@@ -1,0 +1,54 @@
+# IDE and editors
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-error.log*
+.npm/
+.yarn/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+
+# Build artifacts
+dist/
+
+# Environment files
+.env
+.env.local
+!.env.example
+
+# Claude Code local settings
+.claude/settings.local.json
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
+
+# Graph infrastructure env
+graph-infra/.env
+
+# Task tracking (project-specific, not repo-level)
+.tl/tasks/
+
+# Binary documents
+*.docx
