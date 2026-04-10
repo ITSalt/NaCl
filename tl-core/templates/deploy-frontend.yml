@@ -1,0 +1,64 @@
+# Frontend deployment workflow (Next.js static export)
+# Triggers: push to main (production) or feature/* (staging)
+# Template from claude-skills — customize for your project
+
+name: Deploy Frontend
+
+on:
+  push:
+    branches:
+      - main
+      - 'feature/**'
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/deploy-frontend.yml'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    env:
+      # Set these in GitHub Secrets:
+      # SSH_PRIVATE_KEY, VPS_IP_STAGING, VPS_IP_PROD, VPS_USER
+      # PROD_API_URL, STAGING_API_URL, PROD_URL, STAGING_URL
+      DEPLOY_TARGET: ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
+      VPS_IP: ${{ github.ref == 'refs/heads/main' && secrets.VPS_IP_PROD || secrets.VPS_IP_STAGING }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: 'frontend/package-lock.json'
+
+      - name: Install dependencies
+        run: cd frontend && npm ci
+
+      - name: Build
+        run: cd frontend && npm run build
+        env:
+          # Pass build-time env vars from secrets
+          NEXT_PUBLIC_API_URL: ${{ env.DEPLOY_TARGET == 'production' && secrets.PROD_API_URL || secrets.STAGING_API_URL }}
+
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Deploy static files to server
+        run: |
+          rsync -avz --delete \
+            frontend/out/ ${{ secrets.VPS_USER }}@${{ env.VPS_IP }}:/app/frontend/
+
+      - name: Health check
+        run: |
+          sleep 3
+          URL="${{ env.DEPLOY_TARGET == 'production' && secrets.PROD_URL || secrets.STAGING_URL }}"
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$URL" || echo "000")
+          if [ "$STATUS" != "200" ]; then
+            echo "Frontend health check failed: $STATUS"
+            exit 1
+          fi
+          echo "Frontend deployed and accessible: $STATUS"

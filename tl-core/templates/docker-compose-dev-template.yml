@@ -1,0 +1,260 @@
+# =============================================================================
+# Docker Compose -- Development Infrastructure
+# =============================================================================
+#
+# Template for docker-compose.dev.yml
+# Provides infrastructure services for local development.
+#
+# Philosophy: Docker for infrastructure, native run for applications.
+# See: tl-core/references/dev-environment.md
+#
+# Usage:
+#   docker compose -f docker-compose.dev.yml up -d
+#   docker compose -f docker-compose.dev.yml ps          # check health
+#   docker compose -f docker-compose.dev.yml down         # stop
+#   docker compose -f docker-compose.dev.yml down -v      # stop + remove volumes
+#
+# Environment variables are loaded from .env file.
+# Copy .env.example to .env and fill in project-specific values.
+#
+# =============================================================================
+
+services:
+
+  # ---------------------------------------------------------------------------
+  # PostgreSQL -- primary database
+  # ---------------------------------------------------------------------------
+  db:
+    image: postgres:16-alpine
+    container_name: {{project_name}}-db
+    restart: unless-stopped
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    environment:
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+      POSTGRES_DB: ${DB_NAME:-{{project_name}}_dev}
+      # Performance tuning for development
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      # Optional: mount init scripts (create extensions, seed schemas, etc.)
+      # - ./scripts/db/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-{{project_name}}_dev}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "1.0"
+    networks:
+      - app-network
+
+  # ---------------------------------------------------------------------------
+  # Redis -- caching, sessions, queues
+  # ---------------------------------------------------------------------------
+  redis:
+    image: redis:7-alpine
+    container_name: {{project_name}}-redis
+    restart: unless-stopped
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    command: >
+      redis-server
+      --maxmemory 128mb
+      --maxmemory-policy allkeys-lru
+      --appendonly yes
+      --appendfsync everysec
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: "0.5"
+    networks:
+      - app-network
+
+  # ---------------------------------------------------------------------------
+  # MinIO -- S3-compatible object storage
+  # ---------------------------------------------------------------------------
+  minio:
+    image: minio/minio:latest
+    container_name: {{project_name}}-minio
+    restart: unless-stopped
+    ports:
+      - "${MINIO_API_PORT:-9000}:9000"     # S3 API
+      - "${MINIO_CONSOLE_PORT:-9001}:9001" # Web console
+    environment:
+      MINIO_ROOT_USER: ${MINIO_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_PASSWORD:-minioadmin}
+    volumes:
+      - minio-data:/data
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "0.5"
+    networks:
+      - app-network
+
+  # ---------------------------------------------------------------------------
+  # MinIO Client -- creates default bucket on startup, then exits
+  # ---------------------------------------------------------------------------
+  minio-init:
+    image: minio/mc:latest
+    container_name: {{project_name}}-minio-init
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+        mc alias set local http://minio:9000 $${MINIO_ROOT_USER} $${MINIO_ROOT_PASSWORD};
+        mc mb --ignore-existing local/$${DEFAULT_BUCKET};
+        mc anonymous set download local/$${DEFAULT_BUCKET}/public;
+        echo 'Bucket created successfully';
+      "
+    environment:
+      MINIO_ROOT_USER: ${MINIO_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_PASSWORD:-minioadmin}
+      DEFAULT_BUCKET: ${MINIO_BUCKET:-{{project_name}}-uploads}
+    networks:
+      - app-network
+
+  # ---------------------------------------------------------------------------
+  # pgAdmin -- database management UI (optional)
+  # Uncomment to enable. Access at http://localhost:5050
+  # ---------------------------------------------------------------------------
+  # pgadmin:
+  #   image: dpage/pgadmin4:latest
+  #   container_name: {{project_name}}-pgadmin
+  #   restart: unless-stopped
+  #   ports:
+  #     - "${PGADMIN_PORT:-5050}:80"
+  #   environment:
+  #     PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@{{project_name}}.local}
+  #     PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin}
+  #     PGADMIN_CONFIG_SERVER_MODE: "False"
+  #   volumes:
+  #     - pgadmin-data:/var/lib/pgadmin
+  #   depends_on:
+  #     db:
+  #       condition: service_healthy
+  #   deploy:
+  #     resources:
+  #       limits:
+  #         memory: 256M
+  #         cpus: "0.5"
+  #   networks:
+  #     - app-network
+
+  # ---------------------------------------------------------------------------
+  # RabbitMQ -- message broker (optional)
+  # Uncomment to enable. Management UI at http://localhost:15672
+  # ---------------------------------------------------------------------------
+  # rabbitmq:
+  #   image: rabbitmq:3-management-alpine
+  #   container_name: {{project_name}}-rabbitmq
+  #   restart: unless-stopped
+  #   ports:
+  #     - "${RABBITMQ_PORT:-5672}:5672"       # AMQP
+  #     - "${RABBITMQ_MGMT_PORT:-15672}:15672" # Management UI
+  #   environment:
+  #     RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-guest}
+  #     RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-guest}
+  #     RABBITMQ_DEFAULT_VHOST: ${RABBITMQ_VHOST:-/}
+  #   volumes:
+  #     - rabbitmq-data:/var/lib/rabbitmq
+  #   healthcheck:
+  #     test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+  #     interval: 10s
+  #     timeout: 10s
+  #     retries: 5
+  #     start_period: 30s
+  #   deploy:
+  #     resources:
+  #       limits:
+  #         memory: 512M
+  #         cpus: "0.5"
+  #   networks:
+  #     - app-network
+
+# =============================================================================
+# Named volumes -- data persists between container restarts
+# =============================================================================
+volumes:
+  pgdata:
+    name: {{project_name}}-pgdata
+  redis-data:
+    name: {{project_name}}-redis-data
+  minio-data:
+    name: {{project_name}}-minio-data
+  # Uncomment if using optional services:
+  # pgadmin-data:
+  #   name: {{project_name}}-pgadmin-data
+  # rabbitmq-data:
+  #   name: {{project_name}}-rabbitmq-data
+
+# =============================================================================
+# Network -- shared bridge network for all services
+# =============================================================================
+networks:
+  app-network:
+    name: {{project_name}}-network
+    driver: bridge
+
+# =============================================================================
+# .env.example -- copy to .env and adjust values
+# =============================================================================
+#
+# # --- Project ---
+# PROJECT_NAME={{project_name}}
+#
+# # --- PostgreSQL ---
+# DB_USER=postgres
+# DB_PASSWORD=postgres
+# DB_NAME={{project_name}}_dev
+# DB_PORT=5432
+# DATABASE_URL=postgresql://postgres:postgres@localhost:5432/{{project_name}}_dev
+#
+# # --- Redis ---
+# REDIS_PORT=6379
+# REDIS_URL=redis://localhost:6379
+#
+# # --- MinIO (S3) ---
+# MINIO_USER=minioadmin
+# MINIO_PASSWORD=minioadmin
+# MINIO_BUCKET={{project_name}}-uploads
+# MINIO_API_PORT=9000
+# MINIO_CONSOLE_PORT=9001
+# MINIO_ENDPOINT=http://localhost:9000
+#
+# # --- pgAdmin (optional) ---
+# PGADMIN_EMAIL=admin@{{project_name}}.local
+# PGADMIN_PASSWORD=admin
+# PGADMIN_PORT=5050
+#
+# # --- RabbitMQ (optional) ---
+# RABBITMQ_USER=guest
+# RABBITMQ_PASSWORD=guest
+# RABBITMQ_PORT=5672
+# RABBITMQ_MGMT_PORT=15672
+# RABBITMQ_VHOST=/
+# RABBITMQ_URL=amqp://guest:guest@localhost:5672/

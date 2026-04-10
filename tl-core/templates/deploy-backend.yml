@@ -1,0 +1,76 @@
+# Backend deployment workflow
+# Triggers: push to main (production) or feature/* (staging)
+# Template from claude-skills — customize for your project
+
+name: Deploy Backend
+
+on:
+  push:
+    branches:
+      - main
+      - 'feature/**'
+    paths:
+      - 'backend/**'
+      - '.github/workflows/deploy-backend.yml'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    env:
+      # Set these in GitHub Secrets:
+      # SSH_PRIVATE_KEY, VPS_IP_STAGING, VPS_IP_PROD, VPS_USER, DEPLOY_USER
+      DEPLOY_TARGET: ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
+      VPS_IP: ${{ github.ref == 'refs/heads/main' && secrets.VPS_IP_PROD || secrets.VPS_IP_STAGING }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: 'backend/package-lock.json'
+
+      - name: Install dependencies
+        run: cd backend && npm ci
+
+      - name: Run tests
+        run: cd backend && npm test
+
+      - name: Build
+        run: cd backend && npm run build
+
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Deploy to server
+        run: |
+          rsync -avz --delete \
+            --exclude='node_modules' \
+            --exclude='.env' \
+            backend/ ${{ secrets.VPS_USER }}@${{ env.VPS_IP }}:/app/backend/
+
+      - name: Install + Build + Migrate + Restart on server
+        run: |
+          ssh ${{ secrets.VPS_USER }}@${{ env.VPS_IP }} << 'EOF'
+            cd /app/backend
+            npm ci --production
+            npm run build
+            npm run migrate
+            sudo -u ${{ secrets.DEPLOY_USER || 'deploy' }} pm2 restart backend || \
+            sudo -u ${{ secrets.DEPLOY_USER || 'deploy' }} pm2 start dist/server.js --name backend
+          EOF
+
+      - name: Health check
+        run: |
+          sleep 5
+          URL="${{ env.DEPLOY_TARGET == 'production' && secrets.PROD_URL || secrets.STAGING_URL }}"
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$URL/api/health" || echo "000")
+          if [ "$STATUS" != "200" ]; then
+            echo "Health check failed: $STATUS"
+            exit 1
+          fi
+          echo "Health check passed: $STATUS"
