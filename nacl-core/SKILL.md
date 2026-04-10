@@ -93,7 +93,7 @@ Schema files: `graph-infra/schema/`
 | nacl-sa-finalize | Statistics, ADR, readiness |
 | nacl-sa-full | Full SA orchestrator (10 phases) |
 
-### TL Layer (6 skills)
+### TL Layer (7 skills)
 | Skill | Purpose |
 |-------|---------|
 | nacl-tl-plan | Task planning from graph |
@@ -102,6 +102,7 @@ Schema files: `graph-infra/schema/`
 | nacl-tl-next | Next task + SA context |
 | nacl-tl-full | Full lifecycle orchestrator |
 | nacl-tl-conductor | Batch process manager |
+| nacl-tl-hotfix | Emergency hotfix to main |
 
 ### Output (2 skills)
 | Skill | Purpose |

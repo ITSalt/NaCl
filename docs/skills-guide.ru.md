@@ -22,7 +22,8 @@
 │       └── /nacl-tl-conductor --items FR-001
 │
 ├── Что-то сломалось?
-│   └── /nacl-tl-fix "что сломалось"
+│   ├── Обычный фикс → /nacl-tl-fix "что сломалось"
+│   └── Критичный баг в проде? → /nacl-tl-fix → /nacl-tl-hotfix --apply
 │
 ├── Несколько запросов (фичи + баги + задачи)?
 │   └── /nacl-tl-intake → /nacl-tl-conductor --items ...
@@ -92,6 +93,7 @@
 | Ситуация | Скилл |
 |----------|-------|
 | Коммит + пуш + PR | `/nacl-tl-ship` |
+| Экстренный хотфикс в production | `/nacl-tl-hotfix --apply` |
 | Полная доставка на staging | `/nacl-tl-deliver` |
 | Мониторинг CI/CD | `/nacl-tl-deploy` |
 | Релиз в production | `/nacl-tl-release` |
@@ -101,6 +103,7 @@
 | Ситуация | Скилл |
 |----------|-------|
 | Исправить баг (spec-first) | `/nacl-tl-fix "описание"` |
+| Экстренный хотфикс (в обход фича-ветки) | `/nacl-tl-hotfix` |
 | Переоткрытые задачи | `/nacl-tl-reopened` |
 | Диагностика проекта | `/nacl-tl-diagnose` |
 | Синхронизация доков с кодом | `/nacl-tl-reconcile` |

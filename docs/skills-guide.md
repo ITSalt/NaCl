@@ -22,7 +22,8 @@ What do you need?
 │       └── /nacl-tl-conductor --items FR-001
 │
 ├── Something is broken?
-│   └── /nacl-tl-fix "what's broken"
+│   ├── Regular fix → /nacl-tl-fix "what's broken"
+│   └── Critical production issue? → /nacl-tl-fix → /nacl-tl-hotfix --apply
 │
 ├── Got multiple requests (features + bugs + tasks)?
 │   └── /nacl-tl-intake → /nacl-tl-conductor --items ...
@@ -93,6 +94,7 @@ What do you need?
 | Situation | Skill |
 |-----------|-------|
 | Commit + push + PR | `/nacl-tl-ship` |
+| Emergency hotfix to production | `/nacl-tl-hotfix --apply` |
 | Full delivery (push → CI → staging → verify) | `/nacl-tl-deliver` |
 | Monitor CI/CD deployment | `/nacl-tl-deploy` |
 | Release to production | `/nacl-tl-release` |
@@ -112,6 +114,7 @@ What do you need?
 | Situation | Skill |
 |-----------|-------|
 | Fix a bug (spec-first) | `/nacl-tl-fix "description"` |
+| Emergency hotfix (bypass feature branch) | `/nacl-tl-hotfix` |
 | Fix reopened tasks (QA failures) | `/nacl-tl-reopened` |
 | Diagnose project health | `/nacl-tl-diagnose` |
 | Reconcile docs with code | `/nacl-tl-reconcile` |

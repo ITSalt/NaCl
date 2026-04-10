@@ -2,7 +2,7 @@
 
 # NaCl
 
-**NaCl** (Na + Cl) is a set of 56 slash-command skills for [Claude Code](https://docs.anthropic.com/en/docs/claude-code) that cover the entire software development lifecycle -- from business analysis and system specification to TDD development, code review, QA, and release. Business and system analysis artifacts live in a Neo4j graph database, so every requirement is queryable, traceable, and never lost in a wall of Markdown.
+**NaCl** (Na + Cl) is a set of 57 slash-command skills for [Claude Code](https://docs.anthropic.com/en/docs/claude-code) that cover the entire software development lifecycle -- from business analysis and system specification to TDD development, code review, QA, and release. Business and system analysis artifacts live in a Neo4j graph database, so every requirement is queryable, traceable, and never lost in a wall of Markdown.
 
 ## How It Works
 
@@ -50,9 +50,9 @@ All skills use the `nacl-{layer}-{action}` naming convention: **BA** = Business 
 |---|---|---|---|
 | **Business Analysis** | `nacl-ba-*` | 14 | Business processes, entities, roles, rules, glossary, validation. Output in Russian. |
 | **System Analysis** | `nacl-sa-*` | 9 | Architecture, domain model, use cases, UI, roles, validation. Output in Russian. |
-| **TeamLead** | `nacl-tl-*` | 24 | Full dev lifecycle: planning, TDD (BE/FE), code review, QA, deploy, release, diagnostics. |
+| **TeamLead** | `nacl-tl-*` | 25 | Full dev lifecycle: planning, TDD (BE/FE), code review, QA, deploy, release, hotfix, diagnostics. |
 | **Utilities** | `nacl-*` | 4 | `nacl-core` (Cypher helpers), `nacl-render` (export), `nacl-publish` (Docmost sync), `nacl-init` (scaffolding). |
-| | | **51** | |
+| | | **52** | |
 
 ## Prerequisites
 

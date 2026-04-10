@@ -21,6 +21,13 @@ Read git strategy from config.yaml → commit → push → PR (if feature-branch
 Never push without passing tests first.
 ```
 
+## Safety Rules
+
+1. **NEVER switch branches.** If you are on branch X, commit to branch X. Period.
+2. **NEVER push to a branch other than the current one.** No `git checkout main`. No `git stash && git checkout`. No autonomous "this is a hotfix" decisions.
+3. If you believe the current branch is wrong for the change — **ASK the user**. Suggest `/nacl-tl-hotfix` if the fix seems critical for production.
+4. The ONLY skill authorized to target `main` from another branch is `/nacl-tl-hotfix`.
+
 ---
 
 ## Invocation
@@ -99,19 +106,21 @@ If config.yaml missing → use all fallback defaults. If YouGile missing → ski
 
 ### Step 2: DETERMINE GIT STRATEGY
 
-Read from `config.yaml → modules.[name].git_strategy`:
-
-| Strategy | Branch | Push target |
-|----------|--------|-------------|
-| `direct` | Stay on `git_base_branch` (usually `main`) | Push directly to base branch |
-| `feature-branch` | Create `feature/[UC-or-FR]` from `git_base_branch` | Push to feature branch, create PR |
-
-For feature-branch strategy:
-```bash
-git checkout -b feature/UC028 [git_base_branch]
-# or for feature requests:
-git checkout -b feature/FR-001 [git_base_branch]
 ```
+current_branch = git rev-parse --abbrev-ref HEAD
+base_branch = config.yaml → git.main_branch (default: "main")
+strategy = config.yaml → git.strategy (default: "feature-branch")
+```
+
+| Situation | Action |
+|-----------|--------|
+| Already on a feature/topic branch (`current_branch != base_branch`) | **STAY here.** Commit and push to this branch. This is the most common scenario. |
+| On `base_branch` AND strategy == `direct` | Stay on base branch, push directly. |
+| On `base_branch` AND strategy == `feature-branch` | Create new branch: `git checkout -b feature/[UC-or-FR] [base_branch]` |
+
+**IMPORTANT:** If you are on a feature branch, you ALWAYS commit there — regardless of whether
+the change "matches" the branch name. Hotfixes, cross-cutting fixes, shared code changes —
+all go to the current branch. If the user wants it on main, they will use `/nacl-tl-hotfix`.
 
 ### Step 3: COMMIT
 
@@ -328,6 +337,24 @@ If `git status` shows no changes:
 - Check if changes were already committed but not pushed
 - If already pushed → report "already shipped"
 - If nothing changed at all → report "nothing to ship"
+
+### Fix seems unrelated to current branch
+
+If the change appears unrelated to the current feature branch name:
+- This is NORMAL — hotfixes, cross-cutting concerns, and shared code
+  are often committed from whatever branch is active
+- Commit to the CURRENT branch
+- Do NOT autonomously switch to main or create a new branch
+- If you believe the fix is urgent for production,
+  mention it in the report:
+  "Note: if this fix is urgent for production, consider `/nacl-tl-hotfix --apply`"
+
+### Invoked with just a commit message (no UC/FR ID)
+
+When called as `/nacl-tl-ship "some message"` without a UC or FR identifier:
+- Commit to the CURRENT branch (whatever it is)
+- Do NOT try to determine a "correct" branch based on the commit content
+- The user explicitly chose to ship from where they are
 
 ### Feature request with multiple UCs
 

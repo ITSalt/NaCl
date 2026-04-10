@@ -351,6 +351,12 @@ Remaining discrepancies docs/code:
 Next step — ship this fix:
   /nacl-tl-ship "fix: [short description from commit message]"
 
+  ⚠ If this is a critical production issue that cannot wait
+  for the feature branch to merge, consider instead:
+  /nacl-tl-hotfix --apply
+  This will create a hotfix PR directly to main while
+  preserving your feature branch.
+
 Recommendations:
   [if systemic issues found — suggest
    /nacl-tl-diagnose or /nacl-tl-reconcile]
@@ -362,6 +368,10 @@ Recommendations:
 If `--auto-ship` is set AND the fix was successful (tests pass, build OK):
 1. Automatically invoke `/nacl-tl-ship` with the fix description as commit message
 2. Report ship result alongside fix result
+
+Note: `--auto-ship` ALWAYS uses `/nacl-tl-ship` (commits to current branch).
+It NEVER uses `/nacl-tl-hotfix`. If the user wants a hotfix to main, they must
+explicitly invoke `/nacl-tl-hotfix` after the fix is complete.
 
 If the fix failed or tests don't pass → do NOT auto-ship, report the fix failure only.
 

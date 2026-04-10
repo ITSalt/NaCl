@@ -296,8 +296,13 @@ Args: "{task_code} fix: {brief description from nacl-tl-fix report}"
 `/nacl-tl-ship` handles:
 - Correct git strategy (direct vs feature-branch from config.yaml)
 - Commit with descriptive message
-- Push to remote
+- Push to remote (always to the current branch -- ship NEVER switches branches)
 - YouGile column move to DevDone
+
+Note: `/nacl-tl-ship` always commits to the current branch per config strategy.
+If the reopened fix is critical for production and needs to bypass the feature
+branch merge, escalate to the user: "Consider `/nacl-tl-hotfix --apply`
+to ship directly to main."
 
 **If /nacl-tl-ship was NOT invoked** (e.g., /nacl-tl-fix auto-shipped), move to DevDone manually:
 ```

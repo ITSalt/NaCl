@@ -4,7 +4,7 @@
 
 # Workflows
 
-8 end-to-end scenarios. Each shows the exact sequence of slash commands you run in Claude Code and what happens at every step.
+9 end-to-end scenarios. Each shows the exact sequence of slash commands you run in Claude Code and what happens at every step.
 
 ---
 
@@ -154,6 +154,28 @@ Reads Task and Wave nodes from Neo4j, shows per-phase progress (BE, FE, sync, QA
 /nacl-tl-next
 ```
 Recommends the next task to pick up based on wave ordering, dependencies, and critical path analysis. Enriches suggestions with UC entity and form names from the graph.
+
+---
+
+## 9. Emergency Hotfix
+
+**When to use:** A critical bug is in production. You are on a feature branch and need the fix on `main` NOW, without merging the entire feature.
+
+```
+/nacl-tl-fix "what's broken"
+```
+Fix the bug on the current branch (spec-first, as always).
+
+```
+/nacl-tl-hotfix --apply
+```
+Takes the uncommitted fix, creates a `hotfix/` branch from `main`, opens a PR with auto-merge enabled. After the PR merges, restores you to the feature branch.
+
+If the fix is already committed on the feature branch:
+```
+/nacl-tl-hotfix --cherry-pick HEAD
+```
+Cherry-picks the commit onto a `hotfix/` branch from `main` and opens a PR.
 
 ---
 
