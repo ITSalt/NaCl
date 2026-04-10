@@ -34,7 +34,7 @@ Each use case is committed atomically. QA runs at two levels: locally during dev
 
 - **Graph-first analysis.** Business processes, entities, roles, and rules are stored as Neo4j nodes and edges -- not flat files. This makes impact analysis, traceability, and validation a matter of Cypher queries rather than manual cross-referencing.
 
-- **Skill language controls output language.** Graph BA and Graph SA skill prompts are written in Russian, so Claude produces Russian-language artifacts. TL skills are in English and produce English output. This is intentional -- analysis documents are for stakeholders, code is for developers.
+- **Skill language controls output language.** BA and SA skill prompts are written in Russian, so Claude produces Russian-language artifacts. TL skills are in English and produce English output. This is intentional -- analysis documents are for stakeholders, code is for developers.
 
 - **Atomic commits per use case.** Each UC (use case) is developed, tested, reviewed, and shipped as a single unit. No half-done features in the repository.
 

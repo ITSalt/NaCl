@@ -22,5 +22,5 @@
 - [ ] Tested locally with Claude Code
 - [ ] No hardcoded paths (`~/projects/`, `/Users/`)
 - [ ] No credentials or API keys in code
-- [ ] Follows naming conventions (`graph_layer_action` or `tl-action`)
+- [ ] Follows naming conventions (`nacl-{layer}-{action}`, e.g. `nacl-ba-context`)
 - [ ] Documentation updated if needed

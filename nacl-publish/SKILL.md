@@ -183,7 +183,7 @@ Before any Docmost command, verify:
    UNWIND lbls AS lbl
    RETURN lbl, sum(cnt) AS total ORDER BY lbl
    ```
-   - If empty -> `WARNING: Graph is empty. Run /graph_import or seed data first.`
+   - If empty -> `WARNING: Graph is empty. Run /nacl-ba-from-board or seed data first.`
 
 4. **Manifest exists?** Read `.docmost-sync.json`.
    - If missing and command is not `docmost` (full) -> suggest running `/nacl-publish docmost` first.
@@ -659,7 +659,7 @@ Used for finding existing pages during manifest rebuild.
 |-----------|--------|
 | Docmost MCP unavailable | `ERROR: Docmost MCP not available. Check MCP server connection.` |
 | Neo4j unavailable | `ERROR: Neo4j not available. Check config.yaml → graph.neo4j_bolt_port (default: 3587) and ensure Docker is running.` |
-| Graph is empty | `WARNING: Graph is empty. Run /graph_import or seed first.` |
+| Graph is empty | `WARNING: Graph is empty. Run /nacl-ba-from-board or seed first.` |
 | Manifest missing (incremental) | `ERROR: No manifest. Run /nacl-publish docmost first.` |
 | Manifest missing (full) | Proceed with init flow: read `config.yaml → docmost.spaces.graph` first; only ask the user if config.yaml is empty. |
 | Page create fails | Log error, continue with next page, report failures at end. |
@@ -1056,7 +1056,7 @@ In all cases, save the manifest with whatever state was achieved before the fail
 
 ## Integration with Other Skills
 
-### After `/graph_import`
+### After `/nacl-ba-from-board`
 
 After importing data into the graph, suggest:
 ```

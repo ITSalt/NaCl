@@ -7,11 +7,11 @@ body:
     attributes:
       label: Category
       options:
-        - Graph BA
-        - Graph SA
-        - Graph TL
-        - TL Development
-        - Infrastructure (graph-infra, nacl-init)
+        - BA (Business Analysis)
+        - SA (System Analysis)
+        - TL (TeamLead)
+        - Utility (nacl-core, nacl-render, nacl-publish, nacl-init)
+        - Infrastructure (graph-infra)
         - CLI Tools (docmost-sync, yougile-setup)
     validations:
       required: true

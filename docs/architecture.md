@@ -9,7 +9,7 @@ NaCl implements a three-layer pipeline where each layer transforms artifacts fro
 ## The Pipeline
 
 ```
-Graph BA (Business Analysis)     Graph SA (System Analysis)      TL (Development)
+BA (Business Analysis)           SA (System Analysis)            TL (TeamLead)
 ─────────────────────────────    ──────────────────────────      ─────────────────
 Stakeholders, processes,         Modules, domain model,          Tasks, waves,
 entities, roles, glossary,       use cases, forms, roles,        TDD code, review,
