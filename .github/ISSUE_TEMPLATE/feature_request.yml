@@ -1,0 +1,37 @@
+name: Feature Request
+description: Suggest an improvement to an existing skill or tool
+labels: ["enhancement"]
+body:
+  - type: dropdown
+    id: category
+    attributes:
+      label: Category
+      options:
+        - Graph BA
+        - Graph SA
+        - Graph TL
+        - TL Development
+        - Infrastructure
+        - CLI Tools
+        - Documentation
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: What would you like to see improved?
+    validations:
+      required: true
+  - type: textarea
+    id: usecase
+    attributes:
+      label: Use Case
+      description: Why is this needed? What problem does it solve?
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed Solution
+      description: How do you think this should work?

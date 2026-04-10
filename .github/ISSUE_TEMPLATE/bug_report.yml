@@ -1,0 +1,57 @@
+name: Bug Report
+description: Report a skill that isn't working correctly
+labels: ["bug"]
+body:
+  - type: dropdown
+    id: category
+    attributes:
+      label: Category
+      options:
+        - Graph BA
+        - Graph SA
+        - Graph TL
+        - TL Development
+        - Infrastructure (graph-infra, project-init)
+        - CLI Tools (docmost-sync, yougile-setup)
+    validations:
+      required: true
+  - type: input
+    id: skill
+    attributes:
+      label: Skill Name
+      placeholder: "e.g., graph_ba_context, tl-fix"
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: What happened?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to Reproduce
+      description: How can we reproduce this?
+      value: |
+        1.
+        2.
+        3.
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual Behavior
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      value: |
+        - OS:
+        - Claude Code version:
+        - Docker version (if applicable):
+        - Neo4j version (if applicable):

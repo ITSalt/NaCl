@@ -1,0 +1,44 @@
+name: New Skill Proposal
+description: Propose a new skill for the project
+labels: ["enhancement"]
+body:
+  - type: input
+    id: name
+    attributes:
+      label: Skill Name
+      placeholder: "e.g., graph_ba_timeline, tl-perf"
+    validations:
+      required: true
+  - type: dropdown
+    id: category
+    attributes:
+      label: Category
+      options:
+        - Graph BA
+        - Graph SA
+        - Graph TL
+        - TL Development
+        - Infrastructure
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem It Solves
+      description: What gap does this skill fill?
+    validations:
+      required: true
+  - type: textarea
+    id: workflow
+    attributes:
+      label: Proposed Workflow
+      description: What steps should the skill perform?
+      value: |
+        1.
+        2.
+        3.
+  - type: textarea
+    id: output
+    attributes:
+      label: Expected Output
+      description: What artifacts does this skill produce?

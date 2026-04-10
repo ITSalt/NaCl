@@ -1,0 +1,47 @@
+name: Lint Skills
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate-skills:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check SKILL.md frontmatter
+        run: |
+          errors=0
+          for dir in */; do
+            if [ -f "$dir/SKILL.md" ]; then
+              if ! head -1 "$dir/SKILL.md" | grep -q '^---$'; then
+                echo "ERROR: $dir/SKILL.md missing YAML frontmatter"
+                errors=$((errors + 1))
+              elif ! grep -A 10 '^---$' "$dir/SKILL.md" | grep -q '^name:'; then
+                echo "ERROR: $dir/SKILL.md missing 'name' field in frontmatter"
+                errors=$((errors + 1))
+              fi
+            fi
+          done
+          if [ $errors -gt 0 ]; then
+            echo "Found $errors skill(s) with invalid frontmatter"
+            exit 1
+          fi
+          echo "All skills have valid frontmatter"
+
+      - name: Check for hardcoded paths
+        run: |
+          if git ls-files | xargs grep -l '~/projects/\|/Users/' 2>/dev/null | grep -v '.github/'; then
+            echo "ERROR: Found hardcoded paths in tracked files"
+            exit 1
+          fi
+          echo "No hardcoded paths found"
+
+      - name: Check for credential patterns
+        run: |
+          if git ls-files | grep -v '\.env' | xargs grep -lE 'API_KEY=.+|PASSWORD=.+|SECRET=.+' 2>/dev/null | grep -v '.github/'; then
+            echo "ERROR: Found potential credentials in tracked files"
+            exit 1
+          fi
+          echo "No credential patterns found"
