@@ -7,10 +7,10 @@ body:
     attributes:
       label: Category
       options:
-        - Graph BA
-        - Graph SA
-        - Graph TL
-        - TL Development
+        - BA (Business Analysis)
+        - SA (System Analysis)
+        - TL (TeamLead)
+        - Utility
         - Infrastructure
         - CLI Tools
         - Documentation

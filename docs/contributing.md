@@ -50,20 +50,19 @@ After frontmatter, the skill body contains:
 
 ## Naming Conventions
 
-| Category | Pattern | Example |
-|----------|---------|---------|
-| Graph BA | `graph_ba_action` | `graph_ba_context` |
-| Graph SA | `graph_sa_action` | `graph_sa_domain` |
-| Graph TL | `graph_tl_action` | `graph_tl_plan` |
-| Graph infra | `graph_action` | `graph_render` |
-| TL development | `tl-action` | `tl-dev-be` |
+All NaCl skills follow the pattern `nacl-{layer}-{action}` with hyphens as separators.
 
-Note the underscore (`_`) for graph skills and hyphen (`-`) for TL skills.
+| Prefix | Stands for | Layer | Example |
+|--------|-----------|-------|---------|
+| `nacl-ba-` | **B**usiness **A**nalysis | Analysis of business processes, entities, roles, rules | `nacl-ba-context` |
+| `nacl-sa-` | **S**ystem **A**nalysis | Technical specification: architecture, domain model, UC, UI | `nacl-sa-domain` |
+| `nacl-tl-` | **T**eam **L**ead | Development lifecycle: TDD, review, QA, deploy, release | `nacl-tl-dev-be` |
+| `nacl-` | *(utility)* | Shared infrastructure: core references, render, publish | `nacl-render` |
 
 ## Language Conventions
 
-- **Graph BA/SA skills**: Written in Russian. The skill language controls Claude's output language with the user. BA/SA artifacts are typically in Russian.
-- **TL/Graph TL skills**: Written in English.
+- **BA/SA skills** (`nacl-ba-*`, `nacl-sa-*`): Written in Russian. The skill language controls Claude's output language with the user. BA/SA artifacts are typically in Russian.
+- **TL skills** (`nacl-tl-*`): Written in English.
 - **CLAUDE.md files**: Always in English.
 - **Documentation (docs/)**: English primary, Russian as `*.ru.md`.
 

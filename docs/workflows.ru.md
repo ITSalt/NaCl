@@ -11,35 +11,35 @@
 **Когда**: начинаете проект, ничего нет.
 
 ```
-/project-init "Название проекта"     # CLAUDE.md + config.yaml + Docker
-/graph_ba_full                        # бизнес-анализ → Neo4j граф
-/graph_sa_full                        # системная спецификация → Neo4j граф
-/graph_tl_conductor                   # планирование → разработка → QA → staging
+/nacl-init "Название проекта"     # CLAUDE.md + config.yaml + Docker
+/nacl-ba-full                        # бизнес-анализ → Neo4j граф
+/nacl-sa-full                        # системная спецификация → Neo4j граф
+/nacl-tl-conductor                   # планирование → разработка → QA → staging
 ```
 
-`graph_ba_full` проведёт через 10 фаз интерактивно: контекст, процессы, workflows, сущности, роли, глоссарий, правила, валидация, handoff.
+`nacl-ba-full` проведёт через 10 фаз интерактивно: контекст, процессы, workflows, сущности, роли, глоссарий, правила, валидация, handoff.
 
-`graph_sa_full` создаст архитектуру, доменную модель, use cases, роли, UI, валидацию.
+`nacl-sa-full` создаст архитектуру, доменную модель, use cases, роли, UI, валидацию.
 
-`graph_tl_conductor` создаст задачи из графа, разработает код (TDD), проведёт ревью и QA.
+`nacl-tl-conductor` создаст задачи из графа, разработает код (TDD), проведёт ревью и QA.
 
 ## 2. Добавить фичу
 
 **Когда**: проект существует, нужна новая функциональность.
 
 ```
-/graph_sa_feature "описание фичи"     # анализ влияния через Cypher
-/graph_tl_conductor --items FR-001    # разработка + QA + деплой
+/nacl-sa-feature "описание фичи"     # анализ влияния через Cypher
+/nacl-tl-conductor --items FR-001    # разработка + QA + деплой
 ```
 
-`graph_sa_feature` проверяет влияние на существующие модули, домен и UC через граф.
+`nacl-sa-feature` проверяет влияние на существующие модули, домен и UC через граф.
 
 ## 3. Исправить баг
 
 **Когда**: что-то сломалось.
 
 ```
-/tl-fix "описание проблемы"
+/nacl-tl-fix "описание проблемы"
 ```
 
 Автоматически определяет затронутые UC/TECH, классифицирует уровень (L0-L3), обновляет документацию ПЕРЕД кодом.
@@ -49,8 +49,8 @@
 **Когда**: накопилось несколько запросов (фичи + баги + задачи).
 
 ```
-/graph_tl_intake                      # триаж: фичи → /graph_sa_feature, баги → /tl-fix
-/graph_tl_conductor --items FR-001,FR-002,BUG-003
+/nacl-tl-intake                      # триаж: фичи → /nacl-sa-feature, баги → /nacl-tl-fix
+/nacl-tl-conductor --items FR-001,FR-002,BUG-003
 ```
 
 ## 5. Импорт документа клиента
@@ -58,9 +58,9 @@
 **Когда**: клиент прислал описание бизнес-процессов.
 
 ```
-/graph_ba_from_board import /path/to/document.docx
-/graph_sa_full
-/graph_tl_conductor
+/nacl-ba-from-board import /path/to/document.docx
+/nacl-sa-full
+/nacl-tl-conductor
 ```
 
 Парсит документ → создаёт Excalidraw-борд → синхронизирует в Neo4j-граф.
@@ -70,7 +70,7 @@
 **Когда**: код готов, нужно задеплоить.
 
 ```
-/tl-deliver
+/nacl-tl-deliver
 ```
 
 Push → PR → ожидание CI → верификация на staging (E2E) → health check.
@@ -80,7 +80,7 @@ Push → PR → ожидание CI → верификация на staging (E2E
 **Когда**: staging проверен, готов к релизу.
 
 ```
-/tl-release
+/nacl-tl-release
 ```
 
 Version bump, git tag, changelog, release notes.
@@ -90,15 +90,15 @@ Version bump, git tag, changelog, release notes.
 **Когда**: всё сломано, доки устарели.
 
 ```
-/tl-diagnose         # анализ git-истории, drift доков, здоровье кода
-/tl-reconcile        # приводит доки в соответствие с кодом
+/nacl-tl-diagnose         # анализ git-истории, drift доков, здоровье кода
+/nacl-tl-reconcile        # приводит доки в соответствие с кодом
 ```
 
 ## 9. Статус и планирование
 
 ```
-/graph_tl_status     # прогресс проекта из Neo4j + status.json
-/graph_tl_next       # рекомендация: что делать дальше
+/nacl-tl-status     # прогресс проекта из Neo4j + status.json
+/nacl-tl-next       # рекомендация: что делать дальше
 ```
 
 ## Что дальше

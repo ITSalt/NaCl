@@ -7,11 +7,11 @@ body:
     attributes:
       label: Category
       options:
-        - Graph BA
-        - Graph SA
-        - Graph TL
-        - TL Development
-        - Infrastructure (graph-infra, project-init)
+        - BA (Business Analysis)
+        - SA (System Analysis)
+        - TL (TeamLead)
+        - Utility (nacl-core, nacl-render, nacl-publish, nacl-init)
+        - Infrastructure (graph-infra)
         - CLI Tools (docmost-sync, yougile-setup)
     validations:
       required: true
@@ -19,7 +19,7 @@ body:
     id: skill
     attributes:
       label: Skill Name
-      placeholder: "e.g., graph_ba_context, tl-fix"
+      placeholder: "e.g., nacl-ba-context, nacl-tl-fix"
     validations:
       required: true
   - type: textarea

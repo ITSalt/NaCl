@@ -9,7 +9,7 @@ NaCl implements a three-layer pipeline where each layer transforms artifacts fro
 ## The Pipeline
 
 ```
-Graph BA (Business Analysis)     Graph SA (System Analysis)      TL (Development)
+BA (Business Analysis)           SA (System Analysis)            TL (TeamLead)
 ─────────────────────────────    ──────────────────────────      ─────────────────
 Stakeholders, processes,         Modules, domain model,          Tasks, waves,
 entities, roles, glossary,       use cases, forms, roles,        TDD code, review,
@@ -21,7 +21,7 @@ rules, workflows                 API contracts, UI               QA, ship, deplo
 ```
 
 Each layer has:
-- **An orchestrator** that runs all steps automatically (`graph_ba_full`, `graph_sa_full`, `graph_tl_conductor`)
+- **An orchestrator** that runs all steps automatically (`nacl-ba-full`, `nacl-sa-full`, `nacl-tl-conductor`)
 - **Individual skills** that can be invoked manually for specific tasks
 
 ## Neo4j as Knowledge Graph
@@ -44,10 +44,10 @@ This enables:
 ## Orchestration Hierarchy
 
 ```
-Level 4: graph_tl_conductor          (full pipeline: intake → dev → staging)
-Level 3: graph_ba_full / graph_sa_full / tl-full   (layer orchestrators)
-Level 2: graph_ba_context / tl-dev-be / tl-qa      (individual skills)
-Level 1: graph_core / tl-core                       (shared references)
+Level 4: nacl-tl-conductor          (full pipeline: intake → dev → staging)
+Level 3: nacl-ba-full / nacl-sa-full / nacl-tl-full   (layer orchestrators)
+Level 2: nacl-ba-context / nacl-tl-dev-be / nacl-tl-qa      (individual skills)
+Level 1: nacl-core / tl-core                       (shared references)
 ```
 
 **Level 4** orchestrates the entire workflow — from user requests to deployed code.
@@ -60,18 +60,18 @@ Level 1: graph_core / tl-core                       (shared references)
 ```
 User input (interviews, documents)
     ↓
-graph_ba_* → Neo4j BA nodes (processes, entities, roles, rules)
+nacl-ba-* → Neo4j BA nodes (processes, entities, roles, rules)
     ↓
-graph_sa_* → Neo4j SA nodes (modules, domain, UCs, forms, API contracts)
+nacl-sa-* → Neo4j SA nodes (modules, domain, UCs, forms, API contracts)
     ↓
-graph_tl_plan → .tl/tasks/ (task files with specs from graph)
+nacl-tl-plan → .tl/tasks/ (task files with specs from graph)
     ↓
-tl-dev-be → src/ backend code (TDD: test first, then implementation)
-tl-dev-fe → src/ frontend code (TDD: same approach)
+nacl-tl-dev-be → src/ backend code (TDD: test first, then implementation)
+nacl-tl-dev-fe → src/ frontend code (TDD: same approach)
     ↓
-tl-ship → git commit + push + PR
-tl-deploy → CI/CD → staging
-tl-release → production
+nacl-tl-ship → git commit + push + PR
+nacl-tl-deploy → CI/CD → staging
+nacl-tl-release → production
 ```
 
 ## Skill Anatomy
@@ -79,7 +79,7 @@ tl-release → production
 Each skill is a directory with a `SKILL.md` file:
 
 ```
-graph_ba_context/
+nacl-ba-context/
 └── SKILL.md          # YAML frontmatter + prompt instructions
 ```
 
@@ -88,7 +88,7 @@ The SKILL.md contains:
 2. **Role declaration** — who the AI agent pretends to be
 3. **Workflow phases** — numbered steps with user interaction gates
 4. **Templates and rules** — output format specifications
-5. **References** — links to shared resources in `graph_core/` or `tl-core/`
+5. **References** — links to shared resources in `nacl-core/` or `nacl-tl-core/`
 
 ## config.yaml
 

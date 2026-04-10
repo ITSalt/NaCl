@@ -40,7 +40,7 @@ alias nacl-update='cd ~/NaCl && git pull && for dir in ~/NaCl/*/; do [ -f "$dir/
 ```bash
 ls ~/.claude/skills/ | wc -l    # должно показать ~56
 claude                           # запустить Claude Code
-# Введите: /project-init --dry-run
+# Введите: /nacl-init --dry-run
 ```
 
 ## Дальше

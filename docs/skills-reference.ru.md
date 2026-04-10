@@ -4,134 +4,118 @@
 
 # Каталог скиллов
 
-56 скиллов, организованных по уровням и функциям.
+51 скилл, организованный по уровням и функциям. Все скиллы следуют конвенции `nacl-{слой}-{действие}`: **BA** = Business Analysis, **SA** = System Analysis, **TL** = TeamLead.
 
 ## Оркестраторы
 
 | Скилл | Описание |
 |-------|----------|
-| `/graph_ba_full` | Полный цикл бизнес-анализа (10 фаз) |
-| `/graph_sa_full` | Полная системная спецификация (8 фаз) |
-| `/graph_tl_conductor` | Полный пайплайн: планирование → разработка → staging |
-| `/tl-full` | Автономный жизненный цикл одного UC |
+| `/nacl-ba-full` | Полный цикл бизнес-анализа (10 фаз) |
+| `/nacl-sa-full` | Полная системная спецификация (8 фаз) |
+| `/nacl-tl-conductor` | Полный пайплайн: планирование → разработка → staging |
+| `/nacl-tl-full` | Автономный жизненный цикл одного UC |
 
-## Graph BA — Бизнес-анализ (14 скиллов)
+## BA — Бизнес-анализ (14 скиллов)
 
 > Эти скиллы работают на русском языке — язык SKILL.md определяет язык общения Claude.
 
 | Скилл | Описание | Пример |
 |-------|----------|--------|
-| `graph_ba_context` | Определение границ системы | `/graph_ba_context` |
-| `graph_ba_process` | Карта бизнес-процессов | `/graph_ba_process` |
-| `graph_ba_workflow` | Activity diagram для процесса | `/graph_ba_workflow BP-001` |
-| `graph_ba_entities` | Каталог бизнес-сущностей | `/graph_ba_entities` |
-| `graph_ba_roles` | Идентификация бизнес-ролей | `/graph_ba_roles` |
-| `graph_ba_glossary` | Глоссарий предметной области | `/graph_ba_glossary` |
-| `graph_ba_rules` | Каталог бизнес-правил | `/graph_ba_rules` |
-| `graph_ba_validate` | Валидация BA-модели (L1-L8) | `/graph_ba_validate` |
-| `graph_ba_handoff` | Передача BA→SA | `/graph_ba_handoff` |
-| `graph_ba_full` | Оркестратор: все 10 фаз | `/graph_ba_full` |
-| `graph_ba_from_board` | Импорт документа + борд + граф | `/graph_ba_from_board import doc.docx` |
-| `graph_ba_import_doc` | Парсинг документа клиента | `/graph_ba_import_doc doc.docx` |
-| `graph_ba_analyze` | Анализ Excalidraw-борда | `/graph_ba_analyze` |
-| `graph_ba_sync` | Синхронизация борда с графом | `/graph_ba_sync` |
+| `nacl-ba-context` | Определение границ системы | `/nacl-ba-context` |
+| `nacl-ba-process` | Карта бизнес-процессов | `/nacl-ba-process` |
+| `nacl-ba-workflow` | Activity diagram для процесса | `/nacl-ba-workflow BP-001` |
+| `nacl-ba-entities` | Каталог бизнес-сущностей | `/nacl-ba-entities` |
+| `nacl-ba-roles` | Идентификация бизнес-ролей | `/nacl-ba-roles` |
+| `nacl-ba-glossary` | Глоссарий предметной области | `/nacl-ba-glossary` |
+| `nacl-ba-rules` | Каталог бизнес-правил | `/nacl-ba-rules` |
+| `nacl-ba-validate` | Валидация BA-модели (L1-L8) | `/nacl-ba-validate` |
+| `nacl-ba-handoff` | Передача BA→SA | `/nacl-ba-handoff` |
+| `nacl-ba-full` | Оркестратор: все 10 фаз | `/nacl-ba-full` |
+| `nacl-ba-from-board` | Импорт документа + борд + граф | `/nacl-ba-from-board import doc.docx` |
+| `nacl-ba-import-doc` | Парсинг документа клиента | `/nacl-ba-import-doc doc.docx` |
+| `nacl-ba-analyze` | Анализ Excalidraw-борда | `/nacl-ba-analyze` |
+| `nacl-ba-sync` | Синхронизация борда с графом | `/nacl-ba-sync` |
 
-## Graph SA — Системный анализ (9 скиллов)
+## SA — Системный анализ (9 скиллов)
 
 > Эти скиллы работают на русском языке.
 
 | Скилл | Описание | Пример |
 |-------|----------|--------|
-| `graph_sa_architect` | Модули, Context Map, NFR | `/graph_sa_architect` |
-| `graph_sa_domain` | Доменная модель | `/graph_sa_domain` |
-| `graph_sa_uc` | Реестр Use Cases + детализация | `/graph_sa_uc` |
-| `graph_sa_roles` | Системные роли и матрица прав | `/graph_sa_roles` |
-| `graph_sa_ui` | UI-архитектура, компоненты | `/graph_sa_ui` |
-| `graph_sa_validate` | Валидация спецификации | `/graph_sa_validate` |
-| `graph_sa_finalize` | Финализация: глоссарий, ADR, статистика | `/graph_sa_finalize` |
-| `graph_sa_feature` | Инкрементальная фича через граф | `/graph_sa_feature "описание"` |
-| `graph_sa_full` | Оркестратор: все фазы SA | `/graph_sa_full` |
+| `nacl-sa-architect` | Модули, Context Map, NFR | `/nacl-sa-architect` |
+| `nacl-sa-domain` | Доменная модель | `/nacl-sa-domain` |
+| `nacl-sa-uc` | Реестр Use Cases + детализация | `/nacl-sa-uc` |
+| `nacl-sa-roles` | Системные роли и матрица прав | `/nacl-sa-roles` |
+| `nacl-sa-ui` | UI-архитектура, компоненты | `/nacl-sa-ui` |
+| `nacl-sa-validate` | Валидация спецификации | `/nacl-sa-validate` |
+| `nacl-sa-finalize` | Финализация: глоссарий, ADR, статистика | `/nacl-sa-finalize` |
+| `nacl-sa-feature` | Инкрементальная фича через граф | `/nacl-sa-feature "описание"` |
+| `nacl-sa-full` | Оркестратор: все фазы SA | `/nacl-sa-full` |
 
-## Graph TL — Планирование (6 скиллов)
-
-| Скилл | Описание | Пример |
-|-------|----------|--------|
-| `graph_tl_plan` | Задачи и волны из SA-графа | `/graph_tl_plan` |
-| `graph_tl_intake` | Триаж запросов с контекстом графа | `/graph_tl_intake` |
-| `graph_tl_conductor` | Пакетный workflow: intake → staging | `/graph_tl_conductor` |
-| `graph_tl_full` | Полный цикл разработки из графа | `/graph_tl_full` |
-| `graph_tl_status` | Статус проекта из графа | `/graph_tl_status` |
-| `graph_tl_next` | Рекомендация следующей задачи | `/graph_tl_next` |
-
-## Графовая инфраструктура (3 скилла)
+## Утилиты (4 скилла)
 
 | Скилл | Описание |
 |-------|----------|
-| `graph_core` | Общие ссылки для всех graph_* скиллов (не вызывается напрямую) |
-| `graph_render` | Рендер графа в Markdown/Excalidraw | 
-| `graph_publish` | Публикация графа в Docmost |
+| `nacl-core` | Общие ссылки для всех nacl-* скиллов (не вызывается напрямую) |
+| `nacl-render` | Рендер графа в Markdown/Excalidraw | 
+| `nacl-publish` | Публикация графа в Docmost |
+| `nacl-init` | Создание CLAUDE.md + config.yaml для нового проекта |
 
-## TL — Разработка (24 скилла)
+## TL — TeamLead (24 скилла)
 
 ### Планирование
 
 | Скилл | Описание |
 |-------|----------|
-| `tl-plan` | Создание задач из SA-спецификации |
-| `tl-intake` | Триаж запросов пользователей |
-| `tl-next` | Рекомендация следующей задачи |
-| `tl-status` | Статус проекта |
+| `nacl-tl-plan` | Создание задач из SA-спецификации |
+| `nacl-tl-intake` | Триаж запросов пользователей |
+| `nacl-tl-next` | Рекомендация следующей задачи |
+| `nacl-tl-status` | Статус проекта |
 
 ### Разработка
 
 | Скилл | Описание |
 |-------|----------|
-| `tl-dev-be` | Бэкенд TDD (test → implement → refactor) |
-| `tl-dev-fe` | Фронтенд TDD (React/Next.js) |
-| `tl-dev` | Инфра/TECH задачи |
+| `nacl-tl-dev-be` | Бэкенд TDD (test → implement → refactor) |
+| `nacl-tl-dev-fe` | Фронтенд TDD (React/Next.js) |
+| `nacl-tl-dev` | Инфра/TECH задачи |
 
 ### Качество
 
 | Скилл | Описание |
 |-------|----------|
-| `tl-review` | Код-ревью (--be или --fe) |
-| `tl-sync` | Проверка синхронизации BE/FE |
-| `tl-stubs` | Поиск стабов и моков |
-| `tl-verify-code` | Статический анализ корректности |
-| `tl-verify` | Оркестратор: код + E2E + YouGile |
-| `tl-qa` | E2E тестирование (Playwright) |
+| `nacl-tl-review` | Код-ревью (--be или --fe) |
+| `nacl-tl-sync` | Проверка синхронизации BE/FE |
+| `nacl-tl-stubs` | Поиск стабов и моков |
+| `nacl-tl-verify-code` | Статический анализ корректности |
+| `nacl-tl-verify` | Оркестратор: код + E2E + YouGile |
+| `nacl-tl-qa` | E2E тестирование (Playwright) |
 
 ### Доставка
 
 | Скилл | Описание |
 |-------|----------|
-| `tl-ship` | Коммит, пуш, PR |
-| `tl-deploy` | Мониторинг CI/CD |
-| `tl-deliver` | Полная доставка: push → CI → staging → verify |
-| `tl-release` | Релиз: version bump, tag, changelog |
+| `nacl-tl-ship` | Коммит, пуш, PR |
+| `nacl-tl-deploy` | Мониторинг CI/CD |
+| `nacl-tl-deliver` | Полная доставка: push → CI → staging → verify |
+| `nacl-tl-release` | Релиз: version bump, tag, changelog |
 
 ### Исправление и восстановление
 
 | Скилл | Описание |
 |-------|----------|
-| `tl-fix` | Исправление бага (spec-first) |
-| `tl-reopened` | Переоткрытые задачи (QA failures) |
-| `tl-diagnose` | Диагностика здоровья проекта |
-| `tl-reconcile` | Синхронизация доков с кодом |
+| `nacl-tl-fix` | Исправление бага (spec-first) |
+| `nacl-tl-reopened` | Переоткрытые задачи (QA failures) |
+| `nacl-tl-diagnose` | Диагностика здоровья проекта |
+| `nacl-tl-reconcile` | Синхронизация доков с кодом |
 
 ### Документация и оркестрация
 
 | Скилл | Описание |
 |-------|----------|
-| `tl-docs` | Обновление документации |
-| `tl-full` | Полный цикл одного UC |
-| `tl-conductor` | Пакетный workflow |
-
-## Инициализация (1 скилл)
-
-| Скилл | Описание |
-|-------|----------|
-| `project-init` | Создание CLAUDE.md + config.yaml для нового проекта |
+| `nacl-tl-docs` | Обновление документации |
+| `nacl-tl-full` | Полный цикл одного UC |
+| `nacl-tl-conductor` | Пакетный workflow |
 
 ## Что дальше
 

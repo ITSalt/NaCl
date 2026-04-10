@@ -91,13 +91,13 @@ Restart Claude Code to pick up the MCP server.
 Open Claude Code in your target project directory:
 
 ```
-/project-init "My Project Name"
+/nacl-init "My Project Name"
 ```
 
 This creates `CLAUDE.md` and `config.yaml`. Then start the full pipeline:
 
 ```
-/graph_ba_full
+/nacl-ba-full
 ```
 
 Claude will guide you through business analysis interactively, storing everything in the Neo4j graph.

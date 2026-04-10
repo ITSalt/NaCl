@@ -4,7 +4,7 @@
 
 **56 скиллов для Claude Code**, реализующих полный цикл разработки ПО -- от бизнес-анализа до релиза в продакшен.
 
-Каждый скилл -- это слэш-команда (`/graph_ba_full`, `/tl-dev-be`, `/tl-ship`, ...), которая превращает Claude Code в специализированного агента с жёстким процессом, артефактами и критериями качества. Все BA/SA артефакты хранятся в графе Neo4j, визуализируются через Excalidraw и публикуются в Docmost.
+Каждый скилл -- это слэш-команда (`/nacl-ba-full`, `/nacl-tl-dev-be`, `/nacl-tl-ship`, ...), которая превращает Claude Code в специализированного агента с жёстким процессом, артефактами и критериями качества. Все BA/SA артефакты хранятся в графе Neo4j, визуализируются через Excalidraw и публикуются в Docmost.
 
 ## Как это работает
 
@@ -12,41 +12,41 @@
  Клиентский документ
         |
         v
- /project-init "Мой проект"        Инициализация репозитория
+ /nacl-init "Мой проект"        Инициализация репозитория
         |
         v
- /graph_ba_full                     Бизнес-анализ --> Neo4j граф
+ /nacl-ba-full                     Бизнес-анализ --> Neo4j граф
         |                           (процессы, сущности, роли,
         |                            правила, глоссарий)
         v
- /graph_sa_full                     Системная спецификация --> Neo4j граф
+ /nacl-sa-full                     Системная спецификация --> Neo4j граф
         |                           (архитектура, домен, UC, UI,
         |                            роли, валидация)
         v
- /graph_tl_conductor                Планирование + оркестрация
+ /nacl-tl-conductor                Планирование + оркестрация
         |
-        +-- /graph_tl_plan          Задачи из графа (волны, BE+FE пары)
-        +-- /tl-dev-be              Бэкенд TDD
-        +-- /tl-dev-fe              Фронтенд TDD
-        +-- /tl-review              Код-ревью
-        +-- /tl-qa                  E2E тестирование (Playwright)
-        +-- /tl-ship                Коммит, пуш, PR
+        +-- /nacl-tl-plan          Задачи из графа (волны, BE+FE пары)
+        +-- /nacl-tl-dev-be              Бэкенд TDD
+        +-- /nacl-tl-dev-fe              Фронтенд TDD
+        +-- /nacl-tl-review              Код-ревью
+        +-- /nacl-tl-qa                  E2E тестирование (Playwright)
+        +-- /nacl-tl-ship                Коммит, пуш, PR
         |
         v
- /tl-deliver --> /tl-release        Staging --> Production
+ /nacl-tl-deliver --> /nacl-tl-release        Staging --> Production
 ```
 
 ## Что внутри
 
-| Категория | Кол-во | Описание |
-|-----------|--------|----------|
-| Graph BA | 14 | Бизнес-анализ: процессы, сущности, роли, правила, глоссарий, импорт документов, валидация, синхронизация с Excalidraw |
-| Graph SA | 9 | Системная спецификация: архитектура, доменная модель, Use Cases, UI, роли, валидация, инкрементальные фичи |
-| Graph TL | 6 | Планирование и оркестрация: задачи из графа, волны, conductor, intake, статус |
-| Graph infra | 3 | Инфраструктура графа: core, render, publish |
-| TL development | 24 | Разработка: TDD бэкенд/фронтенд, ревью, QA, деплой, релиз, диагностика, reconcile, стабы, синхронизация |
-| project-init | 1 | Инициализация проекта с CLAUDE.md и config.yaml |
-| **Итого** | **56** | |
+Все скиллы следуют конвенции `nacl-{слой}-{действие}`: **BA** = Business Analysis, **SA** = System Analysis, **TL** = TeamLead.
+
+| Категория | Префикс | Кол-во | Описание |
+|-----------|---------|--------|----------|
+| **Бизнес-анализ** | `nacl-ba-*` | 14 | Процессы, сущности, роли, правила, глоссарий, импорт документов, валидация |
+| **Системный анализ** | `nacl-sa-*` | 9 | Архитектура, доменная модель, Use Cases, UI, роли, валидация |
+| **TeamLead** | `nacl-tl-*` | 24 | Разработка: TDD (BE/FE), ревью, QA, деплой, релиз, диагностика |
+| **Утилиты** | `nacl-*` | 4 | `nacl-core`, `nacl-render`, `nacl-publish`, `nacl-init` |
+| | | **51** | |
 
 ### Язык скиллов
 
@@ -89,8 +89,8 @@ Neo4j будет доступен на `localhost:7474`, Excalidraw -- на `loc
 
 ```bash
 cd ваш-проект
-claude install-skill /путь/к/NaCl/project-init
-claude install-skill /путь/к/NaCl/graph_ba_full
+claude install-skill /путь/к/NaCl/nacl-init
+claude install-skill /путь/к/NaCl/nacl-ba-full
 # ... остальные скиллы по необходимости
 ```
 
@@ -98,16 +98,16 @@ claude install-skill /путь/к/NaCl/graph_ba_full
 
 ```bash
 claude
-> /project-init "Название проекта"
+> /nacl-init "Название проекта"
 ```
 
 **5. Запустите бизнес-анализ**
 
 ```bash
-> /graph_ba_full
+> /nacl-ba-full
 ```
 
-Далее следуйте пайплайну: `graph_sa_full` --> `graph_tl_conductor` --> `tl-deliver` --> `tl-release`.
+Далее следуйте пайплайну: `nacl-sa-full` --> `nacl-tl-conductor` --> `nacl-tl-deliver` --> `nacl-tl-release`.
 
 Подробная инструкция: [docs/quickstart.ru.md](docs/quickstart.ru.md)
 
@@ -115,16 +115,15 @@ claude
 
 ```
 NaCl/
-  graph_ba_*/ (14)      Бизнес-анализ (SKILL.md на русском)
-  graph_sa_*/ (9)       Системная спецификация (SKILL.md на русском)
-  graph_tl_*/ (6)       Планирование из графа
-  graph_core/           Общие Cypher-запросы и константы
-  graph_render/         Рендеринг графа в Markdown / Excalidraw
-  graph_publish/        Публикация графа в Docmost
-  graph-infra/          Docker Compose для Neo4j + Excalidraw
-  tl-*/        (24)     Разработка, ревью, QA, деплой
-  tl-core/              Общие шаблоны TL-скиллов
-  project-init/         Инициализация проекта
+  nacl-ba-*/ (14)      Бизнес-анализ (SKILL.md на русском)
+  nacl-sa-*/ (9)       Системная спецификация (SKILL.md на русском)
+  nacl-tl-*/ (24)      Разработка, ревью, QA, деплой, релиз
+  nacl-core/           Общие Cypher-запросы и константы
+  nacl-render/         Рендеринг графа в Markdown / Excalidraw
+  nacl-publish/        Публикация графа в Docmost
+  nacl-init/           Инициализация проекта
+  nacl-tl-core/        Общие шаблоны TL-скиллов
+  graph-infra/         Docker Compose для Neo4j + Excalidraw
   docmost-sync/         Синхронизация с Docmost
   yougile-setup/        Настройка интеграции с YouGile
 ```
