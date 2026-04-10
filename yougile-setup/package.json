@@ -1,0 +1,19 @@
+{
+  "name": "yougile-setup",
+  "version": "1.0.0",
+  "description": "CLI tool for setting up YouGile boards with standard columns and stickers for project-init",
+  "main": "dist/index.js",
+  "bin": {
+    "yougile-setup": "dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js"
+  },
+  "type": "module",
+  "dependencies": {},
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0"
+  }
+}
