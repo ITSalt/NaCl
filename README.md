@@ -7,25 +7,25 @@
 ## How It Works
 
 ```
-/project-init "My Project"
+/nacl-init "My Project"
      |
      v
-/graph_ba_full                 Business Analysis --> Neo4j graph
+/nacl-ba-full                 Business Analysis --> Neo4j graph
      |
      v
-/graph_sa_full                 System Specification --> Neo4j graph
+/nacl-sa-full                 System Specification --> Neo4j graph
      |
      v
-/graph_tl_conductor            Planning + Development orchestration
-     |--- /graph_tl_plan       Create tasks from graph
-     |--- /tl-dev-be           Backend TDD
-     |--- /tl-dev-fe           Frontend TDD
-     |--- /tl-review           Code review
-     |--- /tl-qa               E2E testing (Playwright)
-     |--- /tl-ship             Commit, push, PR
+/nacl-tl-conductor            Planning + Development orchestration
+     |--- /nacl-tl-plan       Create tasks from graph
+     |--- /nacl-tl-dev-be           Backend TDD
+     |--- /nacl-tl-dev-fe           Frontend TDD
+     |--- /nacl-tl-review           Code review
+     |--- /nacl-tl-qa               E2E testing (Playwright)
+     |--- /nacl-tl-ship             Commit, push, PR
      |
      v
-/tl-deliver --> /tl-release    Staging --> Production
+/nacl-tl-deliver --> /nacl-tl-release    Staging --> Production
 ```
 
 Each use case is committed atomically. QA runs at two levels: locally during development and on staging after push.
@@ -38,21 +38,21 @@ Each use case is committed atomically. QA runs at two levels: locally during dev
 
 - **Atomic commits per use case.** Each UC (use case) is developed, tested, reviewed, and shipped as a single unit. No half-done features in the repository.
 
-- **Two-level QA.** `/tl-verify-code` runs static analysis locally during development. `/tl-qa` runs E2E tests via Playwright on staging after push.
+- **Two-level QA.** `/nacl-tl-verify-code` runs static analysis locally during development. `/nacl-tl-qa` runs E2E tests via Playwright on staging after push.
 
 - **Config-driven workflow.** Each project has a `config.yaml` that controls git strategy (direct vs feature-branch), Neo4j connection, Docmost space, YouGile board, and other project-specific settings.
 
 ## What's Inside
 
-| Category | Count | Description |
-|---|---|---|
-| **Graph BA** | 14 | Business analysis: processes, entities, roles, rules, glossary, validation. Output in Russian (by design -- skill prompt language controls Claude's output language). |
-| **Graph SA** | 9 | System specification: architecture, domain model, use cases, UI, roles, validation. Output in Russian. |
-| **Graph TL** | 6 | Graph-aware planning and orchestration: conductor, planner, intake, status. |
-| **Graph Infra** | 3 | Shared graph infrastructure: `graph_core` (Cypher helpers), `graph_render` (Markdown/Excalidraw export), `graph_publish` (Docmost sync). |
-| **TL Development** | 24 | Full dev lifecycle: TDD (BE/FE), code review, QA, deploy, release, diagnostics, sync, stubs, reconciliation. |
-| **Project Init** | 1 | Scaffolds a new project with `CLAUDE.md`, `config.yaml`, and directory structure. |
-| | **56** | |
+All skills use the `nacl-{layer}-{action}` naming convention: **BA** = Business Analysis, **SA** = System Analysis, **TL** = TeamLead.
+
+| Category | Prefix | Count | Description |
+|---|---|---|---|
+| **Business Analysis** | `nacl-ba-*` | 14 | Business processes, entities, roles, rules, glossary, validation. Output in Russian. |
+| **System Analysis** | `nacl-sa-*` | 9 | Architecture, domain model, use cases, UI, roles, validation. Output in Russian. |
+| **TeamLead** | `nacl-tl-*` | 24 | Full dev lifecycle: planning, TDD (BE/FE), code review, QA, deploy, release, diagnostics. |
+| **Utilities** | `nacl-*` | 4 | `nacl-core` (Cypher helpers), `nacl-render` (export), `nacl-publish` (Docmost sync), `nacl-init` (scaffolding). |
+| | | **51** | |
 
 ## Prerequisites
 
@@ -63,7 +63,7 @@ Each use case is committed atomically. QA runs at two levels: locally during dev
 
 ### Optional integrations
 
-- **Docmost** -- wiki for publishing analysis and specification artifacts (`graph_publish`)
+- **Docmost** -- wiki for publishing analysis and specification artifacts (`nacl-publish`)
 - **YouGile** -- project management board for task tracking (`yougile-setup`)
 
 ## Quick Start
@@ -93,7 +93,7 @@ Each use case is committed atomically. QA runs at two levels: locally during dev
    ```bash
    cd /path/to/your-project
    claude
-   > /project-init "My Project"
+   > /nacl-init "My Project"
    ```
 
 5. **Run the pipeline**
@@ -101,9 +101,9 @@ Each use case is committed atomically. QA runs at two levels: locally during dev
    Start with business analysis, then proceed through the workflow:
 
    ```
-   > /graph_ba_full           # analyze business domain
-   > /graph_sa_full           # create system specification
-   > /graph_tl_conductor      # plan and develop
+   > /nacl-ba-full           # analyze business domain
+   > /nacl-sa-full           # create system specification
+   > /nacl-tl-conductor      # plan and develop
    ```
 
    Each orchestrator skill (`*_full`, `*_conductor`) guides you through its phases with confirmation gates -- you stay in control at every step.
@@ -126,15 +126,14 @@ See [docs/quickstart.md](docs/quickstart.md) for a detailed walkthrough.
 
 ```
 NaCl/
-  graph_ba_*          14 business analysis skills
-  graph_sa_*           9 system specification skills
-  graph_tl_*           6 graph-aware dev orchestration skills
-  graph_core/          shared Cypher helpers and graph utilities
-  graph_render/        Markdown and Excalidraw rendering
-  graph_publish/       Docmost publishing
-  tl-*/               24 development lifecycle skills
-  tl-core/             shared TL utilities
-  project-init/        project scaffolding
+  nacl-ba-*/          14 business analysis skills
+  nacl-sa-*/           9 system analysis skills
+  nacl-tl-*/          24 development lifecycle skills
+  nacl-core/          shared Cypher helpers and graph utilities
+  nacl-render/        Markdown and Excalidraw rendering
+  nacl-publish/       Docmost publishing
+  nacl-init/          project scaffolding
+  nacl-tl-core/       shared TL templates and references
   docs/                documentation
   docker-compose.yml   Neo4j + Excalidraw infrastructure
 ```

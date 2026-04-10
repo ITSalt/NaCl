@@ -12,7 +12,7 @@ These integrations are **not required** for core NaCl functionality. Skills work
 
 ### What it enables
 
-- `graph_publish` — publish graph data to Docmost wiki pages
+- `nacl-publish` — publish graph data to Docmost wiki pages
 - Automated documentation sync from Neo4j to readable wiki
 
 ### Setup
@@ -65,9 +65,9 @@ node ~/NaCl/docmost-sync/dist/index.js --scope sa --mode dry-run --project-dir /
 
 ### What it enables
 
-- `tl-ship` — post commit summaries to task chat
-- `tl-intake` — read user requests from YouGile
-- `tl-verify` / `tl-reopened` — move tasks through verification workflow
+- `nacl-tl-ship` — post commit summaries to task chat
+- `nacl-tl-intake` — read user requests from YouGile
+- `nacl-tl-verify` / `nacl-tl-reopened` — move tasks through verification workflow
 
 ### Setup
 
@@ -104,13 +104,13 @@ Add to `.mcp.json`:
 cd ~/NaCl/yougile-setup && npm install && npm run build
 ```
 
-The `project-init` skill can automatically set up YouGile boards.
+The `nacl-init` skill can automatically set up YouGile boards.
 
 ## Without Optional Tools
 
 If you don't set up Docmost or YouGile:
 
-- **Publishing**: Graph data stays in Neo4j. Use `graph_render` to export to local Markdown files.
+- **Publishing**: Graph data stays in Neo4j. Use `nacl-render` to export to local Markdown files.
 - **Task tracking**: Tasks are managed via `.tl/tasks/` files and git. No external board sync.
 - **All analysis and development skills work normally**.
 

@@ -91,13 +91,13 @@ npm install -g @anthropic/neo4j-mcp
 Откройте Claude Code в директории вашего проекта:
 
 ```
-/project-init "Название проекта"
+/nacl-init "Название проекта"
 ```
 
 Создаст `CLAUDE.md` и `config.yaml`. Затем запустите полный пайплайн:
 
 ```
-/graph_ba_full
+/nacl-ba-full
 ```
 
 Claude проведёт вас через бизнес-анализ интерактивно, сохраняя всё в Neo4j-граф.

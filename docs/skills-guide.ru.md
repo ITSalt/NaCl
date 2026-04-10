@@ -12,34 +12,34 @@
 Что вам нужно?
 │
 ├── Начать новый проект?
-│   └── /project-init "Имя" → /graph_ba_full → /graph_sa_full → /graph_tl_conductor
+│   └── /nacl-init "Имя" → /nacl-ba-full → /nacl-sa-full → /nacl-tl-conductor
 │
 ├── Есть документ клиента для анализа?
-│   └── /graph_ba_from_board import /path/to/doc.docx
+│   └── /nacl-ba-from-board import /path/to/doc.docx
 │
 ├── Добавить фичу?
-│   └── /graph_sa_feature "описание"
-│       └── /graph_tl_conductor --items FR-001
+│   └── /nacl-sa-feature "описание"
+│       └── /nacl-tl-conductor --items FR-001
 │
 ├── Что-то сломалось?
-│   └── /tl-fix "что сломалось"
+│   └── /nacl-tl-fix "что сломалось"
 │
 ├── Несколько запросов (фичи + баги + задачи)?
-│   └── /graph_tl_intake → /graph_tl_conductor --items ...
+│   └── /nacl-tl-intake → /nacl-tl-conductor --items ...
 │
 ├── Нужно отправить код?
-│   └── /tl-ship (коммит + пуш + PR)
-│       └── /tl-deliver (CI + staging + health check)
-│           └── /tl-release (production)
+│   └── /nacl-tl-ship (коммит + пуш + PR)
+│       └── /nacl-tl-deliver (CI + staging + health check)
+│           └── /nacl-tl-release (production)
 │
 ├── Всё сломано / доки устарели?
-│   └── /tl-diagnose → /tl-reconcile
+│   └── /nacl-tl-diagnose → /nacl-tl-reconcile
 │
 ├── Проверить статус проекта?
-│   └── /graph_tl_status
+│   └── /nacl-tl-status
 │
 └── Что делать дальше?
-    └── /graph_tl_next
+    └── /nacl-tl-next
 ```
 
 ## По фазам
@@ -48,62 +48,62 @@
 
 | Ситуация | Скилл |
 |----------|-------|
-| Полный BA с нуля | `/graph_ba_full` |
-| Импорт документа клиента | `/graph_ba_from_board import doc.docx` |
-| Определить границы системы | `/graph_ba_context` |
-| Карта бизнес-процессов | `/graph_ba_process` |
-| Декомпозиция процесса | `/graph_ba_workflow` |
-| Каталог сущностей | `/graph_ba_entities` |
-| Бизнес-роли | `/graph_ba_roles` |
-| Глоссарий | `/graph_ba_glossary` |
-| Бизнес-правила | `/graph_ba_rules` |
-| Валидация BA-модели | `/graph_ba_validate` |
-| Передача в SA | `/graph_ba_handoff` |
+| Полный BA с нуля | `/nacl-ba-full` |
+| Импорт документа клиента | `/nacl-ba-from-board import doc.docx` |
+| Определить границы системы | `/nacl-ba-context` |
+| Карта бизнес-процессов | `/nacl-ba-process` |
+| Декомпозиция процесса | `/nacl-ba-workflow` |
+| Каталог сущностей | `/nacl-ba-entities` |
+| Бизнес-роли | `/nacl-ba-roles` |
+| Глоссарий | `/nacl-ba-glossary` |
+| Бизнес-правила | `/nacl-ba-rules` |
+| Валидация BA-модели | `/nacl-ba-validate` |
+| Передача в SA | `/nacl-ba-handoff` |
 
 ### Системный анализ
 
 | Ситуация | Скилл |
 |----------|-------|
-| Полный SA с нуля | `/graph_sa_full` |
-| Добавить фичу | `/graph_sa_feature` |
-| Модули (bounded contexts) | `/graph_sa_architect` |
-| Доменная модель | `/graph_sa_domain` |
-| Use Cases | `/graph_sa_uc` |
-| Системные роли | `/graph_sa_roles` |
-| UI-архитектура | `/graph_sa_ui` |
-| Валидация спецификации | `/graph_sa_validate` |
-| Финализация | `/graph_sa_finalize` |
+| Полный SA с нуля | `/nacl-sa-full` |
+| Добавить фичу | `/nacl-sa-feature` |
+| Модули (bounded contexts) | `/nacl-sa-architect` |
+| Доменная модель | `/nacl-sa-domain` |
+| Use Cases | `/nacl-sa-uc` |
+| Системные роли | `/nacl-sa-roles` |
+| UI-архитектура | `/nacl-sa-ui` |
+| Валидация спецификации | `/nacl-sa-validate` |
+| Финализация | `/nacl-sa-finalize` |
 
 ### Разработка
 
 | Ситуация | Скилл |
 |----------|-------|
-| Полный цикл (BE+FE+QA+docs) | `/tl-full --task UC001` |
-| Бэкенд TDD | `/tl-dev-be UC001` |
-| Фронтенд TDD | `/tl-dev-fe UC001` |
-| TECH/инфра-задача | `/tl-dev TECH001` |
-| Код-ревью | `/tl-review UC001 --be` или `--fe` |
-| E2E тестирование | `/tl-qa UC001` |
-| Синхронизация BE/FE | `/tl-sync UC001` |
-| Проверка стабов | `/tl-stubs` |
+| Полный цикл (BE+FE+QA+docs) | `/nacl-tl-full --task UC001` |
+| Бэкенд TDD | `/nacl-tl-dev-be UC001` |
+| Фронтенд TDD | `/nacl-tl-dev-fe UC001` |
+| TECH/инфра-задача | `/nacl-tl-dev TECH001` |
+| Код-ревью | `/nacl-tl-review UC001 --be` или `--fe` |
+| E2E тестирование | `/nacl-tl-qa UC001` |
+| Синхронизация BE/FE | `/nacl-tl-sync UC001` |
+| Проверка стабов | `/nacl-tl-stubs` |
 
 ### Деплой
 
 | Ситуация | Скилл |
 |----------|-------|
-| Коммит + пуш + PR | `/tl-ship` |
-| Полная доставка на staging | `/tl-deliver` |
-| Мониторинг CI/CD | `/tl-deploy` |
-| Релиз в production | `/tl-release` |
+| Коммит + пуш + PR | `/nacl-tl-ship` |
+| Полная доставка на staging | `/nacl-tl-deliver` |
+| Мониторинг CI/CD | `/nacl-tl-deploy` |
+| Релиз в production | `/nacl-tl-release` |
 
 ### Исправление и восстановление
 
 | Ситуация | Скилл |
 |----------|-------|
-| Исправить баг (spec-first) | `/tl-fix "описание"` |
-| Переоткрытые задачи | `/tl-reopened` |
-| Диагностика проекта | `/tl-diagnose` |
-| Синхронизация доков с кодом | `/tl-reconcile` |
+| Исправить баг (spec-first) | `/nacl-tl-fix "описание"` |
+| Переоткрытые задачи | `/nacl-tl-reopened` |
+| Диагностика проекта | `/nacl-tl-diagnose` |
+| Синхронизация доков с кодом | `/nacl-tl-reconcile` |
 
 ## Что дальше
 

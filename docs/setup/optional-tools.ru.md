@@ -38,6 +38,6 @@ cd ~/NaCl/yougile-setup && npm install && npm run build
 
 ## Без дополнительных инструментов
 
-- Данные графа остаются в Neo4j. Экспорт в Markdown через `/graph_render`
+- Данные графа остаются в Neo4j. Экспорт в Markdown через `/nacl-render`
 - Задачи управляются через файлы `.tl/tasks/` и git
 - Все скиллы анализа и разработки работают нормально

@@ -4,7 +4,7 @@
 
 # Graph Infrastructure Setup
 
-Neo4j + Excalidraw Docker stack for graph-based skills. Required for all `graph_*` skills.
+Neo4j + Excalidraw Docker stack for graph-based skills. Required for all `nacl-*` skills.
 
 ## What You Get
 
@@ -85,17 +85,17 @@ Restart Claude Code to connect.
 In Claude Code:
 
 ```
-/graph_ba_context
+/nacl-ba-context
 ```
 
 If it starts asking about your project's business domain, the setup is working.
 
 ## Multiple Projects
 
-Each project gets its own Docker stack with different ports. The `project-init` skill handles this automatically:
+Each project gets its own Docker stack with different ports. The `nacl-init` skill handles this automatically:
 
 ```
-/project-init "Second Project"
+/nacl-init "Second Project"
 # → auto-detects used ports
 # → proposes next available port block (+10)
 # → generates .env and docker-compose.yml

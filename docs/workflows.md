@@ -13,7 +13,7 @@
 **When to use:** You are starting a greenfield project and want to go from an empty repo to a working application with full traceability.
 
 ```
-/project-init "Project Name"
+/nacl-init "Project Name"
 ```
 Generates `CLAUDE.md` with development rules, skill routing, and documentation discipline for the new project.
 
@@ -23,17 +23,17 @@ docker compose -f graph-infra/docker-compose.yml up -d
 Starts Neo4j and supporting infrastructure (skip if already running).
 
 ```
-/graph_ba_full
+/nacl-ba-full
 ```
 Interactive business analysis session. Walks you through context, processes, entities, roles, rules, glossary, and validation -- all stored as nodes and edges in Neo4j.
 
 ```
-/graph_sa_full
+/nacl-sa-full
 ```
 10-phase system specification: architecture, domain model, use cases, UI design, roles, and finalization. Reads BA data from the graph, writes SA artifacts back.
 
 ```
-/graph_tl_conductor
+/nacl-tl-conductor
 ```
 End-to-end orchestration: creates execution waves and tasks from the graph, develops each UC (backend + frontend TDD), reviews code, runs QA, ships to staging.
 
@@ -44,12 +44,12 @@ End-to-end orchestration: creates execution waves and tasks from the graph, deve
 **When to use:** The project already has a specification in Neo4j and you need to add new functionality.
 
 ```
-/graph_sa_feature "feature description"
+/nacl-sa-feature "feature description"
 ```
 Runs impact analysis via Cypher traversal (affected modules, domain entities, UCs, screens), then invokes only the SA skills that need updating. Creates a FeatureRequest artifact for handoff.
 
 ```
-/graph_tl_conductor --items FR-001
+/nacl-tl-conductor --items FR-001
 ```
 Picks up the feature request, creates tasks, develops, tests, and ships -- all in one pass.
 
@@ -60,7 +60,7 @@ Picks up the feature request, creates tasks, develops, tests, and ships -- all i
 **When to use:** Something is broken in the application and you need a spec-first fix.
 
 ```
-/tl-fix "what's broken"
+/nacl-tl-fix "what's broken"
 ```
 Auto-detects the affected UC or TECH task from the problem description. Classifies the fix level (L0: typo, L1: single file, L2: multi-file, L3: cross-module). Updates documentation BEFORE touching code, then applies the fix and verifies.
 
@@ -71,12 +71,12 @@ Auto-detects the affected UC or TECH task from the problem description. Classifi
 **When to use:** You have a mix of feature requests, bug reports, and tasks to process at once.
 
 ```
-/graph_tl_intake
+/nacl-tl-intake
 ```
-Triages each request using Neo4j context to disambiguate scope. Routes features to `/graph_sa_feature`, bugs to `/tl-fix`, and standalone tasks to `/tl-dev`.
+Triages each request using Neo4j context to disambiguate scope. Routes features to `/nacl-sa-feature`, bugs to `/nacl-tl-fix`, and standalone tasks to `/nacl-tl-dev`.
 
 ```
-/graph_tl_conductor --items FR-001,FR-002,BUG-003
+/nacl-tl-conductor --items FR-001,FR-002,BUG-003
 ```
 Orchestrates all routed items through planning, development, QA, and shipping as a single coordinated batch.
 
@@ -87,17 +87,17 @@ Orchestrates all routed items through planning, development, QA, and shipping as
 **When to use:** A client sent a requirements document (DOCX, PDF, XLSX, or plain text) and you want to turn it into a working specification.
 
 ```
-/graph_ba_from_board import /path/to/document.docx
+/nacl-ba-from-board import /path/to/document.docx
 ```
 Parses the document, extracts business-process elements, places them on an Excalidraw board with swimlanes and confidence coloring, then syncs everything to the Neo4j graph.
 
 ```
-/graph_sa_full
+/nacl-sa-full
 ```
 Builds the full system specification from the imported BA data now living in the graph.
 
 ```
-/graph_tl_conductor
+/nacl-tl-conductor
 ```
 Plans and executes development from the specification.
 
@@ -108,9 +108,9 @@ Plans and executes development from the specification.
 **When to use:** Development is complete and you want to push, verify CI, and confirm the staging environment is healthy.
 
 ```
-/tl-deliver
+/nacl-tl-deliver
 ```
-Chains three steps into one pipeline: pushes the feature branch and creates a PR (`tl-ship`), monitors CI/CD and waits for a green build (`tl-deploy`), then runs E2E verification and health checks against staging (`tl-verify`).
+Chains three steps into one pipeline: pushes the feature branch and creates a PR (`nacl-tl-ship`), monitors CI/CD and waits for a green build (`nacl-tl-deploy`), then runs E2E verification and health checks against staging (`nacl-tl-verify`).
 
 ---
 
@@ -119,7 +119,7 @@ Chains three steps into one pipeline: pushes the feature branch and creates a PR
 **When to use:** Staging is verified and you are ready to cut a release.
 
 ```
-/tl-release
+/nacl-tl-release
 ```
 Bumps the version number, creates a git tag, aggregates the changelog from commit history, generates release notes, and notifies YouGile.
 
@@ -130,12 +130,12 @@ Bumps the version number, creates a git tag, aggregates the changelog from commi
 **When to use:** Documentation has drifted from code, tests are failing for unclear reasons, or the project feels out of sync.
 
 ```
-/tl-diagnose
+/nacl-tl-diagnose
 ```
 Analyzes git history, documentation drift, code health, and regression patterns. Produces a diagnostic report with specific findings.
 
 ```
-/tl-reconcile
+/nacl-tl-reconcile
 ```
 Uses the diagnostic report to bring all documentation back in sync with the current code state. Invokes SA skills as needed, then validates the result.
 
@@ -146,12 +146,12 @@ Uses the diagnostic report to bring all documentation back in sync with the curr
 **When to use:** You want a quick overview of where the project stands or what to work on next.
 
 ```
-/graph_tl_status
+/nacl-tl-status
 ```
 Reads Task and Wave nodes from Neo4j, shows per-phase progress (BE, FE, sync, QA) for each UC, TECH task status, and SA coverage metrics.
 
 ```
-/graph_tl_next
+/nacl-tl-next
 ```
 Recommends the next task to pick up based on wave ordering, dependencies, and critical path analysis. Enriches suggestions with UC entity and form names from the graph.
 

@@ -6,7 +6,7 @@ body:
     id: name
     attributes:
       label: Skill Name
-      placeholder: "e.g., graph_ba_timeline, tl-perf"
+      placeholder: "e.g., nacl-ba-timeline, nacl-tl-perf"
     validations:
       required: true
   - type: dropdown
@@ -14,11 +14,10 @@ body:
     attributes:
       label: Category
       options:
-        - Graph BA
-        - Graph SA
-        - Graph TL
-        - TL Development
-        - Infrastructure
+        - BA (Business Analysis)
+        - SA (System Analysis)
+        - TL (TeamLead)
+        - Utility
     validations:
       required: true
   - type: textarea
