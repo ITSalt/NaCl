@@ -56,7 +56,7 @@ All skills use the `nacl-{layer}-{action}` naming convention: **BA** = Business 
 
 ## Prerequisites
 
-- **Claude Code CLI** -- [installation guide](https://docs.anthropic.com/en/docs/claude-code)
+- **Claude Code** -- [installation guide](https://docs.anthropic.com/en/docs/claude-code) (CLI, Desktop app, or IDE extension)
 - **Docker** and **Docker Compose** -- for Neo4j and Excalidraw containers
 - **Git** 2.30+
 - **Node.js** 18+
@@ -65,6 +65,12 @@ All skills use the `nacl-{layer}-{action}` naming convention: **BA** = Business 
 
 - **Docmost** -- wiki for publishing analysis and specification artifacts (`nacl-publish`)
 - **YouGile** -- project management board for task tracking (`yougile-setup`)
+
+### Platform compatibility
+
+NaCl skills work on all **local** Claude Code platforms: CLI (terminal), Desktop app (Mac/Windows), and IDE extensions (VS Code, JetBrains). All share the same `~/.claude/skills/` directory -- skills installed once are available everywhere.
+
+> Skills do **not** work on claude.ai/code (web app) because it runs in a sandbox without local filesystem access.
 
 ## Quick Start
 
@@ -88,12 +94,14 @@ All skills use the `nacl-{layer}-{action}` naming convention: **BA** = Business 
    claude install-skills .
    ```
 
+   > This CLI command links skills to `~/.claude/skills/`. If you use the Desktop app or IDE extension without the CLI, see [manual linking](docs/quickstart.md#step-2-link-skills-to-claude-code).
+
 4. **Initialize your project**
 
-   ```bash
-   cd /path/to/your-project
-   claude
-   > /nacl-init "My Project"
+   Open Claude Code in your target project directory (CLI: `claude`, or open the project in Desktop app / IDE extension), then run:
+
+   ```
+   /nacl-init "My Project"
    ```
 
 5. **Run the pipeline**

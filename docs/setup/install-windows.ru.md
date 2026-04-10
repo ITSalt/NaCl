@@ -24,7 +24,7 @@ wsl --install -d Ubuntu
 Установите: [Docker Desktop](https://docs.docker.com/desktop/install/windows-install/), [Node.js 20](https://nodejs.org/), [Git](https://git-scm.com/download/win)
 
 ```powershell
-npm install -g @anthropic-ai/claude-code
+npm install -g @anthropic-ai/claude-code    # CLI; скиллы также работают в десктоп-приложении и расширениях IDE
 git clone https://github.com/ITSalt/NaCl.git $HOME\NaCl
 ```
 
@@ -42,6 +42,8 @@ Get-ChildItem -Path "$HOME\NaCl" -Directory | ForEach-Object {
     }
 }
 ```
+
+> Скиллы, подключённые к `~/.claude/skills/` (или `%USERPROFILE%\.claude\skills\` на нативном Windows), автоматически доступны на всех локальных платформах Claude Code: CLI, десктоп-приложение и расширения для IDE.
 
 ## Типичные проблемы
 

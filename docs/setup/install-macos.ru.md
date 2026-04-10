@@ -9,7 +9,9 @@
 1. **Homebrew**: `/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"`
 2. **Docker Desktop**: `brew install --cask docker` (запустите после установки)
 3. **Node.js 18+**: `brew install node`
-4. **Claude Code CLI**: `npm install -g @anthropic-ai/claude-code && claude login`
+4. **Claude Code**: `npm install -g @anthropic-ai/claude-code && claude login`
+
+> Это устанавливает CLI. Скиллы NaCl также работают с [десктоп-приложением Claude](https://claude.ai/download) и расширениями для IDE (VS Code, JetBrains) -- они используют общую директорию `~/.claude/skills/`.
 
 ## Установка
 
@@ -39,7 +41,7 @@ alias nacl-update='cd ~/NaCl && git pull && for dir in ~/NaCl/*/; do [ -f "$dir/
 
 ```bash
 ls ~/.claude/skills/ | wc -l    # должно показать ~56
-claude                           # запустить Claude Code
+claude                           # запустить Claude Code (или откройте десктоп-приложение / IDE)
 # Введите: /nacl-init --dry-run
 ```
 

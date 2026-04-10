@@ -8,7 +8,7 @@ Get from zero to your first skill run in 10 minutes.
 
 ## Prerequisites
 
-- [Claude Code CLI](https://claude.ai/code) installed and authenticated
+- [Claude Code](https://claude.ai/code) installed and authenticated (CLI, Desktop app, or IDE extension -- see [Platform compatibility](../README.md#platform-compatibility))
 - [Docker](https://docs.docker.com/get-docker/) installed and running
 - [Git](https://git-scm.com/)
 - [Node.js 18+](https://nodejs.org/) (only for optional CLI tools)
@@ -37,6 +37,8 @@ echo "Linked $(ls ~/.claude/skills/ | wc -l) skills"
 ```
 
 This creates symlinks so Claude Code discovers the skills as slash commands.
+
+> **Platform note:** The `~/.claude/skills/` directory is shared across all local Claude Code platforms. Skills linked here are available in CLI, Desktop app, and IDE extensions.
 
 ## Step 3: Start the graph infrastructure
 
@@ -88,7 +90,7 @@ Restart Claude Code to pick up the MCP server.
 
 ## Step 5: Initialize your first project
 
-Open Claude Code in your target project directory:
+Open Claude Code in your target project directory (CLI: run `claude` in terminal, or open the folder in Desktop app / IDE extension):
 
 ```
 /nacl-init "My Project Name"

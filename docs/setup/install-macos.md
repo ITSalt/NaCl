@@ -30,7 +30,7 @@ Start Docker Desktop and ensure it's running.
 brew install node
 ```
 
-### 4. Claude Code CLI
+### 4. Claude Code
 
 ```bash
 npm install -g @anthropic-ai/claude-code
@@ -41,6 +41,8 @@ Authenticate:
 ```bash
 claude login
 ```
+
+> This installs the CLI. NaCl skills also work with the [Claude Desktop app](https://claude.ai/download) and IDE extensions (VS Code, JetBrains) -- they share the same `~/.claude/skills/` directory.
 
 ## Installation
 
@@ -86,7 +88,7 @@ See [Graph Setup](graph-setup.md) for Docker + Neo4j + Excalidraw configuration.
 
 ```bash
 ls ~/.claude/skills/ | wc -l    # should show ~56
-claude                           # start Claude Code
+claude                           # start Claude Code (or open Desktop app / IDE extension)
 # Then type: /nacl-init --dry-run
 ```
 

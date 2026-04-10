@@ -41,7 +41,7 @@ All paths use Linux format (`~/NaCl`, `~/.claude/skills/`).
 - [Docker Desktop](https://docs.docker.com/desktop/install/windows-install/) with WSL2 backend
 - [Node.js 20](https://nodejs.org/) (Windows installer)
 - [Git for Windows](https://git-scm.com/download/win)
-- Claude Code CLI: `npm install -g @anthropic-ai/claude-code`
+- Claude Code: `npm install -g @anthropic-ai/claude-code` (CLI; skills also work in Desktop app and IDE extensions)
 
 ### 2. Clone the repository
 
@@ -67,6 +67,8 @@ Get-ChildItem -Path "$HOME\NaCl" -Directory | ForEach-Object {
 
 Write-Host "Linked $((Get-ChildItem $skillsDir).Count) skills"
 ```
+
+> Skills linked to `~/.claude/skills/` (or `%USERPROFILE%\.claude\skills\` on native Windows) are automatically available in all local Claude Code platforms: CLI, Desktop app, and IDE extensions.
 
 > Note: Creating symlinks on Windows requires either Administrator privileges or Developer Mode enabled (Settings > Update & Security > For Developers).
 

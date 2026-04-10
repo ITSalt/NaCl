@@ -21,7 +21,9 @@ sudo usermod -aG docker $USER && newgrp docker
 
 **Node.js 18+**: `curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash - && sudo apt install -y nodejs`
 
-**Claude Code CLI**: `npm install -g @anthropic-ai/claude-code && claude login`
+**Claude Code**: `npm install -g @anthropic-ai/claude-code && claude login`
+
+> Это устанавливает CLI. Скиллы NaCl также работают с расширениями для IDE (VS Code, JetBrains), которые используют общую директорию `~/.claude/skills/`.
 
 ## Установка
 

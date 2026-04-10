@@ -38,12 +38,14 @@ Or use [nvm](https://github.com/nvm-sh/nvm):
 nvm install 20
 ```
 
-### 3. Claude Code CLI
+### 3. Claude Code
 
 ```bash
 npm install -g @anthropic-ai/claude-code
 claude login
 ```
+
+> This installs the CLI. NaCl skills also work with IDE extensions (VS Code, JetBrains) which share the same `~/.claude/skills/` directory.
 
 ## Installation
 
@@ -89,7 +91,7 @@ See [Graph Setup](graph-setup.md) for Docker + Neo4j + Excalidraw configuration.
 
 ```bash
 ls ~/.claude/skills/ | wc -l    # should show ~56
-claude                           # start Claude Code
+claude                           # start Claude Code (or open IDE extension)
 # Then type: /nacl-init --dry-run
 ```
 
