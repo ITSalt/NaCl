@@ -23,10 +23,18 @@ Never push without passing tests first.
 
 ## Safety Rules
 
-1. **NEVER switch branches.** If you are on branch X, commit to branch X. Period.
-2. **NEVER push to a branch other than the current one.** No `git checkout main`. No `git stash && git checkout`. No autonomous "this is a hotfix" decisions.
-3. If you believe the current branch is wrong for the change — **ASK the user**. Suggest `/nacl-tl-hotfix` if the fix seems critical for production.
-4. The ONLY skill authorized to target `main` from another branch is `/nacl-tl-hotfix`.
+> **ABSOLUTE RULE: When strategy == "feature-branch", you MUST NOT commit to base_branch.
+> No exceptions. No rationalizations. Not "all recent commits are small fixes."
+> Not "the user gave a bare message." Not "this is a tiny one-liner."
+> If you are on base_branch and strategy is feature-branch,
+> you MUST create a new branch BEFORE committing.**
+
+1. **NEVER commit to base_branch when strategy == "feature-branch".** This is the highest-priority rule. It overrides ALL edge cases below. If you are about to `git commit` on base_branch with feature-branch strategy — STOP, you have a bug in your reasoning.
+2. **NEVER switch branches.** If on branch X (not base_branch), commit to X. Period.
+3. **NEVER push to a branch other than the current one.** No `git checkout main`. No autonomous "this is a hotfix" decisions.
+4. If you believe the current branch is wrong — **ASK the user**. Suggest `/nacl-tl-hotfix` if critical.
+5. The ONLY skill authorized to target `main` from another branch is `/nacl-tl-hotfix`.
+6. **MECHANICAL GUARD:** Before every `git commit`, run the base-branch assertion (Step 2.5). If it prints FATAL — do NOT proceed.
 
 ---
 
@@ -114,16 +122,50 @@ strategy = config.yaml → git.strategy (default: "feature-branch")
 
 | Situation | Action |
 |-----------|--------|
-| Already on a feature/topic branch (`current_branch != base_branch`) | **STAY here.** Commit and push to this branch. This is the most common scenario. |
+| Already on a feature/topic branch (`current_branch != base_branch`) | **STAY here.** Commit and push to this branch. |
 | On `base_branch` AND strategy == `direct` | Stay on base branch, push directly. |
-| On `base_branch` AND strategy == `feature-branch` | Create new branch: `git checkout -b feature/[UC-or-FR] [base_branch]` |
+| On `base_branch` AND strategy == `feature-branch` | **MUST create a new branch before committing.** See naming below. |
 
-**IMPORTANT:** If you are on a feature branch, you ALWAYS commit there — regardless of whether
-the change "matches" the branch name. Hotfixes, cross-cutting fixes, shared code changes —
-all go to the current branch. If the user wants it on main, they will use `/nacl-tl-hotfix`.
+**IMPORTANT:** If on a feature branch, ALWAYS commit there — regardless of whether
+the change "matches" the branch name. If user wants it on main → `/nacl-tl-hotfix`.
+
+#### Branch naming (when creating a new branch)
+
+| Source | Branch name | Example |
+|--------|-------------|---------|
+| UC identifier provided | `feature/UC028` | `/nacl-tl-ship UC028` |
+| FR identifier provided | `feature/FR-001` | `/nacl-tl-ship --feature FR-001` |
+| Bare commit message | `feature/[slug]` | `"fix: add lecture breadcrumb"` → `feature/fix-add-lecture-breadcrumb` |
+| Auto-composed message | `feature/[slug]` | Auto: `"fix: cast lectureId"` → `feature/fix-cast-lectureid` |
+
+Slugification:
+```bash
+slug=$(echo "$message" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/-/g; s/--*/-/g; s/^-//; s/-$//' | cut -c1-50)
+git checkout -b "feature/${slug}" "$base_branch"
+```
+
+**There is NO scenario where strategy == "feature-branch" and you commit directly to base_branch.**
+If you cannot derive a branch name — ask the user. Do NOT fall back to base_branch.
+
+### Step 2.5: BASE-BRANCH GUARD (mandatory)
+
+Run this BEFORE every `git commit`. Non-negotiable.
+
+```bash
+current_branch=$(git rev-parse --abbrev-ref HEAD)
+# base_branch and strategy were read from config.yaml in Step 1
+if [ "$current_branch" = "$base_branch" ] && [ "$strategy" = "feature-branch" ]; then
+  echo "FATAL: Cannot commit to $base_branch with feature-branch strategy. Create a branch first."
+  exit 1
+fi
+echo "GUARD OK: branch=$current_branch, strategy=$strategy"
+```
+
+If FATAL → go back to Step 2, create the branch. Do NOT skip or override this check.
 
 ### Step 3: COMMIT
 
+0. **Pre-commit check:** Verify you ran Step 2.5 and are NOT on base_branch with feature-branch strategy. If you are — STOP, go back to Step 2.
 1. Stage relevant files (smart staging — exclude .env, node_modules, dist/, .tl/qa-screenshots/):
    ```bash
    git add [relevant files]
@@ -173,6 +215,9 @@ If push fails (reject, conflict):
 - Pull and rebase: `git pull --rebase`
 - If merge conflict → report to user, do not force-push
 - Retry push after rebase
+
+**Post-push check:** If strategy == "feature-branch" and you just pushed to base_branch — STOP.
+Something went wrong. Report the error to the user immediately.
 
 ### Step 5: CREATE MERGE REQUEST / PR (feature-branch only)
 
@@ -348,13 +393,16 @@ If the change appears unrelated to the current feature branch name:
 - If you believe the fix is urgent for production,
   mention it in the report:
   "Note: if this fix is urgent for production, consider `/nacl-tl-hotfix --apply`"
+- **Note:** "current branch" here means a FEATURE branch. If you are on base_branch,
+  this edge case does not apply — Step 2's decision table takes precedence.
 
 ### Invoked with just a commit message (no UC/FR ID)
 
 When called as `/nacl-tl-ship "some message"` without a UC or FR identifier:
-- Commit to the CURRENT branch (whatever it is)
-- Do NOT try to determine a "correct" branch based on the commit content
-- The user explicitly chose to ship from where they are
+- **If on a feature branch:** commit to the CURRENT branch. The user chose to ship from here.
+- **If on base_branch AND strategy == "direct":** commit to base_branch. Allowed.
+- **If on base_branch AND strategy == "feature-branch":** MUST create a new branch first. Derive branch name from message slug (see Step 2, "Branch naming"). Example: `"fix: add lecture breadcrumb"` on main → create `feature/fix-add-lecture-breadcrumb`.
+- A bare commit message does NOT override the project's git strategy. Strategy is a project-level decision, not per-invocation.
 
 ### Feature request with multiple UCs
 
