@@ -127,6 +127,7 @@ See [docs/quickstart.md](docs/quickstart.md) for a detailed walkthrough.
 | [docs/skills-reference.md](docs/skills-reference.md) | Full catalog of all 56 skills with parameters and examples |
 | [docs/graph-schema.md](docs/graph-schema.md) | Neo4j node/edge types, constraints, indexes |
 | [docs/configuration.md](docs/configuration.md) | `config.yaml` reference and environment variables |
+| [docs/methodology/](docs/methodology/) | BA/SA methodology deep dive: graph philosophy, validation, traceability |
 | [docs/contributing.md](docs/contributing.md) | How to add or modify skills |
 | [docs/faq.md](docs/faq.md) | Common questions and troubleshooting |
 

@@ -127,3 +127,4 @@ Skills read `config.yaml` at runtime to adapt behavior to the project.
 - [Skills Reference](skills-reference.md) — complete catalog of all 56 skills
 - [Workflows](workflows.md) — end-to-end scenarios
 - [Quick Start](quickstart.md) — get started in 10 minutes
+- [Methodology](methodology/) — why the graph, how BA/SA layers work, validation framework

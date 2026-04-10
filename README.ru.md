@@ -142,6 +142,7 @@ NaCl/
 | Документ | Описание |
 |----------|----------|
 | [Быстрый старт](docs/quickstart.ru.md) | Пошаговая настройка и первый запуск |
+| [Методология](docs/methodology/) | Философия графа, слои BA/SA, валидация, трассируемость |
 | [Архитектура графа](docs/graph-architecture.ru.md) | Neo4j-схема, узлы, связи, слои |
 | [Создание скиллов](docs/creating-skills.ru.md) | Как писать свои SKILL.md |
 | [Интеграции](docs/integrations.ru.md) | Docmost, YouGile, CI/CD |

@@ -52,3 +52,6 @@ graph-infra/.env
 
 # Binary documents
 *.docx
+
+# Article drafts (not for public repo)
+docs/article-plan.md
