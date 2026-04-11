@@ -46,7 +46,8 @@ After frontmatter, the skill body contains:
 1. **Role declaration** — `## Your Role` section defining the AI persona
 2. **Invocation** — how users call the skill (e.g., `/my-skill "args"`)
 3. **Workflow** — numbered phases with clear inputs/outputs
-4. **References** — links to shared resources
+4. **Parameters/Modifiers** — document all invocation variants in a table (see [Modifier Conventions](skill-modifiers.md#conventions) for naming rules)
+5. **References** — links to shared resources
 
 ## Naming Conventions
 
@@ -83,6 +84,7 @@ Before submitting a PR:
 - [ ] No hardcoded paths (`~/projects/`, `/Users/`)
 - [ ] No credentials or API keys
 - [ ] Follows naming conventions
+- [ ] Modifiers documented (if any) per [conventions](skill-modifiers.md#conventions)
 - [ ] Documentation updated if needed
 
 ## Code Style (CLI Tools)

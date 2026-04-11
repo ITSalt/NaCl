@@ -47,87 +47,88 @@ What do you need?
 
 ### Business Analysis
 
-| Situation | Skill |
-|-----------|-------|
-| Full BA from scratch | `/nacl-ba-full` |
-| Import client document | `/nacl-ba-from-board import doc.docx` |
-| Define system boundaries | `/nacl-ba-context` |
-| Map business processes | `/nacl-ba-process` |
-| Decompose process into steps | `/nacl-ba-workflow` |
-| Catalog business entities | `/nacl-ba-entities` |
-| Identify business roles | `/nacl-ba-roles` |
-| Build glossary | `/nacl-ba-glossary` |
-| Extract business rules | `/nacl-ba-rules` |
-| Validate BA model | `/nacl-ba-validate` |
-| Prepare handoff to SA | `/nacl-ba-handoff` |
+| Situation | Skill | Key modifiers |
+|-----------|-------|---------------|
+| Full BA from scratch | `/nacl-ba-full` | |
+| Import client document | `/nacl-ba-from-board import doc.docx` | Also: `new`, `analyze`, `sync`, `full` |
+| Define system boundaries | `/nacl-ba-context` | |
+| Map business processes | `/nacl-ba-process` | |
+| Decompose process into steps | `/nacl-ba-workflow` | |
+| Catalog business entities | `/nacl-ba-entities` | `mode=FULL\|CREATE\|MODIFY\|COLLECT` |
+| Identify business roles | `/nacl-ba-roles` | |
+| Build glossary | `/nacl-ba-glossary` | |
+| Extract business rules | `/nacl-ba-rules` | `scope=full\|add` |
+| Validate BA model | `/nacl-ba-validate` | Modes: `internal`, `cross`, `full` |
+| Prepare handoff to SA | `/nacl-ba-handoff` | |
 
 ### System Analysis
 
-| Situation | Skill |
-|-----------|-------|
-| Full SA from scratch | `/nacl-sa-full` |
-| Add a feature incrementally | `/nacl-sa-feature` |
-| Design modules (bounded contexts) | `/nacl-sa-architect` |
-| Create domain model | `/nacl-sa-domain` |
-| Define use cases | `/nacl-sa-uc` |
-| Define system roles | `/nacl-sa-roles` |
-| Design UI architecture | `/nacl-sa-ui` |
-| Validate specification | `/nacl-sa-validate` |
-| Finalize specification | `/nacl-sa-finalize` |
+| Situation | Skill | Key modifiers |
+|-----------|-------|---------------|
+| Full SA from scratch | `/nacl-sa-full` | |
+| Add a feature incrementally | `/nacl-sa-feature` | |
+| Design modules (bounded contexts) | `/nacl-sa-architect` | |
+| Create domain model | `/nacl-sa-domain IMPORT_BA` | Modes: `IMPORT_BA`, `CREATE`, `MODIFY`, `FULL` |
+| Define use cases | `/nacl-sa-uc stories` | Also: `detail UC-ID`, `list` |
+| Define system roles | `/nacl-sa-roles IMPORT_BA` | Modes: `IMPORT_BA`, `CREATE`, `MODIFY`, `FULL` |
+| Design UI architecture | `/nacl-sa-ui verify` | Also: `components`, `navigation`, `full` |
+| Validate specification | `/nacl-sa-validate` | Modes: `internal`, `ba-cross`; `--scope` |
+| Finalize specification | `/nacl-sa-finalize` | Modes: `full`, `module`, `stats-only` |
 
 ### Development
 
-| Situation | Skill |
-|-----------|-------|
-| Full lifecycle (BE+FE+QA+docs) | `/nacl-tl-full --task UC001` |
-| Backend TDD | `/nacl-tl-dev-be UC001` |
-| Frontend TDD | `/nacl-tl-dev-fe UC001` |
-| TECH/infrastructure task | `/nacl-tl-dev TECH001` |
-| Code review | `/nacl-tl-review UC001 --be` or `--fe` |
-| E2E testing | `/nacl-tl-qa UC001` |
-| Verify BE/FE sync | `/nacl-tl-sync UC001` |
-| Check for stubs/mocks | `/nacl-tl-stubs` |
-| Update docs after dev | `/nacl-tl-docs UC001` |
+| Situation | Skill | Key modifiers |
+|-----------|-------|---------------|
+| Full lifecycle (BE+FE+QA+docs) | `/nacl-tl-full --task UC001` | `--wave`, `--feature`, `--skip-plan`, `--skip-qa`, `--yes` |
+| Backend TDD | `/nacl-tl-dev-be UC001` | `--continue`, `--dry-run` |
+| Frontend TDD | `/nacl-tl-dev-fe UC001` | `--continue`, `--dry-run` |
+| TECH/infrastructure task | `/nacl-tl-dev TECH001` | `--continue`, `--dry-run` |
+| Code review | `/nacl-tl-review UC001 --be` | `--be` or `--fe` (required for UC) |
+| E2E testing | `/nacl-tl-qa UC001` | |
+| Verify BE/FE sync | `/nacl-tl-sync UC001` | |
+| Check for stubs/mocks | `/nacl-tl-stubs UC001` | `--final` (full `src/` scan) |
+| Update docs after dev | `/nacl-tl-docs UC001` | |
 
 ### Shipping & Deployment
 
-| Situation | Skill |
-|-----------|-------|
-| Commit + push + PR | `/nacl-tl-ship` |
-| Emergency hotfix to production | `/nacl-tl-hotfix --apply` |
-| Full delivery (push → CI → staging → verify) | `/nacl-tl-deliver` |
-| Monitor CI/CD deployment | `/nacl-tl-deploy` |
-| Merge PRs + deploy verify + release tag | `/nacl-tl-release` |
+| Situation | Skill | Key modifiers |
+|-----------|-------|---------------|
+| Commit + push + PR | `/nacl-tl-ship` | `--deploy`, `--feature` |
+| Emergency hotfix to production | `/nacl-tl-hotfix --apply` | `--cherry-pick`, `--force-push`, `--rebase-feature`, `--dry-run`, `--yes` |
+| Full delivery (push → CI → staging → verify) | `/nacl-tl-deliver` | `--feature`, `--env`, `--skip-verify`, `--skip-deploy` |
+| Monitor CI/CD deployment | `/nacl-tl-deploy` | `--staging`, `--production`, `--watch` |
+| Merge PRs + deploy verify + release tag | `/nacl-tl-release` | `--major\|--minor\|--patch`, `--skip-merge`, `--pr N,N`, `--dry-run`, `--yes` |
 
 ### Planning & Status
 
-| Situation | Skill |
-|-----------|-------|
-| Create development plan from SA | `/nacl-tl-plan` |
-| Triage user requests | `/nacl-tl-intake` |
-| Full batch workflow | `/nacl-tl-conductor` |
-| Project status | `/nacl-tl-status` |
-| Next task recommendation | `/nacl-tl-next` |
+| Situation | Skill | Key modifiers |
+|-----------|-------|---------------|
+| Create development plan from SA | `/nacl-tl-plan` | `--feature FR-NNN` |
+| Triage user requests | `/nacl-tl-intake` | |
+| Full batch workflow | `/nacl-tl-conductor` | `--items`, `--feature`, `--skip-deliver`, `--skip-qa`, `--yes` |
+| Project status | `/nacl-tl-status` | `--waves`, `--be\|--fe\|--tech`, `--qa`, `--blocked`, `--compact` |
+| Next task recommendation | `/nacl-tl-next` | `--be\|--fe\|--tech`, `--wave N`, `--list`, `--review\|--sync\|--qa` |
 
 ### Fix & Recovery
 
-| Situation | Skill |
-|-----------|-------|
-| Fix a bug (spec-first) | `/nacl-tl-fix "description"` |
-| Emergency hotfix (bypass feature branch) | `/nacl-tl-hotfix` |
-| Fix reopened tasks (QA failures) | `/nacl-tl-reopened` |
-| Diagnose project health | `/nacl-tl-diagnose` |
-| Reconcile docs with code | `/nacl-tl-reconcile` |
-| Verify implementation correctness | `/nacl-tl-verify-code UC001` |
+| Situation | Skill | Key modifiers |
+|-----------|-------|---------------|
+| Fix a bug (spec-first) | `/nacl-tl-fix "description"` | `--dry-run`, `--l1`, `--auto-ship` |
+| Emergency hotfix (bypass feature branch) | `/nacl-tl-hotfix` | `--apply`, `--cherry-pick`, `--force-push` |
+| Fix reopened tasks (QA failures) | `/nacl-tl-reopened` | `--task`, `--all`, `--yes`, `--auto-ship`, `--dry-run` |
+| Diagnose project health | `/nacl-tl-diagnose` | `--since`, `--focus` |
+| Reconcile docs with code | `/nacl-tl-reconcile` | `--report`, `--scope`, `--dry-run`, `--force` |
+| Verify implementation correctness | `/nacl-tl-verify-code UC001` | `--task`, `--files` |
 
 ### Visualization & Publishing
 
-| Situation | Skill |
-|-----------|-------|
-| Render graph to Markdown/Excalidraw | `/nacl-render` |
-| Publish to Docmost | `/nacl-publish` |
+| Situation | Skill | Key modifiers |
+|-----------|-------|---------------|
+| Render graph to Markdown/Excalidraw | `/nacl-render md uc UC-101` | Namespaces: `md`, `excalidraw`; `--output` |
+| Publish to Docmost | `/nacl-publish docmost` | Also: `boards`, `full`, `docmost-incremental` |
 
 ## Next Steps
 
 - [Skills Reference](skills-reference.md) — complete catalog with descriptions
+- [Skill Modifiers Reference](skill-modifiers.md) — full documentation of all flags, modes, and subcommands
 - [Workflows](workflows.md) — end-to-end scenarios

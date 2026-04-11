@@ -239,3 +239,38 @@ MATCH (bp:BusinessProcess)
 WITH max(toInteger(replace(bp.id, 'BP-', ''))) AS maxNum
 RETURN 'BP-' + apoc.text.lpad(toString(coalesce(maxNum, 0) + 1), 3, '0') AS nextId
 ```
+
+## Skill Modifier Conventions
+
+Skills accept **modifiers** — arguments that change behavior. See [Skill Modifiers Reference](docs/skill-modifiers.md) for the full catalog.
+
+### Three Paradigms
+
+| Paradigm | When to Use | Syntax | Example |
+|----------|------------|--------|---------|
+| **Mode** (positional) | 2-5 mutually exclusive workflow branches | `/skill MODE` | `/nacl-sa-domain IMPORT_BA` |
+| **Subcommand** | 3+ distinct operations under one namespace | `/skill command [args]` | `/nacl-ba-from-board sync` |
+| **Flag** | Optional behavioral modifiers | `/skill [target] --flag` | `/nacl-tl-ship --deploy` |
+
+### Standard Flag Families
+
+Reuse these before inventing new flags:
+
+| Family | Flags | Purpose |
+|--------|-------|---------|
+| Task type filter | `--be`, `--fe`, `--tech` | Filter by development type |
+| Workflow filter | `--review`, `--sync`, `--qa` | Filter by workflow phase |
+| Scope | `--wave N`, `--feature FR-NNN`, `--task UC###`, `--all` | Limit scope |
+| Skip | `--skip-{phase}` | Skip a named workflow phase |
+| User gates | `--yes` (skip), `--confirm` (add) | Control confirmation prompts |
+| Safety | `--dry-run`, `--force`, `--force-push` | Risk-level control |
+| Auto-chain | `--deploy`, `--auto-ship` | Chain into next skill |
+| Version | `--major`, `--minor`, `--patch` | SemVer bump type |
+| Output | `--compact`, `--list`, `--final`, `--output <path>` | Control output format |
+
+### Naming Rules for New Modifiers
+
+- **Flags:** kebab-case with double dashes: `--skip-verify`, `--dry-run`
+- **Mode values:** UPPER_CASE for CRUD branches (`FULL`, `CREATE`, `MODIFY`), lowercase for utility modes (`full`, `module`)
+- **Subcommands:** lowercase: `sync`, `verify`, `stories`
+- **Identifiers:** match layer format: `UC028`, `FR-001`, `TECH003`
