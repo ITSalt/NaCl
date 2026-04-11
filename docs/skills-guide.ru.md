@@ -31,7 +31,7 @@
 ├── Нужно отправить код?
 │   └── /nacl-tl-ship (коммит + пуш + PR)
 │       └── /nacl-tl-deliver (CI + staging + health check)
-│           └── /nacl-tl-release (production)
+│           └── /nacl-tl-release (мерж PR + деплой + тег + уведомление)
 │
 ├── Всё сломано / доки устарели?
 │   └── /nacl-tl-diagnose → /nacl-tl-reconcile
@@ -96,7 +96,7 @@
 | Экстренный хотфикс в production | `/nacl-tl-hotfix --apply` |
 | Полная доставка на staging | `/nacl-tl-deliver` |
 | Мониторинг CI/CD | `/nacl-tl-deploy` |
-| Релиз в production | `/nacl-tl-release` |
+| Мерж PR + деплой + релиз | `/nacl-tl-release` |
 
 ### Исправление и восстановление
 

@@ -46,6 +46,7 @@ git:
   strategy: "feature-branch"   # "direct" or "feature-branch"
   main_branch: "main"
   branch_prefix: "feature/"
+  merge_method: "squash"       # "squash", "merge", or "rebase" — used by nacl-tl-release when merging PRs
 
 # Credentials: infrastructure access + test users for QA/debugging
 # Used by: nacl-tl-qa (E2E login), nacl-tl-verify (delegates to nacl-tl-qa), nacl-tl-fix (bug reproduction)
@@ -122,6 +123,7 @@ deploy:
     trigger: "push to main branch"
     url: ""                    # https://example.com
     health_endpoint: "/api/health"
+    ci_timeout: 600              # seconds to wait for CI after merge to main (default: 600 = 10min)
 
 # Test reports (verification, QA)
 # If mode is "local" or section is empty → reports saved to .tl/reports/ (default)

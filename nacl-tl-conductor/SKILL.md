@@ -508,7 +508,7 @@ phase = "complete":
 | Phase 5 (verify) | DevDone -> Testing | nacl-tl-verify (inside nacl-tl-deliver) |
 | Phase 5 (verify pass) | Testing -> ToRelease | nacl-tl-verify (inside nacl-tl-deliver) |
 | Phase 5 (verify fail) | Testing -> Reopened | nacl-tl-verify (inside nacl-tl-deliver) |
-| Manual | ToRelease -> Done | nacl-tl-release (manual, production) |
+| Phase 6 (release) | ToRelease -> Done | nacl-tl-release (merges PRs, verifies deploy, tags version) |
 
 Conductor does NOT directly move YouGile tasks. It delegates to sub-skills that handle their own YouGile transitions. Conductor only reads YouGile state for awareness.
 

@@ -121,7 +121,17 @@ Chains three steps into one pipeline: pushes the feature branch and creates a PR
 ```
 /nacl-tl-release
 ```
-Bumps the version number, creates a git tag, aggregates the changelog from commit history, generates release notes, and notifies YouGile.
+Full release pipeline. With `feature-branch` git strategy: collects verified PRs (from YouGile "ToRelease" or GitHub), merges them into `main` with user confirmation, waits for production CI to pass, runs a health check, then bumps the version, creates a git tag, generates release notes, and notifies YouGile. With `direct` strategy (code already on main), the merge and deploy steps are skipped automatically.
+
+To merge specific PRs:
+```
+/nacl-tl-release --pr 42,45
+```
+
+To skip merge and only tag (old behavior):
+```
+/nacl-tl-release --skip-merge
+```
 
 ---
 

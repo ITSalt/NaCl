@@ -31,7 +31,7 @@ What do you need?
 ├── Need to ship code?
 │   └── /nacl-tl-ship (commit + push + PR)
 │       └── /nacl-tl-deliver (CI + staging + health check)
-│           └── /nacl-tl-release (production)
+│           └── /nacl-tl-release (merge PRs + deploy verify + tag + notify)
 │
 ├── Everything is broken / docs are outdated?
 │   └── /nacl-tl-diagnose → /nacl-tl-reconcile
@@ -97,7 +97,7 @@ What do you need?
 | Emergency hotfix to production | `/nacl-tl-hotfix --apply` |
 | Full delivery (push → CI → staging → verify) | `/nacl-tl-deliver` |
 | Monitor CI/CD deployment | `/nacl-tl-deploy` |
-| Release to production | `/nacl-tl-release` |
+| Merge PRs + deploy verify + release tag | `/nacl-tl-release` |
 
 ### Planning & Status
 

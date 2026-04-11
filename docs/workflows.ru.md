@@ -83,7 +83,17 @@ Push → PR → ожидание CI → верификация на staging (E2E
 /nacl-tl-release
 ```
 
-Version bump, git tag, changelog, release notes.
+Полный пайплайн релиза. При `feature-branch` стратегии: собирает верифицированные PR (из YouGile "ToRelease" или GitHub), мержит их в `main` с подтверждением пользователя, ждёт CI на production, проверяет health check, затем bump версии, git tag, release notes и уведомление YouGile. При `direct` стратегии шаги мержа и деплоя пропускаются автоматически.
+
+Мерж конкретных PR:
+```
+/nacl-tl-release --pr 42,45
+```
+
+Только тегирование (без мержа):
+```
+/nacl-tl-release --skip-merge
+```
 
 ## 8. Восстановление
 
