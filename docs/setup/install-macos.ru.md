@@ -26,6 +26,13 @@ for dir in ~/NaCl/*/; do
 done
 echo "Подключено $(ls ~/.claude/skills/ | wc -l) скиллов"
 
+# Подключить агентов
+mkdir -p ~/.claude/agents
+for file in ~/NaCl/.claude/agents/*.md; do
+  [ -f "$file" ] && ln -sf "$file" ~/.claude/agents/"$(basename "$file")"
+done
+echo "Подключено $(ls ~/.claude/agents/ | wc -l) агентов"
+
 # Опционально: CLI-инструменты
 cd ~/NaCl/docmost-sync && npm install && npm run build
 cd ~/NaCl/yougile-setup && npm install && npm run build
@@ -34,7 +41,7 @@ cd ~/NaCl/yougile-setup && npm install && npm run build
 Алиас для обновления (добавить в `~/.zshrc`):
 
 ```bash
-alias nacl-update='cd ~/NaCl && git pull && for dir in ~/NaCl/*/; do [ -f "$dir/SKILL.md" ] && ln -sf "$dir" ~/.claude/skills/"$(basename "$dir")"; done'
+alias nacl-update='cd ~/NaCl && git pull && for dir in ~/NaCl/*/; do [ -f "$dir/SKILL.md" ] && ln -sf "$dir" ~/.claude/skills/"$(basename "$dir")"; done && for f in ~/NaCl/.claude/agents/*.md; do [ -f "$f" ] && ln -sf "$f" ~/.claude/agents/"$(basename "$f")"; done'
 ```
 
 ## Проверка

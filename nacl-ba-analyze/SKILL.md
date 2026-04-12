@@ -1,5 +1,7 @@
 ---
 name: nacl-ba-analyze
+model: haiku
+effort: low
 description: |
   Анализ Excalidraw-доски бизнес-процесса: полнота, diff со snapshot, сравнение с Neo4j-графом.
   Используй когда пользователь просит: проанализировать доску, проверить доску,

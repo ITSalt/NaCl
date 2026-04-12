@@ -1,5 +1,7 @@
 ---
 name: nacl-sa-ui
+model: sonnet
+effort: medium
 description: |
   UI architecture through Neo4j graph: navigation, components, form-domain mapping verification.
   Use when: design navigation, create component catalog, verify form-domain mapping,

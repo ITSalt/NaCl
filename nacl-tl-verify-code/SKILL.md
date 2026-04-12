@@ -1,5 +1,7 @@
 ---
 name: nacl-tl-verify-code
+model: sonnet
+effort: medium
 description: |
   Static code analysis to verify implementation correctness.
   Traces data flow: DB → service → route → hook → component → UI.

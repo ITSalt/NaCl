@@ -1,5 +1,7 @@
 ---
 name: nacl-sa-finalize
+model: sonnet
+effort: medium
 description: |
   Finalize specification via Neo4j: statistics, glossary, ADR, traceability matrix,
   readiness assessment. All computed from graph queries.Use when: finalize spec with graph, generate statistics, or the user says "/nacl-sa-finalize".

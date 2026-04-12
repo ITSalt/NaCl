@@ -1,5 +1,7 @@
 ---
 name: nacl-sa-uc
+model: opus
+effort: high
 description: |
   Реестр Use Cases из BA automation scope + детализация UC (Activity, формы, требования) через Neo4j граф.
   Используй когда пользователь просит: создать use cases из BA, реестр UC, детализировать UC,

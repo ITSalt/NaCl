@@ -1,5 +1,7 @@
 ---
 name: nacl-sa-architect
+model: opus
+effort: high
 description: |
   Декомпозиция системы на модули (Bounded Contexts), построение Context Map и определение NFR.
   Читает BA-данные из Neo4j графа, записывает Module/Requirement узлы в граф.

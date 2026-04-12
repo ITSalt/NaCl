@@ -1,5 +1,7 @@
 ---
 name: nacl-ba-workflow
+model: sonnet
+effort: medium
 description: |
   Build activity diagrams for business processes in Neo4j: workflow steps,
   performers, documents, decisions. 3-swimlane decomposition.Use when: decompose process into steps with graph, or the user says "/nacl-ba-workflow".

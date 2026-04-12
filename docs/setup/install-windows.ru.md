@@ -43,7 +43,20 @@ Get-ChildItem -Path "$HOME\NaCl" -Directory | ForEach-Object {
 }
 ```
 
-> Скиллы, подключённые к `~/.claude/skills/` (или `%USERPROFILE%\.claude\skills\` на нативном Windows), автоматически доступны на всех локальных платформах Claude Code: CLI, десктоп-приложение и расширения для IDE.
+Подключение агентов:
+
+```powershell
+$agentsDir = "$env:USERPROFILE\.claude\agents"
+New-Item -ItemType Directory -Force -Path $agentsDir | Out-Null
+
+Get-ChildItem -Path "$HOME\NaCl\.claude\agents" -Filter "*.md" | ForEach-Object {
+    $target = Join-Path $agentsDir $_.Name
+    if (Test-Path $target) { Remove-Item $target -Force }
+    New-Item -ItemType SymbolicLink -Path $target -Target $_.FullName | Out-Null
+}
+```
+
+> Скиллы и агенты, подключённые к `~/.claude/` (или `%USERPROFILE%\.claude\` на нативном Windows), автоматически доступны на всех локальных платформах Claude Code: CLI, десктоп-приложение и расширения для IDE.
 
 ## Типичные проблемы
 

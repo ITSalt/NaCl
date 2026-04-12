@@ -1,5 +1,7 @@
 ---
 name: nacl-sa-full
+model: opus
+effort: high
 description: |
   Full SA specification in Neo4j via 10-phase orchestration.
   Chains all nacl-sa-* skills with user confirmation gates.Use when: create complete SA spec with graph, or the user says "/nacl-sa-full".

@@ -1,5 +1,7 @@
 ---
 name: nacl-ba-validate
+model: opus
+effort: high
 description: |
   Validate BA model consistency via Cypher: L1-L8 internal checks,
   XL1-XL5 cross-validation with SA layer. Read-only, no writes.Use when: validate BA model, check consistency, or the user says "/nacl-ba-validate".

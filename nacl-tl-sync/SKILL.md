@@ -1,5 +1,7 @@
 ---
 name: nacl-tl-sync
+model: sonnet
+effort: medium
 description: |
   Verifies BE/FE synchronization for a UC task.
   Checks API contract compliance, shared types, endpoint matching,

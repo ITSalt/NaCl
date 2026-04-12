@@ -70,10 +70,24 @@ done
 echo "Linked $(ls ~/.claude/skills/ | wc -l) skills"
 ```
 
+### Link agents
+
+```bash
+mkdir -p ~/.claude/agents
+
+for file in ~/NaCl/.claude/agents/*.md; do
+  if [ -f "$file" ]; then
+    ln -sf "$file" ~/.claude/agents/"$(basename "$file")"
+  fi
+done
+
+echo "Linked $(ls ~/.claude/agents/ | wc -l) agents"
+```
+
 Add to `~/.bashrc` for easy updates:
 
 ```bash
-alias nacl-update='cd ~/NaCl && git pull && for dir in ~/NaCl/*/; do [ -f "$dir/SKILL.md" ] && ln -sf "$dir" ~/.claude/skills/"$(basename "$dir")"; done'
+alias nacl-update='cd ~/NaCl && git pull && for dir in ~/NaCl/*/; do [ -f "$dir/SKILL.md" ] && ln -sf "$dir" ~/.claude/skills/"$(basename "$dir")"; done && for f in ~/NaCl/.claude/agents/*.md; do [ -f "$f" ] && ln -sf "$f" ~/.claude/agents/"$(basename "$f")"; done'
 ```
 
 ### Build optional CLI tools

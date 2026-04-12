@@ -1,5 +1,7 @@
 ---
 name: nacl-ba-context
+model: sonnet
+effort: medium
 description: |
   Define system boundaries in Neo4j graph: scope, stakeholders, external entities, data flows.— all data stored as graph nodes and edges.
   Use when: define system scope with graph, system context diagram, or the user says "/nacl-ba-context".

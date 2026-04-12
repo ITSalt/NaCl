@@ -1,5 +1,7 @@
 ---
 name: nacl-ba-process
+model: sonnet
+effort: medium
 description: |
   Build business process map in Neo4j: process groups, processes, links, roles.— all data stored as graph nodes and edges.
   Use when: map processes with graph, create process map, or the user says "/nacl-ba-process".

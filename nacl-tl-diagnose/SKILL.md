@@ -1,5 +1,7 @@
 ---
 name: nacl-tl-diagnose
+model: opus
+effort: high
 description: |
   Project health diagnostic — analyzes git history, documentation drift,
   code health, and regression patterns. Produces DIAGNOSTIC-REPORT.md.

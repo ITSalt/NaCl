@@ -1,5 +1,7 @@
 ---
 name: nacl-ba-from-board
+model: sonnet
+effort: low
 description: |
   Orchestrator skill: unified BA-board workflow combining import_doc + analyze + sync.
   Creates boards, imports client documents, analyzes completeness, syncs to Neo4j graph.

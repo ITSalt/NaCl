@@ -1,5 +1,7 @@
 ---
 name: nacl-tl-intake
+model: opus
+effort: high
 description: |
   Graph-aware request triage: queries Neo4j to disambiguate features vs bugs.
   Routes features to nacl-sa-feature, bugs to nacl-tl-fix, tasks to nacl-tl-dev.Use when: triage with graph context, batch of changes with graph, or the user says "/nacl-tl-intake".

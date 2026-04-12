@@ -1,5 +1,7 @@
 ---
 name: nacl-tl-release
+model: sonnet
+effort: low
 description: |
   Full release pipeline: merge verified PRs to main, wait for production CI,
   health check, version bump, git tag, changelog, GitHub release, YouGile notification.

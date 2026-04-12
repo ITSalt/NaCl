@@ -31,13 +31,20 @@ my-skill/
 ```yaml
 ---
 name: my-skill
+model: sonnet
+effort: medium
 description: |
   Описание в один абзац — что делает скилл.
   Use when: фразы-триггеры для маршрутизации.
 ---
 ```
 
-Поле `name` должно совпадать с именем директории.
+| Поле | Обязательно | Описание |
+|------|-------------|----------|
+| `name` | Да | Должно совпадать с именем директории |
+| `model` | Да | Целевая модель: `opus`, `sonnet` или `haiku` (см. [Архитектура агентов](agents.ru.md)) |
+| `effort` | Да | Уровень рассуждений: `high`, `medium` или `low` |
+| `description` | Да | Что делает скилл + "Use when:" фразы-триггеры |
 
 ### Тело скилла
 
@@ -78,8 +85,9 @@ description: |
 
 ## Чеклист Pull Request
 
-- [ ] SKILL.md имеет YAML frontmatter с полем `name`
+- [ ] SKILL.md имеет YAML frontmatter с полями `name`, `model`, `effort`
 - [ ] Имя директории совпадает с `name`
+- [ ] `model` установлен на правильный уровень (`opus`/`sonnet`/`haiku`) по [Архитектуре агентов](agents.ru.md)
 - [ ] Протестировано локально в Claude Code
 - [ ] Нет захардкоженных путей (`~/projects/`, `/Users/`)
 - [ ] Нет credentials или API-ключей

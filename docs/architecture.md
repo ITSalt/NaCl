@@ -84,11 +84,13 @@ nacl-ba-context/
 ```
 
 The SKILL.md contains:
-1. **YAML frontmatter** — `name` and `description` (used for skill discovery)
+1. **YAML frontmatter** — `name`, `model`, `effort`, and `description`
 2. **Role declaration** — who the AI agent pretends to be
 3. **Workflow phases** — numbered steps with user interaction gates
 4. **Templates and rules** — output format specifications
-5. **References** — links to shared resources in `nacl-core/` or `nacl-tl-core/`
+5. **References** — links to shared resources in `nacl-core/`
+
+The `model` field (`opus`, `sonnet`, `haiku`) controls which Claude model runs the skill. The `effort` field (`high`, `medium`, `low`) controls reasoning depth. See [Agent Architecture](agents.md) for the full model selection strategy.
 
 ## config.yaml
 
@@ -124,7 +126,8 @@ Skills read `config.yaml` at runtime to adapt behavior to the project.
 
 ## Next Steps
 
-- [Skills Reference](skills-reference.md) — complete catalog of all 56 skills
+- [Agent Architecture](agents.md) — model selection, 6 cognitive profiles, delegation patterns
+- [Skills Reference](skills-reference.md) — complete catalog of all skills
 - [Workflows](workflows.md) — end-to-end scenarios
 - [Quick Start](quickstart.md) — get started in 10 minutes
 - [Methodology](methodology/) — why the graph, how BA/SA layers work, validation framework

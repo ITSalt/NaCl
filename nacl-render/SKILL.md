@@ -1,5 +1,7 @@
 ---
 name: nacl-render
+model: sonnet
+effort: low
 description: |
   Convert Neo4j graph data into Markdown documents with Mermaid diagrams
   and Excalidraw visual boards. Use when: render graph, generate docs,

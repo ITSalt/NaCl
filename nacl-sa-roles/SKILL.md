@@ -1,5 +1,7 @@
 ---
 name: nacl-sa-roles
+model: sonnet
+effort: medium
 description: |
   System roles and permission matrix through Neo4j graph: SystemRole, HAS_PERMISSION, MAPPED_TO.
   Modes: IMPORT_BA (import BusinessRole from BA layer), CREATE (new role), MODIFY (change role), FULL (full role model).

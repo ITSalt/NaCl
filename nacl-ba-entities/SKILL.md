@@ -1,5 +1,7 @@
 ---
 name: nacl-ba-entities
+model: sonnet
+effort: medium
 description: |
   Catalog business entities in Neo4j: stereotypes, attributes, states, CRUD matrix.Use when: model entities with graph, create entity catalog, or the user says "/nacl-ba-entities".
 ---

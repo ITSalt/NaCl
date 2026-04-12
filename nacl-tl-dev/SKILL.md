@@ -1,5 +1,7 @@
 ---
 name: nacl-tl-dev
+model: sonnet
+effort: medium
 description: |
   Infrastructure and TECH task development using TDD workflow.
   Use when: develop TECH task, setup infrastructure, configure Docker,

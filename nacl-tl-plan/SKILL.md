@@ -1,5 +1,7 @@
 ---
 name: nacl-tl-plan
+model: opus
+effort: high
 description: |
   Graph-based development planning from SA specifications in Neo4j.
   One Cypher query per UC instead of reading ~70 markdown files.

@@ -1,5 +1,7 @@
 ---
 name: nacl-tl-qa
+model: sonnet
+effort: medium
 description: |
   E2E QA testing for UC tasks using MCP Playwright.
   Acts as a real user: navigates pages, fills forms, clicks buttons,

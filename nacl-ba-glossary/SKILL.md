@@ -1,5 +1,7 @@
 ---
 name: nacl-ba-glossary
+model: sonnet
+effort: medium
 description: |
   Build ubiquitous language glossary in Neo4j: terms, definitions, synonyms, links.Use when: create glossary with graph, define terms, or the user says "/nacl-ba-glossary".
 ---

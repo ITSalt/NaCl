@@ -1,5 +1,7 @@
 ---
 name: nacl-ba-import-doc
+model: haiku
+effort: low
 description: |
   Parse a client document (DOCX/PDF/XLSX/text) and place extracted business-process
   elements onto an Excalidraw board with swimlanes, confidence colors, and customData.

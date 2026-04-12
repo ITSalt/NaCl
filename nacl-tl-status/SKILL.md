@@ -1,5 +1,7 @@
 ---
 name: nacl-tl-status
+model: haiku
+effort: low
 description: |
   Graph-aware project status with SA coverage metrics.
   Reads Task/Wave nodes from Neo4j, falls back to status.json.Use when: project status with graph, check progress with SA coverage, or the user says "/nacl-tl-status".

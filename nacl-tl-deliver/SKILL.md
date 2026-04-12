@@ -1,5 +1,7 @@
 ---
 name: nacl-tl-deliver
+model: sonnet
+effort: low
 description: |
   Delivery orchestrator: push feature branch, wait for CI, verify on staging, health check.
   Chains nacl-tl-ship, nacl-tl-verify, and nacl-tl-deploy into a single continuous pipeline.

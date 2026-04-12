@@ -1,5 +1,7 @@
 ---
 name: nacl-tl-full
+model: opus
+effort: high
 description: |
   Graph-aware full lifecycle orchestrator. Reads waves/tasks from Neo4j,
   updates phase status in graph. Delegates to standard dev skills.Use when: run full dev workflow with graph, or the user says "/nacl-tl-full".

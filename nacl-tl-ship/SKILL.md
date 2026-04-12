@@ -1,5 +1,7 @@
 ---
 name: nacl-tl-ship
+model: sonnet
+effort: low
 description: |
   Commit, push, create PR, and update YouGile after development.
   Reads git strategy from config.yaml (direct vs feature-branch).

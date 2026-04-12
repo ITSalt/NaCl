@@ -1,5 +1,7 @@
 ---
 name: nacl-tl-verify
+model: sonnet
+effort: medium
 description: |
   Verification orchestrator: code analysis + E2E testing + YouGile reporting.
   Runs /nacl-tl-verify-code first (cheap, catches 60%+ issues), then /nacl-tl-qa if needed.

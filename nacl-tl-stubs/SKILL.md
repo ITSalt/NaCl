@@ -1,5 +1,7 @@
 ---
 name: nacl-tl-stubs
+model: sonnet
+effort: medium
 description: |
   Scans codebase for stubs, mocks, and placeholder code.
   Maintains stub-registry.json with severity tracking.

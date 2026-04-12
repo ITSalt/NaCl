@@ -1,5 +1,7 @@
 ---
 name: nacl-sa-feature
+model: opus
+effort: high
 description: |
   Incremental feature specification via Neo4j graph. Impact analysis through
   Cypher traversal, selective SA skill invocation, FeatureRequest artifact.Use when: add feature with graph, new functionality, or the user says "/nacl-sa-feature".

@@ -1,5 +1,7 @@
 ---
 name: nacl-ba-handoff
+model: sonnet
+effort: medium
 description: |
   Generate BA→SA handoff package from Neo4j: traceability matrix, automation scope,
   module suggestions, coverage stats. Creates cross-layer edges after user confirmation.Use when: prepare BA→SA handoff, build traceability matrix, or the user says "/nacl-ba-handoff".

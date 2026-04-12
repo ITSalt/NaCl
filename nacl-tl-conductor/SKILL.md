@@ -1,5 +1,7 @@
 ---
 name: nacl-tl-conductor
+model: opus
+effort: high
 description: |
   Graph-aware batch process manager: intake to staging.
   Delegates planning to nacl-tl-plan, dev to nacl-tl-full.Use when: batch workflow with graph, orchestrate graph intake, or the user says "/nacl-tl-conductor".

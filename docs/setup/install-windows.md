@@ -68,7 +68,22 @@ Get-ChildItem -Path "$HOME\NaCl" -Directory | ForEach-Object {
 Write-Host "Linked $((Get-ChildItem $skillsDir).Count) skills"
 ```
 
-> Skills linked to `~/.claude/skills/` (or `%USERPROFILE%\.claude\skills\` on native Windows) are automatically available in all local Claude Code platforms: CLI, Desktop app, and IDE extensions.
+### Link agents
+
+```powershell
+$agentsDir = "$env:USERPROFILE\.claude\agents"
+New-Item -ItemType Directory -Force -Path $agentsDir | Out-Null
+
+Get-ChildItem -Path "$HOME\NaCl\.claude\agents" -Filter "*.md" | ForEach-Object {
+    $target = Join-Path $agentsDir $_.Name
+    if (Test-Path $target) { Remove-Item $target -Force }
+    New-Item -ItemType SymbolicLink -Path $target -Target $_.FullName | Out-Null
+}
+
+Write-Host "Linked $((Get-ChildItem $agentsDir -Filter '*.md').Count) agents"
+```
+
+> Skills and agents linked to `~/.claude/` (or `%USERPROFILE%\.claude\` on native Windows) are automatically available in all local Claude Code platforms: CLI, Desktop app, and IDE extensions.
 
 > Note: Creating symlinks on Windows requires either Administrator privileges or Developer Mode enabled (Settings > Update & Security > For Developers).
 

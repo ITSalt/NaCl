@@ -31,13 +31,20 @@ Every SKILL.md must start with frontmatter:
 ```yaml
 ---
 name: my-skill
+model: sonnet
+effort: medium
 description: |
   One-paragraph description of what this skill does.
   Use when: trigger phrases that help Claude route to this skill.
 ---
 ```
 
-The `name` field must match the directory name.
+| Field | Required | Description |
+|-------|----------|-------------|
+| `name` | Yes | Must match the directory name |
+| `model` | Yes | Target model: `opus`, `sonnet`, or `haiku` (see [Agent Architecture](agents.md)) |
+| `effort` | Yes | Reasoning effort: `high`, `medium`, or `low` |
+| `description` | Yes | What the skill does + "Use when:" trigger phrases |
 
 ### Skill Body
 
@@ -78,8 +85,9 @@ Before submitting a PR:
 
 ## Pull Request Checklist
 
-- [ ] SKILL.md has YAML frontmatter with `name` field
+- [ ] SKILL.md has YAML frontmatter with `name`, `model`, `effort` fields
 - [ ] Directory name matches the `name` in frontmatter
+- [ ] `model` is set to the correct tier (`opus`/`sonnet`/`haiku`) per [Agent Architecture](agents.md)
 - [ ] Tested locally with Claude Code
 - [ ] No hardcoded paths (`~/projects/`, `/Users/`)
 - [ ] No credentials or API keys

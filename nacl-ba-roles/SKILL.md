@@ -1,5 +1,7 @@
 ---
 name: nacl-ba-roles
+model: sonnet
+effort: medium
 description: |
   Identify and describe business roles in Neo4j: departments, responsibilities,
   role-process matrix.Use when: define roles with graph, build role matrix, or the user says "/nacl-ba-roles".

@@ -38,6 +38,22 @@ echo "Подключено $(ls ~/.claude/skills/ | wc -l) скиллов"
 
 Создаёт симлинки, чтобы Claude Code находил скиллы как слэш-команды.
 
+### Подключить агентов
+
+```bash
+mkdir -p ~/.claude/agents
+
+for file in ~/NaCl/.claude/agents/*.md; do
+  if [ -f "$file" ]; then
+    ln -sf "$file" ~/.claude/agents/"$(basename "$file")"
+  fi
+done
+
+echo "Подключено $(ls ~/.claude/agents/ | wc -l) агентов"
+```
+
+Агенты определяют когнитивные профили (модель, усилие, инструменты), которые скиллы-оркестраторы используют при делегировании работы. В NaCl входят 6 агентов: `strategist` (Opus), `analyst`, `developer`, `verifier`, `operator` (Sonnet) и `scout` (Haiku).
+
 > **Платформы:** Директория `~/.claude/skills/` общая для всех локальных платформ Claude Code. Скиллы, подключённые здесь, доступны в CLI, десктоп-приложении и расширениях для IDE.
 
 ## Шаг 3: Запустить графовую инфраструктуру

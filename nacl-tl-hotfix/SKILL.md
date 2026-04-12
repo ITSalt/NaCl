@@ -1,5 +1,7 @@
 ---
 name: nacl-tl-hotfix
+model: opus
+effort: high
 description: |
   Emergency hotfix to main: stash/cherry-pick changes, create hotfix branch
   from main, validate, open PR with auto-merge, restore source branch.

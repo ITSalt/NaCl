@@ -1,5 +1,7 @@
 ---
 name: nacl-tl-dev-fe
+model: sonnet
+effort: medium
 description: |
   Frontend TDD development from task specifications using React/Next.js.
   Use when: develop frontend, implement UI, create React components,

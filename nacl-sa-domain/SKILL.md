@@ -1,5 +1,7 @@
 ---
 name: nacl-sa-domain
+model: opus
+effort: high
 description: |
   Domain Model through Neo4j graph: DomainEntity, DomainAttribute, Enumeration, relationships.
   Modes: IMPORT_BA (import from BA layer), CREATE (new entity), MODIFY (change entity), FULL (full module domain model).

@@ -1,5 +1,7 @@
 ---
 name: nacl-ba-rules
+model: sonnet
+effort: medium
 description: |
   Catalog business rules in Neo4j: constraints, calculations, invariants, authorization.Use when: extract business rules with graph, classify rules, or the user says "/nacl-ba-rules".
 ---

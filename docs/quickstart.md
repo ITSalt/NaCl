@@ -38,6 +38,22 @@ echo "Linked $(ls ~/.claude/skills/ | wc -l) skills"
 
 This creates symlinks so Claude Code discovers the skills as slash commands.
 
+### Link agents
+
+```bash
+mkdir -p ~/.claude/agents
+
+for file in ~/NaCl/.claude/agents/*.md; do
+  if [ -f "$file" ]; then
+    ln -sf "$file" ~/.claude/agents/"$(basename "$file")"
+  fi
+done
+
+echo "Linked $(ls ~/.claude/agents/ | wc -l) agents"
+```
+
+Agents define cognitive profiles (model, effort, tools) that orchestrator skills use when delegating work. Six agents ship with NaCl: `strategist` (Opus), `analyst`, `developer`, `verifier`, `operator` (Sonnet), and `scout` (Haiku).
+
 > **Platform note:** The `~/.claude/skills/` directory is shared across all local Claude Code platforms. Skills linked here are available in CLI, Desktop app, and IDE extensions.
 
 ## Step 3: Start the graph infrastructure

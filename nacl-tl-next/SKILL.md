@@ -1,5 +1,7 @@
 ---
 name: nacl-tl-next
+model: haiku
+effort: low
 description: |
   Graph-aware next task recommendation with SA context enrichment.
   Reads Task/Wave from Neo4j, enriches with UC entity/form names.Use when: next task with graph, what to work on, or the user says "/nacl-tl-next".

@@ -1,5 +1,7 @@
 ---
 name: nacl-tl-reconcile
+model: opus
+effort: high
 description: |
   Emergency documentation-code reconciliation.
   Brings all docs in sync with current code state.

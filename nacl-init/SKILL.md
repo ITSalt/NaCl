@@ -1,5 +1,7 @@
 ---
 name: nacl-init
+model: haiku
+effort: low
 description: |
   Initialize a new project with CLAUDE.md containing development rules,
   skill routing, bug fix protocol, and documentation discipline.

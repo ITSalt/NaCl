@@ -1,5 +1,7 @@
 ---
 name: nacl-publish
+model: sonnet
+effort: low
 description: |
   Публикация графа в Docmost и генерация Excalidraw-бордов.
   Используй когда пользователь просит: опубликовать граф, синхронизировать с Docmost,

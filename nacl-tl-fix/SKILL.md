@@ -1,5 +1,7 @@
 ---
 name: nacl-tl-fix
+model: sonnet
+effort: medium
 description: |
   Spec-first bug fixing with automatic documentation sync.
   Auto-detects affected UC/TECH from problem description.

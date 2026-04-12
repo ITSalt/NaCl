@@ -1,5 +1,7 @@
 ---
 name: nacl-sa-validate
+model: opus
+effort: high
 description: |
   Validate specification consistency through Neo4j Cypher queries.
   Internal validation (L1-L6): data consistency, model connectivity, requirement completeness,

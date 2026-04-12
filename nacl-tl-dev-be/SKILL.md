@@ -1,5 +1,7 @@
 ---
 name: nacl-tl-dev-be
+model: sonnet
+effort: medium
 description: |
   Backend TDD development from task specifications.
   Use when: develop backend, implement BE feature, run backend TDD cycle,

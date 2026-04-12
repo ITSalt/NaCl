@@ -1,5 +1,7 @@
 ---
 name: nacl-tl-docs
+model: sonnet
+effort: medium
 description: |
   Documentation updates for approved tasks.
   Use when: update documentation, write docs, finalize task, complete task,

@@ -1,5 +1,7 @@
 ---
 name: nacl-ba-full
+model: opus
+effort: high
 description: |
   Full BA model creation in Neo4j via 10-phase orchestration.
   Chains all nacl-ba-* skills sequentially with user confirmation gates.Use when: create complete BA model with graph, full business analysis, or the user says "/nacl-ba-full".

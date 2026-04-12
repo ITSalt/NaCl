@@ -1,5 +1,7 @@
 ---
 name: nacl-tl-review
+model: opus
+effort: high
 description: |
   Code review for completed tasks (BE, FE, or TECH).
   Use when: review code, code review, check implementation, verify task,

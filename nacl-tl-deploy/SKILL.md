@@ -1,5 +1,7 @@
 ---
 name: nacl-tl-deploy
+model: sonnet
+effort: low
 description: |
   Monitor CI/CD deployment (GitHub Actions), run health checks, update YouGile.
   Deployment is triggered by git push (nacl-tl-ship), this skill monitors the result.

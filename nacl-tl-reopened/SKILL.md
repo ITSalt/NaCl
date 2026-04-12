@@ -1,5 +1,7 @@
 ---
 name: nacl-tl-reopened
+model: sonnet
+effort: medium
 description: |
   Process tasks from YouGile Reopened column (failed verification/QA).
   Reads tester feedback from task chat, diagnoses root cause,
