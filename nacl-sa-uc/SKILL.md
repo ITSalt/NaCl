@@ -28,6 +28,20 @@ You are a Solution Architect agent specialized in Use Case design. You read BA-l
 | `detail` | `<UC-ID>` (e.g. `UC-101`) | Detail a specific UC: activity steps, forms, requirements |
 | `list` | --- | Show all UCs from graph with detail status |
 
+**Flags:**
+
+| Flag | Required | Description |
+|------|----------|-------------|
+| `--lang` | No | Output language: `en` or `ru` (default: `ru`). |
+
+---
+
+## Language
+
+Supports `--lang=en` for English output. See [nacl-core/lang-directive.md](../nacl-core/lang-directive.md).
+When `--lang=en`: all generated text, node names, descriptions in English.
+Default: Russian (ru).
+
 ---
 
 ## Shared References

@@ -111,6 +111,48 @@ Use [GitHub Issues](https://github.com/ITSalt/NaCl/issues) with the appropriate 
 - **Feature Request** — suggest an improvement
 - **New Skill Proposal** — propose a new skill
 
+## Translating Skills
+
+BA/SA skills (`nacl-ba-*`, `nacl-sa-*`) are written in Russian by default. The
+`--lang` flag lets users request output in a different language without modifying
+the skill itself.
+
+### The `--lang` flag pattern
+
+Invocation example:
+
+```
+/nacl-ba-context --lang=en
+```
+
+When a skill receives `--lang=en`, it produces all user-facing output (analysis,
+artifact text, progress messages) in English while keeping internal IDs and
+structure unchanged.
+
+### Adding language support to a skill that does not have it yet
+
+1. **Invocation table** — add a `--lang` row to the Parameters/Modifiers table
+   in `SKILL.md`:
+
+   | Modifier | Values | Default | Effect |
+   |----------|--------|---------|--------|
+   | `--lang` | `ru`, `en` | `ru` | Output language |
+
+2. **Language section** — add a `## Language` section to the skill body that
+   documents which strings are localised (artifact names, section headers,
+   status messages) and which remain language-neutral (IDs, Cypher, filenames).
+
+3. **Test it** — invoke the skill with `--lang=en` on a sample project and
+   verify that all user-facing output is in English and no Russian strings leak
+   into the result.
+
+### Notes
+
+- **TL skills** (`nacl-tl-*`) are already written in English and do not need
+  `--lang` support.
+- The `--lang` flag follows the standard flag conventions described in
+  [Skill Modifiers](skill-modifiers.md).
+
 ## Questions?
 
 Open a [Discussion](https://github.com/ITSalt/NaCl/discussions) or create an issue with the `question` label.

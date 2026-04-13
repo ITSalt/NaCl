@@ -62,6 +62,18 @@ Create the complete domain model for a module: all entities, attributes, enumera
 
 **Parameter:** `module` -- module name (must exist as a Module node in the graph).
 
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `--lang` | No | Output language: `en` or `ru` (default: `ru`). |
+
+---
+
+## Language
+
+Supports `--lang=en` for English output. See [nacl-core/lang-directive.md](../nacl-core/lang-directive.md).
+When `--lang=en`: all generated text, node names, descriptions in English.
+Default: Russian (ru).
+
 ---
 
 ## Workflow: Mode IMPORT_BA

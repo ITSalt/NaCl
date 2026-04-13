@@ -426,7 +426,16 @@ calls_next:
 
 parameters:
   scope: full | update  # full = from scratch, update = modify existing context
+  lang: ru | en         # output language (default: ru)
 ```
+
+---
+
+## Language
+
+Supports `--lang=en` for English output. See [nacl-core/lang-directive.md](../nacl-core/lang-directive.md).
+When `--lang=en`: all generated text, node names, descriptions in English.
+Default: Russian (ru).
 
 ---
 

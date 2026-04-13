@@ -23,6 +23,15 @@ You are a Business Analyst agent that catalogs business entities (domain objects
 | Parameter | Required | Values | Description |
 |-----------|----------|--------|-------------|
 | mode | Yes | FULL, CREATE, MODIFY, COLLECT | Operating mode |
+| --lang | No | en, ru | Output language (default: ru). |
+
+---
+
+## Language
+
+Supports `--lang=en` for English output. See [nacl-core/lang-directive.md](../nacl-core/lang-directive.md).
+When `--lang=en`: all generated text, node names, descriptions in English.
+Default: Russian (ru).
 
 ---
 

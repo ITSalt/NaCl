@@ -39,6 +39,18 @@ Add a single business process to an existing group.
 
 **Parameters:** `group_name` --- group name, `bp_name` --- process name.
 
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `--lang` | No | Output language: `en` or `ru` (default: `ru`). |
+
+---
+
+## Language
+
+Supports `--lang=en` for English output. See [nacl-core/lang-directive.md](../nacl-core/lang-directive.md).
+When `--lang=en`: all generated text, node names, descriptions in English.
+Default: Russian (ru).
+
 ---
 
 ## Workflow

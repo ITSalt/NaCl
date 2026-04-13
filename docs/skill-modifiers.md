@@ -195,9 +195,19 @@ Automatically invoke the next skill in the pipeline after completion.
 | `/nacl-ba-validate internal` | internal | L1-L8: BA-internal consistency checks only |
 | `/nacl-ba-validate cross` | cross | XL1-XL5: BA-to-SA cross-layer validation only |
 
+#### --lang flag (all BA skills)
+
+All BA skills accept `--lang=en` to switch output to English. Default is `ru` (Russian).
+
+| Flag | Values | Default | Description |
+|------|--------|---------|-------------|
+| `--lang` | `en`, `ru` | `ru` | Output language for all generated text and node properties |
+
+See [nacl-core/lang-directive.md](../nacl-core/lang-directive.md) for full resolution order and rules.
+
 #### Other BA skills
 
-`nacl-ba-context`, `nacl-ba-process`, `nacl-ba-workflow`, `nacl-ba-roles`, `nacl-ba-glossary`, `nacl-ba-handoff`, `nacl-ba-import-doc`, `nacl-ba-analyze`, `nacl-ba-sync`, `nacl-ba-full` — no user-facing modifiers. Invoked with no arguments or a single positional argument (file path or process ID).
+`nacl-ba-context`, `nacl-ba-process`, `nacl-ba-workflow`, `nacl-ba-roles`, `nacl-ba-glossary`, `nacl-ba-handoff`, `nacl-ba-import-doc`, `nacl-ba-analyze`, `nacl-ba-sync`, `nacl-ba-full` — accept `--lang=en` flag; otherwise invoked with no arguments or a single positional argument (file path or process ID).
 
 ---
 
@@ -268,9 +278,19 @@ Automatically invoke the next skill in the pipeline after completion.
 | `/nacl-sa-finalize module <module_id>` | module | Finalize single module (scoped statistics + readiness) |
 | `/nacl-sa-finalize stats-only` | stats-only | Statistics and readiness only (no ADR, no glossary) |
 
+#### --lang flag (all SA skills)
+
+All SA skills accept `--lang=en` to switch output to English. Default is `ru` (Russian).
+
+| Flag | Values | Default | Description |
+|------|--------|---------|-------------|
+| `--lang` | `en`, `ru` | `ru` | Output language for all generated text and node properties |
+
+See [nacl-core/lang-directive.md](../nacl-core/lang-directive.md) for full resolution order and rules.
+
 #### Other SA skills
 
-`nacl-sa-architect`, `nacl-sa-feature`, `nacl-sa-full` — no user-facing modifiers beyond a positional description argument.
+`nacl-sa-architect`, `nacl-sa-feature`, `nacl-sa-full` — accept `--lang=en` flag; otherwise no user-facing modifiers beyond a positional description argument.
 
 ---
 
@@ -564,6 +584,12 @@ Which flags work on which skills. Only flags appearing on 2+ skills are shown.
 | `--deploy` | x | | | | | | | | | | | | | | | | | | | | | |
 | `--force` | | | | | | | | | | | | | | | | x | | | | | | |
 | `--force-push` | | | | | | | | | | | | | x | | | | | | | | | |
+
+### BA/SA Flags (not in TL column matrix)
+
+| Flag | Applies to | Default | Description |
+|------|------------|---------|-------------|
+| `--lang` | All BA skills, all SA skills | `ru` | Switch output language: `en` or `ru`. See [nacl-core/lang-directive.md](../nacl-core/lang-directive.md). |
 
 ---
 
