@@ -215,8 +215,8 @@ Write `MIGRATION-REPORT.md` at project root. Include:
 
 Active on the first-in-order canary (currently: `family-cinema`). Do not
 run `/nacl-migrate` on any further project until the gate completes and the
-user approves the retrospective report. Per
-`/Users/maxnikitin/.claude/plans/humming-crafting-bumblebee.md`:
+user approves the retrospective report. Per the migration retrospective gate
+design (see `~/.claude/plans/<plan-file>.md` if a Claude Code plan was used):
 
 1. Launch **3 Explore sub-agents in parallel**:
    - BA parity auditor → `BA-AUDIT.md`

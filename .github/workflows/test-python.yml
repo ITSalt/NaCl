@@ -1,0 +1,52 @@
+name: Test Python Migration
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'nacl-migrate-core/**'
+      - 'nacl-migrate-ba/**'
+      - 'nacl-migrate-sa/**'
+      - 'nacl-migrate/**'
+  push:
+    branches: [main]
+    paths:
+      - 'nacl-migrate-core/**'
+      - 'nacl-migrate-ba/**'
+      - 'nacl-migrate-sa/**'
+      - 'nacl-migrate/**'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Run unittest suite
+        run: |
+          cd nacl-migrate-core
+          python3 -m unittest discover -s tests -v
+
+      - name: Syntax check nacl-migrate-ba scripts
+        run: |
+          python3 -m py_compile \
+            nacl-migrate-ba/scripts/audit_ba.py \
+            nacl-migrate-ba/scripts/detect_ba.py \
+            nacl-migrate-ba/scripts/generate_ba_cypher.py \
+            nacl-migrate-ba/scripts/parse_ba.py \
+            nacl-migrate-ba/scripts/preflight_ids.py \
+            nacl-migrate-ba/scripts/validate_ba_ir.py
+          echo "nacl-migrate-ba scripts OK"
+
+      - name: Syntax check nacl-migrate-sa scripts
+        run: |
+          python3 -m py_compile \
+            nacl-migrate-sa/scripts/audit_sa.py \
+            nacl-migrate-sa/scripts/generate_sa_cypher.py \
+            nacl-migrate-sa/scripts/parse_sa.py \
+            nacl-migrate-sa/scripts/validate_sa_ir.py
+          echo "nacl-migrate-sa scripts OK"
