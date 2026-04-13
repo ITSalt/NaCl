@@ -14,7 +14,7 @@ Claude models differ in reasoning depth and cost:
 | **Sonnet** | Balanced speed and quality | $15 | Code generation, structured content, testing |
 | **Haiku** | Fast, low-latency | $5 | Status queries, quick lookups, sync |
 
-Running all 51 skills on Opus wastes budget on tasks that Sonnet handles equally well. Running everything on Haiku loses quality where reasoning matters. The agent architecture routes each skill to the right model.
+Running all 55 skills on Opus wastes budget on tasks that Sonnet handles equally well. Running everything on Haiku loses quality where reasoning matters. The agent architecture routes each skill to the right model.
 
 ## Skill Frontmatter
 
@@ -53,7 +53,7 @@ The thinking brain. Reads, analyzes, judges -- never writes code.
 
 **Why Opus:** These skills make decisions that cascade downstream. Wrong architecture wastes all development. Missed review findings become production bugs. Misclassified triage wastes entire cycles.
 
-### analyst -- Sonnet, medium effort (11 skills)
+### analyst -- Sonnet, medium effort (13 skills)
 
 The domain modeler. Creates structured BA/SA artifacts from domain knowledge.
 
@@ -62,6 +62,7 @@ The domain modeler. Creates structured BA/SA artifacts from domain knowledge.
 **Skills:**
 - BA phase skills: `nacl-ba-context`, `nacl-ba-process`, `nacl-ba-workflow`, `nacl-ba-entities`, `nacl-ba-roles`, `nacl-ba-glossary`, `nacl-ba-rules`, `nacl-ba-handoff`
 - SA content: `nacl-sa-roles`, `nacl-sa-ui`, `nacl-sa-finalize`
+- Migration: `nacl-migrate-ba`, `nacl-migrate-sa`
 
 **Why Sonnet:** These skills fill structured templates with domain knowledge provided by the user. The reasoning challenge is formalization, not invention.
 
@@ -85,13 +86,13 @@ The quality gate. Tests, verifies, and reports without modifying code.
 
 **Why Sonnet:** Verification is systematic: trace data flows, match API contracts, run E2E scripts. Pattern matching, not creative reasoning.
 
-### operator -- Sonnet, low effort (7 skills)
+### operator -- Sonnet, low effort (8 skills)
 
 The shipping arm. Git operations, CI/CD monitoring, publishing.
 
 **Tools:** Read, Grep, Bash
 
-**Skills:** `nacl-tl-ship`, `nacl-tl-deploy`, `nacl-tl-deliver`, `nacl-tl-release`, `nacl-render`, `nacl-publish`, `nacl-ba-from-board`
+**Skills:** `nacl-tl-ship`, `nacl-tl-deploy`, `nacl-tl-deliver`, `nacl-tl-release`, `nacl-render`, `nacl-publish`, `nacl-ba-from-board`, `nacl-migrate`
 
 **Why Sonnet + low effort:** These skills follow rigid scripts defined in `config.yaml`. No judgment calls -- just execute and report.
 
@@ -125,18 +126,18 @@ Skills are **not** preloaded into agents. The orchestrator passes the specific s
 ## Model Distribution Summary
 
 ```
-                opus (16)             sonnet (29)           haiku (6)
+                opus (16)             sonnet (32)           haiku (6)
               ┌─────────────┐    ┌──────────────────┐    ┌──────────┐
   effort:high │ strategist  │    │                  │    │          │
               │ (12 skills) │    │                  │    │          │
               │ orchestrator│    │                  │    │          │
               │ (4 skills)  │    │                  │    │          │
               ├─────────────┤    ├──────────────────┤    │          │
-effort:medium │             │    │ analyst (11)     │    │          │
+effort:medium │             │    │ analyst (13)     │    │          │
               │             │    │ developer (6)    │    │          │
               │             │    │ verifier (5)     │    │          │
               ├─────────────┤    ├──────────────────┤    ├──────────┤
-  effort:low  │             │    │ operator (7)     │    │ scout(6) │
+  effort:low  │             │    │ operator (8)     │    │ scout(6) │
               └─────────────┘    └──────────────────┘    └──────────┘
 ```
 

@@ -4,7 +4,7 @@
 
 # The NaCl Methodology: Three Layers, One Graph
 
-NaCl is a set of 57 slash-command skills for Claude Code that cover the full software development lifecycle -- from business analysis through system specification to TDD development, code review, QA, and release. What makes NaCl different is not the number of skills but the methodology beneath them: a structured pipeline where all business and system analysis artifacts live in a Neo4j graph database, queryable by both humans and AI agents.
+NaCl is a set of 55 slash-command skills for Claude Code that cover the full software development lifecycle -- from business analysis through system specification to TDD development, code review, QA, and release. What makes NaCl different is not the number of skills but the methodology beneath them: a structured pipeline where all business and system analysis artifacts live in a Neo4j graph database, queryable by both humans and AI agents.
 
 This document explains the core ideas. The companion pages go deeper into each layer.
 

@@ -2,9 +2,7 @@
 
 # NaCl
 
-**57 скиллов для Claude Code**, реализующих полный цикл разработки ПО -- от бизнес-анализа до релиза в продакшен.
-
-Каждый скилл -- это слэш-команда (`/nacl-ba-full`, `/nacl-tl-dev-be`, `/nacl-tl-ship`, ...), которая превращает Claude Code в специализированного агента с жёстким процессом, артефактами и критериями качества. Все BA/SA артефакты хранятся в графе Neo4j, визуализируются через Excalidraw и публикуются в Docmost.
+**NaCl** (Na + Cl) -- набор из **55 скилл-команд** для [Claude Code](https://docs.anthropic.com/en/docs/claude-code), охватывающих полный цикл разработки ПО -- от бизнес-анализа и системной спецификации до TDD-разработки, код-ревью, QA и релиза. Артефакты бизнес- и системного анализа хранятся в графе Neo4j, поэтому каждое требование можно запросить, отследить и оно никогда не потеряется в толще Markdown.
 
 ## Как это работает
 
@@ -46,7 +44,8 @@
 | **Системный анализ** | `nacl-sa-*` | 9 | Архитектура, доменная модель, Use Cases, UI, роли, валидация |
 | **TeamLead** | `nacl-tl-*` | 25 | Разработка: TDD (BE/FE), ревью, QA, деплой, релиз, хотфикс, диагностика |
 | **Утилиты** | `nacl-*` | 4 | `nacl-core`, `nacl-render`, `nacl-publish`, `nacl-init` |
-| | | **52** | |
+| **Миграция** | `nacl-migrate-*` | 3 | Детерминированная миграция Markdown → Neo4j граф с паттерном адаптеров. |
+| | | **55** | |
 
 ### Язык скиллов
 
@@ -85,8 +84,7 @@ git clone https://github.com/user/NaCl.git
 **2. Запустите инфраструктуру**
 
 ```bash
-cd NaCl/graph-infra
-docker compose up -d
+docker compose -f graph-infra/docker-compose.yml up -d
 ```
 
 Neo4j будет доступен на `localhost:7474`, Excalidraw -- на `localhost:3050`.
@@ -118,21 +116,47 @@ claude install-skill /путь/к/NaCl/nacl-ba-full
 
 Подробная инструкция: [docs/quickstart.ru.md](docs/quickstart.ru.md)
 
-## Архитектура
+## Архитектура агентов
+
+NaCl направляет каждый скилл к одному из 6 когнитивных агентов, подбирая сложность задачи к нужной модели Claude:
+
+| Агент | Модель | Скиллов | Зона ответственности |
+|---|---|---|---|
+| **strategist** | Opus | 12 | Архитектура, валидация, глубокое ревью |
+| **analyst** | Sonnet | 13 | Доменное моделирование, структурированный контент, парсинг для миграции |
+| **developer** | Sonnet | 6 | TDD-генерация кода, исправление багов |
+| **verifier** | Sonnet | 5 | Тестирование, верификация, проверка контрактов |
+| **operator** | Sonnet | 8 | Git-операции, CI/CD, публикация, оркестрация миграции |
+| **scout** | Haiku | 6 | Быстрые запросы, статусные проверки |
+
+Определения агентов находятся в `.claude/agents/`. Подробная аргументация выбора модели: [docs/agents.md](docs/agents.md).
+
+## Миграция из Markdown
+
+Уже есть проект с Markdown-документацией по BA/SA? Пайплайн миграции конвертирует её в граф:
+
+```
+/nacl-migrate [project_path]
+```
+
+Миграция использует детерминированный парсинг на Python (без LLM) с паттерном адаптеров для разных форматов Markdown. Подробнее: [docs/migration.md](docs/migration.md).
+
+## Структура проекта
 
 ```
 NaCl/
-  nacl-ba-*/ (14)      Бизнес-анализ (SKILL.md на русском)
-  nacl-sa-*/ (9)       Системная спецификация (SKILL.md на русском)
-  nacl-tl-*/ (24)      Разработка, ревью, QA, деплой, релиз
-  nacl-core/           Общие Cypher-запросы и константы
-  nacl-render/         Рендеринг графа в Markdown / Excalidraw
-  nacl-publish/        Публикация графа в Docmost
-  nacl-init/           Инициализация проекта
-  nacl-tl-core/        Общие шаблоны TL-скиллов
-  graph-infra/         Docker Compose для Neo4j + Excalidraw
-  docmost-sync/         Синхронизация с Docmost
-  yougile-setup/        Настройка интеграции с YouGile
+  .claude/agents/     6 определений когнитивных агентов (strategist, analyst, developer, ...)
+  nacl-ba-*/          14 скиллов бизнес-анализа
+  nacl-sa-*/           9 скиллов системной спецификации
+  nacl-tl-*/          25 скиллов жизненного цикла разработки
+  nacl-migrate-*/      3 скилла миграции Markdown → граф
+  nacl-core/          общие Cypher-хелперы и утилиты графа
+  nacl-render/        рендеринг в Markdown и Excalidraw
+  nacl-publish/       публикация в Docmost
+  nacl-init/          инициализация проекта
+  nacl-tl-core/       общие шаблоны и справочники TL
+  graph-infra/        Docker-инфраструктура Neo4j + Excalidraw
+  docs/               документация
 ```
 
 Каждый скилл -- это директория с файлом `SKILL.md`, который Claude Code загружает при вызове слэш-команды. SKILL.md содержит роль агента, входные/выходные артефакты, алгоритм работы, критерии качества и примеры.
@@ -141,12 +165,14 @@ NaCl/
 
 | Документ | Описание |
 |----------|----------|
-| [Быстрый старт](docs/quickstart.ru.md) | Пошаговая настройка и первый запуск |
-| [Методология](docs/methodology/) | Философия графа, слои BA/SA, валидация, трассируемость |
-| [Архитектура графа](docs/graph-architecture.ru.md) | Neo4j-схема, узлы, связи, слои |
-| [Создание скиллов](docs/creating-skills.ru.md) | Как писать свои SKILL.md |
-| [Интеграции](docs/integrations.ru.md) | Docmost, YouGile, CI/CD |
-| [FAQ](docs/faq.ru.md) | Частые вопросы |
+| [docs/quickstart.md](docs/quickstart.md) | Пошаговая настройка и первый запуск |
+| [docs/architecture.md](docs/architecture.md) | Схема графа, модель взаимодействия скиллов, потоки данных |
+| [docs/skills-reference.md](docs/skills-reference.md) | Полный каталог всех 55 скиллов с параметрами и примерами |
+| [docs/graph-schema.md](docs/graph-schema.md) | Типы узлов/рёбер Neo4j, ограничения, индексы |
+| [docs/configuration.md](docs/configuration.md) | Справочник `config.yaml` и переменные окружения |
+| [docs/methodology/](docs/methodology/) | Методология BA/SA: философия графа, валидация, трассируемость |
+| [docs/contributing.md](docs/contributing.md) | Как добавлять или изменять скиллы |
+| [docs/faq.md](docs/faq.md) | Частые вопросы и устранение неполадок |
 
 ## Участие в проекте
 

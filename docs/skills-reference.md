@@ -4,7 +4,7 @@
 
 # Skills Reference
 
-NaCl provides **51 skills** organized by layer and function. All skills follow the `nacl-{layer}-{action}` naming convention: **BA** = Business Analysis, **SA** = System Analysis, **TL** = TeamLead. Skills are invoked as slash commands (e.g. `/nacl-tl-fix`, `/nacl-ba-full`) and can delegate to each other through sub-agent orchestration.
+NaCl provides **55 skills** organized by layer and function. All skills follow the `nacl-{layer}-{action}` naming convention: **BA** = Business Analysis, **SA** = System Analysis, **TL** = TeamLead. Skills are invoked as slash commands (e.g. `/nacl-tl-fix`, `/nacl-ba-full`) and can delegate to each other through sub-agent orchestration.
 
 > **See also:** [Skill Modifiers Reference](skill-modifiers.md) — full documentation of all flags, modes, and subcommands.
 
@@ -77,7 +77,7 @@ Shared libraries, rendering, and project scaffolding.
 
 ---
 
-## TL Skills — TeamLead (24)
+## TL Skills — TeamLead (25)
 
 TeamLead skills for the full development lifecycle -- from planning through release.
 
@@ -140,6 +140,18 @@ TeamLead skills for the full development lifecycle -- from planning through rele
 |-------|-------------|-------------------|---------------|
 | `nacl-tl-full` | Autonomous full lifecycle orchestrator. Coordinates planning, development (BE+FE), sync, stubs, review, QA, and docs across execution waves. | `/nacl-tl-full --task UC001` | `--wave`, `--task`, `--feature`, `--skip-plan`, `--skip-qa`, `--yes` |
 | `nacl-tl-conductor` | Process manager for the full development workflow: intake to staging. Creates feature branches, dispatches sub-agents, commits per UC atomically. | `/nacl-tl-conductor --items FR-001` | `--items`, `--feature`, `--branch`, `--skip-deliver`, `--skip-qa`, `--yes` |
+
+---
+
+## Migration Skills (3)
+
+Skills for migrating existing projects from markdown-based specs into the NaCl graph format.
+
+| Skill | Description | Example invocation | Key modifiers |
+|-------|-------------|-------------------|---------------|
+| `nacl-migrate` | Orchestrator for migrating an existing project's markdown specifications into Neo4j graph format. Chains nacl-migrate-ba and nacl-migrate-sa with user confirmation gates. | `/nacl-migrate` | — |
+| `nacl-migrate-ba` | Extract and import BA artifacts (processes, entities, roles, rules) from existing markdown documents into Neo4j BA layer nodes. | `/nacl-migrate-ba path/to/docs` | — |
+| `nacl-migrate-sa` | Extract and import SA artifacts (modules, use cases, domain model, forms) from existing markdown documents into Neo4j SA layer nodes. | `/nacl-migrate-sa path/to/docs` | — |
 
 ---
 

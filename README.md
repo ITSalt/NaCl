@@ -2,7 +2,7 @@
 
 # NaCl
 
-**NaCl** (Na + Cl) is a set of 57 slash-command skills for [Claude Code](https://docs.anthropic.com/en/docs/claude-code) that cover the entire software development lifecycle -- from business analysis and system specification to TDD development, code review, QA, and release. Business and system analysis artifacts live in a Neo4j graph database, so every requirement is queryable, traceable, and never lost in a wall of Markdown.
+**NaCl** (Na + Cl) is a set of 55 slash-command skills for [Claude Code](https://docs.anthropic.com/en/docs/claude-code) that cover the entire software development lifecycle -- from business analysis and system specification to TDD development, code review, QA, and release. Business and system analysis artifacts live in a Neo4j graph database, so every requirement is queryable, traceable, and never lost in a wall of Markdown.
 
 ## How It Works
 
@@ -52,7 +52,8 @@ All skills use the `nacl-{layer}-{action}` naming convention: **BA** = Business 
 | **System Analysis** | `nacl-sa-*` | 9 | Architecture, domain model, use cases, UI, roles, validation. Output in Russian. |
 | **TeamLead** | `nacl-tl-*` | 25 | Full dev lifecycle: planning, TDD (BE/FE), code review, QA, deploy, release, hotfix, diagnostics. |
 | **Utilities** | `nacl-*` | 4 | `nacl-core` (Cypher helpers), `nacl-render` (export), `nacl-publish` (Docmost sync), `nacl-init` (scaffolding). |
-| | | **52** | |
+| **Migration** | `nacl-migrate-*` | 3 | Deterministic Markdown → Neo4j graph migration with adapter pattern. |
+| | | **55** | |
 
 ## Prerequisites
 
@@ -84,7 +85,7 @@ NaCl skills work on all **local** Claude Code platforms: CLI (terminal), Desktop
 2. **Start infrastructure**
 
    ```bash
-   docker compose up -d    # Neo4j + Excalidraw
+   docker compose -f graph-infra/docker-compose.yml up -d    # Neo4j + Excalidraw
    ```
 
 3. **Install skills into Claude Code**
@@ -118,13 +119,38 @@ NaCl skills work on all **local** Claude Code platforms: CLI (terminal), Desktop
 
 See [docs/quickstart.md](docs/quickstart.md) for a detailed walkthrough.
 
+## Agent Architecture
+
+NaCl routes each skill to one of 6 cognitive agents, matching task complexity to the right Claude model:
+
+| Agent | Model | Skills | Responsibility |
+|---|---|---|---|
+| **strategist** | Opus | 12 | Architecture, validation, deep review |
+| **analyst** | Sonnet | 13 | Domain modeling, structured content, migration parsing |
+| **developer** | Sonnet | 6 | TDD code generation, bug fixes |
+| **verifier** | Sonnet | 5 | Testing, verification, contract matching |
+| **operator** | Sonnet | 8 | Git operations, CI/CD, publishing, migration orchestration |
+| **scout** | Haiku | 6 | Fast lookups, status queries |
+
+Agent definitions live in `.claude/agents/`. See [docs/agents.md](docs/agents.md) for the full model selection rationale.
+
+## Migration from Markdown
+
+Already have a project with Markdown-based BA/SA documentation? The migration pipeline converts it into the graph:
+
+```
+/nacl-migrate [project_path]
+```
+
+The migration uses deterministic Python parsing (no LLM) with an adapter pattern for different Markdown formats. See [docs/migration.md](docs/migration.md) for details.
+
 ## Documentation
 
 | Document | Description |
 |---|---|
 | [docs/quickstart.md](docs/quickstart.md) | Step-by-step setup and first run |
 | [docs/architecture.md](docs/architecture.md) | Graph schema, skill interaction model, data flow |
-| [docs/skills-reference.md](docs/skills-reference.md) | Full catalog of all 56 skills with parameters and examples |
+| [docs/skills-reference.md](docs/skills-reference.md) | Full catalog of all 55 skills with parameters and examples |
 | [docs/graph-schema.md](docs/graph-schema.md) | Neo4j node/edge types, constraints, indexes |
 | [docs/configuration.md](docs/configuration.md) | `config.yaml` reference and environment variables |
 | [docs/methodology/](docs/methodology/) | BA/SA methodology deep dive: graph philosophy, validation, traceability |
@@ -135,16 +161,18 @@ See [docs/quickstart.md](docs/quickstart.md) for a detailed walkthrough.
 
 ```
 NaCl/
+  .claude/agents/     6 cognitive agent definitions (strategist, analyst, developer, ...)
   nacl-ba-*/          14 business analysis skills
   nacl-sa-*/           9 system analysis skills
-  nacl-tl-*/          24 development lifecycle skills
+  nacl-tl-*/          25 development lifecycle skills
+  nacl-migrate-*/      3 Markdown → Graph migration skills
   nacl-core/          shared Cypher helpers and graph utilities
   nacl-render/        Markdown and Excalidraw rendering
   nacl-publish/       Docmost publishing
   nacl-init/          project scaffolding
   nacl-tl-core/       shared TL templates and references
-  docs/                documentation
-  docker-compose.yml   Neo4j + Excalidraw infrastructure
+  graph-infra/        Neo4j + Excalidraw Docker infrastructure
+  docs/               documentation
 ```
 
 ## Contributing
