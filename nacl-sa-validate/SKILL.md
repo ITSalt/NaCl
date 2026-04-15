@@ -135,6 +135,38 @@ ORDER BY label
 - `level=ba-cross` --> STOP, report that BA layer is not populated. User must run `/nacl-ba-import-doc` or `/nacl-ba-from-board` first.
 - `level=full` --> Run only L1-L6 (internal), skip XL6-XL9 with a WARNING in the report.
 
+### Step 0c: Verify exemption properties are populated
+
+Before running checks, confirm that exemption properties exist in the graph. Include this table
+in the report header so the user can see which properties are set and which are missing.
+
+```cypher
+// Pre-flight: exemption property coverage
+MATCH (ff:FormField)
+WITH count(ff) AS total,
+     sum(CASE WHEN ff.field_category IS NOT NULL THEN 1 ELSE 0 END) AS has_prop
+RETURN 'FormField.field_category' AS property, total, has_prop, total - has_prop AS missing
+UNION ALL
+MATCH (uc:UseCase)
+WITH count(uc) AS total,
+     sum(CASE WHEN uc.has_ui IS NOT NULL THEN 1 ELSE 0 END) AS has_prop
+RETURN 'UseCase.has_ui' AS property, total, has_prop, total - has_prop AS missing
+UNION ALL
+MATCH (de:DomainEntity)
+WITH count(de) AS total,
+     sum(CASE WHEN de.shared IS NOT NULL THEN 1 ELSE 0 END) AS has_prop
+RETURN 'DomainEntity.shared' AS property, total, has_prop, total - has_prop AS missing
+UNION ALL
+MATCH (sr:SystemRole)
+WITH count(sr) AS total,
+     sum(CASE WHEN sr.system_only IS NOT NULL THEN 1 ELSE 0 END) AS has_prop
+RETURN 'SystemRole.system_only' AS property, total, has_prop, total - has_prop AS missing
+```
+
+If `missing` is high for any property, the exemption filters in L4-L6/XL8 will treat those nodes
+as non-exempt (defaulting to the strict check). This is correct behavior -- it means the SA skills
+haven't classified those nodes yet.
+
 ---
 
 ## Severity Levels
@@ -338,6 +370,25 @@ RETURN uc.id AS uc_id, uc.name AS uc_name,
 
 ---
 
+### CRITICAL: Mandatory Exemption Filters
+
+Checks L4–L6 and XL8 contain WHERE filters that exempt nodes with specific properties.
+These filters MUST be included verbatim in every query — omitting them causes false positives
+that cannot be fixed by any SA skill (the data is correct, the query is wrong).
+
+| Check | Mandatory filter | Purpose |
+|-------|-----------------|---------|
+| L4.1 | `AND coalesce(ff.field_category, 'input') = 'input'` | Exempt display/action fields from MAPS_TO requirement |
+| L5.1 | `AND coalesce(uc.has_ui, true) = true` | Exempt backend-only UCs from form requirement |
+| L5.4 | `WHERE mapped_fields = 0 AND input_fields > 0` | Exempt forms with only display/action fields |
+| L6.1 | `AND coalesce(de.shared, false) = false` | Exempt intentionally shared cross-module entities |
+| XL8.2 | `AND coalesce(sr.system_only, false) = false` | Exempt infrastructure-only roles |
+
+If executing via HTTP API (curl) instead of MCP tools, copy queries CHARACTER-FOR-CHARACTER
+from the code blocks below. Do NOT simplify, rephrase, or omit WHERE clauses.
+
+---
+
 ### Level 4: Form-Domain Traceability
 
 **Goal:** Every FormField should map to a DomainAttribute; every DomainAttribute should be reachable from at least one form (or marked internal).
@@ -347,11 +398,14 @@ RETURN uc.id AS uc_id, uc.name AS uc_name,
 ```cypher
 // L4.1 -- Severity: CRITICAL
 // FormFields that have no MAPS_TO edge to a DomainAttribute
+// Only input fields require MAPS_TO; display and action fields are exempt
 MATCH (f:Form)-[:HAS_FIELD]->(ff:FormField)
 WHERE NOT (ff)-[:MAPS_TO]->(:DomainAttribute)
+  AND coalesce(ff.field_category, 'input') = 'input'  -- REQUIRED FILTER: exempt display/action
 RETURN f.name AS form_name, f.id AS form_id,
        ff.name AS field_name, ff.id AS field_id,
-       ff.field_type AS field_type, ff.label AS label,
+       ff.field_type AS field_type, ff.field_category AS field_category,
+       ff.label AS label,
        'FormField has no MAPS_TO -> DomainAttribute binding' AS problem
 ```
 
@@ -406,8 +460,10 @@ RETURN ff.id AS field_id, ff.name AS field_name, ff.field_type AS field_type,
 ```cypher
 // L5.1 -- Severity: WARNING
 // UseCases with ActivitySteps but no USES_FORM edge to any Form
+// Backend-only UCs (has_ui=false) are exempt
 MATCH (uc:UseCase)-[:HAS_STEP]->(:ActivityStep)
 WHERE NOT (uc)-[:USES_FORM]->(:Form)
+  AND coalesce(uc.has_ui, true) = true  -- REQUIRED FILTER: exempt backend-only UCs
 WITH DISTINCT uc
 RETURN uc.id AS uc_id, uc.name AS uc_name,
        'UseCase has steps but no linked Forms (USES_FORM)' AS problem
@@ -441,15 +497,17 @@ RETURN f.id AS form_id, f.name AS form_name,
 
 ```cypher
 // L5.4 -- Severity: WARNING
-// UC -> Form where none of the form's fields have MAPS_TO edges
+// UC -> Form where none of the input fields have MAPS_TO edges
+// Forms with only display/action fields are exempt (no input fields to map)
 MATCH (uc:UseCase)-[:USES_FORM]->(f:Form)-[:HAS_FIELD]->(ff:FormField)
 WITH uc, f, count(ff) AS total_fields,
+     sum(CASE WHEN coalesce(ff.field_category, 'input') = 'input' THEN 1 ELSE 0 END) AS input_fields,
      sum(CASE WHEN (ff)-[:MAPS_TO]->(:DomainAttribute) THEN 1 ELSE 0 END) AS mapped_fields
-WHERE mapped_fields = 0
+WHERE mapped_fields = 0 AND input_fields > 0  -- REQUIRED FILTER: exempt display-only forms
 RETURN uc.id AS uc_id, uc.name AS uc_name,
        f.id AS form_id, f.name AS form_name,
-       total_fields,
-       'Form used by UC has zero mapped fields -- no domain traceability' AS problem
+       total_fields, input_fields,
+       'Form used by UC has input fields but zero mapped -- no domain traceability' AS problem
 ```
 
 ---
@@ -463,9 +521,10 @@ RETURN uc.id AS uc_id, uc.name AS uc_name,
 ```cypher
 // L6.1 -- Severity: WARNING
 // Entities belonging to multiple modules (via CONTAINS_ENTITY) -- potential shared entity conflict
+// Entities marked shared=true are intentionally shared and exempt
 MATCH (m:Module)-[:CONTAINS_ENTITY]->(de:DomainEntity)
 WITH de, collect(m.name) AS modules, count(m) AS module_count
-WHERE module_count > 1
+WHERE module_count > 1 AND coalesce(de.shared, false) = false  -- REQUIRED FILTER: exempt shared entities
 RETURN de.id AS entity_id, de.name AS entity_name, modules,
        'DomainEntity belongs to multiple modules -- verify attribute consistency' AS problem
 ```
@@ -649,8 +708,10 @@ RETURN br.id AS br_id, coalesce(br.full_name, br.name) AS br_name,
 ```cypher
 // XL8.2 -- Severity: WARNING
 // SA SystemRoles that no BA BusinessRole maps to
+// Roles marked system_only=true are infrastructure roles with no BA counterpart -- exempt
 MATCH (sr:SystemRole)
 WHERE NOT (:BusinessRole)-[:MAPPED_TO]->(sr)
+  AND coalesce(sr.system_only, false) = false  -- REQUIRED FILTER: exempt infrastructure roles
 RETURN sr.id AS sr_id, sr.name AS sr_name,
        'SystemRole not mapped from any BA BusinessRole (may be system-only role)' AS problem
 ```
