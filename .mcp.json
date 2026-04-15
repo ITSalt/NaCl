@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "neo4j": {
+      "command": "npx",
+      "args": ["-y", "@anthropic/neo4j-mcp-server"],
+      "env": {
+        "NEO4J_URI": "bolt://localhost:3587",
+        "NEO4J_USERNAME": "neo4j",
+        "NEO4J_PASSWORD": "neo4j_graph_dev"
+      }
+    }
+  }
+}
