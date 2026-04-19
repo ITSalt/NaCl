@@ -144,11 +144,16 @@ Already have a project with Markdown-based BA/SA documentation? The migration pi
 
 The migration uses deterministic Python parsing (no LLM) with an adapter pattern for different Markdown formats. See [docs/migration.md](docs/migration.md) for details.
 
+## Handover
+
+Transferring a project's Neo4j graph between machines is a one-shot, encrypted export/import. Useful when handing the project over to another developer or moving to a new workstation. See [docs/HANDOVER.md](docs/HANDOVER.md).
+
 ## Documentation
 
 | Document | Description |
 |---|---|
 | [docs/quickstart.md](docs/quickstart.md) | Step-by-step setup and first run |
+| [docs/HANDOVER.md](docs/HANDOVER.md) | Runbook for exporting and importing a graph between machines |
 | [docs/architecture.md](docs/architecture.md) | Graph schema, skill interaction model, data flow |
 | [docs/skills-reference.md](docs/skills-reference.md) | Full catalog of all 55 skills with parameters and examples |
 | [docs/graph-schema.md](docs/graph-schema.md) | Neo4j node/edge types, constraints, indexes |

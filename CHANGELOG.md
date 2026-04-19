@@ -6,6 +6,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+- Graph handover scripts (`graph-infra/scripts/handover-{export,import}.sh` + `_lib.sh`) for inter-machine transfer of a project's Neo4j graph. Uses APOC cypher export + gzip + age symmetric encryption; verified via manifest round-trip.
+- `graph-infra/handover/` directory for committed encrypted snapshots, with `.gitattributes` binary marker and cleanup policy in local `README.md`.
+
+### Fixed
+- Cross-project container isolation: every `graph-infra/docker-compose.yml` now inherits a unique Compose project name via `name:` + `COMPOSE_PROJECT_NAME` (`nacl-tl-core/templates/graph-docker-compose.yml:1`). Previously all `graph-infra/` folders across the workspace resolved to the same project name, which allowed `docker compose up -d --remove-orphans` in one project to silently cull containers and data volumes of other projects. `nacl-init/SKILL.md` step 2c.4 now emits `COMPOSE_PROJECT_NAME=<slug>-graph` in every new project's `.env`/`.env.example`. Regression test confirms the class of incident is closed.
+
+### Infrastructure
+- All eight existing NaCl-using projects on the dev machine migrated to the templated form: named volumes, unique project labels, 18 anonymous SHA-hashed volumes cleaned up. Data preserved via pre-migration dumps for the four at-risk projects; dumps retained at `<project>/graph-infra/backup-20260419.dump` as a one-time durability hedge.
+
+### Documentation
+- `docs/HANDOVER.md` + `docs/HANDOVER.ru.md` — runbook for exporting and importing a graph between machines.
+
 ## [0.5.0] — 2026-04-13
 
 ### Added
@@ -58,5 +71,3 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 [0.5.0]: https://github.com/itsalt/NaCl/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/itsalt/NaCl/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/itsalt/NaCl/compare/v0.2.0...v0.3.0
-[0.2.0]: https://github.com/itsalt/NaCl/compare/v0.1.0...v0.2.0
-[0.1.0]: https://github.com/itsalt/NaCl/releases/tag/v0.1.0
