@@ -1,6 +1,6 @@
 """inline-table-v1 adapter — SA layer.
 
-Target format (family-cinema, ElectroCharge):
+Target format (short-prefix-uc dialect):
   - docs/10-architecture/module-tree.md:      module table
   - docs/12-domain/entities/*.md:             # Name (RU) + ## Атрибуты table + ## Жизненный цикл mermaid
   - docs/12-domain/enumerations/*.md:         # Name + ## Значения table
@@ -10,8 +10,8 @@ Target format (family-cinema, ElectroCharge):
   - docs/16-requirements/UC###-requirements.md: per-UC FR/NFR blocks
 
 Numbering variants:
-  - `10-16` (family-cinema, kartov-orders)
-  - `00-06` (ElectroCharge, infographic)
+  - `10-16` layout
+  - `00-06` layout
 
 Returns a SaIR plus a HandoffIR parsed from docs/99-meta/traceability-matrix.md.
 Both are returned as a tuple from parse() to avoid coupling the two stores.
@@ -419,7 +419,7 @@ class InlineTableV1SaAdapter:
         idx = 0
         # Iterate ALL tables in the section body (not just tables[0]) to
         # handle multi-subsection layouts where each subsection has its own
-        # table (e.g. ElectroCharge order.md with Идентификация, Местоположение…).
+        # table (subsections like Идентификация, Местоположение, etc.).
         for table in tables:
             for row in table:
                 keys = list(row.keys())
@@ -750,8 +750,8 @@ class InlineTableV1SaAdapter:
             return out
 
         # Fallback: subsection-based parser for "### Шаг N" / "### Step N"
-        # headings (used by ElectroCharge-style UCs where steps are prose
-        # subsections, not table rows).
+        # headings (prose-step UC dialect where steps are prose subsections,
+        # not table rows).
         step_re = re.compile(
             r"^###\s+(?:Шаг|Step)\s+\d+\s*[—\-–:.]?\s*(.*)", re.MULTILINE
         )

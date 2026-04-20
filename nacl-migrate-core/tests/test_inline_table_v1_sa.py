@@ -2,9 +2,9 @@
 UC family + 3-digit family co-existence.
 
 The adapter has six call sites that historically hardcoded ``\\d{3}`` for UC
-and SCR ids; this suite covers each site against the infographic-style
-letter-prefix format (``UC-F01``) and confirms the kartov-orders / family-
-cinema 3-digit shape (``UC-001``) still parses unchanged.
+and SCR ids; this suite covers each site against the letter-prefix UC
+format (``UC-F01``) and confirms the 3-digit UC shape (``UC-001``) still
+parses unchanged.
 """
 
 from __future__ import annotations
@@ -201,12 +201,12 @@ class RequirementsFilenameTests(unittest.TestCase):
 class ActivityStepSubsectionTests(unittest.TestCase):
     """Fix 2: UC with ## Основной поток + ### Шаг N subsections."""
 
-    def test_ec_style_uc_activity_steps(self):
+    def test_sample_uc_activity_steps(self):
         with tempfile.TemporaryDirectory() as tmp:
-            project = Path(tmp) / "ec"
+            project = Path(tmp) / "sample"
             uc_dir = project / "docs" / "04-usecases"
             uc_dir.mkdir(parents=True)
-            src = Path(__file__).parent / "fixtures" / "inline-table" / "ec-usecases" / "UC001-auth-otp.md"
+            src = Path(__file__).parent / "fixtures" / "inline-table" / "usecases-sample" / "UC001-auth-otp.md"
             shutil.copy(src, uc_dir / "UC001-auth-otp.md")
             ir, _ = InlineTableV1SaAdapter().parse(project)
         self.assertTrue(len(ir.use_cases) >= 1, "Should parse at least 1 UC")
@@ -220,12 +220,12 @@ class ActivityStepSubsectionTests(unittest.TestCase):
 class DomainAttributeMultiTableTests(unittest.TestCase):
     """Fix 3: Entity with ## Схема таблицы + Колонка|Тип multi-subsection."""
 
-    def test_ec_style_entity_attributes(self):
+    def test_sample_entity_attributes(self):
         with tempfile.TemporaryDirectory() as tmp:
-            project = Path(tmp) / "ec"
+            project = Path(tmp) / "sample"
             ent_dir = project / "docs" / "02-domain" / "entities"
             ent_dir.mkdir(parents=True)
-            src = Path(__file__).parent / "fixtures" / "inline-table" / "ec-entities" / "order.md"
+            src = Path(__file__).parent / "fixtures" / "inline-table" / "entities-sample" / "order.md"
             shutil.copy(src, ent_dir / "order.md")
             ir, _ = InlineTableV1SaAdapter().parse(project)
         self.assertTrue(len(ir.domain_entities) >= 1, "Should parse at least 1 entity")
@@ -241,10 +241,10 @@ class NfrRequirementsTests(unittest.TestCase):
 
     def test_nfr_fallback(self):
         with tempfile.TemporaryDirectory() as tmp:
-            project = Path(tmp) / "ec"
+            project = Path(tmp) / "sample"
             req_dir = project / "docs" / "06-requirements"
             req_dir.mkdir(parents=True)
-            src = Path(__file__).parent / "fixtures" / "inline-table" / "ec-requirements" / "nfr.md"
+            src = Path(__file__).parent / "fixtures" / "inline-table" / "requirements-sample" / "nfr.md"
             shutil.copy(src, req_dir / "nfr.md")
             ir, _ = InlineTableV1SaAdapter().parse(project)
         self.assertGreater(len(ir.requirements), 0,

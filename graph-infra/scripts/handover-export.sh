@@ -21,7 +21,7 @@ for arg in "$@"; do
 done
 
 if [[ "$TO" == s3://* ]]; then
-  die "S3 export ships in S2. See /Users/maxnikitin/.claude/plans/nacl-s2-multi-user-collaboration.md"
+  die "S3 export is not yet implemented. Use --to=git for now."
 fi
 
 require age expect gzip jq docker

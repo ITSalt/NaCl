@@ -1,6 +1,6 @@
 """Regression tests for nacl-migrate-sa/scripts/generate_sa_cypher.py.
 
-BLOCKER-1 + BLOCKER-2 (kartov-orders retrospective): the Cypher plan emitted
+BLOCKER-1 + BLOCKER-2: the Cypher plan emitted
 by generate_sa_cypher.py must include ``ba_trace`` in the per-row props for
 both DomainEntity and Enumeration node batches. Prior versions silently
 dropped the field, so every DomainEntity/Enumeration landed in the graph

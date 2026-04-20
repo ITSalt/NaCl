@@ -28,7 +28,7 @@ nacl-migrate-core/
 │       └── llm_freeform_v1.py  # (much later — skill-driven)
 └── tests/
     ├── fixtures/
-    │   └── inline-table/       # real snippets from family-cinema
+    │   └── inline-table/       # structural samples for the inline-table dialect
     ├── test_frontmatter.py
     ├── test_markdown.py
     ├── test_mermaid.py

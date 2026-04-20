@@ -1,6 +1,6 @@
 """frontmatter-v1 adapter — SA layer.
 
-Target format (kartov-orders):
+Target format (letter-suffix-frontmatter dialect):
   - docs/10-architecture/module-tree.md        : frontmatter + module table
   - docs/12-domain/entities/<slug>.md          : frontmatter with ``title``,
                                                  ``type: entity``, ``module``,
@@ -187,9 +187,9 @@ class FrontmatterV1SaAdapter:
         """Return the numbering scheme (``10-16`` or ``00-06``) and the
         resolved directory map.
 
-        Both layouts coexist in the wild: kartov-orders / family-cinema use
-        ``10-16``, infographic / ElectroCharge use ``00-06``. Pick the layout
-        whose directories actually exist on disk. If both exist (pathological)
+        Both layouts coexist in practice: some dialects use ``10-16`` and
+        others use ``00-06``. Pick the layout whose directories actually
+        exist on disk. If both exist (pathological)
         we emit no warning here — the IR carries one — and prefer ``10-16``
         for backwards compatibility with the original adapter behaviour.
         """
@@ -822,8 +822,8 @@ class FrontmatterV1SaAdapter:
                             kind_key = k
                     for row in table:
                         raw_id = row.get(keys[0], "").strip()
-                        # Accept the kartov-orders shape ``RQ101-01`` and the
-                        # infographic shape ``RQ-F01-01`` (letter-prefix UC).
+                        # Accept the short-prefix shape ``RQ101-01`` and the
+                        # letter-prefix shape ``RQ-F01-01`` (letter-prefix UC).
                         if not re.fullmatch(
                             r"[A-Za-z]+(?:-?[A-Z0-9]+)+", raw_id,
                         ):

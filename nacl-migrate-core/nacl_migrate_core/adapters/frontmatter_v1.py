@@ -1,6 +1,6 @@
 """frontmatter-v1 adapter — BA layer.
 
-Target format (kartov-orders):
+Target format (letter-suffix-frontmatter dialect):
   - Hybrid: some files start with a YAML frontmatter block, others are bare
     H1 + inline metadata tables.
 
@@ -66,7 +66,7 @@ _ENTITY_FM_KEYS = {"id", "name", "stereotype", "parent", "processes", "ba_source
 
 # Stereotype normaliser for workflow-step table rows.
 # The BA IR only allows three stereotypes: "Бизнес-функция",
-# "Автоматизируется", "Решение". kartov-orders introduces two extra labels
+# "Автоматизируется", "Решение". This dialect introduces two extra labels
 # "Событие" (pre-trigger) and "Результат" (post-outcome). Both are narrative
 # anchors rather than actions — they represent manual/external transitions
 # with no system automation, so we map them to "Бизнес-функция" (the BA IR's
@@ -99,7 +99,7 @@ _STEP_NUM_RE = re.compile(r"S(\d{1,3})")
 # Adapter
 
 class FrontmatterV1BaAdapter(BaseBaAdapter):
-    """BA adapter for the kartov-orders hybrid YAML-frontmatter dialect."""
+    """BA adapter for the letter-suffix hybrid YAML-frontmatter dialect."""
 
     name = "frontmatter-v1"
     version = "1.0.0"
@@ -595,8 +595,8 @@ def _bullets(body: str) -> List[str]:
 
 def _parse_attribute_table(obj_id: str, text: str, rel_source: str
                            ) -> List[EntityAttribute]:
-    # Accept both "Атрибуты" (canonical) and "Структура" (kartov-orders uses
-    # this for "Результат"-stereotype entities — OBJ-009, OBJ-010, ...).
+    # Accept both "Атрибуты" (canonical) and "Структура" (this dialect uses
+    # the latter for "Результат"-stereotype entities — OBJ-009, OBJ-010, ...).
     body = md.find_section(text, r"Атрибуты|Attributes|Структура|Structure")
     if not body:
         return []
@@ -638,7 +638,7 @@ def _parse_workflow_steps(bp_id: str, text: str, rel_source: str
                           ) -> List[WorkflowStep]:
     """Parse the ``## Шаги процесса`` table into WorkflowStep entries.
 
-    Column layout (kartov-orders):
+    Column layout (letter-suffix-frontmatter dialect):
         # | Исполнитель | Стереотип | Действие | Артефакт
     The first column contains ``S01`` / ``S02`` / ... The step_number is
     extracted from that token. The "Действие" text is kept verbatim in

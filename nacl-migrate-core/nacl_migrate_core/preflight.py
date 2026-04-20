@@ -5,8 +5,8 @@ filenames and YAML frontmatter values, classifies each token against the
 adapter-supported whitelist, and returns a structured summary.
 
 This is the orchestrator's safety net: if the source repo uses an ID
-convention no current adapter understands (e.g. infographic's ``UC-F01``
-letter-prefix family before R3), the orchestrator must surface the gap and
+convention no current adapter understands (e.g. a ``UC-F01`` letter-prefix
+family before a widened adapter ships), the orchestrator must surface the gap and
 ask the user to widen an adapter (with a fixture + test) before any parse
 runs.
 

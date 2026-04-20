@@ -119,7 +119,7 @@ phase. No phase executes without explicit approval.
 
 | Adapter | Status | Description |
 |---|---|---|
-| `inline-table-v1` | Current | Markdown tables with inline properties; the original family-cinema format |
+| `inline-table-v1` | Current | Markdown tables with inline properties |
 | `frontmatter-v1` | Planned | YAML frontmatter per file |
 | `llm-freeform-v1` | Planned | Skill-driven parsing for loosely structured prose |
 

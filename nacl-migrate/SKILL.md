@@ -38,7 +38,7 @@ is a hard stop requiring user confirmation.
 |---|---|---|
 | `project_path` | No | Project root (default: cwd). |
 | `--dry-run` | No | Run all parsing + validation, skip Neo4j writes. |
-| `--skip-ba` | No | SA-only project (e.g. ElectroCharge). |
+| `--skip-ba` | No | SA-only project (BA not yet captured). |
 | `--skip-sa` | No | BA-only (rare). |
 | `--skip-render-diff` | No | Do not regenerate Markdown for comparison. |
 | `--resume-from` | No | Phase name (e.g. `sa-migrate`) to resume after fix. |
@@ -92,7 +92,7 @@ execute, verify, then ask before continuing.
 Before any parse step runs, scan the project for ID-shaped tokens and
 classify them against the adapter-supported whitelist. This catches the
 class of regressions where the source repo introduces a new ID convention
-(e.g. infographic's letter-prefix `UC-F01` family) that no adapter knows
+(e.g. a letter-prefix `UC-F01` family) that no adapter knows
 how to handle yet — without this gate, 100% of UCs/screens silently drop
 at parse with no surface signal until audit-time.
 
@@ -213,10 +213,9 @@ Write `MIGRATION-REPORT.md` at project root. Include:
 
 ## MANDATORY retrospective gate (on canary projects)
 
-Active on the first-in-order canary (currently: `family-cinema`). Do not
-run `/nacl-migrate` on any further project until the gate completes and the
-user approves the retrospective report. Per the migration retrospective gate
-design (see `~/.claude/plans/<plan-file>.md` if a Claude Code plan was used):
+Active on the first-in-order canary project. Do not run `/nacl-migrate`
+on any further project until the gate completes and the user approves the
+retrospective report. Per the migration retrospective gate design:
 
 1. Launch **3 Explore sub-agents in parallel**:
    - BA parity auditor → `BA-AUDIT.md`

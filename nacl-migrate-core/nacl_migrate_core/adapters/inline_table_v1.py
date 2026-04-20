@@ -1,6 +1,6 @@
 """inline-table-v1 adapter.
 
-Target format (family-cinema, ElectroCharge):
+Target format (short-prefix-uc dialect):
   - No YAML frontmatter.
   - File starts with `# {ID}: {Name}` or `# {Name}`.
   - Metadata in a `## Метаданные` / `## Metadata` section containing a

@@ -1,8 +1,8 @@
-"""Regression tests for the frontmatter_v1 BA adapter (kartov-orders dialect).
+"""Regression tests for the frontmatter_v1 BA adapter (letter-suffix-frontmatter dialect).
 
-Fixtures under ``tests/fixtures/frontmatter/ba/`` are real kartov-orders
-snippets copied verbatim. The tests assemble a minimal docs/ tree in a
-tempdir, point the adapter at it, and assert on the emitted IR.
+Fixtures under ``tests/fixtures/frontmatter/ba/`` are sample documents in the
+letter-suffix-frontmatter dialect. The tests assemble a minimal docs/ tree
+in a tempdir, point the adapter at it, and assert on the emitted IR.
 """
 
 from __future__ import annotations
@@ -25,7 +25,7 @@ INLINE_FIXTURES = Path(__file__).resolve().parent / "fixtures" / "inline-table"
 
 def _build_project(tmp: Path) -> Path:
     """Materialise the fixture tree into a tempdir shaped like a project."""
-    project = tmp / "kartov-fixture"
+    project = tmp / "frontmatter-ba-fixture"
     docs = project / "docs"
     for src_rel, dst_rel in (
         ("entities",  "02-business-entities/entities"),
@@ -45,7 +45,7 @@ def _build_project(tmp: Path) -> Path:
 
 
 class DetectTests(unittest.TestCase):
-    def test_detect_on_kartov_entities(self):
+    def test_detect_on_sample_entities(self):
         samples = sorted((FIXTURES / "entities").glob("*.md"))
         self.assertTrue(samples, "expected ba/entities fixtures")
         confidence = FrontmatterV1BaAdapter.detect(samples)
@@ -120,7 +120,7 @@ class ParseTests(unittest.TestCase):
         role = by_id["ROL-01"]
         self.assertEqual(role.full_name, "Товарник")
         self.assertEqual(role.department, "Товарный отдел")
-        # original_id is None because kartov-orders uses ROL-NN natively.
+        # original_id is None because this dialect uses ROL-NN natively.
         self.assertIsNone(role.original_id)
 
     def test_business_rules_catalog_parsed(self):

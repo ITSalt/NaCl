@@ -23,7 +23,7 @@ for arg in "$@"; do
 done
 
 if [[ "$FROM" == s3://* ]]; then
-  die "S3 import ships in S2. See /Users/maxnikitin/.claude/plans/nacl-s2-multi-user-collaboration.md"
+  die "S3 import is not yet implemented. Use --from=git for now."
 fi
 
 [[ -n "$ARTIFACT_FILE" ]] || die "Required: --file=PATH to a .cypher.gz.age artifact."

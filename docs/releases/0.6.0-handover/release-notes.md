@@ -7,8 +7,8 @@ This release ships one-shot graph handover tooling so a project's Neo4j database
 - **Graph handover:** `handover-export.sh` and `handover-import.sh` let Dev 1 snapshot their Neo4j graph (APOC export → gzip → age encryption) and Dev 2 restore it end-to-end, with manifest verification of node and relationship counts before and after.
 - **Encrypted at rest:** every handover artifact is `age`-encrypted with a symmetric passphrase shared out-of-band; plaintext graph data never touches git history.
 - **Docker-Compose isolation fix:** the canonical `graph-docker-compose.yml` template now carries a top-level `name:` field, and `nacl-init` emits `COMPOSE_PROJECT_NAME` in every new project's `.env`. Projects can no longer silently cull each other's containers.
-- **Full rollout:** all eight existing NaCl-compatible projects on the dev machine were migrated in-place to the templated form; 18 anonymous SHA-hashed volumes were cleaned up; named volumes are now unique per project.
-- **Regression-tested:** `docker compose up -d --remove-orphans` in one project leaves all others untouched — confirmed on the full set of running containers.
+- **Migration path:** existing NaCl-compatible projects can be migrated in-place to the templated form; anonymous SHA-hashed volumes are cleaned up and replaced with named, per-project volumes.
+- **Regression-tested:** `docker compose up -d --remove-orphans` in one project's `graph-infra/` leaves unrelated projects' containers and volumes untouched.
 
 ---
 
@@ -27,24 +27,19 @@ This release ships one-shot graph handover tooling so a project's Neo4j database
 
 - **Cross-project container isolation:** `nacl-tl-core/templates/graph-docker-compose.yml` now has a top-level `name: ${COMPOSE_PROJECT_NAME:-${CONTAINER_PREFIX:-graph}-graph}` field. Previously every `graph-infra/` folder derived the same Compose project name from the folder name (`graph-infra`), so `docker compose up -d --remove-orphans` in any project could silently cull containers and data volumes belonging to other projects.
 - **`nacl-init` updated (step 2c.4):** the skill now emits `COMPOSE_PROJECT_NAME=<slug>-graph` as the first line of every new project's `.env` and `.env.example`, so all future projects start with unique project names by construction.
-- **Template propagated:** all eight existing NaCl-compatible projects on the dev machine had their `graph-infra/docker-compose.yml` replaced with the canonical templated form — fully parameterised `container_name`, `volumes`, and `networks` via `CONTAINER_PREFIX`.
+- **Template propagated:** existing projects using the previous template can replace their `graph-infra/docker-compose.yml` with the canonical form — fully parameterised `container_name`, `volumes`, and `networks` via `CONTAINER_PREFIX`.
 
 ---
 
 ## Infrastructure
 
-- **Pre-rollout safety dumps:** four at-risk projects whose containers were on anonymous volumes were dumped before any structural change. Dump sizes and verified node counts:
-  - `evcharge-bot` — 137 KB, 447 nodes
-  - `ElectroCharge` — 105 KB, 211 nodes
-  - `infographic` — 156 KB, 344 nodes
-  - `kartov-orders` — 921 KB, 1 580 nodes
-  - All counts match post-rollout state. Dumps retained at `<project>/graph-infra/backup-20260419.dump` as a one-time durability hedge.
-- **Ambiguous orphan volume resolved:** the 516 MB `graph-infra_neo4j-data` volume found during audit was identified as empty (zero nodes, never populated). Deleted outright; no data lost.
-- **Anonymous volume cleanup:** 18 SHA-hashed anonymous volumes left behind by the four migrate-stack containers were removed after data was verified on the new named volumes.
-- **Named volumes confirmed unique:** every project's Neo4j data now lives on a named volume (`<prefix>-neo4j-data`, `<prefix>-neo4j-logs`). SHA-hash mounts no longer appear in `docker inspect` output for any graph-related container.
-- **Regression test:** `docker compose up -d --remove-orphans` in `evcharge-bot/graph-infra/` — all five simultaneously-running containers (`ec/ev/ig/ko-migrate-neo4j`, `learn-neo4j`) survived untouched. PASS.
-- **Handover round-trip:** `handover-export.sh` + `handover-import.sh` verified on `learn-neo4j` (1 485 nodes / 1 969 relationships / 28 constraints). Import re-verified node count against manifest. PASS.
-- **Phase 1.3 verifier sweep:** 7 failure modes tested and PASS, 1 PARTIAL (0-byte intermediate on APOC failure — fixed via trap in `handover-export.sh`), 1 accepted limitation (empty-graph export is rejected by design; documented in `docs/HANDOVER.md`).
+- **Pre-rollout safety dumps:** projects whose containers are on anonymous volumes should be dumped before any structural change (see `docs/HANDOVER.md`). Exported Cypher node and relationship counts match the post-rollout state one-to-one.
+- **Orphan volume handling:** any pre-existing orphan volume from the old shared-name layout is identifiable via `docker volume inspect`; empty volumes are safe to delete.
+- **Anonymous volume cleanup:** SHA-hashed anonymous volumes left by the previous layout can be removed once data is verified on the new named volumes.
+- **Named volumes confirmed unique:** every project's Neo4j data lives on a named volume (`<prefix>-neo4j-data`, `<prefix>-neo4j-logs`). SHA-hash mounts no longer appear in `docker inspect` output for any graph-related container.
+- **Regression test:** running `docker compose up -d --remove-orphans` in one project's `graph-infra/` leaves unrelated projects' containers and volumes untouched.
+- **Handover round-trip:** `handover-export.sh` + `handover-import.sh` verified end-to-end — node counts, relationship counts, and constraint counts match pre-export state via the manifest.
+- **Verifier sweep:** the failure modes exercised during development all pass, with one accepted limitation — empty-graph export is rejected by design (documented in `docs/HANDOVER.md`).
 
 ---
 
@@ -93,4 +88,4 @@ docker compose --env-file graph-infra/.env -f graph-infra/docker-compose.yml up 
 
 ## Credits
 
-Phase 1.1–1.3 scripts, verifier sweep, and Wave 2 remediation rollout executed on 2026-04-19. Thanks to everyone who tested the handover round-trip and the compose isolation fix on development machines.
+Thanks to everyone who tested the handover round-trip and the compose isolation fix on development machines.

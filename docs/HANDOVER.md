@@ -62,7 +62,7 @@ Minimal (passphrase prompted interactively, writes to `graph-infra/handover/`):
 With env-var passphrase and explicit container (non-interactive, suitable for CI):
 
 ```bash
-export NACL_CONTAINER=learn-neo4j
+export NACL_CONTAINER=<your-project>-neo4j
 export NACL_HANDOVER_PASSPHRASE=correct-horse-battery-staple
 
 ./graph-infra/scripts/handover-export.sh

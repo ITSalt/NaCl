@@ -1,6 +1,6 @@
-"""Regression tests for the inline_table_v1 adapter against family-cinema.
+"""Regression tests for the inline_table_v1 adapter.
 
-Uses real fixtures shipped under tests/fixtures/inline-table/. Keeps expected
+Uses sample fixtures shipped under tests/fixtures/inline-table/. Keeps expected
 counts small enough to be easy to maintain but precise enough to catch a
 regression in parsing (e.g. the section-fullmatch fix).
 """

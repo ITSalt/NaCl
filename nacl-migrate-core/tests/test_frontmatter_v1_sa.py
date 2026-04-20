@@ -1,4 +1,4 @@
-"""Regression tests for the frontmatter_v1 SA adapter (kartov-orders dialect)."""
+"""Regression tests for the frontmatter_v1 SA adapter (letter-suffix-frontmatter dialect)."""
 
 from __future__ import annotations
 
@@ -17,7 +17,7 @@ FIXTURES = Path(__file__).resolve().parent / "fixtures" / "frontmatter" / "sa"
 
 
 def _build_project(tmp: Path) -> Path:
-    project = tmp / "kartov-sa-fixture"
+    project = tmp / "frontmatter-sa-fixture"
     docs = project / "docs"
     for src_rel, dst_rel in (
         ("usecases",     "14-usecases"),
@@ -36,7 +36,7 @@ def _build_project(tmp: Path) -> Path:
 
 
 class DetectTests(unittest.TestCase):
-    def test_detect_on_kartov_samples(self):
+    def test_detect_on_sample_frontmatter(self):
         samples = sorted((FIXTURES / "usecases").glob("*.md")) + \
                   sorted((FIXTURES / "entities").glob("*.md")) + \
                   sorted((FIXTURES / "screens").glob("*.md"))
@@ -102,7 +102,7 @@ class ParseTests(unittest.TestCase):
     def test_system_roles_from_enumeration(self):
         by_id = {r.id: r for r in self.ir.system_roles}
         # The system-role.md fixture has three value rows. We document that
-        # kartov-orders only ships 3 codes (WAREHOUSE_STAFF was removed),
+        # the letter-suffix-frontmatter dialect only ships 3 codes (WAREHOUSE_STAFF was removed),
         # so the adapter emits exactly those three SystemRole nodes.
         for expected in ("SYSROL-DATA_MANAGER",
                          "SYSROL-ANALYST",
@@ -127,9 +127,9 @@ class ParseTests(unittest.TestCase):
         csv_form = by_id["FORM-delivery-order-list"]
         self.assertIn("UC-301", csv_form.used_by_uc)
         self.assertIn("UC-304", csv_form.used_by_uc)
-        # ozon-supply-create-form has `uc: [UC509, UC511]` (YAML list)
-        self.assertIn("FORM-ozon-supply-create-form", by_id)
-        list_form = by_id["FORM-ozon-supply-create-form"]
+        # supply-create-form has `uc: [UC509, UC511]` (YAML list)
+        self.assertIn("FORM-supply-create-form", by_id)
+        list_form = by_id["FORM-supply-create-form"]
         self.assertIn("UC-509", list_form.used_by_uc)
         self.assertIn("UC-511", list_form.used_by_uc)
 
@@ -147,7 +147,7 @@ class ParseTests(unittest.TestCase):
     def test_traceability_sections_1_3(self):
         # The fixture matrix includes all four sections. Section 1-3 must
         # populate AUTOMATES_AS / REALIZED_AS / MAPPED_TO. Section 4 in
-        # kartov-orders uses RQxxx-NN shorthand; edges may or may not emit
+        # the letter-suffix-frontmatter dialect uses RQxxx-NN shorthand; edges may or may not emit
         # depending on which REQ ids were parsed — but the test fixture
         # only ships UC101-requirements, so only BRQ-001 → REQ-RQ101-03
         # would resolve.
@@ -217,8 +217,8 @@ class DescriptionBoldLeakTests(unittest.TestCase):
         self.assertNotIn("**", de.description)
 
     def test_exclusion_list_fixture_has_no_bold_leak(self):
-        """End-to-end: the real kartov-orders ``exclusion-list.md`` fixture
-        must parse a clean description — no ``**`` artefacts anywhere."""
+        """End-to-end: the ``exclusion-list.md`` fixture must parse a clean
+        description — no ``**`` artefacts anywhere."""
         fixture = FIXTURES / "entities" / "exclusion-list.md"
         self.assertTrue(fixture.is_file(), f"missing fixture: {fixture}")
 
@@ -237,7 +237,7 @@ class DescriptionBoldLeakTests(unittest.TestCase):
 class SystemRoleIdFormatTests(unittest.TestCase):
     """Regression guard for the SystemRole id pattern.
 
-    kartov-orders encodes system-role codes as SCREAMING_SNAKE_CASE
+    the letter-suffix-frontmatter dialect encodes system-role codes as SCREAMING_SNAKE_CASE
     (DATA_MANAGER, MARKETPLACE_MANAGER, ...). The IR's SystemRole id
     validator originally allowed only [A-Z0-9-] — the underscore was a
     missing character class. Pattern fixed to [A-Z0-9_\\-]+.

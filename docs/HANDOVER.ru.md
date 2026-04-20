@@ -62,7 +62,7 @@ export NACL_CONTAINER=myproject-neo4j
 С паролем через переменную окружения и явным указанием контейнера (неинтерактивный режим):
 
 ```bash
-export NACL_CONTAINER=learn-neo4j
+export NACL_CONTAINER=<your-project>-neo4j
 export NACL_HANDOVER_PASSPHRASE=correct-horse-battery-staple
 
 ./graph-infra/scripts/handover-export.sh

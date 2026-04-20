@@ -28,7 +28,7 @@ tags: [screen, order-generation]
 | col_status | Статус | Column | DeliveryOrder.status | view |
 | col_created_at | Дата создания | Column | DeliveryOrder.createdAt | view |
 | col_approved_at | Дата утверждения | Column | DeliveryOrder.approvedAt | view |
-| col_shipment_id | ID поставки Ozon | Column | DeliveryOrder.marketplaceShipmentId | view |
+| col_shipment_id | ID поставки Marketplace | Column | DeliveryOrder.marketplaceShipmentId | view |
 | col_created_by | Инициатор | Column | DeliveryOrder.createdBy | view |
 
 ## Functional-элементы
@@ -37,7 +37,7 @@ tags: [screen, order-generation]
 |----|----------|-----|----------|
 | btn_create | + Создать заявку | Button | Переход к DeliveryOrderCreateForm (UC301) |
 | fil_status | Фильтр по статусу | Select | Фильтрация по DeliveryOrder.status (ALL / DRAFT / EXPORTED / APPROVED / PUBLISHED) |
-| fil_marketplace | Фильтр по маркетплейсу | Select | Фильтрация по DeliveryOrder.marketplace (ALL / WB / OZON / OZON_SELECT) |
+| fil_marketplace | Фильтр по маркетплейсу | Select | Фильтрация по DeliveryOrder.marketplace (ALL / MP2 / MARKETPLACE / MARKETPLACE_SELECT) |
 | lnk_row | Строка заявки | Link | Переход к DeliveryOrderApproveForm (UC303) при статусе EXPORTED; иначе — просмотр |
 | btn_export | Экспорт в 1С | Button | Запуск экспорта из строки списка (UC401); активен при статусе DRAFT |
 

@@ -298,7 +298,7 @@ cp "$SKILLS_DIR/graph-infra/queries/"*.cypher graph-infra/queries/
 
 #### 2c.4 Generate .env from config.yaml
 
-**Why `COMPOSE_PROJECT_NAME` is required:** Docker Compose derives the project name from the containing folder name when no explicit name is provided. Every project's `graph-infra/` folder has the same folder name, so without this variable all stacks share the same project name — any `docker compose up --remove-orphans` in one project would cull containers from every other. This was the direct cause of the 2026-04-19 incident in which `fc-migrate-neo4j` and its volume were silently deleted. Setting `COMPOSE_PROJECT_NAME` explicitly makes the project name unique and stable regardless of where the folder lives on disk.
+**Why `COMPOSE_PROJECT_NAME` is required:** Docker Compose derives the project name from the containing folder name when no explicit name is provided. Every project's `graph-infra/` folder has the same folder name, so without this variable all stacks share the same project name — any `docker compose up --remove-orphans` in one project would cull containers from every other. Without this, running `docker compose up --remove-orphans` in one project's `graph-infra/` would silently cull containers and named volumes of every other project that shared the default Compose project name. Setting `COMPOSE_PROJECT_NAME` explicitly makes the project name unique and stable regardless of where the folder lives on disk.
 
 Write `graph-infra/.env`:
 ```
