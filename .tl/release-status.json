@@ -1,0 +1,12 @@
+{
+  "started": "2026-04-28T22:38:00Z",
+  "prs": [],
+  "merge": { "status": "skipped" },
+  "ci": { "status": "skipped" },
+  "health": { "status": "skipped" },
+  "version": { "status": "done", "bump": "minor", "value": "v0.7.0" },
+  "tag": { "status": "done", "value": "v0.7.0" },
+  "graph": { "status": "skipped", "reason": "NaCl repo has no Neo4j instance" },
+  "release": { "status": "done", "url": "https://github.com/ITSalt/NaCl/releases/tag/v0.7.0" },
+  "yougile": { "status": "skipped" }
+}
