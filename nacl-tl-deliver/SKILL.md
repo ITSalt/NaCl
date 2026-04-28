@@ -80,6 +80,9 @@ Persists delivery progress for resumption:
   },
   "deploy": {
     "status": "pending"
+  },
+  "graph": {
+    "status": "pending"
   }
 }
 ```
@@ -88,7 +91,7 @@ Persists delivery progress for resumption:
 
 ---
 
-## Workflow: 5 Steps
+## Workflow: 6 Steps
 
 ### Step 1: PRE-CHECK
 
@@ -282,6 +285,57 @@ Persists delivery progress for resumption:
 
 ---
 
+### Step 6: UPDATE INTAKEITEM GRAPH STATE
+
+After Step 5 completes (regardless of health check result), update the Neo4j graph so
+each `IntakeItem` associated with this delivery reflects its delivered status.
+
+Tool used: `mcp__neo4j__write-cypher`
+
+**Identify IntakeItem IDs:**
+- If delivered via `--feature FR-NNN` → read `.tl/feature-requests/FR-NNN.md` for
+  `intakeItemIds` listed in the artifact.
+- If delivered via `--branch feature/...` → read `.tl/conductor-state.json` for
+  the `intakeItemIds` array (populated by `nacl-tl-conductor`).
+- If neither source provides IDs → skip with a warning and set `graph.status = "skipped"`.
+
+**For each `intakeItemId`, run:**
+
+```cypher
+MATCH (i:IntakeItem {id: $intakeItemId})
+SET i.status = 'delivered',
+    i.delivered_at = date(),
+    i.delivered_pr = $prNumber
+RETURN i;
+```
+
+Parameters:
+- `$intakeItemId` — ID string from the list above (e.g. `"FAM-58"`)
+- `$prNumber` — PR number string from `delivery-status.json → ship.pr` (e.g. `"#42"`)
+
+**Failure tolerance:** If Neo4j is unavailable or the Cypher query errors for any reason,
+log a warning and continue — do NOT fail the delivery:
+```
+WARN: Could not update IntakeItem [id] in Neo4j (connection error or node not found).
+      Graph state may be stale — reconcile later with /nacl-tl-diagnose.
+```
+
+Update `delivery-status.json`:
+```json
+"graph": {
+  "status": "done",
+  "updated": ["FAM-58"],
+  "skipped": []
+}
+```
+
+Use `"skipped"` for IDs that were not found or errored. Use `"warn"` as status if any
+item could not be updated.
+
+→ **Output:** list of IntakeItem IDs updated, list skipped
+
+---
+
 ## Final Report
 
 ```
@@ -301,13 +355,16 @@ CI:
   Run: https://github.com/org/repo/actions/runs/123
 
 Verification:
-  UC028: ✅ PASS (code analysis + E2E)
-  UC029: ✅ PASS (code analysis only)
+  UC028: PASS (code analysis + E2E)
+  UC029: PASS (code analysis only)
 
 Deploy:
   Environment: staging
   URL: https://staging.example.com
   Health: 200 OK
+
+Graph:
+  IntakeItems updated: FAM-58 → delivered
 
 YouGile: tasks moved to ToRelease
 
@@ -326,15 +383,19 @@ If partial failure:
 
 Branch: feature/FR-001-generation-controls
 
-Ship: ✅ pushed (abc1234), PR #42
-CI: ✅ passed (3m 12s)
+Ship: pushed (abc1234), PR #42
+CI: passed (3m 12s)
 
 Verification:
-  UC028: ✅ PASS
-  UC029: ❌ FAIL — E2E test "format selection" failed
+  UC028: PASS
+  UC029: FAIL — E2E test "format selection" failed
          See .tl/reports/verify-UC029-*/report.html
 
-Deploy: ✅ staging healthy
+Deploy: staging healthy
+
+Graph:
+  FAM-58: updated (delivered)
+  WARN: Neo4j unavailable for FAM-59 — reconcile later
 
 YouGile:
   UC028: → ToRelease
@@ -359,6 +420,7 @@ On start, if `.tl/delivery-status.json` exists and branch matches:
    ci.status != "done"      → resume from Step 3
    verify.status != "done"  → resume from Step 4
    deploy.status != "done"  → resume from Step 5
+   graph.status != "done"   → resume from Step 6
    all done                 → show report
    ```
 
@@ -418,6 +480,11 @@ If `deploy.staging.url` not in config.yaml:
 - Skip health check (Step 5)
 - Warn: "No staging URL configured. Skipping health check."
 
+### Neo4j unavailable (Step 6)
+- Log warning per item that could not be updated
+- Set `graph.status = "warn"` in delivery-status.json
+- Continue — delivery result is valid regardless of graph state
+
 ---
 
 ## Relationship to Other Skills
@@ -428,6 +495,7 @@ nacl-tl-deliver internally:
   Step 2: uses git + gh CLI directly (NOT /nacl-tl-ship — to avoid double test/build)
   Step 4: delegates to /nacl-tl-verify (which runs /nacl-tl-verify-code + /nacl-tl-qa)
   Step 5: uses curl for health check (NOT /nacl-tl-deploy — simpler, no pipeline monitoring needed)
+  Step 6: uses mcp__neo4j__write-cypher to update IntakeItem nodes
 ```
 
 **Why not use nacl-tl-ship?** nacl-tl-ship runs tests, build, commits, and pushes. But nacl-tl-deliver receives code that's already committed (by nacl-tl-conductor). Running nacl-tl-ship would duplicate test/build and try to commit when there's nothing to commit. nacl-tl-deliver only needs to push and create PR.
@@ -439,7 +507,8 @@ nacl-tl-deliver internally:
 ## References
 
 - `config.yaml` → git strategy, deploy settings, yougile
-- `.tl/conductor-state.json` → which UCs to verify (from conductor)
+- `.tl/conductor-state.json` → which UCs to verify (from conductor); also source of intakeItemIds
 - `.tl/delivery-status.json` → delivery state (created by this skill)
-- `.tl/feature-requests/FR-NNN.md` → feature scope
+- `.tl/feature-requests/FR-NNN.md` → feature scope; also source of intakeItemIds
 - `.tl/status.json` → UC completion status
+- `mcp__neo4j__write-cypher` → updates IntakeItem nodes in Neo4j (Step 6)

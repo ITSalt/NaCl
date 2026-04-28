@@ -75,6 +75,7 @@ Persists release progress for resumption:
   "health": { "status": "pending" },
   "version": { "status": "pending", "bump": null, "value": null },
   "tag": { "status": "pending" },
+  "graph": { "status": "pending" },
   "release": { "status": "pending" },
   "yougile": { "status": "pending" }
 }
@@ -84,7 +85,7 @@ Persists release progress for resumption:
 
 ---
 
-## Workflow: 8 Steps
+## Workflow: 9 Steps
 
 ### Step 0: PRE-CHECK
 
@@ -285,7 +286,50 @@ git tag -a v1.3.0 -m "Release v1.3.0 — Analytics Funnel Dashboard"
 git push origin v1.3.0
 ```
 
-### Step 7: CREATE GITHUB RELEASE (optional)
+---
+
+### Step 7: MARK DELIVERED INTAKEITEMS WITH RELEASE VERSION
+
+After the git tag is pushed, stamp all `IntakeItem` nodes that were delivered but not yet
+assigned a release version.
+
+Tool used: `mcp__neo4j__write-cypher`
+
+Run the following query, substituting the new version string (e.g. `"v1.3.0"`):
+
+```cypher
+MATCH (i:IntakeItem)
+WHERE i.status = 'delivered' AND i.delivered_in_release IS NULL
+SET i.delivered_in_release = $version
+RETURN count(i) AS updated;
+```
+
+Parameter:
+- `$version` — the new release version string, e.g. `"v1.3.0"`
+
+**Failure tolerance:** If Neo4j is unavailable or the query errors, log a warning and
+continue — do NOT block the release:
+```
+WARN: Could not stamp IntakeItems with release version in Neo4j.
+      Graph state may be stale — reconcile later with /nacl-tl-diagnose.
+```
+
+Update `release-status.json`:
+```json
+"graph": {
+  "status": "done",
+  "version": "v1.3.0",
+  "updated": 3
+}
+```
+
+Use `"warn"` as status if the query failed.
+
+→ **Output:** count of IntakeItem nodes stamped with the release version
+
+---
+
+### Step 8: CREATE GITHUB RELEASE (optional)
 
 Create a GitHub release using `gh` CLI:
 
@@ -308,7 +352,7 @@ EOF
 
 If `deploy.production.url` is set in config.yaml, include it in the release notes body.
 
-### Step 8: YOUGILE NOTIFICATION
+### Step 9: YOUGILE NOTIFICATION
 
 If YouGile configured:
 
@@ -347,8 +391,9 @@ On start, if `.tl/release-status.json` exists:
    health.status != "done"    → resume from Step 3b
    version.status != "done"   → resume from Step 4
    tag.status != "done"       → resume from Step 6
-   release.status != "done"   → resume from Step 7
-   yougile.status != "done"   → resume from Step 8
+   graph.status != "done"     → resume from Step 7
+   release.status != "done"   → resume from Step 8
+   yougile.status != "done"   → resume from Step 9
    all done                   → show report
    ```
 
@@ -377,6 +422,7 @@ On start, if `.tl/release-status.json` exists:
 | Single PR release | Same flow, one PR in list |
 | `--dry-run` flag | Show merge plan + version bump, no action |
 | Session interrupted mid-merge | Resume from release-status.json, skip already-merged PRs |
+| Neo4j unavailable (Step 7) | Log warning, set graph.status = "warn", continue release |
 
 ---
 
@@ -397,6 +443,10 @@ Deploy:
 
 Version: v1.3.0 (minor bump)
 Tag: v1.3.0 (pushed)
+
+Graph:
+  IntakeItems stamped with v1.3.0: 3 nodes updated
+
 Release: https://github.com/org/repo/releases/tag/v1.3.0
 
 Changelog:
@@ -425,6 +475,10 @@ Deploy:
 
 Version: v0.1.0 (minor bump)
 Tag: v0.1.0 (pushed)
+
+Graph:
+  IntakeItems stamped with v0.1.0: 1 node updated
+
 Release: https://github.com/org/repo/releases/tag/v0.1.0
 
 ===============================================
@@ -439,3 +493,4 @@ Release: https://github.com/org/repo/releases/tag/v0.1.0
 - `.tl/release-status.json` — release state (created by this skill)
 - `config.yaml` → deploy.production.url — link in release notes
 - `config.yaml` → yougile — for notifications and PR discovery
+- `mcp__neo4j__write-cypher` → stamps IntakeItem nodes with release version (Step 7)
