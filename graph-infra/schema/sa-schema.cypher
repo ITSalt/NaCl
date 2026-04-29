@@ -48,6 +48,9 @@ CREATE CONSTRAINT constraint_systemrole_id
 CREATE CONSTRAINT constraint_component_id
   FOR (n:Component) REQUIRE n.id IS UNIQUE;
 
+CREATE CONSTRAINT constraint_featurerequest_id
+  FOR (n:FeatureRequest) REQUIRE n.id IS UNIQUE;
+
 
 // ---------------------------------------------------------------------------
 // 2. INDEXES (name lookup for each label + module index on DomainEntity)
@@ -91,6 +94,12 @@ CREATE INDEX index_systemrole_name
 
 CREATE INDEX index_component_name
   FOR (n:Component) ON (n.name);
+
+CREATE INDEX index_featurerequest_status
+  FOR (n:FeatureRequest) ON (n.status);
+
+CREATE INDEX index_featurerequest_created_at
+  FOR (n:FeatureRequest) ON (n.created_at);
 
 
 // ---------------------------------------------------------------------------
@@ -144,6 +153,30 @@ CREATE INDEX index_component_name
 //
 // (:UseCase)-[:EXPOSES]->(:APIEndpoint)
 //   Use case is exposed via an API endpoint.
+//
+// (:FeatureRequest)-[:INCLUDES_UC {kind: String}]->(:UseCase)
+//   FeatureRequest scopes a use case. `kind` ∈ {'new','modified'}.
+//
+// (:FeatureRequest)-[:AFFECTS_MODULE]->(:Module)
+//   FeatureRequest impacts a module (architectural touchpoint).
+//
+// (:FeatureRequest)-[:AFFECTS_ENTITY]->(:DomainEntity)
+//   FeatureRequest impacts a domain entity (new or modified).
+//
+// (:FeatureRequest)-[:RAISES_REQUIREMENT]->(:Requirement)
+//   FeatureRequest introduces or updates a requirement (optional).
+//
+// --- FeatureRequest properties (documented) ---
+// FeatureRequest {
+//   id: String,                // "FR-NNN"
+//   slug: String,              // url-safe slug
+//   title: String,
+//   description: String,
+//   status: String,            // "spec-complete" | "in-development" | "shipped"
+//   created_at: DateTime,
+//   source_skill: String,      // "nacl-sa-feature"
+//   markdown_path: String      // ".tl/feature-requests/FR-NNN-<slug>.md"
+// }
 //
 // --- Extended UseCase properties (documented) ---
 // UseCase {

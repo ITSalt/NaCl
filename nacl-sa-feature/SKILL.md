@@ -223,8 +223,10 @@ Analyze the feature against graph results and classify:
 | UCs: new | Does this create new user interaction flows? | `nacl-sa-uc` (create) |
 | UCs: modify | Does this change existing UC behavior? | `nacl-sa-uc` (update) |
 | Roles | Does this add new permissions or roles? | `nacl-sa-roles` |
-| Screens: new | Does this need new UI screens? | `nacl-sa-ui` |
-| Screens: modify | Does this change existing screens? | `nacl-sa-ui` (update) |
+| UI: new | Does this need new forms or UI components? | `nacl-sa-uc` (creates Form/FormField) + `nacl-sa-ui` (creates Component, including `component_type='navigation'`) |
+| UI: modify | Does this change existing forms or components? | `nacl-sa-ui` (update) |
+
+> **Note on UI terminology.** The SA schema (`graph-infra/schema/sa-schema.cypher`) does **not** define `Screen` or `NavigationRoute` labels. UI is modeled as `Form` + `FormField` + `Component`. Navigation is a `Component` with `component_type='navigation'` and `route`/`roles`/`menu_order`/`parent_menu` properties, linked to `Form` via `USED_IN`. Trace path: `UseCase -[USES_FORM]-> Form -[HAS_FIELD]-> FormField -[MAPS_TO]-> DomainAttribute`.
 
 #### Step 2.5: Determine UC allocation
 
@@ -254,7 +256,8 @@ Present to user (in their language):
 | Domain:        [+N entities, +M enums]  |
 | Use Cases:     [+N new, ~M modified]    |
 | Roles:         [+N permissions]         |
-| Screens:       [+N new, ~M modified]    |
+| UI: Forms      [+N new, ~M modified]    |
+| UI: Components [+N new, ~M modified]    |
 |                                         |
 | Affected modules: [list from graph]     |
 | Affected UCs:     [list from graph]     |
@@ -346,12 +349,12 @@ For each modified UC:
   - Add new Requirement nodes
   - Update Form/FormField nodes if UI changed
 
-#### 3f. Interface (if new/modified screens flagged)
+#### 3f. Interface (if new/modified UI flagged)
 
-Invoke `/nacl-sa-ui` via Skill tool or manually:
-- Create/update Screen nodes
-- Create/update NavigationRoute nodes
-- Update component references
+Invoke `/nacl-sa-ui` via Skill tool or manually. The schema for UI is `Form/FormField/Component` — there are no `Screen` or `NavigationRoute` labels:
+- Run `nacl-sa-ui verify` to confirm `FormField -[MAPS_TO]-> DomainAttribute` traceability for affected UCs
+- Run `nacl-sa-ui components` to create/update `Component` nodes (display, layout, input, feedback) and `[:USED_IN]->Form` edges
+- Run `nacl-sa-ui navigation` to create/update `Component {component_type:'navigation', route, roles, menu_order, parent_menu}` for UCs with UI
 
 **After each sub-step:** Report progress to user. User can stop at any point.
 
@@ -455,9 +458,66 @@ If the feature introduced new domain terms, add them to the glossary:
 
 **Goal:** Create the bridge artifact for TL consumption and present next steps.
 
-#### Step 6.1: Determine FR number
+#### Step 6.1: Determine FR number (collision-safe allocation)
 
-Scan `.tl/feature-requests/` for existing FRs, increment.
+The FR-id namespace must be unique across **three sources** simultaneously, otherwise downstream skills (`tl-conductor`, `tl-plan --feature`) routing to the wrong artifact:
+
+1. **Disk** — markdown files in `.tl/feature-requests/FR-*.md`.
+2. **Graph (modern)** — `:FeatureRequest` nodes.
+3. **Graph (legacy)** — any node of any label with `id` matching the FR-NNN pattern (historical `:Task` ids from older intake pipelines, etc.).
+
+**Sub-namespaces** (prefix-aware allocation):
+- `FR-NNN` — default numeric sequence (FR-001, FR-002, …).
+- `FR-<DOMAIN>-N` — sub-namespace for thematically grouped features (e.g. `FR-PAY-1`, `FR-PAY-2` for a payments group). Each sub-namespace increments independently.
+- `FR-LEG-*` and `FR-LEG-INTAKE-*` — **reserved for tombstones**. Never allocated to new FRs.
+
+##### Allocation algorithm
+
+1. **Determine the target sub-namespace.** Default is the unprefixed numeric sequence (`FR-NNN`). If the user explicitly invokes the skill with a domain qualifier (e.g. `/nacl-sa-feature --namespace=PAY "..."`), use `FR-PAY-N`.
+
+2. **Collect existing ids from disk:**
+   ```bash
+   ls .tl/feature-requests/FR-*.md 2>/dev/null \
+     | sed -E 's|.*/FR-(.+)\.md$|FR-\1|' \
+     | sed -E 's|^(FR-[A-Za-z0-9-]+?-[0-9]+).*|\1|' \
+     | sort -u
+   ```
+   Yields a list like `FR-001 FR-002 FR-003 FR-PAY-1 FR-PAY-2`.
+
+3. **Collect existing ids from the graph (any label, any sub-namespace):**
+   ```cypher
+   // mcp__neo4j__read-cypher
+   // Query: sa_collect_fr_ids_any_label
+   MATCH (n)
+   WHERE n.id IS NOT NULL
+     AND n.id =~ 'FR-([A-Za-z]+-)?[0-9]+'
+   RETURN labels(n)[0] AS label, n.id AS id
+   ORDER BY n.id
+   ```
+
+4. **Union the two sets, exclude tombstones** (`FR-LEG-*`, `FR-LEG-INTAKE-*`).
+
+5. **Compute next id within the target sub-namespace:**
+   ```
+   next = max(numeric_suffix(id) for id in union if matches_target_prefix(id)) + 1
+   ```
+   Format with the conventional padding for the target sub-namespace (`FR-NNN` uses 3 digits; sub-namespaces typically use 1 digit, but follow whatever pattern is already established in the project).
+
+6. **Collision check** — verify the proposed id does NOT exist in the union. If it does (race condition or manual creation), increment and retry. If after 5 retries no free id is found, abort and ask the user for explicit allocation.
+
+##### Why "any label" matters
+
+In some projects the FR-NNN namespace was historically reused for `:Task` nodes (intake pipelines that converted raw requests into refined features). A new FR allocated only by checking `:FeatureRequest` would silently collide with a legacy `:Task` of the same id and break downstream queries that filter by label. Always check **all** labels.
+
+##### Worked example
+
+Suppose disk holds `FR-001..FR-006` plus `FR-PAY-1..FR-PAY-2` (a payment-domain sub-namespace), and the graph mirrors this set plus `FR-LEG-001..002` (tombstones from a previous renumbering pass). User invokes `/nacl-sa-feature "..."` without `--namespace`.
+
+- Union excluding tombstones: `FR-001..FR-006` + `FR-PAY-1..FR-PAY-2`.
+- Target prefix = numeric (no domain qualifier). Highest numeric suffix in `FR-NNN` form: 6.
+- Allocate `FR-007`. Cross-label collision check: free across all node labels. Done.
+
+If the same call had been made with `--namespace=PAY`, the algorithm would scan `FR-PAY-N`, see max = 2, and allocate `FR-PAY-3`.
 
 #### Step 6.2: Create FeatureRequest file
 
@@ -485,7 +545,8 @@ Create `.tl/feature-requests/FR-NNN-[slug].md` with this structure:
 | Use Cases | [+N NEW] | [UC-NNN list] |
 | Use Cases | [~M MODIFIED] | [UC-NNN list] |
 | Roles | [+N permissions] | [list] |
-| Screens | [+N NEW, ~M MODIFIED] | [list] |
+| UI: Forms | [+N NEW, ~M MODIFIED] | [Form IDs] |
+| UI: Components | [+N NEW, ~M MODIFIED] | [Component IDs, including `component_type='navigation'`] |
 
 ## Graph Impact Trace
 - Modules affected: [list with IDs]
@@ -516,6 +577,81 @@ Create `.tl/feature-requests/FR-NNN-[slug].md` with this structure:
 - [list of nacl-sa-* skills that were actually invoked during this feature spec]
 ```
 
+#### Step 6.2bis: Persist FeatureRequest into Neo4j
+
+The markdown artifact in Step 6.2 is **not** the source of truth. The graph is. Write a `:FeatureRequest` node and its edges so downstream skills (`nacl-tl-conductor`, `nacl-tl-plan --feature`, `nacl-tl-full --feature`) can resolve scope from the graph instead of falling back to markdown.
+
+```cypher
+// mcp__neo4j__write-cypher
+// Query: sa_persist_feature_request
+// Params:
+//   $frId               -- "FR-NNN"
+//   $slug               -- url-safe slug
+//   $title              -- human title
+//   $description        -- 1-3 sentence summary
+//   $mdPath             -- ".tl/feature-requests/FR-NNN-<slug>.md"
+//   $newUcIds           -- list of UC ids created in Phase 3
+//   $modifiedUcIds      -- list of UC ids modified in Phase 3
+//   $affectedModuleIds  -- list of Module ids touched
+//   $affectedEntityIds  -- list of DomainEntity ids touched
+MERGE (fr:FeatureRequest {id: $frId})
+SET fr.slug          = $slug,
+    fr.title         = $title,
+    fr.description   = $description,
+    fr.status        = 'spec-complete',
+    fr.created_at    = coalesce(fr.created_at, datetime()),
+    fr.updated_at    = datetime(),
+    fr.source_skill  = 'nacl-sa-feature',
+    fr.markdown_path = $mdPath
+WITH fr
+CALL {
+  WITH fr
+  UNWIND $newUcIds AS ucId
+    MATCH (uc:UseCase {id: ucId})
+    MERGE (fr)-[r:INCLUDES_UC]->(uc)
+    SET r.kind = 'new'
+  RETURN count(*) AS _new
+}
+CALL {
+  WITH fr
+  UNWIND $modifiedUcIds AS ucId
+    MATCH (uc:UseCase {id: ucId})
+    MERGE (fr)-[r:INCLUDES_UC]->(uc)
+    SET r.kind = 'modified'
+  RETURN count(*) AS _mod
+}
+CALL {
+  WITH fr
+  UNWIND $affectedModuleIds AS mId
+    MATCH (m:Module {id: mId})
+    MERGE (fr)-[:AFFECTS_MODULE]->(m)
+  RETURN count(*) AS _modules
+}
+CALL {
+  WITH fr
+  UNWIND $affectedEntityIds AS deId
+    MATCH (de:DomainEntity {id: deId})
+    MERGE (fr)-[:AFFECTS_ENTITY]->(de)
+  RETURN count(*) AS _entities
+}
+RETURN fr.id AS fr_id;
+```
+
+Then verify the write with a read-back:
+
+```cypher
+// mcp__neo4j__read-cypher
+// Query: sa_verify_feature_request
+MATCH (fr:FeatureRequest {id: $frId})
+OPTIONAL MATCH (fr)-[r:INCLUDES_UC]->(uc:UseCase)
+RETURN fr.id           AS fr_id,
+       fr.status       AS status,
+       fr.markdown_path AS md_path,
+       collect(DISTINCT {uc: uc.id, kind: r.kind}) AS ucs;
+```
+
+If the write fails (label/constraint missing), make sure `graph-infra/schema/sa-schema.cypher` has been applied — it must contain `constraint_featurerequest_id`.
+
 #### Step 6.3: Present completion summary
 
 Present to user (in their language):
@@ -535,7 +671,7 @@ Graph changes:
 Impact:
   +N new UCs, ~M modified UCs
   +N new entities, +M new enums
-  +N new screens
+  +N new forms, +M new components
 
 Skills invoked: [list]
 
@@ -631,5 +767,7 @@ Before finishing, verify:
 ### Phase 6: Handoff
 - [ ] FR number determined (no conflicts)
 - [ ] `.tl/feature-requests/FR-NNN-[slug].md` created
+- [ ] `:FeatureRequest` node + `INCLUDES_UC` / `AFFECTS_MODULE` / `AFFECTS_ENTITY` edges written via `mcp__neo4j__write-cypher` (Step 6.2bis)
+- [ ] Read-back via `mcp__neo4j__read-cypher` confirms `:FeatureRequest` is in graph and links to the expected UCs
 - [ ] Graph impact trace included in FR
 - [ ] Completion summary presented with next steps

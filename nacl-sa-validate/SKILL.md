@@ -4,8 +4,8 @@ model: opus
 effort: high
 description: |
   Validate specification consistency through Neo4j Cypher queries.
-  Internal validation (L1-L6): data consistency, model connectivity, requirement completeness,
-  form-domain traceability, UC-form validation, cross-module consistency.
+  Internal validation (L1-L7): data consistency, model connectivity, requirement completeness,
+  form-domain traceability, UC-form validation, cross-module consistency, FeatureRequest consistency.
   Cross-validation BA->SA (XL6-XL9): UC coverage, entity coverage, role coverage, rule coverage.
   Use when: validate specification, check consistency, find errors, run checks, quality gate.
 ---
@@ -43,9 +43,9 @@ IMPORTANT: This skill uses ONLY read-cypher. Validation must NEVER write to the 
 
 | Parameter | Values | Description |
 |-----------|--------|-------------|
-| `level` | `internal` | L1-L6: SA-internal consistency checks |
+| `level` | `internal` | L1-L7: SA-internal consistency checks |
 | | `ba-cross` | XL6-XL9: BA-to-SA cross-layer coverage |
-| | `full` (default) | All levels: L1-L6 + XL6-XL9 |
+| | `full` (default) | All levels: L1-L7 + XL6-XL9 |
 | `--scope` | `intra-uc UC-NNN[,UC-NNN]` | Limit validation to specific UCs and their subgraph (forms, fields, requirements, entities). Used by nacl-sa-feature for incremental validation. |
 | | `intra-module mod-xxx` | Limit validation to a specific module's nodes. |
 
@@ -93,6 +93,11 @@ When `--scope` is provided, all Cypher queries are augmented with a WHERE clause
           |  Consistency      |            |
           +---------+---------+            |
                     |                      |
+          +---------+---------+            |
+          |  L7: FeatureReq   |            |
+          |  Consistency      |            |
+          +---------+---------+            |
+                    |                      |
                     +----------+-----------+
                                |
                     +----------+-----------+
@@ -133,7 +138,7 @@ ORDER BY label
 
 **If the result is empty:**
 - `level=ba-cross` --> STOP, report that BA layer is not populated. User must run `/nacl-ba-import-doc` or `/nacl-ba-from-board` first.
-- `level=full` --> Run only L1-L6 (internal), skip XL6-XL9 with a WARNING in the report.
+- `level=full` --> Run only L1-L7 (internal), skip XL6-XL9 with a WARNING in the report.
 
 ### Step 0c: Verify exemption properties are populated
 
@@ -181,7 +186,7 @@ Every detected problem is assigned a severity:
 
 ---
 
-## Validation Levels -- Internal (L1-L6)
+## Validation Levels -- Internal (L1-L7)
 
 ### Level 1: Data Consistency
 
@@ -382,6 +387,9 @@ that cannot be fixed by any SA skill (the data is correct, the query is wrong).
 | L5.1 | `AND coalesce(uc.has_ui, true) = true` | Exempt backend-only UCs from form requirement |
 | L5.4 | `WHERE mapped_fields = 0 AND input_fields > 0` | Exempt forms with only display/action fields |
 | L6.1 | `AND coalesce(de.shared, false) = false` | Exempt intentionally shared cross-module entities |
+| L7.2 | `AND fr.legacy_origin IS NULL` | Exempt FR tombstones (renamed legacy nodes preserved for traceability) |
+| L7.4 | `WHERE fr.legacy_origin IS NULL` | Exempt FR tombstones (same reason as L7.2) |
+| L7.6 | `AND NOT n.id STARTS WITH 'FR-LEG-'` | Exempt all tombstone namespaces from cross-label collision check |
 | XL8.2 | `AND coalesce(sr.system_only, false) = false` | Exempt infrastructure-only roles |
 
 If executing via HTTP API (curl) instead of MCP tools, copy queries CHARACTER-FOR-CHARACTER
@@ -564,6 +572,112 @@ WHERE NOT (:UseCase)-[:ACTOR]->(sr)
 RETURN sr.id AS role_id, sr.name AS role_name,
        'SystemRole defined but not assigned as actor to any UseCase' AS problem
 ```
+
+---
+
+### Level 7: FeatureRequest Consistency
+
+**Goal:** The FR-id namespace is consistent across three sources — `.tl/feature-requests/*.md` files, `:FeatureRequest` nodes, and any other node label that historically used FR-NNN ids (e.g. `:Task`). Without these checks, downstream skills (`nacl-tl-conductor`, `nacl-tl-plan --feature`, `nacl-tl-full --feature`) silently fall back to parsing markdown and lose graph-based scope resolution, or worse — route to the wrong node when the same id exists under multiple labels.
+
+**Checks:**
+- **L7.1** — markdown FR exists on disk but no `:FeatureRequest` node in graph (CRITICAL)
+- **L7.2** — `:FeatureRequest` node has no `INCLUDES_UC` edge (CRITICAL; tombstones exempt)
+- **L7.3** — `INCLUDES_UC` edge has unexpected `kind` value (WARNING)
+- **L7.4** — `:FeatureRequest` references missing `:UseCase` (CRITICAL; tombstones exempt)
+- **L7.5** — duplicate FR-NNN markdown files on disk (CRITICAL; filesystem check, not Cypher)
+- **L7.6** — FR-NNN id reused across multiple node labels in active namespace (CRITICAL)
+
+**How to obtain `$fileFrIds`:** before running L7.1, list FR ids from disk with a shell helper (`ls .tl/feature-requests/FR-*.md` → strip prefix/suffix to get `FR-NNN`). Pass the list as `$fileFrIds` parameter to the Cypher below.
+
+#### Check 7.1: FR markdown without FeatureRequest node in graph
+
+```cypher
+// L7.1 -- Severity: CRITICAL
+// Every FR-NNN.md on disk must have a :FeatureRequest node in Neo4j.
+// Backfill via Step 6.2bis of nacl-sa-feature.
+UNWIND $fileFrIds AS frId
+OPTIONAL MATCH (fr:FeatureRequest {id: frId})
+WITH frId, fr
+WHERE fr IS NULL
+RETURN frId AS missing_fr_id,
+       'FR markdown exists on disk but no :FeatureRequest node in graph' AS problem
+```
+
+#### Check 7.2: FeatureRequest nodes with no INCLUDES_UC
+
+Active FeatureRequest nodes must scope at least one UseCase via INCLUDES_UC, otherwise downstream planning has nothing to consume. **Tombstones** (renamed legacy nodes preserved for historical traceability) are exempt — they keep their original edges (`GENERATES`, `REFINED_AS`, `EXTENDS`, `DERIVED_FROM`) instead of `INCLUDES_UC`. Tombstones are identified by the `legacy_origin` property, set automatically by `nacl-sa-feature` when renaming a node out of the active id-namespace.
+
+```cypher
+// L7.2 -- Severity: CRITICAL
+// FeatureRequest nodes that scope zero UCs are useless for downstream planning.
+// Tombstones (legacy_origin IS NOT NULL) are exempt — they use legacy edges, not INCLUDES_UC.
+MATCH (fr:FeatureRequest)
+WHERE NOT (fr)-[:INCLUDES_UC]->(:UseCase)
+  AND fr.legacy_origin IS NULL  -- REQUIRED FILTER: exempt tombstones
+RETURN fr.id AS fr_id, fr.status AS status,
+       'FeatureRequest has no INCLUDES_UC -> UseCase' AS problem
+```
+
+#### Check 7.3: INCLUDES_UC edges with kind not in {new, modified}
+
+```cypher
+// L7.3 -- Severity: WARNING
+// nacl-sa-feature writes kind='new'|'modified'. Other values indicate manual drift.
+MATCH (fr:FeatureRequest)-[r:INCLUDES_UC]->(uc:UseCase)
+WHERE NOT coalesce(r.kind, 'unknown') IN ['new', 'modified']
+RETURN fr.id AS fr_id, uc.id AS uc_id, r.kind AS kind,
+       'INCLUDES_UC edge has unexpected kind property' AS problem
+```
+
+#### Check 7.4: FeatureRequest references missing UseCase
+
+```cypher
+// L7.4 -- Severity: CRITICAL
+// Integrity check: INCLUDES_UC must point to an existing UseCase.
+// (Neo4j MERGE on missing UC silently no-ops, so an FR can end up with zero UCs.)
+// Tombstones (legacy_origin IS NOT NULL) are exempt -- they use legacy edges.
+MATCH (fr:FeatureRequest)
+WHERE fr.legacy_origin IS NULL  -- REQUIRED FILTER: exempt tombstones
+OPTIONAL MATCH (fr)-[:INCLUDES_UC]->(uc:UseCase)
+WITH fr, count(uc) AS uc_count
+WHERE uc_count = 0
+RETURN fr.id AS fr_id, 'FeatureRequest stored, but INCLUDES_UC matched no UseCase (likely UC ids did not exist at write time)' AS problem
+```
+
+#### Check 7.5: Duplicate FR-NNN markdown files on disk
+
+This check is **filesystem-level** (not Cypher) — it detects two or more `.tl/feature-requests/FR-NNN-*.md` files sharing the same `FR-NNN` prefix. Such duplicates mean the FR-id was reused for two different features without renumbering, producing the same kind of confusion that `tl-conductor --feature FR-NNN` resolves to a coin-flip artifact.
+
+**How to run** (bash, in project root):
+
+```bash
+ls .tl/feature-requests/FR-*.md 2>/dev/null \
+  | sed -E 's|.*/(FR-[A-Za-z0-9-]+?-[0-9]+).*\.md$|\1|' \
+  | sort \
+  | uniq -d
+```
+
+**Severity: CRITICAL**. Any output (one fr_id per line) is a violation. Resolution: rename the duplicate file to a free FR-id (use Step 6.1 allocation algorithm in `nacl-sa-feature`), then backfill its `:FeatureRequest` graph node. Don't merge the two markdowns — they describe genuinely different features.
+
+#### Check 7.6: FR-NNN id used by multiple node labels (cross-label collision)
+
+A single `FR-NNN` value should belong to **at most one** node label across the graph. Historically some projects used `FR-NNN` simultaneously for `:Task` (intake-pipeline ticket) and `:FeatureRequest` (refined spec). The two coexisted via different labels but caused real confusion: `tl-plan --feature FR-007` could resolve either node depending on the query. Tombstones rename their ids out of this namespace (`FR-LEG-*`, `FR-LEG-INTAKE-*`), but ad-hoc collisions still occur when an FR allocator forgets to scan all labels.
+
+```cypher
+// L7.6 -- Severity: CRITICAL
+// FR-id reuse across labels in the active namespace (excluding LEG tombstones).
+MATCH (n)
+WHERE n.id IS NOT NULL
+  AND n.id =~ 'FR-([A-Za-z]+-)?[0-9]+'
+  AND NOT n.id STARTS WITH 'FR-LEG-'
+WITH n.id AS fr_id, collect(DISTINCT labels(n)[0]) AS labels_seen
+WHERE size(labels_seen) > 1
+RETURN fr_id, labels_seen,
+       'FR-id used by multiple labels — only :FeatureRequest is canonical for active namespace' AS problem
+ORDER BY fr_id
+```
+
+Resolution: rename the non-`:FeatureRequest` node into a tombstone namespace (e.g. `:Task {id: 'FR-LEG-INTAKE-007'}`) preserving all its edges via `SET n.id = ...`. Never delete — the historical lineage may be referenced by other artifacts.
 
 ---
 
