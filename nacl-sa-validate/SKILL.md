@@ -172,6 +172,16 @@ If `missing` is high for any property, the exemption filters in L4-L6/XL8 will t
 as non-exempt (defaulting to the strict check). This is correct behavior -- it means the SA skills
 haven't classified those nodes yet.
 
+**To backfill missing exemption properties**, use `/nacl-sa-flags`:
+
+```
+/nacl-sa-flags audit                           # confirm scope
+/nacl-sa-flags backfill-all --detect-internal  # write safe defaults
+/nacl-sa-validate full                         # re-run validation
+```
+
+`nacl-sa-flags` is the canonical orchestrator-tier skill for setting validation-only metadata. It writes only `has_ui`, `system_only`, `shared`, `internal`, `field_category` -- no domain semantics. After `nacl-migrate-sa` it is invoked automatically; after manual graph edits or skill-version upgrades, run it explicitly.
+
 ---
 
 ## Severity Levels

@@ -222,6 +222,7 @@ SET uc.name = $name,
     uc.priority = $priority,
     uc.user_story = $userStory,
     uc.acceptance_criteria = $acceptanceCriteria,
+    uc.has_ui = $hasUi,
     uc.status = 'identified',
     uc.detail_status = 'not_started',
     uc.created = datetime(),
@@ -236,6 +237,7 @@ Parameters:
 - `$priority` --- `"MVP"` | `"Post-MVP"` | `"Nice-to-have"`
 - `$userStory` --- e.g. `"As a [role], I want [action] so that [value]"`. Generate from UC name and actor.
 - `$acceptanceCriteria` --- list of acceptance criteria strings, e.g. `["Given X, When Y, Then Z", ...]`. Derive from BA step context.
+- `$hasUi` --- boolean. `true` if this UC will have at least one user-facing form (the default for interactive UCs); `false` for backend-only UCs (cron jobs, webhook handlers, background workers, system-to-system flows). The validator's L5.1 check uses this flag to skip UCs that legitimately have no `USES_FORM` edge. If you forget to set it during creation, `nacl-sa-flags backfill-all` will derive it from the presence of `USES_FORM` after the fact, but setting it explicitly here is preferred — it carries the original design intent rather than reading state back.
 
 #### 4.2 Create AUTOMATES_AS edge (WorkflowStep to UseCase)
 

@@ -241,6 +241,7 @@ SET sr.name = $name,
     sr.type = $type,
     sr.description = $description,
     sr.responsibilities = $responsibilities,
+    sr.system_only = $systemOnly,
     sr.status = 'draft',
     sr.created = datetime()
 ```
@@ -251,6 +252,7 @@ Parameters:
 - `$type` -- "internal" or "external"
 - `$description` -- Russian description of the role
 - `$responsibilities` -- semicolon-separated list of main responsibilities (Russian)
+- `$systemOnly` -- boolean. `true` for infrastructure-only roles that never appear in BA mapping (e.g., `System`, `Worker`, `Cron`); `false` for end-user-facing roles (Teacher, Student, OrderManager, etc.). Used by validator XL8.2 to skip BA-mapping requirements on infrastructure roles. If forgotten, `nacl-sa-flags backfill-all` defaults it to `false` and the user can flip it later via `/nacl-sa-flags set-system-only --role <id> true`.
 
 **Cypher -- create MAPPED_TO handoff edge (BusinessRole -> SystemRole):**
 

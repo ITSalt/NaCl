@@ -247,7 +247,8 @@ If `apoc` is not available, compute the next ID in the agent and pass it as a pa
 MERGE (de:DomainEntity {id: $id})
 SET de.name = $name,
     de.module = $module,
-    de.description = $description
+    de.description = $description,
+    de.shared = $shared
 ```
 
 Parameters:
@@ -255,6 +256,7 @@ Parameters:
 - `$name` -- English PascalCase (e.g. "Order")
 - `$module` -- module name (e.g. "orders")
 - `$description` -- Russian description from BA entity
+- `$shared` -- boolean. `true` if this entity is intentionally referenced from multiple modules (typical for User, Group, GroupLecture, organization-wide aggregate roots); `false` for module-local entities. Used by validator L6.1 to skip cross-module attribute consistency checks on intentionally-shared entities. If forgotten, `nacl-sa-flags backfill-all` defaults it to `false`; refine selectively via `/nacl-sa-flags set-shared --entity <id> true`.
 
 **Cypher -- link entity to module:**
 
@@ -272,7 +274,8 @@ MERGE (da:DomainAttribute {id: $id})
 SET da.name = $name,
     da.data_type = $dataType,
     da.nullable = $nullable,
-    da.description = $description
+    da.description = $description,
+    da.internal = $internal
 ```
 
 Parameters:
@@ -281,6 +284,7 @@ Parameters:
 - `$dataType` -- one of: UUID, String, Int, Decimal, Boolean, Date, DateTime, Enum, JSON, Reference
 - `$nullable` -- boolean
 - `$description` -- Russian description
+- `$internal` -- boolean. `true` for system attributes that should never appear in any user form (surrogate keys, foreign keys, timestamps, password hashes, refresh tokens, telemetry IDs, third-party-system internal references). `false` for user-facing attributes. Used by validator L4.2 to skip "attribute not referenced by any FormField" checks on internal attributes. If forgotten, `nacl-sa-flags backfill-all --detect-internal` will auto-flag attributes whose names match common system patterns (`id`, `*_id`, `*_at`, `*_token`, `*_hash`); the user reviews and refines the rest.
 
 **Cypher -- link attribute to entity:**
 

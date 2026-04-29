@@ -234,6 +234,27 @@ Exit 0 → "All SA counts match." Exit 1 → surface mismatches to the user.
 
 ---
 
+## Phase 7b — Backfill validation exemption flags
+
+Migrated graphs are populated from markdown documents that predate the L4–L7 validators. Their nodes lack the `has_ui` / `system_only` / `shared` / `internal` / `field_category` exemption properties, which causes `nacl-sa-validate` to emit dozens of false-positive findings on the very first run.
+
+To prevent this, the migration ends with an automatic backfill via `nacl-sa-flags`:
+
+```
+/nacl-sa-flags backfill-all --detect-internal
+```
+
+**Behavior:**
+- `:UseCase.has_ui` is derived deterministically: `true` if `(uc)-[:USES_FORM]->(:Form)`, else `false`.
+- `:DomainAttribute.internal` is auto-flagged for system patterns (`id`, `*_id`, `*_at`, `*_token`, `*_hash`).
+- `:SystemRole.system_only`, `:DomainEntity.shared`, `:FormField.field_category` get safe defaults (`false`, `false`, `'input'`).
+
+The user is prompted at the end of Phase 7 to confirm before the backfill runs. If declined, the migration completes without flags and `nacl-sa-validate full` will surface ~50–150 NULL-property findings as recommendations rather than CRITICAL/WARN; the user can then run `nacl-sa-flags backfill-all` manually at any later time.
+
+**Why `--detect-internal` by default:** post-migration graphs have many surrogate keys and timestamps. The heuristic flags them automatically and is safe (it only sets `internal=true`, never `internal=false`, so manually-flagged user-facing attributes are preserved). Real telemetry / provider-internal columns may need additional manual marking after the first validate run.
+
+---
+
 ## Phase 8 — Report
 
 Write `MIGRATION-REPORT-SA.md` at project root:
