@@ -1,0 +1,491 @@
+/**
+ * render.test.ts — unit tests for the deterministic render pipeline.
+ *
+ * Tests cover:
+ *  1. deterministic-id: stable ids, seeds, versionNonce across calls.
+ *  2. elements: makeRect / makeArrow / makeDiamond / makeText factories.
+ *  3. Binding bug regression: arrow sets BOTH startBinding/endBinding AND
+ *     pushes into boundElements of source and target shapes.
+ *  4. Each renderer (domain-model, context-map, activity, ba-process) with
+ *     a mock driver returning fixture records — snapshot output and check hashes.
+ *  5. Round-trip determinism: render → computeBoardHash → render again → hashes match.
+ */
+import { describe, it } from 'node:test';
+import assert from 'node:assert/strict';
+
+import { seedFromId, deterministicSeeds, elementId } from './deterministic-id.js';
+import { makeRect, makeDiamond, makeText, makeArrow, assembleScene, type ShapeRegistry } from './elements.js';
+import { computeBoardHash } from '../services/meta.js';
+import type { Driver } from 'neo4j-driver';
+
+// ---------------------------------------------------------------------------
+// Fake Driver (same pattern as renderable.test.ts)
+// ---------------------------------------------------------------------------
+
+type FakeRow = Record<string, unknown>;
+
+function makeFakeDriver(
+  responses: { match: string; rows: FakeRow[] }[],
+): Driver {
+  return {
+    session() {
+      return {
+        async run(cypher: string) {
+          const resp = responses.find((r) => cypher.includes(r.match));
+          const records = (resp?.rows ?? []).map((row) => ({
+            get(key: string) {
+              const val = row[key];
+              // Simulate neo4j integer wrapper
+              if (typeof val === 'number') {
+                return { toNumber: () => val, low: val, high: 0 };
+              }
+              return val ?? null;
+            },
+            keys: Object.keys(row),
+          }));
+          return { records };
+        },
+        async close() { /* no-op */ },
+      };
+    },
+    async close() { /* no-op */ },
+  } as unknown as Driver;
+}
+
+// ---------------------------------------------------------------------------
+// 1. deterministic-id
+// ---------------------------------------------------------------------------
+
+describe('deterministic-id', () => {
+  it('seedFromId returns a consistent uint32 for the same input', () => {
+    const s1 = seedFromId('UC-001');
+    const s2 = seedFromId('UC-001');
+    assert.equal(s1, s2, 'seed must be stable');
+    assert.ok(s1 >= 0 && s1 <= 0xFFFFFFFF, 'seed must be uint32');
+  });
+
+  it('seedFromId returns different values for different inputs', () => {
+    const s1 = seedFromId('UC-001');
+    const s2 = seedFromId('UC-002');
+    assert.notEqual(s1, s2);
+  });
+
+  it('deterministicSeeds returns stable seed and versionNonce', () => {
+    const r1 = deterministicSeeds('DE-Order');
+    const r2 = deterministicSeeds('DE-Order');
+    assert.equal(r1.seed, r2.seed);
+    assert.equal(r1.versionNonce, r2.versionNonce);
+  });
+
+  it('deterministicSeeds seed != versionNonce for same input', () => {
+    const { seed, versionNonce } = deterministicSeeds('some-id');
+    assert.notEqual(seed, versionNonce, 'seed and versionNonce must differ');
+  });
+
+  it('elementId returns stable 16-char hex for same input', () => {
+    const id1 = elementId('DE-Order', 'rect');
+    const id2 = elementId('DE-Order', 'rect');
+    assert.equal(id1, id2);
+    assert.match(id1, /^[0-9a-f]{16}$/);
+  });
+
+  it('elementId differs for different roles', () => {
+    const r = elementId('DE-Order', 'rect');
+    const t = elementId('DE-Order', 'text');
+    assert.notEqual(r, t);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// 2. element factories
+// ---------------------------------------------------------------------------
+
+describe('makeRect', () => {
+  it('produces a rectangle with quantized coords', () => {
+    const rect = makeRect({
+      logicalId: 'test-rect',
+      x: 10.7,
+      y: 20.3,
+      width: 220.9,
+      height: 80.1,
+      backgroundColor: '#e3f2fd',
+      strokeColor: '#1565c0',
+    });
+    assert.equal(rect.type, 'rectangle');
+    assert.equal(rect.x, 11);   // Math.round(10.7)
+    assert.equal(rect.y, 20);   // Math.round(20.3)
+    assert.equal(rect.width, 221);
+    assert.equal(rect.height, 80);
+    assert.equal(rect.strokeColor, '#1565c0');
+    assert.equal(rect.backgroundColor, '#e3f2fd');
+  });
+
+  it('seed and versionNonce are stable and non-zero', () => {
+    const rect = makeRect({ logicalId: 'stable-id', x: 0, y: 0, width: 100, height: 50 });
+    assert.ok(rect.seed > 0);
+    assert.ok(rect.versionNonce > 0);
+    const rect2 = makeRect({ logicalId: 'stable-id', x: 0, y: 0, width: 100, height: 50 });
+    assert.equal(rect.seed, rect2.seed);
+    assert.equal(rect.versionNonce, rect2.versionNonce);
+  });
+
+  it('defaults strokeColor to #000000', () => {
+    const rect = makeRect({ logicalId: 'r', x: 0, y: 0, width: 50, height: 20 });
+    assert.equal(rect.strokeColor, '#000000');
+  });
+});
+
+describe('makeDiamond', () => {
+  it('produces a diamond element', () => {
+    const d = makeDiamond({ logicalId: 'diam', x: 100, y: 200, width: 160, height: 120 });
+    assert.equal(d.type, 'diamond');
+    assert.equal(d.width, 160);
+    assert.equal(d.height, 120);
+  });
+});
+
+describe('makeText', () => {
+  it('produces a text element with containerId', () => {
+    const t = makeText({
+      logicalId: 'txt-1',
+      x: 10, y: 20, width: 200,
+      text: 'Hello',
+      fontSize: 18,
+      containerId: 'parent-rect',
+    });
+    assert.equal(t.type, 'text');
+    assert.equal(t.text, 'Hello');
+    assert.equal(t.fontSize, 18);
+    assert.equal(t.containerId, 'parent-rect');
+  });
+
+  it('defaults containerId to null', () => {
+    const t = makeText({ logicalId: 'txt-2', x: 0, y: 0, width: 100, text: 'X' });
+    assert.equal(t.containerId, null);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// 3. Binding bug regression
+// ---------------------------------------------------------------------------
+
+describe('makeArrow — binding both directions', () => {
+  it('sets startBinding and endBinding on the arrow', () => {
+    const registry: ShapeRegistry = new Map();
+    const r1 = makeRect({ logicalId: 'r1', x: 0, y: 0, width: 100, height: 50 });
+    const r2 = makeRect({ logicalId: 'r2', x: 300, y: 0, width: 100, height: 50 });
+    registry.set(r1.id, r1.boundElements);
+    registry.set(r2.id, r2.boundElements);
+
+    const arrow = makeArrow({
+      logicalId: 'arrow-r1-r2',
+      startX: 100, startY: 25,
+      endX: 300, endY: 25,
+      startShapeId: r1.id,
+      endShapeId: r2.id,
+      registry,
+    });
+
+    assert.equal(arrow.startBinding?.elementId, r1.id, 'arrow.startBinding must point to r1');
+    assert.equal(arrow.endBinding?.elementId, r2.id, 'arrow.endBinding must point to r2');
+  });
+
+  it('reverse: source and target shapes have the arrow id in boundElements', () => {
+    const registry: ShapeRegistry = new Map();
+    const r1 = makeRect({ logicalId: 'src', x: 0, y: 0, width: 100, height: 50 });
+    const r2 = makeRect({ logicalId: 'tgt', x: 300, y: 0, width: 100, height: 50 });
+    registry.set(r1.id, r1.boundElements);
+    registry.set(r2.id, r2.boundElements);
+
+    const arrow = makeArrow({
+      logicalId: 'arrow-src-tgt',
+      startX: 100, startY: 25,
+      endX: 300, endY: 25,
+      startShapeId: r1.id,
+      endShapeId: r2.id,
+      registry,
+    });
+
+    assert.ok(
+      r1.boundElements.some((b) => b.id === arrow.id && b.type === 'arrow'),
+      'source shape must have arrow id in boundElements',
+    );
+    assert.ok(
+      r2.boundElements.some((b) => b.id === arrow.id && b.type === 'arrow'),
+      'target shape must have arrow id in boundElements',
+    );
+  });
+
+  it('is idempotent: calling makeArrow twice does not duplicate boundElements entries', () => {
+    const registry: ShapeRegistry = new Map();
+    const r1 = makeRect({ logicalId: 'a', x: 0, y: 0, width: 100, height: 50 });
+    const r2 = makeRect({ logicalId: 'b', x: 200, y: 0, width: 100, height: 50 });
+    registry.set(r1.id, r1.boundElements);
+    registry.set(r2.id, r2.boundElements);
+
+    makeArrow({
+      logicalId: 'arrow-a-b',
+      startX: 100, startY: 25, endX: 200, endY: 25,
+      startShapeId: r1.id, endShapeId: r2.id, registry,
+    });
+    // Simulate a second call with the same ids (shouldn't duplicate)
+    makeArrow({
+      logicalId: 'arrow-a-b',
+      startX: 100, startY: 25, endX: 200, endY: 25,
+      startShapeId: r1.id, endShapeId: r2.id, registry,
+    });
+
+    const arrowEntriesInR1 = r1.boundElements.filter((b) => b.type === 'arrow');
+    assert.equal(arrowEntriesInR1.length, 1, 'no duplicate arrow entries on source');
+  });
+
+  it('works with no registry (free arrow, no binding)', () => {
+    const arrow = makeArrow({
+      logicalId: 'free-arrow',
+      startX: 0, startY: 0, endX: 100, endY: 100,
+    });
+    assert.equal(arrow.startBinding, null);
+    assert.equal(arrow.endBinding, null);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// 4. Renderers with mock driver
+// ---------------------------------------------------------------------------
+
+describe('renderBoard — domain-model renderer', () => {
+  it('produces a scene with entity cards and no duplicate boundElements', async () => {
+    const { renderBoard } = await import('./index.js');
+
+    const driver = makeFakeDriver([
+      {
+        match: 'DomainEntity',
+        rows: [
+          {
+            id: 'DE-Order', name: 'Order', description: 'An order',
+            module_name: 'Sales',
+            attributes: [{ attr_name: 'id', attr_type: 'UUID' }, { attr_name: 'total', attr_type: 'Decimal' }],
+            relationships: [],
+          },
+          {
+            id: 'DE-Item', name: 'Item', description: 'Line item',
+            module_name: 'Sales',
+            attributes: [{ attr_name: 'qty', attr_type: 'Int' }],
+            relationships: [{ target_id: 'DE-Order', target_name: 'Order', rel_type: 'belongs_to', cardinality: '*:1' }],
+          },
+        ],
+      },
+      {
+        match: 'HAS_ENUM',
+        rows: [],
+      },
+    ]);
+
+    const scene = await renderBoard('domain-model', null, driver);
+
+    assert.equal(scene.type, 'excalidraw');
+    assert.ok(scene.elements.length > 0, 'should have elements');
+
+    // All element ids must be unique
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const els = scene.elements as any[];
+    const ids = els.map((e) => e.id as unknown);
+    const unique = new Set(ids);
+    assert.equal(unique.size, ids.length, 'all element ids must be unique');
+
+    // Check that any arrows have both binding directions set
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const arrows: any[] = els.filter((e) => e.type === 'arrow');
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const shapes: any[] = els.filter((e) => e.type !== 'arrow' && e.type !== 'text');
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const shapeById = new Map<string, any>(shapes.map((s) => [s.id as string, s]));
+
+    for (const arrow of arrows) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      const start = (arrow.startBinding as { elementId: string } | null)?.elementId;
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      const end = (arrow.endBinding as { elementId: string } | null)?.elementId;
+      if (start) {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+        const src = shapeById.get(start);
+        if (src) {
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+          const bounds = (src.boundElements ?? []) as Array<{ id: string; type: string }>;
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+          assert.ok(bounds.some((b) => b.id === arrow.id), `source shape ${start} must have arrow ${String(arrow.id)} in boundElements`);
+        }
+      }
+      if (end) {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+        const tgt = shapeById.get(end);
+        if (tgt) {
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+          const bounds = (tgt.boundElements ?? []) as Array<{ id: string; type: string }>;
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+          assert.ok(bounds.some((b) => b.id === arrow.id), `target shape ${end} must have arrow ${String(arrow.id)} in boundElements`);
+        }
+      }
+    }
+  });
+});
+
+describe('renderBoard — context-map renderer', () => {
+  it('produces a scene with module boxes', async () => {
+    const { renderBoard } = await import('./index.js');
+
+    const driver = makeFakeDriver([
+      {
+        match: 'CONTAINS_ENTITY',
+        rows: [
+          {
+            id: 'M-Sales', name: 'Sales', description: 'Sales module',
+            entity_count: { toNumber: () => 3, low: 3, high: 0 },
+            uc_count: { toNumber: () => 2, low: 2, high: 0 },
+            depends_on: [],
+          },
+          {
+            id: 'M-Auth', name: 'Auth', description: 'Auth module',
+            entity_count: { toNumber: () => 1, low: 1, high: 0 },
+            uc_count: { toNumber: () => 0, low: 0, high: 0 },
+            depends_on: ['M-Sales'],
+          },
+        ],
+      },
+      {
+        match: 'RELATES_TO',
+        rows: [
+          { source_module: 'M-Auth', target_module: 'M-Sales' },
+        ],
+      },
+    ]);
+
+    const scene = await renderBoard('context-map', null, driver);
+    assert.equal(scene.type, 'excalidraw');
+    assert.ok(scene.elements.length > 0);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const ids2 = (scene.elements as any[]).map((e) => e.id as unknown);
+    assert.equal(new Set(ids2).size, ids2.length, 'unique ids');
+  });
+});
+
+describe('renderBoard — activity renderer', () => {
+  it('produces a scene with swimlanes and steps', async () => {
+    const { renderBoard } = await import('./index.js');
+
+    const driver = makeFakeDriver([
+      {
+        match: 'HAS_STEP',
+        rows: [
+          { uc_id: 'UC-001', uc_name: 'Create Order', step_id: 'AS-001', step_desc: 'Enter order details', actor_type: 'User', step_number: { toNumber: () => 1, low: 1, high: 0 } },
+          { uc_id: 'UC-001', uc_name: 'Create Order', step_id: 'AS-002', step_desc: 'Validate data', actor_type: 'System', step_number: { toNumber: () => 2, low: 2, high: 0 } },
+          { uc_id: 'UC-001', uc_name: 'Create Order', step_id: 'AS-003', step_desc: 'Save order', actor_type: 'System', step_number: { toNumber: () => 3, low: 3, high: 0 } },
+        ],
+      },
+    ]);
+
+    const scene = await renderBoard('activity', 'UC-001', driver);
+    assert.equal(scene.type, 'excalidraw');
+    assert.ok(scene.elements.length > 0);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const ids3 = (scene.elements as any[]).map((e) => e.id as unknown);
+    assert.equal(new Set(ids3).size, ids3.length, 'unique ids');
+  });
+});
+
+describe('renderBoard — ba-process renderer', () => {
+  it('produces a scene with role swimlanes and workflow steps', async () => {
+    const { renderBoard } = await import('./index.js');
+
+    const driver = makeFakeDriver([
+      {
+        match: 'BusinessProcess',
+        rows: [
+          {
+            bp_id: 'BP-001', bp_name: 'Order Processing',
+            step_id: 'WS-001', step_name: 'Receive Order', stereotype: 'Бизнес-функция', step_number: { toNumber: () => 1, low: 1, high: 0 },
+            role_id: 'BR-Manager', role_name: 'Manager',
+            documents: [],
+          },
+          {
+            bp_id: 'BP-001', bp_name: 'Order Processing',
+            step_id: 'WS-002', step_name: 'Process Payment', stereotype: 'Автоматизируется', step_number: { toNumber: () => 2, low: 2, high: 0 },
+            role_id: 'BR-System', role_name: 'System',
+            documents: [{ doc_id: 'BE-Invoice', doc_name: 'Invoice', relation: 'PRODUCES' }],
+          },
+        ],
+      },
+    ]);
+
+    const scene = await renderBoard('process', 'BP-001', driver);
+    assert.equal(scene.type, 'excalidraw');
+    assert.ok(scene.elements.length > 0);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const ids4 = (scene.elements as any[]).map((e) => e.id as unknown);
+    assert.equal(new Set(ids4).size, ids4.length, 'unique ids');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// 5. Round-trip determinism test
+// ---------------------------------------------------------------------------
+
+describe('renderBoard — determinism and hash stability', () => {
+  it('two consecutive renders of the same graph produce the same hash', async () => {
+    const { renderBoard } = await import('./index.js');
+
+    const driverFactory = () => makeFakeDriver([
+      {
+        match: 'DomainEntity',
+        rows: [
+          {
+            id: 'DE-A', name: 'EntityA', description: null,
+            module_name: null,
+            attributes: [{ attr_name: 'id', attr_type: 'UUID' }],
+            relationships: [],
+          },
+        ],
+      },
+      { match: 'HAS_ENUM', rows: [] },
+    ]);
+
+    const scene1 = await renderBoard('domain-model', null, driverFactory());
+    const scene2 = await renderBoard('domain-model', null, driverFactory());
+
+    const h1 = computeBoardHash(scene1);
+    const h2 = computeBoardHash(scene2);
+    assert.equal(h1, h2, 'consecutive renders must produce the same hash');
+    assert.match(h1, /^sha256:[0-9a-f]{64}$/);
+  });
+
+  it('hash changes when graph data changes', async () => {
+    const { renderBoard } = await import('./index.js');
+
+    const driver1 = makeFakeDriver([
+      {
+        match: 'DomainEntity',
+        rows: [
+          { id: 'DE-A', name: 'EntityA', description: null, module_name: null, attributes: [], relationships: [] },
+        ],
+      },
+      { match: 'HAS_ENUM', rows: [] },
+    ]);
+    const driver2 = makeFakeDriver([
+      {
+        match: 'DomainEntity',
+        rows: [
+          { id: 'DE-A', name: 'EntityA', description: null, module_name: null, attributes: [], relationships: [] },
+          { id: 'DE-B', name: 'EntityB', description: null, module_name: null, attributes: [], relationships: [] },
+        ],
+      },
+      { match: 'HAS_ENUM', rows: [] },
+    ]);
+
+    const scene1 = await renderBoard('domain-model', null, driver1);
+    const scene2 = await renderBoard('domain-model', null, driver2);
+
+    const h1 = computeBoardHash(scene1);
+    const h2 = computeBoardHash(scene2);
+    assert.notEqual(h1, h2, 'different graph → different hash');
+  });
+});

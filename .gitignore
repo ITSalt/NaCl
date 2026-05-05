@@ -55,3 +55,7 @@ graph-infra/.env
 
 # Article drafts (not for public repo)
 docs/article-plan.md
+
+# analyst-tool: keep operational handoff notes and local benchmark scripts private
+analyst-tool/HANDOFF-*.md
+analyst-tool/bench/

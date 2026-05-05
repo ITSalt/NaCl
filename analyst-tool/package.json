@@ -1,0 +1,37 @@
+{
+  "name": "analyst-tool",
+  "version": "0.1.0",
+  "description": "Local web tool for browsing and editing Excalidraw boards with NaCl skill integration",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "nacl-analyst-tool": "./bin/nacl-analyst-tool.js"
+  },
+  "files": [
+    "bin/",
+    "server/dist/",
+    "web/dist/",
+    "README.md",
+    "package.json"
+  ],
+  "workspaces": [
+    "server",
+    "web",
+    "e2e"
+  ],
+  "scripts": {
+    "dev": "concurrently --kill-others --names server,web \"npm run dev --workspace=server\" \"npm run dev --workspace=web\"",
+    "build": "npm run build --workspace=server && npm run build --workspace=web",
+    "start": "npm run start --workspace=server",
+    "prepare": "npm run build 2>/dev/null || true",
+    "lint": "npm run lint --workspace=server && npm run lint --workspace=web",
+    "typecheck": "npm run typecheck --workspace=server && npm run typecheck --workspace=web",
+    "test": "npm run test --workspace=server",
+    "e2e": "npm run test --workspace=e2e",
+    "migrate:meta": "node --import tsx/esm scripts/migrate-meta.ts"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "tsx": "^4.7.0"
+  }
+}
