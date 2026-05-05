@@ -107,14 +107,41 @@ When `--scope` is provided, all Cypher queries are augmented with a WHERE clause
 
 ---
 
+## Schema Reference
+
+This skill assumes the **canonical SA schema** as defined in `graph-infra/schema/sa-schema.cypher` and produced by:
+
+- `/nacl-sa-architect` -- writes `:Module`, `:Component`, edge `(:Module)-[:CONTAINS_UC]->(:UseCase)`, `(:Module)-[:CONTAINS_ENTITY]->(:DomainEntity)`
+- `/nacl-sa-domain` -- writes `:DomainEntity`, `:DomainAttribute`, `:Enumeration`, `:EnumValue` (with `.value` property)
+- `/nacl-sa-uc` -- writes `:UseCase`, `:Requirement`, `:Form`, `:FormField`, `:ActivityStep`
+- `/nacl-sa-roles` -- writes `:SystemRole`
+- `/nacl-sa-ui` -- writes `:Component`, `:FormField`
+- BA->SA handoff edges (canonical names): `AUTOMATES_AS`, `REALIZED_AS`, `IMPLEMENTED_BY`, `MAPPED_TO`, `TYPED_AS`, `SUGGESTS`
+- Stereotype on automated steps: `WorkflowStep.stereotype = 'Автоматизируется'` (Russian) or `'Automated'` (English) -- both accepted.
+
+**Non-canonical aliases are NOT supported.** If the graph uses any of these, validation will HALT in pre-flight (Step 0a) instead of producing false-positive criticals:
+
+| Non-canonical | Canonical |
+|---------------|-----------|
+| `:SAModule` | `:Module` |
+| `:SAEntity` | `:DomainEntity` |
+| `:SARequirement` | `:Requirement` |
+| `:SAActor` | `:SystemRole` |
+| `:SAComponent` | `:Component` |
+| edge `TRACES_TO` | use `AUTOMATES_AS` / `REALIZED_AS` / `IMPLEMENTED_BY` / `MAPPED_TO` per source-target semantics |
+
+If your graph uses non-canonical labels, see the **Migration Cypher Appendix** at the bottom of this skill, or re-import the SA layer using canonical skills.
+
+---
+
 ## Pre-flight Checks
 
 ### Step 0: Verify graph has data
 
-Before running any validation, confirm that the graph contains SA-layer nodes.
+Before running any validation, confirm that the graph contains SA-layer nodes under canonical labels.
 
 ```cypher
-// Pre-flight: count SA-layer nodes
+// Pre-flight: count canonical SA-layer nodes
 MATCH (n)
 WHERE n:Module OR n:UseCase OR n:DomainEntity OR n:Form OR n:Requirement OR n:SystemRole
 RETURN labels(n)[0] AS label, count(n) AS count
@@ -126,7 +153,138 @@ ORDER BY label
 2. Suggest the user runs `/nacl-sa-architect` or `/nacl-sa-domain` first.
 3. Explain that `/nacl-sa-validate` works only with a populated Neo4j graph.
 
-### Step 0b: Verify BA layer exists (for ba-cross / full)
+### Step 0a: Detect schema drift (CRITICAL gate)
+
+If canonical SA labels are absent but non-canonical aliases exist (e.g. `:SAModule`, `:SAEntity`, `:SARequirement`), the validator's queries silently return zero rows and produce **false-positive CRITICAL findings** for every L2-L7 / XL6-XL9 check. This step catches that scenario explicitly.
+
+```cypher
+// Step 0a: schema-drift detection
+CALL db.labels() YIELD label
+WITH collect(label) AS allLabels
+RETURN
+  [l IN allLabels WHERE l IN
+     ['Module','DomainEntity','Requirement','SystemRole','Component']] AS canonical_present,
+  [l IN allLabels WHERE l IN
+     ['SAModule','SAEntity','SARequirement','SAActor','SAComponent']] AS dialect_present,
+  [l IN allLabels WHERE l STARTS WITH 'SA' AND l <> 'SystemRole'] AS sa_prefixed_labels,
+  allLabels AS all_labels_in_graph
+```
+
+Also probe for non-canonical edge types that signal drift in BA->SA handoff:
+
+```cypher
+// Step 0a (cont.): probe non-canonical edge types
+CALL db.relationshipTypes() YIELD relationshipType
+WITH collect(relationshipType) AS allEdges
+RETURN
+  [r IN allEdges WHERE r IN
+     ['AUTOMATES_AS','REALIZED_AS','IMPLEMENTED_BY','MAPPED_TO','TYPED_AS','SUGGESTS']]
+       AS canonical_handoff_edges,
+  [r IN allEdges WHERE r IN ['TRACES_TO','REALIZES','MAPS_FROM']] AS dialect_handoff_edges
+```
+
+**Decision rule:**
+
+| Condition | Action |
+|-----------|--------|
+| `canonical_present` non-empty AND `dialect_present` empty | OK -- continue to Step 0b |
+| `canonical_present` empty AND `dialect_present` non-empty | **HALT** -- emit drift report below; do NOT run any L*/XL* checks |
+| Both non-empty | **HALT** -- mixed schema is worse than pure dialect; emit drift report; do NOT run checks |
+| `dialect_handoff_edges` non-empty AND no canonical handoff edges | **HALT** -- BA->SA layer uses non-canonical edges; emit drift report |
+
+**Drift report template (emit verbatim, fill placeholders from query results):**
+
+```
+==============================================================================
+SCHEMA DRIFT DETECTED -- VALIDATION HALTED
+==============================================================================
+
+The graph uses non-canonical labels/edges that this skill does not support.
+
+  Canonical labels found    : {canonical_present}
+  Non-canonical labels found: {dialect_present}
+  All SA-prefixed labels    : {sa_prefixed_labels}
+  Canonical handoff edges   : {canonical_handoff_edges}
+  Non-canonical handoff edges: {dialect_handoff_edges}
+
+The skill expects the canonical SA schema (see "Schema Reference" section above).
+Running validation queries against this graph would silently miss every node and
+produce false-positive CRITICAL findings.
+
+To proceed, choose ONE:
+
+  1. Migrate the graph to canonical labels & edges.
+     See the "Migration Cypher Appendix" at the bottom of this skill --
+     copy the block, run it via mcp__neo4j__write-cypher, then re-run
+     /nacl-sa-validate. The migration is idempotent.
+
+  2. Re-import the SA layer using canonical skills:
+       /nacl-sa-architect   (creates :Module + structural skeleton)
+       /nacl-sa-domain      (creates :DomainEntity, :Enumeration)
+       /nacl-sa-uc          (creates :UseCase, :Requirement, :Form, :FormField)
+       /nacl-sa-roles       (creates :SystemRole)
+       /nacl-ba-handoff     (creates BA->SA handoff edges)
+
+DO NOT proceed with validation. Halt here, surface this report to the user,
+and wait for instruction.
+==============================================================================
+```
+
+### Step 0b: Pre-flight node-count report (two sections)
+
+Once Step 0a has confirmed the graph is canonical, render a two-section node-count report. The first section is canonical labels; the second surfaces any unexpected labels that didn't trigger HALT but are still worth flagging (e.g. typos, custom labels).
+
+```cypher
+// Step 0b: canonical SA-layer node counts
+UNWIND ['Module','UseCase','DomainEntity','DomainAttribute','Enumeration','EnumValue',
+        'Form','FormField','Requirement','SystemRole','Component','ActivityStep',
+        'FeatureRequest'] AS labelName
+CALL {
+  WITH labelName
+  MATCH (n) WHERE labelName IN labels(n)
+  RETURN count(n) AS cnt
+}
+RETURN labelName AS label, cnt AS count
+ORDER BY labelName
+```
+
+```cypher
+// Step 0b (cont.): non-canonical labels still present in graph
+CALL db.labels() YIELD label
+WITH label
+WHERE NOT label IN
+   ['Module','UseCase','DomainEntity','DomainAttribute','Enumeration','EnumValue',
+    'Form','FormField','Requirement','SystemRole','Component','ActivityStep',
+    'FeatureRequest','BusinessProcess','WorkflowStep','BusinessEntity','BusinessRole',
+    'BusinessRule','EntityAttribute','ProcessGroup','Term','Glossary','Stakeholder',
+    'ExternalEntity','Document','DataFlow']
+CALL {
+  WITH label
+  MATCH (n) WHERE label IN labels(n)
+  RETURN count(n) AS cnt
+}
+RETURN label, cnt AS count
+ORDER BY label
+```
+
+Render in the report header as:
+
+```
+Pre-flight node counts:
+
+Canonical SA labels:
+  Module          : 4
+  DomainEntity    : 15
+  Requirement     : 29
+  UseCase         : 24
+  Form            : 14
+  ...
+
+Non-canonical labels detected (informational):
+  (none, or list with "<-- review" hint)
+```
+
+### Step 0c: Verify BA layer exists (for ba-cross / full)
 
 ```cypher
 // Pre-flight: count BA-layer nodes
@@ -140,7 +298,7 @@ ORDER BY label
 - `level=ba-cross` --> STOP, report that BA layer is not populated. User must run `/nacl-ba-import-doc` or `/nacl-ba-from-board` first.
 - `level=full` --> Run only L1-L7 (internal), skip XL6-XL9 with a WARNING in the report.
 
-### Step 0c: Verify exemption properties are populated
+### Step 0d: Verify exemption properties are populated
 
 Before running checks, confirm that exemption properties exist in the graph. Include this table
 in the report header so the user can see which properties are set and which are missing.
@@ -253,16 +411,41 @@ RETURN node_type, id, duplicate_count
 
 #### Check 1.4: Inconsistent enumeration values (duplicate or empty)
 
+Canonical writer (`/nacl-sa-domain`) populates `EnumValue.value`. Some legacy or hand-written graphs may use `.code` or `.label` instead. To avoid false positives, this check coalesces all three property names; if none yields a non-empty string, the value is considered empty.
+
 ```cypher
 // L1.4 -- Severity: WARNING
-// Enumerations with duplicate or empty values
+// Enumerations with duplicate or empty values (tolerant: .value | .code | .label)
 MATCH (e:Enumeration)-[:HAS_VALUE]->(ev:EnumValue)
-WITH e, ev.value AS val, count(*) AS cnt
+WITH e, coalesce(ev.value, ev.code, ev.label) AS val, count(*) AS cnt
 WHERE cnt > 1 OR val IS NULL OR trim(val) = ''
 RETURN e.name AS enumeration, e.id AS enum_id,
        coalesce(val, '<EMPTY>') AS value, cnt AS occurrences,
        CASE WHEN val IS NULL OR trim(val) = '' THEN 'Empty enum value'
             ELSE 'Duplicate enum value' END AS problem
+```
+
+#### Check 1.5: Enumeration value-property convention (informational)
+
+Reports which property name carries the actual enum value. Run this once during pre-flight or in the report header so the user can spot drift early.
+
+```cypher
+// L1.5 -- Severity: INFO
+// Distribution of EnumValue value-property convention
+MATCH (ev:EnumValue)
+WITH count(ev) AS total,
+     sum(CASE WHEN ev.value IS NOT NULL AND trim(toString(ev.value)) <> '' THEN 1 ELSE 0 END) AS with_value,
+     sum(CASE WHEN ev.code  IS NOT NULL AND trim(toString(ev.code))  <> '' THEN 1 ELSE 0 END) AS with_code,
+     sum(CASE WHEN ev.label IS NOT NULL AND trim(toString(ev.label)) <> '' THEN 1 ELSE 0 END) AS with_label
+RETURN total, with_value, with_code, with_label,
+       CASE
+         WHEN with_value = total THEN 'canonical (.value)'
+         WHEN with_code  = total THEN 'drift (.code only) -- consider migrating to .value'
+         WHEN with_label = total THEN 'drift (.label only) -- consider migrating to .value'
+         WHEN with_value > 0 AND (with_code > 0 OR with_label > 0) THEN 'mixed -- some EnumValues use .value, others use .code/.label'
+         WHEN total = 0 THEN 'no EnumValues in graph'
+         ELSE 'broken -- no EnumValue carries a recognized value property'
+       END AS convention
 ```
 
 ---
@@ -701,14 +884,17 @@ These checks verify BA-to-SA traceability via handoff edges. They require both B
 
 #### Check XL6.1: Automated WorkflowSteps without AUTOMATES_AS edge
 
+The stereotype string is documentation; the `AUTOMATES_AS` edge is the source of truth. To stay tolerant to language drift, accept both Russian (`'Автоматизируется'`) and English (`'Automated'`) stereotypes. The edge itself is the authoritative signal of intent -- if it exists, the step is automated regardless of stereotype text.
+
 ```cypher
 // XL6.1 -- Severity: CRITICAL
-// BA WorkflowSteps with stereotype "Автоматизируется" that have no AUTOMATES_AS -> UseCase
+// BA WorkflowSteps marked as automated that have no AUTOMATES_AS -> UseCase
 MATCH (bp:BusinessProcess)-[:HAS_STEP]->(ws:WorkflowStep)
-WHERE ws.stereotype = 'Автоматизируется'
+WHERE coalesce(ws.stereotype, '') IN ['Автоматизируется', 'Automated']
   AND NOT (ws)-[:AUTOMATES_AS]->(:UseCase)
 RETURN bp.id AS bp_id, bp.name AS bp_name,
        ws.id AS ws_id, ws.function_name AS ws_function,
+       coalesce(ws.stereotype, '') AS stereotype,
        'Automated WorkflowStep has no AUTOMATES_AS -> UseCase' AS problem
 ```
 
@@ -738,11 +924,14 @@ RETURN ws.id AS ws_id, ws.function_name AS ws_function,
 
 #### Check XL6.4: Coverage summary (informational)
 
+A step counts as "automated" if it has either a stereotype (Russian or English) or an existing `AUTOMATES_AS` edge -- whichever signals intent. This avoids zero-coverage when stereotype text drifted but rebbing still got wired up.
+
 ```cypher
 // XL6.4 -- Severity: INFO
-// Summary: automated steps vs. covered steps
+// Summary: automated steps (stereotype OR edge-bearing) vs. covered steps
 MATCH (ws:WorkflowStep)
-WHERE ws.stereotype = 'Автоматизируется'
+WHERE coalesce(ws.stereotype, '') IN ['Автоматизируется', 'Automated']
+   OR (ws)-[:AUTOMATES_AS]->(:UseCase)
 WITH count(ws) AS total_automated,
      sum(CASE WHEN (ws)-[:AUTOMATES_AS]->(:UseCase) THEN 1 ELSE 0 END) AS covered
 RETURN total_automated, covered,
@@ -929,9 +1118,12 @@ RETURN total_ba, implemented, out_of_scope,
 
 ### Step 1: Pre-flight
 
-1. Run the pre-flight queries (Step 0, Step 0b).
-2. Determine which levels to execute based on the `level` parameter and available data.
-3. If graph is empty, STOP and advise the user.
+1. Run Step 0 (canonical SA-layer node count). If graph is empty, STOP and advise the user.
+2. Run Step 0a (schema-drift detection via `db.labels()` / `db.relationshipTypes()`). If non-canonical labels or `TRACES_TO` edges are detected without canonical counterparts, **HALT** and emit the drift report verbatim. Do NOT execute any further checks.
+3. Run Step 0b (two-section node-count report) and include it in the report header.
+4. Run Step 0c (BA-layer verification) to decide whether XL6-XL9 can run.
+5. Run Step 0d (exemption-property coverage) and include the table in the report header.
+6. Determine which levels to execute based on the `level` parameter and available data.
 
 ### Step 2: Execute validation levels
 
@@ -1156,3 +1348,110 @@ Before completing, verify:
 - [ ] All problems listed with severity and affected nodes
 - [ ] Recommendations provided for each issue category
 - [ ] Next steps checklist included
+
+---
+
+## Migration Cypher Appendix
+
+If Step 0a (schema-drift detection) halts validation because the graph uses non-canonical labels (`:SAModule`, `:SAEntity`, `:SARequirement`, `:SAActor`, `:SAComponent`) or non-canonical handoff edges (`TRACES_TO`), use the cypher block below to migrate the graph to the canonical schema. The migration is idempotent -- running it on an already-canonical graph is a no-op.
+
+**Prerequisites:**
+- Backup the Neo4j database (or work on a clone). Label/edge renames are not trivially reversible.
+- APOC procedures available (`apoc.refactor.rename.label`, `apoc.refactor.setType`).
+- Run via `mcp__neo4j__write-cypher`. This is a **write operation** -- the validator itself never executes it; the user (or an upstream skill) does.
+
+### Step 1: Rename node labels
+
+```cypher
+// Rename SAModule -> Module
+MATCH (n:SAModule)
+CALL apoc.refactor.rename.label('SAModule', 'Module', [n]) YIELD batches
+RETURN 'SAModule -> Module' AS step, sum(batches) AS batches
+```
+
+```cypher
+MATCH (n:SAEntity)
+CALL apoc.refactor.rename.label('SAEntity', 'DomainEntity', [n]) YIELD batches
+RETURN 'SAEntity -> DomainEntity' AS step, sum(batches) AS batches
+```
+
+```cypher
+MATCH (n:SARequirement)
+CALL apoc.refactor.rename.label('SARequirement', 'Requirement', [n]) YIELD batches
+RETURN 'SARequirement -> Requirement' AS step, sum(batches) AS batches
+```
+
+```cypher
+MATCH (n:SAActor)
+CALL apoc.refactor.rename.label('SAActor', 'SystemRole', [n]) YIELD batches
+RETURN 'SAActor -> SystemRole' AS step, sum(batches) AS batches
+```
+
+```cypher
+MATCH (n:SAComponent)
+CALL apoc.refactor.rename.label('SAComponent', 'Component', [n]) YIELD batches
+RETURN 'SAComponent -> Component' AS step, sum(batches) AS batches
+```
+
+### Step 2: Convert TRACES_TO edges to canonical handoff edges
+
+`TRACES_TO` is a generic placeholder; canonical schema uses four distinct edge types depending on the (source, target) label pair. Run the four blocks below in any order; each one only matches its intended pair.
+
+```cypher
+// BusinessProcess -[TRACES_TO]-> Module  =>  SUGGESTS
+MATCH (bp:BusinessProcess)-[r:TRACES_TO]->(m:Module)
+CALL apoc.refactor.setType(r, 'SUGGESTS') YIELD output
+RETURN 'BP-TRACES_TO->Module renamed to SUGGESTS' AS step, count(output) AS edges
+```
+
+```cypher
+// BusinessEntity -[TRACES_TO]-> DomainEntity  =>  REALIZED_AS
+MATCH (be:BusinessEntity)-[r:TRACES_TO]->(de:DomainEntity)
+CALL apoc.refactor.setType(r, 'REALIZED_AS') YIELD output
+RETURN 'BE-TRACES_TO->DE renamed to REALIZED_AS' AS step, count(output) AS edges
+```
+
+```cypher
+// BusinessRole -[TRACES_TO]-> SystemRole  =>  MAPPED_TO
+MATCH (br:BusinessRole)-[r:TRACES_TO]->(sr:SystemRole)
+CALL apoc.refactor.setType(r, 'MAPPED_TO') YIELD output
+RETURN 'BR-TRACES_TO->SR renamed to MAPPED_TO' AS step, count(output) AS edges
+```
+
+```cypher
+// BusinessRule -[TRACES_TO]-> Requirement  =>  IMPLEMENTED_BY
+MATCH (brule:BusinessRule)-[r:TRACES_TO]->(req:Requirement)
+CALL apoc.refactor.setType(r, 'IMPLEMENTED_BY') YIELD output
+RETURN 'BR-TRACES_TO->Req renamed to IMPLEMENTED_BY' AS step, count(output) AS edges
+```
+
+```cypher
+// WorkflowStep -[TRACES_TO]-> UseCase  =>  AUTOMATES_AS
+MATCH (ws:WorkflowStep)-[r:TRACES_TO]->(uc:UseCase)
+CALL apoc.refactor.setType(r, 'AUTOMATES_AS') YIELD output
+RETURN 'WS-TRACES_TO->UC renamed to AUTOMATES_AS' AS step, count(output) AS edges
+```
+
+```cypher
+// EntityAttribute -[TRACES_TO]-> DomainAttribute  =>  TYPED_AS
+MATCH (ea:EntityAttribute)-[r:TRACES_TO]->(da:DomainAttribute)
+CALL apoc.refactor.setType(r, 'TYPED_AS') YIELD output
+RETURN 'EA-TRACES_TO->DA renamed to TYPED_AS' AS step, count(output) AS edges
+```
+
+### Step 3: Surface unmapped TRACES_TO edges (if any)
+
+After steps 1-2, any remaining `TRACES_TO` edges connect node-pairs the canonical schema doesn't define. Decide per-case: drop or keep.
+
+```cypher
+MATCH (a)-[r:TRACES_TO]->(b)
+RETURN labels(a) AS source_labels, labels(b) AS target_labels, count(r) AS remaining
+```
+
+### Step 4: Re-run validation
+
+```
+/nacl-sa-validate full
+```
+
+Step 0a should now PASS the drift check, and L1-L7 / XL6-XL9 will execute against the canonical labels.
