@@ -10,6 +10,38 @@ description: |
   bring docs in sync, or the user says "/nacl-tl-reconcile".
 ---
 
+## Contract
+
+**Inputs this skill consumes:**
+- DIAGNOSTIC-REPORT.md (from nacl-tl-diagnose)
+- Recent fix statuses (scans .tl/status.json + git log + task chat for
+  six-status vocabulary: PASS / BLOCKED / UNVERIFIED / NO_INFRA /
+  RUNNER_BROKEN / REGRESSION)
+- Current code state
+
+**Outputs this skill produces:**
+- Headline one of: RECONCILE COMPLETE / RECONCILE APPLIED — UNVERIFIED
+  (when documenting non-PASS upstream with user acknowledgment) /
+  RECONCILE HALTED — REGRESSION
+- Doc updates (gated on user acknowledgment for non-PASS upstream)
+- Health Score adjusted to weight UNVERIFIED tasks downward (-5 per UNVERIFIED task)
+
+**Downstream consumers of this output:**
+- Human user
+- Repository documentation
+
+**Contract change discipline:**
+If this skill's output contract changes, every downstream consumer listed above
+must be audited and updated in the same release. The 0.10.0→0.10.1 regression
+was caused by the absence of this discipline. `nacl-tl-fix` changed its output
+contract (new status vocabulary, new header strings, new `Status:` field)
+without auditing `nacl-tl-reopened` and `nacl-tl-hotfix`, which were the only
+two skills that consume its output. Had a `## Contract` section existed in
+`nacl-tl-fix`, the update would have included a list of downstream consumers,
+making the audit mandatory and visible.
+
+---
+
 # TeamLead Emergency Reconciliation Skill
 
 ## Your Role
@@ -69,7 +101,37 @@ Parse the diagnostic report to extract:
 
 **Pre-flight freshness check:** For each discrepancy referencing a specific doc file, check if that file was modified AFTER the report date (`git log -1 --format="%ai" -- [doc_file]`). If the doc was updated after the report, re-verify the discrepancy before including it in the plan — it may already be fixed.
 
-**If Health Score >= 80:** Report "Project is healthy, reconcile not needed" and exit.
+**Pre-flight unverified fix scan (MANDATORY before Phase 2):**
+
+Scan recent fixes for non-PASS status. Check:
+1. `.tl/status.json` — look for tasks with status `verified-pending` or `blocked`
+2. `git log --oneline -20` — for commits related to recent fixes
+3. Task chat (if accessible) — for FIX APPLIED — UNVERIFIED headlines
+
+For each UNVERIFIED or BLOCKED fix found:
+- Surface to user:
+  ```
+  WARNING: The following recent fixes have UNVERIFIED status (no test exercises
+  the change). Reconciling docs to match this code means documenting unverified
+  behavior as canonical.
+
+  Unverified fixes:
+    - [task-id]: [description] (status: verified-pending)
+
+  Acknowledge that "documenting unverified behavior is intentional"? [yes/no]
+  ```
+- If user acknowledges → proceed to Phase 2; headline will be RECONCILE APPLIED — UNVERIFIED
+- If user does not acknowledge → stop; recommend fixing the verification gap first
+- Record the acknowledgment in the Phase 5 report
+
+**Health Score adjustment for UNVERIFIED tasks:**
+The Health Score computed by nacl-tl-diagnose is adjusted before display:
+- For each task with status `verified-pending` in .tl/status.json: deduct 5 points
+- Report the adjusted score: "Health Score: [raw] → [adjusted] (adjusted for [N] UNVERIFIED tasks)"
+- A high Health Score must reflect honest verification, not just doc-code alignment
+
+**If adjusted Health Score >= 80 AND no UNVERIFIED tasks:** Report "Project is healthy, reconcile not needed" and exit.
+**If adjusted Health Score >= 80 BUT UNVERIFIED tasks exist:** Proceed with user gate above; reconcile may still be needed to surface the unverified state.
 
 ---
 
@@ -277,14 +339,28 @@ npm test         # tests still pass
 
 ### Phase 5: REPORT
 
-Present final report to user (in user's language). Include:
-- Health Score before → after
+Present final report to user (in user's language). Open with a per-task status
+table — one row per recent fix scanned in Phase 1, with columns: task ID,
+upstream fix status (PASS / UNVERIFIED / BLOCKED), user acknowledgment
+(yes/no/N-A), and whether docs were updated for that task. The aggregate
+RECONCILE headline is selected from the per-task statuses in the table.
+
+Then include:
+- Health Score before → after (raw → adjusted for UNVERIFIED tasks)
 - Docs updated: N files (list)
 - Docs created: N files (list)
 - .tl/ updated: yes/no
+- Unverified fix acknowledgments (if any) — record explicitly:
+  "User acknowledged that documenting unverified behavior is intentional for: [list]"
 - Validation results (sa-validate, gap-check, ba-validate, build, tests)
 - Remaining issues (if any)
 - Recommendations for preventing future drift
+
+Headline selection:
+- No UNVERIFIED fixes found → RECONCILE COMPLETE
+- UNVERIFIED fixes found AND user acknowledged → RECONCILE APPLIED — UNVERIFIED
+- REGRESSION detected in recent code → RECONCILE HALTED — REGRESSION
+  (Do NOT reconcile docs to match code that has a known REGRESSION)
 
 ---
 

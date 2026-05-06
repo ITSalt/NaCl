@@ -9,6 +9,35 @@ description: |
   tag version, or the user says "/nacl-tl-release".
 ---
 
+## Contract
+
+**Inputs this skill consumes:**
+- Per-PR underlying UC statuses (from graph or .tl/status.json)
+- GitHub CI status per PR
+
+**Outputs this skill produces:**
+- Headline one of: RELEASE COMPLETE / RELEASE HALTED — {SUFFIX} /
+  RELEASE INCOMPLETE — REGRESSION
+- Release tag (created only on aggregated PASS)
+- Per-UC table in release notes
+- `delivered_in_release` graph stamp gated on PASS
+
+**Downstream consumers of this output:**
+- GitHub release
+- Deploy pipeline (downstream of merge to main)
+
+**Contract change discipline:**
+If this skill's output contract changes, every downstream consumer listed above
+must be audited and updated in the same release. The 0.10.0→0.10.1 regression
+was caused by the absence of this discipline. `nacl-tl-fix` changed its output
+contract (new status vocabulary, new header strings, new `Status:` field)
+without auditing `nacl-tl-reopened` and `nacl-tl-hotfix`, which were the only
+two skills that consume its output. Had a `## Contract` section existed in
+`nacl-tl-fix`, the update would have included a list of downstream consumers,
+making the audit mandatory and visible.
+
+---
+
 # TeamLead Release — Merge + Deploy + Version + Notify
 
 ## Your Role
@@ -134,7 +163,23 @@ Write initial `.tl/release-status.json` with discovered PRs.
 
 ### Step 2: MERGE TO MAIN (USER GATE)
 
-Present the merge plan:
+**Pre-merge UC status gate (runs BEFORE presenting merge plan):**
+
+For each PR in the release candidate list:
+1. Identify the underlying UC(s) by reading:
+   - Graph: `MATCH (t:Task)-[:IN_WAVE]->() WHERE t.id IN [UC list] RETURN t.id, t.status`
+   - Fallback: `.tl/status.json` for each UC referenced in the PR branch name or commit messages
+2. Branch on UC status:
+
+   | UC status | Merge action |
+   |-----------|-------------|
+   | done (PASS) | Include in merge plan normally |
+   | verified-pending (UNVERIFIED) | HALT: "PR #N has UC### with UNVERIFIED dev status. Merge without verification? [yes/no] Default: no". If user confirms → include with warning. If not → exclude from merge plan; report RELEASE HALTED — UNVERIFIED |
+   | blocked | Same user gate as UNVERIFIED |
+   | failed / REGRESSION | DO NOT include; report: "PR #N excluded — REGRESSION in UC###"; flag RELEASE INCOMPLETE — REGRESSION |
+   | Not found | Warn and include (backward-compat) |
+
+Present the merge plan (including UC status column):
 
 ```
 ===============================================
@@ -145,18 +190,21 @@ PRs to merge into {main_branch}:
 
   #42  feat: UC-028 Funnel event tracking     (feature/UC028)
        CI: passed | Reviews: 1 approved | Conflicts: none
+       UC status: PASS (graph: done)
 
   #45  feat: UC-029 Scene prompt display       (feature/UC029)
        CI: passed | Reviews: 1 approved | Conflicts: none
+       UC status: UNVERIFIED (graph: verified-pending) — USER GATE REQUIRED
 
 Merge method: squash (from config.yaml)
 Target: {main_branch}
 
 Proceed with merge? [yes/no]
+(UNVERIFIED PRs require separate confirmation before merging)
 ===============================================
 ```
 
-**Wait for user confirmation.** Skip if `--yes`.
+**Wait for user confirmation.** Skip if `--yes` (but UNVERIFIED UCs still require explicit per-UC confirmation when `--yes` is set — `--yes` skips the plan gate, not the UNVERIFIED safety gate).
 
 For each PR, **sequentially** (order matters — later PRs may conflict after earlier merges):
 
@@ -290,18 +338,40 @@ git push origin v1.3.0
 
 ### Step 7: MARK DELIVERED INTAKEITEMS WITH RELEASE VERSION
 
-After the git tag is pushed, stamp all `IntakeItem` nodes that were delivered but not yet
-assigned a release version.
+After the git tag is pushed, stamp `IntakeItem` nodes with the release version.
+This step is **gated on aggregated PASS status**:
 
-Tool used: `mcp__neo4j__write-cypher`
+- Only stamp IntakeItems whose underlying UCs had PASS status (task.status = 'done')
+- Do NOT stamp IntakeItems for UCs with 'verified-pending' or 'blocked' status
+- If ANY UC in the release had REGRESSION → do NOT proceed to tagging or stamping
 
-Run the following query, substituting the new version string (e.g. `"v1.3.0"`):
+Run the following query for PASS items only, substituting the new version string:
 
 ```cypher
 MATCH (i:IntakeItem)
-WHERE i.status = 'delivered' AND i.delivered_in_release IS NULL
+WHERE i.status = 'delivered'
+  AND i.delivered_in_release IS NULL
+  AND NOT EXISTS {
+    MATCH (i)<-[:PART_OF]-(t:Task)
+    WHERE t.status IN ['verified-pending', 'blocked', 'failed']
+  }
 SET i.delivered_in_release = $version
 RETURN count(i) AS updated;
+```
+
+For IntakeItems associated with UNVERIFIED UCs, stamp with a note instead:
+
+```cypher
+MATCH (i:IntakeItem)
+WHERE i.status = 'delivered'
+  AND i.delivered_in_release IS NULL
+  AND EXISTS {
+    MATCH (i)<-[:PART_OF]-(t:Task)
+    WHERE t.status = 'verified-pending'
+  }
+SET i.delivered_in_release = $version,
+    i.delivery_note = 'released with UNVERIFIED dev status, user override'
+RETURN count(i) AS updated_unverified;
 ```
 
 Parameter:
@@ -423,6 +493,9 @@ On start, if `.tl/release-status.json` exists:
 | `--dry-run` flag | Show merge plan + version bump, no action |
 | Session interrupted mid-merge | Resume from release-status.json, skip already-merged PRs |
 | Neo4j unavailable (Step 7) | Log warning, set graph.status = "warn", continue release |
+| PR merged but UC was UNVERIFIED | Halt BEFORE merge. Ask user: "UC### is UNVERIFIED — merge to main without test coverage? [yes/no] Default: no". Never auto-merge UNVERIFIED. If user answers yes, merge proceeds with override note. |
+| Any UC has REGRESSION status | RELEASE INCOMPLETE — REGRESSION. Do NOT merge, do NOT tag. |
+| All UCs PASS | Proceed normally; RELEASE COMPLETE headline |
 
 ---
 
@@ -434,8 +507,8 @@ On start, if `.tl/release-status.json` exists:
 ===============================================
 
 Merge:
-  #42  feat: UC-028 Funnel event tracking   — merged (squash)
-  #45  feat: UC-029 Scene prompt display     — merged (squash)
+  #42  feat: UC-028 Funnel event tracking   — merged (squash) [PASS]
+  #45  feat: UC-029 Scene prompt display     — merged (squash) [PASS]
 
 Deploy:
   CI: passed (4m 22s)

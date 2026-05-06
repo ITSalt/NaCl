@@ -30,22 +30,49 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - `excalidraw` Docker service (bare Excalidraw at `localhost:3580`) -- replaced by Analyst Tool at `localhost:3582`.
 - `excalidraw-room` Docker service (live-collab container) -- removed as out of scope for a single-analyst workflow; can be reintroduced separately if needed.
 
-## [0.12.0] — 2026-05-06 (part 1 of 2 — see also part 2: orchestrator-status-propagation)
+## [0.12.0] — 2026-05-07
 
-Three development skills hardened with the same six-sub-step TDD discipline introduced in `nacl-tl-fix` (0.10.0): `nacl-tl-dev`, `nacl-tl-dev-be`, and `nacl-tl-dev-fe` all claimed RED-first TDD but had no enforcement — no baseline capture, no VERIFY RED step confirming new tests appeared in the failure set, and no delta comparison at GREEN. A developer could report "all tests pass" against a pre-existing clean suite without ever writing a test that exercised the new code.
+Two-part release. Part 1 hardened three dev skills with enforced TDD discipline.
+Part 2 hardened seven orchestrator skills to consume and propagate the resulting
+honest status across the full pipeline. The v0.12.0 tag is applied after both parts ship.
+
+**Part 1 — TDD Discipline at the Dev Layer:**
+`nacl-tl-dev`, `nacl-tl-dev-be`, and `nacl-tl-dev-fe` all claimed RED-first TDD but
+had no enforcement — no baseline capture, no VERIFY RED step confirming new tests
+appeared in the failure set, and no delta comparison at GREEN. A developer could report
+"all tests pass" against a pre-existing clean suite without ever writing a test that
+exercised the new code.
+
+**Part 2 — Orchestrator Status Propagation:**
+Seven orchestrator skills (`nacl-tl-conductor`, `nacl-tl-full`, `nacl-tl-ship`,
+`nacl-tl-deliver`, `nacl-tl-release`, `nacl-tl-deploy`, `nacl-tl-reconcile`) were
+collapsing sub-skill status into binary pass/fail. With Part 1 producing honest signal,
+Part 2 makes orchestrators act on it: gate graph writes, halt on REGRESSION, require
+user confirmation for UNVERIFIED, and surface per-task status in all reports.
 
 ### Added
 
+**Part 1 — Dev skills:**
 - `nacl-tl-dev`, `nacl-tl-dev-be`, `nacl-tl-dev-fe`: Step N.0 DISCOVER RUNNER — reads `scripts.test` from workspace `package.json`; halts with `NO_INFRA` if absent (never invents a fallback runner).
 - `nacl-tl-dev`, `nacl-tl-dev-be`, `nacl-tl-dev-fe`: Step N.1 CAPTURE BASELINE — runs the test suite once before writing any test; stores failing-test set to a temp file as the reference for all subsequent comparisons.
 - `nacl-tl-dev`, `nacl-tl-dev-be`, `nacl-tl-dev-fe`: Step N.3 VERIFY RED — parses runner output after tests are written; confirms (a) new tests appear in the failure set, (b) no previously-passing test has flipped to fail. Halts if either condition fails.
 - `nacl-tl-dev`, `nacl-tl-dev-be`, `nacl-tl-dev-fe`: Step N.5 VERIFY GREEN + COMPARE — computes delta against baseline; determines status (`PASS` / `UNVERIFIED` / `BLOCKED` / `RUNNER_BROKEN` / `REGRESSION`) before commit.
 - `nacl-tl-dev` (Workflow B — infra): Steps B.0–B.3 verification-command discipline: DISCOVER VERIFICATION COMMAND → CAPTURE BASELINE STATE → APPLY CHANGE → RE-RUN VERIFICATION COMMAND. Parallel to the TDD path for Docker/CI/CD tasks.
-- All three skills: `## Contract` section documenting inputs, outputs, downstream consumers, and the contract-change audit discipline introduced in 0.10.1.
+- All three dev skills: `## Contract` section documenting inputs, outputs, downstream consumers, and the contract-change audit discipline introduced in 0.10.1.
+
+**Part 2 — Orchestrator skills:**
+- New graph property value `t.status = 'verified-pending'` for Task nodes where dev returned UNVERIFIED; `t.status = 'blocked'` for BLOCKED with user override.
+- `nacl-tl-ship`: Step 1.0 pre-flight upstream status check — reads `.tl/status.json` BEFORE running local tests; UNVERIFIED/BLOCKED/REGRESSION halt before commit.
+- `nacl-tl-deliver`: Step 4.0 pre-verify dev status gate — checks each UC's dev status before invoking `/nacl-tl-verify`; UNVERIFIED UCs require user gate.
+- `nacl-tl-release`: Step 2 pre-merge UC status gate — looks up underlying UC statuses before presenting merge plan; UNVERIFIED requires per-PR confirmation (not bypassed by `--yes`).
+- `nacl-tl-deploy`: Step 1.0 pre-monitor gate — confirms commit SHA came from PASS-status tasks before starting CI monitoring.
+- `nacl-tl-reconcile`: Phase 1 pre-flight unverified fix scan — mandatory scan of recent fixes; UNVERIFIED fixes require explicit acknowledgment "documenting unverified behavior is intentional"; Health Score adjusted -5 per UNVERIFIED task.
+- All seven orchestrator skills: `## Contract` section with aggregation rules and contract-change discipline.
 
 ### Changed
 
-- `nacl-tl-dev`, `nacl-tl-dev-be`, `nacl-tl-dev-fe`: Output summary block replaced — single "Ready for Review" / "Status: Ready for Review" header replaced with status-aware headline: `DEV COMPLETE` / `DEV APPLIED — UNVERIFIED` / `DEV APPLIED — BLOCKED` / `DEV APPLIED — NO_INFRA` / `DEV APPLIED — RUNNER_BROKEN` / `DEV INCOMPLETE — REGRESSION` (and `DEV-BE *` / `DEV-FE *` variants).
+**Part 1 — Dev skills:**
+- `nacl-tl-dev`, `nacl-tl-dev-be`, `nacl-tl-dev-fe`: Output summary block replaced — single "Ready for Review" header replaced with status-aware headline: `DEV COMPLETE` / `DEV APPLIED — UNVERIFIED` / `DEV APPLIED — BLOCKED` / `DEV APPLIED — NO_INFRA` / `DEV APPLIED — RUNNER_BROKEN` / `DEV INCOMPLETE — REGRESSION` (and `DEV-BE *` / `DEV-FE *` variants).
 - `nacl-tl-dev`, `nacl-tl-dev-be`, `nacl-tl-dev-fe`: Output template gains baseline diff section (failures pre vs post the change) and test-runner output snippet.
 - `nacl-tl-dev`, `nacl-tl-dev-be`, `nacl-tl-dev-fe`: Anti-patterns tables gain "no baseline capture" and "no postfix comparison" rows citing the new sub-steps.
 - `nacl-tl-dev`, `nacl-tl-dev-be`, `nacl-tl-dev-fe`: Development checklists updated with per-sub-step checkboxes (N.0 through N.5).
@@ -53,6 +80,17 @@ Three development skills hardened with the same six-sub-step TDD discipline intr
 - `nacl-tl-dev-be` Step 3 (RED Phase): restructured into sub-steps 3.0–3.3; Step 4 (GREEN Phase) gains Step 4.2 VERIFY GREEN + COMPARE.
 - `nacl-tl-dev-fe` Step 3 (RED Phase): restructured into sub-steps 3.0–3.3 (RTL test categories CT/HT/FT/IT/AT/EC preserved as Step 3.2 content); Step 4 (GREEN Phase) gains Step 4.2 VERIFY GREEN + COMPARE.
 - changelog.md append templates in all three skills: "Status: Ready for Review" replaced with status headline placeholder.
+
+**Part 2 — Orchestrator skills:**
+- `nacl-tl-conductor`: Phase 3 UC loop reads nacl-tl-full headline; graph write gated on PASS; failure matrix extended with UNVERIFIED/BLOCKED/REGRESSION rows; Phase 6 report gains per-task status column.
+- `nacl-tl-conductor`: Bug fix branch reads nacl-tl-fix `Status:` field; `t.status = 'done'` written only on PASS.
+- `nacl-tl-full`: STEP 1 BE dev / STEP 3 FE dev read sub-skill headline; `phase = 'approved'` written only on PASS (UNVERIFIED keeps phase at 'ready_for_review'); STEP 8 aggregates all phase statuses before writing overall task status.
+- `nacl-tl-full`: WAVE_RESULT gains per-UC status, aggregated counts, and headline selection logic.
+- `nacl-tl-ship`: PR body includes `**Verification status:**` field; `--deploy` cannot bypass upstream UNVERIFIED/BLOCKED status.
+- `nacl-tl-deliver`: Step 6 graph write gated on aggregated PASS; partially-verified batches only stamp PASS-UC IntakeItems; final report gains per-UC dev status column.
+- `nacl-tl-release`: Merge plan shows UC status column; Step 7 graph stamp excludes UNVERIFIED UCs from standard stamp.
+- `nacl-tl-deploy`: Health failure in Step 3 halts pipeline (no longer report-and-continue); Step 4 success path only reachable with 200 OK health.
+- `nacl-tl-reconcile`: Phase 5 report records UNVERIFIED acknowledgments; headline selection documents RECONCILE APPLIED — UNVERIFIED path.
 
 ## [0.11.0] — 2026-05-06
 

@@ -9,6 +9,35 @@ description: |
   or the user says "/nacl-tl-deliver".
 ---
 
+## Contract
+
+**Inputs this skill consumes:**
+- Per-UC dev statuses from .tl/status.json (six-status vocabulary)
+- /nacl-tl-verify results per UC
+- /nacl-tl-deploy result for the staging environment
+
+**Outputs this skill produces:**
+- Aggregated delivery status; per-UC table
+- Headline one of: DELIVER COMPLETE / DELIVER APPLIED — {SUFFIX} /
+  DELIVER INCOMPLETE — REGRESSION
+- IntakeItem `delivered` graph write gated on aggregated PASS
+
+**Downstream consumers of this output:**
+- nacl-tl-deploy
+- Human user
+
+**Contract change discipline:**
+If this skill's output contract changes, every downstream consumer listed above
+must be audited and updated in the same release. The 0.10.0→0.10.1 regression
+was caused by the absence of this discipline. `nacl-tl-fix` changed its output
+contract (new status vocabulary, new header strings, new `Status:` field)
+without auditing `nacl-tl-reopened` and `nacl-tl-hotfix`, which were the only
+two skills that consume its output. Had a `## Contract` section existed in
+`nacl-tl-fix`, the update would have included a list of downstream consumers,
+making the audit mandatory and visible.
+
+---
+
 # TeamLead Deliver — Feature Branch Delivery Pipeline
 
 ## Your Role
@@ -215,12 +244,27 @@ Persists delivery progress for resumption:
 
 ### Step 4: VERIFY (skip if `--skip-verify`)
 
+0. **Pre-verify dev status check:**
+
+   Before invoking /nacl-tl-verify for any UC, read its dev status from
+   `.tl/status.json`. UNVERIFIED dev status means /nacl-tl-verify is
+   operating on incomplete signal — the code may be untested.
+
+   | UC dev status | Action before verifying |
+   |---------------|------------------------|
+   | PASS (done) | Proceed with /nacl-tl-verify normally |
+   | UNVERIFIED (verified-pending) | Post advisory: "UC### dev status UNVERIFIED. /nacl-tl-verify will run but results have reduced confidence. Proceed? [yes/no]". If yes → run verify; if no → skip UC (mark as skipped in delivery) |
+   | BLOCKED (blocked) | Same as UNVERIFIED: advisory + user gate |
+   | Not found / old-style "done" | Proceed (backward-compat) |
+   | REGRESSION (failed) | DO NOT run /nacl-tl-verify. Log: "UC### skipped — REGRESSION status" |
+
 1. Determine which UCs to verify:
    - If conductor-state.json exists → read completed UC list
    - If `--feature FR-001` → read FR's UC list from feature-request artifact
    - Fallback: verify all UCs found in `.tl/status.json` with status "done"
+     or "verified-pending" (with user gate for the latter)
 
-2. For each UC (or batch via `--all`):
+2. For each UC that passes the pre-verify gate (Step 4.0):
    Launch sub-agent (Task tool):
    ```
    Execute /nacl-tl-verify UC###
@@ -244,7 +288,8 @@ Persists delivery progress for resumption:
      "status": "done",
      "results": {
        "UC028": "PASS",
-       "UC029": "FAIL"
+       "UC029": "FAIL",
+       "UC030": "UNVERIFIED_DEV_SKIPPED"
      }
    }
    ```
@@ -252,6 +297,10 @@ Persists delivery progress for resumption:
 6. Decision:
    - If ALL UCs PASS → proceed to Step 5
    - If SOME UCs FAIL → report which failed, proceed to Step 5 for healthy UCs
+   - If ANY UC is UNVERIFIED (dev status) and user declined verify → **USER GATE**:
+     "X UCs have UNVERIFIED dev status. Deliver partial set or halt?"
+     - If user confirms partial delivery → proceed to Step 5 for PASS UCs only
+     - If user halts → DELIVER APPLIED — UNVERIFIED; do NOT write IntakeItem 'delivered'
    - If ALL UCs FAIL → **STOP**, recommend /nacl-tl-reopened
 
 → **Output:** verification report per UC
@@ -287,8 +336,22 @@ Persists delivery progress for resumption:
 
 ### Step 6: UPDATE INTAKEITEM GRAPH STATE
 
-After Step 5 completes (regardless of health check result), update the Neo4j graph so
-each `IntakeItem` associated with this delivery reflects its delivered status.
+After Step 5 completes, update the Neo4j graph for `IntakeItem` nodes.
+This step is **gated on aggregated PASS status**:
+
+- If aggregated delivery status is PASS → write `i.status = 'delivered'`
+- If aggregated status is UNVERIFIED → DO NOT write 'delivered'; log warning:
+  "IntakeItem not marked delivered — delivery contains UNVERIFIED UCs"
+- If aggregated status is BLOCKED (with override) → write 'delivered' but
+  add `i.delivery_note = 'shipped with BLOCKED status, user override'`
+- If aggregated status is REGRESSION → DO NOT write; delivery is invalid
+
+For partially-verified batches (PASS UCs mixed with UNVERIFIED UCs), only
+stamp the IntakeItems corresponding to PASS UCs as 'delivered'. Leave
+UNVERIFIED-UC IntakeItems untouched.
+
+After verifying aggregated status, update the Neo4j graph so
+each `IntakeItem` associated with PASS UCs reflects its delivered status.
 
 Tool used: `mcp__neo4j__write-cypher`
 
@@ -338,9 +401,15 @@ item could not be updated.
 
 ## Final Report
 
+The `Dev status` and `Verification` sections form a per-UC status table —
+each UC appears on its own row with the upstream dev status alongside the
+verification result. The aggregate headline (DELIVER COMPLETE / DELIVER
+APPLIED — UNVERIFIED / DELIVER INCOMPLETE — REGRESSION) is selected from
+the per-task statuses in those tables.
+
 ```
 ═══════════════════════════════════════════════════════════════
-                    DELIVERED TO STAGING
+                    DELIVER COMPLETE
 ═══════════════════════════════════════════════════════════════
 
 Branch: feature/FR-001-generation-controls
@@ -354,9 +423,13 @@ CI:
   Status: passed (3m 12s)
   Run: https://github.com/org/repo/actions/runs/123
 
+Dev status (pre-verify gate):
+  UC028: PASS (dev verified before delivery)
+  UC029: PASS (dev verified before delivery)
+
 Verification:
-  UC028: PASS (code analysis + E2E)
-  UC029: PASS (code analysis only)
+  UC028: PASS (code analysis + E2E)    [Dev: PASS]
+  UC029: PASS (code analysis only)     [Dev: PASS]
 
 Deploy:
   Environment: staging
@@ -364,9 +437,13 @@ Deploy:
   Health: 200 OK
 
 Graph:
-  IntakeItems updated: FAM-58 → delivered
+  IntakeItems updated: FAM-58 → delivered (gated on PASS)
 
 YouGile: tasks moved to ToRelease
+
+Headline: DELIVER COMPLETE
+(Use DELIVER APPLIED — UNVERIFIED when any UC has UNVERIFIED dev status;
+ DELIVER INCOMPLETE — REGRESSION when any UC has REGRESSION status)
 
 Next:
   /nacl-tl-release          — when ready for production

@@ -7,6 +7,37 @@ description: |
   updates phase status in graph. Delegates to standard dev skills.Use when: run full dev workflow with graph, or the user says "/nacl-tl-full".
 ---
 
+## Contract
+
+**Inputs this skill consumes:**
+- Graph waves+tasks (Neo4j Task/Wave nodes)
+- Sub-skill results: nacl-tl-dev-be, nacl-tl-dev-fe, nacl-tl-review,
+  nacl-tl-ship (six-status vocabulary: PASS / BLOCKED / UNVERIFIED /
+  NO_INFRA / RUNNER_BROKEN / REGRESSION)
+
+**Outputs this skill produces:**
+- Per-UC status table; phase-level status
+- Headline one of: FULL COMPLETE / FULL APPLIED — {SUFFIX} /
+  FULL INCOMPLETE — REGRESSION
+- Graph phase writes gated on PASS (phase = 'approved' only on PASS;
+  'ready_for_review' for UNVERIFIED; 'blocked' for BLOCKED)
+
+**Downstream consumers of this output:**
+- nacl-tl-conductor
+- Human user
+
+**Contract change discipline:**
+If this skill's output contract changes, every downstream consumer listed above
+must be audited and updated in the same release. The 0.10.0→0.10.1 regression
+was caused by the absence of this discipline. `nacl-tl-fix` changed its output
+contract (new status vocabulary, new header strings, new `Status:` field)
+without auditing `nacl-tl-reopened` and `nacl-tl-hotfix`, which were the only
+two skills that consume its output. Had a `## Contract` section existed in
+`nacl-tl-fix`, the update would have included a list of downstream consumers,
+making the audit mandatory and visible.
+
+---
+
 # /nacl-tl-full -- Graph-Aware Full Lifecycle Orchestrator
 
 ## Your Role
@@ -379,7 +410,20 @@ For each UC (sequentially):
   STEP 1 -- Backend Development
     Update graph: SET t.phase_be = 'in_progress', t.status = 'in_progress'
     Launch Task agent: /nacl-tl-dev-be UC###
-    Update graph: SET t.phase_be = 'ready_for_review'
+    Read sub-skill status from output headline:
+      "DEV-BE COMPLETE"                → PASS
+      "DEV-BE APPLIED — UNVERIFIED"    → UNVERIFIED
+      "DEV-BE APPLIED — BLOCKED"       → BLOCKED
+      "DEV-BE APPLIED — NO_INFRA"      → NO_INFRA
+      "DEV-BE APPLIED — RUNNER_BROKEN" → RUNNER_BROKEN
+      "DEV-BE INCOMPLETE — REGRESSION" → REGRESSION
+    Branch on status:
+      PASS:        SET t.phase_be = 'ready_for_review'
+      UNVERIFIED:  SET t.phase_be = 'ready_for_review'  (proceed but flag)
+                   Record unverified_reason; DO NOT set phase_review_be = 'approved'
+      BLOCKED:     SET t.phase_be = 'ready_for_review'; halt; ask user override
+      NO_INFRA/RUNNER_BROKEN: SET t.phase_be = 'failed'; HALT; escalate
+      REGRESSION:  SET t.phase_be = 'failed'; HALT; file bug
     Expected: creates result-be.md
     DO NOT skip to STEP 3 without completing STEP 2 first.
 
@@ -392,15 +436,31 @@ For each UC (sequentially):
     IF still rejected after 3 -> mark UC as FAILED at phase "review_be":
       SET t.phase_review_be = 'failed', t.status = 'failed'
       Skip to next UC
-    IF approved:
+    IF approved AND BE dev status was PASS:
       SET t.phase_review_be = 'approved'
-    Only proceed to STEP 3 when phase_review_be = approved
+    IF approved BUT BE dev status was UNVERIFIED:
+      SET t.phase_review_be = 'ready_for_review'  (NOT 'approved' — UNVERIFIED dev
+                                                     cannot advance to approved)
+    Only proceed to STEP 3 when phase_review_be = 'approved' (PASS path only)
+    For UNVERIFIED path: record status; continue to STEP 3 but mark UC unverified
 
   STEP 3 -- Frontend Development
-    Prerequisite: phase_review_be = approved
+    Prerequisite: phase_review_be = approved (or UNVERIFIED override)
     Update graph: SET t.phase_fe = 'in_progress'
     Launch Task agent: /nacl-tl-dev-fe UC###
-    Update graph: SET t.phase_fe = 'ready_for_review'
+    Read sub-skill status from output headline:
+      "DEV-FE COMPLETE"                → PASS
+      "DEV-FE APPLIED — UNVERIFIED"    → UNVERIFIED
+      "DEV-FE APPLIED — BLOCKED"       → BLOCKED
+      "DEV-FE APPLIED — NO_INFRA"      → NO_INFRA
+      "DEV-FE APPLIED — RUNNER_BROKEN" → RUNNER_BROKEN
+      "DEV-FE INCOMPLETE — REGRESSION" → REGRESSION
+    Branch on status (same logic as STEP 1 BE):
+      PASS:        SET t.phase_fe = 'ready_for_review'
+      UNVERIFIED:  SET t.phase_fe = 'ready_for_review'; record unverified_reason
+      BLOCKED:     SET t.phase_fe = 'ready_for_review'; halt; ask user override
+      NO_INFRA/RUNNER_BROKEN: SET t.phase_fe = 'failed'; HALT; escalate
+      REGRESSION:  SET t.phase_fe = 'failed'; HALT; file bug
     Expected: creates result-fe.md
     DO NOT skip to STEP 5 without completing STEP 4 first.
 
@@ -413,9 +473,13 @@ For each UC (sequentially):
     IF still rejected after 3 -> mark UC as FAILED at phase "review_fe":
       SET t.phase_review_fe = 'failed', t.status = 'failed'
       Skip to next UC
-    IF approved:
+    IF approved AND FE dev status was PASS:
       SET t.phase_review_fe = 'approved'
-    Only proceed to STEP 5 when phase_review_fe = approved
+    IF approved BUT FE dev status was UNVERIFIED:
+      SET t.phase_review_fe = 'ready_for_review'  (UNVERIFIED dev cannot advance
+                                                     to 'approved')
+    Only proceed to STEP 5 when phase_review_fe = 'approved' (PASS path only)
+    For UNVERIFIED path: record; continue but UC remains unverified
 
   STEP 5 -- Sync Verification  <- MANDATORY, never skip
     Update graph: SET t.phase_sync = 'in_progress'
@@ -453,8 +517,12 @@ For each UC (sequentially):
 
   STEP 8 -- Documentation  <- MANDATORY, final step
     Launch Task agent: /nacl-tl-docs UC###
-    Update graph: SET t.status = 'done'
-    UC is DONE -- only after THIS step
+    Aggregate UC status from all phase statuses:
+      - If ALL phases were PASS: SET t.status = 'done'
+      - If ANY phase was UNVERIFIED: SET t.status = 'verified-pending'
+      - If ANY phase was BLOCKED (with override): SET t.status = 'blocked'
+    Write aggregated status to .tl/status.json for this UC
+    UC is considered DONE only when ALL phases PASS
 
 REMINDER: Do NOT return WAVE_RESULT after Step 1 or Step 3. Continue executing
 Steps 2 through 8 before considering any UC complete.
@@ -465,10 +533,24 @@ WAVE_RESULT:
   wave: N
   status: complete|partial
   tasks:
-    - UC001: done (all 8 phases complete)
-    - UC003: done (all 8 phases complete)
-    - UC005: FAILED at phase "qa" (3 retries -- acceptance criterion 3 not met)
+    - UC001: done [PASS] (all 8 phases complete, graph: done)
+    - UC003: done [UNVERIFIED] (all phases complete, no test exercises change,
+             graph: verified-pending)
+    - UC005: FAILED [REGRESSION] at phase "qa" (3 retries -- regression detected)
+  status_summary:
+    pass: 1
+    unverified: 1
+    blocked: 0
+    regression: 1
+  headline: FULL APPLIED — UNVERIFIED
   problems: [list of unresolved issues with details]
+
+Headline selection rules:
+  - ALL tasks PASS → FULL COMPLETE
+  - ANY task REGRESSION → FULL INCOMPLETE — REGRESSION
+  - ANY task UNVERIFIED (and no REGRESSION) → FULL APPLIED — UNVERIFIED
+  - ANY task BLOCKED (and no REGRESSION/UNVERIFIED) → FULL APPLIED — BLOCKED
+  - ANY task NO_INFRA / RUNNER_BROKEN → FULL HALTED — {suffix}
 ```
 
 ### L0 receives each Wave result
@@ -508,7 +590,7 @@ RETURN t.id AS task_id, t.title AS title, t.status AS status,
 ORDER BY w.number, t.id
 ```
 
-For each UC that is NOT in terminal state (`done` or `failed`):
+For each UC that is NOT in terminal state (`done`, `verified-pending`, `blocked`, or `failed`):
 
 ```
 IF any phase is pending/in_progress (and task not explicitly FAILED):
@@ -519,10 +601,19 @@ IF any phase is pending/in_progress (and task not explicitly FAILED):
   -> Wait for completion
   -> Re-query graph to validate
 
-ONLY when all UCs are either "done" or "failed" (explicit) -> proceed to Step 3.1
+Status-aware terminal states:
+  done             -- all phases PASS
+  verified-pending -- any phase UNVERIFIED (fix applied, no test covers it)
+  blocked          -- any phase BLOCKED (pre-existing failures, user override)
+  failed           -- phase failed after 3 retries, or REGRESSION
+
+A phase reaches 'approved' ONLY when sub-skill status is PASS.
+For UNVERIFIED sub-skill output, phase remains 'ready_for_review'.
+
+ONLY when all UCs are in a terminal state -> proceed to Step 3.1
 ```
 
-This validation prevents false "EXECUTION COMPLETE" reports when dev is done but review/sync/QA are still pending.
+This validation prevents false "EXECUTION COMPLETE" reports when dev is done but review/sync/QA are still pending. It also prevents 'approved' from being written when the sub-skill returned UNVERIFIED.
 
 ### Step 3.1: Final Stub Scan
 
@@ -559,19 +650,26 @@ TECH Tasks: M total
 
 UC Tasks: N total
   Wave 1:
-    [done] UC001: Create Order               (all 8 phases complete)
-    [done] UC002: List Orders                 (all 8 phases complete)
+    [done] UC001: Create Order    [PASS]        (all 8 phases complete, graph: done)
+    [done] UC002: List Orders     [PASS]        (all 8 phases complete, graph: done)
   Wave 2:
-    [done] UC003: Edit Order                  (all 8 phases complete)
-    [FAIL] UC005: Export Orders               (FAILED at QA, 3 retries)
+    [unverified] UC003: Edit Order [UNVERIFIED] (phases complete, no covering test,
+                                                 graph: verified-pending)
+    [FAIL] UC005: Export Orders    [REGRESSION] (FAILED at QA, 3 retries)
   Wave 3:
-    [done] UC004: Delete Order               (all 8 phases complete)
+    [done] UC004: Delete Order    [PASS]        (all 8 phases complete, graph: done)
 
 Summary:
-  Completed:  M/M TECH + (N-1)/N UC = X/Y phases done
-  Failed:     1 UC (UC005 -- QA failure)
-  Stubs:      0 critical, 3 warnings, 12 info
-  QA:         4/5 passed
+  Completed:  M/M TECH + (N-2)/N UC done
+  PASS:        3 UCs (graph: done)
+  UNVERIFIED:  1 UC (graph: verified-pending — no test exercises the change)
+  REGRESSION:  1 UC (graph: failed — new failure introduced)
+  Stubs:       0 critical, 3 warnings, 12 info
+  QA:          3/5 passed
+
+Headline: FULL INCOMPLETE — REGRESSION
+(FULL COMPLETE when all PASS; FULL APPLIED — UNVERIFIED when any UNVERIFIED
+ and no REGRESSION)
 
 Problems requiring attention:
   1. UC005: QA test "export generates valid CSV" fails -- ExportService

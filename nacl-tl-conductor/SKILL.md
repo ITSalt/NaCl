@@ -7,6 +7,36 @@ description: |
   Delegates planning to nacl-tl-plan, dev to nacl-tl-full.Use when: batch workflow with graph, orchestrate graph intake, or the user says "/nacl-tl-conductor".
 ---
 
+## Contract
+
+**Inputs this skill consumes:**
+- Graph IntakeItems (queries Neo4j)
+- Sub-orchestrator results: nacl-tl-full (UC paths), nacl-tl-fix (bug paths)
+- .tl/status.json per task (six-status vocabulary: PASS / BLOCKED / UNVERIFIED /
+  NO_INFRA / RUNNER_BROKEN / REGRESSION)
+
+**Outputs this skill produces:**
+- Per-task status table; aggregated PASS/UNVERIFIED/BLOCKED counts
+- Headline one of: CONDUCTOR COMPLETE / CONDUCTOR APPLIED — {SUFFIX} /
+  CONDUCTOR INCOMPLETE — REGRESSION
+- Graph writes gated on PASS (t.status = 'done' only on PASS;
+  'verified-pending' for UNVERIFIED; 'blocked' for BLOCKED)
+
+**Downstream consumers of this output:**
+- Human user (via batch report)
+
+**Contract change discipline:**
+If this skill's output contract changes, every downstream consumer listed above
+must be audited and updated in the same release. The 0.10.0→0.10.1 regression
+was caused by the absence of this discipline. `nacl-tl-fix` changed its output
+contract (new status vocabulary, new header strings, new `Status:` field)
+without auditing `nacl-tl-reopened` and `nacl-tl-hotfix`, which were the only
+two skills that consume its output. Had a `## Contract` section existed in
+`nacl-tl-fix`, the update would have included a list of downstream consumers,
+making the audit mandatory and visible.
+
+---
+
 # Graph TeamLead Conductor -- Process Manager
 
 ## Your Role
@@ -267,16 +297,58 @@ For each UC in wave order (sequential within wave, wave-by-wave):
 
 3. Wait for completion
 
-4. Check result:
-   a. Read .tl/status.json for UC### phases
-   b. If ALL phases done/approved/pass:
-      - Stage and commit:
-        git add -A
-        git commit -m "UC###: [title from task-be.md or status.json]"
-      - Update conductor-state.json: status = "done", commit = [hash]
-   c. If any phase FAILED:
-      - Update conductor-state.json: status = "failed", failedPhase = [phase], reason = [details]
-      - Log failure, continue to next UC
+4. Read aggregated UC status (Step 4a then branch per Step 4b):
+
+   a. Read sub-skill status:
+      - Look for headline in nacl-tl-full output:
+        "FULL COMPLETE" → PASS
+        "FULL APPLIED — UNVERIFIED" → UNVERIFIED
+        "FULL APPLIED — BLOCKED" → BLOCKED
+        "FULL INCOMPLETE — REGRESSION" → REGRESSION
+        "FULL HALTED — NO_INFRA" → NO_INFRA
+        "FULL HALTED — RUNNER_BROKEN" → RUNNER_BROKEN
+      - Cross-check .tl/status.json for UC### (nacl-tl-full writes it)
+      - If no new-style headline present, treat as PASS only if all
+        phases show done/approved in status.json (backward-compat)
+
+   b. Branch on aggregated status:
+
+      PASS:
+        - Stage and commit:
+          git add -A
+          git commit -m "UC###: [title from task-be.md or status.json]"
+        - Update Neo4j: t.status = 'done'
+        - Update conductor-state.json: status = "done", commit = [hash]
+
+      UNVERIFIED:
+        - DO NOT commit
+        - Update Neo4j: t.status = 'verified-pending'
+        - Update conductor-state.json: status = "unverified", reason = [details]
+        - Log: "UC### complete but UNVERIFIED — no test exercises the change"
+        - Continue to next UC (will appear in report)
+
+      BLOCKED:
+        - HALT; post advisory to user:
+          "UC### blocked: [reason]. Override with --yes to record as blocked
+           and continue, or fix blocker first."
+        - If user confirms override (or --yes flag):
+          - Update Neo4j: t.status = 'blocked'
+          - Update conductor-state.json: status = "blocked"
+          - Continue
+        - If no confirmation: abort batch
+
+      NO_INFRA / RUNNER_BROKEN:
+        - HALT; escalate:
+          "Infrastructure problem for UC###: [status]. Fix infra before
+           continuing. Re-run /nacl-tl-conductor to resume."
+        - Update conductor-state.json: status = "infra_error"
+        - Do NOT continue to next UC automatically
+
+      REGRESSION:
+        - HALT; file new bug:
+          "UC### introduced a regression. File a bug, do not ship."
+        - Update conductor-state.json: status = "regression"
+        - Do NOT commit; do NOT advance to delivery
 ```
 
 #### Bug fixes (independent, after TECH, can interleave with UCs)
@@ -291,31 +363,76 @@ For each BUG item:
 
 3. Wait for completion
 
-4. If fix successful:
-   a. Stage and commit:
-      git add -A
-      git commit -m "fix: [short description]"
-   b. Update conductor-state.json: status = "done", commit = [hash]
+4. Read nacl-tl-fix status from its Step 8 report:
+   Look for headline:
+     "FIX COMPLETE"                 → PASS
+     "FIX APPLIED — UNVERIFIED"     → UNVERIFIED
+     "FIX APPLIED — BLOCKED"        → BLOCKED
+     "FIX APPLIED — NO_INFRA"       → NO_INFRA
+     "FIX APPLIED — RUNNER_BROKEN"  → RUNNER_BROKEN
+     "FIX INCOMPLETE — REGRESSION"  → REGRESSION
 
-5. If fix failed:
-   a. Update conductor-state.json: status = "failed", reason = [details]
-   b. Log failure, continue
+5. Branch on status:
+
+   PASS:
+     a. Stage and commit:
+        git add -A
+        git commit -m "fix: [short description]"
+     b. Update Neo4j: t.status = 'done'
+     c. Update conductor-state.json: status = "done", commit = [hash]
+
+   UNVERIFIED:
+     a. DO NOT commit
+     b. Update Neo4j: t.status = 'verified-pending'
+     c. Update conductor-state.json: status = "unverified"
+     d. Log: "BUG-### fixed but UNVERIFIED — no test exercises the change"
+     e. Continue (will appear in report)
+
+   BLOCKED:
+     a. Halt; ask user to confirm override before continuing
+     b. If confirmed: Update Neo4j t.status = 'blocked'; continue
+     c. If not confirmed: abort batch
+
+   NO_INFRA / RUNNER_BROKEN:
+     a. Halt; escalate as infrastructure problem
+     b. Update conductor-state.json: status = "infra_error"
+
+   REGRESSION:
+     a. Halt; log new regression; do NOT commit
+     b. Update conductor-state.json: status = "regression"
 ```
 
 #### Updating Task Node Status in Neo4j
 
-After each item completes (success or failure), update the corresponding Task node:
+After each item completes, update the corresponding Task node using the
+aggregated sub-skill status. Graph writes are GATED on verification status:
 
 ```cypher
-// Mark task as done
+// PASS — task verified and committed
 MATCH (t:Task {id: $taskId})
-SET t.status = $status,
+SET t.status = 'done',
     t.commit = $commitHash,
     t.completed_at = datetime()
 ```
 
 ```cypher
-// Mark task as failed
+// UNVERIFIED — fix applied but no test covers the change
+MATCH (t:Task {id: $taskId})
+SET t.status = 'verified-pending',
+    t.unverified_reason = $reason,
+    t.updated = datetime()
+```
+
+```cypher
+// BLOCKED — fix applied, pre-existing failures, user override recorded
+MATCH (t:Task {id: $taskId})
+SET t.status = 'blocked',
+    t.blocked_reason = $reason,
+    t.updated = datetime()
+```
+
+```cypher
+// REGRESSION / NO_INFRA / RUNNER_BROKEN — halt without graph status advance
 MATCH (t:Task {id: $taskId})
 SET t.status = 'failed',
     t.failed_phase = $failedPhase,
@@ -323,7 +440,10 @@ SET t.status = 'failed',
     t.failed_at = datetime()
 ```
 
-This keeps the graph in sync with the actual execution state.
+**Rule:** t.status = 'done' is written ONLY when sub-skill status is PASS.
+For UNVERIFIED: write 'verified-pending'. For BLOCKED: write 'blocked'.
+For REGRESSION/NO_INFRA/RUNNER_BROKEN: write 'failed'.
+This keeps the graph in sync with the actual verification state.
 
 ---
 
@@ -400,12 +520,13 @@ Duration: 2h 14m
 Scope source: Neo4j graph
 
 Development:
-  TECH-001: Shared types setup            (commit abc1234)  -- DONE
-  UC028: Image format selection            (commit def5678)  -- DONE
-  UC029: Scene prompt display              (FAILED at sync)  -- FAILED
-  BUG-003: Share button on mobile          (commit 789abcd)  -- DONE
+  TECH-001: Shared types setup            (commit abc1234)  -- DONE        [PASS]
+  UC028: Image format selection            (commit def5678)  -- DONE        [PASS]
+  UC029: Scene prompt display              (no commit)       -- UNVERIFIED  [UNVERIFIED]
+  BUG-003: Share button on mobile          (commit 789abcd)  -- DONE        [PASS]
 
   Result: 3/4 items completed
+  Status summary: 3 PASS, 1 UNVERIFIED, 0 BLOCKED, 0 REGRESSION
 
 Quality:
   Stubs: 0 critical, 3 warnings
@@ -428,9 +549,13 @@ Problems:
 
 Next:
   /nacl-tl-release              -- production release
-  /nacl-tl-full --task UC029    -- fix failed UC
+  /nacl-tl-full --task UC029    -- fix unverified UC
   /nacl-tl-conductor --items ... -- next batch
 ===============================================================
+
+Headline: CONDUCTOR APPLIED — UNVERIFIED
+(Use CONDUCTOR COMPLETE when all items PASS; CONDUCTOR INCOMPLETE — REGRESSION
+ when any item has REGRESSION status.)
 ```
 
 ---
@@ -441,10 +566,17 @@ Every possible sub-agent outcome has a defined response:
 
 | Situation | Conductor Action |
 |-----------|-----------------|
-| nacl-tl-full returns DONE for UC | Commit atomically, update Task node in graph, continue |
-| nacl-tl-full returns FAILED for UC | Record failure with phase + reason, update Task node, continue to next UC |
+| nacl-tl-full returns PASS (FULL COMPLETE) | Commit atomically, write t.status='done' to graph, continue |
+| nacl-tl-full returns UNVERIFIED | DO NOT commit; write t.status='verified-pending'; log; continue |
+| nacl-tl-full returns BLOCKED | Halt; ask user override; if confirmed write t.status='blocked'; continue |
+| nacl-tl-full returns NO_INFRA / RUNNER_BROKEN | Halt; escalate as infra problem; do NOT continue automatically |
+| nacl-tl-full returns REGRESSION | Halt; file bug; do NOT commit or advance to delivery |
+| nacl-tl-full returns FAILED for UC (old-style) | Record failure with phase + reason, update Task node, continue to next UC |
 | nacl-tl-dev returns FAILED for TECH | Retry with review loop (max 3), then record failure |
-| nacl-tl-fix returns FAILED for BUG | Record failure, continue |
+| nacl-tl-fix returns PASS | Commit atomically, write t.status='done', continue |
+| nacl-tl-fix returns UNVERIFIED | DO NOT commit; write t.status='verified-pending'; continue |
+| nacl-tl-fix returns BLOCKED | Halt; ask user override before continuing |
+| nacl-tl-fix returns REGRESSION | Halt; do NOT commit |
 | Sub-agent timeout / no response | Record as timeout, continue. Recommend manual retry in report |
 | Git conflict on commit | Attempt `git add -A && git commit`. If conflict -> pause, ask user |
 | Git conflict on branch creation | Checkout existing branch (resume scenario) |

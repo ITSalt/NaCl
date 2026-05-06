@@ -10,6 +10,40 @@ description: |
   or the user says "/nacl-tl-ship".
 ---
 
+## Contract
+
+**Inputs this skill consumes:**
+- Prior verification status from .tl/status.json or YouGile task chat
+  (six-status vocabulary: PASS / BLOCKED / UNVERIFIED / NO_INFRA /
+  RUNNER_BROKEN / REGRESSION)
+- Local test-suite results (sanity check, NOT a substitute for upstream status)
+- config.yaml (git strategy)
+
+**Outputs this skill produces:**
+- Headline one of: SHIP COMPLETE / SHIP APPLIED — UNVERIFIED (only when user
+  explicitly overrides on --deploy with non-PASS upstream) /
+  SHIP HALTED — {NO_INFRA | RUNNER_BROKEN | UNVERIFIED | BLOCKED} /
+  SHIP INCOMPLETE — REGRESSION
+- Commit + push to feature branch
+- PR creation (gated on aggregated PASS or explicit override)
+
+**Downstream consumers of this output:**
+- nacl-tl-deliver
+- nacl-tl-deploy
+- nacl-tl-release
+
+**Contract change discipline:**
+If this skill's output contract changes, every downstream consumer listed above
+must be audited and updated in the same release. The 0.10.0→0.10.1 regression
+was caused by the absence of this discipline. `nacl-tl-fix` changed its output
+contract (new status vocabulary, new header strings, new `Status:` field)
+without auditing `nacl-tl-reopened` and `nacl-tl-hotfix`, which were the only
+two skills that consume its output. Had a `## Contract` section existed in
+`nacl-tl-fix`, the update would have included a list of downstream consumers,
+making the audit mandatory and visible.
+
+---
+
 # TeamLead Ship — Commit + Push + PR + YouGile
 
 ## Your Role
@@ -96,6 +130,24 @@ If config.yaml missing → use all fallback defaults. If YouGile missing → ski
 ## Workflow: 6 Steps
 
 ### Step 1: PRE-FLIGHT CHECKS
+
+0. **Read prior verification status (BEFORE running local tests):**
+
+   Check `.tl/status.json` for the task being shipped, or read the sub-skill
+   output from the task chat. Look for the six-status vocabulary:
+
+   | Prior status | Action |
+   |--------------|--------|
+   | PASS | Proceed normally |
+   | UNVERIFIED | HALT. Post advisory: "Task dev status is UNVERIFIED — no test exercises the change. Local tests passing does NOT substitute for upstream verification. Confirm to ship unverified? [yes/no] Default: no". If user confirms with `--yes` or explicit "yes", proceed with SHIP APPLIED — UNVERIFIED headline. If no answer → SHIP HALTED — UNVERIFIED |
+   | BLOCKED | HALT. Post: "Task dev status is BLOCKED — pre-existing failures. Confirm to ship blocked task? [yes/no] Default: no". If confirmed → proceed. If not → SHIP HALTED — BLOCKED |
+   | NO_INFRA | HALT. Report: SHIP HALTED — NO_INFRA. Recommend fixing infra |
+   | RUNNER_BROKEN | HALT. Report: SHIP HALTED — RUNNER_BROKEN. Escalate |
+   | REGRESSION | HALT. Report: SHIP INCOMPLETE — REGRESSION. Do NOT ship |
+   | Not found (no status.json) | Warn and proceed (backward-compat) |
+
+   **Local tests passing does NOT override prior UNVERIFIED/BLOCKED status.**
+   Local tests are a sanity check, not a verification substitute.
 
 1. Read `config.yaml` for git strategy, module config, **and deploy config**
 2. Run tests for affected modules:
@@ -225,6 +277,15 @@ Something went wrong. Report the error to the user immediately.
 
 If git_strategy is `feature-branch`:
 
+**Verification gate before PR creation:**
+- If prior task status (from Step 1.0) was PASS → create PR normally
+- If prior task status was UNVERIFIED and user confirmed override in Step 1.0:
+  → create PR with `**Verification status:** UNVERIFIED` note in body
+- If prior task status was BLOCKED and user confirmed override in Step 1.0:
+  → create PR with `**Verification status:** BLOCKED (user override)` in body
+- If prior task status was REGRESSION → DO NOT create PR; report SHIP INCOMPLETE — REGRESSION
+- If no status found (backward-compat) → create PR normally
+
 **Create Pull Request on GitHub:**
 ```bash
 gh pr create \
@@ -239,6 +300,8 @@ gh pr create \
 - [x] 34 unit tests passing
 - [ ] E2E verification via /nacl-tl-verify
 
+**Verification status:** PASS
+
 Generated with Claude Code
 EOF
 )" \
@@ -248,6 +311,15 @@ EOF
 ### Step 5.5: DEPLOY (config-driven, only with `--deploy` flag)
 
 **This step only runs when `--deploy` flag is provided.**
+
+**Verification gate before deploy:**
+- If prior task status (from Step 1.0) was PASS → proceed with deploy
+- If prior task status was UNVERIFIED → SHIP HALTED — UNVERIFIED unless
+  user gave explicit confirmation in Step 1.0. `--deploy` does NOT bypass
+  verification status. The user must confirm unverified deploy explicitly.
+- If prior task status was BLOCKED → same gate as UNVERIFIED
+- If prior task status was REGRESSION → SHIP INCOMPLETE — REGRESSION; do NOT deploy
+- Deploy never bypasses verification. Local tests passing does not substitute.
 
 Read deploy strategy from `config.yaml`:
 
@@ -313,15 +385,20 @@ If YouGile not configured → skip, just report locally.
 
 ## Output
 
-Present to user (in their language):
+Per-task status table is the first block of every report — the headline summarizes
+the aggregated status, then a `Verification status:` line surfaces the per-task value
+that was consumed (PASS / UNVERIFIED / BLOCKED / NO_INFRA / RUNNER_BROKEN /
+REGRESSION) so the reader sees the per-task status at a glance. Present to user
+(in their language):
 
-**Without `--deploy`:**
+**Without `--deploy` (PASS case):**
 ```
 ═══════════════════════════════════════════════
-  SHIPPED
+  SHIP COMPLETE
 ═══════════════════════════════════════════════
 
 UC-028: Funnel Event Tracking
+Verification status: PASS
 
 Git:
   Branch: feature/UC028
@@ -336,6 +413,20 @@ YouGile: task moved to DevDone, summary posted
 
 Next step:
   /nacl-tl-verify UC028  — verify implementation
+═══════════════════════════════════════════════
+```
+
+**UNVERIFIED case (user confirmed override):**
+```
+═══════════════════════════════════════════════
+  SHIP APPLIED — UNVERIFIED
+═══════════════════════════════════════════════
+
+UC-028: Funnel Event Tracking
+Verification status: UNVERIFIED (user override — shipped without test coverage)
+
+WARNING: No test exercises the change. Ship confirmed by user.
+...
 ═══════════════════════════════════════════════
 ```
 

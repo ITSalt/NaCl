@@ -9,6 +9,35 @@ description: |
   or the user says "/nacl-tl-deploy".
 ---
 
+## Contract
+
+**Inputs this skill consumes:**
+- Commit SHA being deployed
+- Prior verification status by SHA (from graph or status.json, six-status vocabulary)
+- CI pipeline status (GitHub Actions)
+- Health-check results
+
+**Outputs this skill produces:**
+- Headline one of: DEPLOY COMPLETE / DEPLOY HALTED — REGRESSION /
+  DEPLOY HALTED — {NO_INFRA | RUNNER_BROKEN | UNVERIFIED | BLOCKED}
+- Health-failure halts the pipeline rather than report-and-continue
+
+**Downstream consumers of this output:**
+- Human user
+- nacl-tl-deliver (for staging) / nacl-tl-release (for production)
+
+**Contract change discipline:**
+If this skill's output contract changes, every downstream consumer listed above
+must be audited and updated in the same release. The 0.10.0→0.10.1 regression
+was caused by the absence of this discipline. `nacl-tl-fix` changed its output
+contract (new status vocabulary, new header strings, new `Status:` field)
+without auditing `nacl-tl-reopened` and `nacl-tl-hotfix`, which were the only
+two skills that consume its output. Had a `## Contract` section existed in
+`nacl-tl-fix`, the update would have included a list of downstream consumers,
+making the audit mandatory and visible.
+
+---
+
 # TeamLead Deploy — Monitor + Verify + YouGile
 
 ## Your Role
@@ -65,6 +94,29 @@ Detect CI/CD platform from the project:
 
 ### Step 1: IDENTIFY DEPLOYMENT
 
+0. **Pre-monitor verification gate:**
+
+   Before monitoring any pipeline, confirm the code being deployed came from
+   tasks with verified development status. Read from graph or status.json:
+
+   ```cypher
+   // Find tasks associated with the commit SHA being deployed
+   MATCH (t:Task)
+   WHERE t.commit = $commitSha
+   RETURN t.id AS task_id, t.status AS status
+   ```
+
+   Or read `.tl/status.json` and `.tl/conductor-state.json` to find tasks
+   associated with the branch/commit being deployed.
+
+   | Task status | Deploy action |
+   |-------------|--------------|
+   | done (PASS) | Proceed with deployment monitoring |
+   | verified-pending (UNVERIFIED) | HALT: "Deploying code from task with UNVERIFIED dev status. No test exercises the change. Confirm deploy? [yes/no] Default: no". If confirmed → continue with DEPLOY HALTED — UNVERIFIED in report if health fails. If not confirmed → DEPLOY HALTED — UNVERIFIED |
+   | blocked | Same gate as UNVERIFIED |
+   | failed / REGRESSION | HALT immediately: DEPLOY HALTED — REGRESSION. Do NOT proceed |
+   | Not found in graph | Warn and proceed (backward-compat) |
+
 1. Read `config.yaml → deploy` for target environment config
 2. Check CI/CD pipeline status:
    ```bash
@@ -109,21 +161,31 @@ After pipeline succeeds:
    curl -s [url][health_endpoint] | jq '.'
    ```
 6. If not 200 → retry 3 times with 10s intervals
-7. If still failing → FAIL
+7. If still failing → HALT the pipeline. Do NOT continue to YouGile update or
+   next deployment step. Report: DEPLOY HALTED — health check failed.
+   The health failure signals that the deployment is broken; reporting success
+   or partial success and continuing is a lie.
 8. Если health endpoint не отвечает и `config.yaml → vps.[env]` заполнен:
    1. SSH-диагностика: `ssh -i {ssh_key} {user}@{ip}`
    2. Проверить процессы: `pm2 status` / `docker ps`
    3. Проверить логи: `journalctl -u app --since '5m ago'` / `docker logs --since 5m`
    4. Проверить ресурсы: `df -h`, `free -m`
    5. Включить результат в отчёт о сбое
+   6. HALT pipeline with diagnostic report. Do NOT proceed to Step 4 success path.
 
 ### Step 4: YOUGILE UPDATE + REPORT
 
-**On success:**
+The report opens with a per-task status table — one row per deployed commit
+SHA — containing: SHA, source-task ID, source-task verification status (read
+in Step 1.0), CI status, health status, and the aggregated DEPLOY headline.
+Per-task verification status is required in every report; this is the single
+source of truth that downstream readers consume.
+
+**On success (pipeline passed AND health check passed):**
 - Move task to Done (if --production) or ToRelease (if --staging)
 - Post deploy confirmation to task chat:
   ```
-  ✅ Deployed to [staging/production]
+  Deployed to [staging/production]
 
   URL: https://example.com
   Health: 200 OK
@@ -133,13 +195,26 @@ After pipeline succeeds:
 
   Next: /nacl-tl-release (for production deploys)
   ```
+- Headline: DEPLOY COMPLETE
 
-**On failure:**
+**On pipeline failure (Step 2):**
 - Move task to Reopened
 - Post failure details to task chat
 - Suggest: check logs, fix, re-push
+- Headline: DEPLOY HALTED — REGRESSION (if new failures introduced)
+  or DEPLOY HALTED — {NO_INFRA | RUNNER_BROKEN} as appropriate
 
-**Without YouGile:** Just report locally.
+**On health check failure (Step 3):**
+- Pipeline halted (Step 3.7 — see above); do NOT reach this step's success path
+- Move task to Reopened with health failure details
+- Headline: DEPLOY HALTED — health check failed
+
+**On pre-monitor gate halt (Step 1.0):**
+- Do NOT update YouGile to Done
+- Post advisory with status detail
+- Headline: DEPLOY HALTED — UNVERIFIED / DEPLOY HALTED — REGRESSION
+
+**Without YouGile:** Just report locally with headline.
 
 ---
 
