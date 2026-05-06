@@ -69,7 +69,7 @@ Optional flags:
 | **L2** (Spec-sync) | Docs exist but describe OLD behavior. Code evolved past docs | Yes, update | Enum added, API changed, flow changed |
 | **L3** (Spec-create) | No docs exist for this area | Yes, create | SSE protocol, new auth provider, payments |
 
-**Tests are treated as code (L1), not as specification.** Test failures alone do not escalate to L2 unless the underlying spec is also stale.
+**Tests are treated as code (L1), not as specification.** Test failures alone do not escalate to L2 unless the underlying spec is also stale. (However: a regression test for the bug is mandatory for L1+ and must be written via `/nacl-tl-regression-test` BEFORE the fix is applied — see Step 6. The classification level above is independent of test-writing — it determines what happens to *docs*, not whether a regression test is required.)
 
 Use reference: `nacl-tl-core/references/fix-classification-rules.md` (if available; otherwise use the table above).
 
@@ -259,28 +259,70 @@ Present to user (in their language):
 
 ---
 
-### Step 6: APPLY FIX — announce: "Step 6: APPLY FIX"
+### Step 6: APPLY FIX (TDD-ordered) — announce: "Step 6: APPLY FIX"
 
-**Goal:** Fix the issue according to the (updated) specification.
+**Goal:** Fix the issue according to the (updated) specification, with the regression test written **before** the fix so RED→GREEN is verified by construction.
 
-**For L0 (Environment):**
-- Apply missing migrations, set env vars, clear caches, fix configs
-- No code changes needed
+**For L0 (Environment):** apply infrastructure fix only — migrations, env vars, caches, configs. Skip the TDD sub-flow below; jump to Step 7.
 
-**For L1 (Code-only):**
-- Fix code to match the existing specification
-- Write/update tests covering the bug
-- Verify tests pass
+**For L1 / L2 / L3 (any code change):** follow the TDD-ordered sub-steps 6a→6h. Step 7 then determines the final status.
 
-**For L2/L3 (with docs update):**
-- Fix code to match the UPDATED specification from Step 5
-- Write/update tests:
-  - Test = executable spec (TDD style)
-  - Test must verify Expected Behavior from Step 4
-  - Test must verify Unchanged Behavior (regression check!)
-- Verify tests pass
+#### TDD-ordered sub-steps (L1+)
 
-**Principles:**
+```
+6a  RESTATE BUG. Write down Current / Expected / Unchanged behavior
+    (already produced in Step 4 — re-confirm).
+
+6b  CAPTURE BASELINE. Discover scripts.test of the affected workspace
+    (see Step 7.1) and run it once. Record:
+      - the exact failing-test set (file + test name) → "baseline_failures"
+      - whether the runner started cleanly, collected tests, exited 0 or non-zero
+    If scripts.test is missing / runner is broken / suite empty after sanity
+    check, capture that as a flag and continue without baseline (status will
+    resolve to NO_INFRA or RUNNER_BROKEN at Step 7).
+
+6c  PICK PATH.
+      - Grep test files for an import of any changed/about-to-change source
+        module(s).
+      - If at least one test file imports the target → Path B (existing
+        coverage). Note: the imported test may or may not actually exercise
+        the bug — Step 7 will resolve that via baseline comparison.
+      - Otherwise → Path A (no test imports the file; a new regression test
+        is required).
+
+6d  (Path A only) WRITE REGRESSION TEST FIRST.
+    Invoke /nacl-tl-regression-test as a separate sub-agent (developer
+    subagent_type) with: bug description, target source file(s),
+    Current/Expected behavior from 6a. The sub-agent writes ONLY a test
+    file — it does not touch the production code. This separation is
+    deliberate: the fix author cannot also be the test author, otherwise
+    the test will be tuned to whatever the fix happens to do.
+
+6e  (Path A only) VERIFY THE TEST IS RED.
+    Run the new test in isolation against the still-broken code.
+    It MUST fail. If it passes, the test does not capture the bug —
+    discard it and re-invoke /nacl-tl-regression-test with sharper inputs
+    (cite Current/Expected more concretely). After 2 unsuccessful retries,
+    stop and ask the user to refine Step 4. Do NOT proceed to apply the fix
+    until the test is RED.
+
+6f  APPLY THE FIX. Modify production code only.
+      - L1: code matches existing spec.
+      - L2/L3: code matches the spec updated in Step 5 (which already passed
+        the USER GATE).
+      - Honor the principles: minimal scope, no opportunistic refactors,
+        no improvements outside the bug.
+
+6g  RE-RUN THE FULL SUITE. Use the same scripts.test command as 6b.
+    Record:
+      - "postfix_failures" — full failing-test set after the fix
+      - (Path A) whether the new regression test transitioned RED→GREEN
+      - (Path B) which baseline_failures cleared (= "transitioned" set)
+
+6h  HAND OFF TO STEP 7 for status determination.
+```
+
+**Principles (unchanged):**
 - Minimal changes — only what's needed for the fix
 - Do not refactor "along the way"
 - Do not add "improvements" beyond the bug scope
@@ -290,50 +332,103 @@ Present to user (in their language):
 
 ### Step 7: VALIDATE — announce: "Step 7: VALIDATE"
 
-**Goal:** Verify the fix is correct and nothing else broke.
+**Goal:** Determine the honest status of the fix, then run impact checks and update the changelog. This step never claims tests passed when no tests honestly passed, and never claims failures are unrelated without baseline evidence.
 
-1. **Tests:** Run unit/integration tests
-   ```bash
-   npm test          # or project-specific command
-   npm run build     # verify build succeeds
-   ```
+#### 7.1 Discover the test command (no fallback runner)
 
-2. **Mini sa-validate** (for L2/L3):
-   - Read the updated docs
-   - Verify against code: do docs now describe what code does?
-   - Check L4 (form↔domain) and L5 (UC→form) for affected UCs
+Locate the workspace owning the changed files (the nearest `package.json` walking up from a changed file). Read its `scripts.test`. Run **exactly that command** at every test step (6b, 6e, 6g). Do NOT substitute another runner — do not invent `npx vitest`, `npx jest`, etc., even if `npm test` looks unfamiliar. The runner is whatever the workspace declares.
 
-3. **Impact check:**
-   - Are there other UCs using the same endpoints/components?
-   - Did anything break in adjacent UCs?
-   - Check imports, shared types, shared state
+If `scripts.test` is missing → the affected layer has no test infrastructure; status will resolve to `NO_INFRA`.
 
-4. **Update .tl/changelog:**
-   ```markdown
-   ### [YYYY-MM-DD] nacl-tl-fix: [brief description]
-   - **Level:** L0/L1/L2/L3
-   - **Root cause:** [what was wrong]
-   - **Affected UC:** UC-### (or "infrastructure")
-   - **Docs updated:** [list] or "none (L0/L1)"
-   - **Code changed:** [file list]
-   ```
+#### 7.2 Sanity-check the runner if the suite reported zero tests
+
+If at 6b the runner started cleanly but reported 0 tests collected:
+- Pick any one known-good test file in the workspace (e.g. the largest one, or one referenced by `git log`).
+- Re-run scripts.test scoped to that single file (or use the runner's filter flag).
+- If at least one test runs → the original glob simply didn't match what we expected; treat as Path B if it now covers the changed file, else Path A. Continue.
+- If still zero tests → the runner is misconfigured; status `RUNNER_BROKEN`.
+
+The point: zero collected tests is **not** the same as "no regression test exists." It often means the glob is broken or the wrong runner is selected.
+
+#### 7.3 Determine the status
+
+Compute from Step 6's recorded data:
+- **baseline_failures** = set of failing tests at 6b
+- **postfix_failures** = set of failing tests at 6g
+- **new_failures** = postfix_failures − baseline_failures (tests failing now that weren't before)
+- **transitioned** = baseline_failures − postfix_failures (tests that were failing, now pass)
+- **regression_test_red_to_green** = true iff Path A and the test written in 6d was RED at 6e and GREEN at 6g
+
+Apply these rules in order — first match wins:
+
+| # | Condition | Status | Step 8 header |
+|---|---|---|---|
+| 1 | `scripts.test` was missing (6b flagged NO_INFRA). | `NO_INFRA` | `FIX APPLIED — UNVERIFIED` |
+| 2 | Runner failed to start, exited non-zero before any test ran, or 7.2 confirmed misconfiguration. | `RUNNER_BROKEN` | `FIX APPLIED — UNVERIFIED` |
+| 3 | `new_failures` is non-empty (the fix introduced failures that didn't exist in baseline). | `REGRESSION` | `FIX INCOMPLETE` — return to 6f |
+| 4 | Path A and `regression_test_red_to_green` is false (the test we wrote against the bug is still RED — the fix didn't fix it). | `REGRESSION` | `FIX INCOMPLETE` — return to 6f |
+| 5 | At least one test transitioned RED→GREEN — either the new regression test (Path A) or an existing test that was in `baseline_failures` and is now green (Path B) — AND `postfix_failures` is empty. | `PASS` | `FIX COMPLETE` |
+| 6 | At least one test transitioned RED→GREEN AND `postfix_failures` is non-empty BUT `postfix_failures ⊆ baseline_failures` (the only failures left are pre-existing failures the baseline already had). | `BLOCKED` | `FIX APPLIED — UNVERIFIED` (pre-existing unrelated failures) |
+| 7 | No test transitioned RED→GREEN (Path B, and no baseline_failures cleared). The fix was applied, the suite runs, but nothing in the suite gives evidence the fix did anything. | `UNVERIFIED` | `FIX APPLIED — UNVERIFIED` (no test exercises the change) |
+
+Notes:
+- Rule 5 is the "happy path" — applies in both Path A (the new regression test transitions RED→GREEN) and Path B (an existing baseline-failing test transitions).
+- Rule 6 (`BLOCKED`) is reachable from both paths: Path A when the new regression test transitions but unrelated baseline failures persist; Path B when an existing baseline-failing test transitions but unrelated baseline failures persist.
+- Rule 7 (`UNVERIFIED`) is only reachable from Path B and indicates the import-grep heuristic at 6c was a false positive — a test imports the file but doesn't actually cover the bug. Recommend invoking `/nacl-tl-regression-test` retroactively (it will fail-then-pass against the now-fixed code, which is weaker than RED-first but better than nothing).
+
+#### 7.4 Mini sa-validate (L2/L3 only)
+
+- Read the updated docs.
+- Verify against code: do docs now describe what code does?
+- Check L4 (form↔domain) and L5 (UC→form) for affected UCs.
+
+#### 7.5 Impact check
+
+- Other UCs using the same endpoints/components?
+- Adjacent UCs broken? Check imports, shared types, shared state.
+
+#### 7.6 Update `.tl/changelog`
+
+```markdown
+### [YYYY-MM-DD] nacl-tl-fix: [brief description]
+- **Level:** L0/L1/L2/L3
+- **Status:** PASS / BLOCKED / UNVERIFIED / NO_INFRA / RUNNER_BROKEN
+- **Root cause:** [what was wrong]
+- **Affected UC:** UC-### (or "infrastructure")
+- **Docs updated:** [list] or "none (L0/L1)"
+- **Code changed:** [file list]
+- **Tests:** [new test path if Path A] or "existing test transitioned: [path]" or "none (status BLOCKED/UNVERIFIED/NO_INFRA)"
+- **Pre-existing failures (baseline-confirmed unrelated):** [list, only if BLOCKED]
+```
 
 ---
 
 ### Step 8: REPORT (MANDATORY — never skip) — announce: "Step 8: REPORT"
 
-**Goal:** Give the user a complete picture of what was done.
+**Goal:** Give the user a complete picture of what was done. The report header reflects the Step 7 status — it is **not** always `FIX COMPLETE`.
 
-Present in user's language:
+Header by status:
+
+| Step 7 status | Step 8 header |
+|---|---|
+| `PASS` (rule 5) | `FIX COMPLETE` |
+| `BLOCKED` (rule 6) | `FIX APPLIED — UNVERIFIED` (pre-existing unrelated failures) |
+| `UNVERIFIED` (rule 7) | `FIX APPLIED — UNVERIFIED` (no test exercises the change) |
+| `NO_INFRA` (rule 1) | `FIX APPLIED — UNVERIFIED` (no test runner for this layer) |
+| `RUNNER_BROKEN` (rule 2) | `FIX APPLIED — UNVERIFIED` (test runner could not execute) |
+| `REGRESSION` (rules 3, 4) | `FIX INCOMPLETE` (the fix did not pass its own regression test, or introduced new failures) |
+
+#### Template — present in user's language
 
 ```
 ═══════════════════════════════════════════
-  FIX COMPLETE
+  <HEADER from table above>
 ═══════════════════════════════════════════
 
 Problem: [from user's description]
 Root cause: [what caused it]
 Level: L0/L1/L2/L3
+Status: <PASS | BLOCKED | UNVERIFIED | NO_INFRA | RUNNER_BROKEN | REGRESSION>
 
 Docs updated:
   [file list or "— (L0/L1, docs are current)"]
@@ -343,21 +438,24 @@ Changes applied:
    "Applied 13 pending migrations to test DB"]
 
 Tests:
-  [✓] Unit tests pass
-  [✓] Build succeeds
-  [✓] Impact check — adjacent UCs not affected
+  Runner:           [exact scripts.test command actually run, or "none — NO_INFRA"]
+  Baseline (6b):    [N tests collected, K failing] or "skipped (NO_INFRA / RUNNER_BROKEN)"
+  Regression test:  [path of new test (Path A) | "covered by existing test: [path]" (Path B) | "none — UNVERIFIED" | "n/a — NO_INFRA"]
+  RED→GREEN:        [✓ confirmed at 6e and 6g (Path A) | ✓ existing test transitioned (Path B) | ✗ no transition observed (UNVERIFIED) | n/a]
+  Postfix (6g):     [N tests collected, K failing] or "skipped"
+  New failures:     [list — only if REGRESSION; otherwise "none"]
+  Pre-existing failures (baseline-confirmed unrelated):
+                    [list — only if BLOCKED; otherwise "none"]
+
+Impact check:
+  [✓] Adjacent UCs not affected
+  [or list of concerns]
 
 Remaining discrepancies docs/code:
   [list or "none"]
 
-Next step — ship this fix:
-  /nacl-tl-ship "fix: [short description from commit message]"
-
-  ⚠ If this is a critical production issue that cannot wait
-  for the feature branch to merge, consider instead:
-  /nacl-tl-hotfix --apply
-  This will create a hotfix PR directly to main while
-  preserving your feature branch.
+Next step:
+  <see "Next step recommendations" below>
 
 Recommendations:
   [if systemic issues found — suggest
@@ -365,17 +463,62 @@ Recommendations:
 ═══════════════════════════════════════════
 ```
 
+#### Next step recommendations by status
+
+- `PASS`:
+  ```
+  /nacl-tl-ship "fix: [short description]"
+  ```
+  ⚠ If this is a critical production issue that cannot wait for the feature branch to merge, consider `/nacl-tl-hotfix --apply` instead.
+
+- `BLOCKED`:
+  ```
+  Decide:
+    (a) Ship anyway — the fix is verified. Pre-existing failures are
+        baseline-confirmed unrelated:
+          /nacl-tl-ship "fix: [short description] (note: pre-existing failures unchanged)"
+    (b) Investigate the unrelated failures first:
+          /nacl-tl-diagnose
+  ```
+
+- `UNVERIFIED`:
+  ```
+  The fix was applied but no test exercises it. Either:
+    (a) Write a regression test now (the import-grep heuristic missed):
+          /nacl-tl-regression-test "[bug description]"
+    (b) Accept and ship — at your discretion:
+          /nacl-tl-ship "fix: [short description] (note: no regression test)"
+  ```
+
+- `NO_INFRA`:
+  ```
+  The affected workspace has no test runner. Open a TECH task to set one up:
+    /nacl-tl-dev TECH-### "set up test runner for [workspace]"
+  Then re-run /nacl-tl-fix to add a regression test for this bug.
+  In the meantime, the fix can ship if the change is small enough to review by eye:
+    /nacl-tl-ship "fix: [short description] (note: no test infra in workspace)"
+  ```
+
+- `RUNNER_BROKEN`:
+  ```
+  The test runner could not execute. This is likely an L0 environment issue.
+    /nacl-tl-diagnose
+  Do NOT ship the fix until the runner works again — there is no way to verify regressions.
+  ```
+
+- `REGRESSION`:
+  ```
+  Return to Step 6f. Either the fix is wrong, or it broke something else.
+  Do NOT ship.
+  ```
+
 ### Auto-ship (if --auto-ship flag)
 
-If `--auto-ship` is set AND the fix was successful (tests pass, build OK):
-1. Automatically invoke `/nacl-tl-ship` with the fix description as commit message
-2. Report ship result alongside fix result
+If `--auto-ship` is set:
+- Status `PASS` → automatically invoke `/nacl-tl-ship` with the fix description as commit message; report ship result alongside fix result.
+- Status `BLOCKED` / `UNVERIFIED` / `NO_INFRA` / `RUNNER_BROKEN` / `REGRESSION` → do NOT auto-ship. Print the report and stop. The user makes the call.
 
-Note: `--auto-ship` ALWAYS uses `/nacl-tl-ship` (commits to current branch).
-It NEVER uses `/nacl-tl-hotfix`. If the user wants a hotfix to main, they must
-explicitly invoke `/nacl-tl-hotfix` after the fix is complete.
-
-If the fix failed or tests don't pass → do NOT auto-ship, report the fix failure only.
+`--auto-ship` ALWAYS uses `/nacl-tl-ship` (commits to current branch). It NEVER uses `/nacl-tl-hotfix`. If the user wants a hotfix to main, they must explicitly invoke `/nacl-tl-hotfix` after the fix is complete.
 
 ---
 
@@ -422,5 +565,6 @@ Useful for understanding scope before making changes.
 - `nacl-tl-core/references/tdd-workflow.md` — TDD cycle for Step 6
 - `nacl-tl-core/references/review-checklist.md` — self-review checklist
 - `nacl-tl-core/references/stub-tracking-rules.md` — stub markers
+- `/nacl-tl-regression-test` (sibling skill) — invoked from Step 6d to write a regression test against broken code (RED-first). The fix author MUST NOT also write the regression test.
 
 If a reference file is not found in the project, use the inline tables and rules in this SKILL.md as fallback.

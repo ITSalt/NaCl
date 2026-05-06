@@ -4,7 +4,7 @@
 
 # Skills Reference
 
-NaCl provides **55 skills** organized by layer and function. All skills follow the `nacl-{layer}-{action}` naming convention: **BA** = Business Analysis, **SA** = System Analysis, **TL** = TeamLead. Skills are invoked as slash commands (e.g. `/nacl-tl-fix`, `/nacl-ba-full`) and can delegate to each other through sub-agent orchestration.
+NaCl provides **56 skills** organized by layer and function. All skills follow the `nacl-{layer}-{action}` naming convention: **BA** = Business Analysis, **SA** = System Analysis, **TL** = TeamLead. Skills are invoked as slash commands (e.g. `/nacl-tl-fix`, `/nacl-ba-full`) and can delegate to each other through sub-agent orchestration.
 
 > **See also:** [Skill Modifiers Reference](skill-modifiers.md) — full documentation of all flags, modes, and subcommands.
 
@@ -122,7 +122,8 @@ TeamLead skills for the full development lifecycle -- from planning through rele
 
 | Skill | Description | Example invocation | Key modifiers |
 |-------|-------------|-------------------|---------------|
-| `nacl-tl-fix` | Spec-first bug fixing with automatic documentation sync. Auto-detects affected UC/TECH, classifies fix level (L0-L3), updates docs BEFORE code. | `/nacl-tl-fix "Login button returns 500"` | `--dry-run`, `--l1`, `--auto-ship` |
+| `nacl-tl-fix` | Spec-first bug fixing with automatic documentation sync. Auto-detects affected UC/TECH, classifies fix level (L0-L3), updates docs BEFORE code. Writes the regression test (via `nacl-tl-regression-test`) BEFORE applying the fix; reports honest status (`PASS` / `BLOCKED` / `UNVERIFIED` / `NO_INFRA` / `RUNNER_BROKEN` / `REGRESSION`) instead of always claiming `FIX COMPLETE`. | `/nacl-tl-fix "Login button returns 500"` | `--dry-run`, `--l1`, `--auto-ship` |
+| `nacl-tl-regression-test` | Independent regression-test author. Writes a single test against currently-broken code; the test must be RED. Touches only test files, never production code. Refuses on `NO_INFRA`. Invoked by `nacl-tl-fix` Step 6d, but also callable directly. | `/nacl-tl-regression-test "POST /activate returns 400 on empty body"` | — |
 | `nacl-tl-reopened` | Process tasks from YouGile Reopened column (failed verification/QA). Reads tester feedback, diagnoses root cause, fixes via nacl-tl-fix, ships via nacl-tl-ship. | `/nacl-tl-reopened` | `--task`, `--all`, `--yes`, `--auto-ship`, `--dry-run` |
 | `nacl-tl-diagnose` | Project health diagnostic -- analyzes git history, documentation drift, code health, and regression patterns. Produces DIAGNOSTIC-REPORT.md. | `/nacl-tl-diagnose` | `--since`, `--focus` |
 | `nacl-tl-hotfix` | Emergency hotfix to main: stash/cherry-pick changes, create hotfix branch from main, validate, open PR with auto-merge, restore source branch. | `/nacl-tl-hotfix --apply` | `--apply`, `--cherry-pick`, `--force-push`, `--rebase-feature`, `--dry-run`, `--yes` |

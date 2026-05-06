@@ -257,7 +257,7 @@ export async function renderActivity(driver: Driver, ucId: string): Promise<Exca
   });
   bgRects.push(userBgRect);
 
-  // System lane only when actor_type data is present. allNullActor → single lane.
+  // System lane only when actor data is present. allNullActor → single lane.
   if (!allNullActor) {
     const sysBgId = semIds.activitySwimBg('system');
     const sysBgRect = makeRect({
@@ -309,7 +309,7 @@ export async function renderActivity(driver: Driver, ucId: string): Promise<Exca
     height: 20,
     // In single-lane mode the header label can't claim "Пользователь" — that
     // would falsely assert the data has been classified.
-    text: allNullActor ? 'Шаги (actor_type не задан)' : 'Пользователь',
+    text: allNullActor ? 'Шаги (actor не задан)' : 'Пользователь',
     fontSize: 16,
     strokeColor: '#1e1e1e',
     strokeWidth: 2,
@@ -361,7 +361,7 @@ export async function renderActivity(driver: Driver, ucId: string): Promise<Exca
     sysHeaderRect.boundElements.push({ id: sysHeaderTextId, type: 'text' });
   }
 
-  // --- Warning banner when actor_type is missing on every step ---
+  // --- Warning banner when actor is missing on every step ---
   // Free text element above the swimlane, no container, so the analyst sees
   // immediately that the diagram is degraded by missing graph data.
   if (allNullActor) {
@@ -372,7 +372,7 @@ export async function renderActivity(driver: Driver, ucId: string): Promise<Exca
       y: -40,
       width: SWIMLANE_WIDTH - 20,
       height: 20,
-      text: '⚠ actor_type не задан — заполните в графе для разделения по дорожкам',
+      text: '⚠ actor не задан — заполните в графе для разделения по дорожкам',
       fontSize: 12,
       strokeColor: '#b71c1c',
       strokeWidth: 1,

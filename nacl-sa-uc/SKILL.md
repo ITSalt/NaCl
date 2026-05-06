@@ -477,7 +477,7 @@ For each confirmed step:
 ```cypher
 MERGE (as:ActivityStep {id: $stepId})
 SET as.description = $description,
-    as.step_type = $stepType,
+    as.actor = $actor,
     as.order = $order,
     as.form_ref = $formRef,
     as.updated = datetime()
@@ -487,7 +487,7 @@ RETURN as.id AS id
 Parameters:
 - `$stepId` --- e.g. `"UC-101-AS01"`
 - `$description` --- e.g. `"Открывает форму создания заказа"`
-- `$stepType` --- `"User"` or `"System"`
+- `$actor` --- one of `"User"`, `"System"`, or unset; classify per `frontmatter_v1_sa.py:1098` convention
 - `$order` --- integer (1, 2, 3, ...)
 - `$formRef` --- Form ID or `null`
 
@@ -756,7 +756,7 @@ RETURN uc.id AS uc_id
 
 ```cypher
 MATCH (uc:UseCase {id: $ucId})-[:HAS_STEP]->(as_step:ActivityStep)
-WHERE as_step.step_type = 'User' AND as_step.form_ref IS NULL
+WHERE as_step.actor = 'User' AND as_step.form_ref IS NULL
 RETURN as_step.id AS step_id, as_step.description AS description
 ```
 
@@ -969,7 +969,7 @@ If `detail` finds no DomainEntity realized from related BA entities:
 | Node | Properties |
 |------|------------|
 | UseCase | id, name, actor, priority, status, detail_status, created, updated |
-| ActivityStep | id, description, step_type, order, form_ref, updated |
+| ActivityStep | id, description, actor, order, form_ref, updated |
 | Form | id, name, description, updated |
 | FormField | id, name, label, field_type, required, order, updated |
 | Requirement | id, description, source, rq_type, updated |

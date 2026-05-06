@@ -4,7 +4,7 @@ description: |
   Code generation agent for TDD development, bug fixing, and documentation.
   Use when delegating tasks that write application code from specifications.
   Routes skills: nacl-tl-dev, nacl-tl-dev-be, nacl-tl-dev-fe, nacl-tl-fix,
-  nacl-tl-docs, nacl-tl-reopened.
+  nacl-tl-regression-test, nacl-tl-docs, nacl-tl-reopened.
 model: sonnet
 effort: medium
 tools: Read, Write, Edit, Grep, Glob, Bash
@@ -36,7 +36,7 @@ in the codebase and generate code that matches the project's conventions.
 ## Skills Routed Here
 
 nacl-tl-dev, nacl-tl-dev-be, nacl-tl-dev-fe, nacl-tl-fix,
-nacl-tl-docs, nacl-tl-reopened
+nacl-tl-regression-test, nacl-tl-docs, nacl-tl-reopened
 
 ## Important
 

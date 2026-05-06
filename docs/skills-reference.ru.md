@@ -4,7 +4,7 @@
 
 # Каталог скиллов
 
-51 скилл, организованный по уровням и функциям. Все скиллы следуют конвенции `nacl-{слой}-{действие}`: **BA** = Business Analysis, **SA** = System Analysis, **TL** = TeamLead.
+52 скилла, организованных по уровням и функциям. Все скиллы следуют конвенции `nacl-{слой}-{действие}`: **BA** = Business Analysis, **SA** = System Analysis, **TL** = TeamLead.
 
 ## Оркестраторы
 
@@ -104,7 +104,8 @@
 
 | Скилл | Описание |
 |-------|----------|
-| `nacl-tl-fix` | Исправление бага (spec-first) |
+| `nacl-tl-fix` | Исправление бага (spec-first). Регрессионный тест пишется ДО фикса (через `nacl-tl-regression-test`); статус честный (`PASS` / `BLOCKED` / `UNVERIFIED` / `NO_INFRA` / `RUNNER_BROKEN` / `REGRESSION`), а не всегда `FIX COMPLETE` |
+| `nacl-tl-regression-test` | Независимый автор регрессионных тестов. Пишет один тест против сломанного кода — тест обязан быть RED. Трогает только тестовые файлы, не продакшен. На `NO_INFRA` отказывается. Вызывается из `nacl-tl-fix` Step 6d или напрямую |
 | `nacl-tl-reopened` | Переоткрытые задачи (QA failures) |
 | `nacl-tl-diagnose` | Диагностика здоровья проекта |
 | `nacl-tl-reconcile` | Синхронизация доков с кодом |

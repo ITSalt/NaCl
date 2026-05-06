@@ -52,6 +52,23 @@ _METADATA_HEADING = (
 )
 
 
+def _canonicalize_actor(text: Optional[str]) -> Optional[str]:
+    """Return canonical 'User' / 'System' from a raw actor string, or None.
+
+    Uses case-insensitive substring matching so complex Russian strings like
+    'ACT-01 Пользователь (Посетитель)' and 'Система (триггер: ...)' resolve
+    correctly.  Returns None for empty/None input or unrecognised values.
+    """
+    if not text:
+        return None
+    tl = text.lower()
+    if any(kw in tl for kw in ("пользовател", "клиент", "user", "client")):
+        return "User"
+    if any(kw in tl for kw in ("систем", "сервер", "system", "server")):
+        return "System"
+    return None
+
+
 # ---------------------------------------------------------------------------
 
 class InlineTableV1SaAdapter:
@@ -642,12 +659,33 @@ class InlineTableV1SaAdapter:
             if not main_scenario:
                 main_scenario = self._parse_step_subsections(text, scenario_heading)
 
+            # Resolve UC-level actor for fallback via substring canonicalization.
+            uc_actor_raw = (metadata.get("актор") or metadata.get("actor") or "").strip()
+            uc_actor_canonical = _canonicalize_actor(uc_actor_raw)
+
             activity_steps: List[ActivityStep] = []
-            for idx, step_desc in enumerate(main_scenario, start=1):
+            for idx, (col_actor, step_desc) in enumerate(main_scenario, start=1):
+                # Precedence:
+                # 1. Per-step 'User:' / 'System:' prefix on description (highest).
+                # 2. Per-step Компонент / Исполнитель column value.
+                # 3. UC-level actor (lowest explicit source).
+                actor: Optional[str] = None
+                if step_desc.lower().startswith("user:"):
+                    actor = "User"
+                    step_desc = step_desc[5:].strip()
+                elif step_desc.lower().startswith("system:"):
+                    actor = "System"
+                    step_desc = step_desc[7:].strip()
+                elif col_actor is not None:
+                    actor = col_actor
+                else:
+                    # Fall back to UC-level actor when no inline source is present.
+                    actor = uc_actor_canonical
                 activity_steps.append(ActivityStep(
                     id=f"{uc_id}-A{idx:02d}",
                     step_number=idx,
                     description=step_desc,
+                    actor=actor,
                     source_file=self._rel(project, path),
                 ))
 
@@ -670,7 +708,7 @@ class InlineTableV1SaAdapter:
                 ba_trace=list(dict.fromkeys(ba_trace)),
                 preconditions=preconditions,
                 postconditions=postconditions,
-                main_scenario=main_scenario,
+                main_scenario=[desc for _, desc in main_scenario],
                 activity_steps=activity_steps,
                 source_file=self._rel(project, path),
             ))
@@ -725,28 +763,62 @@ class InlineTableV1SaAdapter:
         return out
 
     @staticmethod
-    def _parse_scenario_table(body: Optional[str]) -> List[str]:
+    def _parse_scenario_table(body: Optional[str]) -> List[Tuple[Optional[str], str]]:
+        """Parse the main-scenario table body.
+
+        Returns a list of ``(actor, description)`` tuples where *actor* is the
+        canonicalized value ('User' / 'System' / None) derived from an
+        optional 'Компонент' / 'Исполнитель' / 'Actor' / 'Актор' column, and
+        *description* is the step text from the 'Действие' / 'Action' column.
+        """
+        _ACTOR_HEADER_TOKENS = ("компонент", "исполнитель", "actor", "актор")
+
         if not body:
             return []
         tables = md.parse_tables(body)
         if tables:
-            out: List[str] = []
+            out: List[Tuple[Optional[str], str]] = []
             for row in tables[0]:
                 keys = list(row.keys())
-                # Prefer "Действие" / "Action" / "Step" / "Шаг" column if present
+
+                # Detect optional actor column (Компонент / Исполнитель / Actor / Актор).
+                actor_col = None
+                for k in keys:
+                    # Strip markdown bold markers and whitespace before comparing.
+                    kl = re.sub(r"\*\*", "", k).strip().lower()
+                    if any(t == kl for t in _ACTOR_HEADER_TOKENS):
+                        actor_col = k
+                        break
+
+                # Detect step-description column.
                 step_col = None
                 for k in keys:
                     kl = k.lower()
                     if any(t in kl for t in ("действие", "action", "шаг", "step")):
                         step_col = k
                         break
+
+                # Canonicalize per-step actor from the actor column cell.
+                col_actor: Optional[str] = None
+                if actor_col:
+                    raw_cell = re.sub(r"\*\*", "", row.get(actor_col, "")).strip()
+                    if raw_cell and raw_cell != "--":
+                        col_actor = _canonicalize_actor(raw_cell)
+
                 if step_col and row[step_col].strip():
-                    out.append(md.strip_markdown_inline(row[step_col].strip()))
+                    desc = md.strip_markdown_inline(row[step_col].strip())
+                    out.append((col_actor, desc))
                 else:
-                    # Fallback: concatenate all non-numeric columns
-                    pieces = [v.strip() for k, v in row.items() if v.strip() and k != keys[0]]
+                    # Fallback: concatenate all non-numeric, non-actor columns
+                    skip = {keys[0]}
+                    if actor_col:
+                        skip.add(actor_col)
+                    pieces = [
+                        v.strip() for k, v in row.items()
+                        if v.strip() and k not in skip
+                    ]
                     if pieces:
-                        out.append(md.strip_markdown_inline(" — ".join(pieces)))
+                        out.append((col_actor, md.strip_markdown_inline(" — ".join(pieces))))
             return out
 
         # Fallback: subsection-based parser for "### Шаг N" / "### Step N"
@@ -767,11 +839,11 @@ class InlineTableV1SaAdapter:
                 desc = f"{title}: {first_item.group(1).strip()}" if title else first_item.group(1).strip()
             else:
                 desc = title or "(no description)"
-            out.append(md.strip_markdown_inline(desc))
+            out.append((None, md.strip_markdown_inline(desc)))
         return out
 
     @staticmethod
-    def _parse_step_subsections(text: str, scenario_heading: str) -> List[str]:
+    def _parse_step_subsections(text: str, scenario_heading: str) -> List[Tuple[Optional[str], str]]:
         """Extract activity steps from ### Шаг N / ### Step N subsections.
 
         Used when the main-scenario section heading exists but its body is
@@ -779,7 +851,8 @@ class InlineTableV1SaAdapter:
         ``iter_sections`` cuts off at the next heading of any level).
 
         This scans the full UC text for the scenario heading followed by
-        step subsections, collecting them into a list.
+        step subsections, collecting them into a list.  Actor is always None
+        because prose subsections carry no actor column.
         """
         # First, verify that the scenario heading exists in the text
         flags = re.IGNORECASE
@@ -794,7 +867,7 @@ class InlineTableV1SaAdapter:
             return []
 
         # Collect all ### Шаг N / ### Step N subsections from the full text
-        out: List[str] = []
+        out: List[Tuple[Optional[str], str]] = []
         for level, _, heading, body in md.iter_sections(text):
             if level != 3:
                 continue
@@ -810,7 +883,7 @@ class InlineTableV1SaAdapter:
                 desc = f"{title}: {first_item.group(1).strip()}" if title else first_item.group(1).strip()
             else:
                 desc = title or "(no description)"
-            out.append(md.strip_markdown_inline(desc))
+            out.append((None, md.strip_markdown_inline(desc)))
         return out
 
     # ---- requirements ---------------------------------------------------

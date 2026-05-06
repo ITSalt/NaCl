@@ -2,7 +2,7 @@
 
 # NaCl
 
-**NaCl** (Na + Cl) -- набор из **55 скилл-команд** для [Claude Code](https://docs.anthropic.com/en/docs/claude-code), охватывающих полный цикл разработки ПО -- от бизнес-анализа и системной спецификации до TDD-разработки, код-ревью, QA и релиза. Артефакты бизнес- и системного анализа хранятся в графе Neo4j, поэтому каждое требование можно запросить, отследить и оно никогда не потеряется в толще Markdown.
+**NaCl** (Na + Cl) -- набор из **56 скилл-команд** для [Claude Code](https://docs.anthropic.com/en/docs/claude-code), охватывающих полный цикл разработки ПО -- от бизнес-анализа и системной спецификации до TDD-разработки, код-ревью, QA и релиза. Артефакты бизнес- и системного анализа хранятся в графе Neo4j, поэтому каждое требование можно запросить, отследить и оно никогда не потеряется в толще Markdown.
 
 ## Как это работает
 
@@ -179,7 +179,7 @@ NaCl/
 | [docs/quickstart.md](docs/quickstart.md) | Пошаговая настройка и первый запуск |
 | [docs/HANDOVER.ru.md](docs/HANDOVER.ru.md) | Руководство по экспорту и импорту графа между машинами |
 | [docs/architecture.md](docs/architecture.md) | Схема графа, модель взаимодействия скиллов, потоки данных |
-| [docs/skills-reference.md](docs/skills-reference.md) | Полный каталог всех 55 скиллов с параметрами и примерами |
+| [docs/skills-reference.md](docs/skills-reference.md) | Полный каталог всех 56 скиллов с параметрами и примерами |
 | [docs/graph-schema.md](docs/graph-schema.md) | Типы узлов/рёбер Neo4j, ограничения, индексы |
 | [docs/configuration.md](docs/configuration.md) | Справочник `config.yaml` и переменные окружения |
 | [docs/methodology/](docs/methodology/) | Методология BA/SA: философия графа, валидация, трассируемость |

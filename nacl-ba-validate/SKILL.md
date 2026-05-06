@@ -19,6 +19,8 @@ rule traceability, role mapping, glossary alignment with SA layer).
 
 All checks are **read-only** -- validation NEVER modifies data in the graph.
 
+**Note:** ActivityStep / UC step-level structure is checked by `/nacl-sa-validate` (see L3.5, L3.6).
+
 **Shared references:** `nacl-core/SKILL.md`
 
 ---

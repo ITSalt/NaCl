@@ -566,6 +566,38 @@ RETURN uc.id AS uc_id, uc.name AS uc_name,
        'UseCase has no assigned actor (SystemRole)' AS problem
 ```
 
+#### Check 3.5: ActivitySteps with empty/missing actor
+
+Every ActivityStep must carry an `actor` property (`User` or `System`) so the
+activity-diagram renderer can distribute steps across swimlanes. A missing actor
+collapses the diagram to a single lane and hides the User/System separation.
+
+```cypher
+// L3.5 -- Severity: CRITICAL
+// ActivitySteps with empty/missing actor (CRITICAL)
+MATCH (uc:UseCase)-[:HAS_STEP]->(s:ActivityStep)
+WHERE s.actor IS NULL OR s.actor = ''
+RETURN uc.id AS uc_id,
+       count(s) AS empty_actor_steps,
+       'ActivityStep.actor empty — diagram will render single-lane' AS problem
+ORDER BY empty_actor_steps DESC
+```
+
+#### Check 3.6: Non-canonical actor values on ActivityStep
+
+The renderer expects exactly `User` or `System` (case-sensitive). Values such as
+`admin`, `system`, `authenticated`, or `Admin` are silently ignored and produce
+the same degraded single-lane output as a missing actor.
+
+```cypher
+// L3.6 -- Severity: WARNING
+// Non-canonical actor values (WARNING)
+MATCH (uc:UseCase)-[:HAS_STEP]->(s:ActivityStep)
+WHERE s.actor IS NOT NULL AND s.actor <> '' AND NOT s.actor IN ['User', 'System']
+RETURN uc.id AS uc_id, s.id AS step_id, s.actor AS actor_value,
+       'Non-canonical actor value (renderer expects User|System exactly)' AS problem
+```
+
 ---
 
 ### CRITICAL: Mandatory Exemption Filters

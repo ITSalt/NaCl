@@ -155,7 +155,7 @@ Transferring a project's Neo4j graph between machines is a one-shot, encrypted e
 | [docs/quickstart.md](docs/quickstart.md) | Step-by-step setup and first run |
 | [docs/HANDOVER.md](docs/HANDOVER.md) | Runbook for exporting and importing a graph between machines |
 | [docs/architecture.md](docs/architecture.md) | Graph schema, skill interaction model, data flow |
-| [docs/skills-reference.md](docs/skills-reference.md) | Full catalog of all 55 skills with parameters and examples |
+| [docs/skills-reference.md](docs/skills-reference.md) | Full catalog of all 56 skills with parameters and examples |
 | [docs/graph-schema.md](docs/graph-schema.md) | Neo4j node/edge types, constraints, indexes |
 | [docs/configuration.md](docs/configuration.md) | `config.yaml` reference and environment variables |
 | [docs/methodology/](docs/methodology/) | BA/SA methodology deep dive: graph philosophy, validation, traceability |

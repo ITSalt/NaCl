@@ -484,11 +484,25 @@ describe('renderBoard — activity renderer', () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const els = scene.elements as any[];
     const sysBg = els.find((e) => e.id === 'swim-system-bg');
-    assert.equal(sysBg, undefined, 'system swimlane bg must NOT be rendered when actor_type is all null');
+    assert.equal(sysBg, undefined, 'system swimlane bg must NOT be rendered when actor is all null');
     const userBg = els.find((e) => e.id === 'swim-user-bg');
     assert.ok(userBg, 'user swimlane bg still rendered (now hosts every step)');
     const warning = els.find((e) => e.type === 'text' && String(e.id ?? '').startsWith('text-warning-UC-003-actor-missing'));
-    assert.ok(warning, 'warning banner is added when actor_type is missing on every step');
+    assert.ok(warning, 'warning banner is added when actor is missing on every step');
+    // Regression: warning text and header must use "actor" not legacy "actor_type"
+    // These two assertions are RED until activity.ts lines 312 and 375 are updated.
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    assert.ok(
+      !String((warning as any).text ?? '').includes('actor_type'),
+      `warning text must not contain legacy "actor_type" — got: ${(warning as any).text}`,
+    );
+    const userHeaderText = els.find((e) => e.id === 'text-swim-user-header');
+    assert.ok(userHeaderText, 'user header text element must exist');
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    assert.ok(
+      !String((userHeaderText as any).text ?? '').includes('actor_type'),
+      `user header text must not contain legacy "actor_type" — got: ${(userHeaderText as any).text}`,
+    );
   });
 });
 

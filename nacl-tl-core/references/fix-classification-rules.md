@@ -32,6 +32,11 @@ The problem is **not in the code or documentation** at all. It is an infrastruct
 3. **No code or documentation changes needed.**
 4. If the fix reveals a gap in DEPLOY.md or DEVELOPMENT.md, note it as a recommendation.
 
+### What is NOT L0
+
+- **A workspace having no test runner** is not L0 — it is a missing-infrastructure condition that surfaces during `/nacl-tl-fix` Step 7 as `NO_INFRA`. The fix itself stays at whatever level (L1/L2/L3) the bug requires. The skill applies the fix but reports `FIX APPLIED — UNVERIFIED` and recommends `/nacl-tl-dev TECH-### "set up test runner for [workspace]"`. Do not collapse this into L0 just because there's nothing to validate against.
+- **A broken test runner** (collected 0 tests, exited non-zero before any test ran) is also not L0 in the sense of bypassing test verification. It surfaces as `RUNNER_BROKEN` and recommends `/nacl-tl-diagnose`. The fix may still be the right L0/L1/L2/L3 classification on its own merits, but it ships as `FIX APPLIED — UNVERIFIED` until the runner is fixed.
+
 ---
 
 ## L1 — Code-only
@@ -57,9 +62,10 @@ The documentation (UCs, specs, domain model) **describes the correct behavior**,
 
 ### Actions
 
-1. Fix the code.
-2. Write or update a test covering the bug.
-3. **Do not touch** the documentation — it is already correct.
+1. Write the regression test FIRST, against the broken code (delegated to `/nacl-tl-regression-test` per `nacl-tl-fix` Step 6d). Verify it is RED.
+2. Apply the code fix.
+3. Re-run the suite. The regression test must be GREEN; no new failures vs baseline.
+4. **Do not touch** the documentation — it is already correct.
 
 ---
 
@@ -85,8 +91,9 @@ Documentation **exists** but describes **outdated or incorrect** behavior. The c
 ### Actions
 
 1. **First** update the documentation — capture the correct behavior.
-2. **Then** fix the code so it matches the updated spec.
-3. Write or update tests.
+2. Write the regression test against the still-broken code (delegated to `/nacl-tl-regression-test`). Verify it is RED.
+3. **Then** fix the code so it matches the updated spec.
+4. Re-run the suite. The regression test must be GREEN; no new failures vs baseline.
 
 ### Which SA documents to update
 
@@ -127,8 +134,9 @@ There is **no documentation at all** for the affected area. The functionality is
 ### Actions
 
 1. **First** create a minimal specification in Kiro-style bugfix spec format.
-2. **Then** fix the code so it matches the created specification.
-3. Write or update tests.
+2. Write the regression test against the still-broken code (delegated to `/nacl-tl-regression-test`). Verify it is RED.
+3. **Then** fix the code so it matches the created specification.
+4. Re-run the suite. The regression test must be GREEN; no new failures vs baseline.
 
 ### Kiro-style bugfix spec format
 
