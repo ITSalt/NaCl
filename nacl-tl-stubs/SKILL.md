@@ -10,6 +10,31 @@ description: |
   Flags: UC### for UC-specific scan, --final for pre-release check, no flag for full scan.
 ---
 
+## Contract
+
+**Inputs this skill consumes:**
+- Codebase paths (full repo or UC scope)
+- Optional: stub-registry.json prior state
+
+**Outputs this skill produces:**
+- stub-registry.json with severity counts (CRITICAL / MAJOR / WARNING)
+- Headline one of: STUBS COMPLETE / STUBS APPLIED — UNVERIFIED /
+  STUBS RUNNER_BROKEN / STUBS APPLIED — REGRESSION (when prior count grew)
+
+**Downstream consumers of this output:**
+- nacl-tl-review (Stub Verification Gate)
+- nacl-tl-release (final pre-release scan)
+
+**Contract change discipline:**
+If this skill's output contract changes — status vocabulary, headline format,
+exit codes, or report-field names — every downstream consumer in the list
+above must be audited and updated in the same release. The 0.10.0→0.10.1
+regression (nacl-tl-reopened broke when nacl-tl-fix changed its output) was
+caused by skipping this discipline. Do not ship contract changes without
+auditing consumers.
+
+---
+
 # TeamLead Stub Tracking Skill
 
 You are a **quality gate scanner** responsible for detecting incomplete code markers (stubs, TODOs, mocks, hacks) in the codebase. You scan source files, classify findings by severity, maintain a persistent registry, and block downstream phases when critical stubs remain.
@@ -17,6 +42,7 @@ You are a **quality gate scanner** responsible for detecting incomplete code mar
 ## Your Role
 
 - **Scan source files** for marker comments and code patterns indicating placeholder implementations
+- **Scan test files** for empty or hollow test structures (the 44-stub scenario)
 - **Classify each finding** by severity: CRITICAL, WARNING, or INFO
 - **Associate stubs with UCs** by matching file paths against task result files
 - **Detect resolved stubs** by comparing current scan against previous registry entries
@@ -27,7 +53,7 @@ You are a **quality gate scanner** responsible for detecting incomplete code mar
 ## Key Principle: Nothing Ships Unnoticed
 
 ```
-Scan:       Thorough -- check all marker types and code patterns
+Scan:       Thorough -- check all marker types, code patterns, AND empty test structures
 Classify:   Strict -- security and data integrity stubs are always CRITICAL
 Track:      Persistent -- stubs are never deleted, only resolved
 Gate:       Enforced -- critical stubs block review, QA, and release
@@ -95,11 +121,49 @@ console\.log\(                     # production code only, not tests
 return\s+true\s*;?\s*//.*?(stub|todo|hack|temporary|dev)
 ```
 
+### Empty Test File Patterns (new in 0.11.0)
+
+Applied to `**/*.test.{ts,tsx,js,jsx}` and `**/*.spec.{ts,tsx,js,jsx}` files only.
+
+**Pattern A — Hollow test file:**
+Count the number of `it(` and `test(` call sites in the file. If zero → flag as `STUB-EMPTY-TEST-FILE`.
+
+This catches the "44-stub scenario": a project with 44 test files that each contain `describe('X', () => { /* nothing */ })` — the grep for comment markers finds nothing, but there are no test cases executing. The file looks like a test suite but provides zero coverage.
+
+Example that triggers the check:
+```typescript
+// auth.test.ts
+describe('AuthService', () => {
+  // TODO: add tests
+});
+```
+The above file has 0 `it(` and 0 `test(` calls → `STUB-EMPTY-TEST-FILE`.
+
+**Pattern B — Describe block with no cases:**
+Within non-empty test files (files that have at least one `it(` or `test(` call), detect `describe(` blocks that contain no `it(` or `test(` inside them. Heuristic: scan for `describe(` followed by `{` and look ahead for the matching `}` — if no `it(` or `test(` appears between them, flag as `STUB-EMPTY-DESCRIBE`.
+
+This is a WARNING-severity check. It indicates test coverage debt where a block was set up but not populated.
+
+Example:
+```typescript
+describe('PaymentService', () => {
+  describe('processRefund', () => {
+    // Planned but not implemented
+  });
+  it('creates a payment', () => { ... });
+});
+```
+The inner `describe('processRefund', ...)` has no test cases → `STUB-EMPTY-DESCRIBE`.
+
 ### File Scope
 
-**Include**: `src/**/*.{ts,tsx,js,jsx}`
+**Production code include**: `src/**/*.{ts,tsx,js,jsx}`
 
-**Exclude**: `node_modules/`, `dist/`, `build/`, `**/*.test.{ts,tsx}`, `**/*.spec.{ts,tsx}`, `tests/fixtures/**`, `__mocks__/**`, `**/*.stories.{ts,tsx}`
+**Production code exclude**: `node_modules/`, `dist/`, `build/`, `**/*.test.{ts,tsx}`, `**/*.spec.{ts,tsx}`, `tests/fixtures/**`, `__mocks__/**`, `**/*.stories.{ts,tsx}`
+
+**Test file scan (separate pass)**: `**/*.test.{ts,tsx,js,jsx}`, `**/*.spec.{ts,tsx,js,jsx}`
+
+The test-file pass runs in addition to the production-code pass, not as a replacement. Test files are excluded from production-code stub markers (TODOs in test setup code are expected) but are included in the empty-structure scan.
 
 ---
 
@@ -131,14 +195,16 @@ Apply rules in order. First match wins.
 | 13 | `console.log` in production code | Debug statement left behind |
 | 14 | `// eslint-disable` | Linting bypassed |
 | 15 | Placeholder images/text in components | UI not finalized |
+| 16 | `STUB-EMPTY-TEST-FILE` (0 `it()`/`test()` in a test file) | Coverage debt: file exists but executes nothing |
+| 17 | `STUB-EMPTY-DESCRIBE` (describe block with no test cases inside) | Coverage debt: test block exists but executes nothing |
 
 ### INFO -- Tracked only, never blocking
 
 | # | Condition | Rationale |
 |---|-----------|-----------|
-| 16 | `TODO` mentioning docs/jsdoc/readme | Documentation debt |
-| 17 | `TODO` mentioning optimize/cache/refactor | Technical debt |
-| 18 | `TODO` without deadline or urgency | General improvement note |
+| 18 | `TODO` mentioning docs/jsdoc/readme | Documentation debt |
+| 19 | `TODO` mentioning optimize/cache/refactor | Technical debt |
+| 20 | `TODO` without deadline or urgency | General improvement note |
 
 ---
 
@@ -150,11 +216,21 @@ Apply rules in order. First match wins.
 - **UC###**: read `result-be.md` and `result-fe.md`, extract file lists from "Files Changed/Created" sections, scan only those
 - **--final**: scan all `src/`, apply stricter thresholds
 
-### Step 2: Scan Files
+### Step 2: Scan Production Files
 
-Run grep/rg with all patterns above. For each match extract: `file`, `line`, `type` (TODO/FIXME/STUB/MOCK/HACK), `text`, `ucRef` (from parentheses if present).
+Run grep/rg with all production patterns above. For each match extract: `file`, `line`, `type` (TODO/FIXME/STUB/MOCK/HACK), `text`, `ucRef` (from parentheses if present).
 
 For code patterns without markers, infer type: `throw NotImplemented` -> STUB, `return {} as any` -> STUB, `console.log` -> HACK, `@ts-ignore` -> HACK.
+
+### Step 2b: Scan Test Files (separate pass)
+
+For each `*.test.{ts,tsx,js,jsx}` and `*.spec.{ts,tsx,js,jsx}` file in scope:
+
+1. Count `it(` and `test(` occurrences.
+2. If count == 0 → flag as `STUB-EMPTY-TEST-FILE` (WARNING).
+3. If count > 0 → scan for `describe(` blocks with no `it(`/`test(` inside (Pattern B above). Each such block → flag as `STUB-EMPTY-DESCRIBE` (WARNING).
+
+The test-file pass runs regardless of whether the production-code pass found anything. A clean production-code scan with empty test files is NOT `STUBS COMPLETE` — it is `STUBS APPLIED — UNVERIFIED`.
 
 ### Step 3: Classify Severity
 
@@ -186,13 +262,20 @@ Write `.tl/stub-registry.json`:
   "updatedAt": "ISO-timestamp",
   "stats": {
     "total": 12, "critical": 1, "warning": 5, "info": 6,
-    "resolved": 8, "unresolved": 4, "orphaned": 1
+    "resolved": 8, "unresolved": 4, "orphaned": 1,
+    "emptyTestFiles": 2, "emptyDescribeBlocks": 3
   },
   "stubs": [
     {
       "id": "STUB-001", "file": "src/orders/order.service.ts", "line": 45,
       "type": "STUB", "severity": "CRITICAL",
       "text": "// STUB(UC001): returns empty array",
+      "uc": "UC001", "createdAt": "ISO", "resolvedAt": null
+    },
+    {
+      "id": "STUB-045", "file": "src/orders/order.test.ts", "line": 1,
+      "type": "STUB-EMPTY-TEST-FILE", "severity": "WARNING",
+      "text": "0 it()/test() calls in test file",
       "uc": "UC001", "createdAt": "ISO", "resolvedAt": null
     }
   ]
@@ -201,7 +284,7 @@ Write `.tl/stub-registry.json`:
 
 ### Step 7: Generate Output
 
-**UC scan**: write `.tl/tasks/UC###/stub-report.md` using `nacl-tl-core/templates/stub-report-template.md`. Sections: frontmatter (task_id, scan_date, status, counts), summary, critical/warning/info/orphaned stubs, blocking status, recommendations, registry update note.
+**UC scan**: write `.tl/tasks/UC###/stub-report.md` using `nacl-tl-core/templates/stub-report-template.md`. Sections: frontmatter (task_id, scan_date, status, counts), summary, critical/warning/info/orphaned stubs, empty-test-file count with file list, blocking status, recommendations, registry update note.
 
 **Full scan / --final**: print console summary (see Output Formats below).
 
@@ -213,7 +296,8 @@ Append to `.tl/changelog.md`:
 
 ```
 ## [YYYY-MM-DD HH:MM] STUBS: UC### / Full / Final
-- Scanned: N files | Found: N (N critical, N warning, N info)
+- Scanned: N files (production) + M test files | Found: N (N critical, N warning, N info)
+- Empty test files: N | Empty describe blocks: N
 - New: N, Resolved: N, Orphaned: N | Gate: PASS / BLOCKED
 ```
 
@@ -227,7 +311,7 @@ Append to `.tl/changelog.md`:
 |-----------|--------|
 | Critical > 0 | **BLOCK** -- return to developer |
 | Orphaned > 0 | **BLOCK** -- all stubs must link to a UC |
-| Warning > 3 | **WARNING** -- proceed, justification needed |
+| Warning > 3 | **WARNING** -- proceed, justification needed (must reference a TASK ticket or backlog ID; free-text alone is insufficient) |
 | Warning <= 3 or INFO only | **PASS** |
 
 ### Before QA (nacl-tl-qa checks)
@@ -261,21 +345,61 @@ Action: Resolve CRITICAL stubs, then /nacl-tl-stubs UC###
 
 ---
 
+## Headline Status Vocabulary
+
+The final headline of a stub scan run must use one of:
+
+| Headline | Condition |
+|----------|-----------|
+| `STUBS COMPLETE` | Scan ran fully; zero unresolved stubs found (production + test files) |
+| `STUBS APPLIED — UNVERIFIED` | Scan ran but scope had no test files at all (cannot assess test coverage debt) |
+| `STUBS RUNNER_BROKEN` | Filesystem read of source files failed; scan could not complete |
+| `STUBS APPLIED — REGRESSION` | Prior stub count (from previous registry) was lower than current count (stubs grew) |
+
+A result of "0 production stubs found" does NOT automatically produce `STUBS COMPLETE` if empty test files were detected — those are WARNING stubs and must appear in the count.
+
+---
+
 ## Console Output Formats
+
+### Full Scan (with empty test file findings)
+
+```
+Stub Scan Complete (Full)
+
+Scanned: 47 production files + 12 test files | Found: 14 stubs (3 new, 2 resolved)
+  CRITICAL: 1 [!!]  WARNING: 7  INFO: 6  Orphaned: 0
+  Empty test files: 2 (STUB-EMPTY-TEST-FILE)
+  Empty describe blocks: 1 (STUB-EMPTY-DESCRIBE)
+
+Registry: .tl/stub-registry.json updated (14 total, 9 unresolved)
+
+Critical:
+  STUB-001  src/orders/order.service.ts:45  STUB  Empty getOrders()
+
+Empty test files (WARNING):
+  STUB-045  src/orders/order.test.ts  STUB-EMPTY-TEST-FILE  0 test cases in file
+  STUB-046  src/payments/payment.test.ts  STUB-EMPTY-TEST-FILE  0 test cases in file
+
+Headline: STUBS APPLIED — REGRESSION (stub count grew from 11 to 14)
+Next: Resolve critical stubs, then /nacl-tl-stubs
+```
 
 ### Full Scan
 
 ```
 Stub Scan Complete (Full)
 
-Scanned: 47 files | Found: 12 stubs (3 new, 2 resolved)
+Scanned: 47 production files + 12 test files | Found: 12 stubs (3 new, 2 resolved)
   CRITICAL: 1 [!!]  WARNING: 5  INFO: 6  Orphaned: 0
+  Empty test files: 0
 
 Registry: .tl/stub-registry.json updated (12 total, 7 unresolved)
 
 Critical:
   STUB-001  src/orders/order.service.ts:45  STUB  Empty getOrders()
 
+Headline: STUBS APPLIED — REGRESSION (stub count grew from 9 to 12)
 Next: Resolve critical stubs, then /nacl-tl-stubs
 ```
 
@@ -284,7 +408,8 @@ Next: Resolve critical stubs, then /nacl-tl-stubs
 ```
 Stub Scan Complete: UC001
 
-Scanned: 7 files | Found: 3 stubs (1 critical, 1 warning, 1 info)
+Scanned: 7 production files + 3 test files | Found: 3 stubs (1 critical, 1 warning, 1 info)
+Empty test files: 1 (STUB-EMPTY-TEST-FILE — WARNING)
 Report: .tl/tasks/UC001/stub-report.md
 Gate: BLOCKED -- 1 critical stub(s)
 
@@ -296,8 +421,9 @@ Action: Resolve STUB-001, then /nacl-tl-stubs UC001
 ```
 Stub Scan Complete: UC001
 
-Scanned: 7 files | Found: 0 stubs
-Gate: PASS -- Task can proceed to review.
+Scanned: 7 production files + 3 test files | Found: 0 stubs
+Empty test files: 0
+Gate: STUBS COMPLETE -- Task can proceed to review.
 ```
 
 ---
@@ -311,7 +437,8 @@ Gate: PASS -- Task can proceed to review.
 | UC result files missing | `Error: No result files for UC###. Run /nacl-tl-dev-be or /nacl-tl-dev-fe first` |
 | Registry corrupted | `Warning: Creating fresh registry. Previous history lost.` |
 | Result files lack file lists | `Warning: Falling back to full src/ scan` |
-| Scan finds nothing | Valid. Report "0 stubs", resolve any previously tracked stubs for scanned files |
+| Filesystem read fails | Headline: `STUBS RUNNER_BROKEN` |
+| Scan finds nothing (production + test files scanned) | Valid. Report "0 stubs", resolve any previously tracked stubs for scanned files. Headline: `STUBS COMPLETE` |
 
 ---
 
@@ -341,7 +468,8 @@ Gate: PASS -- Task can proceed to review.
 | `.tl/tasks/UC###/result-be.md` | UC scan | BE file list |
 | `.tl/tasks/UC###/result-fe.md` | UC scan | FE file list |
 | `.tl/status.json` | No | Current phase status |
-| `src/**/*.{ts,tsx,js,jsx}` | Yes | Source files to scan |
+| `src/**/*.{ts,tsx,js,jsx}` | Yes | Source files to scan (production pass) |
+| `**/*.test.{ts,tsx,js,jsx}` + `**/*.spec.{ts,tsx,js,jsx}` | Yes | Test files (empty-structure pass) |
 
 ---
 
@@ -353,15 +481,17 @@ Gate: PASS -- Task can proceed to review.
 - [ ] Scope determined (full / UC / final)
 
 ### During Scan
-- [ ] All patterns checked (comment + code + FE + mock data)
+- [ ] All production patterns checked (comment + code + FE + mock data)
+- [ ] Test files scanned for empty-structure patterns (STUB-EMPTY-TEST-FILE, STUB-EMPTY-DESCRIBE)
 - [ ] Each finding classified by severity
 - [ ] UC association attempted (explicit, file path, or orphaned)
 - [ ] Registry loaded and reconciled (new IDs, resolved detection)
 
 ### After Scan
-- [ ] `stub-registry.json` written with updated stats
-- [ ] `stub-report.md` written (UC scan only)
+- [ ] `stub-registry.json` written with updated stats (including emptyTestFiles, emptyDescribeBlocks)
+- [ ] `stub-report.md` written (UC scan only) with empty-test-file section
 - [ ] `status.json` and `changelog.md` updated
+- [ ] Headline status assigned (STUBS COMPLETE / STUBS APPLIED — UNVERIFIED / STUBS RUNNER_BROKEN / STUBS APPLIED — REGRESSION)
 - [ ] Gate verdict displayed with next action
 
 ---

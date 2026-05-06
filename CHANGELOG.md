@@ -30,6 +30,28 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - `excalidraw` Docker service (bare Excalidraw at `localhost:3580`) -- replaced by Analyst Tool at `localhost:3582`.
 - `excalidraw-room` Docker service (live-collab container) -- removed as out of scope for a single-analyst workflow; can be reintroduced separately if needed.
 
+## [0.11.0] — 2026-05-06
+
+Five verification and quality-gate skills updated to apply the same honesty standard introduced by `nacl-tl-fix` in 0.10.0: all five were returning PASS based on static analysis or file scanning alone, with no test-runner discovery and no coverage check. A workspace with 44 hollow test files received the same output as one with a complete, green test suite.
+
+### Added
+
+- `nacl-tl-verify-code`: Step 5 "Run test suite" — discovers `scripts.test`, runs it, checks whether any test imports the changed file. Static analysis alone now produces `UNVERIFIED`, not `PASS`.
+- `nacl-tl-stubs`: Step 2b "Scan test files" — counts `it()`/`test()` calls per test file; zero → `STUB-EMPTY-TEST-FILE` (WARNING). Detects the "44-stub scenario" (hollow describe blocks).
+- `nacl-tl-stubs`: `STUB-EMPTY-DESCRIBE` check — flags describe blocks within non-empty test files that contain no test cases.
+- `nacl-tl-sync`: Step 7 "Run BE and FE test suites" — runs both workspace runners after static checks; checks endpoint path coverage by grepping test files.
+- `nacl-tl-review`: Step 6b "Test Author Independence Check" — `git log` author overlap check; MAJOR flag when tests and production code share the same primary author (>50% overlap).
+- All five skills: `## Contract` section documenting inputs, outputs, downstream consumers, and the contract-change audit discipline introduced in 0.10.1.
+
+### Changed
+
+- `nacl-tl-verify-code`: result vocabulary expanded from `PASS | PASS_NEEDS_E2E | FAIL` to eight statuses: `PASS | PASS_NEEDS_E2E | UNVERIFIED | NO_INFRA | RUNNER_BROKEN | BLOCKED | REGRESSION | FAIL`.
+- `nacl-tl-stubs`: headline status vocabulary added: `STUBS COMPLETE / STUBS APPLIED — UNVERIFIED / STUBS RUNNER_BROKEN / STUBS APPLIED — REGRESSION`. Binary "0 stubs = PASS" replaced.
+- `nacl-tl-stubs`: WARNING stub justification (count > 3) now requires a TASK ticket or backlog item ID reference; free-text alone rejected.
+- `nacl-tl-verify`: adopted six-status headline vocabulary (`VERIFY COMPLETE` / `VERIFY APPLIED — *` / `VERIFY INCOMPLETE — REGRESSION`). PASS report body now distinguishes code-only vs E2E-verified. YouGile-unavailable case now prints explicit fallback text instead of silently skipping.
+- `nacl-tl-sync`: verdict logic now requires both BE and FE suites to pass AND endpoint paths to be covered before `SYNC COMPLETE`. Headline vocabulary expanded to six statuses.
+- `nacl-tl-review`: headline vocabulary expanded to six statuses; APPROVED / CHANGES REQUESTED retained as verdict refinement within headline. Rejection path now distinguishes implementation-wrong from tests-tuned-to-bug.
+
 ## [0.10.1] — 2026-05-06
 
 Downstream skills `nacl-tl-reopened` and `nacl-tl-hotfix` are updated to honor the six-status output contract introduced by `nacl-tl-fix` in 0.10.0. Both skills were previously unaware of the new status vocabulary and could auto-ship or merge to main an UNVERIFIED / NO_INFRA / RUNNER_BROKEN / REGRESSION fix without halting. Both skills also gain a `## Contract` section that documents inputs, outputs, downstream consumers, and a standing discipline: when a skill's output contract changes, its consumers must be audited in the same release.

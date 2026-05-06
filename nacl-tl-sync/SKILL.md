@@ -10,6 +10,33 @@ description: |
   or the user says "/nacl-tl-sync UC###".
 ---
 
+## Contract
+
+**Inputs this skill consumes:**
+- BE and FE workspace paths
+- API contract definition (api-contract*.md or shared types)
+- Both workspaces' `package.json` `scripts.test`
+
+**Outputs this skill produces:**
+- Headline one of: SYNC COMPLETE / SYNC APPLIED — UNVERIFIED /
+  SYNC APPLIED — BLOCKED / SYNC APPLIED — NO_INFRA /
+  SYNC APPLIED — RUNNER_BROKEN / SYNC INCOMPLETE — REGRESSION
+- Per-category result table (8 static checks + 2 runtime checks)
+- Endpoint coverage report
+
+**Downstream consumers of this output:**
+- nacl-tl-deliver (gates ship on SYNC PASS)
+
+**Contract change discipline:**
+If this skill's output contract changes — status vocabulary, headline format,
+exit codes, or report-field names — every downstream consumer in the list
+above must be audited and updated in the same release. The 0.10.0→0.10.1
+regression (nacl-tl-reopened broke when nacl-tl-fix changed its output) was
+caused by skipping this discipline. Do not ship contract changes without
+auditing consumers.
+
+---
+
 # TeamLead Sync Verification Skill
 
 You are a **synchronization verification specialist** ensuring that backend and frontend implementations are fully aligned with the API contract. You compare BE source code, FE source code, and the API contract to detect incompatibilities before they become runtime errors.
@@ -22,6 +49,8 @@ You are a **synchronization verification specialist** ensuring that backend and 
 - **Compare both sides** against the contract: URLs, methods, request/response shapes, error codes
 - **Check shared types** for consistency and absence of duplication
 - **Search for mock remnants** in production FE code
+- **Run BE and FE test suites** after static checks — static analysis alone cannot produce SYNC COMPLETE
+- **Check endpoint test coverage** — grep test files for the endpoint paths touched by the change
 - **Generate sync-report.md** with all findings and **update tracking files**
 
 ## Key Principle
@@ -38,6 +67,9 @@ BE Code              FE Code
    |                   |
    +------- nacl-tl-sync ---+
             (compares)
+            +
+   BE test suite + FE test suite
+   (runtime confirmation)
 ```
 
 ---
@@ -100,7 +132,7 @@ For each contract endpoint find: route declaration, DTO/validation schema, respo
 
 For each contract endpoint find: API call, request body construction, response parsing, error handling (catch blocks, status checks), auth header setup.
 
-### Step 5: Compare -- Run All Checks
+### Step 5: Compare -- Run All Static Checks
 
 For each endpoint, compare contract vs BE vs FE across all 8 verification categories below.
 
@@ -108,11 +140,59 @@ For each endpoint, compare contract vs BE vs FE across all 8 verification catego
 
 Scan `src/frontend/` (excluding test directories) for mock patterns.
 
-### Step 7: Generate sync-report.md
+### Step 7: Run BE and FE Test Suites
+
+**This step is mandatory. Static checks alone cannot produce SYNC COMPLETE.**
+
+#### 7.1 Discover test commands
+
+For the BE workspace: locate the nearest `package.json` containing BE source files. Read its `scripts.test`.
+For the FE workspace: locate the nearest `package.json` containing FE source files. Read its `scripts.test`.
+
+Do NOT invent runners. Use exactly what each workspace declares.
+
+Record per workspace:
+- `be_runner`: the exact command, or `NO_INFRA` if `scripts.test` is missing
+- `fe_runner`: the exact command, or `NO_INFRA` if `scripts.test` is missing
+
+#### 7.2 Run each suite
+
+Run BE suite. Capture: exit code, tests collected, pass/fail counts, stderr.
+Run FE suite. Capture: exit code, tests collected, pass/fail counts, stderr.
+
+If a runner exits non-zero before any test runs, or stdout is empty and stderr is non-empty → record `RUNNER_BROKEN` for that workspace.
+
+#### 7.3 Check endpoint coverage
+
+For each API endpoint path touched by this change (extracted in Step 2), grep test files in the corresponding workspace:
+
+```
+grep -rn "<endpoint_path_string>" src/**/*.test.{ts,tsx,js,jsx} src/**/*.spec.{ts,tsx,js,jsx}
+```
+
+- If at least one test file references the endpoint path → `covered = true`
+- If no test file references the endpoint path → `covered = false`; flag as `coverage_gap`
+
+This check runs for both BE and FE independently.
+
+#### 7.4 Classify runtime result
+
+Apply these rules in order — first match wins:
+
+| # | Condition | Runtime result |
+|---|-----------|----------------|
+| 1 | Either workspace has `NO_INFRA` | `NO_INFRA` |
+| 2 | Either workspace has `RUNNER_BROKEN` | `RUNNER_BROKEN` |
+| 3 | Either suite has new failures vs pre-change baseline | `REGRESSION` |
+| 4 | Both suites pass AND both have `coverage_gap = false` | `PASS` |
+| 5 | Both suites pass AND at least one has `coverage_gap = true` | `UNVERIFIED` |
+| 6 | Both suites pass AND pre-existing failures remain | `BLOCKED` |
+
+### Step 8: Generate sync-report.md
 
 Write `.tl/tasks/UC###/sync-report.md` using `nacl-tl-core/templates/sync-report-template.md`.
 
-### Step 8: Update Tracking
+### Step 9: Update Tracking
 
 Update `status.json` and append to `changelog.md`.
 
@@ -216,17 +296,36 @@ Only check if the contract defines events. Compare event names, payload shapes, 
 
 ## Verdict Logic
 
+Static checks alone determine FAIL (blockers found). The runtime check from Step 7 determines whether a blocker-free sync is SYNC COMPLETE or a qualified status.
+
 ```
-if (blocker_count > 0):    verdict = "FAIL"
-elif (warning_count > 0):  verdict = "PASS_WITH_WARNINGS"
-else:                      verdict = "PASS"
+if (blocker_count > 0):
+  verdict = "FAIL"  →  headline: SYNC INCOMPLETE — REGRESSION (return to dev)
+elif runtime_result == "NO_INFRA":
+  verdict = "NO_INFRA"  →  headline: SYNC APPLIED — NO_INFRA
+elif runtime_result == "RUNNER_BROKEN":
+  verdict = "RUNNER_BROKEN"  →  headline: SYNC APPLIED — RUNNER_BROKEN
+elif runtime_result == "REGRESSION":
+  verdict = "REGRESSION"  →  headline: SYNC INCOMPLETE — REGRESSION
+elif runtime_result == "UNVERIFIED":
+  verdict = "UNVERIFIED"  →  headline: SYNC APPLIED — UNVERIFIED
+elif runtime_result == "BLOCKED":
+  verdict = "BLOCKED"  →  headline: SYNC APPLIED — BLOCKED
+elif runtime_result == "PASS" and warning_count > 0:
+  verdict = "PASS_WITH_WARNINGS"  →  headline: SYNC COMPLETE (with warnings)
+else:
+  verdict = "PASS"  →  headline: SYNC COMPLETE
 ```
 
-| Verdict | Next step |
-|---------|-----------|
-| `PASS` | Proceed to `/nacl-tl-qa UC###` or `/nacl-tl-docs UC###` |
-| `PASS_WITH_WARNINGS` | Proceed with warnings included in QA/review checklist |
-| `FAIL` | Return to `/nacl-tl-dev-be UC### --continue` or `/nacl-tl-dev-fe UC### --continue` |
+| Headline | Next step |
+|----------|-----------|
+| `SYNC COMPLETE` | Proceed to `/nacl-tl-qa UC###` or `/nacl-tl-docs UC###` |
+| `SYNC COMPLETE` (with warnings) | Proceed with warnings included in QA/review checklist |
+| `SYNC INCOMPLETE — REGRESSION` | Return to `/nacl-tl-dev-be UC### --continue` or `/nacl-tl-dev-fe UC### --continue` |
+| `SYNC APPLIED — UNVERIFIED` | Endpoint paths not covered by any test — add coverage or accept gap |
+| `SYNC APPLIED — NO_INFRA` | One or both workspaces missing test runner — add infra |
+| `SYNC APPLIED — RUNNER_BROKEN` | Runner crashed — diagnose environment before proceeding |
+| `SYNC APPLIED — BLOCKED` | Pre-existing unrelated failures — user decides whether to proceed |
 
 ---
 
@@ -244,14 +343,15 @@ The report MUST include:
 6. **Mock Remnants** -- scan results or "no mock remnants found"
 7. **Auth Flow** -- each protected endpoint, BE middleware, FE auth header
 8. **Issues** -- detailed BLOCKER/WARNING/INFO with file, line, description, fix
-9. **Recommendations** -- ordered by severity, actionable fix instructions
-10. **Verdict Justification** -- why this verdict, what is the next step
+9. **Runtime Checks** -- BE suite result, FE suite result, endpoint coverage table
+10. **Recommendations** -- ordered by severity, actionable fix instructions
+11. **Verdict Justification** -- why this verdict, what is the next step
 
 ---
 
 ## Status Update
 
-### On PASS or PASS_WITH_WARNINGS
+### On SYNC COMPLETE
 
 ```json
 {
@@ -261,7 +361,7 @@ The report MUST include:
 }
 ```
 
-### On FAIL
+### On FAIL / REGRESSION / UNVERIFIED / NO_INFRA / RUNNER_BROKEN
 
 ```json
 {
@@ -279,8 +379,10 @@ Append to `.tl/changelog.md`:
 ```markdown
 ## [YYYY-MM-DD HH:MM] SYNC: UC### - Title
 - Phase: Sync Verification
-- Verdict: PASS / PASS_WITH_WARNINGS / FAIL
-- Checks: N passed, M warnings, K blockers
+- Headline: SYNC COMPLETE / SYNC APPLIED — UNVERIFIED / SYNC INCOMPLETE — REGRESSION / ...
+- Static checks: N passed, M warnings, K blockers
+- Runtime: BE suite {PASS/NO_INFRA/RUNNER_BROKEN/REGRESSION}, FE suite {PASS/...}
+- Endpoint coverage: N/M endpoints covered by tests
 - Endpoints verified: N
 ```
 
@@ -288,7 +390,7 @@ Append to `.tl/changelog.md`:
 
 ## Recovery: On FAIL
 
-When the verdict is FAIL, the report must clearly specify:
+When the verdict is FAIL or SYNC INCOMPLETE — REGRESSION, the report must clearly specify:
 
 1. **Which side needs fixing** (BE, FE, or both)
 2. **Exact file and line** where the problem is
@@ -304,35 +406,68 @@ The developer runs `/nacl-tl-dev-be UC### --continue` or `/nacl-tl-dev-fe UC### 
 
 ## Output Summary
 
-### On PASS
+### On SYNC COMPLETE
 
 ```
 Sync Verification Complete
 
 Task: UC### [Title]
-Verdict: PASS
-Endpoints: N/N in sync | Types: N/N consistent | Errors: N/N covered | Mocks: 0
+Headline: SYNC COMPLETE
+Static: N/N endpoints in sync | Types: N/N consistent | Errors: N/N covered | Mocks: 0
+Runtime: BE suite PASS (N tests) | FE suite PASS (N tests)
+Endpoint coverage: N/M endpoints covered by tests
 
 Report: .tl/tasks/UC###/sync-report.md
 Next: /nacl-tl-qa UC### or /nacl-tl-docs UC###
 ```
 
-### On PASS_WITH_WARNINGS
+### On SYNC COMPLETE (with warnings)
 
 ```
 Sync Verification Complete
 
 Task: UC### [Title]
-Verdict: PASS_WITH_WARNINGS (M warnings)
+Headline: SYNC COMPLETE (M warnings)
+Runtime: BE suite PASS | FE suite PASS
 
 Report: .tl/tasks/UC###/sync-report.md
 Next: /nacl-tl-qa UC### (warnings included in checklist)
 ```
 
-### On FAIL
+### On SYNC APPLIED — UNVERIFIED
 
 ```
-Sync Verification: FAILED
+Sync Verification: SYNC APPLIED — UNVERIFIED
+
+Task: UC### [Title]
+Static checks: PASS (no blockers)
+Runtime: BE suite PASS | FE suite PASS
+Endpoint coverage gaps:
+  - POST /api/orders — no test references this path in BE or FE
+
+Report: .tl/tasks/UC###/sync-report.md
+Options:
+  (a) Add endpoint tests: /nacl-tl-dev-be UC### --continue
+  (b) Accept gap and proceed: /nacl-tl-qa UC###
+```
+
+### On SYNC APPLIED — NO_INFRA / RUNNER_BROKEN
+
+```
+Sync Verification: SYNC APPLIED — {NO_INFRA|RUNNER_BROKEN}
+
+Task: UC### [Title]
+Static checks: PASS (no blockers)
+Runtime: {workspace} — {NO_INFRA: scripts.test missing | RUNNER_BROKEN: runner crashed}
+
+Report: .tl/tasks/UC###/sync-report.md
+Next: Add test runner for {workspace} workspace, then re-run /nacl-tl-sync UC###
+```
+
+### On SYNC INCOMPLETE — REGRESSION
+
+```
+Sync Verification: SYNC INCOMPLETE — REGRESSION
 
 Task: UC### [Title]
 Blockers: K found
@@ -411,7 +546,7 @@ If a referenced source file does not exist on disk, mark as BLOCKER in the repor
 - [ ] Both phases.review_be and phases.review_fe are "approved" or "done"
 - [ ] result-be.md and result-fe.md exist
 
-### During Verification
+### During Static Verification
 - [ ] API contract fully parsed (endpoints, types, errors, auth)
 - [ ] BE source scanned for all contract endpoints
 - [ ] FE source scanned for all contract endpoint calls
@@ -423,9 +558,17 @@ If a referenced source file does not exist on disk, mark as BLOCKER in the repor
 - [ ] Shared types checked for consistency and no duplication
 - [ ] Mock remnants scanned in production FE code
 
+### During Runtime Verification (Step 7)
+- [ ] BE workspace `scripts.test` discovered (or NO_INFRA recorded)
+- [ ] FE workspace `scripts.test` discovered (or NO_INFRA recorded)
+- [ ] BE suite run; pass/fail counts captured
+- [ ] FE suite run; pass/fail counts captured
+- [ ] Endpoint path coverage grep run for each touched endpoint (BE and FE)
+- [ ] Runtime result classified (PASS / UNVERIFIED / NO_INFRA / RUNNER_BROKEN / REGRESSION / BLOCKED)
+
 ### After Verification
-- [ ] sync-report.md created with all sections filled
-- [ ] Verdict assigned correctly based on findings
+- [ ] sync-report.md created with all sections filled (including runtime check section)
+- [ ] Headline assigned based on combined static + runtime result
 - [ ] status.json updated (phases.sync)
 - [ ] changelog.md updated
 - [ ] Next steps clearly stated
@@ -434,5 +577,7 @@ If a referenced source file does not exist on disk, mark as BLOCKER in the repor
 
 ## Next Steps
 
-**PASS / PASS_WITH_WARNINGS:** `/nacl-tl-qa UC###` (E2E testing) or `/nacl-tl-docs UC###` (documentation)
-**FAIL:** `/nacl-tl-dev-be UC### --continue` or `/nacl-tl-dev-fe UC### --continue`, then re-run `/nacl-tl-sync UC###`
+**SYNC COMPLETE / SYNC COMPLETE (with warnings):** `/nacl-tl-qa UC###` (E2E testing) or `/nacl-tl-docs UC###` (documentation)
+**SYNC INCOMPLETE — REGRESSION:** `/nacl-tl-dev-be UC### --continue` or `/nacl-tl-dev-fe UC### --continue`, then re-run `/nacl-tl-sync UC###`
+**SYNC APPLIED — UNVERIFIED:** Add endpoint-level tests or accept gap; re-run `/nacl-tl-sync UC###`
+**SYNC APPLIED — NO_INFRA / RUNNER_BROKEN:** Fix test infrastructure, then re-run `/nacl-tl-sync UC###`

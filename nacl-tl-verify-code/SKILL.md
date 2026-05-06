@@ -5,9 +5,37 @@ effort: medium
 description: |
   Static code analysis to verify implementation correctness.
   Traces data flow: DB → service → route → hook → component → UI.
-  Returns PASS / PASS_NEEDS_E2E / FAIL.
+  Returns PASS / PASS_NEEDS_E2E / UNVERIFIED / NO_INFRA / RUNNER_BROKEN
+  / BLOCKED / REGRESSION / FAIL.
   Use when: verify implementation, check code correctness, verify fix,
   or the user says "/nacl-tl-verify-code".
+---
+
+## Contract
+
+**Inputs this skill consumes:**
+- Task spec (UC### or TECH###)
+- Changed file paths (from git diff or task scope)
+- Workspace `package.json` `scripts.test` (read to discover the test runner)
+
+**Outputs this skill produces:**
+- Result one of: PASS / PASS_NEEDS_E2E / UNVERIFIED / NO_INFRA / RUNNER_BROKEN
+  / BLOCKED / REGRESSION / FAIL
+- Static-analysis report (data-flow trace, type checks, runtime concerns)
+- Test-runner output snippet when the suite was actually executed
+
+**Downstream consumers of this output:**
+- nacl-tl-verify (orchestrator that aggregates this skill's result with QA)
+- nacl-tl-deliver (consumes via verify orchestrator)
+
+**Contract change discipline:**
+If this skill's output contract changes — status vocabulary, headline format,
+exit codes, or report-field names — every downstream consumer in the list
+above must be audited and updated in the same release. The 0.10.0→0.10.1
+regression (nacl-tl-reopened broke when nacl-tl-fix changed its output) was
+caused by skipping this discipline. Do not ship contract changes without
+auditing consumers.
+
 ---
 
 # TeamLead Code Verification Skill
@@ -29,7 +57,22 @@ You are a code verification specialist. You verify that a change is CORRECTLY im
 /nacl-tl-verify-code --files src/routes/analytics.ts  # verify specific files
 ```
 
-## Workflow: 5 Steps
+## Result Vocabulary
+
+| Result | Meaning |
+|--------|---------|
+| `PASS` | Static checks pass AND test suite ran AND at least one test covers the changed file(s) AND suite is clean |
+| `PASS_NEEDS_E2E` | All checks pass, changes affect UI — need browser verification; tests ran and passed |
+| `UNVERIFIED` | Static checks pass but no test file imports the changed module(s) — coverage gap |
+| `NO_INFRA` | `scripts.test` is missing from the workspace's `package.json` — cannot run tests |
+| `RUNNER_BROKEN` | `scripts.test` exists but runner crashed (non-zero exit before any test ran, or zero tests collected and sanity check failed) |
+| `BLOCKED` | Suite ran; test(s) pass for the verified change, but unrelated pre-existing failures remain |
+| `REGRESSION` | Test suite reveals failures introduced by the change |
+| `FAIL` | Static analysis found issues that would cause runtime errors or incorrect behavior |
+
+**Static analysis alone never produces PASS.** At best, static analysis without a passing test suite produces `UNVERIFIED`.
+
+## Workflow: 6 Steps
 
 ### Step 1: IDENTIFY CHANGE
 
@@ -81,16 +124,70 @@ Check at each step:
 - Frontend displays field that backend doesn't send
 - API contract says X, code returns Y
 
-### Step 5: RETURN RESULT
+### Step 5: RUN TEST SUITE
+
+**This step is mandatory. Static analysis alone cannot produce PASS.**
+
+#### 5.1 Discover the test command
+
+Locate the workspace owning the changed files (the nearest `package.json` walking up from a changed file). Read its `scripts.test`.
+
+- If `scripts.test` is missing → record `NO_INFRA`; skip 5.2–5.4.
+- If `scripts.test` exists → proceed to 5.2.
+
+Do NOT invent a runner. Do NOT substitute `npx vitest`, `npx jest`, or any other command. The runner is exactly what the workspace declares.
+
+#### 5.2 Run the suite once
+
+Run the exact `scripts.test` command. Capture:
+- Exit code
+- Number of tests collected
+- Pass/fail counts
+- stderr output
+
+If the runner exits non-zero before any test runs, or if stderr is non-empty and stdout is empty → record `RUNNER_BROKEN`.
+
+If zero tests collected:
+- Re-run against one known-good test file (e.g. the largest file in the workspace, or one referenced in `git log`).
+- If at least one test runs → the original glob simply didn't match. Continue.
+- If still zero tests → record `RUNNER_BROKEN`.
+
+#### 5.3 Check test coverage for the changed file(s)
+
+Grep test files (`*.test.{ts,tsx,js,jsx}`, `*.spec.{ts,tsx,js,jsx}`) for any `import` or `require` of the module name(s) being verified.
+
+- If no test file imports the changed module → note `coverage_gap = true`.
+- If at least one test file imports the changed module → note `coverage_gap = false`.
+
+#### 5.4 Classify suite result
+
+| Condition | Suite result |
+|-----------|-------------|
+| `NO_INFRA` flag set (5.1) | `NO_INFRA` |
+| `RUNNER_BROKEN` flag set (5.2) | `RUNNER_BROKEN` |
+| Runner exited non-zero AND new failures present vs no-change baseline | `REGRESSION` |
+| Runner exited 0 AND `coverage_gap = true` | `UNVERIFIED` |
+| Runner exited 0 AND `coverage_gap = false` AND no UI changes | `PASS` |
+| Runner exited 0 AND `coverage_gap = false` AND UI changes present | `PASS_NEEDS_E2E` |
+| Runner exited 0 AND pre-existing failures remain (not introduced by this change) | `BLOCKED` |
+
+### Step 6: RETURN RESULT
 
 Result format (structured):
 
 ```
 VERIFY_CODE_RESULT:
-  result: PASS | PASS_NEEDS_E2E | FAIL
+  result: PASS | PASS_NEEDS_E2E | UNVERIFIED | NO_INFRA | RUNNER_BROKEN | BLOCKED | REGRESSION | FAIL
   taskCode: UC028
   module: backend + frontend
   summary: "one-line summary"
+  testRunner:
+    command: "npm test"          # exact scripts.test command, or "none — NO_INFRA"
+    collected: N                 # tests collected
+    passed: N
+    failed: N
+    coverageGap: true | false    # whether changed files have test coverage
+    runnerOutput: "..."          # first 20 lines of stdout/stderr snippet
   findings:
     - file: src/routes/analytics.ts
       line: 42
@@ -105,10 +202,15 @@ VERIFY_CODE_RESULT:
   recommendation: "PASS_NEEDS_E2E because new data reaches UI components"
 ```
 
-**Decision logic:**
-- **PASS**: All checks pass, no UI-visible changes (backend-only refactor, config change)
-- **PASS_NEEDS_E2E**: All checks pass, but changes affect UI — need browser verification
-- **FAIL**: Issues found that would cause runtime errors or incorrect behavior
+**Decision logic summary:**
+- **PASS**: Static checks pass AND test suite ran AND changed file(s) covered by tests AND suite clean
+- **PASS_NEEDS_E2E**: Same as PASS, but UI changes detected — browser verification still needed
+- **UNVERIFIED**: Static checks pass, test suite ran and passed, but no test imports the changed file
+- **NO_INFRA**: `scripts.test` missing — static checks may have passed, but cannot be machine-verified
+- **RUNNER_BROKEN**: `scripts.test` exists but runner could not execute — environment issue
+- **BLOCKED**: Suite ran; change appears verified, but pre-existing unrelated failures remain
+- **REGRESSION**: Test suite reveals failures introduced by this change
+- **FAIL**: Static analysis found runtime errors or incorrect behavior (regardless of tests)
 
 ## Output Language
 

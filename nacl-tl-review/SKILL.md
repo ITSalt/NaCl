@@ -9,6 +9,36 @@ description: |
   Flags: --be for backend review, --fe for frontend review, no flag for TECH tasks.
 ---
 
+## Contract
+
+**Inputs this skill consumes:**
+- Task files (task-be.md / task-fe.md / task spec)
+- Code under review (current branch diff vs base)
+- Stub registry (from nacl-tl-stubs)
+- Test suite output (`npm test` against the change)
+- Git log for test files (for author-independence check)
+
+**Outputs this skill produces:**
+- Headline one of: REVIEW COMPLETE / REVIEW APPLIED — UNVERIFIED /
+  REVIEW APPLIED — BLOCKED / REVIEW APPLIED — NO_INFRA /
+  REVIEW APPLIED — RUNNER_BROKEN / REVIEW INCOMPLETE — REGRESSION
+- Verdict refinement: APPROVED or CHANGES REQUESTED
+- MAJOR flag when test author overlaps production code author >50%
+
+**Downstream consumers of this output:**
+- nacl-tl-reopened (consumes review verdict)
+- nacl-tl-ship (gates on REVIEW COMPLETE / APPROVED)
+
+**Contract change discipline:**
+If this skill's output contract changes — status vocabulary, headline format,
+exit codes, or report-field names — every downstream consumer in the list
+above must be audited and updated in the same release. The 0.10.0→0.10.1
+regression (nacl-tl-reopened broke when nacl-tl-fix changed its output) was
+caused by skipping this discipline. Do not ship contract changes without
+auditing consumers.
+
+---
+
 # TeamLead Code Review Skill
 
 You are a **senior code reviewer** performing comprehensive code reviews for completed development tasks. You support three review modes: backend (`--be`), frontend (`--fe`), and TECH (no flag). Every review includes a mandatory stub verification gate.
@@ -20,6 +50,8 @@ You are a **senior code reviewer** performing comprehensive code reviews for com
 - **Read task files** and development results from `.tl/tasks/{id}/`
 - **Verify acceptance criteria** and **check code quality** using the appropriate checklist
 - **Verify TDD compliance** (RED -> GREEN -> REFACTOR)
+- **Run the test suite** and capture results honestly
+- **Check test author independence** — flag when tests and production code share the same author
 - **Create the review artifact** and **update tracking files**
 
 ## Key Principle
@@ -75,8 +107,26 @@ If any check fails, report the issue and exit.
 | CRITICAL stubs found | **BLOCK** -- review impossible, return to developer |
 | Orphaned stubs (no UC reference) | **BLOCK** -- all stubs must be bound to a UC |
 | WARNING stubs (count <= 3) | **FLAG** in review, proceed with caution |
-| WARNING stubs (count > 3) | **FLAG** in review, require justification |
+| WARNING stubs (count > 3) | **FLAG** in review, require justification — must reference an existing TASK ticket or backlog item by ID. Free-text alone is insufficient. |
 | No stubs or only INFO | **PROCEED** normally |
+
+### Warning Stub Justification Requirement
+
+When WARNING stub count exceeds 3, the developer must provide justification that:
+1. References an existing TASK ticket ID (e.g., `TECH-042`) or backlog item ID
+2. Explains why the stub cannot be resolved before review
+
+Example acceptable justification:
+```
+// STUB(UC014): placeholder until payment gateway is integrated — TECH-042
+```
+
+Example unacceptable (free-text only):
+```
+// TODO: add real implementation later
+```
+
+A review that finds WARNING stubs > 3 with no ticket references must be REJECTED for that specific criterion, even if all other checks pass.
 
 ### Frontend-Specific Stub Checks (--fe only)
 
@@ -174,27 +224,104 @@ Verify commits follow the pattern:
 - `feat(UC###): ...` for GREEN phase
 - `refactor(UC###): ...` for REFACTOR phase
 
-### Step 6: Run Tests
+### Step 6: Run Tests and Check Author Independence
 
-Execute `npm test`. Verify:
+#### 6a. Run the test suite
+
+Execute `npm test` (or the workspace's `scripts.test`). Capture:
+- Pass/fail counts
+- Coverage percentage
+- Any flaky test indicators
+
+Verify:
 - All tests pass
 - Coverage meets thresholds (80%+ recommended)
 - No flaky tests
+
+If `scripts.test` is missing → record `NO_INFRA`; proceed to review but flag in report.
+If runner crashes → record `RUNNER_BROKEN`; proceed to review but flag in report.
+
+#### 6b. Test Author Independence Check
+
+**Goal:** Detect when tests were written by the same person who wrote the production code for this UC, which reduces the independence guarantee of the test suite.
+
+**Procedure:**
+
+1. Identify the test files for the UC under review (from `result-be.md` or `result-fe.md`).
+2. Run `git log --format="%ae" -- <test_file>` for each test file to collect author emails.
+3. Run `git log --format="%ae" -- <production_file>` for each production source file to collect author emails.
+4. Compute overlap: what fraction of test-file commits share an author with production-file commits for the same UC?
+
+**Classification:**
+
+| Overlap | Action |
+|---------|--------|
+| <= 50% | No flag — sufficient independence |
+| > 50% | **MAJOR flag** — test and production code share the same primary author for this UC |
+
+**When MAJOR flag is raised:**
+
+Add to the review report:
+```
+MAJOR: Test Author Independence
+Test files and production files for this UC are authored predominantly by the same
+contributor (overlap: N%). This reduces the independence guarantee — the same
+author may have unconsciously tuned both the implementation and the tests.
+
+Recommended action: Invoke /nacl-tl-regression-test retroactively to validate
+one critical acceptance criterion for this UC. The regression test must be written
+independently and must verify the behavior described in acceptance.md, not the
+implementation in the production code.
+
+This flag does NOT block approval, but it must be visible in the review report.
+```
+
+This check is non-blocking. A MAJOR flag does not prevent REVIEW COMPLETE or APPROVED, but it must appear in the review artifact and is visible to downstream consumers.
 
 ### Step 7: Document Issues
 
 Categorize by severity: **Blocker** (must fix), **Critical** (should fix), **Major** (should fix), **Minor** (nice to have). For each issue document file, line, description, recommended fix, rationale.
 
-### Step 8: Make Decision
+### Step 8: Make Decision and Assign Headline
+
+#### 8a. Determine review verdict
 
 | Result | Condition | Status Update |
 |--------|-----------|---------------|
 | `approved` | No blockers, all criteria met | Phase -> `approved` |
 | `rejected` | Blockers found or stub gate failed | Phase -> `in_progress` |
 
+#### 8b. Assign headline status
+
+The headline is independent of the APPROVED / CHANGES REQUESTED verdict. It reflects the completeness of the verification, not the quality judgment.
+
+| Condition | Headline |
+|-----------|----------|
+| Tests ran AND passed AND no warnings above threshold | `REVIEW COMPLETE` |
+| Tests ran AND passed AND test author independence flag (MAJOR) | `REVIEW APPLIED — UNVERIFIED` |
+| Tests ran AND passed AND no test imports the changed file(s) | `REVIEW APPLIED — UNVERIFIED` |
+| `scripts.test` missing | `REVIEW APPLIED — NO_INFRA` |
+| Runner crashed | `REVIEW APPLIED — RUNNER_BROKEN` |
+| Tests revealed new failures | `REVIEW INCOMPLETE — REGRESSION` |
+| Review blocked (CRITICAL stubs, or prerequisite unmet) | `REVIEW APPLIED — BLOCKED` |
+
+Both the headline and the APPROVED / CHANGES REQUESTED verdict appear in the review artifact:
+
+```
+Headline: REVIEW COMPLETE
+Verdict:  APPROVED
+```
+
+or:
+
+```
+Headline: REVIEW APPLIED — UNVERIFIED (test author overlap 80%)
+Verdict:  APPROVED (code quality checks pass; coverage independence caveat above)
+```
+
 ### Step 9: Create Review Artifact
 
-Write to `review-be.md` (BE), `review-fe.md` (FE), or `review.md` (TECH) using `nacl-tl-core/templates/review-template.md`. Include: summary, stub gate result, files reviewed, acceptance verification, checklist findings, issues, test results, TDD compliance, positive observations, decision, next steps.
+Write to `review-be.md` (BE), `review-fe.md` (FE), or `review.md` (TECH) using `nacl-tl-core/templates/review-template.md`. Include: summary, stub gate result, files reviewed, acceptance verification, checklist findings, issues, test results, TDD compliance, test author independence result, positive observations, headline + verdict, next steps.
 
 ### Step 10: Update Tracking
 
@@ -237,10 +364,12 @@ Append to `changelog.md`:
 
 ```markdown
 ## [YYYY-MM-DD HH:MM] REVIEW: UC### - Title (BE/FE/TECH)
+- Headline: REVIEW COMPLETE / REVIEW APPLIED — UNVERIFIED / ...
 - Stub Gate: PASSED / BLOCKED / WARNING (N)
 - Result: approved / rejected
 - Issues: N blocker, N critical, N major, N minor
 - Tests: N passed, coverage X%
+- Test author independence: OK / MAJOR (N% overlap)
 ```
 
 ---
@@ -419,9 +548,11 @@ GOOD: "The test checks implementation details. Consider testing behavior instead
 Backend Code Review Complete
 
 Task: UC### [Title] (Backend)
-Result: APPROVED / REJECTED
+Headline: REVIEW COMPLETE
+Verdict: APPROVED / CHANGES REQUESTED
 
 Stub Check: No critical stubs / N warnings (non-blocking)
+Test Author Independence: OK / MAJOR (N% overlap — retroactive /nacl-tl-regression-test recommended)
 
 BE Checklist:
   Code Correctness:  PASS    Error Handling:  PASS
@@ -441,9 +572,11 @@ Next: /nacl-tl-dev-fe UC### (start frontend) or /nacl-tl-sync UC### (verify sync
 Frontend Code Review Complete
 
 Task: UC### [Title] (Frontend)
-Result: APPROVED / REJECTED
+Headline: REVIEW COMPLETE
+Verdict: APPROVED / CHANGES REQUESTED
 
 Stub Check: No critical stubs / N warnings (non-blocking)
+Test Author Independence: OK / MAJOR (N% overlap — retroactive /nacl-tl-regression-test recommended)
 
 FE Checklist:
   Component Architecture:  PASS    API Integration:     PASS
@@ -464,10 +597,12 @@ Next: /nacl-tl-sync UC### (verify BE<>FE sync) or /nacl-tl-qa UC### (E2E testing
 TECH Code Review Complete
 
 Task: TECH### [Title]
-Result: APPROVED / REJECTED
+Headline: REVIEW COMPLETE
+Verdict: APPROVED / CHANGES REQUESTED
 
 Stub Check: No critical stubs
 BE Checklist (applied to TECH): All PASS / N issues
+Test Author Independence: OK / MAJOR (N% overlap)
 
 Next: /nacl-tl-status or /nacl-tl-next
 ```
@@ -475,9 +610,10 @@ Next: /nacl-tl-status or /nacl-tl-next
 ### If Rejected (Any Mode)
 
 ```
-Code Review: REJECTED
+Code Review: CHANGES REQUESTED
 
 Task: UC### [Title] (Backend/Frontend) or TECH### [Title]
+Headline: REVIEW INCOMPLETE — REGRESSION / REVIEW APPLIED — BLOCKED / ...
 
 Blockers Found:
   B01: [description]
@@ -500,13 +636,17 @@ Run: /nacl-tl-dev TECH### --continue    (TECH rejections)
 - FE approved -> `phases.review_fe = "approved"`
 - TECH approved -> `status = "approved"`
 
-### If REJECTED
+### If CHANGES REQUESTED
 
 Status reverts to `in_progress`; developer must use `--continue`:
 
 - BE rejected -> `/nacl-tl-dev-be UC### --continue` (reads `review-be.md`)
 - FE rejected -> `/nacl-tl-dev-fe UC### --continue` (reads `review-fe.md`)
 - TECH rejected -> `/nacl-tl-dev TECH### --continue` (reads `review.md`)
+
+Note on rejection path: distinguish the cause clearly.
+- If tests fail because the implementation is wrong → `REVIEW INCOMPLETE — REGRESSION`; return to implementation.
+- If tests fail because tests were written to match a buggy implementation → `REVIEW APPLIED — UNVERIFIED` + MAJOR flag; recommend `/nacl-tl-regression-test` before re-review.
 
 ---
 
@@ -565,7 +705,8 @@ Usage:
 
 ```
 Warning: Tests are failing (Passed: N, Failed: N)
-This will result in REJECTED status. Review continues to identify all issues.
+Headline will be REVIEW INCOMPLETE — REGRESSION. Review continues to identify all issues.
+Distinguish: is the implementation wrong, or are the tests tuned to a buggy implementation?
 ```
 
 ### Missing Result File
@@ -620,14 +761,20 @@ Before deep review, verify these first:
 ### Stub Gate
 - [ ] Registry read; files scanned for markers
 - [ ] Gate decision made (BLOCK / FLAG / PROCEED)
+- [ ] WARNING > 3: ticket/backlog ID references verified
 
 ### During Review
 - [ ] Acceptance criteria verified
 - [ ] Appropriate checklist applied (8 BE / 10 FE)
-- [ ] TDD compliance verified; tests run and documented
+- [ ] TDD compliance verified
+- [ ] Tests run; runner output captured (or NO_INFRA / RUNNER_BROKEN recorded)
+- [ ] Test author independence check run; git log compared
 - [ ] Issues categorized by severity
 
 ### After Review
+- [ ] Headline assigned (REVIEW COMPLETE / REVIEW APPLIED — UNVERIFIED / ...)
+- [ ] Verdict assigned (APPROVED / CHANGES REQUESTED)
+- [ ] MAJOR flag present if test author overlap > 50%
 - [ ] Review artifact created; status.json updated
 - [ ] changelog.md updated; positive observations documented
 - [ ] Next steps clearly stated
