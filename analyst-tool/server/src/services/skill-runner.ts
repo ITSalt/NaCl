@@ -9,8 +9,8 @@
  */
 import { randomBytes } from 'node:crypto';
 import { existsSync } from 'node:fs';
-import { readFile } from 'node:fs/promises';
-import { resolve } from 'node:path';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { resolve, dirname } from 'node:path';
 import type { TaskResult } from 'itsalt-pinch';
 import { classifyBoard } from './board-classifier.js';
 import { computeBoardHash, writeMeta } from './meta.js';
@@ -18,6 +18,7 @@ import { getPacer, setPendingMeta } from './pinch.js';
 import { getConfig } from '../config.js';
 import { broadcast } from '../ws/events.js';
 import { renderBoard } from '../render/index.js';
+import { renderMarkdown, type RenderMdKind, MissingSourceFileError } from '../render/markdown/index.js';
 import { writeBoard } from './boards.js';
 import { getDriverAsync } from './neo4j.js';
 
@@ -25,11 +26,15 @@ import { getDriverAsync } from './neo4j.js';
 // Types
 // ---------------------------------------------------------------------------
 
-export type SkillKind = 'regenerate' | 'sync' | 'analyze';
+export type SkillKind = 'regenerate' | 'sync' | 'analyze' | 'render-md';
 
 export interface SkillRequest {
   kind: SkillKind;
-  board: string; // board name without extension
+  board: string; // board name without extension (required for non-render-md)
+  /** render-md only: which sub-renderer to invoke */
+  subtype?: RenderMdKind;
+  /** render-md only: entity/uc/form id; null for singletons */
+  relatedId?: string | null;
 }
 
 export interface RunSummary {
@@ -197,6 +202,92 @@ function genRunId(): string {
  */
 export function run(req: SkillRequest, pacer?: PacerLike): SkillRunHandle {
   const { kind, board } = req;
+
+  // ---------------------------------------------------------------------------
+  // 'render-md' — runs locally, no Pinch. Board name is not used.
+  // ---------------------------------------------------------------------------
+  if (kind === 'render-md') {
+    const { subtype, relatedId } = req;
+    if (!subtype) {
+      throw Object.assign(
+        new Error('render-md requires subtype'),
+        { statusCode: 400, code: 'missing_subtype' },
+      );
+    }
+
+    const runId = genRunId();
+    const startedAt = new Date().toISOString();
+
+    const promise = (async (): Promise<RunSummary> => {
+      broadcast('runs', { type: 'run.started', runId, kind, board: subtype, startedAt });
+      broadcast(`run:${runId}`, { type: 'run.started', runId, kind, board: subtype, startedAt });
+
+      try {
+        const currentConfig = getConfig();
+        const driver = await getDriverAsync(currentConfig.repoRoot);
+        const projectRoot = currentConfig.repoRoot;
+
+        const { path: outPath, content } = await renderMarkdown(
+          subtype,
+          relatedId ?? null,
+          driver,
+          projectRoot,
+        );
+
+        // Ensure the target directory exists
+        await mkdir(dirname(outPath), { recursive: true });
+        await writeFile(outPath, content, 'utf-8');
+
+        // Update meta: mark as generated (meta is best-effort for md files)
+        const mdBoard = subtype + (relatedId ? `-${relatedId}` : '');
+        await writeMeta(mdBoard, {
+          lastGeneratedAt: new Date().toISOString(),
+          lastGeneratedBy: 'analyst-tool-render-md',
+        }).catch(() => undefined);
+
+        const finishedAt = new Date().toISOString();
+        const summary: RunSummary = {
+          runId,
+          kind,
+          board: subtype,
+          exitCode: 0,
+          durationMs: new Date(finishedAt).getTime() - new Date(startedAt).getTime(),
+          startedAt,
+          finishedAt,
+        };
+
+        broadcast('runs', { type: 'run.completed', ...summary });
+        broadcast(`run:${runId}`, { type: 'run.completed', ...summary });
+        return summary;
+      } catch (err) {
+        const finishedAt = new Date().toISOString();
+        const message = err instanceof Error ? err.message : String(err);
+
+        const isMissingSf = err instanceof MissingSourceFileError;
+        const failedPayload = {
+          type: 'run.failed',
+          runId,
+          kind,
+          board: subtype,
+          error: message,
+          ...(isMissingSf ? {
+            lastError: {
+              code: 'missing_source_file',
+              nodeLabel: (err as MissingSourceFileError).nodeLabel,
+              nodeId: (err as MissingSourceFileError).nodeId,
+            },
+          } : {}),
+          startedAt,
+          finishedAt,
+        };
+        broadcast('runs', failedPayload);
+        broadcast(`run:${runId}`, failedPayload);
+        throw err;
+      }
+    })();
+
+    return { runId, promise };
+  }
 
   // Validate board name and path
   assertBoardName(board);

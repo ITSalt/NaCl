@@ -13,6 +13,7 @@ import { snapshotsRoutes } from './routes/snapshots.js';
 import { searchRoutes } from './routes/search.js';
 import { projectsRoutes } from './routes/projects.js';
 import { versionRoutes } from './routes/version.js';
+import { renderRoutes } from './routes/render.js';
 import { getVersionInfo } from './services/version.js';
 import { start as startWatcher } from './services/fs-watcher.js';
 import { isRecentSelfWrite } from './services/self-writes.js';
@@ -121,6 +122,7 @@ export async function startServer(options: StartServerOptions): Promise<() => Pr
       await searchRoutes(fastify);
       await projectsRoutes(fastify);
       await versionRoutes(fastify);
+      fastify.register(renderRoutes, { prefix: '/render' });
     },
     { prefix: '/api/v1' },
   );
