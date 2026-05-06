@@ -269,6 +269,12 @@ export function makeText(opts: {
    * Omit for dynamic / multi-line text where the exact value can't be predicted.
    */
   baseline?: number;
+  /**
+   * Optional raw text (used in edit mode). When pre-wrapping `text` with
+   * explicit `\n`, set `originalText` to the unwrapped string so the user
+   * can edit the natural source.
+   */
+  originalText?: string;
   customData?: Record<string, unknown>;
 }): TextElement {
   const { seed, versionNonce } = deterministicSeeds(opts.logicalId);
@@ -303,7 +309,7 @@ export function makeText(opts: {
     link: null,
     locked: false,
     text: opts.text,
-    originalText: opts.text,
+    originalText: opts.originalText ?? opts.text,
     fontSize,
     fontFamily: opts.fontFamily ?? 1,
     textAlign: opts.textAlign ?? 'left',

@@ -377,9 +377,9 @@ describe('renderBoard — activity renderer', () => {
       {
         match: 'HAS_STEP',
         rows: [
-          { uc_id: 'UC-001', uc_name: 'Create Order', step_id: 'AS-001', step_desc: 'Enter order details', actor_type: 'User', step_number: { toNumber: () => 1, low: 1, high: 0 } },
-          { uc_id: 'UC-001', uc_name: 'Create Order', step_id: 'AS-002', step_desc: 'Validate data', actor_type: 'System', step_number: { toNumber: () => 2, low: 2, high: 0 } },
-          { uc_id: 'UC-001', uc_name: 'Create Order', step_id: 'AS-003', step_desc: 'Save order', actor_type: 'System', step_number: { toNumber: () => 3, low: 3, high: 0 } },
+          { uc_id: 'UC-001', uc_name: 'Create Order', step_id: 'AS-001', step_desc: 'Enter order details', actor: 'User', step_number: { toNumber: () => 1, low: 1, high: 0 } },
+          { uc_id: 'UC-001', uc_name: 'Create Order', step_id: 'AS-002', step_desc: 'Validate data', actor: 'System', step_number: { toNumber: () => 2, low: 2, high: 0 } },
+          { uc_id: 'UC-001', uc_name: 'Create Order', step_id: 'AS-003', step_desc: 'Save order', actor: 'System', step_number: { toNumber: () => 3, low: 3, high: 0 } },
         ],
       },
     ]);
@@ -390,6 +390,105 @@ describe('renderBoard — activity renderer', () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const ids3 = (scene.elements as any[]).map((e) => e.id as unknown);
     assert.equal(new Set(ids3).size, ids3.length, 'unique ids');
+  });
+
+  it('case-insensitive actor classification: "system"/"User"/"admin" route to correct lanes', async () => {
+    const { renderBoard } = await import('./index.js');
+
+    const driver = makeFakeDriver([
+      {
+        match: 'HAS_STEP',
+        rows: [
+          { uc_id: 'UC-X', uc_name: 'X', step_id: 'AS-1', step_desc: 'a', actor: 'User',   step_number: { toNumber: () => 1, low: 1, high: 0 } },
+          { uc_id: 'UC-X', uc_name: 'X', step_id: 'AS-2', step_desc: 'b', actor: 'system', step_number: { toNumber: () => 2, low: 2, high: 0 } },
+          { uc_id: 'UC-X', uc_name: 'X', step_id: 'AS-3', step_desc: 'c', actor: 'admin',  step_number: { toNumber: () => 3, low: 3, high: 0 } },
+        ],
+      },
+    ]);
+    const scene = await renderBoard('activity', 'UC-X', driver);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const els = scene.elements as any[];
+    const stepRect = (id: string) => els.find((e) => e.type === 'rectangle' && String(e.id) === id);
+    // User-coloured (#2e7d32) on the user-lane steps; System-coloured (#1565c0) only on the actually-system one
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    assert.equal(String(stepRect('step-AS-1')?.strokeColor), '#2e7d32', 'User step → green stroke');
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    assert.equal(String(stepRect('step-AS-2')?.strokeColor), '#1565c0', 'system (lowercase) step → blue stroke');
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    assert.equal(String(stepRect('step-AS-3')?.strokeColor), '#2e7d32', 'admin step → user-side, green stroke');
+    // System swimlane should be present (mixed UC, not all-null)
+    assert.ok(els.some((e) => e.id === 'swim-system-bg'), 'system swimlane bg present in mixed UC');
+  });
+
+  it('long step description is wrapped onto multiple lines and rect grows', async () => {
+    const { renderBoard } = await import('./index.js');
+
+    const longText = 'Открыть приложение Семейный кинотеатр и выбрать категорию контента из меню';
+    const driver = makeFakeDriver([
+      {
+        match: 'HAS_STEP',
+        rows: [
+          { uc_id: 'UC-001', uc_name: 'X', step_id: 'AS-001', step_desc: longText, actor: 'User', step_number: { toNumber: () => 1, low: 1, high: 0 } },
+        ],
+      },
+    ]);
+    const scene = await renderBoard('activity', 'UC-001', driver);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const els = scene.elements as any[];
+    const stepText = els.find((e) => e.type === 'text' && e.containerId === 'step-AS-001');
+    assert.ok(stepText, 'step text element exists');
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    assert.ok(String(stepText.text).includes('\n'), 'long step text must be wrapped with \\n');
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    assert.equal(String(stepText.originalText), longText, 'originalText preserves the raw description');
+  });
+
+  it('placeholder step ("--") gets fallback text and dashed stroke', async () => {
+    const { renderBoard } = await import('./index.js');
+
+    const driver = makeFakeDriver([
+      {
+        match: 'HAS_STEP',
+        rows: [
+          { uc_id: 'UC-002', uc_name: 'X', step_id: 'AS-007', step_desc: '--', actor: 'User', step_number: { toNumber: () => 1, low: 1, high: 0 } },
+        ],
+      },
+    ]);
+    const scene = await renderBoard('activity', 'UC-002', driver);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const els = scene.elements as any[];
+    const stepRect = els.find((e) => e.type === 'rectangle' && String(e.id) === 'step-AS-007');
+    assert.ok(stepRect, 'step rect exists');
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    assert.equal(String(stepRect.strokeStyle), 'dashed', 'placeholder step has dashed border');
+    const stepText = els.find((e) => e.type === 'text' && e.containerId === 'step-AS-007');
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    assert.ok(String(stepText.text).includes('AS-007'), 'fallback text includes the step id');
+  });
+
+  it('all-empty actor → single lane + warning banner, no system swimlane', async () => {
+    const { renderBoard } = await import('./index.js');
+
+    // Empty-string actor (the realistic Neo4j case) collapses to null after
+    // classifyActor, just like a missing property would.
+    const driver = makeFakeDriver([
+      {
+        match: 'HAS_STEP',
+        rows: [
+          { uc_id: 'UC-003', uc_name: 'X', step_id: 'AS-1', step_desc: 'a', actor: '',   step_number: { toNumber: () => 1, low: 1, high: 0 } },
+          { uc_id: 'UC-003', uc_name: 'X', step_id: 'AS-2', step_desc: 'b', actor: null, step_number: { toNumber: () => 2, low: 2, high: 0 } },
+        ],
+      },
+    ]);
+    const scene = await renderBoard('activity', 'UC-003', driver);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const els = scene.elements as any[];
+    const sysBg = els.find((e) => e.id === 'swim-system-bg');
+    assert.equal(sysBg, undefined, 'system swimlane bg must NOT be rendered when actor_type is all null');
+    const userBg = els.find((e) => e.id === 'swim-user-bg');
+    assert.ok(userBg, 'user swimlane bg still rendered (now hosts every step)');
+    const warning = els.find((e) => e.type === 'text' && String(e.id ?? '').startsWith('text-warning-UC-003-actor-missing'));
+    assert.ok(warning, 'warning banner is added when actor_type is missing on every step');
   });
 });
 

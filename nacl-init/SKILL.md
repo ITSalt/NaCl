@@ -76,6 +76,185 @@ Ask the user:
 
 ---
 
+### Step 1.5: AUTO-MIGRATE LEGACY ARTEFACTS
+
+**This step runs every time `/nacl-init` is invoked** — including on a fresh project, where it will find nothing to do and produce no output. It must complete before Step 2 (CLAUDE.md) and before any `docker compose up`.
+
+The goal is to silently bring the project's `graph-infra/` directory and `config.yaml` into the current NaCl standard. The analyst never sees underlying shell commands — only a single summary line if any migration was performed.
+
+#### How to run this step
+
+Read the current state first, then act only where the conditions below are true. All checks are idempotent: if the condition is already false (artefact already absent, field already present, directory already exists), skip that action.
+
+---
+
+#### Migration check A — legacy `excalidraw` container and service
+
+Read `graph-infra/docker-compose.yml` (if it exists):
+
+```bash
+# Does the excalidraw service block exist?
+grep -q "^  excalidraw:" graph-infra/docker-compose.yml 2>/dev/null
+```
+
+If the service is present:
+
+1. Determine the container name. The container name follows the `${CONTAINER_PREFIX}-excalidraw` pattern. Read it from `graph-infra/.env`:
+   ```bash
+   CONTAINER_PREFIX=$(grep '^CONTAINER_PREFIX=' graph-infra/.env 2>/dev/null | cut -d= -f2)
+   EXCALIDRAW_CONTAINER="${CONTAINER_PREFIX}-excalidraw"
+   ```
+   If `.env` is unreadable or `CONTAINER_PREFIX` is empty, fall back to reading the `container_name:` line from inside the `excalidraw:` service block.
+
+2. Stop and remove the container only if it exists:
+   ```bash
+   if docker ps -a --format '{{.Names}}' 2>/dev/null | grep -qx "$EXCALIDRAW_CONTAINER"; then
+     docker stop "$EXCALIDRAW_CONTAINER"
+     docker rm "$EXCALIDRAW_CONTAINER"
+   fi
+   ```
+
+3. Remove the `excalidraw:` service block from `graph-infra/docker-compose.yml`. The block runs from the `  excalidraw:` line to the last line before the next top-level service key or end of the `services:` map. Use a Python one-liner to remove it precisely without touching the rest of the file:
+   ```bash
+   python3 - graph-infra/docker-compose.yml <<'EOF'
+   import sys, re
+   path = sys.argv[1]
+   text = open(path).read()
+   # Remove the excalidraw service block (indented under services:)
+   text = re.sub(r'\n  excalidraw:\n(?:    [^\n]*\n)*', '\n', text)
+   open(path, 'w').write(text)
+   EOF
+   ```
+
+Record: `excalidraw container stopped/removed, service block removed`.
+
+---
+
+#### Migration check B — legacy `excalidraw-room` container and service
+
+Repeat the same three sub-steps as check A, substituting `excalidraw-room` for `excalidraw`:
+
+```bash
+grep -q "^  excalidraw-room:" graph-infra/docker-compose.yml 2>/dev/null
+```
+
+Container name pattern: `${CONTAINER_PREFIX}-excalidraw-room`.
+
+The Python removal pattern:
+```bash
+text = re.sub(r'\n  excalidraw-room:\n(?:    [^\n]*\n)*', '\n', text)
+```
+
+Record: `excalidraw-room container stopped/removed, service block removed`.
+
+---
+
+#### Migration check C — legacy env vars in `graph-infra/.env`
+
+```bash
+grep -qE '^(EXCALIDRAW_PORT|EXCALIDRAW_ROOM_PORT)=' graph-infra/.env 2>/dev/null
+```
+
+If either line exists, remove them:
+```bash
+python3 - graph-infra/.env <<'EOF'
+import sys, re
+path = sys.argv[1]
+lines = open(path).readlines()
+lines = [l for l in lines if not re.match(r'^EXCALIDRAW_(ROOM_)?PORT=', l)]
+open(path, 'w').writelines(lines)
+EOF
+```
+
+Do the same for `graph-infra/.env.example` if it exists.
+
+Record: `EXCALIDRAW_PORT / EXCALIDRAW_ROOM_PORT removed from .env`.
+
+---
+
+#### Migration check D — missing `graph-infra/boards/` directory
+
+```bash
+[ ! -d graph-infra/boards ]
+```
+
+If the directory is absent:
+```bash
+mkdir -p graph-infra/boards
+```
+
+Record: `graph-infra/boards/ created`.
+
+---
+
+#### Migration check E — missing `project.id` in `config.yaml`
+
+```bash
+# Does config.yaml exist and lack a project.id field?
+[ -f config.yaml ] && ! grep -q '^\s*id:' config.yaml 2>/dev/null
+```
+
+If true, compute the project id: take the project name argument (or the current directory basename if no argument was given), lowercase it, replace spaces with hyphens, strip characters not matching `[a-z0-9_-]`, truncate to 64 characters.
+
+Inject `id:` as the first key inside the `project:` block, immediately after the `project:` line, preserving all other content and comments:
+```bash
+python3 - config.yaml "$PROJECT_ID" <<'EOF'
+import sys, re
+path, project_id = sys.argv[1], sys.argv[2]
+text = open(path).read()
+# Insert id: as first key under project: block
+text = re.sub(r'(^project:\s*\n)', r'\1  id: "' + project_id + r'"\n', text, count=1, flags=re.MULTILINE)
+open(path, 'w').write(text)
+EOF
+```
+
+Record: `project.id="<id>" added to config.yaml`.
+
+---
+
+#### Migration check F — missing `project.name` in `config.yaml`
+
+```bash
+[ -f config.yaml ] && ! grep -q '^\s*name:' config.yaml 2>/dev/null
+```
+
+If true, inject `name:` under the `project:` block (after `id:` if it was just added, otherwise as the first key):
+```bash
+python3 - config.yaml "$PROJECT_NAME" <<'EOF'
+import sys, re
+path, project_name = sys.argv[1], sys.argv[2]
+text = open(path).read()
+text = re.sub(r'(^project:\s*\n(?:  id:[^\n]*\n)?)', r'\1  name: "' + project_name + r'"\n', text, count=1, flags=re.MULTILINE)
+open(path, 'w').write(text)
+EOF
+```
+
+Record: `project.name="<name>" added to config.yaml`.
+
+---
+
+#### Migration summary output
+
+After all checks have run:
+
+- If **nothing was migrated** (all conditions were false): produce no output. Continue silently.
+- If **any migration was performed**: print exactly one line:
+
+  ```
+  Migrated existing project: <comma-separated list of what changed>.
+  ```
+
+  Example:
+  ```
+  Migrated existing project: removed legacy excalidraw services (2 containers stopped), created graph-infra/boards/, added project.id="my-project" to config.yaml.
+  ```
+
+  Use generic placeholders in the skill text (`<container-prefix>`, `<project.id>`). In actual execution, substitute real values.
+
+This single line is the **only migration output** the analyst sees. Do not print the underlying commands, container IDs, or intermediate steps.
+
+---
+
 ### Step 2: CREATE CLAUDE.md
 
 Use the template from `nacl-tl-core/templates/claude-md-template.md` as the base.
@@ -191,8 +370,8 @@ curl -s -H "Authorization: Bearer $YOUGILE_API_KEY" \
 Present the list to user:
 ```
 Your YouGile projects:
-  1. f775a373-...  Электрозарядки
-  2. a1b2c3d4-...  Family Cinema
+  1. f775a373-...  Project Alpha
+  2. a1b2c3d4-...  Project Beta
 
 Which project? (number or ID)
 If the project doesn't exist yet:
@@ -226,7 +405,7 @@ If any errors → show them, suggest manual fix.
 
 ### Step 2c: GRAPH INFRASTRUCTURE (optional)
 
-**Goal:** Set up per-project Neo4j + Excalidraw infrastructure for graph-based BA/SA skills.
+**Goal:** Set up per-project Neo4j infrastructure for graph-based BA/SA skills.
 
 ```
 Ask: "Will this project use Neo4j graph for BA/SA specifications? (nacl-ba-*, nacl-sa-* skills)"
@@ -244,15 +423,12 @@ docker ps --format '{{.Ports}}' 2>/dev/null | grep -oE '[0-9]+->7687' | grep -oE
 Find the highest Bolt port in use (default baseline: 3587). Propose the next block with +10 offset:
 - If 3587 is in use → propose 3597
 - If 3597 is in use → propose 3607
-- Port block: bolt=N, http=N-13, excalidraw=N-7, room=N-6
 
 Present to user:
 ```
 Proposed graph ports (auto-detected free range):
   Neo4j Bolt:       {bolt_port}
   Neo4j Browser:    {http_port}
-  Excalidraw:       {excalidraw_port}
-  Excalidraw Room:  {room_port}
 
 Accept these ports? (yes / enter custom)
 ```
@@ -265,8 +441,6 @@ graph:
   neo4j_bolt_port: {bolt_port}
   neo4j_http_port: {http_port}
   neo4j_password: "neo4j_graph_dev"
-  excalidraw_port: {excalidraw_port}
-  excalidraw_room_port: {room_port}
   container_prefix: "{project_name_slug}"
   boards_dir: "graph-infra/boards"
 ```
@@ -307,8 +481,6 @@ CONTAINER_PREFIX={container_prefix}
 NEO4J_PASSWORD={neo4j_password}
 NEO4J_HTTP_PORT={neo4j_http_port}
 NEO4J_BOLT_PORT={neo4j_bolt_port}
-EXCALIDRAW_PORT={excalidraw_port}
-EXCALIDRAW_ROOM_PORT={excalidraw_room_port}
 ```
 
 Also create `graph-infra/.env.example` with same content.
@@ -380,8 +552,7 @@ If verification returns constraints → schema is loaded. If Docker or cypher-sh
 
 Neo4j Browser: http://localhost:{http_port}
   (login: bolt://localhost:{bolt_port}, neo4j / {password})
-Excalidraw:    http://localhost:{excalidraw_port}
-Containers:    {container_prefix}-neo4j, {container_prefix}-excalidraw
+Containers:    {container_prefix}-neo4j
 
 Docker:  started ✓
 Schema:  loaded ✓ (ba + sa + tl)
@@ -400,6 +571,92 @@ Schema: FAILED — load manually:
   Connection: bolt://localhost:{bolt_port}, neo4j / {password}
   Execute each statement from graph-infra/schema/*.cypher one at a time
 ```
+
+---
+
+### Step 2d: REGISTER PROJECT IN ANALYST-TOOL REGISTRY
+
+**Goal:** Write an entry for this project into `~/.nacl/projects.json` so the NaCl Analyst Tool's project picker can discover it immediately. This step runs unconditionally — even if the analyst-tool is not yet installed. The registry write is cheap and idempotent: installing the tool later will find the entry already in place.
+
+**Prerequisite:** Step 1.5 (auto-migration) must have completed first. The migration ensures `config.yaml` contains a valid `project.id` before this step reads it. If Step 1.5 injected a new `project.id`, this step will read that value from the now-updated file.
+
+**Do not skip this step for `--dry-run`.** In dry-run mode, show what would be written but do not modify the file.
+
+#### 2d.1 Resolve registry path
+
+```bash
+NACL_REGISTRY="${NACL_HOME:-$HOME/.nacl}/projects.json"
+```
+
+#### 2d.2 Derive the project id
+
+`project.id` is the project name lowercased with spaces replaced by hyphens and all characters not matching `[a-z0-9_-]` removed, truncated to 64 characters. This must match `/^[a-z0-9_-]{1,64}$/` (the constraint enforced by `analyst-tool/server/src/services/project-registry.ts`).
+
+Example: `"My Acme Project"` → `my-acme-project`.
+
+If `config.yaml` already contains `project.id` (written by Step 1.5 or present from a prior run), use that value. Otherwise derive it from the skill argument.
+
+#### 2d.3 Ensure the directory and file exist
+
+```bash
+mkdir -p "$(dirname "$NACL_REGISTRY")"
+chmod 700 "$(dirname "$NACL_REGISTRY")" 2>/dev/null || true   # best-effort; Windows ignores
+
+if [ ! -f "$NACL_REGISTRY" ]; then
+  printf '{"version":1,"activeProjectId":null,"projects":[]}\n' > "$NACL_REGISTRY"
+  chmod 600 "$NACL_REGISTRY" 2>/dev/null || true
+fi
+```
+
+#### 2d.4 Read, validate, and merge
+
+Read and parse `$NACL_REGISTRY`. Validate `version === 1`. If `version` is anything else, **abort with an error** — do not silently overwrite:
+
+```
+ERROR: ~/.nacl/projects.json has version <N>, expected 1.
+Your analyst-tool may be newer than this skill. Upgrade nacl-init or fix the registry manually.
+See: analyst-tool/server/src/services/project-registry.ts
+```
+
+Find the existing record where `id === <project.id>`:
+
+- **Record exists:** update `name` (in case it was renamed), `root` (current absolute working directory), `lastUsed` (ISO 8601 UTC timestamp). **Keep the original `createdAt`.**
+- **Record does not exist:** append a new object:
+  ```json
+  {
+    "id": "<project.id>",
+    "name": "<project.name>",
+    "root": "<absolute cwd>",
+    "createdAt": "<ISO now>",
+    "lastUsed": "<ISO now>"
+  }
+  ```
+
+Set `activeProjectId = <project.id>`.
+
+The resulting registry shape must match `ProjectRegistry` and `ProjectRecord` from `analyst-tool/server/src/services/project-registry.ts` exactly — field names, types, and the top-level `version: 1` are canonical.
+
+#### 2d.5 Write atomically
+
+```bash
+# Write to a temp file first, then rename (atomic on POSIX)
+printf '%s\n' "$UPDATED_JSON" > "${NACL_REGISTRY}.tmp"
+chmod 600 "${NACL_REGISTRY}.tmp" 2>/dev/null || true
+mv "${NACL_REGISTRY}.tmp" "$NACL_REGISTRY"
+```
+
+#### 2d.6 Log the result
+
+```
+Registered '<name>' (<id>) in <NACL_REGISTRY>
+```
+
+If the entry already existed and was updated, log:
+```
+Updated registry entry '<id>' (root + lastUsed refreshed) in <NACL_REGISTRY>
+```
+
+**Idempotency contract:** re-running `/nacl-init` in the same directory is safe. It updates `name`, `root`, and `lastUsed`; it never duplicates the entry.
 
 ---
 
@@ -422,7 +679,7 @@ CLAUDE.md: [created / updated / no changes needed]
 
 config.yaml: [created / N fields auto-detected]
   Auto-detected:
-    project.name: "Family Cinema"
+    project.name: "My Project"
     project.stack: "Next.js 14 + Fastify + PostgreSQL 17"
     modules.frontend.path: "frontend"
     modules.backend.path: "backend"
@@ -539,3 +796,4 @@ These are generated artifacts (HTML reports, screenshots) that should not be in 
 - `nacl-tl-core/templates/claude-md-template.md` — CLAUDE.md template
 - `nacl-tl-core/references/fix-classification-rules.md` — L1/L2/L3 rules
 - `nacl-tl-core/templates/config-yaml-template.yaml` — config.yaml template
+- `analyst-tool/server/src/services/project-registry.ts` — canonical `ProjectRecord` / `ProjectRegistry` types and atomic-write behaviour

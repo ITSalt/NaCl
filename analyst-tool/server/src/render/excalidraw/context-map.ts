@@ -174,10 +174,12 @@ export async function renderContextMap(driver: Driver): Promise<ExcalidrawScene>
   const registry: ShapeRegistry = new Map();
   const elements: AnyElement[] = [];
 
-  // Module boxes
+  // Module boxes — each box is a group (rect + title + stats) so dragging
+  // any element drags the whole module via Excalidraw's select-on-click.
   for (const layout of layoutModules) {
     const { mod, x, y, rectId } = layout;
 
+    const moduleGroup = [`group-module-${mod.id}`];
     const titleTextId = semIds.moduleText(mod.id);
     const rect = makeRect({
       logicalId: mod.id,
@@ -190,6 +192,7 @@ export async function renderContextMap(driver: Driver): Promise<ExcalidrawScene>
       strokeColor: '#2e7d32',
       strokeWidth: 2,
       roughness: 1,
+      groupIds: moduleGroup,
       customData: { nodeId: mod.id, nodeType: 'Module', confidence: 'high', synced: true },
     });
     registry.set(rectId, rect.boundElements);
@@ -211,9 +214,10 @@ export async function renderContextMap(driver: Driver): Promise<ExcalidrawScene>
       textAlign: 'center',
       verticalAlign: 'middle',
       containerId: rectId,
+      groupIds: moduleGroup,
     }));
 
-    // Stats text (free, inside box)
+    // Stats text — same group as the rect so it drags with the box.
     elements.push(makeText({
       logicalId: `${mod.id}::stats`,
       id: semIds.moduleStatsText(mod.id),
@@ -224,6 +228,7 @@ export async function renderContextMap(driver: Driver): Promise<ExcalidrawScene>
       text: `${mod.entity_count} entities, ${mod.uc_count} use cases`,
       fontSize: 14,
       strokeColor: '#666666',
+      groupIds: moduleGroup,
     }));
   }
 
@@ -263,18 +268,26 @@ export async function renderContextMap(driver: Driver): Promise<ExcalidrawScene>
       strokeWidth: 2,
       registry,
     });
+
+    // Arrow label — bind via containerId so Excalidraw treats it as an arrow
+    // label and auto-positions it at the arrow's midpoint when either
+    // endpoint moves. The arrow's boundElements lists the label id.
+    const labelId = semIds.depLabel(srcId, tgtId);
+    arrow.boundElements.push({ id: labelId, type: 'text' });
     elements.push(arrow);
 
-    // Arrow label
     elements.push(makeText({
       logicalId: `label-dep-${srcId}-${tgtId}`,
-      id: semIds.depLabel(srcId, tgtId),
+      id: labelId,
       x: Math.round((startX + endX) / 2),
       y: Math.round((startY + endY) / 2) - 15,
       width: 120,
       text: 'entity-ref',
       fontSize: 12,
       strokeColor: '#666666',
+      textAlign: 'center',
+      verticalAlign: 'middle',
+      containerId: arrowId,
     }));
   }
 

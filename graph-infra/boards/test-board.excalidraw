@@ -1,7 +1,6 @@
 {
   "type": "excalidraw",
   "version": 2,
-  "source": "claude-skills-graph-infra",
   "elements": [
     {
       "id": "rect-test-001",
@@ -24,8 +23,14 @@
       "isDeleted": false,
       "groupIds": [],
       "boundElements": [
-        { "id": "text-test-001", "type": "text" },
-        { "id": "arrow-001", "type": "arrow" }
+        {
+          "id": "text-test-001",
+          "type": "text"
+        },
+        {
+          "id": "arrow-001",
+          "type": "arrow"
+        }
       ],
       "updated": 1710878400000,
       "link": null,
@@ -89,8 +94,14 @@
       "isDeleted": false,
       "groupIds": [],
       "boundElements": [
-        { "id": "text-test-002", "type": "text" },
-        { "id": "arrow-001", "type": "arrow" }
+        {
+          "id": "text-test-002",
+          "type": "text"
+        },
+        {
+          "id": "arrow-001",
+          "type": "arrow"
+        }
       ],
       "updated": 1710878400000,
       "link": null,
@@ -158,8 +169,14 @@
       "link": null,
       "locked": false,
       "points": [
-        [0, 0],
-        [100, 0]
+        [
+          0,
+          0
+        ],
+        [
+          100,
+          0
+        ]
       ],
       "lastCommittedPoint": null,
       "startBinding": {
@@ -174,6 +191,31 @@
       },
       "startArrowhead": null,
       "endArrowhead": "arrow"
+    },
+    {
+      "id": "rect-e2e-dirty",
+      "type": "rectangle",
+      "x": 600,
+      "y": 100,
+      "width": 100,
+      "height": 60,
+      "angle": 0,
+      "strokeColor": "#e03131",
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "strokeWidth": 2,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "seed": 9999,
+      "version": 1,
+      "versionNonce": 9999,
+      "isDeleted": false,
+      "groupIds": [],
+      "boundElements": [],
+      "updated": 1777845763803,
+      "link": null,
+      "locked": false
     }
   ],
   "appState": {

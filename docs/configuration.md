@@ -14,6 +14,24 @@ If `config.yaml` is missing, skills fall back to built-in defaults where possibl
 
 ---
 
+## Re-running `/nacl-init` on an Existing Project
+
+Running `/nacl-init` on a project that was already initialised is safe and idempotent. In addition to refreshing `CLAUDE.md` and `config.yaml`, the skill automatically migrates legacy infrastructure artefacts without requiring any manual steps from the analyst:
+
+| Detected condition | What the skill does |
+|---|---|
+| `graph-infra/docker-compose.yml` contains an `excalidraw` or `excalidraw-room` service | Stops and removes the container (if running), then removes the service block from the YAML |
+| `graph-infra/.env` contains `EXCALIDRAW_PORT` or `EXCALIDRAW_ROOM_PORT` | Removes those lines |
+| `graph-infra/boards/` directory does not exist | Creates it |
+| `config.yaml` exists but has no `project.id` field | Injects a slugified id derived from the project name |
+| `config.yaml` exists but has no `project.name` field | Injects the human-readable name from the skill argument |
+
+If any migration was performed, the skill prints a single summary line (e.g., `Migrated existing project: removed legacy excalidraw services (2 containers stopped), created graph-infra/boards/.`). For a fresh project with nothing to migrate, no output is produced.
+
+See `nacl-init/SKILL.md` § Auto-migrate Legacy Artefacts for the full procedural detail.
+
+---
+
 ## Complete Example
 
 ```yaml
@@ -40,7 +58,6 @@ graph:
   neo4j_bolt_port: 3587
   neo4j_http_port: 3574
   neo4j_password: "neo4j_graph_dev"
-  excalidraw_port: 3580
   container_prefix: "my-project"
   boards_dir: "graph-infra/boards"
 
@@ -127,9 +144,8 @@ Connection settings for the Neo4j container. Only needed if you use `nacl-ba-*` 
 | `neo4j_bolt_port` | integer | yes | — | Bolt port for Cypher connections (e.g. `3587`) |
 | `neo4j_http_port` | integer | yes | — | HTTP browser port (e.g. `3574`) |
 | `neo4j_password` | string | yes | — | Neo4j password |
-| `excalidraw_port` | integer | no | — | Port for the Excalidraw container used by `nacl-render` |
 | `container_prefix` | string | no | — | Docker container name prefix (e.g. `my-project` → container `my-project-neo4j`) |
-| `boards_dir` | string | no | `graph-infra/boards` | Directory where Excalidraw board files are stored |
+| `boards_dir` | string | no | `graph-infra/boards` | Directory where Excalidraw board files are stored. Each `.excalidraw` file may have a `<basename>.meta.json` sidecar managed by `nacl-render` and `nacl-ba-sync` — format defined in `nacl-core/SKILL.md` § "Board Meta Sidecar". |
 
 ---
 
@@ -249,3 +265,20 @@ graph:
 ```
 
 The `nacl-init` scaffolding skill generates a starter `config.yaml` when you run `/nacl-init "My Project"`.
+
+---
+
+## Environment Variables
+
+### `NACL_HOME`
+
+Controls the directory where NaCl stores its per-user registry file (`projects.json`).
+
+| | |
+|---|---|
+| **Default** | `~/.nacl/` |
+| **Override** | `export NACL_HOME=/path/to/custom/dir` |
+| **Written by** | `nacl-init` (Step 2d) — on every `/nacl-init` run |
+| **Read by** | `nacl-init` (when registering a project) and the NaCl Analyst Tool (when listing projects in the UI) |
+
+Use cases: per-user override on shared machines where `$HOME` is a network drive, or pointing at a test directory during development. The full registry path resolves to `$NACL_HOME/projects.json`. Canonical implementation: `analyst-tool/server/src/services/project-registry.ts`, function `getRegistryPath()`.

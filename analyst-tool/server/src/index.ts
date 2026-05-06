@@ -12,6 +12,8 @@ import { diagnosticsRoutes } from './routes/diagnostics.js';
 import { snapshotsRoutes } from './routes/snapshots.js';
 import { searchRoutes } from './routes/search.js';
 import { projectsRoutes } from './routes/projects.js';
+import { versionRoutes } from './routes/version.js';
+import { getVersionInfo } from './services/version.js';
 import { start as startWatcher } from './services/fs-watcher.js';
 import { isRecentSelfWrite } from './services/self-writes.js';
 import { start as startRegistryWatcher, stop as stopRegistryWatcher } from './services/registry-watcher.js';
@@ -118,6 +120,7 @@ export async function startServer(options: StartServerOptions): Promise<() => Pr
       await snapshotsRoutes(fastify);
       await searchRoutes(fastify);
       await projectsRoutes(fastify);
+      await versionRoutes(fastify);
     },
     { prefix: '/api/v1' },
   );
@@ -175,6 +178,11 @@ export async function startServer(options: StartServerOptions): Promise<() => Pr
 
   // ── listen ────────────────────────────────────────────────────────────────
   await server.listen({ port, host });
+
+  // Print build identity to the console so the operator can confirm the build
+  // they're running. Matches the line surfaced by /api/v1/version and the UI.
+  const v = getVersionInfo();
+  server.log.info(`[build] analyst-tool-server v${v.version} (sha=${v.gitSha}) startedAt=${v.startedAt}`);
 
   // ── stop function ─────────────────────────────────────────────────────────
   const stop = async (): Promise<void> => {

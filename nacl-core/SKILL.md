@@ -214,6 +214,102 @@ To create a labeled rectangle, you need TWO elements:
 - Decisions: centered between alternative paths
 - Arrows: use startBinding/endBinding for connected arrows
 
+## Board Meta Sidecar (`<board>.meta.json`)
+
+Every `.excalidraw` board file may have a companion sidecar file at `{$boards_dir}/<board>.meta.json`. This file is the source of truth for "when was this board last generated from the graph" and "when was it last synced back". The **NaCl Analyst Tool** (`analyst-tool/`) reads the sidecar to display sync status in its sidebar tree — without the sidecar the tool cannot determine freshness. Skills are the **canonical writers** of this file; the tool only reads it (and may write optimistically as a fallback when a skill run fails partway through).
+
+### Schema
+
+```json
+{
+  "lastGeneratedAt":        "2026-05-03T18:42:00.000Z",
+  "lastGeneratedBy":        "nacl-render",
+  "lastSyncedAt":           "2026-05-03T19:00:00.000Z",
+  "lastSyncStatus":         "ok",
+  "lastSyncRunId":          "r-95f71b58",
+  "contentHashAtLastSync":  "sha256:<64-hex-chars>"
+}
+```
+
+All six fields are **nullable** (`null` when not yet set). Dates are ISO-8601 UTC strings.
+
+### Field Semantics
+
+| Field | Type | Writer | Null means |
+|---|---|---|---|
+| `lastGeneratedAt` | ISO-8601 string \| null | `nacl-render` | board was never generated from graph |
+| `lastGeneratedBy` | string \| null | `nacl-render` | board was never generated from graph |
+| `lastSyncedAt` | ISO-8601 string \| null | `nacl-ba-sync` (success only) | board was never synced to graph |
+| `lastSyncStatus` | `"ok"` \| `"failed"` \| null | `nacl-ba-sync` | no sync has been attempted |
+| `lastSyncRunId` | string \| null | `nacl-ba-sync` | invoked directly (not via analyst-tool), or no run ID available |
+| `contentHashAtLastSync` | `"sha256:<hex>"` \| null | `nacl-render` and `nacl-ba-sync` (success only) | no render or sync has completed |
+
+### Who Writes What
+
+| Action | Fields written |
+|---|---|
+| Render from graph (success) | `lastGeneratedAt`, `lastGeneratedBy`, `contentHashAtLastSync` |
+| Sync to graph (success) | `lastSyncedAt`, `lastSyncStatus = "ok"`, `lastSyncRunId`, `contentHashAtLastSync` |
+| Sync to graph (failure) | `lastSyncStatus = "failed"`, `lastSyncRunId` |
+| Analyst-tool save | nothing — the tool does not write meta; `hasUnsyncedEdits` is derived at read time from `mtime` + recomputed hash |
+
+### Content Hash Algorithm
+
+`contentHashAtLastSync` is a SHA-256 hash of a **normalized** representation of the board scene. The algorithm (canonical TypeScript implementation: `analyst-tool/server/src/services/meta.ts`, function `computeBoardHash`):
+
+1. **Extract** three top-level fields from the `.excalidraw` JSON: `elements` (array), `appState` (object), `files` (object).
+2. **Normalize `appState`**: keep only `viewBackgroundColor` and `gridSize`; all other keys are dropped. Missing keys default to `null`.
+3. **Normalize each element** in `elements`:
+   - Strip the following volatile per-element keys: `version`, `versionNonce`, `seed`, `updated`.
+   - Sort the remaining keys alphabetically (ascending).
+   - Produce a new object with only the sorted, non-volatile keys.
+4. **Assemble** the normalized scene object:
+   ```json
+   {
+     "elements": [ ...normalized elements... ],
+     "appState": { "viewBackgroundColor": <value or null>, "gridSize": <value or null> },
+     "files": <files object or {}>
+   }
+   ```
+5. **Serialize** with `JSON.stringify` (no extra whitespace, no key sorting at the top level — the top-level key order is `elements`, `appState`, `files` as shown above).
+6. **Hash** the UTF-8 bytes of the JSON string with SHA-256.
+7. **Prefix** the lowercase hex digest with `sha256:`.
+
+Result format: `"sha256:<64 lowercase hex characters>"`.
+
+Any re-implementation (Python, shell, etc.) **must** produce the same byte sequence as the TypeScript reference for identical input. The key sort in step 3 is per-element, not recursive — nested objects inside element properties are not sorted.
+
+### Atomic Write Requirement
+
+To prevent the `analyst-tool` fs-watcher from reading a half-written file, the sidecar **must** be written atomically:
+
+1. Write the new JSON content to `<board>.meta.json.tmp` (same directory as the board).
+2. Rename `<board>.meta.json.tmp` → `<board>.meta.json`.
+
+On POSIX filesystems `rename(2)` is atomic. On Windows the tool is expected to run on macOS/Linux so this guarantee holds.
+
+### Merge Rule
+
+A skill never blindly overwrites the entire sidecar. Before writing, it reads the existing sidecar (or uses all-null defaults if missing), merges only the fields it owns (per the "Who Writes What" table above), and writes the merged result. This ensures `nacl-render` does not destroy `lastSyncedAt` set by a previous `nacl-ba-sync` run, and vice versa.
+
+### Analyst Tool Integration
+
+The meta sidecar is also read by the local **NaCl Analyst Tool** (`analyst-tool/`), which uses it to display sync status in the sidebar tree. The tool writes meta optimistically as a fallback in case a skill run fails partway, but the skills themselves are the canonical writers per the table above.
+
+---
+
+## Project Initialization
+
+The `/nacl-init` skill creates or updates `CLAUDE.md`, `config.yaml`, and graph infrastructure for a project. Re-running `/nacl-init` on an existing project is idempotent and triggers automatic migration of legacy infrastructure (removing stale excalidraw containers, creating missing `graph-infra/boards/`, injecting missing `project.id` / `project.name` fields) — see `nacl-init/SKILL.md` § Auto-migrate Legacy Artefacts for details.
+
+---
+
+## Project Registry (`~/.nacl/projects.json`)
+
+The NaCl Analyst Tool discovers projects through a per-user registry at `~/.nacl/projects.json` (override via `NACL_HOME` env var — see `docs/configuration.md`). **The registry is written only by `nacl-init`** (Step 2d); the analyst-tool and all other skills only read it. The canonical TypeScript types (`ProjectRecord`, `ProjectRegistry`) and the atomic-write implementation live in `analyst-tool/server/src/services/project-registry.ts`. Every entry has the fields `id`, `name`, `root`, `createdAt`, and `lastUsed`; the top-level object carries `version: 1` and `activeProjectId`. Skills must never write to this file directly — invoke `/nacl-init` to register or refresh a project.
+
+---
+
 ## ID Generation Rules
 
 | Layer | Format | Example | Counter |

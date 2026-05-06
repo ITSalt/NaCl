@@ -34,7 +34,7 @@ You are a Business Analyst agent specialized in graph synchronization. You read 
 
 Before executing, read and internalize:
 
-- **`nacl-core/SKILL.md`** --- Excalidraw JSON format, element types, `customData` structure, color coding, ID generation rules, Neo4j MCP tool names and connection info.
+- **`nacl-core/SKILL.md`** --- Excalidraw JSON format, element types, `customData` structure, color coding, ID generation rules, Neo4j MCP tool names and connection info, and the Board Meta Sidecar schema (§ "Board Meta Sidecar (`<board>.meta.json`)").
 
 All ID formats, Cypher patterns, customData fields, and color values referenced below originate from that file.
 
@@ -57,7 +57,7 @@ All ID formats, Cypher patterns, customData fields, and color values referenced 
                                                   +-------------------+
 ```
 
-Each phase runs sequentially. Phases 3--5 involve interactive Neo4j writes. Phase 6 writes back to the `.excalidraw` file.
+Each phase runs sequentially. Phases 3--5 involve interactive Neo4j writes. Phase 6 writes back to the `.excalidraw` file and updates the meta sidecar.
 
 ---
 
@@ -706,7 +706,25 @@ Reconstruct the full `.excalidraw` JSON with the updated elements array and writ
 
 Preserve all other fields (`type`, `version`, `source`, `appState`, `files`) unchanged. Preserve all elements that were not processed (arrows, text elements, skipped elements) exactly as they were.
 
-### 6.4 Generate the sync report
+### 6.4 Write board meta sidecar (success path)
+
+After writing the board file, update the board meta sidecar. The canonical schema, hash algorithm, and merge rules are in `nacl-core/SKILL.md` § "Board Meta Sidecar (`<board>.meta.json`)".
+
+Steps:
+
+1. **Derive board name** from `board_path`: strip the directory prefix and the `.excalidraw` extension (e.g. `{$boards_dir}/process-BP-001.excalidraw` → `process-BP-001`).
+2. **Read existing sidecar**: read `{$boards_dir}/<board>.meta.json` and parse as JSON; if absent or unreadable, start from all-null defaults.
+3. **Compute content hash**: apply the `computeBoardHash` algorithm (see `nacl-core/SKILL.md` § "Board Meta Sidecar") to the scene that was just written. Strip volatile per-element keys (`version`, `versionNonce`, `seed`, `updated`), sort remaining element keys alphabetically, keep only `viewBackgroundColor` and `gridSize` from `appState`, serialize with `JSON.stringify`, SHA-256 the result, prefix with `sha256:`.
+4. **Merge**: patch the following fields, preserving all others (especially `lastGeneratedAt` and `lastGeneratedBy`) unchanged:
+   - `lastSyncedAt` = current UTC timestamp in ISO-8601 (e.g. `"2026-05-03T19:00:00.000Z"`)
+   - `lastSyncStatus` = `"ok"`
+   - `lastSyncRunId` = the run ID passed in by the caller (e.g. analyst-tool's `r-<hex>` value), or `null` if the skill was invoked directly without a run ID
+   - `contentHashAtLastSync` = the hash from step 3
+5. **Atomic write**: write the merged JSON to `{$boards_dir}/<board>.meta.json.tmp`, then rename to `{$boards_dir}/<board>.meta.json`.
+
+> **Run ID note:** when invoked directly by a human via Claude Code (not via the analyst-tool's skill runner), there is no run ID. In that case set `lastSyncRunId` to `null`. When invoked via the analyst-tool, the tool passes the run ID as context; use that value.
+
+### 6.5 Generate the sync report
 
 Print the report directly to the user:
 
@@ -769,16 +787,33 @@ Print the report directly to the user:
 
 ### Next Steps
 
-1. Open the board in Excalidraw (http://localhost:{$excalidraw_port}) to verify visual state.
-2. Run `/nacl-ba-analyze` to validate board completeness and graph consistency.
-3. Elements with non-green stroke still need attention (medium/low confidence).
+1. Run `/nacl-ba-analyze` to validate board completeness and graph consistency.
+2. Elements with non-green stroke still need attention (medium/low confidence).
 ```
 
 If there were errors, add:
 
 ```
-4. Fix errors listed above and re-run `/nacl-ba-sync` for failed elements.
+3. Fix errors listed above and re-run `/nacl-ba-sync` for failed elements.
 ```
+
+---
+
+## Meta Sidecar on Failure
+
+When sync fails partway through (validation error, Cypher write error, Neo4j connection lost, or conflict), the board file is NOT rewritten (per the error handling rules below). However, the meta sidecar **must still be updated** to record the failure so the analyst-tool can show the correct status.
+
+On any terminal failure (after determining that the sync cannot proceed or did not complete cleanly):
+
+1. **Derive board name** from `board_path` (same as 6.4 step 1).
+2. **Read existing sidecar** (or all-null defaults if absent).
+3. **Merge**: patch only:
+   - `lastSyncStatus` = `"failed"`
+   - `lastSyncRunId` = run ID if available, else `null`
+   - Do **not** update `lastSyncedAt` or `contentHashAtLastSync` — these should still reflect the last successful sync.
+4. **Atomic write**: write to `.tmp` then rename, same as the success path.
+
+This ensures the analyst-tool displays "last sync failed" rather than stale "ok" status.
 
 ---
 
@@ -834,7 +869,7 @@ If any `mcp__neo4j__write-cypher` or `mcp__neo4j__read-cypher` call fails with a
 
 > Neo4j is not reachable. Check config.yaml → graph.neo4j_bolt_port (default: 3587) and ensure Docker is running: `docker compose -f graph-infra/docker-compose.yml up -d`. Cannot proceed with sync.
 
-Stop execution. Do NOT write partial results to the board file --- the board must remain in its pre-sync state so that a retry produces correct results.
+Stop execution. Do NOT write partial results to the board file --- the board must remain in its pre-sync state so that a retry produces correct results. Write the failure meta sidecar (see "Meta Sidecar on Failure" above).
 
 ### Partial failure mid-sync
 
@@ -845,6 +880,8 @@ If a single node creation fails but Neo4j is otherwise reachable:
 3. Continue processing remaining elements
 4. Include the failure in the final report
 5. The user can fix the issue and re-run `/nacl-ba-sync` --- idempotency ensures already-synced elements are skipped
+
+When partial failures occur, Phase 6.4 still runs with `lastSyncStatus = "ok"` because the overall sync completed (failed individual elements are left for retry). If the majority of the sync failed or the board was not written, use `lastSyncStatus = "failed"` instead.
 
 ---
 
@@ -857,7 +894,7 @@ If a single node creation fails but Neo4j is otherwise reachable:
 - {$boards_dir}/{boardname}.excalidraw          # the board being synced
 
 # Shared references:
-- nacl-core/SKILL.md                                 # ID formats, Excalidraw format, Neo4j schema
+- nacl-core/SKILL.md                                 # ID formats, Excalidraw format, Neo4j schema, meta sidecar spec
 
 # Neo4j (via MCP):
 - mcp__neo4j__read-cypher                             # query existing nodes, generate next IDs
@@ -868,6 +905,9 @@ If a single node creation fails but Neo4j is otherwise reachable:
 ```yaml
 # Board file (updated with nodeId, synced, strokeColor):
 - {$boards_dir}/{boardname}.excalidraw
+
+# Meta sidecar (always written — success or failure):
+- {$boards_dir}/{boardname}.meta.json
 
 # Neo4j (via MCP):
 - mcp__neo4j__write-cypher                            # create/update nodes, create relationships
@@ -889,6 +929,7 @@ None. The board file already exists (this skill reads an existing board).
 | Caller | Context |
 |--------|---------|
 | User | Manual invocation: `/nacl-ba-sync [board_path]` |
+| Analyst Tool | Via `itsalt-pinch` skill runner; passes `lastSyncRunId` in run context |
 | Recommended after | `/nacl-ba-import-doc` or `/nacl-ba-from-board` |
 
 ---
@@ -938,6 +979,7 @@ Before completing the sync, verify:
 - [ ] All processed elements have updated customData (nodeId, synced: true)
 - [ ] strokeColor changed to #2e7d32 for all synced elements
 - [ ] Board file rewritten with updated elements
+- [ ] Meta sidecar written (success: lastSyncedAt + ok + hash; failure: lastSyncStatus = failed)
 - [ ] Sync report displayed with node/relationship counts
 - [ ] Warnings and errors listed
 - [ ] Next steps provided

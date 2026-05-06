@@ -58,7 +58,7 @@ All skills use the `nacl-{layer}-{action}` naming convention: **BA** = Business 
 ## Prerequisites
 
 - **Claude Code** -- [installation guide](https://docs.anthropic.com/en/docs/claude-code) (CLI, Desktop app, or IDE extension)
-- **Docker** and **Docker Compose** -- for Neo4j and Excalidraw containers
+- **Docker** and **Docker Compose** -- for Neo4j
 - **Git** 2.30+
 - **Node.js** 18+
 
@@ -85,7 +85,7 @@ NaCl skills work on all **local** Claude Code platforms: CLI (terminal), Desktop
 2. **Start infrastructure**
 
    ```bash
-   docker compose -f graph-infra/docker-compose.yml up -d    # Neo4j + Excalidraw
+   docker compose -f graph-infra/docker-compose.yml up -d    # Neo4j
    ```
 
 3. **Install skills into Claude Code**
@@ -161,6 +161,13 @@ Transferring a project's Neo4j graph between machines is a one-shot, encrypted e
 | [docs/methodology/](docs/methodology/) | BA/SA methodology deep dive: graph philosophy, validation, traceability |
 | [docs/contributing.md](docs/contributing.md) | How to add or modify skills |
 | [docs/faq.md](docs/faq.md) | Common questions and troubleshooting |
+| [docs/analyst-tool.md](docs/analyst-tool.md) | Analyst Tool — local Excalidraw board browser and skill runner |
+
+## NaCl Analyst Tool
+
+The **NaCl Analyst Tool** is a local web application that replaces the bare Excalidraw Docker service. It lists all boards in `graph-infra/boards/`, shows each board's sync status with the Neo4j graph, and provides one-click **Regenerate**, **Sync**, and **Analyze** buttons that invoke NaCl skills via `itsalt-pinch`. The old `excalidraw` and `excalidraw-room` containers from `graph-infra/` are no longer required. Run it with `cd analyst-tool && npm install && npm run dev` -- the UI opens at `http://localhost:3582`.
+
+The tool supports multiple projects from a single daemon: initialize each project with `/nacl-init "<Project Name>"` from its directory (this registers it in `~/.nacl/projects.json`), then use the project dropdown in the header to switch between them without restarting the server. See [docs/analyst-tool.md](docs/analyst-tool.md) and the [Multi-project setup](docs/analyst-tool.md#multi-project-setup) section for the full guide.
 
 ## Project Structure
 
@@ -176,7 +183,8 @@ NaCl/
   nacl-publish/       Docmost publishing
   nacl-init/          project scaffolding
   nacl-tl-core/       shared TL templates and references
-  graph-infra/        Neo4j + Excalidraw Docker infrastructure
+  graph-infra/        Neo4j Docker infrastructure
+  analyst-tool/       Local web tool for Excalidraw boards (run separately: `cd analyst-tool && npm install && npm run dev`)
   docs/               documentation
 ```
 

@@ -6,6 +6,7 @@ on:
     paths:
       - 'docmost-sync/**'
       - 'yougile-setup/**'
+      - 'analyst-tool/**'
 
 jobs:
   build:
@@ -27,3 +28,72 @@ jobs:
           cd ${{ matrix.tool }}
           npm ci
           npm run build
+
+  build-analyst-tool:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: analyst-tool/package-lock.json
+
+      - name: Install analyst-tool
+        run: |
+          cd analyst-tool
+          npm ci
+
+      - name: Typecheck analyst-tool
+        run: |
+          cd analyst-tool
+          npm run typecheck
+
+      - name: Build analyst-tool
+        run: |
+          cd analyst-tool
+          npm run build
+
+  e2e-analyst-tool:
+    runs-on: ubuntu-latest
+    needs: build-analyst-tool
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: analyst-tool/package-lock.json
+
+      - name: Install analyst-tool (with e2e workspace)
+        run: |
+          cd analyst-tool
+          npm ci
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        id: pw-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-chromium-${{ hashFiles('analyst-tool/e2e/package.json') }}
+
+      - name: Install Playwright browsers
+        if: steps.pw-cache.outputs.cache-hit != 'true'
+        run: |
+          cd analyst-tool
+          npx playwright install chromium --with-deps
+
+      - name: Install Playwright system deps (cached run)
+        if: steps.pw-cache.outputs.cache-hit == 'true'
+        run: |
+          cd analyst-tool
+          npx playwright install-deps chromium
+
+      - name: Run E2E tests
+        run: |
+          cd analyst-tool
+          npm run e2e
+        env:
+          CI: 'true'

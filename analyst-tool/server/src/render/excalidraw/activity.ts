@@ -17,8 +17,8 @@
  *   swim-user-bg / swim-system-bg
  *   swim-user-header / swim-system-header
  *   text-swim-user-header / text-swim-system-header
- *   step-{ucId}-{stepId}
- *   text-step-{ucId}-{stepId}
+ *   step-{stepId}
+ *   text-step-{stepId}
  *   arrow-{ucIdNoHyphens}-{fromStepId}-{toStepId}
  */
 import neo4j from 'neo4j-driver';
@@ -56,7 +56,19 @@ interface StepRecord {
   uc_name: string;
   step_id: string;
   step_desc: string;
-  actor_type: 'User' | 'System' | string;
+  /**
+   * Raw value of `as_step.actor` from Neo4j. Possible states:
+   *   - `null`            — property absent on the node
+   *   - `''`              — present but unset (empty string)
+   *   - `'User'`/`'user'` — render in User lane (case-insensitive)
+   *   - `'System'`/`'system'` — render in System lane (case-insensitive)
+   *   - other strings (e.g. `'admin'`, `'authenticated'`) — treated as user-side actor
+   *
+   * We keep the raw value so the renderer can detect "every step has an
+   * unset actor" (a graph-data issue) and surface it as a single-lane
+   * diagram + warning, rather than silently dumping everything into User.
+   */
+  actor: string | null;
   step_number: number;
 }
 
@@ -77,16 +89,63 @@ function toNum(v: unknown): number {
   return typeof v === 'number' ? v : 0;
 }
 
+/**
+ * Word-wrap `text` to roughly `maxChars` per line, breaking at whitespace.
+ * Long words that exceed `maxChars` are kept intact on their own line.
+ *
+ * Heuristic: at fontSize=12 and ~6.5px average char width, ~28 chars fit
+ * inside the 200px text area of a STEP_WIDTH=220 rect.
+ */
+function wrapText(text: string, maxChars: number): { wrapped: string; lineCount: number } {
+  const words = text.split(/\s+/).filter((w) => w.length > 0);
+  if (words.length === 0) return { wrapped: text, lineCount: 1 };
+  const lines: string[] = [];
+  let current = '';
+  for (const w of words) {
+    if (!current) {
+      current = w;
+    } else if (current.length + 1 + w.length <= maxChars) {
+      current += ' ' + w;
+    } else {
+      lines.push(current);
+      current = w;
+    }
+  }
+  if (current) lines.push(current);
+  return { wrapped: lines.join('\n'), lineCount: lines.length };
+}
+
+/** Empty / "--" placeholder check — symptom of incomplete graph data. */
+function isPlaceholderDescription(desc: string): boolean {
+  const trimmed = desc.trim();
+  return trimmed === '' || trimmed === '--' || trimmed === '—';
+}
+
+/**
+ * Classify a raw actor string into one of the two swimlanes.
+ *   - case-insensitive `system` → System lane
+ *   - everything else (`User`, `Admin`, `authenticated`, …) → User lane
+ *   - null / `''` → null (caller decides: warn / single-lane / fallback)
+ */
+function classifyActor(raw: string | null): 'User' | 'System' | null {
+  if (raw === null) return null;
+  const t = raw.trim();
+  if (t === '') return null;
+  return t.toLowerCase() === 'system' ? 'System' : 'User';
+}
+
 // ---------------------------------------------------------------------------
 // Cypher query (verbatim from SKILL.md §1095)
 // ---------------------------------------------------------------------------
 
+// Note: graph schema uses `actor` (not `actor_type` as some older docs claimed).
+// We expose values to the renderer verbatim and normalize per-step below.
 const ACTIVITY_QUERY = `
 MATCH (uc:UseCase {id: $ucId})-[:HAS_STEP]->(as_step:ActivityStep)
 OPTIONAL MATCH (uc)-[:ACTOR]->(sr:SystemRole)
 RETURN uc.id AS uc_id, uc.name AS uc_name,
        as_step.id AS step_id, as_step.description AS step_desc,
-       as_step.actor_type AS actor_type, as_step.step_number AS step_number
+       as_step.actor AS actor, as_step.step_number AS step_number
 ORDER BY as_step.step_number
 `;
 
@@ -103,7 +162,7 @@ async function fetchSteps(driver: Driver, ucId: string): Promise<StepRecord[]> {
       uc_name: toStr(r.get('uc_name')) ?? '',
       step_id: toStr(r.get('step_id')) ?? '',
       step_desc: toStr(r.get('step_desc')) ?? '',
-      actor_type: toStr(r.get('actor_type')) ?? 'User',
+      actor: toStr(r.get('actor')),
       step_number: toNum(r.get('step_number')),
     })).filter((s) => s.step_id.length > 0);
   } finally {
@@ -121,23 +180,62 @@ export async function renderActivity(driver: Driver, ucId: string): Promise<Exca
   // Sort by step_number
   steps.sort((a, b) => a.step_number - b.step_number);
 
+  // Data-quality detection — drives layout mode + warning banner.
+  // Each step gets its actor classified into User / System / null. If every
+  // step is null after classification (raw value was missing or empty), the
+  // graph is incomplete and we can't honestly split lanes. Render a single
+  // lane and warn the analyst rather than silently dumping into "User".
+  const classifiedSteps = steps.map((s) => ({ ...s, lane: classifyActor(s.actor) }));
+  const allNullActor = classifiedSteps.length > 0 && classifiedSteps.every((s) => s.lane === null);
+
   const registry: ShapeRegistry = new Map();
   const bgRects: AnyElement[] = [];
   const headerElements: AnyElement[] = [];
   const stepElements: AnyElement[] = [];
   const arrowElements: AnyElement[] = [];
+  const warningElements: AnyElement[] = [];
 
-  // Swimlane x positions
+  // Swimlane x positions — when allNullActor, omit the system lane entirely.
   const userX = 0;
   const sysX  = SWIMLANE_WIDTH + SWIMLANE_GAP;
 
-  // Compute total height — matches LLM formula:
-  //   swimlaneTotalH = SWIMLANE_HEADER + START_Y + n*STEP_HEIGHT + (n-1)*STEP_SPACING_Y + 40
-  //   For UC-001 with 11 steps: 50 + 80 + 11*100 + 10*100 + 40 = 2270 ✓
-  //   (No trailing gap after the last step — gap only between steps)
-  const n = steps.length;
-  const totalStepArea = n * STEP_HEIGHT + (n > 0 ? (n - 1) * STEP_SPACING_Y : 0);
+  // Pre-compute per-step layout (text-wrapping → dynamic height) so the
+  // swimlane background height accounts for tall steps.
+  const TEXT_LINE_PX = 20;          // fontSize=12 * lineHeight 5/3 ≈ 20
+  const TEXT_VPAD = 10;             // top + bottom padding inside rect
+  const WRAP_CHARS = 28;            // ~28 chars fit in 200px at fontSize=12
+
+  interface PrepStep {
+    step: StepRecord;
+    lane: 'User' | 'System' | null;
+    isEmpty: boolean;
+    displayText: string;          // shown when collapsed (may contain \n)
+    rawText: string;              // shown in edit mode
+    lineCount: number;
+    rectH: number;
+  }
+
+  const prepped: PrepStep[] = classifiedSteps.map(({ lane, ...step }) => {
+    const isEmpty = isPlaceholderDescription(step.step_desc);
+    const rawText = isEmpty ? `${step.step_id} (нет описания)` : step.step_desc;
+    const { wrapped, lineCount } = wrapText(rawText, WRAP_CHARS);
+    // Rect height: at least STEP_HEIGHT, otherwise grow to fit lines + padding.
+    const neededH = lineCount * TEXT_LINE_PX + TEXT_VPAD * 2 + 20;
+    const rectH = Math.max(STEP_HEIGHT, neededH);
+    return { step, lane, isEmpty, displayText: wrapped, rawText, lineCount, rectH };
+  });
+
+  // Total swimlane height — sum of dynamic step heights + spacing.
+  const totalStepArea = prepped.reduce((acc, p) => acc + p.rectH, 0)
+    + (prepped.length > 0 ? (prepped.length - 1) * STEP_SPACING_Y : 0);
   const swimlaneTotalH = SWIMLANE_HEADER + START_Y + totalStepArea + 40;
+
+  // Each swimlane (bg + header + label) is one group so dragging any element
+  // moves the whole lane together. Note: this changes hashes vs. pre-Wave-0
+  // LLM output, which used groupIds: [] for all elements — accepted because
+  // the alternative is the user-visible "drag bg, header stays" bug.
+  const userGroup = [`group-swim-${ucId}-user`];
+  const sysGroup  = [`group-swim-${ucId}-system`];
 
   // --- Swimlane background rects ---
   // strokeColor: #e0e0e0 (matches LLM), strokeWidth: 1, opacity: 30
@@ -155,25 +253,30 @@ export async function renderActivity(driver: Driver, ucId: string): Promise<Exca
     strokeWidth: 1,
     roughness: 1,
     opacity: 30,
+    groupIds: userGroup,
   });
   bgRects.push(userBgRect);
 
-  const sysBgId = semIds.activitySwimBg('system');
-  const sysBgRect = makeRect({
-    logicalId: `${ucId}::swimlane-system-bg`,
-    id: sysBgId,
-    x: sysX,
-    y: 0,
-    width: SWIMLANE_WIDTH,
-    height: swimlaneTotalH,
-    backgroundColor: '#fafafa',
-    strokeColor: '#e0e0e0',
-    strokeStyle: 'solid',
-    strokeWidth: 1,
-    roughness: 1,
-    opacity: 30,
-  });
-  bgRects.push(sysBgRect);
+  // System lane only when actor_type data is present. allNullActor → single lane.
+  if (!allNullActor) {
+    const sysBgId = semIds.activitySwimBg('system');
+    const sysBgRect = makeRect({
+      logicalId: `${ucId}::swimlane-system-bg`,
+      id: sysBgId,
+      x: sysX,
+      y: 0,
+      width: SWIMLANE_WIDTH,
+      height: swimlaneTotalH,
+      backgroundColor: '#fafafa',
+      strokeColor: '#e0e0e0',
+      strokeStyle: 'solid',
+      strokeWidth: 1,
+      roughness: 1,
+      opacity: 30,
+      groupIds: sysGroup,
+    });
+    bgRects.push(sysBgRect);
+  }
 
   // --- Swimlane header rects ---
   // strokeColor: #424242, strokeWidth: 2, opacity: 100
@@ -190,6 +293,7 @@ export async function renderActivity(driver: Driver, ucId: string): Promise<Exca
     strokeWidth: 2,
     roughness: 1,
     opacity: 100,
+    groupIds: userGroup,
   });
   headerElements.push(userHeaderRect);
 
@@ -203,7 +307,9 @@ export async function renderActivity(driver: Driver, ucId: string): Promise<Exca
     y: 15,
     width: SWIMLANE_WIDTH - 20,
     height: 20,
-    text: 'Пользователь',
+    // In single-lane mode the header label can't claim "Пользователь" — that
+    // would falsely assert the data has been classified.
+    text: allNullActor ? 'Шаги (actor_type не задан)' : 'Пользователь',
     fontSize: 16,
     strokeColor: '#1e1e1e',
     strokeWidth: 2,
@@ -211,50 +317,76 @@ export async function renderActivity(driver: Driver, ucId: string): Promise<Exca
     verticalAlign: 'middle',
     containerId: userHeaderId,
     baseline: 15,
+    groupIds: userGroup,
   }));
   // Register text binding on header rect
   userHeaderRect.boundElements.push({ id: userHeaderTextId, type: 'text' });
 
-  const sysHeaderId = semIds.activitySwimHeader('system');
-  const sysHeaderRect = makeRect({
-    logicalId: `${ucId}::swimlane-system-header`,
-    id: sysHeaderId,
-    x: sysX,
-    y: 0,
-    width: SWIMLANE_WIDTH,
-    height: SWIMLANE_HEADER,
-    backgroundColor: '#fafafa',
-    strokeColor: '#424242',
-    strokeWidth: 2,
-    roughness: 1,
-    opacity: 100,
-  });
-  headerElements.push(sysHeaderRect);
+  if (!allNullActor) {
+    const sysHeaderId = semIds.activitySwimHeader('system');
+    const sysHeaderRect = makeRect({
+      logicalId: `${ucId}::swimlane-system-header`,
+      id: sysHeaderId,
+      x: sysX,
+      y: 0,
+      width: SWIMLANE_WIDTH,
+      height: SWIMLANE_HEADER,
+      backgroundColor: '#fafafa',
+      strokeColor: '#424242',
+      strokeWidth: 2,
+      roughness: 1,
+      opacity: 100,
+      groupIds: sysGroup,
+    });
+    headerElements.push(sysHeaderRect);
 
-  const sysHeaderTextId = semIds.activitySwimHeaderText('system');
-  headerElements.push(makeText({
-    logicalId: `${ucId}::swimlane-system-label`,
-    id: sysHeaderTextId,
-    x: sysX + 10,
-    y: 15,
-    width: SWIMLANE_WIDTH - 20,
-    height: 20,
-    text: 'Система',
-    fontSize: 16,
-    strokeColor: '#1e1e1e',
-    strokeWidth: 2,
-    textAlign: 'center',
-    verticalAlign: 'middle',
-    containerId: sysHeaderId,
-    baseline: 15,
-  }));
-  sysHeaderRect.boundElements.push({ id: sysHeaderTextId, type: 'text' });
+    const sysHeaderTextId = semIds.activitySwimHeaderText('system');
+    headerElements.push(makeText({
+      logicalId: `${ucId}::swimlane-system-label`,
+      id: sysHeaderTextId,
+      x: sysX + 10,
+      y: 15,
+      width: SWIMLANE_WIDTH - 20,
+      height: 20,
+      text: 'Система',
+      fontSize: 16,
+      strokeColor: '#1e1e1e',
+      strokeWidth: 2,
+      textAlign: 'center',
+      verticalAlign: 'middle',
+      containerId: sysHeaderId,
+      baseline: 15,
+      groupIds: sysGroup,
+    }));
+    sysHeaderRect.boundElements.push({ id: sysHeaderTextId, type: 'text' });
+  }
+
+  // --- Warning banner when actor_type is missing on every step ---
+  // Free text element above the swimlane, no container, so the analyst sees
+  // immediately that the diagram is degraded by missing graph data.
+  if (allNullActor) {
+    warningElements.push(makeText({
+      logicalId: `${ucId}::warning-actor-missing`,
+      id: `text-warning-${ucId}-actor-missing`,
+      x: userX + 10,
+      y: -40,
+      width: SWIMLANE_WIDTH - 20,
+      height: 20,
+      text: '⚠ actor_type не задан — заполните в графе для разделения по дорожкам',
+      fontSize: 12,
+      strokeColor: '#b71c1c',
+      strokeWidth: 1,
+      textAlign: 'left',
+      verticalAlign: 'top',
+    }));
+  }
 
   // --- Step shapes ---
   interface LayoutStep {
     step: StepRecord;
     stepX: number;
     stepY: number;
+    rectH: number;
     shapeId: string;
   }
 
@@ -262,17 +394,24 @@ export async function renderActivity(driver: Driver, ucId: string): Promise<Exca
   // First step starts at y = SWIMLANE_HEADER + START_Y = 50 + 80 = 130
   let currentY = SWIMLANE_HEADER + START_Y;
 
-  for (const step of steps) {
-    const isUser = step.actor_type === 'User';
-    const laneX = isUser ? userX : sysX;
+  for (const prep of prepped) {
+    const { step, lane, isEmpty, displayText, rawText, lineCount, rectH } = prep;
+
+    // In allNullActor mode, every step lives in the single (user) lane. Keep
+    // the user-style colours so the diagram is still readable; the warning
+    // banner makes the data-quality issue explicit.
+    // Otherwise: lane === 'System' → System lane; lane === 'User' or null
+    // (mixed UC where some steps have actor and some don't) → User lane.
+    const isUserLane = allNullActor || lane !== 'System';
+    const laneX = isUserLane ? userX : sysX;
     const stepX = laneX + Math.round((SWIMLANE_WIDTH - STEP_WIDTH) / 2);
     const stepY = currentY;
 
     const stepId = semIds.activityStep(step.step_id);
     const stepTextId = semIds.activityStepText(step.step_id);
 
-    const bgColor = isUser ? '#e8f5e9' : '#e3f2fd';
-    const strokeColor = isUser ? '#2e7d32' : '#1565c0';
+    const bgColor = isUserLane ? '#e8f5e9' : '#e3f2fd';
+    const strokeColor = isEmpty ? '#9e9e9e' : (isUserLane ? '#2e7d32' : '#1565c0');
 
     const shapeEl = makeRect({
       logicalId: `${ucId}::step::${step.step_id}`,
@@ -280,12 +419,15 @@ export async function renderActivity(driver: Driver, ucId: string): Promise<Exca
       x: stepX,
       y: stepY,
       width: STEP_WIDTH,
-      height: STEP_HEIGHT,
+      height: rectH,
       backgroundColor: bgColor,
       strokeColor,
+      // Dashed border for placeholder/empty descriptions — tells the analyst
+      // at a glance that this step needs proper data in the graph.
+      strokeStyle: isEmpty ? 'dashed' : 'solid',
       strokeWidth: 2,
       roughness: 1,
-      opacity: 100,
+      opacity: isEmpty ? 70 : 100,
       customData: { nodeId: step.step_id, nodeType: 'ActivityStep', confidence: 'high', synced: true },
     });
     registry.set(stepId, shapeEl.boundElements);
@@ -293,29 +435,32 @@ export async function renderActivity(driver: Driver, ucId: string): Promise<Exca
     shapeEl.boundElements.push({ id: stepTextId, type: 'text' });
     stepElements.push(shapeEl);
 
-    // Text element: x=stepX+10, y=stepY+40 (vertically centred in 100h rect), w=200, h=20
-    // lineHeight=5/3 matches LLM output for fontSize=12 step labels
-    // baseline=14 matches LLM for single-line step text
+    // Vertically centre the text block inside the rect.
+    const textBlockH = lineCount * TEXT_LINE_PX;
+    const textY = stepY + Math.round((rectH - textBlockH) / 2);
+
     stepElements.push(makeText({
       logicalId: `${ucId}::step-label::${step.step_id}`,
       id: stepTextId,
       x: stepX + 10,
-      y: stepY + Math.round((STEP_HEIGHT - 20) / 2),
+      y: textY,
       width: STEP_WIDTH - 20,
-      height: 20,
-      text: step.step_desc,
+      height: textBlockH,
+      // Pre-wrapped for display (containerId-bound text in Excalidraw renders
+      // `text` verbatim when collapsed; `originalText` is shown in edit mode).
+      text: displayText,
+      originalText: rawText,
       fontSize: 12,
-      strokeColor: '#1e1e1e',
+      strokeColor: isEmpty ? '#9e9e9e' : '#1e1e1e',
       strokeWidth: 2,
       textAlign: 'center',
       verticalAlign: 'middle',
       containerId: stepId,
       lineHeight: 5 / 3,
-      baseline: 14,
     }));
 
-    layoutSteps.push({ step, stepX, stepY, shapeId: stepId });
-    currentY += STEP_HEIGHT + STEP_SPACING_Y;
+    layoutSteps.push({ step, stepX, stepY, rectH, shapeId: stepId });
+    currentY += rectH + STEP_SPACING_Y;
   }
 
   // --- Sequential arrows between consecutive steps ---
@@ -326,7 +471,7 @@ export async function renderActivity(driver: Driver, ucId: string): Promise<Exca
     const arrowId = semIds.activityArrow(ucId, prev.step.step_id, curr.step.step_id);
 
     const startX = prev.stepX + STEP_WIDTH / 2;
-    const startY = prev.stepY + STEP_HEIGHT;
+    const startY = prev.stepY + prev.rectH;
     const endX   = curr.stepX + STEP_WIDTH / 2;
     const endY   = curr.stepY;
 
@@ -348,11 +493,13 @@ export async function renderActivity(driver: Driver, ucId: string): Promise<Exca
   // 2. Swimlane header rects + header texts
   // 3. Step shapes + step texts
   // 4. Arrows
+  // 5. Warnings (free text above the diagram, drawn last so they're on top)
   const elements: AnyElement[] = [
     ...bgRects,
     ...headerElements,
     ...stepElements,
     ...arrowElements,
+    ...warningElements,
   ];
 
   return assembleScene(elements);

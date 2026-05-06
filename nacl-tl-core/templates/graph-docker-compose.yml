@@ -28,33 +28,6 @@ services:
       retries: 5
       start_period: 30s
 
-  excalidraw:
-    image: alswl/excalidraw:v0.18.0-fork-b3
-    container_name: ${CONTAINER_PREFIX:-graph}-excalidraw
-    restart: unless-stopped
-    ports:
-      - "${EXCALIDRAW_PORT:-3580}:80"
-    environment:
-      VITE_APP_WS_SERVER_URL: http://localhost:${EXCALIDRAW_ROOM_PORT:-3581}
-    networks:
-      - graph-net
-    healthcheck:
-      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:80 || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-      start_period: 10s
-
-  excalidraw-room:
-    image: excalidraw/excalidraw-room:latest
-    container_name: ${CONTAINER_PREFIX:-graph}-excalidraw-room
-    restart: unless-stopped
-    ports:
-      - "${EXCALIDRAW_ROOM_PORT:-3581}:80"
-    environment:
-      PORT: 80
-    networks:
-      - graph-net
 
 volumes:
   neo4j-data:

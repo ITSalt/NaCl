@@ -30,6 +30,16 @@ export default function App() {
   const activeProjectId = useStore((s) => s.activeProjectId);
   const unregisteredCwdProjectId = useStore((s) => s.unregisteredCwdProjectId);
   const [wsConnected, setWsConnected] = useState(false);
+  const [serverVersion, setServerVersion] = useState<{ version: string; gitSha: string } | null>(null);
+
+  // Fetch the server's build identity once. Surfaced next to the web bundle's
+  // version in the header so the operator can spot mismatched server vs. UI.
+  useEffect(() => {
+    void fetch('/api/v1/version')
+      .then((r) => r.ok ? r.json() as Promise<{ version: string; gitSha: string }> : null)
+      .then((info) => { if (info) setServerVersion(info); })
+      .catch(() => undefined);
+  }, []);
 
   // Bootstrap: load projects first, then conditionally load boards.
   // We load boards when:
@@ -208,6 +218,26 @@ export default function App() {
       <header className="app-header">
         <span className="app-title">NaCl Analyst Tool</span>
         <ProjectPicker />
+        <span
+          className="app-version"
+          title={`web bundle built ${__APP_BUILT_AT__}`}
+        >
+          web v{__APP_VERSION__}+{__APP_GIT_SHA__}
+          {serverVersion && (
+            <>
+              {' · '}
+              <span
+                className={
+                  serverVersion.gitSha === __APP_GIT_SHA__
+                    ? 'app-version-server'
+                    : 'app-version-server app-version-mismatch'
+                }
+              >
+                server v{serverVersion.version}+{serverVersion.gitSha}
+              </span>
+            </>
+          )}
+        </span>
         <span className={`ws-indicator ${wsConnected ? 'ws-indicator--connected' : 'ws-indicator--disconnected'}`}>
           {wsConnected ? '● live' : '○ offline'}
         </span>

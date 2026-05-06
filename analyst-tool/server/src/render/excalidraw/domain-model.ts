@@ -268,7 +268,13 @@ export async function renderDomainModel(driver: Driver): Promise<ExcalidrawScene
   for (const layout of layoutEntities) {
     const { entity, x, y, cardHeight, rectId } = layout;
 
-    // Outer card rect
+    // groupIds: same id on every element of the card → click-any-element selects
+    // the group, drag-the-rect drags the whole card. This is Excalidraw's native
+    // mechanism for "card-as-a-unit"; containerId-based binding only works for
+    // ONE text per shape and would force the body texts to auto-center on top of
+    // the header, so we use groupIds for the multi-text body.
+    const cardGroup = [`group-entity-${entity.id}`];
+
     const headerTextId = semIds.entityHeaderText(entity.id);
     const rect = makeRect({
       logicalId: entity.id,
@@ -281,13 +287,15 @@ export async function renderDomainModel(driver: Driver): Promise<ExcalidrawScene
       strokeColor: '#1565c0',
       strokeWidth: 2,
       roughness: 1,
+      groupIds: cardGroup,
       customData: { nodeId: entity.id, nodeType: 'DomainEntity', confidence: 'high', synced: true },
     });
     registry.set(rectId, rect.boundElements);
     rect.boundElements.push({ id: headerTextId, type: 'text' });
     elements.push(rect);
 
-    // Header text — bound to rect
+    // Header text — bound to rect via containerId (Excalidraw centers it inside
+    // the rect's top region) AND part of the group.
     elements.push(makeText({
       logicalId: `${entity.id}::header`,
       id: headerTextId,
@@ -302,9 +310,12 @@ export async function renderDomainModel(driver: Driver): Promise<ExcalidrawScene
       textAlign: 'center',
       verticalAlign: 'middle',
       containerId: rectId,
+      groupIds: cardGroup,
     }));
 
-    // Attribute texts (free text, not bound)
+    // Attribute rows — same group as the rect; no containerId (would conflict
+    // with the header). Excalidraw's group-on-click selects the whole card so
+    // dragging moves all rows together with the rect.
     entity.attributes.forEach((attr, ai) => {
       if (!attr.attr_name) return;
       elements.push(makeText({
@@ -317,6 +328,7 @@ export async function renderDomainModel(driver: Driver): Promise<ExcalidrawScene
         text: `${attr.attr_type ?? '?'}  ${attr.attr_name}`,
         fontSize: 13,
         strokeColor: '#1e1e1e',
+        groupIds: cardGroup,
       }));
     });
   }
@@ -325,6 +337,7 @@ export async function renderDomainModel(driver: Driver): Promise<ExcalidrawScene
   for (const layout of layoutEnums) {
     const { en, x, y, cardHeight, rectId } = layout;
 
+    const cardGroup = [`group-enum-${en.enum_id}`];
     const enumHeaderTextId = semIds.enumHeaderText(en.enum_id);
     const rect = makeRect({
       logicalId: en.enum_id,
@@ -337,6 +350,7 @@ export async function renderDomainModel(driver: Driver): Promise<ExcalidrawScene
       strokeColor: '#f57f17',
       strokeWidth: 2,
       roughness: 1,
+      groupIds: cardGroup,
       customData: { nodeId: en.enum_id, nodeType: 'Enumeration', confidence: 'high', synced: true },
     });
     registry.set(rectId, rect.boundElements);
@@ -357,6 +371,7 @@ export async function renderDomainModel(driver: Driver): Promise<ExcalidrawScene
       textAlign: 'center',
       verticalAlign: 'middle',
       containerId: rectId,
+      groupIds: cardGroup,
     }));
 
     en.enum_values.forEach((val, vi) => {
@@ -370,6 +385,7 @@ export async function renderDomainModel(driver: Driver): Promise<ExcalidrawScene
         text: String(val),
         fontSize: 13,
         strokeColor: '#1e1e1e',
+        groupIds: cardGroup,
       }));
     });
   }
@@ -420,18 +436,25 @@ export async function renderDomainModel(driver: Driver): Promise<ExcalidrawScene
         strokeWidth: 2,
         registry,
       });
+
+      // Bind label as an arrow label (containerId → arrow) so it follows
+      // the arrow's midpoint when either endpoint moves.
+      const labelId = semIds.relatesLabel(entity.id, rel.target_id);
+      arrow.boundElements.push({ id: labelId, type: 'text' });
       elements.push(arrow);
 
-      // Arrow label at midpoint
       elements.push(makeText({
         logicalId: `label-rel-${entity.id}-${rel.target_id}`,
-        id: semIds.relatesLabel(entity.id, rel.target_id),
+        id: labelId,
         x: Math.round((startX + endX) / 2),
         y: Math.round((startY + endY) / 2) - 15,
         width: 160,
         text: `${rel.rel_type ?? ''} (${rel.cardinality ?? ''})`,
         fontSize: 12,
         strokeColor: '#666666',
+        textAlign: 'center',
+        verticalAlign: 'middle',
+        containerId: arrowId,
       }));
     }
   }

@@ -6,6 +6,7 @@ import { parseArgs } from 'node:util';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import { join, dirname } from 'node:path';
+import { execSync } from 'node:child_process';
 import { openBrowser } from './open-browser.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -15,6 +16,32 @@ const __dirname = dirname(__filename);
 const require = createRequire(import.meta.url);
 const pkg = require('../package.json');
 const VERSION = pkg.version ?? '0.0.0';
+
+function readGitSha() {
+  try {
+    const sha = execSync('git rev-parse --short HEAD', {
+      cwd: __dirname,
+      stdio: ['ignore', 'pipe', 'ignore'],
+      encoding: 'utf-8',
+      timeout: 1000,
+    }).trim();
+    if (!sha) return 'unknown';
+    try {
+      const status = execSync('git status --porcelain', {
+        cwd: __dirname,
+        stdio: ['ignore', 'pipe', 'ignore'],
+        encoding: 'utf-8',
+        timeout: 1000,
+      });
+      return status.length > 0 ? `${sha}-dirty` : sha;
+    } catch {
+      return sha;
+    }
+  } catch {
+    return 'unknown';
+  }
+}
+const GIT_SHA = readGitSha();
 
 // ---------------------------------------------------------------------------
 // Argument parsing
@@ -101,6 +128,10 @@ try {
 // ---------------------------------------------------------------------------
 // Start
 // ---------------------------------------------------------------------------
+
+// Build identity, printed first so the operator can confirm which build is
+// running before any [config]/[bootstrap] noise scrolls past.
+process.stdout.write(`[nacl-analyst-tool] v${VERSION} (sha=${GIT_SHA})\n`);
 
 let stopServer;
 try {

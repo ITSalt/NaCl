@@ -4,15 +4,15 @@
 
 # Graph Infrastructure Setup
 
-Neo4j + Excalidraw Docker stack for graph-based skills. Required for all `nacl-*` skills.
+Neo4j Docker stack for graph-based skills. Required for all `nacl-*` skills.
 
 ## What You Get
 
 | Service | Purpose | Default Port |
 |---------|---------|-------------|
 | Neo4j | Knowledge graph database | 3574 (HTTP), 3587 (Bolt) |
-| Excalidraw | Visual whiteboard for diagrams | 3580 |
-| Excalidraw Room | Real-time collaboration | 3581 |
+
+> **Excalidraw boards** are now managed by the **NaCl Analyst Tool** (`analyst-tool/`), which runs as a local Node.js process outside Docker. Start it separately with `cd analyst-tool && npm install && npm run dev` — it listens on `http://localhost:3582`.
 
 ## Step 1: Start Docker Stack
 
@@ -28,7 +28,7 @@ Verify containers are running:
 docker compose -f graph-infra/docker-compose.yml ps
 ```
 
-You should see 3 containers: neo4j, excalidraw, excalidraw-room.
+You should see 1 container: neo4j.
 
 ## Step 2: Load Schema
 

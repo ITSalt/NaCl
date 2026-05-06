@@ -190,6 +190,10 @@ export async function renderBaProcess(driver: Driver, bpId: string): Promise<Exc
     const roleKey = roleId ?? `role-${r}`;
     const laneY = r * SWIMLANE_HEIGHT;
 
+    // Each role lane is one group (bg + label rect + label text) so dragging
+    // any element drags the whole lane via Excalidraw's select-on-click.
+    const laneGroup = [`group-bp-lane-${bpId}-${roleKey}`];
+
     // Swimlane background (full width)
     const bgId = semIds.baSwimBg(roleKey);
     bgRects.push(makeRect({
@@ -204,6 +208,7 @@ export async function renderBaProcess(driver: Driver, bpId: string): Promise<Exc
       strokeWidth: 1,
       roughness: 1,
       opacity: 20,
+      groupIds: laneGroup,
     }));
 
     // Role label rect
@@ -220,6 +225,7 @@ export async function renderBaProcess(driver: Driver, bpId: string): Promise<Exc
       strokeColor: '#424242',
       strokeWidth: 2,
       roughness: 1,
+      groupIds: laneGroup,
       customData: roleId ? { nodeId: roleId, nodeType: 'BusinessRole', confidence: 'high', synced: true } : undefined,
     });
     registry.set(labelId, labelRect.boundElements);
@@ -240,6 +246,7 @@ export async function renderBaProcess(driver: Driver, bpId: string): Promise<Exc
       textAlign: 'center',
       verticalAlign: 'middle',
       containerId: labelId,
+      groupIds: laneGroup,
     }));
   }
 
@@ -262,6 +269,11 @@ export async function renderBaProcess(driver: Driver, bpId: string): Promise<Exc
     const stepId = semIds.baStep(bpId, step.step_id);
     const stepTextId = semIds.baStepText(bpId, step.step_id);
 
+    // Each step + its document annotations are one group. Arrows are NOT in
+    // the group — they auto-track via boundElements, and adding them to the
+    // group would double-translate them on drag.
+    const stepGroup = [`group-bp-step-${bpId}-${step.step_id}`];
+
     // Color by stereotype
     const isBusiness = step.stereotype === 'Бизнес-функция';
     const bgColor     = isBusiness ? '#e8f5e9' : '#e3f2fd';
@@ -278,6 +290,7 @@ export async function renderBaProcess(driver: Driver, bpId: string): Promise<Exc
       strokeColor,
       strokeWidth: 2,
       roughness: 1,
+      groupIds: stepGroup,
       customData: { nodeId: step.step_id, nodeType: 'WorkflowStep', confidence: 'high', synced: true },
     });
     registry.set(stepId, rect.boundElements);
@@ -298,6 +311,7 @@ export async function renderBaProcess(driver: Driver, bpId: string): Promise<Exc
       textAlign: 'center',
       verticalAlign: 'middle',
       containerId: stepId,
+      groupIds: stepGroup,
     }));
 
     layoutSteps.push({ step, stepX, stepY, shapeId: stepId });
@@ -322,6 +336,7 @@ export async function renderBaProcess(driver: Driver, bpId: string): Promise<Exc
         strokeColor: '#6a1b9a',
         strokeWidth: 2,
         roughness: 1,
+        groupIds: stepGroup,
         customData: doc.doc_id ? { nodeId: doc.doc_id, nodeType: 'BusinessEntity', confidence: 'high', synced: true } : undefined,
       });
       registry.set(docId, docRect.boundElements);
@@ -342,6 +357,7 @@ export async function renderBaProcess(driver: Driver, bpId: string): Promise<Exc
         textAlign: 'center',
         verticalAlign: 'middle',
         containerId: docId,
+        groupIds: stepGroup,
       }));
 
       // Dashed arrow from step bottom to doc top

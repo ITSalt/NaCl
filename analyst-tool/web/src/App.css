@@ -41,8 +41,24 @@ body,
   font-size: 15px;
 }
 
-.ws-indicator {
+.app-version {
   margin-left: auto;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+  opacity: 0.7;
+  cursor: help;
+}
+
+.app-version-server {
+  opacity: 0.85;
+}
+
+.app-version-mismatch {
+  color: #f5a97f;
+  opacity: 1;
+}
+
+.ws-indicator {
   font-size: 12px;
   opacity: 0.8;
 }
