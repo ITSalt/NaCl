@@ -83,8 +83,9 @@ class ApiError extends Error {
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const hasBody = init?.body != null;
   const res = await fetch(`/api/v1${path}`, {
-    headers: { 'Content-Type': 'application/json' },
+    ...(hasBody ? { headers: { 'Content-Type': 'application/json' } } : {}),
     ...init,
   });
   if (!res.ok) {
