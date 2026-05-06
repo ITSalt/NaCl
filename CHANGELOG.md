@@ -30,6 +30,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - `excalidraw` Docker service (bare Excalidraw at `localhost:3580`) -- replaced by Analyst Tool at `localhost:3582`.
 - `excalidraw-room` Docker service (live-collab container) -- removed as out of scope for a single-analyst workflow; can be reintroduced separately if needed.
 
+## [0.10.1] — 2026-05-06
+
+Downstream skills `nacl-tl-reopened` and `nacl-tl-hotfix` are updated to honor the six-status output contract introduced by `nacl-tl-fix` in 0.10.0. Both skills were previously unaware of the new status vocabulary and could auto-ship or merge to main an UNVERIFIED / NO_INFRA / RUNNER_BROKEN / REGRESSION fix without halting. Both skills also gain a `## Contract` section that documents inputs, outputs, downstream consumers, and a standing discipline: when a skill's output contract changes, its consumers must be audited in the same release.
+
+### Fixed
+
+- `nacl-tl-reopened`: Step 2 marker scan now recognizes all six 0.10.0 status-aware headers (`FIX COMPLETE`, `FIX APPLIED — UNVERIFIED`, `FIX INCOMPLETE`, etc.); old markers retained for backward-compat.
+- `nacl-tl-reopened`: new Step 7.5 "Parse fix status" branches on PASS / BLOCKED / UNVERIFIED / NO_INFRA / RUNNER_BROKEN / REGRESSION. Non-PASS statuses post advisory and halt rather than silently advancing to review + ship.
+- `nacl-tl-reopened`: Step 9 auto-ship gated on Step 7.5 status == PASS. BLOCKED/UNVERIFIED/NO_INFRA/RUNNER_BROKEN/REGRESSION never auto-ship.
+- `nacl-tl-hotfix`: Step 3 Scenario 3 captures `/nacl-tl-fix` `Status:` field explicitly; any non-PASS status triggers halt-and-confirm (default: no) before proceeding.
+- `nacl-tl-hotfix`: Step 4 VALIDATE distinguishes `NO_INFRA` / `RUNNER_BROKEN` from code-level test failures and from missing feature-branch dependencies.
+- `nacl-tl-hotfix`: Step 6 pre-merge gate added: if fix status is not PASS, an additional confirmation is required before PR creation (`"Shipping a non-PASS fix to main is high-risk. Confirm? [yes/no]"`).
+
+### Changed
+
+- `nacl-tl-reopened/SKILL.md` + `nacl-tl-hotfix/SKILL.md`: added `## Contract` section after frontmatter documenting inputs consumed, outputs produced, downstream consumers, and the contract-change audit discipline.
+- `nacl-tl-reopened`: YouGile rework report template gains `📊 Статус фикса: {STATUS}` field with a one-line rationale line from `/nacl-tl-fix` Step 8.
+- `nacl-tl-hotfix`: PR body template includes `**Fix status:**` and, for non-PASS cases, notes that the fix was shipped with explicit user override.
+
 ## [0.10.0] — 2026-05-06
 
 Honest bug-fix skill: `nacl-tl-fix` is rewritten to enforce TDD ordering (regression test before the fix, RED-first), capture a failing-test baseline before any change, and report status-aware results (`PASS` / `BLOCKED` / `UNVERIFIED` / `NO_INFRA` / `RUNNER_BROKEN` / `REGRESSION`) instead of always claiming `FIX COMPLETE`. New skill `nacl-tl-regression-test` is the independent test author that the fix skill delegates to. Bundled: `nacl-sa-validate` schema-drift hardening (queued from `_drafts/sa-validate-schema-drift.md`); plus a three-layer fix (parser canonicalization, writer schema correctness, validator coverage L3.5/L3.6) that closes a silent activity-diagram swimlane degradation where graphs passed validation as healthy while the renderer fell back to single-lane mode.

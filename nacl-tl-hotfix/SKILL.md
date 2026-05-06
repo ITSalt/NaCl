@@ -9,6 +9,32 @@ description: |
   or the user says "/nacl-tl-hotfix".
 ---
 
+## Contract
+
+**Inputs this skill consumes:**
+- nacl-tl-fix output (six-status vocabulary; PASS required for unattended merge
+  to main; non-PASS requires explicit user override)
+
+**Outputs this skill produces:**
+- HOTFIX COMPLETE — fix verified, PR created with auto-merge label
+- HOTFIX BLOCKED — {NO_INFRA | RUNNER_BROKEN | UNVERIFIED} — halt with reason
+- HOTFIX HALTED — REGRESSION — new bug filed
+- PR to main (only if fix status was PASS, or user explicitly overrode)
+
+**Downstream consumers of this output:**
+- GitHub auto-merge (consumes PR label)
+- Deploy pipeline (downstream of merge to main)
+
+**Contract change discipline:**
+If this skill's output contract changes — status vocabulary, headline format,
+exit codes, or report-field names — every downstream consumer in the list
+above must be audited and updated in the same release. The 0.10.0→0.10.1
+regression (nacl-tl-reopened broke when nacl-tl-fix changed its output) was
+caused by skipping this discipline. Do not ship contract changes without
+auditing consumers.
+
+---
+
 # TeamLead Hotfix -- Emergency Fix to Main
 
 ## Your Role
@@ -146,7 +172,58 @@ git diff <commit>~1 <commit> | git apply --3way
 If both fail: STOP and report the dependency issue (the fix likely depends on code that only exists in the feature branch).
 
 **Scenario 3 (from scratch):**
-Delegate to `/nacl-tl-fix` with the user's description. Wait for fix to complete. If `/nacl-tl-fix` fails, STOP and report.
+Delegate to `/nacl-tl-fix` with the user's description. Wait for fix to complete.
+
+Capture `/nacl-tl-fix`'s `Status:` field explicitly from its Step 8 report. This is
+mandatory — the production main bar is higher than a feature branch.
+
+Branch on the status immediately:
+- **PASS** — proceed to Step 4.
+- **BLOCKED** — the fix was applied and a test transitioned, but pre-existing failures
+  remain in the suite. STOP and report:
+  ```
+  HOTFIX BLOCKED — BLOCKED
+  Fix applied but pre-existing test failures remain (baseline-confirmed).
+  Shipping a non-PASS fix to main is high-risk. Confirm to proceed? [yes/no]
+  Default: no
+  ```
+  Do NOT proceed past this point without explicit "yes".
+- **UNVERIFIED** — the fix was applied but no test exercises the change. STOP and report:
+  ```
+  HOTFIX BLOCKED — UNVERIFIED
+  Fix applied but no test exercises the change. Cannot machine-verify correctness.
+  Shipping a non-PASS fix to main is high-risk. Confirm to proceed? [yes/no]
+  Default: no
+  ```
+  Do NOT proceed past this point without explicit "yes".
+- **NO_INFRA** — the affected workspace has no test runner. STOP and report:
+  ```
+  HOTFIX BLOCKED — NO_INFRA
+  The workspace has no test runner (scripts.test missing).
+  Cannot verify the fix before shipping to main.
+  Recommended: set up test infra first (/nacl-tl-dev TECH-### "set up test runner").
+  Shipping a non-PASS fix to main is high-risk. Confirm to proceed? [yes/no]
+  Default: no
+  ```
+  Do NOT proceed past this point without explicit "yes".
+- **RUNNER_BROKEN** — the test runner could not execute. STOP and report:
+  ```
+  HOTFIX BLOCKED — RUNNER_BROKEN
+  The test runner failed to execute. Cannot verify the fix before shipping to main.
+  Recommended: diagnose the runner (/nacl-tl-diagnose) before hotfixing.
+  Shipping a non-PASS fix to main is high-risk. Confirm to proceed? [yes/no]
+  Default: no
+  ```
+  Do NOT proceed past this point without explicit "yes".
+- **REGRESSION** — the fix introduced new failures or its regression test is still RED. HALT:
+  ```
+  HOTFIX HALTED — REGRESSION
+  Fix introduced new test failures not present in baseline, or the regression test
+  for this bug is still failing after the fix.
+  Do NOT ship. Return to /nacl-tl-fix Step 6f to correct the fix.
+  ```
+  Record the new failures in YouGile task chat as advisory (user decides whether to
+  open a new task). Do NOT proceed.
 
 ### Step 4: VALIDATE -- announce: "Step 4: VALIDATE"
 
@@ -160,17 +237,37 @@ Delegate to `/nacl-tl-fix` with the user's description. Wait for fix to complete
    ```bash
    cd [module_path] && [build_cmd]
    ```
-3. If tests/build FAIL:
-   - Check if failures are related to missing code from the feature branch (dependency issue).
-   - If yes: STOP with advisory:
-     ```
-     This fix depends on code from {source_branch} that does not exist on main.
-     Options:
-       (a) Include the dependency in the hotfix
-       (b) Merge the full feature branch first
-       (c) Write a standalone fix for main
-     ```
-   - If no (pre-existing failures or unrelated): warn but allow user to proceed.
+3. If tests/build FAIL, distinguish the source of failure before deciding how to proceed:
+
+   **If /nacl-tl-fix returned NO_INFRA or RUNNER_BROKEN (Scenario 3):**
+   The test failure is an infrastructure problem, not a code regression from the hotfix
+   changes themselves. Surface with the headline:
+   ```
+   HOTFIX BLOCKED — NO_INFRA
+   ```
+   or:
+   ```
+   HOTFIX BLOCKED — RUNNER_BROKEN
+   ```
+   Do NOT conflate with a code-level test failure. The user needs to fix test infra
+   independently; the hotfix code itself may be correct.
+
+   **If the failure is a dependency issue (code from feature branch not on main):**
+   STOP with advisory:
+   ```
+   This fix depends on code from {source_branch} that does not exist on main.
+   Options:
+     (a) Include the dependency in the hotfix
+     (b) Merge the full feature branch first
+     (c) Write a standalone fix for main
+   ```
+
+   **If the failure appears unrelated (pre-existing failures on main):**
+   Warn but allow user to proceed:
+   ```
+   HOTFIX BLOCKED — pre-existing failures detected on main branch.
+   These may be unrelated to the hotfix. Review before proceeding.
+   ```
 
 4. Show impact summary:
    ```bash
@@ -202,6 +299,21 @@ Delegate to `/nacl-tl-fix` with the user's description. Wait for fix to complete
 
 **Goal:** Get the fix to main via PR with auto-merge.
 
+**Pre-merge status gate (runs before the user gate):**
+
+Check the fix status captured in Step 3 (Scenario 3) or Step 4:
+
+- If status is **PASS**: proceed to the standard user gate below.
+- If status is **anything other than PASS** and the user has NOT yet explicitly confirmed
+  override (they were asked in Step 3 and answered "yes"): prepend the following additional
+  confirmation before presenting the standard PR plan:
+  ```
+  ⚠ Fix status: {STATUS}. Shipping a non-PASS fix to main is high-risk.
+  Confirm? [yes/no]
+  Default: no
+  ```
+  If the answer is not explicitly "yes", STOP. Do not create the PR.
+
 **Present plan to user (unless `--yes`):**
 ```
 ═══════════════════════════════════════════════
@@ -212,6 +324,7 @@ Branch: hotfix/{slug}
 Target: {main_branch}
 Commit: {hash}
 Files changed: {N}
+Fix status: {PASS | BLOCKED | UNVERIFIED | NO_INFRA | RUNNER_BROKEN | REGRESSION}
 
 The hotfix PR will be created with auto-merge.
 CI must pass before merge. After merge, production
@@ -233,6 +346,9 @@ gh pr create \
 **Priority:** Critical -- production fix
 
 **Source:** {source_branch} (Scenario {N})
+
+**Fix status:** {PASS | BLOCKED | UNVERIFIED | NO_INFRA | RUNNER_BROKEN | REGRESSION}
+{if non-PASS: "**Note:** Fix shipped with explicit user override. Status reason: {reason}"}
 
 ### Changes
 {git diff --stat summary}
@@ -361,6 +477,7 @@ Git:
   Target: {main_branch}
 
 Validation:
+  Fix status: {PASS | BLOCKED | UNVERIFIED | NO_INFRA | RUNNER_BROKEN | REGRESSION}
   Tests: {N} passing
   Build: OK
 
@@ -466,6 +583,6 @@ If ANY step fails and the workflow cannot continue:
 
 - `config.yaml` → `git.main_branch`, `deploy.production.*`
 - `nacl-tl-ship/SKILL.md` — regular shipping (always current branch)
-- `nacl-tl-fix/SKILL.md` — spec-first bug fixing (used in Scenario 3)
+- `nacl-tl-fix/SKILL.md` — spec-first bug fixing (used in Scenario 3); Status vocabulary: PASS / BLOCKED / UNVERIFIED / NO_INFRA / RUNNER_BROKEN / REGRESSION
 - `nacl-tl-deploy/SKILL.md` — production deployment monitoring
 - `nacl-tl-core/references/commit-conventions.md` — commit message format

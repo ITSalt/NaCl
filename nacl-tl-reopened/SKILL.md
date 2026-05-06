@@ -10,6 +10,34 @@ description: |
   or the user says "/nacl-tl-reopened".
 ---
 
+## Contract
+
+**Inputs this skill consumes:**
+- nacl-tl-fix output (six-status vocabulary: PASS / BLOCKED / UNVERIFIED /
+  NO_INFRA / RUNNER_BROKEN / REGRESSION; status-aware headlines like
+  "FIX COMPLETE", "FIX APPLIED — UNVERIFIED", "FIX INCOMPLETE — REGRESSION")
+- nacl-tl-review verdict (APPROVED / CHANGES REQUESTED)
+- nacl-tl-stubs result (severity counts)
+
+**Outputs this skill produces:**
+- Rework report posted to YouGile task chat with `📊 Статус фикса` field
+- Status table mirroring nacl-tl-fix Step 7 (one row per substatus encountered)
+- Auto-ship gated on fix status == PASS
+
+**Downstream consumers of this output:**
+- Tester (human, via YouGile rework report)
+- No automated downstream consumers
+
+**Contract change discipline:**
+If this skill's output contract changes — status vocabulary, headline format,
+exit codes, or report-field names — every downstream consumer in the list
+above must be audited and updated in the same release. The 0.10.0→0.10.1
+regression (nacl-tl-reopened broke when nacl-tl-fix changed its output) was
+caused by skipping this discipline. Do not ship contract changes without
+auditing consumers.
+
+---
+
 # TeamLead — Reopened Task Handler
 
 ## Your Role
@@ -107,6 +135,12 @@ For each task:
    |--------|-------------|-----------------|
    | "VERIFICATION REPORT" or "Автоматическая верификация" | /nacl-tl-verify, /nacl-tl-verify-code | Verdict (PASS/FAIL), findings[], data flow issues |
    | "QA REPORT" or "qa-report" | /nacl-tl-qa | Failed scenarios, screenshots, acceptance criteria gaps |
+   | "FIX COMPLETE" | /nacl-tl-fix (status PASS) | Fix level, files changed, regression test path |
+   | "FIX APPLIED — UNVERIFIED" | /nacl-tl-fix (status BLOCKED / UNVERIFIED / NO_INFRA / RUNNER_BROKEN) | Status, reason line, pre-existing failures if BLOCKED |
+   | "FIX APPLIED — BLOCKED" | /nacl-tl-fix (status BLOCKED, legacy header) | Status, baseline-confirmed unrelated failures |
+   | "FIX APPLIED — NO_INFRA" | /nacl-tl-fix (status NO_INFRA, legacy header) | Status, affected workspace |
+   | "FIX APPLIED — RUNNER_BROKEN" | /nacl-tl-fix (status RUNNER_BROKEN, legacy header) | Status, runner error |
+   | "FIX INCOMPLETE" or "FIX INCOMPLETE — REGRESSION" | /nacl-tl-fix (status REGRESSION) | New failures introduced, return-to-6f signal |
    | "Отчёт разработки" or "Development report" | /nacl-tl-ship, previous /nacl-tl-reopened | What was already attempted, files changed |
    | Other comments | Analyst/PM/User | Additional context, priority notes, clarifications |
 
@@ -230,23 +264,157 @@ Args: "{synthesized problem description}"
 ```
 
 Add flags as appropriate:
-- If `--auto-ship` was passed to `/nacl-tl-reopened`: add `--auto-ship`
+- If `--auto-ship` was passed to `/nacl-tl-reopened`: add `--auto-ship` only if fix status is later confirmed PASS (see Step 7.5)
 - If Path A and fix is clearly code-only (tester found a specific code bug, no spec drift): consider `--l1`
 
-**Wait for /nacl-tl-fix to complete.** Capture its output:
+**Wait for /nacl-tl-fix to complete.** Capture its full output, including:
 - Fix level (L0/L1/L2/L3)
 - Files changed
 - Tests added/updated
-- Validation result (tests pass / build OK)
+- **Status line** — the six-status value: `PASS / BLOCKED / UNVERIFIED / NO_INFRA / RUNNER_BROKEN / REGRESSION`
+- **Report header** — `FIX COMPLETE`, `FIX APPLIED — UNVERIFIED`, or `FIX INCOMPLETE`
 
-**If /nacl-tl-fix fails** (tests don't pass, build broken, cannot determine fix):
-- Do NOT proceed to Step 8
-- Post explanation to YouGile task chat
-- Leave task in InWork
-- Report failure to user
-- Move to next task (if `--all`)
+Proceed to Step 7.5 immediately after /nacl-tl-fix completes.
+
+### Step 7.5: PARSE FIX STATUS — announce: "Step 7.5: PARSE FIX STATUS"
+
+**Goal:** Branch based on the six-status value from /nacl-tl-fix Step 8.
+
+Extract the `Status:` line from the /nacl-tl-fix report. Match against the vocabulary below
+(first match wins):
+
+---
+
+**Status: PASS** (header: `FIX COMPLETE`)
+
+→ Proceed to Step 8 (review + stubs) and Step 9 (ship).
+→ If `--auto-ship` was passed and Step 8 passes, auto-ship is permitted in Step 9.
+
+---
+
+**Status: BLOCKED** (header: `FIX APPLIED — UNVERIFIED`, pre-existing unrelated failures)
+
+The fix was applied and a test transitioned RED→GREEN, but pre-existing unrelated failures remain
+in the suite. These are baseline-confirmed (not introduced by this fix).
+
+→ Post advisory to YouGile task chat (see template below).
+→ Require explicit user acknowledgment before proceeding to Step 8.
+→ Do NOT auto-ship in Step 9 regardless of `--auto-ship` flag.
+→ Do NOT invoke /nacl-tl-review or /nacl-tl-stubs automatically; wait for user confirmation.
+
+Advisory template:
+```
+⚠️ FIX APPLIED — BLOCKED
+Fix was applied and its test transitioned RED→GREEN, but pre-existing failures remain in
+the suite (baseline-confirmed unrelated to this fix).
+
+Pre-existing failures: {list from nacl-tl-fix report}
+
+Action required: confirm whether to proceed to review and ship with known pre-existing
+failures, or investigate the failures first.
+  (a) Proceed to review + ship — type "proceed"
+  (b) Investigate pre-existing failures first — type "investigate"
+```
+
+---
+
+**Status: UNVERIFIED** (header: `FIX APPLIED — UNVERIFIED`, no test exercises the change)
+
+The fix was applied but no test exercises it. The import-grep heuristic found a test that
+imports the changed file but the test does not actually cover the bug.
+
+→ Post advisory to YouGile task chat (see template below).
+→ Do NOT proceed to auto-review or auto-ship.
+→ Escalate to user with explicit message.
+
+Advisory template:
+```
+⚠️ FIX APPLIED — UNVERIFIED
+Fix was applied, but no test exercises the change. The fix cannot be machine-verified.
+
+Reason: {reason line from nacl-tl-fix Step 8}
+
+Options:
+  (a) Write a regression test now:
+        /nacl-tl-regression-test "{bug description}"
+  (b) Accept the unverified fix and proceed manually — confirm "proceed unverified"
+```
+
+Do NOT proceed past this advisory without explicit user input.
+
+---
+
+**Status: NO_INFRA** (header: `FIX APPLIED — UNVERIFIED`, no test runner for this layer)
+
+The affected workspace has no `scripts.test`. The fix was applied but cannot be machine-verified.
+
+→ Post advisory to YouGile task chat.
+→ Halt further automated steps.
+→ Recommend the user adds test infrastructure.
+
+Advisory template:
+```
+⚠️ FIX APPLIED — NO_INFRA
+The workspace containing the changed files has no test runner (scripts.test missing).
+
+Recommended next step:
+  /nacl-tl-dev TECH-### "set up test runner for [workspace]"
+
+After test infra is in place, re-run /nacl-tl-fix to add a regression test for this bug.
+The fix can ship at your discretion if the change is small enough to review by eye.
+```
+
+---
+
+**Status: RUNNER_BROKEN** (header: `FIX APPLIED — UNVERIFIED`, test runner could not execute)
+
+The test runner could not start or execute any tests. This is likely a local L0
+environment issue, not a code problem.
+
+→ Post advisory to YouGile task chat.
+→ Halt further automated steps.
+→ Escalate as an infra problem.
+
+Advisory template:
+```
+⚠️ FIX APPLIED — RUNNER_BROKEN
+The test runner failed to execute. This is an infrastructure problem, not a code problem.
+
+Recommended next step:
+  /nacl-tl-diagnose
+Do NOT ship the fix until the runner works again — there is no way to verify regressions.
+```
+
+---
+
+**Status: REGRESSION** (header: `FIX INCOMPLETE`)
+
+The fix introduced new test failures that were not in the baseline, or the regression test
+written for this bug is still RED after the fix was applied.
+
+→ Post failure notice to YouGile task chat.
+→ Halt immediately. Do NOT proceed to Step 8 or Step 9.
+→ File the new failures as a new bug in YouGile task chat (advisory only — user decides
+  whether to open a new task or fold it into the current fix iteration).
+
+Failure notice template:
+```
+❌ FIX INCOMPLETE — REGRESSION
+The fix introduced new test failures not present in the baseline, or the regression test
+for this bug is still failing after the fix was applied.
+
+New failures: {list from nacl-tl-fix report}
+
+Action required: return to /nacl-tl-fix Step 6f to correct the fix.
+Do NOT ship.
+```
+
+---
 
 ### Step 8: REVIEW + STUBS — announce: "Step 8: REVIEW + STUBS"
+
+**Precondition:** Only reached if Step 7.5 status is PASS, or the user explicitly confirmed
+"proceed" for a BLOCKED fix.
 
 **Goal:** Quality gates after the fix.
 
@@ -285,9 +453,11 @@ Args: "UC###"
 
 ### Step 9: SHIP — announce: "Step 9: SHIP"
 
-**Goal:** Commit, push, and update YouGile.
+**Precondition (auto-ship gate):** Auto-ship is only permitted when Step 7.5 status was PASS.
+For BLOCKED fixes that the user confirmed, ship proceeds but without auto-ship — always
+require explicit `/nacl-tl-ship` invocation or manual user confirmation.
 
-**If /nacl-tl-fix already shipped via `--auto-ship`:** Skip to the DevDone move.
+**If /nacl-tl-fix already shipped via `--auto-ship` AND Step 7.5 status was PASS:** Skip to the DevDone move.
 
 **Otherwise:**
 ```
@@ -306,7 +476,7 @@ If the reopened fix is critical for production and needs to bypass the feature
 branch merge, escalate to the user: "Consider `/nacl-tl-hotfix --apply`
 to ship directly to main."
 
-**If /nacl-tl-ship was NOT invoked** (e.g., /nacl-tl-fix auto-shipped), move to DevDone manually:
+**If /nacl-tl-ship was NOT invoked** (e.g., /nacl-tl-fix auto-shipped with PASS status), move to DevDone manually:
 ```
 update_task(id=<taskId>, columnId: config.yougile.columns.dev_done)
 ```
@@ -321,6 +491,8 @@ update_task(id=<taskId>, columnId: config.yougile.columns.dev_done)
 🏗 Модуль: {module_name}
 🔄 Итерация: {rework iteration number}
 📊 Уровень фикса: {L0/L1/L2/L3 from nacl-tl-fix}
+📊 Статус фикса: {PASS | BLOCKED | UNVERIFIED | NO_INFRA | RUNNER_BROKEN | REGRESSION}
+   Пояснение: {one-line reason text from nacl-tl-fix Step 8}
 
 📝 Проблема (из отчёта тестировщика):
 {brief summary of tester findings}
@@ -358,6 +530,7 @@ update_task(id=<taskId>, columnId: config.yougile.columns.dev_done)
 
   Task: {CODE} — {title}
   Fix level: {L0/L1/L2/L3}
+  Fix status: {PASS | BLOCKED | UNVERIFIED | NO_INFRA | RUNNER_BROKEN | REGRESSION}
   Status: DevDone ✅
 
   Changes: {N files changed}
@@ -410,6 +583,10 @@ When processing multiple reopened tasks:
 |-----------|--------|
 | Task has been through /nacl-tl-reopened 2+ times | Escalate to user, do not auto-fix |
 | /nacl-tl-fix cannot determine root cause | Post analysis to YouGile, escalate to user |
+| /nacl-tl-fix status is REGRESSION | Post failure, halt, do not auto-fix |
+| /nacl-tl-fix status is UNVERIFIED | Post advisory, halt, escalate to user |
+| /nacl-tl-fix status is NO_INFRA | Post advisory, halt, recommend test infra task |
+| /nacl-tl-fix status is RUNNER_BROKEN | Post advisory, halt, escalate as infra problem |
 | Review rejected 2 times after fix | Post details, leave in InWork, escalate |
 | Fix requires manual actions (env, infra) | Post instructions to YouGile, keep in InWork |
 | Git push fails | Post error, keep in InWork, escalate |
@@ -464,14 +641,15 @@ The skill then runs Steps 5-10 with:
 - Step 5: Plan based on user description
 - Steps 6, 9 (YouGile): skipped
 - Step 7: `/nacl-tl-fix "{user description}"`
-- Step 8: Review + stubs
+- Step 7.5: Parse fix status (mandatory — same branching applies)
+- Step 8: Review + stubs (only if Step 7.5 status is PASS or user confirmed BLOCKED)
 - Step 10: Local report only
 
 ---
 
 ## References
 
-- `nacl-tl-fix/SKILL.md` — primary delegation target (8-step spec-first bug fix)
+- `nacl-tl-fix/SKILL.md` — primary delegation target (8-step spec-first bug fix); Step 8 status vocabulary: PASS / BLOCKED / UNVERIFIED / NO_INFRA / RUNNER_BROKEN / REGRESSION
 - `nacl-tl-verify/SKILL.md` — upstream: sends FAIL tasks to Reopened (Step 6)
 - `nacl-tl-ship/SKILL.md` — downstream: commit + push + PR + YouGile
 - `nacl-tl-review/SKILL.md` — quality gate (code review)
