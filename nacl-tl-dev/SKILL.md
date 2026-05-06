@@ -11,6 +11,31 @@ description: |
 
 # TeamLead TECH Development Skill
 
+## Contract
+
+**Inputs this skill consumes:**
+- TECH task spec (TECH###)
+- Workspace `package.json` `scripts.test` (Workflow A — TDD path) OR
+  verification command from README/task spec (Workflow B — infra path)
+
+**Outputs this skill produces:**
+- Headline one of: DEV COMPLETE / DEV APPLIED — UNVERIFIED /
+  DEV APPLIED — BLOCKED / DEV APPLIED — NO_INFRA /
+  DEV APPLIED — RUNNER_BROKEN / DEV INCOMPLETE — REGRESSION
+- Baseline diff (failures pre vs post the change)
+- Test or verification-command output snippet
+
+**Downstream consumers of this output:**
+- nacl-tl-review (TECH path)
+- nacl-tl-ship
+- nacl-tl-deliver
+- nacl-tl-conductor
+
+**Contract change discipline:**
+The 0.10.0→0.10.1 regression was caused by the absence of this discipline. `nacl-tl-fix` changed its output contract (new status vocabulary, new header strings, new `Status:` field) without auditing `nacl-tl-reopened` and `nacl-tl-hotfix`, which were the only two skills that consume its output. Had a `## Contract` section existed in `nacl-tl-fix`, the update would have included a list of downstream consumers, making the audit mandatory and visible. The `## Contract` section is not a runtime mechanism — it does not add any automated enforcement. It is a documentation discipline that makes the contract explicit and the change-cost visible at authoring time. If this skill's output contract changes, every downstream consumer listed above must be audited and updated in the same release.
+
+---
+
 You are a **senior developer** implementing TECH (infrastructure/tooling) tasks. TECH tasks cover work that is not tied to a specific use case but is essential for the project to function:
 
 - Docker Compose setup
@@ -114,33 +139,76 @@ Based on the task category, follow either **Workflow A** (TDD) or **Workflow B**
 
 Use when the task produces testable code: utility libraries, shared types with validation, auth middleware, database helpers, etc.
 
-### A1: RED Phase -- Write Failing Tests
+### A.0: DISCOVER RUNNER
+
+Read `scripts.test` from the affected workspace's `package.json` (the nearest `package.json` walking up from the files you will create or modify). If `scripts.test` is absent or `package.json` does not exist, halt with:
+
+```
+DEV APPLIED — NO_INFRA
+scripts.test not found in workspace package.json. Test verification is not possible.
+Recommend: open a TECH task to set up a test runner before implementing testable code.
+```
+
+### A.1: CAPTURE BASELINE
+
+Run `scripts.test` once **before writing any test or production code**. Capture and store:
+- The exact set of failing tests (file name + test name) → `baseline_failures`
+- Total tests collected, total passing, total failing
+- Whether the runner started cleanly (exit code, any stderr)
+
+Store output in `/tmp/TECH-###-baseline.txt` (or equivalent temp location). This baseline is the reference for all subsequent comparisons.
+
+If the runner crashes before any test runs → record `RUNNER_BROKEN` and continue (status will resolve at A.5).
+
+### A.2: RED Phase — Write Failing Tests (formerly A1)
 
 1. Create test file(s) based on `test-spec.md`
 2. Write ALL test cases before any implementation (AAA pattern: Arrange / Act / Assert)
-3. Run tests -- verify they FAIL
-4. Document failure output
+3. Do NOT run tests yet — that is A.3
 
-**Commit:**
+### A.3: VERIFY RED
+
+Run `scripts.test` again (same command as A.1). Confirm:
+
+**(a)** The new tests appear in the failure set (they are actually failing, not silently skipped).
+**(b)** No previously-passing test has flipped to fail.
+
+If **(a)** fails: the new test is not being discovered by the runner. Check file naming conventions, import paths, and runner glob patterns. Fix before proceeding.
+
+If **(b)** fails: the test code itself has introduced a regression in the baseline. The test file is broken — **halt and ask the user** before touching production code.
+
+**Commit RED:**
 
 ```bash
 git commit -m "test(TECH-###): add failing tests for [feature]"
 ```
 
-### A2: GREEN Phase -- Minimal Implementation
+### A.4: GREEN Phase — Minimal Implementation (formerly A2)
 
 1. Write MINIMAL code to pass tests
 2. No premature optimization -- keep it simple
 3. Run tests after each change
 4. Stop when all tests pass
 
-**Commit:**
+**Commit GREEN:**
 
 ```bash
 git commit -m "feat(TECH-###): implement [feature]"
 ```
 
-### A3: REFACTOR Phase -- Improve Code
+### A.5: VERIFY GREEN + COMPARE
+
+Run `scripts.test` once more (same command as A.1). Compute the delta against baseline:
+
+| Result | Condition | Status |
+|--------|-----------|--------|
+| New tests now passing AND `postfix_failures ⊆ baseline_failures` AND `new_failures` is empty | Happy path | `PASS` |
+| New tests still failing (they did not transition) | Change did not fix them | `UNVERIFIED` |
+| `postfix_failures ⊃ baseline_failures` (new failures introduced) | Change broke something | `REGRESSION` — halt before commit |
+| Runner crashed or produced empty output | Infrastructure problem | `RUNNER_BROKEN` |
+| `postfix_failures == baseline_failures` AND change is in module A, all baseline failures are in unrelated module B | Pre-existing unrelated failures | `BLOCKED` with rationale |
+
+### A.6: REFACTOR Phase — Improve Code (formerly A3)
 
 1. Improve code quality without changing behavior
 2. Extract common patterns, improve naming, remove duplication
@@ -167,7 +235,27 @@ git commit -m "refactor(TECH-###): improve [component] implementation"
 
 Use when the task produces configuration: Docker setup, CI/CD pipelines, environment configuration, etc.
 
-### B1: Implement Configuration
+### B.0: DISCOVER VERIFICATION COMMAND
+
+Read the verification command from the task's `task.md` (Verification section) or from the project README. The command must be explicit (e.g., `docker compose ps`, `terraform plan`, `make smoke`, `gh workflow list`).
+
+If no verification command is documented, halt with:
+
+```
+DEV APPLIED — NO_INFRA
+No verification command found in task.md or README. Infrastructure verification is not possible.
+Recommend: add a Verification section to task.md with a concrete command before implementing.
+```
+
+### B.1: CAPTURE BASELINE STATE
+
+Run the verification command once **before applying any change**. Capture:
+- Current running state (container names, statuses, exit codes)
+- Relevant config diff if applicable (e.g., `docker compose config`, `terraform show`)
+
+Store in `/tmp/TECH-###-baseline.txt`. This is the reference for comparison after the change.
+
+### B.2: Implement Configuration (formerly B1)
 
 1. Read `task.md` requirements and configuration section
 2. Read `impl-brief.md` if it exists
@@ -179,17 +267,50 @@ Use when the task produces configuration: Docker setup, CI/CD pipelines, environ
 git commit -m "feat(TECH-###): configure [infrastructure component]"
 ```
 
-### B2: Verify Configuration
+### B.3: RE-RUN VERIFICATION COMMAND
 
-Run the verification steps from `task.md` Verification section. Document each step and its result.
+Run the same verification command as B.0. Sanity-check:
+- Output is non-empty
+- Exit code is zero (or the expected non-zero documented in task.md)
+- Expected containers/services/resources appear in the output
 
-### B3: Fix Issues
+If output is empty or the command crashes → `RUNNER_BROKEN`. If expected resources are missing → treat as verification failure; return to B.2.
+
+**Fix cycle (formerly B3):**
 
 If verification reveals problems, fix configuration, re-run verification, repeat until all checks pass.
 
 ```bash
 git commit -m "fix(TECH-###): resolve [issue] in [component]"
 ```
+
+### B.4: STATUS-AWARE OUTPUT
+
+Determine status from B.3 result:
+
+| Result | Status | Headline |
+|--------|--------|----------|
+| Verification command ran cleanly, all expected resources present | `PASS` | `DEV COMPLETE` |
+| Verification command ran but expected resources missing / config mismatch | Investigate and fix | Return to B.2 |
+| Verification command crashed or produced empty output | `RUNNER_BROKEN` | `DEV APPLIED — RUNNER_BROKEN` |
+| No verification command was documented | `NO_INFRA` | `DEV APPLIED — NO_INFRA` |
+
+---
+
+## Step N.6 — Status-Aware Output (both workflows)
+
+After completing the TDD or verification cycle, produce output with the following headline based on the resolved status:
+
+| Status | Headline |
+|--------|----------|
+| `PASS` | `DEV COMPLETE` |
+| `UNVERIFIED` | `DEV APPLIED — UNVERIFIED` |
+| `BLOCKED` | `DEV APPLIED — BLOCKED` |
+| `NO_INFRA` | `DEV APPLIED — NO_INFRA` |
+| `RUNNER_BROKEN` | `DEV APPLIED — RUNNER_BROKEN` |
+| `REGRESSION` | `DEV INCOMPLETE — REGRESSION` |
+
+**Never use a single "Ready for Review" header.** The headline must reflect the actual observed status.
 
 ---
 
@@ -231,6 +352,8 @@ Create `.tl/tasks/TECH-###/result.md` documenting:
 - Summary of implementation
 - Workflow used (TDD or verification-based)
 - Files created/modified with line counts
+- Status headline and resolved status (PASS / UNVERIFIED / BLOCKED / NO_INFRA / RUNNER_BROKEN / REGRESSION)
+- Baseline diff (failures or state pre vs post the change)
 - Verification results (test results or infrastructure checks)
 - Commits made
 - Known issues (if any)
@@ -258,9 +381,9 @@ Append to `changelog.md`:
 ## [YYYY-MM-DD HH:MM] DEV: TECH-### - Task Title
 - Phase: Development
 - Type: Infrastructure
-- Status: Ready for Review
+- Status: [DEV COMPLETE | DEV APPLIED — UNVERIFIED | DEV APPLIED — BLOCKED | DEV APPLIED — NO_INFRA | DEV APPLIED — RUNNER_BROKEN | DEV INCOMPLETE — REGRESSION]
 - Changes: N files, +X/-Y lines
-- Verification: [TDD N tests passed | Infrastructure checks passed]
+- Verification: [TDD N tests passed | Infrastructure checks passed | UNVERIFIED — reason]
 ```
 
 ## Test File Naming
@@ -310,7 +433,8 @@ If dependent tasks are not complete, list their statuses and exit.
 | Phase | Anti-pattern | Correct approach |
 |-------|-------------|------------------|
 | RED | Testing implementation details | Test behavior |
-| RED | No failure verification | See test fail first |
+| RED | No failure verification | See A.3 VERIFY RED — confirm tests appear in failure set |
+| RED | No baseline capture | See A.1 CAPTURE BASELINE — always run suite before writing tests |
 | GREEN | Over-engineering | Minimal code only |
 | GREEN | Skip to refactor | Make it work first |
 | REFACTOR | Big-bang refactoring | Small steps, test after each |
@@ -320,6 +444,7 @@ If dependent tasks are not complete, list their statuses and exit.
 | Anti-pattern | Correct approach |
 |-------------|------------------|
 | Skip verification | Always verify before marking done |
+| No baseline state capture | See B.1 CAPTURE BASELINE STATE |
 | No rollback plan | Document rollback in task.md |
 | Hardcoded values | Use environment variables |
 | No health checks | Add health endpoints |
@@ -329,27 +454,33 @@ If dependent tasks are not complete, list their statuses and exit.
 After completion, display:
 
 ```
-TECH Task Development Complete
+═══════════════════════════════════════════
+  <HEADLINE: DEV COMPLETE | DEV APPLIED — UNVERIFIED | DEV APPLIED — BLOCKED |
+             DEV APPLIED — NO_INFRA | DEV APPLIED — RUNNER_BROKEN | DEV INCOMPLETE — REGRESSION>
+═══════════════════════════════════════════
 
 Task: TECH-### [Title]
-Duration: XX minutes
-Type: Infrastructure
+Type: Infrastructure / TDD
+Status: <PASS | UNVERIFIED | BLOCKED | NO_INFRA | RUNNER_BROKEN | REGRESSION>
 
 Files:
   Created: N files
   Modified: N files
 
 Verification:
-  Docker services: [healthy | N/A]
-  Tests: N passed (if applicable)
+  Runner:         [exact scripts.test command or verification command, or "none — NO_INFRA"]
+  Baseline:       [N tests collected, K failing] or [service states] or "skipped (NO_INFRA)"
+  Postfix:        [N tests collected, K failing] or [service states] or "skipped"
+  Baseline diff:  [list of transitions, or "none — UNVERIFIED", or "pre-existing: [list] — BLOCKED"]
+  New failures:   [list — only if REGRESSION; otherwise "none"]
 
 Commits: N
   - feat(infra): description
 
-Status: Ready for Review
-
-Run: /nacl-tl-review TECH### to start review
-Run: /nacl-tl-status to see progress
+Next step:
+  DEV COMPLETE       → /nacl-tl-review TECH### to start review
+  DEV APPLIED — *    → See status rationale above; resolve before review
+  DEV INCOMPLETE     → Return to implementation; do NOT submit for review
 ```
 
 ## Development Checklist
@@ -363,25 +494,31 @@ Run: /nacl-tl-status to see progress
 
 ### TDD Workflow (if applicable)
 
-- [ ] Tests written and FAIL as expected
-- [ ] Committed with `test(TECH-###):` prefix
-- [ ] Minimal implementation passes all tests
-- [ ] Committed with `feat(TECH-###):` prefix
-- [ ] Code refactored, tests still pass
-- [ ] Committed with `refactor(TECH-###):` prefix
+- [ ] A.0 — DISCOVER RUNNER: scripts.test found in workspace package.json
+- [ ] A.1 — CAPTURE BASELINE: suite run before writing any test; baseline.txt stored
+- [ ] A.2 — Tests written (all cases from test-spec.md)
+- [ ] A.3 — VERIFY RED: new tests appear in failure set; no previously-passing test flipped
+- [ ] A.3 — Committed with `test(TECH-###):` prefix
+- [ ] A.4 — Minimal implementation passes all tests
+- [ ] A.5 — VERIFY GREEN + COMPARE: delta computed against baseline; status determined
+- [ ] A.4 — Committed with `feat(TECH-###):` prefix
+- [ ] A.6 — Code refactored, tests still pass
+- [ ] A.6 — Committed with `refactor(TECH-###):` prefix
 
 ### Verification Workflow (if applicable)
 
-- [ ] Configuration files created/modified
-- [ ] Committed with `feat(TECH-###):` prefix
-- [ ] All verification steps pass
-- [ ] Fixes committed with `fix(TECH-###):` prefix (if needed)
+- [ ] B.0 — DISCOVER VERIFICATION COMMAND: command found in task.md or README
+- [ ] B.1 — CAPTURE BASELINE STATE: pre-change state recorded
+- [ ] B.2 — Configuration files created/modified
+- [ ] B.2 — Committed with `feat(TECH-###):` prefix
+- [ ] B.3 — RE-RUN VERIFICATION COMMAND: output non-empty, exit code expected
+- [ ] B.3 — Fixes committed with `fix(TECH-###):` prefix (if needed)
 
 ### After Completion
 
-- [ ] result.md created with full documentation
+- [ ] result.md created with full documentation including status headline and baseline diff
 - [ ] status.json updated to ready_for_review
-- [ ] changelog.md updated with DEV entry
+- [ ] changelog.md updated with DEV entry (status headline, not just "Ready for Review")
 
 ## Next Steps
 

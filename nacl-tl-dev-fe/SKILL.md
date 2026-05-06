@@ -11,6 +11,31 @@ description: |
 
 # TeamLead Frontend Development Skill
 
+## Contract
+
+**Inputs this skill consumes:**
+- UC task-fe.md spec
+- FE workspace `package.json` `scripts.test`
+- Shared types (from BE workspace)
+- API contract
+
+**Outputs this skill produces:**
+- Headline one of: DEV-FE COMPLETE / DEV-FE APPLIED — UNVERIFIED /
+  DEV-FE APPLIED — BLOCKED / DEV-FE APPLIED — NO_INFRA /
+  DEV-FE APPLIED — RUNNER_BROKEN / DEV-FE INCOMPLETE — REGRESSION
+- Baseline diff (failures pre vs post the change)
+- FE test-runner output snippet
+
+**Downstream consumers of this output:**
+- nacl-tl-review (FE)
+- nacl-tl-sync
+- nacl-tl-ship
+
+**Contract change discipline:**
+The 0.10.0→0.10.1 regression was caused by the absence of this discipline. `nacl-tl-fix` changed its output contract (new status vocabulary, new header strings, new `Status:` field) without auditing `nacl-tl-reopened` and `nacl-tl-hotfix`, which were the only two skills that consume its output. Had a `## Contract` section existed in `nacl-tl-fix`, the update would have included a list of downstream consumers, making the audit mandatory and visible. The `## Contract` section is not a runtime mechanism — it does not add any automated enforcement. It is a documentation discipline that makes the contract explicit and the change-cost visible at authoring time. If this skill's output contract changes, every downstream consumer listed above must be audited and updated in the same release.
+
+---
+
 You are a **senior frontend developer** implementing features using strict TDD (Test-Driven Development) workflow. You work from self-sufficient frontend task files created by `nacl-tl-plan`. Your scope is **frontend only** -- React components, pages, hooks, forms, API client, state management.
 
 ## Your Role
@@ -24,15 +49,19 @@ You are a **senior frontend developer** implementing features using strict TDD (
 
 ## Key Principle: TDD Enforcement
 
-**CRITICAL**: You MUST follow the TDD cycle strictly:
+**CRITICAL**: You MUST follow the TDD cycle strictly. The six-sub-step discipline below is the enforcement mechanism — claiming RED-first without capturing a baseline and verifying the failure set is the same dishonesty class that caused the 0.10.0 regression.
 
 ```
-RED:      Write failing RTL tests first (tests MUST fail)
-GREEN:    Write minimal code to make tests pass
-REFACTOR: Improve code while keeping tests green
+Step N.0 — DISCOVER RUNNER (before any code)
+Step N.1 — CAPTURE BASELINE (before writing tests)
+Step N.2 — RED: Write failing RTL tests
+Step N.3 — VERIFY RED (confirm new tests appear in failure set)
+Step N.4 — GREEN: Minimal implementation
+Step N.5 — VERIFY GREEN + COMPARE (compute delta against baseline)
+Step N.6 — STATUS-AWARE OUTPUT
 ```
 
-**Golden Rule**: Never write production code without a failing test demanding it.
+**Golden Rule**: Never write production code without a failing test demanding it. Never claim GREEN without comparing postfix failures against the baseline.
 
 ## FE Technology Stack
 
@@ -136,14 +165,36 @@ Set frontend phase status to `in_progress`:
 }
 ```
 
-### Step 3: RED Phase - Write Failing Tests
+### Step 3: RED Phase — Six-Sub-Step TDD Cycle
+
+#### Step 3.0 — DISCOVER RUNNER
+
+Locate the FE workspace's `package.json` (the nearest `package.json` walking up from the files you will create). Read `scripts.test`. Run **exactly that command** at every subsequent test step. Do NOT substitute another runner.
+
+If `scripts.test` is missing or `package.json` does not exist → record `NO_INFRA` and halt:
+
+```
+DEV-FE APPLIED — NO_INFRA
+scripts.test not found in FE workspace package.json. Test verification is not possible.
+Recommend: open a TECH task to set up a test runner for the FE workspace.
+```
+
+#### Step 3.1 — CAPTURE BASELINE
+
+Run `scripts.test` once **before writing any test file**. Capture and store:
+- The exact set of failing tests (file name + test name) → `baseline_failures`
+- Total tests collected, total passing, total failing
+- Whether the runner started cleanly (exit code, stderr)
+
+Store output in `/tmp/UC###-fe-baseline.txt`. If the runner crashes before any test runs → record `RUNNER_BROKEN` and continue (status resolves at Step 3.5).
+
+#### Step 3.2 — Write Failing Tests
 
 1. Create MSW handlers for all API endpoints from `api-contract.md`
 2. Create test fixtures with typed mock data
 3. Create test utility (`renderWithProviders`) if not present
 4. Write ALL test cases from `test-spec-fe.md` before any implementation
-5. Run tests -- verify they FAIL
-6. Document failure output
+5. Do NOT run tests yet — that is Step 3.3
 
 **Test Categories (from test-spec-fe.md):**
 
@@ -164,15 +215,28 @@ Set frontend phase status to `in_progress`:
 - Follow AAA pattern: Arrange, Act, Assert
 - One concept per test case
 
-**Verify & Commit RED Phase:**
+#### Step 3.3 — VERIFY RED
+
+Run `scripts.test` again (same command as Step 3.1). Confirm:
+
+**(a)** The new tests appear in the failure set — they are actually failing, not silently skipped. Parse the output and check each new test name is present in the failure list.
+
+**(b)** No previously-passing test has flipped to fail.
+
+If **(a)** fails: the new tests are not being discovered. Check file naming, MSW handler setup, `renderWithProviders` configuration, runner glob patterns. Fix and re-run before proceeding.
+
+If **(b)** fails: the test code has introduced a regression in the baseline. **Halt and ask the user** — do NOT proceed to implementation.
+
+**Commit RED:**
 
 ```bash
-npm test           # All tests MUST fail at this point
 git add .
 git commit -m "test(UC###): add failing frontend tests for [feature]"
 ```
 
-### Step 4: GREEN Phase - Minimal Implementation
+### Step 4: GREEN Phase — Minimal Implementation
+
+#### Step 4.1 — Implement
 
 1. Write MINIMAL code to pass tests
 2. Implement components, pages, hooks per `impl-brief-fe.md`
@@ -195,15 +259,26 @@ git commit -m "test(UC###): add failing frontend tests for [feature]"
 
 **GREEN Phase Rules:** Implement just enough to pass. No premature optimization. Keep it simple. Follow the API contract exactly for request/response shapes. Use TanStack Query for all server state. Use Tailwind CSS for all styling.
 
-**Verify & Commit GREEN Phase:**
+#### Step 4.2 — VERIFY GREEN + COMPARE
+
+Run `scripts.test` once more (same command as Step 3.1). Compute the delta against baseline:
+
+| Result | Condition | Status |
+|--------|-----------|--------|
+| New tests now passing AND `postfix_failures ⊆ baseline_failures` AND `new_failures` is empty | Happy path | `PASS` |
+| New tests still failing (did not transition) | Change did not fix them | `UNVERIFIED` |
+| `postfix_failures ⊃ baseline_failures` (new failures introduced) | Change broke something | `REGRESSION` — halt before commit |
+| Runner crashed or produced empty output | Infrastructure problem | `RUNNER_BROKEN` |
+| `postfix_failures == baseline_failures` AND change is in component A, all baseline failures in unrelated component B | Pre-existing unrelated failures | `BLOCKED` with rationale |
+
+**Commit GREEN (only if status is PASS or BLOCKED with rationale):**
 
 ```bash
-npm test           # All tests MUST pass at this point
 git add .
 git commit -m "feat(UC###): implement [feature] frontend"
 ```
 
-### Step 5: REFACTOR Phase - Improve Code
+### Step 5: REFACTOR Phase — Improve Code
 
 1. Extract reusable components (if repeated JSX patterns)
 2. Extract custom hooks (if component has > 3 hooks)
@@ -214,10 +289,9 @@ git commit -m "feat(UC###): implement [feature] frontend"
 
 **Refactoring Checklist:** Tests still pass, no duplicated JSX (extract components), no duplicated logic (extract hooks), clear component naming (PascalCase), single responsibility per component, proper error/loading/empty states, TypeScript strict mode passes, no ESLint warnings, Zod validation complete, Tailwind classes organized, accessibility attributes present, max 150 lines per component, max 5 props per component.
 
-**Verify & Commit REFACTOR Phase:**
+**Commit REFACTOR:**
 
 ```bash
-npm test           # Tests MUST still pass after refactoring
 git add .
 git commit -m "refactor(UC###): improve [component] frontend implementation"
 ```
@@ -226,7 +300,7 @@ git commit -m "refactor(UC###): improve [component] frontend implementation"
 
 Use `nacl-tl-core/templates/result-template.md` as base to create `.tl/tasks/UC###/result-fe.md`.
 
-Document: summary of frontend implementation, TDD phases with timestamps, files created/modified with line counts, test results and coverage, commits made, components implemented, hooks created, pages/routes added, known issues, ready for review checklist.
+Document: summary of frontend implementation, TDD phases with timestamps, status headline and resolved status, baseline diff (failures pre vs post), files created/modified with line counts, test results and coverage, commits made, components implemented, hooks created, pages/routes added, known issues, ready for review checklist.
 
 ### Step 7: Update Tracking
 
@@ -248,7 +322,7 @@ Append to `changelog.md`:
 ```markdown
 ## [YYYY-MM-DD HH:MM] DEV-FE: UC### - Task Title
 - Phase: Frontend Development
-- Status: Ready for Review
+- Status: [DEV-FE COMPLETE | DEV-FE APPLIED — UNVERIFIED | DEV-FE APPLIED — BLOCKED | DEV-FE APPLIED — NO_INFRA | DEV-FE APPLIED — RUNNER_BROKEN | DEV-FE INCOMPLETE — REGRESSION]
 - Changes: N files, +X/-Y lines
 - Tests: N passed, coverage X%
 - Components: ComponentA, ComponentB, ComponentC
@@ -315,7 +389,7 @@ src/
 
 ## FE Testing Approach
 
-Test infrastructure setup (MSW server, `renderWithProviders`, `AllProviders`) is defined in `test-spec-fe.md`. Create `__tests__/setup.ts` and `__tests__/utils.tsx` as specified there during the RED phase if they do not already exist.
+Test infrastructure setup (MSW server, `renderWithProviders`, `AllProviders`) is defined in `test-spec-fe.md`. Create `__tests__/setup.ts` and `__tests__/utils.tsx` as specified there during Step 3.2 if they do not already exist.
 
 ### Test Naming & Coverage
 
@@ -397,12 +471,14 @@ Use template from `nacl-tl-core/templates/` for output:
 | RED | Testing implementation details | Brittle tests | Test user-visible behavior |
 | RED | Using `fireEvent` | Unrealistic events | Use `user-event` for real interactions |
 | RED | Using `getByTestId` first | Inaccessible queries | Use `getByRole`, `getByLabelText` |
-| RED | No failure verification | False positives | See test fail first |
+| RED | No failure verification | False positives | Step 3.3 VERIFY RED — parse output, confirm each new test name appears in failure set |
+| RED | No baseline capture | Cannot detect introduced regressions | Step 3.1 CAPTURE BASELINE — run suite before writing any test |
 | RED | Mocking component internals | Tests prove nothing | Mock only API (MSW) and modules |
 | GREEN | Over-engineering components | Wasted effort | Minimal code to pass |
 | GREEN | Skip to refactor | Unstable base | Make it work first |
 | GREEN | Adding features not in tests | Scope creep | Only what tests need |
 | GREEN | Ignoring api-contract shapes | Contract mismatch | Follow contract exactly |
+| GREEN | No postfix comparison | Cannot claim GREEN honestly | Step 4.2 VERIFY GREEN + COMPARE — compute delta against baseline |
 | REFACTOR | Big-bang refactoring | Risk of breakage | Small steps, test after each |
 | REFACTOR | No test run after change | Broken code | Test after each change |
 | REFACTOR | Adding features | Scope creep | Only improve existing |
@@ -433,19 +509,28 @@ Use template from `nacl-tl-core/templates/` for output:
 After completion, display:
 
 ```
-Frontend Development Complete
+═══════════════════════════════════════════
+  <HEADLINE: DEV-FE COMPLETE | DEV-FE APPLIED — UNVERIFIED | DEV-FE APPLIED — BLOCKED |
+             DEV-FE APPLIED — NO_INFRA | DEV-FE APPLIED — RUNNER_BROKEN | DEV-FE INCOMPLETE — REGRESSION>
+═══════════════════════════════════════════
 
 Task: UC### [Title] (Frontend)
 Duration: XX minutes
 TDD Phases: RED -> GREEN -> REFACTOR
+Status: <PASS | UNVERIFIED | BLOCKED | NO_INFRA | RUNNER_BROKEN | REGRESSION>
 
 Files:
   Created: N files (+XXX lines)
   Modified: N files (+XX/-YY lines)
 
 Tests:
-  Passed: N/N
-  Coverage: XX%
+  Runner:         [exact scripts.test command actually run, or "none — NO_INFRA"]
+  Baseline:       [N tests collected, K failing] or "skipped (RUNNER_BROKEN)"
+  RED verified:   [yes — new tests appeared in failure set] or [no — HALT, see Step 3.3]
+  Postfix:        [N tests collected, K failing] or "skipped"
+  Baseline diff:  [list of transitions, or "none — UNVERIFIED", or "pre-existing: [list] — BLOCKED"]
+  New failures:   [list — only if REGRESSION; otherwise "none"]
+  Coverage:       XX%
 
 Components Implemented:
   - ComponentA (src/components/features/xxx/)
@@ -465,12 +550,10 @@ Commits: 3
   - feat(UC###): implement frontend feature
   - refactor(UC###): improve frontend implementation
 
-Status: FE phase -> Ready for Review
-
-Next Steps:
-  /nacl-tl-review UC### --fe    -- Start frontend code review
-  /nacl-tl-status               -- View project progress
-  /nacl-tl-next                 -- Get next suggested task
+Next step:
+  DEV-FE COMPLETE       → /nacl-tl-review UC### --fe to start review
+  DEV-FE APPLIED — *    → See status rationale above; resolve before review
+  DEV-FE INCOMPLETE     → Return to Step 4; do NOT submit for review
 ```
 
 ### --continue Output Summary
@@ -490,13 +573,29 @@ Next: /nacl-tl-review UC### --fe
 
 **Before Starting:** Task files exist (task-fe.md, test-spec-fe.md, impl-brief-fe.md), api-contract.md present, BE phase approved/done, FE phase status pending/in_progress, no blockers, dependencies resolved.
 
-**RED Phase:** MSW handlers created for all API endpoints, test fixtures typed and created, all test cases from test-spec-fe.md written (CT, HT, FT, IT, AT, EC), tests FAIL as expected, committed with `test(UC###):` prefix.
+**RED Phase:**
+- [ ] Step 3.0 — DISCOVER RUNNER: scripts.test found in FE workspace package.json
+- [ ] Step 3.1 — CAPTURE BASELINE: suite run before writing any test; baseline.txt stored
+- [ ] Step 3.2 — MSW handlers created for all API endpoints
+- [ ] Step 3.2 — Test fixtures typed and created
+- [ ] Step 3.2 — All test cases from test-spec-fe.md written (CT, HT, FT, IT, AT, EC)
+- [ ] Step 3.3 — VERIFY RED: new tests appear in failure set; no previously-passing test flipped
+- [ ] Step 3.3 — Committed with `test(UC###):` prefix
 
-**GREEN Phase:** Types match api-contract.md, API client functions created, TanStack Query hooks implemented, Zod schemas for forms, React components render correctly, pages use App Router conventions, all tests pass, committed with `feat(UC###):` prefix.
+**GREEN Phase:**
+- [ ] Types match api-contract.md
+- [ ] API client functions created
+- [ ] TanStack Query hooks implemented
+- [ ] Zod schemas for forms
+- [ ] React components render correctly
+- [ ] Pages use App Router conventions
+- [ ] Step 4.2 — VERIFY GREEN + COMPARE: delta computed against baseline; status determined
+- [ ] All tests pass (PASS or BLOCKED with rationale)
+- [ ] Committed with `feat(UC###):` prefix
 
 **REFACTOR Phase:** Components < 150 lines, props < 5 per component, custom hooks extracted where needed, Tailwind classes organized, accessibility attributes present, TypeScript strict passes, no ESLint warnings, tests still pass, committed with `refactor(UC###):` prefix.
 
-**After Completion:** result-fe.md created, status.json phases.fe set to ready_for_review, changelog.md updated.
+**After Completion:** result-fe.md created (includes status headline and baseline diff), status.json phases.fe set to ready_for_review, changelog.md updated with status headline.
 
 ## Next Steps
 

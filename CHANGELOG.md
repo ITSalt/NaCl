@@ -30,6 +30,30 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - `excalidraw` Docker service (bare Excalidraw at `localhost:3580`) -- replaced by Analyst Tool at `localhost:3582`.
 - `excalidraw-room` Docker service (live-collab container) -- removed as out of scope for a single-analyst workflow; can be reintroduced separately if needed.
 
+## [0.12.0] — 2026-05-06 (part 1 of 2 — see also part 2: orchestrator-status-propagation)
+
+Three development skills hardened with the same six-sub-step TDD discipline introduced in `nacl-tl-fix` (0.10.0): `nacl-tl-dev`, `nacl-tl-dev-be`, and `nacl-tl-dev-fe` all claimed RED-first TDD but had no enforcement — no baseline capture, no VERIFY RED step confirming new tests appeared in the failure set, and no delta comparison at GREEN. A developer could report "all tests pass" against a pre-existing clean suite without ever writing a test that exercised the new code.
+
+### Added
+
+- `nacl-tl-dev`, `nacl-tl-dev-be`, `nacl-tl-dev-fe`: Step N.0 DISCOVER RUNNER — reads `scripts.test` from workspace `package.json`; halts with `NO_INFRA` if absent (never invents a fallback runner).
+- `nacl-tl-dev`, `nacl-tl-dev-be`, `nacl-tl-dev-fe`: Step N.1 CAPTURE BASELINE — runs the test suite once before writing any test; stores failing-test set to a temp file as the reference for all subsequent comparisons.
+- `nacl-tl-dev`, `nacl-tl-dev-be`, `nacl-tl-dev-fe`: Step N.3 VERIFY RED — parses runner output after tests are written; confirms (a) new tests appear in the failure set, (b) no previously-passing test has flipped to fail. Halts if either condition fails.
+- `nacl-tl-dev`, `nacl-tl-dev-be`, `nacl-tl-dev-fe`: Step N.5 VERIFY GREEN + COMPARE — computes delta against baseline; determines status (`PASS` / `UNVERIFIED` / `BLOCKED` / `RUNNER_BROKEN` / `REGRESSION`) before commit.
+- `nacl-tl-dev` (Workflow B — infra): Steps B.0–B.3 verification-command discipline: DISCOVER VERIFICATION COMMAND → CAPTURE BASELINE STATE → APPLY CHANGE → RE-RUN VERIFICATION COMMAND. Parallel to the TDD path for Docker/CI/CD tasks.
+- All three skills: `## Contract` section documenting inputs, outputs, downstream consumers, and the contract-change audit discipline introduced in 0.10.1.
+
+### Changed
+
+- `nacl-tl-dev`, `nacl-tl-dev-be`, `nacl-tl-dev-fe`: Output summary block replaced — single "Ready for Review" / "Status: Ready for Review" header replaced with status-aware headline: `DEV COMPLETE` / `DEV APPLIED — UNVERIFIED` / `DEV APPLIED — BLOCKED` / `DEV APPLIED — NO_INFRA` / `DEV APPLIED — RUNNER_BROKEN` / `DEV INCOMPLETE — REGRESSION` (and `DEV-BE *` / `DEV-FE *` variants).
+- `nacl-tl-dev`, `nacl-tl-dev-be`, `nacl-tl-dev-fe`: Output template gains baseline diff section (failures pre vs post the change) and test-runner output snippet.
+- `nacl-tl-dev`, `nacl-tl-dev-be`, `nacl-tl-dev-fe`: Anti-patterns tables gain "no baseline capture" and "no postfix comparison" rows citing the new sub-steps.
+- `nacl-tl-dev`, `nacl-tl-dev-be`, `nacl-tl-dev-fe`: Development checklists updated with per-sub-step checkboxes (N.0 through N.5).
+- `nacl-tl-dev` Workflow A: A1/A2/A3 renamed to A.0–A.6 with new enforcement steps inserted. Existing RED/GREEN/REFACTOR content preserved as A.2/A.4/A.6.
+- `nacl-tl-dev-be` Step 3 (RED Phase): restructured into sub-steps 3.0–3.3; Step 4 (GREEN Phase) gains Step 4.2 VERIFY GREEN + COMPARE.
+- `nacl-tl-dev-fe` Step 3 (RED Phase): restructured into sub-steps 3.0–3.3 (RTL test categories CT/HT/FT/IT/AT/EC preserved as Step 3.2 content); Step 4 (GREEN Phase) gains Step 4.2 VERIFY GREEN + COMPARE.
+- changelog.md append templates in all three skills: "Status: Ready for Review" replaced with status headline placeholder.
+
 ## [0.11.0] — 2026-05-06
 
 Five verification and quality-gate skills updated to apply the same honesty standard introduced by `nacl-tl-fix` in 0.10.0: all five were returning PASS based on static analysis or file scanning alone, with no test-runner discovery and no coverage check. A workspace with 44 hollow test files received the same output as one with a complete, green test suite.
