@@ -1,0 +1,131 @@
+---
+name: nacl-sa-validate
+description: |
+  Validate NaCl SA graph consistency, connectivity, requirements, form-domain
+  traceability, UC-form coverage, cross-module rules, feature requests, and
+  BA-to-SA coverage. Use when checking SA quality or says `/nacl-sa-validate`.
+---
+
+# NaCl SA Validate For Codex
+
+Validate the SA graph without writing to it. This workflow reports findings and
+coverage only; repairs belong to the relevant SA skill and require confirmation.
+
+Read `../nacl-core/SKILL.md`, `../references/migration-rules.md`, and
+`../references/verification-vocabulary.md` before using this workflow.
+
+## Workflow
+
+Levels:
+
+- `internal`: SA-only checks.
+- `ba-cross`: BA-to-SA traceability checks.
+- `full`: internal plus BA-to-SA checks.
+- Scoped validation may limit checks to specific modules, use cases, entities,
+  or feature requests when the user provides scope.
+
+Pre-flight:
+
+1. Verify graph read tooling.
+2. Count canonical SA nodes and report whether the graph has data.
+3. Detect schema drift by comparing labels and relationship types with the SA
+   schema when introspection is available.
+4. Check BA layer availability before BA-to-SA levels.
+5. Audit exemption properties used by deeper checks: `has_ui`, `system_only`,
+   `shared`, `internal`, and `field_category`.
+
+Internal checks:
+
+- L1 data consistency: required ids, names, property types, duplicate ids, and
+  orphan nodes.
+- L2 connectivity: modules contain use cases and entities, entities have
+  attributes, enums connect to attributes, and core edges are present.
+- L3 requirements: use cases have requirements, requirements are typed and
+  linked, and BA rules mapped to requirements are not orphaned.
+- L4 form-domain traceability: input fields have `MAPS_TO`, attributes used by
+  forms exist, and internal attributes are exempt only when flagged.
+- L5 UC-form validation: UI use cases have forms, user steps reference forms
+  when appropriate, and forms are linked to use cases.
+- L6 cross-module consistency: entities are owned by one module unless marked
+  shared, relationships crossing modules are intentional, and dependencies are
+  recorded.
+- L7 feature request consistency: `FeatureRequest` ids are collision-free,
+  linked UCs exist, and requested new or modified scope is traceable.
+
+BA-to-SA checks:
+
+- XL6: automated BA workflow steps are covered by `AUTOMATES_AS` use cases, and
+  non-BA UCs are explicitly marked system-only when applicable.
+- XL7: BA entities and attributes are realized as domain entities and
+  attributes, with external documents handled explicitly.
+- XL8: BA roles map to system roles, and infrastructure-only roles are flagged.
+- XL9: BA business rules are implemented by requirements or marked out of
+  scope.
+
+Reporting:
+
+- For each level, report check counts, findings grouped by severity, coverage
+  metrics, and recommended repair skill.
+- Overall verification status must use only `VERIFIED`, `FAILED`,
+  `PARTIALLY_VERIFIED`, `BLOCKED`, `NOT_RUN`, or `UNVERIFIED`.
+- Use `NOT_RUN` for intentionally skipped levels and include the reason.
+- Use `BLOCKED` for missing graph access, missing schema, unavailable BA layer
+  for requested BA-to-SA checks, or absent required scope.
+
+## Capabilities
+
+### May Do
+
+- Read SA and BA graph data for validation.
+- Run schema, consistency, connectivity, traceability, and coverage checks.
+- Produce a markdown validation report to the user.
+- Recommend the next NaCl skill for repairs.
+
+### Must Not Do
+
+- Modify root-level `nacl-*` source folders.
+- Write graph data or project files.
+- Repair findings during validation.
+- Claim a check ran when tooling or data was unavailable.
+- Select or constrain the runtime.
+
+### Conditional Tools And Actions
+
+- Graph validation requires graph read tooling.
+- Schema drift checks require graph introspection or readable schema files.
+- BA-to-SA checks require BA graph data.
+- Scoped validation requires resolvable scope ids.
+
+### Blocked Or Unverified Reporting
+
+- Use `BLOCKED` when required graph tooling, schema, BA data, or scope is
+  missing.
+- Use `PARTIALLY_VERIFIED` when some requested levels run and others are
+  `NOT_RUN` or `BLOCKED`.
+- Use `UNVERIFIED` when a result cannot be checked against graph state.
+
+## Source Comparison
+
+- Source Claude skill path: `../../nacl-sa-validate/SKILL.md`
+
+### Preserved Methodology
+
+- Read-only validation boundary.
+- Pre-flight graph and schema checks.
+- Internal SA levels L1 through L7.
+- BA-to-SA coverage levels XL6 through XL9.
+- Exemption-property handling for validation filters.
+
+### Removed Claude Mechanics
+
+- Runtime routing fields in frontmatter.
+- Hard-coded graph tool availability.
+- Source-environment status names in active reporting.
+- Slash-command-only invocation wording.
+
+### Codex Replacement Behavior
+
+- Use graph reads only when available.
+- Map final outcomes to the closed verification vocabulary.
+- Report skipped and unavailable levels honestly.
+- Leave repairs to confirmed follow-up workflows.
