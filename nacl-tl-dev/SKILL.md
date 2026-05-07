@@ -352,7 +352,9 @@ After completing the TDD or verification cycle, produce output with the followin
 
 ## --continue Flag: Re-Work After Review
 
-When invoked with `--continue`, the agent re-works the task based on review feedback.
+When invoked with `--continue`, the agent re-works the task by **delegating to `/nacl-tl-fix`**. This skill no longer runs an inline test-after-change loop. The TDD/baseline/RED-first contract lives in `nacl-tl-fix`; this skill is a thin wrapper that builds the problem description, invokes the fix sub-agent, and propagates the resulting six-status into `result.md` and `status.json`.
+
+**Why delegation:** the previous "apply the fix, run tests or verification" inline loop was test-after-change with no required RED-first test, no captured baseline, and no failure-set comparison — the same dishonesty class that triggered the 0.10.0 regression. `/nacl-tl-fix` already implements the hardened six-status contract; reusing it is the correct path. For TECH-tasks whose review issues are infrastructure-only (Workflow B applies and there is no testable code to regress against), the fix sub-agent will resolve to `NO_INFRA` and this skill records that honestly rather than synthesising a PASS.
 
 ### Continue Pre-Checks
 
@@ -370,14 +372,80 @@ Expected: .tl/tasks/TECH-###/review.md
 Run: /nacl-tl-review TECH### first to generate review feedback.
 ```
 
-### Continue Workflow
+### Continue Workflow (Delegation to `/nacl-tl-fix`)
 
-1. **Read review file**: `.tl/tasks/TECH-###/review.md`
-2. **Parse issues**: Extract all BLOCKER and CRITICAL issues
-3. **For each issue**: identify the affected file, apply the fix, run tests or verification
-4. **Update result.md**: Add a "Re-work" section documenting changes
-5. **Commit**: `git commit -m "fix(TECH-###): address review feedback"`
-6. **Update status**: Set back to `ready_for_review`
+```
+1. Read .tl/tasks/TECH-###/review.md.
+2. Parse issues by severity (BLOCKER / CRITICAL / MAJOR).
+   Drop MINOR issues for the delegated invocation; they are captured in the
+   final result.md note section.
+3. Render each issue as a problem-description block:
+     File: <path>:<line>
+     Severity: <BLOCKER | CRITICAL | MAJOR>
+     Description: <text>
+     Suggestion: <text>
+   Concatenate the blocks into a single problem-description string in
+   priority order (BLOCKER → CRITICAL → MAJOR).
+4. Invoke /nacl-tl-fix as a sub-agent:
+     /nacl-tl-fix "<problem description>" --uc TECH-### --from-review
+   The fix sub-agent owns:
+     - runner discovery (its Step 7.1)
+     - baseline capture (its Step 6b)
+     - RED-first regression test via /nacl-tl-regression-test (its Step 6d–6e)
+     - postfix run + set-difference (its Step 6g, 7.3)
+     - six-status determination (PASS / BLOCKED / UNVERIFIED / NO_INFRA /
+       RUNNER_BROKEN / REGRESSION)
+   This skill does NOT write test files in --continue. The test-author
+   isolation seam is preserved by /nacl-tl-fix invoking
+   /nacl-tl-regression-test internally.
+5. Read /nacl-tl-fix's report. Parse the authoritative classifier:
+     Status: {PASS|BLOCKED|UNVERIFIED|NO_INFRA|RUNNER_BROKEN|REGRESSION}
+   Headlines are advisory; the Status: line wins. A report without a
+   parseable Status: line halts this skill as
+   "DEV APPLIED — UNVERIFIED (downstream report unparseable)".
+6. Read the fix report's regression-test seam evidence:
+     - Tests > Regression test:  <test file path>
+     - Tests > RED→GREEN:        <transition evidence>
+   If the seam evidence is missing for a non-NO_INFRA / non-RUNNER_BROKEN
+   status, treat the outcome as UNVERIFIED. Silence-as-evidence is forbidden.
+7. Append a "## Fix Iteration N" block to .tl/tasks/TECH-###/result.md:
+
+     ## Fix Iteration N — <ISO timestamp>
+     Source: review.md (Blocker: A, Critical: B, Major: C)
+     Delegated to: /nacl-tl-fix --uc TECH-### --from-review
+     Fix Status: <Status: line value, verbatim from nacl-tl-fix report>
+     Fix Headline: <header line from nacl-tl-fix report>
+     Regression-test seam:
+       - test file: <path or "n/a (NO_INFRA / RUNNER_BROKEN)">
+       - RED→GREEN: <evidence string from fix report>
+     Issues addressed:
+       1. [BLOCKER] <title> @ <file:line> — <one-line outcome>
+       2. [CRITICAL] <title> @ <file:line> — <one-line outcome>
+       ...
+     Issues NOT addressed (MINOR, deferred):
+       - [MINOR] <title> @ <file:line>
+
+8. Update status.json:
+     - Status: PASS                        → status = "ready_for_review"
+     - Status: BLOCKED + operator accept   → status = "ready_for_review"
+                                             (record acceptance reason in
+                                             blocked_accept_reason)
+     - Status: BLOCKED (no acceptance)     → status = "in_progress"
+     - Status: UNVERIFIED                  → status = "in_progress"
+     - Status: NO_INFRA                    → status = "in_progress"
+     - Status: RUNNER_BROKEN               → status = "in_progress"
+     - Status: REGRESSION                  → status = "in_progress"
+   For all non-PASS / non-accepted-BLOCKED outcomes, write:
+     continue_failure_reason = "<Status: value> — <one-line>"
+
+9. Do NOT auto-commit on non-PASS. /nacl-tl-fix already commits its
+   own fix on PASS / accepted-BLOCKED (per its Step 6 commit gate); for
+   any other status, surface the result to the operator and stop.
+```
+
+### Continue: silence-as-evidence is forbidden
+
+If the fix sub-agent's report does not contain a Status: line, or omits the regression-test seam (`Tests > Regression test`, `Tests > RED→GREEN`) for a status that requires it (anything other than NO_INFRA or RUNNER_BROKEN), this skill does NOT promote the task to `ready_for_review`. Silence is `UNVERIFIED`; require explicit evidence to advance.
 
 ---
 
@@ -399,7 +467,17 @@ Create `.tl/tasks/TECH-###/result.md` documenting:
 
 ## Step 5: Update Tracking
 
-Update `status.json` for the task:
+Update `status.json` for the task. **Status transition is gated on the resolved A.5 / B.4 status:**
+
+| Resolved status | `status` value |
+|-----------------|----------------|
+| `PASS` | `ready_for_review` |
+| `BLOCKED` (with explicit operator acceptance + recorded rationale) | `ready_for_review` |
+| `BLOCKED` (no acceptance) | `in_progress` (blocked rationale recorded) |
+| `UNVERIFIED` | `in_progress` |
+| `NO_INFRA` | `in_progress` |
+| `RUNNER_BROKEN` | `in_progress` |
+| `REGRESSION` | `in_progress` (return to A.4 / B.2) |
 
 ```json
 {
@@ -410,6 +488,8 @@ Update `status.json` for the task:
   "completed": "YYYY-MM-DDTHH:MM:SSZ"
 }
 ```
+
+For non-PASS / non-accepted-BLOCKED outcomes, also write `failure_reason` with the verbatim `Status:` value and a one-line summary.
 
 Append to `changelog.md`:
 

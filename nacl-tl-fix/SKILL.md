@@ -53,10 +53,30 @@ The user describes the problem in natural language. They do NOT need to specify 
 
 Optional flags:
 ```
-/nacl-tl-fix --dry-run "description"    # analysis only, no changes
-/nacl-tl-fix --l1 "description"        # force L1 (skip docs)
-/nacl-tl-fix --auto-ship "description" # after fix, automatically run /nacl-tl-ship
+/nacl-tl-fix --dry-run "description"            # analysis only, no changes
+/nacl-tl-fix --l1 "description"                 # force L1 (skip docs)
+/nacl-tl-fix --auto-ship "description"          # after fix, automatically run /nacl-tl-ship
+/nacl-tl-fix --uc UC### "description"           # pin the affected UC explicitly (overrides Step 1 auto-detect)
+/nacl-tl-fix --from-review "description"        # invocation source = review; metadata-only marker
 ```
+
+#### `--from-review` (metadata-only)
+
+When invoked with `--from-review`, this skill records `invocation_source: review`
+in the fix report metadata and in the `.tl/changelog` entry. It does NOT change
+the six-status contract, the baseline-capture procedure, or the RED-first
+discipline — every gate at Step 6 and Step 7 still applies. The flag exists so
+that downstream consumers (e.g. `/nacl-tl-dev-be --continue`,
+`/nacl-tl-dev-fe --continue`, `/nacl-tl-dev --continue`) can prove their
+review-rework path delegated to `/nacl-tl-fix` rather than running an inline
+test-after-change loop.
+
+Implementation:
+- The Step 8 report adds a single line under "Problem":
+  `Invocation source: review (--from-review)`.
+- Step 7.6 changelog block adds: `- **Invocation source:** review` (omit when
+  the flag is not passed).
+- No behavior beyond traceability is changed by this flag.
 
 ---
 
@@ -399,6 +419,7 @@ Notes:
 - **Code changed:** [file list]
 - **Tests:** [new test path if Path A] or "existing test transitioned: [path]" or "none (status BLOCKED/UNVERIFIED/NO_INFRA)"
 - **Pre-existing failures (baseline-confirmed unrelated):** [list, only if BLOCKED]
+- **Invocation source:** review   ← include this line ONLY when --from-review was passed; omit otherwise
 ```
 
 ---
@@ -426,6 +447,7 @@ Header by status:
 ═══════════════════════════════════════════
 
 Problem: [from user's description]
+Invocation source: review (--from-review)        ← include this line ONLY when --from-review was passed; omit otherwise
 Root cause: [what caused it]
 Level: L0/L1/L2/L3
 Status: <PASS | BLOCKED | UNVERIFIED | NO_INFRA | RUNNER_BROKEN | REGRESSION>

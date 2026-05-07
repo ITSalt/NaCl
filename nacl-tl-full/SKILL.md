@@ -338,11 +338,36 @@ Your job:
 1. For each TECH task in order:
    a. Read .tl/tasks/TECH-###/task.md to understand the task
    b. Launch Task agent: execute /nacl-tl-dev TECH-### (development)
-   c. Update graph: SET t.status = 'ready_for_review'
-   d. Launch Task agent: execute /nacl-tl-review TECH-### (review)
+   c. **Read /nacl-tl-dev's six-status result BEFORE advancing.** Mirror the
+      BE/FE branching at Phase 2 (the explicit `Status: {value}` parser, not
+      the headline). Branch:
+        Status: PASS                  → set t.phase_dev = 'done',
+                                        t.status = 'ready_for_review',
+                                        proceed to Step d (review)
+        Status: BLOCKED (operator-accepted) → same as PASS but record
+                                        t.blocked_accept_reason
+        Status: BLOCKED (no acceptance) → halt task; set t.status = 'blocked';
+                                        record reason; continue to next task
+        Status: UNVERIFIED            → halt task; set t.status =
+                                        'verified-pending'; record reason;
+                                        continue to next task. Do NOT proceed
+                                        to /nacl-tl-review.
+        Status: NO_INFRA              → halt task; set t.status =
+                                        'verified-pending';
+                                        t.verification_skip_reason = 'NO_INFRA';
+                                        continue to next task.
+        Status: RUNNER_BROKEN         → halt task; set t.status = 'failed';
+                                        record reason; continue to next task.
+        Status: REGRESSION            → halt task; set t.status = 'failed';
+                                        record reason; continue to next task.
+        No parseable Status: line     → halt task; set t.status = 'failed';
+                                        reason 'dev report unparseable'; continue.
+   d. Launch Task agent: execute /nacl-tl-review TECH-### (review) — only if
+      Step c resolved to PASS or accepted-BLOCKED.
    e. If review rejected -> retry loop:
       - Launch Task agent: /nacl-tl-dev TECH-### --continue
-      - Launch Task agent: /nacl-tl-review TECH-###
+      - Re-read its six-status result with the same branching as Step c
+      - Launch Task agent: /nacl-tl-review TECH-### (only on PASS / accepted-BLOCKED)
       - Max 3 retry iterations
    f. If still rejected after 3 -> mark as FAILED:
       MATCH (t:Task {id: $taskId}) SET t.status = 'failed', t.updated = datetime()
@@ -932,7 +957,14 @@ Skip Phase 0 planning. Assume `.tl/` already populated and graph already has Tas
 
 ### --skip-qa
 
-Skip QA phase in all UC lifecycles. Tasks go directly from stubs to docs. Update graph: `phase_qa` stays `pending` (not executed). Log "QA: skipped by user".
+Skip QA phase in all UC lifecycles. Per Cross-cutting principle P4 (skip ⇒ unverified, never PASS), this flag forces the wave aggregate headline to `FULL APPLIED — UNVERIFIED (qa skipped)`. The flag:
+
+- Records `phase_qa = 'skipped'` (not `'pending'`) on every UC Task in the wave, plus `Task.verification_skip_reason = 'full --skip-qa'`.
+- Forbids downstream stamping. The wave aggregate cannot promote any UC to `done` while `phase_qa = 'skipped'`. The wave terminates with `FULL APPLIED — UNVERIFIED (qa skipped)`; UCs that completed every other phase land at `verified-pending` rather than `done`.
+- Is recorded in `status.json` (`run.skip_flags = ['qa']`) and surfaced in the END GATE report under "Skipped phases".
+- Requires a separate explicit operator override before any UC moves to `done` / `delivered` / `released`. The override path is: re-run `/nacl-tl-full --task UC###` (or `/nacl-tl-qa UC###` plus a manual reconcile) without `--skip-qa`.
+
+The previous "Tasks go directly from stubs to docs ... `phase_qa` stays `pending`" path is removed — `pending` is misleading for skipped work because it implies "still to be executed in this run".
 
 ---
 
@@ -994,11 +1026,13 @@ These are lightweight queries that keep L0's context clean.
 
 ### Neo4j connection failure during execution
 
-If a graph write fails mid-execution:
-1. Log the error: `"Neo4j write failed for Task $taskId phase $phase. Continuing with status.json only."`
-2. Continue updating `.tl/status.json` (fallback)
-3. Do NOT stop execution
-4. At END GATE, report: `"Warning: Some graph updates may be missing. Run /nacl-tl-status to verify."`
+If a graph write fails mid-execution, halt phase advancement (the previous "continue with status.json only" path is removed — divergence between the graph and the local status file produces the same dishonest-reporting class addressed elsewhere in this release):
+
+1. Log the error verbatim, including `taskId`, `phase`, and the Cypher statement.
+2. Persist the in-flight phase result to `.tl/status.json` for forensic inspection only — do NOT advance the wave.
+3. STOP wave execution. Do NOT proceed to the next phase or the next task.
+4. At END GATE, report: `FULL HALTED — UNVERIFIED (graph write failed for Task <taskId> phase <phase>); resolve Neo4j connectivity and re-run /nacl-tl-full --task <taskId>.`
+5. Do NOT mark any incomplete UC as `done` in `.tl/status.json` — without graph confirmation the run is unverified.
 
 ### Neo4j unavailable at startup
 

@@ -155,12 +155,38 @@ Record per workspace:
 - `be_runner`: the exact command, or `NO_INFRA` if `scripts.test` is missing
 - `fe_runner`: the exact command, or `NO_INFRA` if `scripts.test` is missing
 
-#### 7.2 Run each suite
+#### 7.2 Run each suite — baseline + postfix per workspace
 
-Run BE suite. Capture: exit code, tests collected, pass/fail counts, stderr.
-Run FE suite. Capture: exit code, tests collected, pass/fail counts, stderr.
+Sync runs after BE and FE have already been implemented; the working tree is post-change. To distinguish pre-existing failures from regressions, capture an explicit baseline per workspace via `git worktree add` at the resolved baseline ref:
+
+**Baseline ref discovery (per workspace).** Resolve in priority order:
+1. `--base <ref>` flag passed to this skill.
+2. Saved baseline artifact `.tl/tasks/UC###/baseline-failures-{be,fe}.json` if present (written upstream by `nacl-tl-dev-be` / `nacl-tl-dev-fe` at their CAPTURE BASELINE step).
+3. Default: `git merge-base HEAD main` (or the configured `git.main_branch`).
+
+If none of the three resolves → record `UNVERIFIED (no baseline)` for that workspace and skip the baseline run; postfix run still executes but classification cannot be `BLOCKED` or `REGRESSION` for that workspace (P3).
+
+**Baseline run (per workspace).** Create a worktree, run the workspace's `scripts.test` there, capture failures, then remove the worktree:
+
+```
+git worktree add <tempdir> <baseline_ref>
+cd <tempdir> && <workspace_scripts.test>
+git worktree remove --force <tempdir>
+```
+
+Capture per workspace: `baseline_failures` (set of failing test names), `tests_collected`, exit code, stderr.
+
+**Postfix run (per workspace, current working tree).** Run `scripts.test` for each workspace. Capture: exit code, `tests_collected`, `postfix_failures` (set of failing test names), pass/fail counts, stderr.
 
 If a runner exits non-zero before any test runs, or stdout is empty and stderr is non-empty → record `RUNNER_BROKEN` for that workspace.
+
+**Compute deltas per workspace:**
+- `be_new_failures = be_postfix_failures − be_baseline_failures`
+- `be_pre_existing = be_postfix_failures ∩ be_baseline_failures`
+- `fe_new_failures = fe_postfix_failures − fe_baseline_failures`
+- `fe_pre_existing = fe_postfix_failures ∩ fe_baseline_failures`
+
+The worktree is removed on every exit path (success, halt, error).
 
 #### 7.3 Check endpoint coverage
 
@@ -190,16 +216,17 @@ grep -rn "jest\.mock(\|vi\.mock(\|setupServer(\|mockapi\." src/**/*.test.{ts,tsx
 
 #### 7.4 Classify runtime result
 
-Apply these rules in order — first match wins:
+Apply these rules in order — first match wins. `BLOCKED` is reserved exclusively for "both workspaces' postfix failures are a non-empty subset of their baseline failures" — i.e. all remaining failures are baseline-confirmed pre-existing. Any new failure in either workspace ⇒ `REGRESSION`. The previous "Both suites pass AND pre-existing failures remain" rule was self-contradictory ("pass" and "failures remain" cannot coexist) and is removed.
 
 | # | Condition | Runtime result |
 |---|-----------|----------------|
 | 1 | Either workspace has `NO_INFRA` | `NO_INFRA` |
 | 2 | Either workspace has `RUNNER_BROKEN` | `RUNNER_BROKEN` |
-| 3 | Either suite has new failures vs pre-change baseline | `REGRESSION` |
-| 4 | Both suites pass AND both have `coverage_gap = false` | `PASS` |
-| 5 | Both suites pass AND at least one has `coverage_gap = true` | `UNVERIFIED` |
-| 6 | Both suites pass AND pre-existing failures remain | `BLOCKED` |
+| 3 | `be_new_failures.size > 0` OR `fe_new_failures.size > 0` (any new failure in either workspace) | `REGRESSION` — list the new failures per workspace |
+| 4 | Either workspace lacks a baseline (UNVERIFIED-no-baseline flag from 7.2) AND its postfix has any failure | `UNVERIFIED (no baseline)` — postfix failures listed but unclassified |
+| 5 | `be_postfix_failures` and `fe_postfix_failures` both empty AND both have `coverage_gap = false` | `PASS` |
+| 6 | `be_postfix_failures` and `fe_postfix_failures` both empty AND at least one has `coverage_gap = true` | `UNVERIFIED` |
+| 7 | At least one workspace has `postfix_failures.size > 0` AND `new_failures.size == 0` AND `postfix_failures ⊆ baseline_failures` for every workspace with failures | `BLOCKED` — list `pre_existing` failures per workspace |
 
 ### Step 8: Generate sync-report.md
 

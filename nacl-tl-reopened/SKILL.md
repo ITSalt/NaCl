@@ -90,8 +90,10 @@ You do NOT write fixes yourself — you delegate to `/nacl-tl-fix` (spec-first b
 | YouGile columns | `config.yaml -> yougile.columns.reopened / in_work / dev_done` |
 | Module list | `config.yaml -> modules.*` |
 | Module stickers | `config.yaml -> yougile.stickers.module` |
-| Test command | `config.yaml -> modules.[name].test_cmd` > fallback `npm test` |
-| Build command | `config.yaml -> modules.[name].build_cmd` > fallback `npm run build` |
+| Test command | `config.yaml -> modules.[name].test_cmd` > workspace `package.json` `scripts.test` (declared only — no `npm test` invention) |
+| Build command | `config.yaml -> modules.[name].build_cmd` > workspace `package.json` `scripts.build` (declared only — no `npm run build` invention) |
+
+**Declared commands only.** If neither `config.yaml -> modules.[name].test_cmd` nor the workspace's `package.json` `scripts.test` exists, this skill halts as `REOPENED HALTED — NO_INFRA (scripts.test undeclared)`. The same applies to the build command. The previous `fallback npm test` / `fallback npm run build` clauses are removed (Cross-cutting principle P2).
 | Git strategy | `config.yaml -> git.strategy` > `modules.[name].git_strategy` > fallback `"feature-branch"` |
 | Base branch | `config.yaml -> git.main_branch` > `modules.[name].git_base_branch` > fallback `"main"` |
 
@@ -524,8 +526,22 @@ Do NOT invoke /nacl-tl-review or /nacl-tl-stubs. Do NOT ship.
 ```
 Post this advisory to YouGile task chat and halt.
 
-If `scripts.test` is missing → note it as `NO_INFRA` (test-re-run skipped), proceed
-to review but include a warning in the Step 10 report.
+If `scripts.test` is missing → halt as `REOPENED HALTED — NO_INFRA (scripts.test undeclared)`:
+
+```
+REOPENED HALTED — NO_INFRA
+
+Re-run gate cannot execute: the workspace containing the changed files declares
+no scripts.test. The previous "proceed to review with a warning" path is removed
+(Cross-cutting principle P2 — declared workspace commands only).
+
+Action required:
+  /nacl-tl-dev TECH-### "set up test runner for [workspace]"
+
+Do NOT proceed to /nacl-tl-review or /nacl-tl-stubs without a re-run baseline.
+```
+
+Post this advisory to YouGile task chat and halt. Do NOT proceed to Step 8 review or Step 9 ship.
 
 If the suite **passes:** proceed to review and stubs below.
 
@@ -636,6 +652,9 @@ update_task(id=<taskId>, columnId: config.yougile.columns.dev_done)
 **Goal:** Final summary for the user.
 
 **Single task:**
+
+The final `Status:` line is gated on the parsed fix-status. `DevDone ✅` only renders when the headline is `REOPENED COMPLETE` (i.e. fix `Status: PASS` AND re-run suite green AND review approved). All other outcomes render `REOPENED APPLIED — <STATUS>` or `REOPENED HALTED — <STATUS>` and leave the YouGile column at InWork (or as the matching halt state).
+
 ```
 ═══════════════════════════════════════════════════════
   <HEADLINE from Contract outcome-headline table above>
@@ -646,14 +665,17 @@ update_task(id=<taskId>, columnId: config.yougile.columns.dev_done)
   Fix status: {PASS | BLOCKED | UNVERIFIED | NO_INFRA | RUNNER_BROKEN | REGRESSION}
   Regression test: {path from nacl-tl-fix report, or "absent — HALTED"}
   RED→GREEN: {confirmed | not confirmed | n/a}
-  Re-run suite: {PASS (N tests) | FAIL (list) | SKIPPED — NO_INFRA}
-  Status: DevDone ✅
+  Re-run suite: {PASS (N tests) | FAIL (list) | HALTED — NO_INFRA}
+  Status: <DevDone ✅ (PASS only) | InWork (BLOCKED-without-accept | UNVERIFIED | NO_INFRA | RUNNER_BROKEN | REGRESSION) | DevDone with note (BLOCKED accepted by operator)>
 
   Changes: {N files changed}
   Tests: {M tests passing}
 
   Next step:
-    /nacl-tl-verify {task_code}    # re-verify the fix
+    REOPENED COMPLETE              → /nacl-tl-verify {task_code}    # re-verify the fix
+    REOPENED APPLIED — UNVERIFIED  → resolve unverified state per advisory; do NOT auto-verify
+    REOPENED HALTED — *            → see halt advisory above
+    REOPENED INCOMPLETE — REGRESSION → return to /nacl-tl-fix Step 6f
 ═══════════════════════════════════════════════════════
 ```
 
@@ -679,14 +701,44 @@ Next steps:
 When processing multiple reopened tasks:
 
 1. **Sequential processing** — tasks share a codebase, parallel fixes would conflict
-2. **Sub-agents for isolation** — each task's fix cycle (Steps 6-9) runs in a Task agent to preserve context:
+2. **Sub-agents for isolation** — each task's fix cycle (Steps 6-9) runs in a Task agent to preserve context. The sub-agent prompt MUST include the same six-status contract enforced by Step 7.5 and the regression-test-seam gate from Step 7.5.1; otherwise the sub-agent will silently collapse non-PASS statuses into apparent completion:
    ```
    For each task:
      Launch Task agent:
        "Process reopened task {CODE}: {synthesized description}.
         Module: {name}, Path: {A|B}.
-        Run: /nacl-tl-fix → /nacl-tl-review → /nacl-tl-stubs → /nacl-tl-ship"
-     Capture result (PASS/FAIL + summary)
+
+        Run, in order:
+          1. /nacl-tl-fix "<problem description>" --uc UC### --from-review
+          2. Parse the fix report's `Status: {PASS|BLOCKED|UNVERIFIED|NO_INFRA|RUNNER_BROKEN|REGRESSION}`
+             line — this is the only authoritative classifier. Headlines are
+             advisory.
+          3. If no Status: line is parseable → return `REOPENED HALTED —
+             UNVERIFIED (fix report unparseable)` and stop.
+          4. Verify the regression-test seam (Step 7.5.1):
+               - Tests > Regression test:  <path or 'n/a — NO_INFRA'>
+               - Tests > RED→GREEN:        <evidence string>
+             If the seam is missing for any status other than NO_INFRA /
+             RUNNER_BROKEN → return `REOPENED HALTED — UNVERIFIED
+             (regression-test seam not honored)` and stop.
+          5. Branch on parsed status:
+               PASS                     → proceed to Step 8 (review + stubs)
+                                          and Step 9 (ship). Auto-ship is
+                                          permitted only here.
+               BLOCKED                  → require explicit user 'proceed' before
+                                          Step 8; auto-ship forbidden.
+               UNVERIFIED / NO_INFRA /
+               RUNNER_BROKEN / REGRESSION
+                                        → halt with the matching `REOPENED
+                                          HALTED — <STATUS>` or `REOPENED
+                                          INCOMPLETE — REGRESSION` headline; do
+                                          NOT advance to /nacl-tl-review,
+                                          /nacl-tl-stubs, or /nacl-tl-ship.
+          6. On PASS: /nacl-tl-review → /nacl-tl-stubs → /nacl-tl-ship.
+        Capture the resolved headline + Status: value as the per-task result."
+     Capture result (one of: REOPENED COMPLETE | REOPENED APPLIED — UNVERIFIED |
+                            REOPENED HALTED — UNVERIFIED | REOPENED HALTED — NO_INFRA |
+                            REOPENED HALTED — RUNNER_BROKEN | REOPENED INCOMPLETE — REGRESSION)
    ```
 3. **Continue on failure** — if one task fails, log it and proceed to the next
 4. **Aggregate results** in Step 10

@@ -230,7 +230,7 @@ The regression-test agent already ran the tests and confirmed RED. Do NOT re-run
 
 1. Record the test file path, test names, and failure snippet from the agent's `FEATURE-TEST WRITTEN` report.
 2. Cross-check: confirm each test name listed in the report maps to a test case in `test-spec-fe.md`. If any test name is absent from the spec, flag it but do not block.
-3. Confirm no previously-passing test has flipped. The agent checks this in its Step 3; if the agent's report is silent on regressions, trust the agent's RED confirmation.
+3. Confirm no previously-passing test has flipped. The agent checks this in its Step 3; **silence on regressions is `UNVERIFIED`, not implicit pass.** Require an explicit no-regression line in the sub-agent's report to advance — for example `Regressions: none introduced (postfix ⊆ baseline)` — and otherwise halt this skill as `DEV-FE APPLIED — UNVERIFIED (sub-agent report missing no-regression evidence)`. The previous "trust the agent's RED confirmation" semantics are removed.
 
 **Commit RED:**
 
@@ -309,7 +309,17 @@ Document: summary of frontend implementation, TDD phases with timestamps, status
 
 ### Step 7: Update Tracking
 
-Update `status.json` frontend phase:
+Update `status.json` frontend phase. **Status transition is gated on the Step 4.2 status:**
+
+| Step 4.2 status | `phases.fe.status` |
+|-----------------|--------------------|
+| `PASS` | `ready_for_review` |
+| `BLOCKED` (with explicit operator acceptance + recorded rationale) | `ready_for_review` |
+| `BLOCKED` (no acceptance) | `in_progress` (blocked rationale recorded) |
+| `UNVERIFIED` | `in_progress` |
+| `NO_INFRA` | `in_progress` |
+| `RUNNER_BROKEN` | `in_progress` |
+| `REGRESSION` | `in_progress` (return to Step 4) |
 
 ```json
 {
@@ -321,6 +331,8 @@ Update `status.json` frontend phase:
   }
 }
 ```
+
+For non-PASS / non-accepted-BLOCKED outcomes, also write `phases.fe.failure_reason` with the verbatim `Status:` value and a one-line summary.
 
 Append to `changelog.md`:
 
@@ -336,28 +348,9 @@ Append to `changelog.md`:
 
 ## --continue Flag: Fix Review Issues
 
-When invoked as `/nacl-tl-dev-fe UC### --continue`, the agent fixes issues from a prior review.
+When invoked as `/nacl-tl-dev-fe UC### --continue`, the agent fixes issues from a prior review by **delegating to `/nacl-tl-fix`**. This skill no longer runs an inline test-after-change loop. The TDD/baseline/RED-first contract lives in `nacl-tl-fix`; this skill is a thin wrapper that builds the problem description, invokes the fix sub-agent, and propagates the resulting six-status into `result-fe.md` and `status.json`.
 
-### --continue Workflow
-
-```
-1. Read .tl/tasks/UC###/review-fe.md -> extract issues list
-2. Parse issues by severity:
-   - Blocker   -- must fix, blocks approval
-   - Critical  -- must fix, high impact
-   - Major     -- should fix, moderate impact
-3. For each issue (Blockers first, then Critical, then Major):
-   a. Navigate to file:line mentioned in review
-   b. Fix the issue
-   c. Run tests to verify fix
-4. Re-run full test suite
-5. Update result-fe.md:
-   - Append "## Fix Iteration N" section
-   - List each issue fixed with before/after
-   - Include updated test output
-6. Commit: fix(UC###): address frontend review feedback (iteration N)
-7. Update status.json phases.fe -> ready_for_review
-```
+**Why delegation:** the previous "fix the issue, run tests" inline loop was test-after-change with no required RED-first test, no captured baseline, and no failure-set comparison — the same dishonesty class that triggered the 0.10.0 regression. `/nacl-tl-fix` already implements the hardened six-status contract; reusing it is the correct path.
 
 ### --continue Pre-Checks
 
@@ -365,7 +358,84 @@ When invoked as `/nacl-tl-dev-fe UC### --continue`, the agent fixes issues from 
 2. **Review has issues**: At least one Blocker, Critical, or Major issue
 3. **Status is correct**: `phases.fe.status` is "rejected" or "in_progress"
 
-Parse issues from `review-fe.md` by severity headers. Fix priorities: Blockers first, then Critical, then Major, then Minor if time permits.
+### --continue Workflow (Delegation to `/nacl-tl-fix`)
+
+```
+1. Read .tl/tasks/UC###/review-fe.md.
+2. Parse issues by severity (Blocker / Critical / Major).
+   Drop Minor issues for the delegated invocation; they are captured in the
+   final result-fe.md note section.
+3. Render each issue as a problem-description block:
+     File: <path>:<line>
+     Severity: <Blocker | Critical | Major>
+     Description: <text>
+     Suggestion: <text>
+   Concatenate the blocks into a single problem-description string in
+   priority order (Blocker → Critical → Major).
+4. Invoke /nacl-tl-fix as a sub-agent:
+     /nacl-tl-fix "<problem description>" --uc UC### --from-review
+   The fix sub-agent owns:
+     - runner discovery (its Step 7.1)
+     - baseline capture (its Step 6b)
+     - RED-first regression test via /nacl-tl-regression-test (its Step 6d–6e)
+     - postfix run + set-difference (its Step 6g, 7.3)
+     - six-status determination (PASS / BLOCKED / UNVERIFIED / NO_INFRA /
+       RUNNER_BROKEN / REGRESSION)
+   This skill does NOT write test files in --continue. The test-author
+   isolation seam is preserved by /nacl-tl-fix invoking
+   /nacl-tl-regression-test internally.
+5. Read /nacl-tl-fix's report. Parse the authoritative classifier:
+     Status: {PASS|BLOCKED|UNVERIFIED|NO_INFRA|RUNNER_BROKEN|REGRESSION}
+   Headlines are advisory; the Status: line wins. A report without a
+   parseable Status: line halts this skill as
+   "DEV-FE APPLIED — UNVERIFIED (downstream report unparseable)".
+6. Read the fix report's regression-test seam evidence:
+     - Tests > Regression test:  <test file path>
+     - Tests > RED→GREEN:        <transition evidence>
+   If the seam evidence is missing for a non-NO_INFRA / non-RUNNER_BROKEN
+   status, treat the outcome as UNVERIFIED. Silence-as-evidence is forbidden.
+7. Append a "## Fix Iteration N" block to .tl/tasks/UC###/result-fe.md:
+
+     ## Fix Iteration N — <ISO timestamp>
+     Source: review-fe.md (Blocker: A, Critical: B, Major: C)
+     Delegated to: /nacl-tl-fix --uc UC### --from-review
+     Fix Status: <Status: line value, verbatim from nacl-tl-fix report>
+     Fix Headline: <header line from nacl-tl-fix report>
+     Regression-test seam:
+       - test file: <path or "n/a (NO_INFRA / RUNNER_BROKEN)">
+       - RED→GREEN: <evidence string from fix report>
+     Issues addressed:
+       1. [Blocker] <title> @ <file:line> — <one-line outcome>
+       2. [Critical] <title> @ <file:line> — <one-line outcome>
+       ...
+     Issues NOT addressed (Minor, deferred):
+       - [Minor] <title> @ <file:line>
+
+8. Update status.json phases.fe:
+     - Status: PASS                        → phases.fe.status = "ready_for_review"
+     - Status: BLOCKED + operator accept   → phases.fe.status = "ready_for_review"
+                                             (record acceptance reason in
+                                             phases.fe.blocked_accept_reason)
+     - Status: BLOCKED (no acceptance)     → phases.fe.status = "in_progress"
+     - Status: UNVERIFIED                  → phases.fe.status = "in_progress"
+     - Status: NO_INFRA                    → phases.fe.status = "in_progress"
+     - Status: RUNNER_BROKEN               → phases.fe.status = "in_progress"
+     - Status: REGRESSION                  → phases.fe.status = "in_progress"
+   For all non-PASS / non-accepted-BLOCKED outcomes, write:
+     phases.fe.continue_failure_reason = "<Status: value> — <one-line>"
+
+9. Do NOT auto-commit on non-PASS. /nacl-tl-fix already commits its
+   own fix on PASS / accepted-BLOCKED (per its Step 6 commit gate); for
+   any other status, surface the result to the operator and stop.
+```
+
+### --continue Issue Parsing
+
+Parse issues from `review-fe.md` by severity headers. Fix priorities: Blockers first, then Critical, then Major. Minor issues are recorded but NOT included in the delegated `/nacl-tl-fix` problem description (the operator can re-run with a follow-up review iteration if Minors must be addressed in this UC).
+
+### --continue: silence-as-evidence is forbidden
+
+If the fix sub-agent's report does not contain a Status: line, or omits the regression-test seam (`Tests > Regression test`, `Tests > RED→GREEN`) for a status that requires it (anything other than NO_INFRA or RUNNER_BROKEN), this skill does NOT promote `phases.fe` to `ready_for_review`. Silence is `UNVERIFIED`; require explicit evidence to advance. This mirrors Step 3.3's regressions rule.
 
 ## Frontend File Organization
 
@@ -563,16 +633,47 @@ Next step:
 
 ### --continue Output Summary
 
-```
-Frontend Fix Iteration N Complete
+The headline is status-aware and matches the same six-status vocabulary used by `nacl-tl-fix`. The `Status:` line below the headline is the authoritative classifier; the headline is decoration.
 
-Task: UC### [Title] (Frontend)
-Issues Fixed: X/Y (Blockers: A, Critical: B, Major: C)
-Tests: N/N passed, Coverage: XX%
-Commit: fix(UC###): address frontend review feedback (iteration N)
-Status: FE phase -> Ready for Review
-Next: /nacl-tl-review UC### --fe
 ```
+═══════════════════════════════════════════
+  <HEADLINE: DEV-FE FIX-CONTINUE COMPLETE | DEV-FE FIX-CONTINUE APPLIED — UNVERIFIED |
+             DEV-FE FIX-CONTINUE APPLIED — BLOCKED | DEV-FE FIX-CONTINUE APPLIED — NO_INFRA |
+             DEV-FE FIX-CONTINUE APPLIED — RUNNER_BROKEN | DEV-FE FIX-CONTINUE INCOMPLETE — REGRESSION>
+═══════════════════════════════════════════
+
+Task: UC### [Title] (Frontend, --continue iteration N)
+Source: .tl/tasks/UC###/review-fe.md
+Issues parsed: Blocker A, Critical B, Major C (Minor D, deferred)
+
+Delegated to: /nacl-tl-fix --uc UC### --from-review
+Fix Status:    <PASS | BLOCKED | UNVERIFIED | NO_INFRA | RUNNER_BROKEN | REGRESSION>
+Fix Headline:  <verbatim header from nacl-tl-fix report>
+
+Regression-test seam (from /nacl-tl-fix):
+  Test file:   <path or "n/a (NO_INFRA / RUNNER_BROKEN)">
+  RED→GREEN:   <evidence string verbatim>
+
+Issues addressed:
+  - [Blocker] <title> @ <file:line>
+  - [Critical] <title> @ <file:line>
+  ...
+
+Tracking:
+  phases.fe.status                = <"ready_for_review" | "in_progress">
+  phases.fe.failure_reason        = <"" or "<Status: value> — <one-line>">
+
+Next step:
+  PASS                  → /nacl-tl-review UC### --fe (re-review)
+  BLOCKED (accepted)    → /nacl-tl-review UC### --fe (re-review with note)
+  BLOCKED (rejected)    → return to Step 4 / re-invoke --continue with sharper inputs
+  UNVERIFIED            → re-invoke --continue OR run /nacl-tl-regression-test retroactively
+  NO_INFRA              → /nacl-tl-dev TECH-### "set up FE test runner"
+  RUNNER_BROKEN         → /nacl-tl-diagnose; do NOT advance the phase
+  REGRESSION            → return to Step 4f in /nacl-tl-fix; do NOT submit for review
+```
+
+This skill never writes test files in `--continue`; the fix sub-agent owns that responsibility via its `nacl-tl-regression-test` invocation.
 
 ## Development Checklist
 

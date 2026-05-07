@@ -63,7 +63,7 @@ You are a code verification specialist. You verify that a change is CORRECTLY im
 |--------|---------|
 | `PASS` | Static checks pass AND test suite ran AND at least one test covers the changed file(s) AND suite is clean |
 | `PASS_NEEDS_E2E` | All checks pass, changes affect UI — need browser verification; tests ran and passed |
-| `UNVERIFIED` | Static checks pass but no test file imports the changed module(s) — coverage gap |
+| `UNVERIFIED` | One of: (a) static checks pass but no test file imports the changed module(s) — coverage gap; (b) no baseline ref could be resolved (no `--base` flag, no saved baseline artifact, no `merge-base HEAD main`) — set arithmetic is undefined |
 | `NO_INFRA` | `scripts.test` is missing from the workspace's `package.json` — cannot run tests |
 | `RUNNER_BROKEN` | `scripts.test` exists but runner crashed (non-zero exit before any test ran, or zero tests collected and sanity check failed) |
 | `BLOCKED` | Suite ran; test(s) pass for the verified change, but unrelated pre-existing failures remain |
@@ -139,13 +139,31 @@ Do NOT invent a runner. Do NOT substitute `npx vitest`, `npx jest`, or any other
 
 #### 5.2 Run the suite twice — baseline then postfix
 
-**Baseline run (unchanged code):** before touching any files, run the exact `scripts.test` command on the current working tree. Capture:
+**Baseline ref discovery (mandatory).** This skill is invoked AFTER a change has landed; the working tree is already post-change. Running the suite once on the working tree is therefore not a baseline — it's a postfix-only measurement, and any "pre-existing" / "regression" claim from a single run is unprovable. Resolve a baseline ref in this priority order:
+
+1. Explicit `--base <ref>` flag supplied by the caller (e.g. a tag, a commit SHA, or the name of an unmerged branch).
+2. Saved pre-change baseline artifact at `.tl/tasks/{taskCode}/baseline-failures.json` (written by an upstream `nacl-tl-fix` / `nacl-tl-dev` invocation at its `CAPTURE BASELINE` step). If present, use the failure set verbatim and skip the baseline-suite run.
+3. Default: `git merge-base HEAD main` (or the configured `git.main_branch`).
+
+If none of the three resolves to a usable ref (e.g. shallow clone, no `main`, no saved artifact, no flag) → record the suite result as `UNVERIFIED` with reason `no baseline ref resolvable`. Do NOT classify as `BLOCKED` or `REGRESSION` — both require a baseline.
+
+**Baseline run (unchanged code) via worktree.** Create a temporary worktree at the resolved baseline ref:
+
+```
+git worktree add <tempdir> <baseline_ref>
+cd <tempdir> && <scripts.test>
+git worktree remove --force <tempdir>
+```
+
+Capture:
 - Exit code
 - `tests_collected` (number of tests discovered by the runner)
 - Set of failing test names → store as `baseline_failures`
 - stderr output
 
-**Postfix run (after the change is applied):** run the same command again with the changed files in place. Capture:
+The worktree is removed on every exit path (success, halt, error). Do NOT use `git stash` on the active branch — verifier callers may have uncommitted work the operator does not want disturbed.
+
+**Postfix run (current working tree, change already applied):** run the same command on the working tree. Capture:
 - Exit code
 - `tests_collected`
 - Set of failing test names → store as `postfix_failures`
@@ -187,13 +205,14 @@ Then grep test files for any `import` or `require` of the module name(s) being v
 |-----------|-------------|
 | `NO_INFRA` flag set (5.1 or 5.3 empty-file guard) | `NO_INFRA` |
 | `RUNNER_BROKEN` flag set (5.2 or 5.4 precondition) | `RUNNER_BROKEN` |
-| `new_failures.size > 0` | `REGRESSION` — list the failing test names from `new_failures` |
-| `new_failures.size == 0` AND `postfix_failures.size > 0` | `BLOCKED` — list the pre-existing failures from `postfix_failures` |
+| Baseline ref unresolvable (5.2 baseline-ref discovery) AND `postfix_failures.size > 0` | `UNVERIFIED (no baseline)` — list `postfix_failures` but do NOT classify them as pre-existing or new |
+| `new_failures.size > 0` (baseline available) | `REGRESSION` — list the failing test names from `new_failures` |
+| `new_failures.size == 0` AND `postfix_failures.size > 0` (baseline available) | `BLOCKED` — list the pre-existing failures from `postfix_failures` |
 | `postfix_failures.size == 0` AND `coverage_gap = true` | `UNVERIFIED` |
 | `postfix_failures.size == 0` AND `coverage_gap = false` AND no UI changes | `PASS` |
 | `postfix_failures.size == 0` AND `coverage_gap = false` AND UI changes present | `PASS_NEEDS_E2E` |
 
-Note: `BLOCKED` supersedes `UNVERIFIED` when pre-existing failures are present regardless of coverage gap.
+Note: `BLOCKED` supersedes `UNVERIFIED` (coverage-gap variant) when pre-existing failures are present AND a baseline is available. Without a baseline, the result is `UNVERIFIED`, not `BLOCKED` — set arithmetic is undefined when one operand is missing (Cross-cutting principle P3).
 
 ### Step 6: RETURN RESULT
 

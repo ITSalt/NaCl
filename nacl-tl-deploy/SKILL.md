@@ -133,10 +133,10 @@ Detect CI/CD platform from the project:
    | Task status | Deploy action |
    |-------------|--------------|
    | done (PASS) | Proceed with deployment monitoring |
-   | verified-pending (UNVERIFIED) | HALT: "Deploying code from task with UNVERIFIED dev status. No test exercises the change. Confirm deploy? [yes/no] Default: no". If confirmed → continue with DEPLOY HALTED — UNVERIFIED in report if health fails. If not confirmed → DEPLOY HALTED — UNVERIFIED |
-   | blocked | Same gate as UNVERIFIED |
-   | failed / REGRESSION | HALT immediately: DEPLOY HALTED — REGRESSION. Do NOT proceed |
-   | Not found in graph | Warn and proceed (backward-compat) |
+   | verified-pending (UNVERIFIED) | HALT by default: `DEPLOY HALTED — UNVERIFIED (upstream verified-pending)`. Operator override is permitted (explicit "yes" prompt; NOT auto-confirmed by `--yes`). On override → headline `DEPLOY APPLIED — UNVERIFIED (operator override)`; Task.verification_skip_reason = 'deploy operator-override'; the source Task is NOT moved to `done` / `released` (Cross-cutting principle P4). |
+   | blocked | Same gate as UNVERIFIED. On override → `DEPLOY APPLIED — UNVERIFIED (blocked, operator override)`; no source-task state movement. |
+   | failed / REGRESSION | HALT immediately: `DEPLOY HALTED — REGRESSION`. Do NOT proceed |
+   | Not found in graph | HALT unconditionally: `DEPLOY HALTED — UNVERIFIED (upstream status unknown)`. The previous "Warn and proceed (backward-compat)" path is removed. The operator must populate the Task node (via the appropriate dev / fix / verify skill) and re-run; there is no override that promotes unknown to verified. |
 
 1. Read `config.yaml → deploy` for target environment config
 2. Check CI/CD pipeline status:

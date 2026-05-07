@@ -10,6 +10,169 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - **NaCl Analyst Tool** (`analyst-tool/`) -- local web application that wraps Excalidraw with a full board browser, sync-status sidebar, snapshot browser with diff overlay, and unified board + graph search.
 
+## [0.15.0] — 2026-05-07
+
+Bundled release closing the dev `--continue` paths, the verifier and sync
+baseline procedures, the review runner discovery, and the wave / intake /
+deploy stamping. After 0.14.0 the five orchestration paths to `main` /
+deploy / delivery / release honoured the six-status output. 0.15.0 closes
+the layer in between: every implementation and quality gate now consumes or
+emits the same six-status contract with exact runner discovery and explicit
+baseline evidence. Dev `--continue` no longer self-grades; it delegates to
+`/nacl-tl-fix` with a new `--from-review` metadata flag.
+
+Five cross-cutting principles thread through the affected skills:
+1. `Status: {value}` is the only authoritative classifier (headlines are
+   advisory).
+2. Declared workspace commands only — no `npm test` / `npm run build` /
+   `npx tsc` fallbacks.
+3. Baseline before any "pre-existing" / "regression" / "new failures"
+   claim.
+4. Skip ⇒ unverified, never PASS.
+5. No autonomous branch switching.
+
+### Added
+
+- `nacl-tl-fix`: `--from-review` flag (metadata-only). When set, the Step 8
+  report adds `Invocation source: review (--from-review)` under the Problem
+  line, and the `.tl/changelog` entry records `- **Invocation source:**
+  review`. The six-status contract, baseline procedure, and RED-first
+  discipline are unchanged. The flag exists so the dev trio can prove its
+  review-rework path delegated to the hardened fix contract.
+- `nacl-tl-dev`, `nacl-tl-dev-be`, `nacl-tl-dev-fe`: explicit `--continue`
+  delegation block. The dev skill reads `review-{be,fe}.md` (or
+  `review.md` for TECH), parses Blocker / Critical / Major issues into a
+  problem description, invokes `/nacl-tl-fix "<problem>" --uc UC###
+  --from-review` as a sub-agent, parses the fix report's `Status:` line,
+  verifies the regression-test seam (`Tests > Regression test` path +
+  `Tests > RED→GREEN` evidence), appends a `## Fix Iteration N` block to
+  `result-{be,fe}.md`, and gates `phases.{be,fe}.status =
+  "ready_for_review"` on `Status: PASS` (or operator-gated accepted-
+  `BLOCKED`). Status-aware `--continue Output Summary` in every dev skill.
+- `nacl-tl-verify-code` Step 5.2: baseline-ref discovery (priority:
+  `--base <ref>` flag → saved `.tl/tasks/<id>/baseline-failures.json`
+  artifact → `git merge-base HEAD main`). Baseline run uses
+  `git worktree add` to a temp dir; worktree removed on every exit path.
+  New `UNVERIFIED (no baseline)` row in the Step 5.4 classification
+  table.
+- `nacl-tl-sync` Step 7.2: per-workspace baseline capture via
+  `git worktree add`. New per-workspace deltas: `be_new_failures`,
+  `be_pre_existing`, `fe_new_failures`, `fe_pre_existing`. New
+  `UNVERIFIED (no baseline)` classification rule for workspaces without a
+  resolvable baseline.
+- `nacl-tl-review` Step 6a-baseline: explicit baseline-ref discovery
+  (mirroring `nacl-tl-verify-code` and `nacl-tl-sync`). New
+  "`APPROVED` allowed?" column in the Step 8b headline table; explicit
+  `APPROVED`-promotion rule documenting that `Code judgment: APPROVED`
+  may only be written when the headline is `REVIEW COMPLETE`.
+- `nacl-tl-reopened` Batch mode sub-agent prompt: now includes the full
+  six-status contract — Step 7.5 status-line parsing, Step 7.5.1
+  regression-test-seam evidence gate (`Tests > Regression test` path +
+  `Tests > RED→GREEN` evidence required for any status other than
+  `NO_INFRA` / `RUNNER_BROKEN`), and per-status branching that prevents
+  `/nacl-tl-review`, `/nacl-tl-stubs`, and `/nacl-tl-ship` from running
+  on non-PASS outcomes.
+- `nacl-tl-full` `--skip-qa`: explicit P4 semantics. Sets
+  `phase_qa = 'skipped'`, `Task.verification_skip_reason =
+  'full --skip-qa'`. Forces wave aggregate headline
+  `FULL APPLIED — UNVERIFIED (qa skipped)`. Forbids downstream stamping;
+  UCs that completed every other phase land at `verified-pending`,
+  not `done`. Records `run.skip_flags = ['qa']` in `status.json`.
+- `nacl-tl-intake`: `Fix Status` and `State` columns in the final
+  summary table. Headline-selection rules surface non-PASS bug atoms in
+  the headline (`INTAKE TRIAGE INCOMPLETE — REGRESSION`,
+  `INTAKE TRIAGE HALTED — RUNNER_BROKEN`,
+  `INTAKE TRIAGE APPLIED — UNVERIFIED (NO_INFRA: N atoms unfinished)`,
+  etc.). Progress rows surface the verbatim downstream `Status:` value
+  per atom.
+
+### Changed
+
+- `nacl-tl-dev-fe` Step 3.3: silence-on-regressions is no longer
+  treated as no-regression. The previous "if the agent's report is
+  silent on regressions, trust the agent's RED confirmation" rule is
+  replaced with: silence is `UNVERIFIED`; require an explicit
+  no-regression line in the sub-agent's report (e.g. `Regressions:
+  none introduced (postfix ⊆ baseline)`) before advancing.
+- `nacl-tl-dev`, `nacl-tl-dev-be`, `nacl-tl-dev-fe` Step 7 (Update
+  Tracking): explicit status-gating table. `phases.{be,fe}.status =
+  "ready_for_review"` only for `Status: PASS` (or operator-gated
+  accepted-`BLOCKED`); every other status keeps the phase in
+  `in_progress` with `failure_reason` recorded.
+- `nacl-tl-reopened`: `modules.[name].test_cmd` and
+  `modules.[name].build_cmd` config keys read declared workspace
+  `package.json` `scripts.{test,build}` only (P2). The previous
+  `fallback npm test` / `fallback npm run build` clauses are removed.
+  Missing → `REOPENED HALTED — NO_INFRA (scripts.test undeclared)`.
+- `nacl-tl-reopened` Step 8 re-run gate: missing `scripts.test` halts
+  as `REOPENED HALTED — NO_INFRA`. The "proceed to review with a
+  warning" path is removed.
+- `nacl-tl-reopened` final report: `Status: DevDone ✅` is gated on
+  the headline `REOPENED COMPLETE` (i.e. fix `Status: PASS` AND
+  re-run suite green AND review approved). Every other outcome
+  renders `REOPENED APPLIED — <STATUS>` or `REOPENED HALTED —
+  <STATUS>` and leaves the YouGile column at InWork (or the matching
+  halt state).
+- `nacl-tl-verify-code` Step 5.2: the previous "before touching any
+  files, run the exact `scripts.test` command on the current working
+  tree" baseline rule is replaced with `git worktree add` against a
+  resolved baseline ref. The working tree is treated exclusively as
+  the postfix.
+- `nacl-tl-sync` Step 7.4 classifier: the contradictory rule "Both
+  suites pass AND pre-existing failures remain → `BLOCKED`" is
+  removed. `BLOCKED` is now reserved for "at least one workspace has
+  failures, all of which are baseline-confirmed pre-existing
+  (`postfix ⊆ baseline`) AND no new failures in either workspace".
+- `nacl-tl-review` Step 6a: declared `scripts.test` only — no
+  `npm test` / `npx jest` / `npx vitest` fallbacks (P2). Missing →
+  `REVIEW HALTED — NO_INFRA`; runner crash → `REVIEW HALTED —
+  RUNNER_BROKEN`. `Code judgment: APPROVED` is forbidden under both
+  halt headlines.
+- `nacl-tl-full` Phase 1 Wave 0 TECH flow: reads `/nacl-tl-dev
+  TECH-###`'s `Status:` line before advancing. Mirrors the BE/FE
+  branching at Phase 2. The previous unconditional advancement to
+  review/commit is replaced with explicit per-status branching.
+- `nacl-tl-deploy` upstream gate: `verified-pending` halts by
+  default as `DEPLOY HALTED — UNVERIFIED (upstream verified-pending)`;
+  operator override emits `DEPLOY APPLIED — UNVERIFIED (operator
+  override)` and refuses to move the source Task to `done`/`released`.
+  Unknown verification state ("Not found in graph") halts
+  unconditionally as `DEPLOY HALTED — UNVERIFIED (upstream status
+  unknown)`. The "warn and proceed (backward-compat)" path is removed.
+- `nacl-tl-intake`: progress and final-summary rows surface the
+  verbatim downstream `Status:` value. Bug atoms with non-PASS
+  downstream status appear as `unfinished`, not `fixed`. Final state
+  movement (`Done`, `Delivered`) requires PASS-family downstream
+  status.
+
+### Removed
+
+- `nacl-tl-dev`, `nacl-tl-dev-be`, `nacl-tl-dev-fe`: the inline
+  `--continue` "fix the issue, run tests to verify fix" loop.
+  Replaced with delegation to `/nacl-tl-fix --from-review`.
+- `nacl-tl-dev-fe` Step 3.3: "if the agent's report is silent on
+  regressions, trust the agent's RED confirmation" — replaced with
+  explicit no-regression-evidence requirement.
+- `nacl-tl-reopened`: `fallback npm test` / `fallback npm run build`
+  configuration clauses.
+- `nacl-tl-reopened` Step 8 re-run gate: "proceed to review with a
+  warning" on missing `scripts.test`.
+- `nacl-tl-verify-code` Step 5.2: single-run "current working tree"
+  baseline measurement.
+- `nacl-tl-sync` Step 7.4: contradictory "Both suites pass AND
+  pre-existing failures remain → `BLOCKED`" rule.
+- `nacl-tl-review` Step 6a: `npm test (or workspace's scripts.test)`
+  fallback; ability to promote to `APPROVED` under `NO_INFRA` /
+  `RUNNER_BROKEN`.
+- `nacl-tl-full` `--skip-qa`: `phase_qa = 'pending'` semantics.
+- `nacl-tl-full` graph-write-failure handler: "continuing with
+  status.json only" path.
+- `nacl-tl-deploy` upstream gate: "Not found in graph | Warn and
+  proceed" backward-compat path.
+- `nacl-tl-intake`: progress / final-summary rows that collapsed
+  every bug atom to "fixed" regardless of the downstream `Status:`
+  value.
+
 ## [0.14.0] — 2026-05-07
 
 Bundled release closing the five orchestration paths that could still move

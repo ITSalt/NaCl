@@ -479,11 +479,23 @@ For each wave:
 
 #### Between items: Progress report
 
-After each skill completes, report to user:
+After each skill completes, report to user. **Bug rows surface the downstream `nacl-tl-fix` six-status result verbatim** — do not collapse non-PASS statuses to "fixed":
 
 ```
-[1/3] Done: Bug 1 "Share button" -- fixed
-       Fix applied to UC-012
+[1/3] PASS: Bug 1 "Share button" -- fixed (Fix Status: PASS)
+       Fix applied to UC-012; regression test transitioned RED→GREEN
+
+[1/3] UNVERIFIED: Bug 1 "Share button" -- fix applied, no regression test (Fix Status: UNVERIFIED)
+       Fix applied to UC-012; coverage gap — no test exercises the change
+
+[1/3] NO_INFRA: Bug 1 "Share button" -- fix applied, NO_INFRA (Fix Status: NO_INFRA)
+       Fix applied to UC-012; workspace declares no scripts.test
+
+[1/3] RUNNER_BROKEN: Bug 1 "Share button" -- fix applied, RUNNER_BROKEN (Fix Status: RUNNER_BROKEN)
+       Fix applied to UC-012; runner crashed; do NOT mark intake atom as fixed
+
+[1/3] REGRESSION: Bug 1 "Share button" -- fix INCOMPLETE (Fix Status: REGRESSION)
+       New failures introduced; return to /nacl-tl-fix Step 6f
 
 [2/3] Done: Feature 1 "Generation Controls" -- specified
        Created: FR-003, 4 new UCs (UC-030..033)
@@ -491,34 +503,50 @@ After each skill completes, report to user:
 [3/3] Working on Feature 2 "Image Editing"...
 ```
 
+The row's leading status word is the verbatim `Status: <value>` from the `/nacl-tl-fix` Step 8 report. Headlines are advisory only; the `Status:` line is authoritative (Cross-cutting principle P1).
+
 #### After all items: Final summary
 
-Choose the headline based on classification method used:
-- All atoms graph-backed (evidence: GRAPH): `INTAKE TRIAGE COMPLETE (graph-backed)`
-- Any atom heuristic-backed (evidence: HEURISTIC) OR any USER_OVERRIDE: `INTAKE TRIAGE APPLIED — UNVERIFIED (heuristic-backed)`
+The headline rolls up both the classification method AND the downstream fix status for every bug atom. **Final state movement** (`Done`, `Delivered`, etc.) requires PASS-family downstream status; otherwise the atom is reported as `unfinished` with the specific status, and the headline degrades to `INTAKE TRIAGE APPLIED — UNVERIFIED` (or worse) regardless of classification evidence.
+
+Headline selection rules (first match wins):
+- Any bug atom resolved with `Status: REGRESSION` ⇒ `INTAKE TRIAGE INCOMPLETE — REGRESSION (N atoms unfinished)`
+- Any bug atom resolved with `Status: RUNNER_BROKEN` ⇒ `INTAKE TRIAGE HALTED — RUNNER_BROKEN (N atoms unfinished)`
+- Any bug atom resolved with `Status: NO_INFRA` ⇒ `INTAKE TRIAGE APPLIED — UNVERIFIED (NO_INFRA: N atoms unfinished)`
+- Any bug atom resolved with `Status: UNVERIFIED` ⇒ `INTAKE TRIAGE APPLIED — UNVERIFIED (no regression test: N atoms unfinished)`
+- Any bug atom resolved with `Status: BLOCKED` (no operator accept) ⇒ `INTAKE TRIAGE APPLIED — UNVERIFIED (BLOCKED: N atoms unfinished)`
+- All bug atoms `Status: PASS` AND any atom heuristic-backed OR any USER_OVERRIDE ⇒ `INTAKE TRIAGE APPLIED — UNVERIFIED (heuristic-backed)`
+- All bug atoms `Status: PASS` AND all atoms graph-backed ⇒ `INTAKE TRIAGE COMPLETE (graph-backed)`
 
 ```
 ===============================================
-  INTAKE TRIAGE COMPLETE (graph-backed)
-  -- OR --
-  INTAKE TRIAGE APPLIED — UNVERIFIED (heuristic-backed)
+  <HEADLINE per rules above>
 ===============================================
 
 Processed: 6 requests -> 2 features, 1 bug, 0 tasks
 Classification method: [Neo4j graph | keyword-fallback (Neo4j unavailable)]
+Atoms unfinished (non-PASS downstream): N
 
-+------+------------------------------------+---------+----------+
-| Atom | Title                              | Type    | Evidence |
-+------+------------------------------------+---------+----------+
-| #1   | Image format selection             | FEATURE | GRAPH    |
-| #2   | Share button doesn't work          | BUG     | GRAPH    |
-| #3   | Update deploy docs                 | TASK    | HEURISTIC|
-+------+------------------------------------+---------+----------+
++------+------------------------------------+---------+----------+--------------------+----------+
+| Atom | Title                              | Type    | Evidence | Fix Status         | State    |
++------+------------------------------------+---------+----------+--------------------+----------+
+| #1   | Image format selection             | FEATURE | GRAPH    | n/a                | spec'd   |
+| #2   | Share button doesn't work          | BUG     | GRAPH    | PASS               | fixed    |
+| #3   | Login crash (UC-012)               | BUG     | GRAPH    | UNVERIFIED         | unfinished|
+| #4   | Update deploy docs                 | TASK    | HEURISTIC| n/a                | spec'd   |
++------+------------------------------------+---------+----------+--------------------+----------+
 
-Bug 1: "Share button broken on mobile" -- fixed
+Bug 1: "Share button broken on mobile" -- Fix Status: PASS  ✓ fixed
   Matched UC-012 "Share Content" (detailed)
   Evidence: GRAPH
-  Fix applied via /nacl-tl-fix
+  Fix Status: PASS (regression test path: tests/share/mobile.test.ts; RED→GREEN confirmed)
+  State: fixed (eligible for delivery)
+
+Bug 2 (example UNVERIFIED): "Login crash" -- Fix Status: UNVERIFIED  ✗ unfinished
+  Matched UC-012 "Login" (detailed)
+  Evidence: GRAPH
+  Fix Status: UNVERIFIED (no test exercises the change)
+  State: unfinished — not eligible for delivery; operator must add a regression test or accept gap
 
 Feature 1: "Generation Controls" -- FR-003
   4 UCs specified (UC-030, UC-031, UC-032, UC-033)
@@ -542,6 +570,12 @@ Next steps:
     /nacl-tl-plan --feature FR-003
     /nacl-tl-full --feature FR-003
     /nacl-tl-deliver --feature FR-003
+
+  For unfinished bug atoms:
+    UNVERIFIED  → /nacl-tl-regression-test "<bug description>" then /nacl-tl-fix
+    NO_INFRA    → /nacl-tl-dev TECH-### "set up test runner for [workspace]"
+    RUNNER_BROKEN → /nacl-tl-diagnose
+    REGRESSION  → return to /nacl-tl-fix Step 6f
 ===============================================
 ```
 

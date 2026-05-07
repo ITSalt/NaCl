@@ -253,20 +253,45 @@ Verify commits follow the pattern:
 
 ### Step 6: Run Tests and Check Author Independence
 
-#### 6a. Run the test suite
+#### 6a. Run the test suite (declared scripts.test only)
 
-Execute `npm test` (or the workspace's `scripts.test`). Capture:
+Execute the workspace's declared `scripts.test`. Do NOT fall back to `npm test`, `npx jest`, `npx vitest`, or any other invented command (Cross-cutting principle P2). The runner is exactly what the workspace declares.
+
+If `scripts.test` is missing → halt as `REVIEW HALTED — NO_INFRA (scripts.test undeclared)`. Do NOT promote the verdict to `APPROVED`; do NOT proceed to Step 8 verdict assignment with a PASS-family headline. Operator override is permitted but the headline becomes `REVIEW APPLIED — UNVERIFIED (no test infra)` and the verdict cannot be `APPROVED`.
+
+If the runner crashes (non-zero exit before any test runs, or stderr non-empty with empty stdout) → halt as `REVIEW HALTED — RUNNER_BROKEN`. Same `APPROVED`-prohibition applies.
+
+For the runs that produce output, capture:
 - Pass/fail counts
 - Coverage percentage
 - Any flaky test indicators
 
+##### 6a-baseline. Baseline capture for "new failures" claims
+
+This skill runs after a change has landed, so a single working-tree run is postfix-only. Any "tests revealed new failures" claim requires an explicit baseline (Cross-cutting principle P3).
+
+Resolve a baseline ref in priority order:
+1. `--base <ref>` flag passed to this skill.
+2. Saved baseline artifact `.tl/tasks/UC###/baseline-failures-{be,fe}.json` written by the upstream dev skill at its CAPTURE BASELINE step.
+3. Default: `git merge-base HEAD main` (or the configured `git.main_branch`).
+
+Run the baseline using `git worktree add` (mirroring `nacl-tl-sync` Step 7.2):
+
+```
+git worktree add <tempdir> <baseline_ref>
+cd <tempdir> && <scripts.test>
+git worktree remove --force <tempdir>
+```
+
+Capture `baseline_failures` and compute `new_failures = postfix_failures − baseline_failures`. The worktree is removed on every exit path.
+
+If no baseline ref resolves → record `UNVERIFIED (no baseline)` for the workspace. Do NOT classify any failure as "new" or "pre-existing" — set arithmetic is undefined when one operand is missing.
+
 Verify:
-- All tests pass
+- All tests pass (via postfix run)
 - Coverage meets thresholds (80%+ recommended)
 - No flaky tests
-
-If `scripts.test` is missing → record `NO_INFRA`; proceed to review but flag in report.
-If runner crashes → record `RUNNER_BROKEN`; proceed to review but flag in report.
+- "New failures" claim is set-arithmetic-derived, not authored from the postfix run alone
 
 #### 6b. Test Author Independence Check
 
@@ -325,15 +350,20 @@ Categorize by severity: **Blocker** (must fix), **Critical** (should fix), **Maj
 
 The headline is independent of the APPROVED / CHANGES REQUESTED verdict. It reflects the completeness of the verification, not the quality judgment.
 
-| Condition | Headline |
-|-----------|----------|
-| Tests ran AND passed AND no warnings above threshold | `REVIEW COMPLETE` |
-| Tests ran AND passed AND test author independence flag (MAJOR) | `REVIEW APPLIED — UNVERIFIED` |
-| Tests ran AND passed AND no test imports the changed file(s) | `REVIEW APPLIED — UNVERIFIED` |
-| `scripts.test` missing | `REVIEW APPLIED — NO_INFRA` |
-| Runner crashed | `REVIEW APPLIED — RUNNER_BROKEN` |
-| Tests revealed new failures | `REVIEW INCOMPLETE — REGRESSION` |
-| Review blocked (CRITICAL stubs, or prerequisite unmet) | `REVIEW APPLIED — BLOCKED` |
+| Condition | Headline | `APPROVED` allowed? |
+|-----------|----------|---------------------|
+| Tests ran AND passed AND no warnings above threshold AND baseline resolved AND `new_failures.size == 0` | `REVIEW COMPLETE` | yes |
+| Tests ran AND passed AND test author independence flag (MAJOR) | `REVIEW APPLIED — UNVERIFIED` | no |
+| Tests ran AND passed AND no test imports the changed file(s) | `REVIEW APPLIED — UNVERIFIED` | no |
+| Tests ran AND postfix has failures BUT baseline could not be resolved | `REVIEW APPLIED — UNVERIFIED (no baseline)` | no |
+| `scripts.test` missing | `REVIEW HALTED — NO_INFRA` | no — `APPROVED` forbidden |
+| Runner crashed | `REVIEW HALTED — RUNNER_BROKEN` | no — `APPROVED` forbidden |
+| Operator override under NO_INFRA / RUNNER_BROKEN | `REVIEW APPLIED — UNVERIFIED (no test infra)` | no |
+| `new_failures.size > 0` (baseline resolved) | `REVIEW INCOMPLETE — REGRESSION` | no |
+| `postfix_failures ⊆ baseline_failures` AND `postfix_failures.size > 0` (baseline resolved) | `REVIEW APPLIED — BLOCKED` (pre-existing failures) | operator-gated |
+| Review blocked (CRITICAL stubs, or prerequisite unmet) | `REVIEW APPLIED — BLOCKED` | no |
+
+**`APPROVED` promotion rule (P4):** the verdict line `Code judgment: APPROVED` may only be written when the headline is `REVIEW COMPLETE`. Any other headline forbids `APPROVED`; the verdict line MUST be `Code judgment: CHANGES REQUESTED` (or `Code judgment: BLOCKED`). The previous "proceed to review but flag in report" loophole is removed.
 
 Both the headline and the APPROVED / CHANGES REQUESTED verdict appear in the review artifact as a **single combined status line** in this format:
 
