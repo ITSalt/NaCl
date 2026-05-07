@@ -6,6 +6,7 @@ import { classifyBoard, type BoardKind } from './board-classifier.js';
 import { readMeta, writeMeta, computeBoardHash, type BoardMeta } from './meta.js';
 import { markSelfWrite } from './self-writes.js';
 import { repairArrowBindings } from './excalidraw-bindings.js';
+import { getDriverAsync } from './neo4j.js';
 
 export { BoardKind };
 
@@ -25,6 +26,7 @@ export type BoardListItem = {
   lastGeneratedAt: string | null;
   lastSyncedAt: string | null;
   hasUnsyncedEdits: boolean;
+  label: string | null;
 };
 
 export type ExcalidrawScene = {
@@ -53,6 +55,48 @@ function computeSyncStatus(meta: BoardMeta, unsyncedEdits: boolean): SyncStatus 
   if (meta.lastSyncedAt === null) return 'never-synced';
   if (unsyncedEdits) return 'dirty';
   return 'synced';
+}
+
+async function resolveLabels(items: BoardListItem[]): Promise<Map<string, string | null>> {
+  const ucIds = items
+    .filter((b) => b.kind === 'activity' && b.relatedId !== null)
+    .map((b) => b.relatedId as string);
+  const bpIds = items
+    .filter((b) => b.kind === 'process' && b.relatedId !== null)
+    .map((b) => b.relatedId as string);
+
+  const labels = new Map<string, string | null>();
+  if (ucIds.length === 0 && bpIds.length === 0) return labels;
+
+  try {
+    const driver = await getDriverAsync(getConfig().repoRoot);
+    const session = driver.session();
+    try {
+      if (ucIds.length > 0) {
+        const r = await session.run(
+          'UNWIND $ucIds AS ucId MATCH (uc:UseCase {id: ucId}) RETURN uc.id AS id, uc.name AS name',
+          { ucIds },
+        );
+        for (const rec of r.records) {
+          labels.set(rec.get('id') as string, (rec.get('name') as string) ?? null);
+        }
+      }
+      if (bpIds.length > 0) {
+        const r = await session.run(
+          'UNWIND $bpIds AS bpId MATCH (bp:BusinessProcess {id: bpId}) RETURN bp.id AS id, bp.name AS name',
+          { bpIds },
+        );
+        for (const rec of r.records) {
+          labels.set(rec.get('id') as string, (rec.get('name') as string) ?? null);
+        }
+      }
+    } finally {
+      await session.close();
+    }
+  } catch {
+    // Neo4j unreachable — labels stay empty; caller will default to null.
+  }
+  return labels;
 }
 
 export async function listBoards(): Promise<BoardListItem[]> {
@@ -111,7 +155,13 @@ export async function listBoards(): Promise<BoardListItem[]> {
       lastGeneratedAt: meta.lastGeneratedAt,
       lastSyncedAt: meta.lastSyncedAt,
       hasUnsyncedEdits: unsyncedEdits,
+      label: null,
     });
+  }
+
+  const labels = await resolveLabels(results);
+  for (const item of results) {
+    item.label = item.relatedId !== null ? (labels.get(item.relatedId) ?? null) : null;
   }
 
   return results;
