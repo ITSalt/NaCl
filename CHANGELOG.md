@@ -10,6 +10,77 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - **NaCl Analyst Tool** (`analyst-tool/`) -- local web application that wraps Excalidraw with a full board browser, sync-status sidebar, snapshot browser with diff overlay, and unified board + graph search.
 
+## [0.13.1] — 2026-05-07
+
+Patch release. Closes the eight low- and medium-severity findings from the
+post-0.13.0 audit. No new contracts, no new flags, no parser changes — only
+stops a handful of skills from reporting partial, skipped, or inferred work
+as if it were complete, and removes invented `npm`/`tsc` fallbacks that
+bypassed declared workspace scripts.
+
+### Changed
+
+**Reporting hygiene:**
+- `nacl-tl-docs`: Steps 9 / 10 / 11 reordered so verification runs before
+  "Mark Task as Done". Link checker now scans every modified markdown file
+  (collected via `git diff --name-only`) and resolves links source-file-
+  relative, not repo-root-relative. Code-syntax check uses the workspace's
+  declared `scripts.typecheck` (or closest declared equivalent) instead of
+  invented `npx tsc`. `DONE (with acknowledged gaps)` is reserved for
+  coverage gaps only — broken links and code-syntax errors emit
+  `DOCS INCOMPLETE` and the task is not marked done.
+- `nacl-tl-qa`: Output Summary first line is now status-aware
+  (`QA COMPLETE` / `QA APPLIED — UNVERIFIED` / `QA HALTED — NO_INFRA` /
+  `QA INCOMPLETE — REGRESSION`); the legacy `E2E QA Testing Complete`
+  happy-path header is removed.
+- `nacl-tl-plan`: planning status contract added — `PLAN COMPLETE` /
+  `PLAN APPLIED — PARTIAL (incomplete SA inputs)` /
+  `PLAN HALTED — NO_SA_DATA`. The "create task files with available
+  information" path is now explicit PARTIAL with missing SA inputs listed
+  in the report and recorded under `partial_inputs` in `status.json`.
+- `nacl-tl-status`: health indicators surface `verified-pending`,
+  `NO_INFRA`, `RUNNER_BROKEN`, `REGRESSION` on dedicated rows; new
+  mandatory "Per-Status Counts" section renders one row per six-status
+  value, including zero counts.
+- `nacl-tl-next`: Priority 0 (`/nacl-tl-deliver`) recommendation now
+  requires every relevant Task to be `done` AND PASS-family.
+  `verified-pending`, `blocked`, `UNVERIFIED`, `NO_INFRA`, `RUNNER_BROKEN`,
+  and `REGRESSION` produce a prominent `[!! UNVERIFIED DELIVERY — NOT
+  RECOMMENDED]` warning block instead of a normal recommendation.
+- `nacl-tl-stubs`: `phases.stubs` in `status.json` aligns one-to-one with
+  the headline vocabulary. `done` only when `STUBS COMPLETE` (triple
+  condition); `unverified` for warnings or no-test-files-scanned;
+  `regression` for empty-test-files exceeding 50%; `blocked` for
+  critical/orphaned/runner-broken. Mapping table in Step 8 documents every
+  headline → `phases.stubs` value → six-status equivalent.
+
+**Declared-command discipline (P2):**
+- `nacl-tl-diagnose`: Agent 3 (Code Health) reads
+  `package.json.scripts.{build,test,typecheck}` (or closest declared
+  equivalents) and refuses to fall back to `npm run build`, `npm test`,
+  `npx tsc --noEmit`, or `npm audit`. Missing declared command emits
+  `<component>: NO_INFRA (scripts.<name> undeclared)` for that
+  sub-project; runner crash before any task runs emits `RUNNER_BROKEN`.
+- `nacl-tl-reconcile`: Phase 4.4 build/test validation reads declared
+  scripts only. Missing declared command records `NO_INFRA` for that
+  component in the Phase 5 `validation-result` column. `--force` scope
+  is now strictly limited to per-task confirmation prompts (user gate
+  + Phase 3 per-discrepancy prompts); the unverified-upstream
+  acknowledgment gate remains separate and unconditional.
+
+### Removed
+
+- Legacy `E2E QA Testing Complete` happy-path header in `nacl-tl-qa`.
+- Hardcoded `npm run build` / `npm test` / `npx tsc --noEmit` / `npm audit`
+  fallbacks in `nacl-tl-diagnose` Agent 3.
+- Hardcoded `npm run build` / `npm test` in `nacl-tl-reconcile` Phase 4.4.
+- `phases.stubs` binary collapse (`"blocked" if critical > 0, "done"
+  otherwise`) in `nacl-tl-stubs` Step 8.
+- Single happy-path `Development Plan Created` header in `nacl-tl-plan`.
+- Generic `[OK]` / `[BLOCKED]` collapse for `verified-pending` /
+  `NO_INFRA` / `RUNNER_BROKEN` / `REGRESSION` in `nacl-tl-status` health
+  indicators.
+
 ## [0.13.0] — 2026-05-07
 
 Single bundled release: honest reporting threaded through the remaining 22
