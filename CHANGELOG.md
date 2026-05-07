@@ -10,6 +10,134 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - **NaCl Analyst Tool** (`analyst-tool/`) -- local web application that wraps Excalidraw with a full board browser, sync-status sidebar, snapshot browser with diff overlay, and unified board + graph search.
 
+## [0.14.0] — 2026-05-07
+
+Bundled release closing the five orchestration paths that could still move
+unverified or unknown-status work toward `main`, deployment, delivery, or
+release. After 0.13.0 every leaf skill produced honest six-status output;
+0.14.0 makes the orchestrators that consume that output consistently honour
+it.
+
+Five cross-cutting principles thread through the affected skills:
+1. `Status: {value}` is the only authoritative classifier (headlines are
+   advisory).
+2. Declared workspace commands only — no `npm test` / `npm run build`
+   fallbacks.
+3. Baseline before any "pre-existing" / "regression" claim.
+4. Skip ⇒ unverified, never PASS.
+5. Ship never switches branches.
+
+### Added
+
+- `nacl-tl-hotfix`: Step 4.0 captures a `main`-branch baseline via
+  `git worktree add`; Step 4.2 computes
+  `new_failures = postfix − baseline`,
+  `pre_existing = postfix ∩ baseline`,
+  `transitioned = baseline − postfix` and only classifies as `BLOCKED`
+  (pre-existing) when set membership confirms it. The worktree is
+  removed on every exit path (Step 7 RESTORE and Cleanup on Failure).
+  PR body and Step 9 report gain a baseline-vs-postfix table.
+- `nacl-tl-hotfix`: `modules.[name].test_filter_flag` config knob;
+  Step 4.1 uses the declared filter or runs the full declared test
+  command (no synthetic `--test-name-pattern`).
+- `nacl-tl-deliver`: explicit `--skip-verify` semantics (P4 — skip ⇒
+  unverified, never PASS). Headline forced to `DELIVER APPLIED —
+  UNVERIFIED (skipped: --skip-verify)`; IntakeItem stamping refused;
+  `Task.verification_skip_reason` written to graph; skip recorded in
+  `delivery-status.json` and report.
+- `nacl-tl-deliver`: operator health-failure override path (Step 5 →
+  3a) — emits `DELIVER APPLIED — UNVERIFIED (health failed, operator
+  override)`, refuses IntakeItem stamping, writes
+  `Task.verification_skip_reason`.
+- `nacl-tl-ship`: status-aware deploy headlines —
+  `SHIP COMPLETE — DEPLOYED (direct)` (PASS),
+  `SHIP APPLIED — UNVERIFIED (auto-deploy refused)` (operator-confirmed
+  unverified ship), and a full `Headline selection` block enumerating
+  every halt / applied / incomplete variant.
+- `nacl-tl-release`: production health-failure operator override path
+  (Step 3b) — emits `RELEASE INCOMPLETE — UNVERIFIED (production
+  health failed, operator override)` and appends a changelog
+  annotation blockquote under the version heading.
+- `nacl-tl-release`: "Excluded from this release artifact (no
+  IntakeItem stamped)" section in the final report listing UCs whose
+  IntakeItems were excluded for non-PASS upstream status.
+- `nacl-tl-conductor`: Status-line-based parser for `nacl-tl-full` and
+  `nacl-tl-fix` reports (UC and BUG loops). Reports without a parseable
+  `Status:` line halt with `CONDUCTOR HALTED — UNVERIFIED (downstream
+  report unparseable: <id>)`.
+
+### Changed
+
+- `nacl-tl-hotfix`: build/test commands read declared workspace
+  `scripts.{build,test}` only — no `npm run build` / `npm test`
+  fallbacks (P2). Missing → `HOTFIX HALTED — NO_INFRA`.
+- `nacl-tl-hotfix`: Step 6 PR + auto-merge gate. PASS → `gh pr merge
+  --auto` enabled; non-PASS operator override → auto-merge skipped,
+  PR annotated `HOTFIX APPLIED — UNVERIFIED`, operator runs the merge
+  manually.
+- `nacl-tl-conductor`: TECH path commit gate (Wave 0 sub-loop) reads
+  the dev report's `Status:` line. Review approval no longer upgrades
+  unverified dev work — `Status: PASS` is required to commit; non-PASS
+  branches the same way the UC loop does.
+- `nacl-tl-conductor`: UC and BUG loops parse `Status: {value}`
+  (P1) — headlines are advisory only. Status-line and headline
+  contradictions are surfaced in Phase 6.
+- `nacl-tl-deliver`: build/test commands read declared workspace
+  `scripts.{build,test}` only (P2). Missing → `DELIVER HALTED —
+  NO_INFRA`.
+- `nacl-tl-deliver`: failed health check (Step 5) halts by default
+  as `DELIVER HALTED — UNVERIFIED (health failed)`. The previous
+  "report as unhealthy but don't fail delivery" behaviour is removed.
+- `nacl-tl-ship`: unknown upstream status (no `status.json` AND no
+  Task node) halts as `SHIP HALTED — UNVERIFIED (upstream status
+  unknown)`. The "warn and proceed" path is removed.
+- `nacl-tl-ship`: operator-confirmed unverified ship (UNVERIFIED or
+  BLOCKED, explicit "yes" not auto-confirmed by `--yes`) sets headline
+  `SHIP APPLIED — UNVERIFIED`; auto-deploy via `--deploy` is refused
+  under non-PASS upstream — operator runs `/nacl-tl-deploy` separately.
+- `nacl-tl-ship`: documentation reaffirms "ship never switches
+  branches autonomously" (P5) explicitly under the Step 1.0 status
+  table.
+- `nacl-tl-release`: UC status gate in Step 2 runs in every mode —
+  `--skip-merge` and `git.strategy == "direct"` no longer skip Steps
+  1–3. The skip flag changes which artifacts are produced, not whether
+  the gate runs. In skip-merge mode the gate runs over UCs derived
+  from commits-since-last-tag.
+- `nacl-tl-release`: Step 3b production health failure halts by
+  default as `RELEASE HALTED — UNVERIFIED (production health failed)`;
+  the tag is NOT pushed. Operator override permitted (see Added).
+- `nacl-tl-release`: Step 7 IntakeItem stamping is strictly gated on
+  PASS. UNVERIFIED, BLOCKED, REGRESSION UCs are excluded from the
+  release artifact — NOT stamped with a release version, NOT stamped
+  with a "release note instead". The previous "stamp with a note"
+  path is removed.
+
+### Removed
+
+- `nacl-tl-hotfix`: `npm run build` and `npm test` fallback rows in
+  Configuration Resolution.
+- `nacl-tl-hotfix`: synthetic `[test_cmd] --test-name-pattern "[test
+  name]"` runner-flag heuristic in Step 4 regression-test execution.
+- `nacl-tl-hotfix`: "If the failure appears unrelated... Warn but allow
+  user to proceed" pre-existing-failure escape hatch.
+- `nacl-tl-conductor`: headline-based parsing of `nacl-tl-full` and
+  `nacl-tl-fix` reports. Headline-to-status mapping table replaced
+  with `Status:` line parser.
+- `nacl-tl-deliver`: `npm run build` and `npm test` fallback rows.
+- `nacl-tl-deliver`: "report as unhealthy (but don't fail delivery)"
+  health-check tolerance.
+- `nacl-tl-ship`: "Not found (no status.json) | Warn and proceed
+  (backward-compat)" row from the Step 1.0 prior-status table.
+- `nacl-tl-ship`: `SHIPPED + DEPLOYED (direct)` headline (replaced
+  with status-aware variants).
+- `nacl-tl-release`: "If `--skip-merge` OR `git.strategy == "direct"`:
+  Skip Steps 1-3 entirely → jump to Step 4" path. The merge action is
+  skipped; the UC status gate is not.
+- `nacl-tl-release`: "Warn but do NOT block release" health-check
+  tolerance.
+- `nacl-tl-release`: "For IntakeItems associated with UNVERIFIED UCs,
+  stamp with a note instead" Cypher block.
+
 ## [0.13.1] — 2026-05-07
 
 Patch release. Closes the eight low- and medium-severity findings from the

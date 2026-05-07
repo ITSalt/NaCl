@@ -271,13 +271,32 @@ For each TECH task:
    c. If approved -> break
    d. If rejected again -> increment retry counter
 
-6. If APPROVED:
+6. Read nacl-tl-dev's six-status result before committing:
+   a. Parse the `Status: {value}` line from nacl-tl-dev's report.
+      Headlines are advisory; the `Status:` line is the only authoritative
+      classifier (P1).
+   b. If the report has no parseable `Status:` line:
+      HALT. Emit:
+        "CONDUCTOR HALTED — UNVERIFIED (downstream report unparseable: TECH-###)"
+      Update conductor-state.json: status = "unverified".
+      Do NOT commit. Continue to next item only after operator review.
+
+7. If APPROVED AND Status: PASS:
    a. Stage and commit:
       git add -A
       git commit -m "TECH-###: [title from task.md]"
    b. Update conductor-state.json: status = "done", commit = [hash]
 
-7. If FAILED (3 retries exhausted):
+   If APPROVED AND Status is non-PASS (UNVERIFIED / BLOCKED / NO_INFRA /
+   RUNNER_BROKEN / REGRESSION):
+   - Review approval CANNOT upgrade unverified dev work. The TECH commit
+     gate consumes the dev result, not the review verdict.
+   - Branch on the parsed dev status using the same rules as the UC loop
+     (Step 4b below): UNVERIFIED → no commit, write 'verified-pending';
+     BLOCKED → operator override or abort; NO_INFRA / RUNNER_BROKEN →
+     halt and escalate; REGRESSION → halt and file bug.
+
+8. If FAILED (3 retries exhausted):
    a. Update conductor-state.json: status = "failed", reason = [details]
    b. Log failure, continue to next TECH task
 ```
@@ -299,17 +318,25 @@ For each UC in wave order (sequential within wave, wave-by-wave):
 
 4. Read aggregated UC status (Step 4a then branch per Step 4b):
 
-   a. Read sub-skill status:
-      - Look for headline in nacl-tl-full output:
-        "FULL COMPLETE" → PASS
-        "FULL APPLIED — UNVERIFIED" → UNVERIFIED
-        "FULL APPLIED — BLOCKED" → BLOCKED
-        "FULL INCOMPLETE — REGRESSION" → REGRESSION
-        "FULL HALTED — NO_INFRA" → NO_INFRA
-        "FULL HALTED — RUNNER_BROKEN" → RUNNER_BROKEN
-      - Cross-check .tl/status.json for UC### (nacl-tl-full writes it)
-      - If no new-style headline present, treat as PASS only if all
-        phases show done/approved in status.json (backward-compat)
+   a. Parse `Status: {value}` from nacl-tl-full's report:
+      - The `Status:` line is the only authoritative classifier (P1).
+        Recognised values: PASS / UNVERIFIED / BLOCKED / NO_INFRA /
+        RUNNER_BROKEN / REGRESSION.
+      - The decorative headline (e.g. "FULL COMPLETE", "FULL APPLIED —
+        UNVERIFIED") is advisory only and MUST NOT be used to classify
+        the result. A report whose `Status:` line and headline disagree
+        is classified by `Status:`; the disagreement is logged and
+        surfaced in Phase 6.
+      - If no parseable `Status: {PASS|UNVERIFIED|BLOCKED|NO_INFRA|
+        RUNNER_BROKEN|REGRESSION}` line is present:
+        HALT. Emit:
+          "CONDUCTOR HALTED — UNVERIFIED (downstream report unparseable: UC###)"
+        Update conductor-state.json: status = "unverified".
+        Do NOT commit; do NOT advance to next UC.
+      - Cross-check .tl/status.json for UC### (nacl-tl-full also writes
+        it). If the JSON file contradicts the parsed `Status:` line, the
+        graph and `Status:` line win; surface the contradiction in
+        Phase 6.
 
    b. Branch on aggregated status:
 
@@ -363,14 +390,20 @@ For each BUG item:
 
 3. Wait for completion
 
-4. Read nacl-tl-fix status from its Step 8 report:
-   Look for headline:
-     "FIX COMPLETE"                 → PASS
-     "FIX APPLIED — UNVERIFIED"     → UNVERIFIED
-     "FIX APPLIED — BLOCKED"        → BLOCKED
-     "FIX APPLIED — NO_INFRA"       → NO_INFRA
-     "FIX APPLIED — RUNNER_BROKEN"  → RUNNER_BROKEN
-     "FIX INCOMPLETE — REGRESSION"  → REGRESSION
+4. Parse `Status: {value}` from nacl-tl-fix's Step 8 report:
+   - The `Status:` line is the only authoritative classifier (P1).
+     Recognised values: PASS / UNVERIFIED / BLOCKED / NO_INFRA /
+     RUNNER_BROKEN / REGRESSION.
+   - Headlines such as "FIX COMPLETE" or "FIX APPLIED — UNVERIFIED" are
+     advisory only. Since 0.10.0 nacl-tl-fix has used the same headline
+     ("FIX APPLIED — UNVERIFIED") for several distinct statuses; the
+     `Status:` line is what disambiguates them.
+   - If no parseable `Status: {PASS|UNVERIFIED|BLOCKED|NO_INFRA|
+     RUNNER_BROKEN|REGRESSION}` line is present:
+     HALT. Emit:
+       "CONDUCTOR HALTED — UNVERIFIED (downstream report unparseable: BUG-###)"
+     Update conductor-state.json: status = "unverified".
+     Do NOT commit; do NOT advance to next bug.
 
 5. Branch on status:
 

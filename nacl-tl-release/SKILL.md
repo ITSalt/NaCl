@@ -121,7 +121,17 @@ Persists release progress for resumption:
 1. Read `config.yaml` → resolve all settings (see table above)
 
 2. If `--skip-merge` OR `git.strategy == "direct"`:
-   - Skip Steps 1-3 entirely → jump to Step 4
+   - Skip the **merge** action of Step 2 (no `gh pr merge` calls).
+   - **DO NOT** skip the UC status gate. The gate at the top of Step 2
+     (graph query, status branching, REGRESSION exclusion, MISSING TASK
+     NODE halt) MUST run in every mode (P1 / 0.14.0 contract). The
+     skip flag changes which artifacts are produced, not whether the
+     gate runs.
+   - Run the gate over the candidate UC list collected in Step 1, or — if
+     `--skip-merge`/direct mode bypasses Step 1 entirely — over the UCs
+     associated with commits since the last tag (`gh pr list --state merged
+     --base {main_branch}` since `git describe --tags --abbrev=0`).
+   - After the gate, jump to Step 3 (verify production deployment).
 
 3. Check for existing `.tl/release-status.json`:
    - If exists → **RESUME MODE** (skip to incomplete step)
@@ -293,11 +303,33 @@ curl -sf "{production_url}{health_endpoint}" --max-time 10
 ```
 Retry 3 times with 10-second intervals.
 
-If health check fails:
-- Warn but do NOT block release (deploy may be slow)
-- Report: "Health check failed. Verify production manually before announcing release."
+If health check fails — **HALT by default**:
+```
+RELEASE HALTED — UNVERIFIED (production health failed)
+Production health endpoint did not return 200 OK after 3 retries.
+Tag has NOT been pushed.
 
-If no `deploy.production.url` configured → skip health check, warn "No production URL configured, skipping health check."
+Resolution options:
+  [1] Wait for deploy propagation and re-run /nacl-tl-release.
+  [2] Investigate production with /nacl-tl-deploy --production.
+  [3] Operator override (see below) to release the tag with a
+      RELEASE INCOMPLETE — UNVERIFIED headline and changelog annotation.
+```
+
+**Operator override (interactive, OFF by default):**
+If the operator chooses to proceed despite the failed health check, the
+release continues but with non-PASS reporting (P4):
+- Headline: `RELEASE INCOMPLETE — UNVERIFIED (production health failed, operator override)`.
+- Changelog annotation: append a `> Health check FAILED at release time
+  ({timestamp}); released under operator override. Verify production
+  manually.` blockquote under the version heading in `.tl/changelog.md`
+  before Step 5 aggregation.
+- Tag is pushed but `release-status.json` records
+  `"health": {"status": "failed_override", "reason": "<text>"}`.
+
+If no `deploy.production.url` configured → skip health check, warn
+"No production URL configured, skipping health check." (No halt — the
+operator opted out of automated health verification at config time.)
 
 ---
 
@@ -373,11 +405,20 @@ git push origin v1.3.0
 ### Step 7: MARK DELIVERED INTAKEITEMS WITH RELEASE VERSION
 
 After the git tag is pushed, stamp `IntakeItem` nodes with the release version.
-This step is **gated on aggregated PASS status**:
+This step is **strictly gated on aggregated PASS status (P4 + 0.14.0
+contract)**:
 
-- Only stamp IntakeItems whose underlying UCs had PASS status (task.status = 'done')
-- Do NOT stamp IntakeItems for UCs with 'verified-pending' or 'blocked' status
-- If ANY UC in the release had REGRESSION → do NOT proceed to tagging or stamping
+- Only stamp IntakeItems whose underlying UCs had PASS status (task.status = 'done').
+- IntakeItems associated with UNVERIFIED, BLOCKED, or REGRESSION UCs are
+  **excluded from the release artifact**. They are NOT stamped with a
+  release version, NOT stamped with a "release note instead", and do NOT
+  receive any `delivered_in_release` write. The previous "stamp with a note
+  instead" path (0.13.0 and earlier) has been removed.
+- Excluded IntakeItems are surfaced explicitly in the release report (see
+  Step 9 / final report) so the operator can decide whether to retry
+  verification before re-running release for those items.
+- If ANY UC in the release had REGRESSION → halted at Step 2 (never reaches
+  Step 7).
 
 Run the following query for PASS items only, substituting the new version string:
 
@@ -393,20 +434,22 @@ SET i.delivered_in_release = $version
 RETURN count(i) AS updated;
 ```
 
-For IntakeItems associated with UNVERIFIED UCs, stamp with a note instead:
+Then collect the excluded set (read-only, for the report):
 
 ```cypher
-MATCH (i:IntakeItem)
+MATCH (i:IntakeItem)<-[:PART_OF]-(t:Task)
 WHERE i.status = 'delivered'
   AND i.delivered_in_release IS NULL
-  AND EXISTS {
-    MATCH (i)<-[:PART_OF]-(t:Task)
-    WHERE t.status = 'verified-pending'
-  }
-SET i.delivered_in_release = $version,
-    i.delivery_note = 'released with UNVERIFIED dev status, user override'
-RETURN count(i) AS updated_unverified;
+  AND t.status IN ['verified-pending', 'blocked', 'failed']
+RETURN i.id AS intake_id,
+       collect(DISTINCT {uc: t.id, status: t.status,
+                         skip_reason: t.verification_skip_reason}) AS blocked_ucs;
 ```
+
+Surface the excluded list in the final report under a dedicated
+"Excluded from release (UNVERIFIED upstream)" section. Do NOT write any
+`delivered_in_release` or `delivery_note` field for these items in this
+release.
 
 Parameter:
 - `$version` — the new release version string, e.g. `"v1.3.0"`
@@ -515,8 +558,8 @@ On start, if `.tl/release-status.json` exists:
 
 | Scenario | Behavior |
 |----------|----------|
-| `git.strategy == "direct"` | Skip Steps 1-3 (no PRs to merge) |
-| `--skip-merge` flag | Skip Steps 1-3 (backward compat, tag-only) |
+| `git.strategy == "direct"` | Skip the merge action of Step 2 (no PRs to merge). UC status gate STILL runs over commits-since-last-tag. |
+| `--skip-merge` flag | Skip the merge action of Step 2 (tag-only). UC status gate STILL runs over commits-since-last-tag (0.14.0 contract). |
 | No PRs found in ToRelease or GitHub | Skip Steps 1-3, proceed to version/tag |
 | One PR has merge conflicts | Stop at that PR, report which merged / which remain |
 | CI fails after merge | Stop before tagging, report. User fixes on main or reverts |
@@ -582,6 +625,39 @@ If any UC in the merged set has evidence level `no-test` or `unknown`, append a 
 ```
 Verification gaps: UC-029 (no-test), UC-031 (unknown) — review before next release.
 ```
+
+**Excluded from release (UNVERIFIED upstream — Step 7):**
+
+If the Step 7 excluded query returns any rows, append this section verbatim
+to the final report:
+
+```
+Excluded from this release artifact (no IntakeItem stamped):
+  IntakeItem  Underlying UC  UC status         Skip reason
+  ----------  -------------  ----------------  -------------------------------
+  FAM-58      UC-029         verified-pending  deliver --skip-verify
+  FAM-61      UC-031         blocked           deliver health failed (override)
+
+These items remain in the graph as 'delivered' but were NOT stamped with
+the release version. Re-run /nacl-tl-deliver after restoring PASS status,
+then re-run /nacl-tl-release for those items.
+```
+
+**Headline selection (P1 — `Status:` is the authoritative classifier):**
+
+  RELEASE COMPLETE
+    — every candidate UC PASS, health 200 OK, tag pushed.
+  RELEASE INCOMPLETE — UNVERIFIED (production health failed, operator override)
+    — Step 3b health failed and operator chose to proceed; tag pushed
+      with changelog annotation; excluded items still excluded.
+  RELEASE HALTED — UNVERIFIED (production health failed)
+    — Step 3b health failed and no operator override; tag NOT pushed.
+  RELEASE HALTED — UNVERIFIED
+    — operator declined an UNVERIFIED-UC user gate at Step 2.
+  RELEASE HALTED — MISSING TASK NODE
+    — Step 2 graph query found a UC with no Task node.
+  RELEASE INCOMPLETE — REGRESSION
+    — any UC has REGRESSION status.
 
 If merge-only (no deploy verification configured):
 

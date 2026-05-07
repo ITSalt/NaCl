@@ -139,15 +139,20 @@ If config.yaml missing → use all fallback defaults. If YouGile missing → ski
    | Prior status | Action |
    |--------------|--------|
    | PASS | Proceed normally |
-   | UNVERIFIED | HALT. Post advisory: "Task dev status is UNVERIFIED — no test exercises the change. Local tests passing does NOT substitute for upstream verification. Confirm to ship unverified? [yes/no] Default: no". If user confirms with `--yes` or explicit "yes", proceed with SHIP APPLIED — UNVERIFIED headline. If no answer → SHIP HALTED — UNVERIFIED |
-   | BLOCKED | HALT. Post: "Task dev status is BLOCKED — pre-existing failures. Confirm to ship blocked task? [yes/no] Default: no". If confirmed → proceed. If not → SHIP HALTED — BLOCKED |
-   | NO_INFRA | HALT. Report: SHIP HALTED — NO_INFRA. Recommend fixing infra |
-   | RUNNER_BROKEN | HALT. Report: SHIP HALTED — RUNNER_BROKEN. Escalate |
-   | REGRESSION | HALT. Report: SHIP INCOMPLETE — REGRESSION. Do NOT ship |
-   | Not found (no status.json) | Warn and proceed (backward-compat) |
+   | UNVERIFIED | HALT. Post advisory: "Task dev status is UNVERIFIED — no test exercises the change. Local tests passing does NOT substitute for upstream verification. Confirm to ship unverified? [yes/no] Default: no". If the operator answers explicitly "yes" (NOT auto-confirmed by `--yes`), proceed with `SHIP APPLIED — UNVERIFIED` headline; PR description is annotated; auto-deploy via `--deploy` is **refused** in this state — the operator must run `/nacl-tl-deploy` separately as an explicit deploy override. If no answer → `SHIP HALTED — UNVERIFIED`. |
+   | BLOCKED | HALT. Post: "Task dev status is BLOCKED — pre-existing failures. Confirm to ship blocked task? [yes/no] Default: no". If confirmed → proceed under `SHIP APPLIED — UNVERIFIED (BLOCKED override)`; auto-deploy refused. If not → `SHIP HALTED — BLOCKED`. |
+   | NO_INFRA | HALT. Report: `SHIP HALTED — NO_INFRA`. Recommend fixing infra. |
+   | RUNNER_BROKEN | HALT. Report: `SHIP HALTED — RUNNER_BROKEN`. Escalate. |
+   | REGRESSION | HALT. Report: `SHIP INCOMPLETE — REGRESSION`. Do NOT ship. |
+   | Unknown / not found (no status.json AND no Task node in graph) | **HALT.** Report: `SHIP HALTED — UNVERIFIED (upstream status unknown)`. The previous "warn and proceed" backward-compat path has been removed (P5 + 0.14.0 contract). The operator must populate the graph or `.tl/status.json`, or invoke an explicit user-initiated path that knowingly accepts the unknown state. |
 
-   **Local tests passing does NOT override prior UNVERIFIED/BLOCKED status.**
+   **Local tests passing does NOT override prior UNVERIFIED/BLOCKED/unknown status.**
    Local tests are a sanity check, not a verification substitute.
+
+   **Reaffirmed: ship never switches branches autonomously (P5).** Ship commits
+   to the current branch only. Hotfix-to-main is a separate user-initiated skill
+   (`/nacl-tl-hotfix`); a non-PASS upstream status does NOT cause this skill to
+   pivot to a hotfix branch or to `main`. The operator chooses.
 
 1. Read `config.yaml` for git strategy, module config, **and deploy config**
 2. Run tests for affected modules:
@@ -318,12 +323,17 @@ EOF
 **This step only runs when `--deploy` flag is provided.**
 
 **Verification gate before deploy:**
-- If prior task status (from Step 1.0) was PASS → proceed with deploy
-- If prior task status was UNVERIFIED → SHIP HALTED — UNVERIFIED unless
-  user gave explicit confirmation in Step 1.0. `--deploy` does NOT bypass
-  verification status. The user must confirm unverified deploy explicitly.
-- If prior task status was BLOCKED → same gate as UNVERIFIED
-- If prior task status was REGRESSION → SHIP INCOMPLETE — REGRESSION; do NOT deploy
+- If prior task status (from Step 1.0) was PASS → proceed with deploy.
+- If prior task status was UNVERIFIED (operator-confirmed ship in Step 1.0) →
+  **auto-deploy is refused.** This skill emits an advisory:
+  `Auto-deploy disabled — upstream status is UNVERIFIED. Run /nacl-tl-deploy
+   --staging separately as an explicit deploy override.`
+  The PR is created and the report ends with the `SHIP APPLIED — UNVERIFIED`
+  headline. `--deploy` does NOT chain into deploy under unverified upstream.
+- If prior task status was BLOCKED (operator-confirmed ship) → same as UNVERIFIED:
+  no auto-deploy, separate explicit operator action required.
+- If prior task status was REGRESSION → `SHIP INCOMPLETE — REGRESSION`; no PR; no deploy.
+- If upstream status was unknown → never reaches Step 5.5 (Step 1.0 already halted).
 - Deploy never bypasses verification. Local tests passing does not substitute.
 
 Read deploy strategy from `config.yaml`:
@@ -435,13 +445,14 @@ WARNING: No test exercises the change. Ship confirmed by user.
 ═══════════════════════════════════════════════
 ```
 
-**With `--deploy`:**
+**With `--deploy` (PASS — auto-deploy chained):**
 ```
 ═══════════════════════════════════════════════
-  SHIPPED + DEPLOYED (direct)
+  SHIP COMPLETE — DEPLOYED (direct)
 ═══════════════════════════════════════════════
 
 UC-028: Funnel Event Tracking
+Verification status: PASS
 
 Git:
   Branch: feature/UC028
@@ -462,6 +473,59 @@ Next step:
   /nacl-tl-verify UC028  — verify implementation
 ═══════════════════════════════════════════════
 ```
+
+**With `--deploy` (UNVERIFIED — auto-deploy refused):**
+```
+═══════════════════════════════════════════════
+  SHIP APPLIED — UNVERIFIED (auto-deploy refused)
+═══════════════════════════════════════════════
+
+UC-028: Funnel Event Tracking
+Verification status: UNVERIFIED (operator override at Step 1.0)
+
+Git:
+  Branch: feature/UC028
+  Commit: abc1234
+  PR: #42 (annotated: SHIP APPLIED — UNVERIFIED)
+
+Deploy (staging):
+  Method: SKIPPED — upstream UNVERIFIED. --deploy does not chain under
+          non-PASS status. Run /nacl-tl-deploy --staging as a separate
+          explicit operator action if you accept the risk.
+
+Tests: 34 passing
+Build: OK
+
+YouGile: task moved to DevDone with UNVERIFIED note
+
+Next step:
+  /nacl-tl-deploy --staging   — explicit operator deploy (separate skill)
+  /nacl-tl-verify UC028       — restore verified status before re-shipping
+═══════════════════════════════════════════════
+```
+
+**Headline selection (the only authoritative classifier is the consumed
+`Status:` line — see Step 1.0):**
+
+  SHIP COMPLETE
+    — upstream PASS, no skip flag, no health/CI failure.
+  SHIP COMPLETE — DEPLOYED (direct)
+    — PASS + `--deploy` succeeded.
+  SHIP APPLIED — UNVERIFIED
+    — upstream UNVERIFIED or BLOCKED with operator override; PR annotated;
+      auto-deploy refused regardless of `--deploy`.
+  SHIP HALTED — UNVERIFIED (upstream status unknown)
+    — no `.tl/status.json` AND no Task node in graph (P1 / P5).
+  SHIP HALTED — UNVERIFIED
+    — operator declined the unverified-ship prompt at Step 1.0.
+  SHIP HALTED — BLOCKED
+    — operator declined the BLOCKED-ship prompt at Step 1.0.
+  SHIP HALTED — NO_INFRA
+    — declared workspace command missing (P2).
+  SHIP HALTED — RUNNER_BROKEN
+    — runner cannot be exercised.
+  SHIP INCOMPLETE — REGRESSION
+    — upstream REGRESSION; no PR, no deploy.
 
 ---
 

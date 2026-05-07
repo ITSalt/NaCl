@@ -80,8 +80,9 @@ Never push directly to main without explicit --force-push + double confirmation.
 |------|---------------|
 | Main branch | `git.main_branch` > `modules.[name].git_base_branch` > fallback `"main"` |
 | Branch prefix | hardcoded `"hotfix/"` (NOT `git.branch_prefix` which is for features) |
-| Build command | `modules.[name].build_cmd` > fallback `npm run build` |
-| Test command | `modules.[name].test_cmd` > fallback `npm test` |
+| Build command | `modules.[name].build_cmd` > workspace `package.json` `scripts.build`. **No `npm run build` fallback.** Missing → `HOTFIX HALTED — NO_INFRA (scripts.build undeclared)` (P2). |
+| Test command | `modules.[name].test_cmd` > workspace `package.json` `scripts.test`. **No `npm test` fallback.** Missing → `HOTFIX HALTED — NO_INFRA (scripts.test undeclared)` (P2). |
+| Test filter | `modules.[name].test_filter_flag` (e.g. `--testPathPattern`, `--filter`) > unset. If unset, the regression-test step runs the full declared test command rather than inventing a runner flag. |
 | Module path | `modules.[name].path` > detect from package.json |
 | YouGile columns | `yougile.columns.*` |
 | Deploy production | `deploy.production.*` |
@@ -254,67 +255,118 @@ No regression test path was recorded for Scenario {1|2}. Cannot proceed without 
 
 ### Step 4: VALIDATE -- announce: "Step 4: VALIDATE"
 
-**Goal:** Verify the fix works on the main branch codebase, including a named regression-test run.
+**Goal:** Verify the fix works on the main branch codebase, including a named regression-test run, and classify any remaining failures against a captured `main` baseline (P3).
 
-1. **Run the regression test by file path** (from `regression_test_path` recorded in Step 3.5).
-   Use the workspace's `scripts.test` runner with a file-path or name filter so only this test
-   runs first:
-   ```bash
-   cd [module_path] && [test_cmd] --test-name-pattern "[test name]"
-   # or equivalent runner filter for vitest/jest/etc.
-   ```
-   The test MUST be GREEN. If it is RED (still failing after the fix was applied), halt:
-   ```
-   HOTFIX INCOMPLETE — REGRESSION
-   Regression test {regression_test_path} is still failing after the fix.
-   The fix does not address the bug. Return to Step 3 / /nacl-tl-fix Step 6f.
-   ```
-   HALT. Do NOT proceed.
+#### Step 4.0: CAPTURE MAIN BASELINE (worktree)
 
-2. Run the full test suite for affected modules:
-   ```bash
-   cd [module_path] && [test_cmd]
-   ```
-3. Run build:
-   ```bash
-   cd [module_path] && [build_cmd]
-   ```
-4. If tests/build FAIL, distinguish the source of failure before deciding how to proceed:
+Before running the postfix suite, capture a `main`-branch baseline using
+`git worktree add` (no stash juggling on the active hotfix branch):
 
-   **If /nacl-tl-fix returned NO_INFRA or RUNNER_BROKEN (Scenario 3):**
-   The test failure is an infrastructure problem, not a code regression from the hotfix
-   changes themselves. Surface with the headline:
-   ```
-   HOTFIX BLOCKED — NO_INFRA
-   ```
-   or:
-   ```
-   HOTFIX BLOCKED — RUNNER_BROKEN
-   ```
-   Do NOT conflate with a code-level test failure. The user needs to fix test infra
-   independently; the hotfix code itself may be correct.
+```bash
+baseline_dir=$(mktemp -d -t hotfix-baseline.XXXXXX)
+git worktree add "$baseline_dir" "$(git rev-parse main)"
+( cd "$baseline_dir/[module_path]" && [test_cmd] ) > "$baseline_dir/baseline.log" 2>&1 || true
+```
 
-   **If the failure is a dependency issue (code from feature branch not on main):**
-   STOP with advisory:
-   ```
-   This fix depends on code from {source_branch} that does not exist on main.
-   Options:
-     (a) Include the dependency in the hotfix
-     (b) Merge the full feature branch first
-     (c) Write a standalone fix for main
-   ```
+Parse the failing-test set from `baseline.log` into `baseline_failures` (a set of
+test identifiers). The `|| true` is required — the baseline is permitted to be
+non-clean; we only care about *which* tests fail there.
 
-   **If the failure appears unrelated (pre-existing failures on main):**
-   Warn but allow user to proceed:
-   ```
-   HOTFIX BLOCKED — pre-existing failures detected on main branch.
-   These may be unrelated to the hotfix. Review before proceeding.
-   ```
+The baseline worktree MUST be removed at the end of the skill regardless of
+outcome (success, halt, or error). The cleanup step (Step 7 / Cleanup on Failure)
+runs:
 
-5. Show impact summary:
-   ```bash
-   git diff --stat main..HEAD
-   ```
+```bash
+git worktree remove --force "$baseline_dir" 2>/dev/null || true
+rm -rf "$baseline_dir"
+```
+
+If `git worktree add` fails (worktree already exists, disk full, etc.):
+emit `HOTFIX HALTED — NO_INFRA (baseline worktree unavailable)` and abort
+before applying the fix on the hotfix branch.
+
+#### Step 4.1: REGRESSION TEST (postfix, named)
+
+Run the regression test by file path (from `regression_test_path` recorded in
+Step 3.5). Use the declared test command plus the configured `test_filter_flag`
+(see Configuration Resolution). If `test_filter_flag` is unset, run the full
+declared test command — do NOT invent a generic `--test-name-pattern` flag (P2):
+
+```bash
+if [ -n "$test_filter_flag" ]; then
+  cd [module_path] && [test_cmd] $test_filter_flag "[regression_test_path]"
+else
+  # No declared filter syntax for this runner; run the full suite.
+  cd [module_path] && [test_cmd]
+fi
+```
+
+The regression test MUST be GREEN. If it is RED (still failing after the fix
+was applied), halt:
+```
+HOTFIX INCOMPLETE — REGRESSION
+Regression test {regression_test_path} is still failing after the fix.
+The fix does not address the bug. Return to Step 3 / /nacl-tl-fix Step 6f.
+```
+HALT. Do NOT proceed.
+
+#### Step 4.2: POSTFIX SUITE + BASELINE COMPARISON
+
+Run the full test suite on the hotfix branch:
+
+```bash
+cd [module_path] && [test_cmd] > postfix.log 2>&1
+postfix_exit=$?
+```
+
+Parse `postfix_failures` from `postfix.log`. Compute set differences:
+
+```
+new_failures = postfix_failures − baseline_failures
+transitioned = baseline_failures − postfix_failures
+pre_existing = postfix_failures ∩ baseline_failures
+```
+
+Run build:
+```bash
+cd [module_path] && [build_cmd]
+```
+
+Classify the outcome (P3 — no claim about pre-existing failures without the captured baseline):
+
+- `new_failures.size > 0` → **REGRESSION**.
+  Halt with `HOTFIX INCOMPLETE — REGRESSION (new failures: <list>)`. Do NOT
+  proceed. Record the new failures in YouGile task chat.
+
+- `new_failures.size == 0 AND postfix_failures.size > 0` → **BLOCKED**
+  (pre-existing failures confirmed by baseline). Record `pre_existing` set
+  explicitly in the report — these are the same tests that fail on `main`,
+  not regressions from this hotfix. Continue to Step 5 with status BLOCKED;
+  Step 6 gate fires.
+
+- `postfix_failures.size == 0 AND build OK` → **PASS** (continue normally).
+
+- `[test_cmd]` returned NO_INFRA / RUNNER_BROKEN (e.g. zero tests collected,
+  runner crashed) → emit `HOTFIX BLOCKED — {NO_INFRA | RUNNER_BROKEN}`. The
+  hotfix code itself may be correct, but cannot be verified. Step 6 gate fires.
+
+**Do NOT** claim a failure is "pre-existing", "unrelated", or "may not be
+related" without `baseline_failures` set membership confirming it.
+
+If the failure is a dependency issue (code from feature branch not on main):
+STOP with advisory:
+```
+This fix depends on code from {source_branch} that does not exist on main.
+Options:
+  (a) Include the dependency in the hotfix
+  (b) Merge the full feature branch first
+  (c) Write a standalone fix for main
+```
+
+Show impact summary:
+```bash
+git diff --stat main..HEAD
+```
 
 ### Step 5: COMMIT -- announce: "Step 5: COMMIT"
 
@@ -345,7 +397,8 @@ No regression test path was recorded for Scenario {1|2}. Cannot proceed without 
 
 Check the fix status captured in Step 3 (Scenario 3) or Step 4:
 
-- If status is **PASS**: proceed to the standard user gate below.
+- If status is **PASS**: proceed to the standard user gate below. The PR
+  headline is `HOTFIX COMPLETE`; auto-merge is enabled.
 - If status is **anything other than PASS**: issue a **fresh unconditional prompt** regardless
   of whether `--yes` was supplied at invocation time. The `--yes` flag does NOT satisfy this
   gate. Present:
@@ -358,6 +411,16 @@ Check the fix status captured in Step 3 (Scenario 3) or Step 4:
   If the answer is not explicitly "yes", STOP. Do not create the PR.
   This gate is unconditional: `--yes` scope is limited to non-safety prompts
   (task-list selection, module-detection confirmation). It never bypasses this gate.
+
+  If the operator confirms "yes" on a non-PASS status (UNVERIFIED, BLOCKED,
+  NO_INFRA, RUNNER_BROKEN), the resulting PR is annotated as
+  `HOTFIX APPLIED — UNVERIFIED` with the captured status and reason in the
+  PR description (P4). Auto-merge is **not** enabled — `gh pr merge --auto`
+  is skipped; the operator must run a separate manual merge command after
+  reviewing CI and the captured baseline diff. The advisory `Status:` line is
+  written to the report and to YouGile.
+
+  REGRESSION never reaches Step 6 — it halts at Step 4.2.
 
 **Present plan to user (unless `--yes`):**
 ```
@@ -390,24 +453,32 @@ gh pr create \
 
 **Priority:** Critical -- production fix
 
+**Headline:** {HOTFIX COMPLETE | HOTFIX APPLIED — UNVERIFIED}
+**Status:** {PASS | BLOCKED | UNVERIFIED | NO_INFRA | RUNNER_BROKEN}
 **Source:** {source_branch} (Scenario {N})
 
-**Fix status:** {PASS | BLOCKED | UNVERIFIED | NO_INFRA | RUNNER_BROKEN | REGRESSION}
-{if non-PASS: "**Note:** Fix shipped with explicit user override. Status reason: {reason}"}
+{if non-PASS: "⚠ Auto-merge is DISABLED — operator override on non-PASS fix. Reason: {reason}. Review CI, baseline diff, and the captured `pre_existing` set before merging manually."}
 
 ### Regression Test Evidence
 
 **Regression test:** {regression_test_path}
 **RED→GREEN evidence:** {red_green_evidence — e.g. "✓ confirmed at Step 6e (RED) and 6g (GREEN) by nacl-tl-fix" or "✓ confirmed RED on main before stash/cherry-pick, GREEN after"}
 
+### Baseline (main) vs Postfix (hotfix)
+
+- Baseline failures (on main, captured via `git worktree`): {N} — {list}
+- Postfix failures (on hotfix branch): {N} — {list}
+- New failures (postfix − baseline): {N} — {list}    ← MUST be 0 to ship
+- Pre-existing (postfix ∩ baseline): {N} — {list}
+
 ### Changes
 {git diff --stat summary}
 
 ### Test Plan
 - [x] Regression test GREEN on hotfix branch ({regression_test_path})
-- [x] Full unit test suite passing on hotfix branch
+- [x] Postfix suite has zero new failures vs main baseline
 - [x] Build succeeds
-- [ ] CI pipeline (auto-merge enabled)
+- [{x or " "}] CI pipeline (auto-merge {enabled | DISABLED — non-PASS override})
 
 Generated with Claude Code via /nacl-tl-hotfix
 EOF
@@ -415,7 +486,14 @@ EOF
   --base {main_branch} \
   --label "hotfix"
 
-gh pr merge --auto --squash
+# Auto-merge is enabled ONLY when fix status is PASS.
+# Non-PASS overrides leave auto-merge OFF — operator runs the merge manually
+# after reviewing CI and the baseline diff.
+if [ "$fix_status" = "PASS" ]; then
+  gh pr merge --auto --squash
+else
+  echo "Auto-merge skipped — fix status is $fix_status. Review the PR manually." >&2
+fi
 ```
 
 **Force-push path (with `--force-push` flag):**
@@ -459,6 +537,13 @@ No stash. The fix exists only on the hotfix branch / main. The feature branch is
 git rebase {main_branch}
 ```
 If rebase conflicts: report and abort (`git rebase --abort`). The user can resolve manually.
+
+**Always — remove the baseline worktree:**
+```bash
+git worktree remove --force "$baseline_dir" 2>/dev/null || true
+rm -rf "$baseline_dir"
+```
+This runs on every exit path (success, halt, error) — see also Cleanup on Failure.
 
 ### Step 8: ADVISORY -- announce: "Step 8: ADVISORY"
 
@@ -514,23 +599,26 @@ Present in user's language:
 
 ```
 ═══════════════════════════════════════════════
-  HOTFIX SHIPPED
+  {HOTFIX COMPLETE | HOTFIX APPLIED — UNVERIFIED}
 ═══════════════════════════════════════════════
 
 Hotfix: {description}
 Scenario: {1: stash apply | 2: cherry-pick | 3: authored}
+Status: {PASS | BLOCKED | UNVERIFIED | NO_INFRA | RUNNER_BROKEN}
 
 Git:
   Source branch: {source_branch}
   Hotfix branch: hotfix/{slug}
-  PR: #{number} (auto-merge: enabled)
+  PR: #{number} (auto-merge: {enabled | DISABLED — non-PASS override})
   Commit: {hash}
   Target: {main_branch}
 
 Validation:
-  Fix status: {PASS | BLOCKED | UNVERIFIED | NO_INFRA | RUNNER_BROKEN | REGRESSION}
-  Tests: {N} passing
-  Build: OK
+  Baseline (main) failures: {N}
+  Postfix (hotfix) failures: {N}
+  New failures (postfix − baseline): {N}    ← MUST be 0 to ship
+  Pre-existing (postfix ∩ baseline): {N}
+  Build: {OK | FAIL}
 
 Source branch restored: {source_branch}
   Working directory: {clean | uncommitted changes restored}
@@ -626,7 +714,13 @@ If ANY step fails and the workflow cannot continue:
 2. If stash was created → `git stash pop` (restore working directory)
 3. If hotfix branch was created → `git branch -D hotfix/{slug}` (delete local)
 4. If hotfix branch was pushed → warn user to delete remote: `git push origin --delete hotfix/{slug}`
-5. Report what happened and what was cleaned up
+5. If a baseline worktree was created in Step 4.0 → always remove it:
+   ```bash
+   git worktree remove --force "$baseline_dir" 2>/dev/null || true
+   rm -rf "$baseline_dir"
+   ```
+   This runs on every exit path, success or failure.
+6. Report what happened and what was cleaned up
 
 ---
 

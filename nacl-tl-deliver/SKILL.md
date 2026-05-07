@@ -72,8 +72,8 @@ Fail fast with clear diagnostics.
 |------|---------------|
 | Git strategy | `git.strategy` > `modules.[name].git_strategy` > fallback `"feature-branch"` |
 | Base branch | `git.main_branch` > `modules.[name].git_base_branch` > fallback `"main"` |
-| Build command | `modules.[name].build_cmd` > fallback `npm run build` |
-| Test command | `modules.[name].test_cmd` > fallback `npm test` |
+| Build command | `modules.[name].build_cmd` > workspace `package.json` `scripts.build`. **No `npm run build` fallback.** Missing → `DELIVER HALTED — NO_INFRA (scripts.build undeclared)` (P2). |
+| Test command | `modules.[name].test_cmd` > workspace `package.json` `scripts.test`. **No `npm test` fallback.** Missing → `DELIVER HALTED — NO_INFRA (scripts.test undeclared)` (P2). |
 | Staging URL | `deploy.staging.url` > no default |
 | Health endpoint | `deploy.staging.health_endpoint` > fallback `/api/health` |
 | CI platform | `deploy.ci_platform` > detect from `.github/workflows/` |
@@ -244,6 +244,35 @@ Persists delivery progress for resumption:
 
 ### Step 4: VERIFY (skip if `--skip-verify`)
 
+**`--skip-verify` semantics (P4 — skip ⇒ unverified, never PASS):**
+
+When `--skip-verify` is supplied, this skill:
+1. **Sets the aggregated headline to** `DELIVER APPLIED — UNVERIFIED (skipped: --skip-verify)`.
+   The PASS-headline path is unreachable; the skill cannot emit `DELIVER COMPLETE`
+   under this flag.
+2. **Refuses to stamp IntakeItems** as `delivered` in Step 6 — no `i.status = 'delivered'`
+   write occurs for any UC in this delivery, regardless of upstream dev status.
+3. **Writes the skip reason to the graph** for every Task node in scope:
+   ```cypher
+   MATCH (t:Task {id: $ucId})
+   SET t.verification_skip_reason = 'deliver --skip-verify',
+       t.verification_skip_at = datetime()
+   ```
+   Use `mcp__neo4j__write-cypher`. Failure to write is logged as a warning but
+   does not change the headline.
+4. **Records the skip flag in the audit trail** — `delivery-status.json` gains
+   `"verify": {"status": "skipped", "reason": "--skip-verify", "skipped_ucs": [...]}`,
+   and the same line appears in the final report.
+5. Skips all Step 4 sub-steps (0–6) below. Step 5 (deploy health) still runs.
+   Step 6 honours rule (2) above: no IntakeItem stamping under skip.
+
+A separate explicit operator override is required to move any IntakeItem to
+`delivered` after a `--skip-verify` run. That override is not part of this
+skill — it must be a user-initiated reconcile or follow-up `/nacl-tl-deliver`
+without `--skip-verify`.
+
+When `--skip-verify` is NOT supplied, Step 4 proceeds as below:
+
 0. **Pre-verify dev status check:**
 
    Before invoking /nacl-tl-verify for any UC, resolve its dev status using
@@ -345,13 +374,40 @@ Persists delivery progress for resumption:
    ```bash
    curl -sf "[url][health]" --max-time 10
    ```
-   - Retry 3 times with 10s intervals
-   - If 200 OK → deployment healthy
-   - If still failing after 3 retries → report as unhealthy (but don't fail delivery)
+   - Retry 3 times with 10s intervals.
+   - If 200 OK → deployment healthy. Continue.
+   - If still failing after 3 retries → **HALT by default** with
+     `DELIVER HALTED — UNVERIFIED (health failed)`. Do NOT stamp IntakeItems
+     as delivered. The operator may re-run `/nacl-tl-deliver` after fixing
+     the deploy or apply an explicit override (see step 3a).
+
+3a. **Operator health-failure override (interactive):**
+    If the operator chooses to acknowledge the health failure and proceed
+    anyway (e.g. known transient infra issue), the headline downgrades to:
+    ```
+    DELIVER APPLIED — UNVERIFIED (health failed, operator override)
+    ```
+    IntakeItem stamping is still refused (Step 6 honours the same rule as
+    `--skip-verify`). The override and reason are written to
+    `delivery-status.json`:
+    ```json
+    "deploy": {
+      "status": "unhealthy_override",
+      "operator_override_reason": "<text>",
+      "override_at": "<iso8601>"
+    }
+    ```
+    and to the graph for each Task in scope:
+    ```cypher
+    MATCH (t:Task {id: $ucId})
+    SET t.verification_skip_reason = 'deliver health failed, operator override',
+        t.verification_skip_at = datetime()
+    ```
 
 4. YouGile: post deployment confirmation to task chat (if configured)
 
-5. Update delivery-status.json: `deploy.status = "done"` (or `"unhealthy"`)
+5. Update delivery-status.json: `deploy.status = "done"`, `"unhealthy_override"`,
+   or HALT before reaching this step on default-no-override path
 
 → **Output:** health status, staging URL
 
@@ -464,9 +520,23 @@ Graph:
 
 YouGile: tasks moved to ToRelease
 
-Headline: DELIVER COMPLETE
-(Use DELIVER APPLIED — UNVERIFIED when any UC has UNVERIFIED dev status;
- DELIVER INCOMPLETE — REGRESSION when any UC has REGRESSION status)
+Headline selection:
+  DELIVER COMPLETE
+    — all UCs PASS, --skip-verify NOT used, health check OK.
+  DELIVER APPLIED — UNVERIFIED (skipped: --skip-verify)
+    — verification skipped via flag; no IntakeItem stamped delivered;
+      Task.verification_skip_reason written to graph.
+  DELIVER APPLIED — UNVERIFIED (health failed, operator override)
+    — health check failed and operator chose to proceed; no IntakeItem
+      stamped delivered; skip reason written to graph.
+  DELIVER APPLIED — UNVERIFIED
+    — any UC has UNVERIFIED dev status (general non-skip case).
+  DELIVER HALTED — UNVERIFIED (health failed)
+    — health check failed and no operator override was given.
+  DELIVER HALTED — NO_INFRA (scripts.{test|build} undeclared)
+    — declared workspace command missing; no fallback (P2).
+  DELIVER INCOMPLETE — REGRESSION
+    — any UC has REGRESSION status.
 
 Next:
   /nacl-tl-release          — when ready for production
