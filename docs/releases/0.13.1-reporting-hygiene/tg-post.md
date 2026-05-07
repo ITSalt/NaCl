@@ -18,4 +18,4 @@ Migration impact is minimal — no flag surfaces, exit codes, or parser contract
 
 Full release notes: docs/releases/0.13.1-reporting-hygiene/release-notes.md
 
-https://github.com/magznikitin/NaCl
+https://github.com/ITSalt/NaCl
