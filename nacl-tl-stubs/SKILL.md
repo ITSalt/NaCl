@@ -314,7 +314,36 @@ Write `.tl/stub-registry.json`. **After writing, verify the file is readable and
 
 ### Step 8: Update Status and Changelog
 
-UC scan: update `.tl/status.json` -> `phases.stubs`: `"blocked"` if critical > 0, `"done"` otherwise.
+UC scan: update `.tl/status.json` -> `phases.stubs` using the headline-aligned
+vocabulary below. The `phases.stubs` value is the authoritative classifier for
+downstream skills (`nacl-tl-next`, `nacl-tl-status`); the headline is
+decoration. `done` is reserved for `STUBS COMPLETE` only — empty test files
+or runner failure NEVER produce `phases.stubs: done`.
+
+| Headline                                              | `phases.stubs` value | Six-status equivalent |
+|-------------------------------------------------------|----------------------|-----------------------|
+| `STUBS COMPLETE`                                      | `done`               | `PASS`                |
+| `STUBS APPLIED — UNVERIFIED` (warnings, no critical)  | `unverified`         | `UNVERIFIED`          |
+| `STUBS APPLIED — REGRESSION (empty test files: N)`    | `regression`         | `REGRESSION`          |
+| `STUBS BLOCKED` (critical > 0 OR orphaned > 0)        | `blocked`            | `BLOCKED`             |
+| `STUBS HALTED — NO_INFRA` (no test files scanned)     | `unverified`         | `NO_INFRA`            |
+| `STUBS HALTED — RUNNER_BROKEN` (sanity-seed failure / registry unwritable) | `blocked` | `RUNNER_BROKEN` |
+
+Mapping rules (apply in order; first match wins):
+
+1. Sanity-seed failure or registry-write failure ⇒ `phases.stubs: blocked`,
+   headline `STUBS HALTED — RUNNER_BROKEN`.
+2. Critical > 0 OR orphaned > 0 ⇒ `phases.stubs: blocked`, headline
+   `STUBS BLOCKED`.
+3. Empty test files exceed 50% threshold ⇒ `phases.stubs: regression`,
+   headline `STUBS APPLIED — REGRESSION (empty test files: N)`.
+4. No test files matched the runner's pattern (zero test files scanned) ⇒
+   `phases.stubs: unverified`, headline `STUBS HALTED — NO_INFRA`.
+5. Warnings present (and triple-condition for COMPLETE not met) ⇒
+   `phases.stubs: unverified`, headline `STUBS APPLIED — UNVERIFIED`.
+6. Triple condition met (production stubs == 0 AND empty-test-files == 0
+   AND test files actually scanned > 0) ⇒ `phases.stubs: done`, headline
+   `STUBS COMPLETE`.
 
 Append to `.tl/changelog.md`:
 
@@ -322,7 +351,8 @@ Append to `.tl/changelog.md`:
 ## [YYYY-MM-DD HH:MM] STUBS: UC### / Full / Final
 - Scanned: N files (production) + M test files | Found: N (N critical, N warning, N info)
 - Empty test files: N | Empty describe blocks: N
-- New: N, Resolved: N, Orphaned: N | Gate: PASS / BLOCKED
+- New: N, Resolved: N, Orphaned: N | Gate: PASS / UNVERIFIED / REGRESSION / BLOCKED / NO_INFRA / RUNNER_BROKEN
+- phases.stubs: done / unverified / regression / blocked
 ```
 
 ---

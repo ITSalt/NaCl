@@ -681,15 +681,33 @@ If `mcp__neo4j__read-cypher` fails:
 
 If pre-flight returns zero SA nodes:
 1. STOP immediately.
-2. Report: "SA layer is empty. Run `/nacl-sa-architect` or `/nacl-sa-domain` to populate it."
+2. Emit headline `PLAN HALTED — NO_SA_DATA` (see Output Summary).
+3. Report: "SA layer is empty. Run `/nacl-sa-architect` or `/nacl-sa-domain` to populate it."
+4. Do NOT create any TL nodes or task files.
 
 ### Missing UC data
 
-If `sa_uc_full_context` returns a UC with no activity steps or no requirements:
+If `sa_uc_full_context` returns a UC with no activity steps or no requirements,
+the plan is partial — task files are generated with available information,
+but the headline is `PLAN APPLIED — PARTIAL (incomplete SA inputs)` and the
+final report explicitly lists every UC and the missing input(s):
+
 1. Create task files with available information.
 2. Add note in impl-brief: "Activity steps pending" or "Requirements pending".
 3. Set task priority to low until resolved.
-4. Add to blockers in status.json.
+4. Add to blockers in status.json under `partial_inputs:` with structure:
+   ```json
+   {
+     "partial_inputs": [
+       {
+         "uc_id": "UC###",
+         "missing": ["activity_steps", "requirements"]
+       }
+     ]
+   }
+   ```
+5. Surface the partial set in the Output Summary `Missing SA inputs:` section
+   so the operator can decide whether to resume SA work before dev starts.
 
 ### Circular dependencies
 
@@ -779,11 +797,27 @@ MATCH (n) WHERE n:Task OR n:Wave DETACH DELETE n
 
 ## Output Summary
 
-After completion, display:
+After completion, display one of the following headers — first matching
+condition wins. The `Status:` line is the authoritative classifier; the
+headline is decoration. Headlines align with the six-status vocabulary used
+by `nacl-tl-fix`.
+
+### Planning status contract
+
+| Headline | Status | When |
+|----------|--------|------|
+| `PLAN COMPLETE` | `PASS` | Every UC has activity steps AND requirements; no TL nodes pre-existed (or overwrite was confirmed); all task files generated. |
+| `PLAN APPLIED — PARTIAL (incomplete SA inputs)` | `UNVERIFIED` | At least one UC has missing activity steps or requirements. Task files were generated; impl-brief notes pending; `partial_inputs` recorded in `status.json`. |
+| `PLAN HALTED — NO_SA_DATA` | `BLOCKED` | Pre-flight returned zero SA nodes. No TL nodes or task files created. |
+
+---
+
+**All UCs fully specified:**
 
 ```
-Development Plan Created (from Neo4j graph)
+PLAN COMPLETE
 
+Status: PASS
 Project: [Name]
 Source: Neo4j SA layer ({N} nodes queried)
 Tasks: {N} UC tasks + {M} TECH tasks
@@ -804,6 +838,48 @@ Next task: TECH-001 [Docker Compose Setup]
 
 Run: /nacl-tl-dev TECH-001 to start infrastructure setup
 Run: /nacl-tl-status to see progress
+```
+
+---
+
+**Some UCs missing activity steps or requirements:**
+
+```
+PLAN APPLIED — PARTIAL (incomplete SA inputs)
+
+Status: UNVERIFIED
+Project: [Name]
+Source: Neo4j SA layer ({N} nodes queried)
+Tasks generated with available information.
+
+Missing SA inputs:
+  - UC037 — activity steps pending
+  - UC042 — requirements pending
+  - UC051 — activity steps pending, requirements pending
+
+Action required: complete SA inputs (`/nacl-sa-uc UC###` /
+`/nacl-sa-architect`) before development starts. Tasks for the listed UCs
+are de-prioritised in `status.json`.
+
+Re-run /nacl-tl-plan after the SA layer is complete to upgrade to PLAN COMPLETE.
+```
+
+---
+
+**Pre-flight returned zero SA nodes:**
+
+```
+PLAN HALTED — NO_SA_DATA
+
+Status: BLOCKED
+Project: [Name]
+Source: Neo4j SA layer (0 nodes)
+
+Cannot plan: SA layer is empty.
+No TL nodes or task files were created.
+
+Run: /nacl-sa-architect or /nacl-sa-domain to populate the SA layer.
+Then re-run /nacl-tl-plan.
 ```
 
 ---

@@ -129,14 +129,34 @@ Monorepo detection:
 Collect:
 1. Build status:
    For each sub-project (or root):
-     cd [sub-project] && npm run build 2>&1 | tail -20
-   Record: which sub-projects pass, which fail
+     - Read the workspace's declared build command from
+       `package.json.scripts.build` (or the closest declared equivalent for
+       non-Node workspaces, e.g. `pyproject.toml` `tool.poetry.scripts`).
+     - If declared, run the declared command and capture the last 20 lines:
+         declared_build_cmd 2>&1 | tail -20
+     - If `scripts.build` is undeclared:
+         Record component status as `build: NO_INFRA (scripts.build undeclared)`.
+         Do NOT fall back to `npm run build`, `make`, or any other invented
+         command — emit `NO_INFRA` and continue with the next sub-project.
+     - If the declared command exits non-zero with a parse/loader error
+       (config missing, runner crash before any task runs):
+         Record component status as `build: RUNNER_BROKEN (<reason>)`.
+   Record: per sub-project, one of: `pass` / `fail` / `NO_INFRA` / `RUNNER_BROKEN`.
 
 2. Test status:
    For each sub-project (or root):
-     cd [sub-project] && npm test 2>&1 | tail -30
-   Record: total passed, total failed, which test files fail
-   If no test script exists for a sub-project, note "no tests configured"
+     - Read the workspace's declared test command from
+       `package.json.scripts.test` (or the closest declared equivalent).
+     - If declared, run the declared command and capture the last 30 lines:
+         declared_test_cmd 2>&1 | tail -30
+       Record: total passed, total failed, which test files fail.
+     - If `scripts.test` is undeclared:
+         Record component status as `test: NO_INFRA (scripts.test undeclared)`.
+         Do NOT fall back to `npm test` or any other invented command.
+     - If the declared command runs but `tests_collected == 0` despite test
+       files matching the runner's pattern, OR exits non-zero with a runner
+       crash before collection:
+         Record component status as `test: RUNNER_BROKEN (<reason>)`.
 
 3. Stub markers scan:
    Search in src/ (excluding node_modules/, dist/, test files):
@@ -147,12 +167,22 @@ Collect:
    - Placeholder data (Lorem ipsum, test@test.com)
 
 4. TypeScript errors:
-   npx tsc --noEmit 2>&1 | tail -30
+   - Read the workspace's declared typecheck command from
+     `package.json.scripts.typecheck` (or `scripts.tsc`, `scripts.lint:types`).
+   - If declared, run the declared command:
+       declared_typecheck_cmd 2>&1 | tail -30
+   - If undeclared:
+       Record component status as `typecheck: NO_INFRA (no declared typecheck command)`.
+       Do NOT fall back to `npx tsc --noEmit`.
 
 5. Dependency health (if time permits):
-   npm audit --json 2>&1 | head -50
+   - Read the declared audit command (e.g. `scripts.audit`) if present;
+     otherwise record `audit: NO_INFRA (no declared audit command)`. The
+     skill MUST NOT invent `npm audit` if the workspace has not declared it.
 
-Return: JSON with build/test status, stub counts, TS errors, audit summary
+Return: JSON with build/test/typecheck/audit status per sub-project. Each
+component is one of: `pass` / `fail` / `NO_INFRA` / `RUNNER_BROKEN` —
+never a synthetic measurement and never a 0.5 fill.
 ```
 
 #### Agent 4 — Server Health (optional)

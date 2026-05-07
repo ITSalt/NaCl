@@ -680,17 +680,55 @@ RETURN [n IN nodes(path) | n.id + ' (' + n.status + ')'] AS chain
 
 ## Health Indicators
 
+The six-status vocabulary used by `nacl-tl-fix` is surfaced explicitly so
+unverified or infrastructure-broken work never silently collapses into
+generic "in progress" or "blocked" states.
+
+### Progress indicators
+
 | Condition | Display |
 |-----------|---------|
-| Progress > 80%, no blockers | `[OK]` |
+| Progress > 80%, no blockers, no unverified work | `[OK]` |
 | Progress 50-80% | `[IN PROGRESS]` |
 | Progress < 50% | `[EARLY STAGE]` |
-| Any critical stubs | `[!! CRITICAL STUBS]` |
-| Any QA failures | `[!! QA FAILURES]` |
-| Blockers > 0 | `[BLOCKED]` |
 | No activity 3+ days | `[STALE]` |
 
-SA-specific health (graph-only):
+### Status indicators (one row each — never collapse)
+
+| Condition | Display |
+|-----------|---------|
+| Any task with `verification_status = verified-pending` | `[!! VERIFIED-PENDING: N]` |
+| Any task with last-fix `Status: NO_INFRA` | `[!! NO_INFRA: N]` |
+| Any task with last-fix `Status: RUNNER_BROKEN` | `[!! RUNNER_BROKEN: N]` |
+| Any task with last-fix `Status: REGRESSION` | `[!! REGRESSION: N]` |
+| Any task with last-fix `Status: BLOCKED` | `[BLOCKED: N]` |
+| Any task with last-fix `Status: UNVERIFIED` (non-skip) | `[UNVERIFIED: N]` |
+| Any critical stubs | `[!! CRITICAL STUBS]` |
+| Any QA failures | `[!! QA FAILURES]` |
+
+The "Per-Status Counts" table in the output renders one column per status
+above. `verified-pending`, `NO_INFRA`, `RUNNER_BROKEN`, and `REGRESSION` get
+their own dedicated rows — they are NEVER folded into a generic `BLOCKED`
+or `IN PROGRESS` count, even when the operator is reading a one-line health
+summary.
+
+### Per-Status Counts (mandatory section in output)
+
+```
+Per-Status Counts (six-status vocabulary):
+  PASS              : N
+  BLOCKED           : N
+  UNVERIFIED        : N
+  NO_INFRA          : N
+  RUNNER_BROKEN     : N
+  REGRESSION        : N
+  verified-pending  : N   (graph-only; tasks awaiting an explicit verification gate)
+```
+
+If a row is zero, render `0` — do not omit the row. An omitted row would
+collapse the visibility this section is designed to surface.
+
+### SA-specific health (graph-only)
 
 | Condition | Display |
 |-----------|---------|
@@ -698,7 +736,7 @@ SA-specific health (graph-only):
 | Any SA metric 60-89% | `[SA: GAPS]` |
 | Any SA metric < 60% | `[SA: !! INCOMPLETE]` |
 
-Multiple indicators combine: `Health: [IN PROGRESS] [BLOCKED] [SA: GAPS]`
+Multiple indicators combine: `Health: [IN PROGRESS] [UNVERIFIED: 2] [!! NO_INFRA: 1] [SA: GAPS]`
 
 ---
 

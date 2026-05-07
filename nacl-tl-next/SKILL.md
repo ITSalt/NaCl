@@ -275,7 +275,7 @@ context, SA enrichment, parallel opportunities, and upcoming blockers.
 
 | Priority | Phase | Condition | Command |
 |----------|-------|-----------|---------|
-| 0 (highest) | delivery pending | all dev tasks done, no failed | `/nacl-tl-deliver` or `/nacl-tl-conductor` |
+| 0 (highest) | delivery pending | every relevant Task is `status: done` AND last-fix `Status:` is in PASS-family (PASS or operator-accepted BLOCKED) | `/nacl-tl-deliver` or `/nacl-tl-conductor` |
 | 1 | QA pending | sync passed + stubs clean | `/nacl-tl-qa UC###` |
 | 2 | sync pending | BE approved + FE approved | `/nacl-tl-sync UC###` |
 | 3 | review-fe pending | FE dev complete | `/nacl-tl-review UC### --fe` |
@@ -284,6 +284,46 @@ context, SA enrichment, parallel opportunities, and upcoming blockers.
 | 6 | fe pending | BE approved + api-contract exists | `/nacl-tl-dev-fe UC###` |
 | 7 | be pending | wave dependencies met | `/nacl-tl-dev-be UC###` |
 | 8 | tech pending | wave dependencies met | `/nacl-tl-dev TECH###` |
+
+### Priority 0 (`/nacl-tl-deliver`) recommendation rule
+
+**Recommend `/nacl-tl-deliver` ONLY when both conditions hold for every
+relevant Task:**
+
+1. `Task.status == 'done'`, AND
+2. The most recent fix/dev `Status:` line for that Task is `PASS` (or
+   `BLOCKED` with a recorded operator acceptance).
+
+**Do NOT recommend `/nacl-tl-deliver` as a normal next step when any
+relevant Task is in any of these states** — instead, surface a prominent
+warning block:
+
+- `verification_status == 'verified-pending'`
+- `Task.status == 'blocked'`
+- last-fix `Status:` is `UNVERIFIED`, `NO_INFRA`, `RUNNER_BROKEN`, or
+  `REGRESSION`
+
+Warning block format:
+
+```
+[!! UNVERIFIED DELIVERY — NOT RECOMMENDED]
+
+Task UC### has status `verified-pending` (or last fix Status: UNVERIFIED).
+
+This task ships in unverified state — not recommended.
+
+To unblock:
+  - Run /nacl-tl-verify UC### or /nacl-tl-qa UC### to obtain PASS evidence, OR
+  - Acknowledge unverified delivery via the explicit operator override on
+    /nacl-tl-deliver itself (this skill will not recommend that path).
+
+Suggested alternative next step: <next non-blocked Task from the priority
+table>.
+```
+
+The warning block replaces the normal recommendation card; it does not
+appear alongside one. `/nacl-tl-deliver` is never silently recommended for
+unverified or blocked work.
 
 ---
 

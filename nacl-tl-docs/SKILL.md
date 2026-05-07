@@ -178,86 +178,110 @@ Append to `.tl/changelog.md`:
 ```markdown
 ## [YYYY-MM-DD HH:MM] DOCS: UC### - Task Title
 - Phase: Documentation
-- Status: Complete
+- Status: Complete (verification pending Step 9)
 - Updates: README, API docs, changelog
-- Task marked as DONE
+- Task will be marked DONE only after Step 9 (Verify Documentation) returns
+  PASS or PARTIAL with acknowledged coverage gap, and Step 10 (Commit)
+  succeeds.
 ```
 
-### Step 9: Mark Task as Done
+### Step 9: Verify Documentation
 
-Update `status.json`:
+Run each sub-step as a script, not a visual check. All three must pass (or
+the user must explicitly accept a `PARTIAL` coverage gap in Step 9.3) before
+proceeding to Step 10.
 
-```json
-{
-  "status": "done",
-  "completed": "YYYY-MM-DDTHH:MM:SSZ",
-  "docs_updated": [
-    "README.md",
-    "docs/api/endpoint.md",
-    "CHANGELOG.md"
-  ]
-}
-```
+This step runs BEFORE marking the task done. Done is conditional on every
+verification sub-step returning PASS, or on PARTIAL coverage gaps with an
+explicit user-acknowledged reason. Broken links and code-syntax errors NEVER
+qualify for the acknowledged-gap path — they emit `DOCS INCOMPLETE` and halt.
 
-### Step 10: Verify Documentation
+#### Step 9.1: Automated link check
 
-Run each sub-step as a script, not a visual check. All three must pass before proceeding to Step 11.
-
-#### Step 10.1: Automated link check
-
-Grep all markdown files in `docs/` for internal link targets:
+Build the list of every markdown file touched in this task (the `docs/` walk
+is not sufficient — README, CHANGELOG, sibling READMEs in module folders, and
+any other `.md` updated for this UC are in scope). Resolve each link relative
+to the source file's directory, not the repo root.
 
 ```bash
-grep -rEoh '\[.*?\]\(([^)]+)\)' docs/ \
-  | grep -v 'http' \
-  | sed 's/.*(\(.*\))/\1/' \
-  | while read -r target; do
-      [ -f "$target" ] || echo "BROKEN: $target"
-    done
+# Collect every markdown file modified for this UC.
+updated_md=$(git diff --name-only --diff-filter=AMR HEAD~1 -- '*.md')
+
+for src in $updated_md; do
+  src_dir=$(dirname "$src")
+  grep -Eoh '\[[^]]+\]\(([^)]+)\)' "$src" \
+    | sed -E 's/.*\(([^)]+)\)/\1/' \
+    | grep -v -E '^(https?:|mailto:|#)' \
+    | while read -r target; do
+        target_no_anchor=${target%%#*}
+        [ -z "$target_no_anchor" ] && continue
+        # Resolve relative to the source file's directory.
+        resolved=$(cd "$src_dir" 2>/dev/null && readlink -f "$target_no_anchor" 2>/dev/null)
+        if [ -z "$resolved" ] || [ ! -e "$resolved" ]; then
+          echo "BROKEN: $src -> $target"
+        fi
+      done
+done
 ```
 
-- Count broken links.
-- If count > 0 → **stop**. Do not proceed to Step 11. Emit:
+- Count broken links across every updated markdown file.
+- If count > 0 → **halt**. Do not proceed to Step 10. Emit:
 
 ```
-DOCS HALTED — UNVERIFIED (broken links: N)
+DOCS INCOMPLETE (broken links: N)
 
 Broken link targets:
-  - <path>
+  - <source file> -> <target>
   ...
 
 Fix the links or remove the references before continuing.
+Broken links are NOT eligible for the acknowledged-gap path.
 ```
 
-#### Step 10.2: Code-example syntax check
+#### Step 9.2: Code-example syntax check
 
-Extract every fenced code block from the updated doc files. For each block:
+Extract every fenced code block from the updated doc files. Use the
+workspace's declared TypeScript / Python entry points — never invent
+`npx tsc`. Read `package.json.scripts.typecheck` (or the closest declared
+equivalent: `scripts.tsc`, `scripts.lint:types`) for TS/JS examples; read
+the workspace Python entry from `pyproject.toml` / declared scripts for
+Python examples.
 
-- **TypeScript / JavaScript** — write the block to a temp file (e.g. `/tmp/nacl_doc_snippet_N.ts`) and run:
-  ```bash
-  npx tsc --noEmit --skipLibCheck /tmp/nacl_doc_snippet_N.ts 2>&1
-  ```
-- **Python** — write to `/tmp/nacl_doc_snippet_N.py` and run:
-  ```bash
-  python -m py_compile /tmp/nacl_doc_snippet_N.py 2>&1
-  ```
-- Other languages: skip syntax check but note "unchecked".
+```bash
+typecheck_cmd=$(jq -r '.scripts.typecheck // .scripts.tsc // empty' package.json 2>/dev/null)
+```
 
-Count blocks with non-zero exit codes. If count > 0 → **stop**. Emit:
+For each fenced block:
+
+- **TypeScript / JavaScript** — if `typecheck_cmd` is declared, write the
+  block to a temp file inside the workspace's source root and re-run
+  `typecheck_cmd` (the workspace command is responsible for include globs
+  and `tsconfig.json`). If no declared command exists, **do not invent
+  `npx tsc`**: skip with `INFO: typecheck command undeclared`.
+- **Python** — if a declared Python entry exists, run it against the temp
+  file. If not, skip with `INFO: python command undeclared`.
+- Other languages — skip with `INFO: language unchecked`.
+
+Count blocks with non-zero exit codes. If count > 0 → **halt**. Emit:
 
 ```
-DOCS HALTED — UNVERIFIED (code syntax errors: N)
+DOCS INCOMPLETE (code syntax errors: N)
 
 Failing snippets:
   - <doc file>:<block index> (<language>): <error line>
   ...
 
 Fix the examples before continuing.
+Syntax errors are NOT eligible for the acknowledged-gap path.
 ```
 
-If `npx` / `tsc` / `python` are unavailable, note the language and continue with status `DOCS HALTED — NO_INFRA` (see Output Summary).
+If the workspace did not declare any check command for a given language,
+emit `INFO: <language> unchecked (no declared command)` and continue. Missing
+infrastructure across the board emits `DOCS HALTED — NO_INFRA` (see Output
+Summary). The skill MUST NOT fall back to `npx tsc`, `tsc`, `python -m
+py_compile`, or any other invented command.
 
-#### Step 10.3: Implementation-coverage audit
+#### Step 9.3: Implementation-coverage audit
 
 Diff the implementation result files against the doc sections updated:
 
@@ -273,22 +297,53 @@ DOCS COVERAGE GAP (N uncovered result files):
   ...
 
 Options:
-  A) Update the relevant doc section and re-run Step 10.
-  B) Acknowledge the gap (provide reason) — status will be DOCS APPLIED — UNVERIFIED.
+  A) Update the relevant doc section and re-run Step 9.
+  B) Acknowledge the gap (provide reason) — status will be DOCS APPLIED — UNVERIFIED with the reason recorded.
 ```
 
-Await user response before proceeding to Step 11. If the user accepts with a reason, record it in `status.json` under `"coverage_gap_reason"`.
+Await user response before proceeding. If the user accepts with a reason,
+record it in the Step 11 `status.json` write under `"coverage_gap_reason"`.
 
-#### Step 10 pass condition
+#### Step 9 pass condition
 
-All three sub-steps must report zero issues (or user has explicitly acknowledged coverage gaps) before Step 11 is allowed.
+- 9.1 must report zero broken links (no acknowledged-gap path).
+- 9.2 must report zero syntax errors (no acknowledged-gap path).
+- 9.3 must report zero uncovered result files OR an explicit user-acknowledged reason.
 
-### Step 11: Commit Documentation
+Only with all three conditions satisfied may the skill proceed to Step 10.
+
+### Step 10: Commit Documentation
 
 ```bash
 git add .
 git commit -m "docs(UC###): update documentation for [feature]"
 ```
+
+### Step 11: Mark Task as Done
+
+This step runs ONLY after Step 9 (all sub-steps PASS or PARTIAL with explicit
+user accept) and Step 10 (commit) succeeded. Update `status.json`:
+
+```json
+{
+  "status": "done",
+  "completed": "YYYY-MM-DDTHH:MM:SSZ",
+  "docs_updated": [
+    "README.md",
+    "docs/api/endpoint.md",
+    "CHANGELOG.md"
+  ],
+  "verification": {
+    "links": "PASS",
+    "syntax": "PASS | INFO: <language> unchecked (no declared command)",
+    "coverage": "PASS | PARTIAL"
+  },
+  "coverage_gap_reason": "<set only when Step 9.3 returned PARTIAL>"
+}
+```
+
+If any 9.1 or 9.2 issue was found, this step does NOT run; the headline is
+`DOCS INCOMPLETE` and `status.json` is not advanced to `done`.
 
 ## Documentation Checklist
 
@@ -379,11 +434,13 @@ Then re-submit for review:
 
 ## Output Summary
 
-After completion, display one of the following headers — first matching condition wins:
+After completion, display one of the following headers — first matching
+condition wins. The `Status:` line is the authoritative classifier; the
+headline is decoration.
 
 ---
 
-**All Step 10 checks pass:**
+**All Step 9 checks pass:**
 
 ```
 DOCS COMPLETE
@@ -397,8 +454,8 @@ Documentation Updated:
   - CHANGELOG.md (added entry)
 
 Verification:
-  - Internal links: OK (0 broken)
-  - Code examples: OK (0 syntax errors)
+  - Internal links: OK (0 broken across all updated markdown files)
+  - Code examples: OK (0 syntax errors via declared workspace command)
   - Implementation coverage: OK (all result files covered)
 
 Commits:
@@ -416,7 +473,7 @@ Run: /nacl-tl-next to get next task
 
 ---
 
-**Broken links, syntax errors, or coverage gaps with user-acknowledged reason:**
+**Coverage gap with user-acknowledged reason (Step 9.3 only):**
 
 ```
 DOCS APPLIED — UNVERIFIED
@@ -427,46 +484,64 @@ Status: DONE (with acknowledged gaps)
 Documentation Updated:
   - <list of files>
 
-Verification gaps:
-  - <e.g. broken links: 0, syntax errors: 1, coverage gap: acknowledged — reason: "legacy module, no result file">
+Verification:
+  - Internal links: OK (0 broken)
+  - Code examples: OK (0 syntax errors)
+  - Implementation coverage: PARTIAL — reason: "<user-supplied>"
 
 Commits:
   - docs(UC###): update documentation for [feature]
 
-Action required: resolve gaps before next release or carry the acknowledged reason forward.
+Action required: resolve the coverage gap before next release or carry the
+acknowledged reason forward.
 ```
+
+`DONE (with acknowledged gaps)` is reserved for **coverage gaps only**.
+Broken links and code-syntax errors NEVER produce this headline — they
+emit `DOCS INCOMPLETE` and the task is NOT marked done.
 
 ---
 
-**Test infra (tsc / python) unavailable to check code examples:**
+**Declared TypeScript / Python check command unavailable for code examples:**
 
 ```
 DOCS HALTED — NO_INFRA
 
 Task: UC### [Title]
 
-Step 10.2 could not run: <tool> not available in this environment.
+Step 9.2 could not run: workspace did not declare a check command for
+<language> (`scripts.typecheck` / Python entry point absent).
 
 Options:
-  A) Install <tool> and re-run Step 10.
-  B) Acknowledge — status will downgrade to DOCS APPLIED — UNVERIFIED.
+  A) Declare the workspace command in package.json/pyproject.toml and re-run.
+  B) Acknowledge — status will downgrade to DOCS APPLIED — UNVERIFIED with
+     reason "language unchecked (no declared command)" and the task will be
+     marked done only if Steps 9.1 and 9.3 also passed.
 ```
+
+The skill MUST NOT invent `npx tsc` / `tsc` / `python -m py_compile`. Missing
+declared command ⇒ `NO_INFRA`.
 
 ---
 
-**Step 10 validation rejected (broken links or syntax errors not fixed):**
+**Step 9 validation rejected (broken links or syntax errors not fixed):**
 
 ```
 DOCS INCOMPLETE
 
 Task: UC### [Title]
+Status: INCOMPLETE
 
-Blocking issues from Step 10:
+Blocking issues from Step 9:
   - <broken links: N> or <code syntax errors: N>
 
-Documentation has NOT been committed.
+Documentation has NOT been committed. Task is NOT marked done.
 Fix the issues and re-run /nacl-tl-docs UC###.
 ```
+
+`DOCS INCOMPLETE` halts Step 10 (commit) and Step 11 (mark done). It is
+the only outcome for broken links or syntax errors — they cannot be
+acknowledged-as-gap.
 
 ## Documentation Quality Guidelines
 

@@ -569,10 +569,24 @@ On re-run of `/nacl-tl-qa UC###`:
 ## Output Summary
 
 ```
-E2E QA Testing Complete
+{HEADLINE}
 
 Task: UC### [Title]
+Status: {QA_STATUS}
 Verdict: QA COMPLETE / QA APPLIED — UNVERIFIED / QA HALTED — NO_INFRA / QA HALTED — UNVERIFIED / QA INCOMPLETE — REGRESSION
+
+Where `{HEADLINE}` is one of (status-aware; `Status:` line above is the
+authoritative classifier — the headline is decoration):
+- `QA COMPLETE` — every UI-testable criterion PASS, every screenshot present.
+- `QA APPLIED — UNVERIFIED` — testing ran but at least one criterion was
+  unverifiable (skipped step, missing screenshot file, ambiguous result).
+- `QA HALTED — NO_INFRA` — prerequisite failure (frontend/backend unreachable,
+  Playwright unavailable, no testable criteria in `acceptance.md`).
+- `QA INCOMPLETE — REGRESSION` — at least one criterion FAIL caused by code
+  the test exercised (not a flaky environment).
+
+Headline must match the `Status:` line. The legacy `E2E QA Testing Complete`
+header is no longer emitted regardless of verdict.
 
 Acceptance Criteria:
   Total: N | Tested: N | Passed: N | Failed: N | N/A: N

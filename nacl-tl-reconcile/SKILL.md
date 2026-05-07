@@ -236,7 +236,17 @@ Present plan and wait for approval. Include:
 - Scope estimate
 - Warning: reconcile fixes only docs, not code
 
-**Do NOT proceed without explicit user confirmation** (unless `--force` flag is set).
+**Do NOT proceed without explicit user confirmation** (unless `--force` flag
+is set).
+
+`--force` scope is **strictly limited** to the per-task confirmation prompts
+in this user gate and the per-discrepancy prompts inside Phase 3. It does
+NOT bypass the unverified-upstream acknowledgment gate (Phase 1's
+`UNVERIFIED upstream fix detected` prompt). When any upstream fix is
+`UNVERIFIED`, the user MUST still explicitly acknowledge that documenting
+unverified behavior is intentional, regardless of `--force`. This gate is
+separate, unconditional, and recorded verbatim in the Phase 5 report under
+"Unverified fix acknowledgments".
 
 **For --dry-run:** Present the plan and exit without starting Phase 3.
 
@@ -381,10 +391,31 @@ If the project has BA artifacts (docs/01-business-processes/ etc.), try to run `
 
 #### 4.4 Build + Test
 
+Use the workspace's declared scripts only — never invent commands.
+
 ```bash
-npm run build    # verify docs-only changes didn't break the build
-npm test         # tests still pass
+# Read declared commands; if undeclared, do NOT fall back.
+build_cmd=$(jq -r '.scripts.build // empty' package.json 2>/dev/null)
+test_cmd=$(jq -r '.scripts.test // empty' package.json 2>/dev/null)
+
+if [ -n "$build_cmd" ]; then
+  $build_cmd     # verify docs-only changes didn't break the build
+else
+  echo "build: NO_INFRA (scripts.build undeclared) — skipping"
+fi
+
+if [ -n "$test_cmd" ]; then
+  $test_cmd      # tests still pass
+else
+  echo "test: NO_INFRA (scripts.test undeclared) — skipping"
+fi
 ```
+
+If either command is undeclared, record `NO_INFRA` for that component in the
+Phase 5 `validation-result` column. Do NOT fall back to `npm run build`,
+`npm test`, or any other invented command. Missing declared commands ⇒
+`NO_INFRA`, never a synthetic PASS. If a declared command runs but exits
+with a runner crash before any task ran, record `RUNNER_BROKEN (<reason>)`.
 
 ---
 
