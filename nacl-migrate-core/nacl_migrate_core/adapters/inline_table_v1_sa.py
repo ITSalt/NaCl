@@ -261,10 +261,13 @@ class InlineTableV1SaAdapter:
             for row in table:
                 name_raw = list(row.values())[0].strip()
                 name = re.sub(r"^[`*]+|[`*]+$", "", name_raw).strip()
-                if not name or name in seen:
+                # Skip summary/total rows (e.g. "Итого", "Total", "**Итого**")
+                if not name or name in seen or re.match(r"^(итого|total|всего)$", name, re.IGNORECASE):
                     continue
                 seen.add(name)
-                description = list(row.values())[1].strip() if len(row) > 1 else ""
+                description_raw = list(row.values())[1].strip() if len(row) > 1 else ""
+                # Strip backticks/asterisks from Код column (e.g. "`core`" → "core")
+                description = re.sub(r"^[`*]+|[`*]+$", "", description_raw).strip()
                 iteration = ""
                 related: List[str] = []
                 for k, v in row.items():
@@ -273,9 +276,15 @@ class InlineTableV1SaAdapter:
                         iteration = v.strip()
                     if "процесс" in kl or "process" in kl:
                         related.extend(re.findall(r"\bBP-\d{3}\b", v))
-                slug = slugify(name)
+                # Use English code (Код column) as Module ID when it's a valid
+                # kebab-case identifier (e.g. "core", "data-import").
+                # Fallback to slugified Russian name for projects without a code column.
+                if re.match(r"^[a-z][a-z0-9-]*$", description):
+                    mod_slug = description
+                else:
+                    mod_slug = slugify(name)
                 ir.modules.append(Module(
-                    id=f"MOD-{slug}",
+                    id=f"MOD-{mod_slug}",
                     name=name,
                     source_file=self._rel(project, tree),
                     description=description,
@@ -311,6 +320,11 @@ class InlineTableV1SaAdapter:
                 (md.find_section(text, r"Описание|Description") or "").strip()
             )
             module_raw = self._extract_owning_module(text)
+            if not module_raw:
+                # Fallback: YAML frontmatter `module:` key (e.g. "module: data-import")
+                fm_data, _ = fm.extract(text)
+                if fm_data:
+                    module_raw = str(fm_data.get("module", "") or "").strip()
             # Apply the shared cleaning pipeline: strip bold markers, take the
             # first comma-separated chunk, drop any parenthetical suffix so
             # "shared/core (auth)" collapses to the canonical "shared/core".
@@ -560,10 +574,22 @@ class InlineTableV1SaAdapter:
             text = self._read(path) or ""
             metadata = self._metadata_table(text)
 
+            # Fallback: try YAML frontmatter when no Метаданные table present
+            if not metadata:
+                fm_data, _ = fm.extract(text)
+                if fm_data:
+                    metadata = {k.lower(): str(v) for k, v in fm_data.items() if v}
+
             scr_id = metadata.get("id", "").strip()
             if not re.match(r"^SCR-(?:\d{3}|[A-Z]\d{2})$", scr_id):
                 m = re.match(r"^(SCR-(?:\d{3}|[A-Z]\d{2}))-", path.name)
                 scr_id = m.group(1) if m else ""
+            # Derive SCR-NNN from "uc: UC101" frontmatter when no explicit id
+            if not scr_id:
+                uc_raw = metadata.get("uc", "") or metadata.get("use case", "")
+                uc_nums = re.findall(r"\bUC-?(\d{1,3})\b", uc_raw)
+                if uc_nums:
+                    scr_id = f"SCR-{int(uc_nums[0]):03d}"
             if not scr_id:
                 self._warn(ir, "FORM_ID_MISSING",
                            f"No SCR-NNN/SCR-X## id found in {path.name}",
@@ -906,9 +932,22 @@ class InlineTableV1SaAdapter:
                         uc_ids = [f"UC-{int(token):03d}"]
                     else:
                         uc_ids = [f"UC-{token}"]
+            # Fallback: derive UC ids from YAML frontmatter when no metadata table
+            if not uc_ids:
+                fm_data, _ = fm.extract(text)
+                if fm_data:
+                    uc_raw_fm = str(fm_data.get("uc") or "")
+                    uc_ids = self._extract_uc_ids(uc_raw_fm)
+            if not uc_ids:
+                # Final fallback: derive from filename
+                m_fn = re.match(r"^UC-?(\d{3}|[A-Z]\d{2})-requirements\.md$", path.name)
+                if m_fn:
+                    token = m_fn.group(1)
+                    uc_ids = [f"UC-{int(token):03d}" if token.isdigit() else f"UC-{token}"]
             ba_trace = re.findall(r"\bBP-\d{3}\b", metadata.get("ba trace", ""))
 
             # Every ### FR-NNN: / ### NFR-NN: heading is a requirement
+            file_req_count = 0
             for level, _, heading, body in md.iter_sections(text):
                 if level != 3:
                     continue
@@ -963,6 +1002,49 @@ class InlineTableV1SaAdapter:
                     ba_trace=list(dict.fromkeys(ba_trace)),
                     source_file=self._rel(project, path),
                 ))
+                file_req_count += 1
+
+            # Fallback: parse table-format requirements (RQ-NNN columns)
+            # Used when requirements files have | ID | Требование | Тип | Приоритет |
+            # rows with identifiers like RQ101-01 instead of ### FR-NNN headings.
+            if file_req_count == 0:
+                all_tables = md.parse_tables(text)
+                uc_prefix = uc_ids[0].replace("-", "") if uc_ids else "ORPHAN"
+                for table in all_tables:
+                    if not table:
+                        continue
+                    keys = list(table[0].keys())
+                    # Find ID column ("ID", "id", "№") and description column
+                    id_col = next((k for k in keys if k.strip().upper() in ("ID", "№", "N")), None)
+                    desc_col = next((k for k in keys if any(t in k.lower() for t in
+                                    ("требование", "requirement", "описание", "description"))), None)
+                    prio_col = next((k for k in keys if any(t in k.lower() for t in
+                                    ("приоритет", "priority"))), None)
+                    type_col = next((k for k in keys if any(t in k.lower() for t in
+                                    ("тип", "type", "category"))), None)
+                    if id_col is None or desc_col is None:
+                        continue
+                    for row in table:
+                        raw_id = row.get(id_col, "").strip()
+                        # Accept RQ101-01, RQ-101-01, RQ001 etc.
+                        rq_m = re.match(r"^RQ-?(\d+)-(\d+)$", raw_id, re.IGNORECASE)
+                        if not rq_m:
+                            continue
+                        req_id = f"REQ-{uc_prefix}-RQ{rq_m.group(1)}-{rq_m.group(2)}"
+                        description = row.get(desc_col, "").strip()
+                        priority = row.get(prio_col, "").strip() if prio_col else ""
+                        kind_raw = row.get(type_col, "").strip().lower() if type_col else ""
+                        kind = "NFR" if any(t in kind_raw for t in ("нфр", "nfr", "нефункц")) else "FR"
+                        ir.requirements.append(Requirement(
+                            id=req_id,
+                            description=md.strip_markdown_inline(description),
+                            kind=kind,
+                            priority=priority,
+                            uc_ids=list(uc_ids),
+                            ba_trace=list(dict.fromkeys(ba_trace)),
+                            source_file=self._rel(project, path),
+                        ))
+                        file_req_count += 1
 
         # Fallback: if zero requirements from per-UC files, check for nfr.md
         if not ir.requirements:
@@ -1113,38 +1195,74 @@ class InlineTableV1SaAdapter:
                     if len(vals) < 2:
                         continue
                     bp_match = re.search(r"\bBP-\d{3}(?:-S\d{2})?\b", vals[0])
-                    uc_ids = self._extract_uc_ids(vals[1])
-                    if bp_match and uc_ids:
-                        for uc_id in uc_ids:
-                            handoff.automates_as.append(HandoffEdge(
+                    # Search ALL columns for UC IDs (handles both 2-column and
+                    # multi-column formats where UC is not in the second column).
+                    all_cells = " ".join(str(v) for v in vals)
+                    uc_ids_row = self._extract_uc_ids(all_cells)
+                    if bp_match and uc_ids_row:
+                        for uc_id in uc_ids_row:
+                            edge = HandoffEdge(
                                 from_id=bp_match.group(0),
                                 to_id=uc_id,
                                 source_file=handoff.source_file,
-                            ))
+                            )
+                            # Deduplicate: same (from_id, to_id) pair only once
+                            key = (edge.from_id, edge.to_id)
+                            if key not in {(e.from_id, e.to_id) for e in handoff.automates_as}:
+                                handoff.automates_as.append(edge)
 
         # Section 2: Entities -> Domain Entities (by name lookup)
+        # Searches ALL cells for CamelCase SA entity names (handles multi-column
+        # tables where the SA entity is not in the second column).
         sec = md.find_section(text, r"\d+\.\s+Сущности.*Domain Entities.*|\d+\.\s+Entities.*|.*OBJ.*DE.*")
         if sec:
             tables = md.parse_tables(sec)
             if tables:
                 de_by_name = {e.name.lower(): e.id for e in ir.domain_entities}
                 de_by_slug = {slugify(e.name): e.id for e in ir.domain_entities}
+                # Also index by English prefix only (before " — ", "(", or space).
+                # Handles names like "ArticleImport — Загрузка..." where full-name
+                # lookup would miss "ArticleImport" token.
+                de_by_short: Dict[str, str] = {}
+                for e in ir.domain_entities:
+                    m_en = re.match(r"([A-Z][A-Za-z0-9]+)", e.name)
+                    if m_en:
+                        de_by_short[m_en.group(1).lower()] = e.id
+                        de_by_short[slugify(m_en.group(1))] = e.id
                 for row in tables[0]:
                     vals = list(row.values())
                     if len(vals) < 2:
                         continue
                     obj_match = re.search(r"\bOBJ-\d{3}\b", vals[0])
-                    sa_candidate = re.sub(r"^[`*]+|[`*]+$", "", vals[1].strip())
-                    # Take the first word-like token as the SA name
-                    name_match = re.match(r"([A-Za-z][A-Za-z0-9]+)", sa_candidate)
-                    if not (obj_match and name_match):
+                    if not obj_match:
                         continue
-                    sa_name = name_match.group(1)
-                    target = de_by_name.get(sa_name.lower()) or de_by_slug.get(slugify(sa_name))
+                    # Search all non-first columns for an English CamelCase entity name
+                    target = None
+                    warned = False
+                    for cell_val in vals[1:]:
+                        cell_clean = re.sub(r"[`*]", "", cell_val.strip())
+                        for token in re.findall(r"\b([A-Z][A-Za-z0-9]+)\b", cell_clean):
+                            t = (de_by_name.get(token.lower())
+                                 or de_by_slug.get(slugify(token))
+                                 or de_by_short.get(token.lower())
+                                 or de_by_short.get(slugify(token)))
+                            if t:
+                                target = t
+                                break
+                        if target:
+                            break
                     if target is None:
-                        self._warn(ir, "HANDOFF_DE_UNKNOWN",
-                                   f"traceability-matrix references DE {sa_name!r} with no matching file",
-                                   handoff.source_file)
+                        if not warned:
+                            # Report the first English token tried as the candidate
+                            for cell_val in vals[1:]:
+                                cell_clean = re.sub(r"[`*]", "", cell_val.strip())
+                                m = re.search(r"\b([A-Z][A-Za-z0-9]+)\b", cell_clean)
+                                if m:
+                                    self._warn(ir, "HANDOFF_DE_UNKNOWN",
+                                               f"traceability-matrix references DE {m.group(1)!r} with no matching file",
+                                               handoff.source_file)
+                                    warned = True
+                                    break
                         continue
                     handoff.realized_as.append(HandoffEdge(
                         from_id=obj_match.group(0),
@@ -1153,7 +1271,9 @@ class InlineTableV1SaAdapter:
                     ))
 
         # Section 3: Roles -> System Roles (by name lookup)
-        sec = md.find_section(text, r"\d+\.\s+Роли.*System Roles.*|\d+\.\s+Roles.*|ACT.*SYSROL.*")
+        # Accepts both ACT-NN and ROL-NN as the BA role identifier.
+        # Searches all cells for underscored/sluggable role names.
+        sec = md.find_section(text, r"\d+\.\s+Роли.*System Roles.*|\d+\.\s+Роли.*Системные.*|\d+\.\s+Roles.*|ACT.*SYSROL.*")
         if sec:
             tables = md.parse_tables(sec)
             if tables:
@@ -1162,51 +1282,84 @@ class InlineTableV1SaAdapter:
                     vals = list(row.values())
                     if len(vals) < 2:
                         continue
-                    act_match = re.search(r"\bACT-\d{2}\b", vals[0])
-                    if not act_match:
+                    # Accept ACT-NN or ROL-NN in first column as the BA role id
+                    ba_id_match = re.search(r"\b(?:ACT|ROL)-\d{2}\b", vals[0])
+                    if not ba_id_match:
                         continue
-                    sa_cell = vals[1].strip()
-                    sa_cell_stripped = re.sub(r"`|\*", "", sa_cell)
-                    name_match = re.match(r"([A-Za-z]+)", sa_cell_stripped)
-                    if not name_match:
-                        continue
-                    sa_name = name_match.group(1)
-                    target = sr_by_slug.get(slugify(sa_name))
+                    ba_id_raw = ba_id_match.group(0)
+                    from_id = canonical_role_id(ba_id_raw)
+                    if not from_id:
+                        # ROL-NN isn't recognized by canonical_role_id — use as-is
+                        from_id = ba_id_raw
+                    # Search all non-first columns for a role name (snake_case or kebab-case)
+                    target = None
+                    for cell_val in vals[1:]:
+                        cell_clean = re.sub(r"`|\*", "", cell_val.strip())
+                        # Prefer snake_case or regular word tokens
+                        for token in re.findall(r"\b([a-z][a-z0-9_]+)\b", cell_clean):
+                            t = sr_by_slug.get(slugify(token))
+                            if t:
+                                target = t
+                                break
+                        if target:
+                            break
                     if target is None:
                         continue   # e.g. "— (вне системы)"
-                    from_id = canonical_role_id(act_match.group(0))
-                    if not from_id:
-                        continue
                     handoff.mapped_to.append(HandoffEdge(
                         from_id=from_id,
                         to_id=target,
                         source_file=handoff.source_file,
                     ))
 
-        # Section 4: BRQ -> Requirement categories.
-        # Note: many projects map to category names rather than specific
-        # Requirement nodes. We can't emit IMPLEMENTED_BY in that case.
-        # Attempt direct resolution where the SA cell contains a REQ-id or
-        # the category string is a known requirement description keyword.
-        sec = md.find_section(text, r"\d+\.\s+Бизнес-правила.*Requirements.*|\d+\.\s+Rules.*|BRQ.*Req.*")
+        # Section 4: BRQ -> Requirements.
+        # Handles both REQ-* prefixed IDs and raw RQ-NNN-NN identifiers by
+        # resolving RQ-NNN-NN against the IR requirements index.
+        sec = md.find_section(text, r"\d+\.\s+Бизнес-правила.*|\d+\.\s+Rules.*|BRQ.*Req.*")
         if sec:
             tables = md.parse_tables(sec)
             if tables:
+                # Build lookup: partial RQ key → full REQ id
+                # e.g. "RQ101-03" → "REQ-UC101-RQ101-03"
+                req_by_rq: Dict[str, str] = {}
+                for r in ir.requirements:
+                    # Extract the RQ suffix from canonical id (e.g. "RQ101-03")
+                    rq_m = re.search(r"(RQ\d+-\d+)$", r.id)
+                    if rq_m:
+                        req_by_rq[rq_m.group(1).upper()] = r.id
                 for row in tables[0]:
                     vals = list(row.values())
                     if len(vals) < 2:
                         continue
                     brq_match = re.search(r"\bBRQ-\d{3}\b", vals[0])
-                    req_match = re.search(r"\bREQ-[A-Z0-9\-]+\b", vals[1])
-                    if brq_match and req_match:
+                    if not brq_match:
+                        continue
+                    all_cells = " ".join(str(v) for v in vals[1:])
+                    # Try REQ-* format first
+                    req_match = re.search(r"\bREQ-[A-Z0-9\-]+\b", all_cells)
+                    if req_match:
                         handoff.implemented_by.append(HandoffEdge(
                             from_id=brq_match.group(0),
                             to_id=req_match.group(0),
                             source_file=handoff.source_file,
                         ))
-                    elif brq_match:
+                        continue
+                    # Try raw RQ-NNN-NN references (comma-separated list)
+                    rq_ids = re.findall(r"\bRQ\d+-\d+\b", all_cells)
+                    matched = False
+                    for rq_raw in rq_ids:
+                        canonical = req_by_rq.get(rq_raw.upper())
+                        if canonical:
+                            handoff.implemented_by.append(HandoffEdge(
+                                from_id=brq_match.group(0),
+                                to_id=canonical,
+                                source_file=handoff.source_file,
+                            ))
+                            matched = True
+                            break  # link to first matching requirement
+                    if not matched:
                         self._warn(ir, "HANDOFF_REQ_CATEGORY",
-                                   f"traceability row BRQ {brq_match.group(0)} -> category '{vals[1].strip()}' (not a REQ id)",
+                                   f"traceability row BRQ {brq_match.group(0)} -> "
+                                   f"'{all_cells.strip()[:60]}' (no REQ/RQ id resolved)",
                                    handoff.source_file)
 
         # Module suggestions: ProcessGroup -> Module (from module-tree
