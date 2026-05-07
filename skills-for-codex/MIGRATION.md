@@ -41,8 +41,15 @@ not be written before that model exists.
 - Pre/post `git status --short` checks confirm only intended
   `skills-for-codex/` files were added or modified.
 
+## Pilot Status
+
+- Five-skill pilot created.
+- Static validation VERIFIED.
+- User-level symlink discovery VERIFIED.
+- Read-only invocation smoke test VERIFIED.
+- Next migration stage is Wave 2 conversion after install docs are committed.
+
 ## Rollout After Pilot
 
 After review, migrate remaining skills in waves: core/utilities, BA, SA, TL
 individual skills, orchestrators, then documentation and validation automation.
-

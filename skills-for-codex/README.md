@@ -24,6 +24,16 @@ Only these skills are included in the pilot:
 No placeholder directories are created for unconverted skills. Additional skills
 should be migrated only after the pilot rules are reviewed and accepted.
 
+## Installation
+
+The verified installation strategy is user-level symlinks from
+`$HOME/.agents/skills/` to the canonical skills under `skills-for-codex/`.
+Repo-local `.agents/skills/` wrappers are intentionally not used for this
+project.
+
+See `INSTALL.md` for the reproducible installer, exact symlink mappings,
+verification commands, and uninstall instructions.
+
 ## References
 
 The pilot creates only three shared reference files upfront:
@@ -34,4 +44,3 @@ The pilot creates only three shared reference files upfront:
 
 Additional shared references, scripts, or assets may be copied here only after
 the pilot proves they are needed.
-
