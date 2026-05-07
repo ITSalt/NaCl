@@ -164,16 +164,29 @@ If a runner exits non-zero before any test runs, or stdout is empty and stderr i
 
 #### 7.3 Check endpoint coverage
 
-For each API endpoint path touched by this change (extracted in Step 2), grep test files in the corresponding workspace:
+For each API endpoint path touched by this change (extracted in Step 2), grep test files in the corresponding workspace using literal-string matching to avoid false negatives from regex metacharacters (`{`, `}`, `[`, `]`, `(`, `)`) in path templates:
 
 ```
-grep -rn "<endpoint_path_string>" src/**/*.test.{ts,tsx,js,jsx} src/**/*.spec.{ts,tsx,js,jsx}
+grep -rFn "<endpoint_path_string>" src/**/*.test.{ts,tsx,js,jsx} src/**/*.spec.{ts,tsx,js,jsx}
 ```
+
+The `-F` flag treats the search string as a fixed literal, not a regular expression.
 
 - If at least one test file references the endpoint path → `covered = true`
 - If no test file references the endpoint path → `covered = false`; flag as `coverage_gap`
 
 This check runs for both BE and FE independently.
+
+#### 7.3b Detect mock usage in FE tests
+
+After running the endpoint coverage grep, scan FE test files for mock framework patterns:
+
+```
+grep -rn "jest\.mock(\|vi\.mock(\|setupServer(\|mockapi\." src/**/*.test.{ts,tsx,js,jsx} src/**/*.spec.{ts,tsx,js,jsx}
+```
+
+- If any FE test file contains `jest.mock(`, `vi.mock(`, `setupServer(`, or `mockapi.` → set `fe_coverage_gap = true` and record the file paths found.
+- When `fe_coverage_gap = true`, the FE endpoint coverage is downgraded to **UNVERIFIED** regardless of path-grep results: tests that intercept requests via mocks do not confirm real BE integration.
 
 #### 7.4 Classify runtime result
 
@@ -278,6 +291,17 @@ Scan `src/frontend/` excluding `test/`, `__tests__/`, `*.test.ts`, `*.spec.ts`, 
 | MOCK_SWITCH | `if (USE_MOCK)` or `if (process.env.MOCK)` | BLOCKER |
 | MOCK_IMPORT | `import { mockApi } from './mock'` | BLOCKER |
 
+Additionally, scan **production paths** (`src/services/`, `src/hooks/`, `src/api/`, and all non-test FE source excluding `__mocks__/`, `fixtures/`, `*.stories.*`) for mock import patterns:
+
+```
+grep -rn "import .* from .*mock" src/services/ src/hooks/ src/api/ src/frontend/
+grep -rn "import .*mock.* from" src/services/ src/hooks/ src/api/ src/frontend/
+```
+
+Exclude paths matching `__mocks__/`, `fixtures/`, `*.stories.`, `*.test.`, `*.spec.`.
+
+Any match found in a production path is classified as `mock_blockers` and treated as **BLOCKER** regardless of other context. Record the count in `mock_blockers`. Record WARNING-severity mock remnants in `mock_warnings`.
+
 ### 8. WebSocket/SSE Events (if applicable)
 
 Only check if the contract defines events. Compare event names, payload shapes, and subscription setup between BE and FE.
@@ -298,8 +322,10 @@ Only check if the contract defines events. Compare event names, payload shapes, 
 
 Static checks alone determine FAIL (blockers found). The runtime check from Step 7 determines whether a blocker-free sync is SYNC COMPLETE or a qualified status.
 
+Apply rules in order — first match wins:
+
 ```
-if (blocker_count > 0):
+if (blocker_count > 0) or (mock_blockers > 0):
   verdict = "FAIL"  →  headline: SYNC INCOMPLETE — REGRESSION (return to dev)
 elif runtime_result == "NO_INFRA":
   verdict = "NO_INFRA"  →  headline: SYNC APPLIED — NO_INFRA
@@ -307,7 +333,7 @@ elif runtime_result == "RUNNER_BROKEN":
   verdict = "RUNNER_BROKEN"  →  headline: SYNC APPLIED — RUNNER_BROKEN
 elif runtime_result == "REGRESSION":
   verdict = "REGRESSION"  →  headline: SYNC INCOMPLETE — REGRESSION
-elif runtime_result == "UNVERIFIED":
+elif (mock_warnings > 0) or (fe_coverage_gap == true) or (runtime_result == "UNVERIFIED"):
   verdict = "UNVERIFIED"  →  headline: SYNC APPLIED — UNVERIFIED
 elif runtime_result == "BLOCKED":
   verdict = "BLOCKED"  →  headline: SYNC APPLIED — BLOCKED
@@ -316,6 +342,11 @@ elif runtime_result == "PASS" and warning_count > 0:
 else:
   verdict = "PASS"  →  headline: SYNC COMPLETE
 ```
+
+**Mock-specific verdict notes:**
+- `mock_blockers > 0`: a production file (non-test, non-fixture, non-stories) imports from a mock module. This is an incompatibility that causes runtime drift — treated identically to a structural BLOCKER.
+- `mock_warnings > 0`: WARNING-severity mock remnants were found (e.g., hardcoded data in non-service FE code). The sync cannot be declared complete — downgrade to UNVERIFIED.
+- `fe_coverage_gap = true`: FE test files use `jest.mock(`, `vi.mock(`, `setupServer(`, or `mockapi.` — they intercept requests rather than hitting a real BE. Endpoint coverage via these tests is not genuine; downgrade to UNVERIFIED.
 
 | Headline | Next step |
 |----------|-----------|
@@ -563,7 +594,9 @@ If a referenced source file does not exist on disk, mark as BLOCKER in the repor
 - [ ] FE workspace `scripts.test` discovered (or NO_INFRA recorded)
 - [ ] BE suite run; pass/fail counts captured
 - [ ] FE suite run; pass/fail counts captured
-- [ ] Endpoint path coverage grep run for each touched endpoint (BE and FE)
+- [ ] Endpoint path coverage grep run for each touched endpoint (BE and FE) using `grep -F` (literal match)
+- [ ] FE test files scanned for `jest.mock(` / `vi.mock(` / `setupServer(` / `mockapi.` patterns; `fe_coverage_gap` recorded
+- [ ] Production paths scanned for mock imports (`import .* from .*mock`); `mock_blockers` and `mock_warnings` counts recorded
 - [ ] Runtime result classified (PASS / UNVERIFIED / NO_INFRA / RUNNER_BROKEN / REGRESSION / BLOCKED)
 
 ### After Verification

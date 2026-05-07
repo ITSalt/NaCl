@@ -17,9 +17,13 @@ description: |
 - Optional: stub-registry.json prior state
 
 **Outputs this skill produces:**
-- stub-registry.json with severity counts (CRITICAL / MAJOR / WARNING)
-- Headline one of: STUBS COMPLETE / STUBS APPLIED — UNVERIFIED /
-  STUBS RUNNER_BROKEN / STUBS APPLIED — REGRESSION (when prior count grew)
+- stub-registry.json with severity counts (CRITICAL / MAJOR / WARNING) and `files_scanned: { production: N, tests: M }`
+- Headline one of:
+  - `STUBS COMPLETE` — production stubs == 0 AND WARNING-empty-test-files == 0 AND tests scanned > 0
+  - `STUBS APPLIED — UNVERIFIED (test files: 0)` — no test files were in scope
+  - `STUBS HALTED — RUNNER_BROKEN` — grep seed failed, filesystem unreadable, or registry unwritable
+  - `STUBS APPLIED — REGRESSION (empty test files: N)` — empty-test-file count exceeds threshold
+  - `STUBS APPLIED — REGRESSION` — stub count grew vs. prior registry (and regression-empty threshold not met)
 
 **Downstream consumers of this output:**
 - nacl-tl-review (Stub Verification Gate)
@@ -205,6 +209,7 @@ Apply rules in order. First match wins.
 | 18 | `TODO` mentioning docs/jsdoc/readme | Documentation debt |
 | 19 | `TODO` mentioning optimize/cache/refactor | Technical debt |
 | 20 | `TODO` without deadline or urgency | General improvement note |
+| 21 | `STUB-EMPTY-TEST-FILE-IMPORT-PROXY` (0 `it()`/`test()`, but first 20 lines import a sibling `*.test(s).*` module) | Delegation pattern; likely intentional re-export |
 
 ---
 
@@ -215,6 +220,21 @@ Apply rules in order. First match wins.
 - **No arguments**: scan all files in `src/`
 - **UC###**: read `result-be.md` and `result-fe.md`, extract file lists from "Files Changed/Created" sections, scan only those
 - **--final**: scan all `src/`, apply stricter thresholds
+
+### Step 1b: Sanity-Seed Check (run before any grep)
+
+Before scanning, write a known stub marker into a temporary file inside the workspace:
+
+```
+// STUB-SEED-CHECK do-not-remove
+```
+
+Run the exact grep/rg configuration (same flags, same pattern, same scope) against that temp file only.
+
+- **If the marker IS found** → seed check passes; continue with Step 2. Delete the temp file.
+- **If the marker is NOT found** → the runner is misconfigured. Emit `STUBS HALTED — RUNNER_BROKEN (grep sanity-seed failed)`. Delete the temp file. Halt.
+
+The temp file must be deleted regardless of the outcome.
 
 ### Step 2: Scan Production Files
 
@@ -227,10 +247,13 @@ For code patterns without markers, infer type: `throw NotImplemented` -> STUB, `
 For each `*.test.{ts,tsx,js,jsx}` and `*.spec.{ts,tsx,js,jsx}` file in scope:
 
 1. Count `it(` and `test(` occurrences.
-2. If count == 0 → flag as `STUB-EMPTY-TEST-FILE` (WARNING).
+2. If count == 0:
+   a. Check the first 20 lines for an import-proxy pattern: `import .* from ['"].*\.tests?['"]` (matches both `.test` and `.tests` extensions).
+   b. If the import-proxy pattern IS found → flag as `STUB-EMPTY-TEST-FILE-IMPORT-PROXY` (INFO). The file delegates to a sibling test module; not a hollow stub.
+   c. If the import-proxy pattern is NOT found → flag as `STUB-EMPTY-TEST-FILE` (WARNING).
 3. If count > 0 → scan for `describe(` blocks with no `it(`/`test(` inside (Pattern B above). Each such block → flag as `STUB-EMPTY-DESCRIBE` (WARNING).
 
-The test-file pass runs regardless of whether the production-code pass found anything. A clean production-code scan with empty test files is NOT `STUBS COMPLETE` — it is `STUBS APPLIED — UNVERIFIED`.
+The test-file pass runs regardless of whether the production-code pass found anything. A clean production-code scan with empty test files is NOT `STUBS COMPLETE` — empty test files always escalate to a non-`STUBS COMPLETE` headline.
 
 ### Step 3: Classify Severity
 
@@ -254,12 +277,13 @@ IDs are never reused. Entries are never deleted. Resolved stubs keep their ID pe
 
 ### Step 6: Write Registry
 
-Write `.tl/stub-registry.json`:
+Write `.tl/stub-registry.json`. **After writing, verify the file is readable and its `updatedAt` field matches the timestamp just written.** If the write fails or the verification read fails, emit `STUBS HALTED — RUNNER_BROKEN (registry unwritable)` and halt — do not print the summary.
 
 ```json
 {
   "$schema": "stub-registry-v1",
   "updatedAt": "ISO-timestamp",
+  "files_scanned": { "production": 47, "tests": 12 },
   "stats": {
     "total": 12, "critical": 1, "warning": 5, "info": 6,
     "resolved": 8, "unresolved": 4, "orphaned": 1,
@@ -351,12 +375,15 @@ The final headline of a stub scan run must use one of:
 
 | Headline | Condition |
 |----------|-----------|
-| `STUBS COMPLETE` | Scan ran fully; zero unresolved stubs found (production + test files) |
-| `STUBS APPLIED — UNVERIFIED` | Scan ran but scope had no test files at all (cannot assess test coverage debt) |
-| `STUBS RUNNER_BROKEN` | Filesystem read of source files failed; scan could not complete |
-| `STUBS APPLIED — REGRESSION` | Prior stub count (from previous registry) was lower than current count (stubs grew) |
+| `STUBS COMPLETE` | ALL three conditions met: (1) production stubs == 0, AND (2) empty-test-file count (WARNING severity) == 0, AND (3) test files were actually scanned (test file count > 0) |
+| `STUBS APPLIED — UNVERIFIED (test files: 0)` | Scan ran but scope had no test files at all; cannot assess test coverage debt |
+| `STUBS HALTED — RUNNER_BROKEN` | Grep sanity-seed failed, filesystem read failed, or registry write failed; scan could not complete or could not be persisted |
+| `STUBS APPLIED — REGRESSION (empty test files: N)` | Empty-test-file (WARNING) count exceeds threshold: > 10 files OR > 50% of scanned test files |
+| `STUBS APPLIED — REGRESSION` | Prior stub count (from previous registry) was lower than current count (stubs grew), and the regression-empty-file threshold is not met |
 
-A result of "0 production stubs found" does NOT automatically produce `STUBS COMPLETE` if empty test files were detected — those are WARNING stubs and must appear in the count.
+**`STUBS COMPLETE` is reserved for zero-unresolved-stubs AND zero WARNING-empty-test-files AND at least one test file was scanned.** A result of "0 production stubs found" does NOT produce `STUBS COMPLETE` if empty test files were detected or if no test files were scanned at all.
+
+The `files_scanned` field in the report must carry `{ production: N, tests: M }`. When `tests == 0`, the headline is downgraded to `STUBS APPLIED — UNVERIFIED (test files: 0)` regardless of production stub count.
 
 ---
 
@@ -437,8 +464,12 @@ Gate: STUBS COMPLETE -- Task can proceed to review.
 | UC result files missing | `Error: No result files for UC###. Run /nacl-tl-dev-be or /nacl-tl-dev-fe first` |
 | Registry corrupted | `Warning: Creating fresh registry. Previous history lost.` |
 | Result files lack file lists | `Warning: Falling back to full src/ scan` |
-| Filesystem read fails | Headline: `STUBS RUNNER_BROKEN` |
-| Scan finds nothing (production + test files scanned) | Valid. Report "0 stubs", resolve any previously tracked stubs for scanned files. Headline: `STUBS COMPLETE` |
+| Filesystem read fails | Halt. Headline: `STUBS HALTED — RUNNER_BROKEN` |
+| Registry write fails | Halt. Headline: `STUBS HALTED — RUNNER_BROKEN (registry unwritable)` |
+| Grep sanity-seed not found | Halt. Headline: `STUBS HALTED — RUNNER_BROKEN (grep sanity-seed failed)` |
+| Scan finds nothing AND test files were scanned (tests > 0) AND no WARNING-empty-test-files | Valid clean result. Report "0 stubs". Headline: `STUBS COMPLETE` |
+| Scan finds nothing AND test files == 0 | Headline: `STUBS APPLIED — UNVERIFIED (test files: 0)` — cannot assess coverage debt |
+| Scan finds empty test files (WARNING) > 10 or > 50% of test files | Headline: `STUBS APPLIED — REGRESSION (empty test files: N)` |
 
 ---
 
@@ -479,19 +510,23 @@ Gate: STUBS COMPLETE -- Task can proceed to review.
 - [ ] `.tl/` and `src/` directories exist
 - [ ] For UC scan: result file(s) present
 - [ ] Scope determined (full / UC / final)
+- [ ] Sanity-seed check passed (grep finds `// STUB-SEED-CHECK do-not-remove` in temp file)
 
 ### During Scan
 - [ ] All production patterns checked (comment + code + FE + mock data)
-- [ ] Test files scanned for empty-structure patterns (STUB-EMPTY-TEST-FILE, STUB-EMPTY-DESCRIBE)
+- [ ] Test files scanned for empty-structure patterns (STUB-EMPTY-TEST-FILE, STUB-EMPTY-TEST-FILE-IMPORT-PROXY, STUB-EMPTY-DESCRIBE)
+- [ ] Import-proxy check applied to each zero-`it()`/`test()` file (first 20 lines, `import .* from ['"].*\.tests?['"]`)
+- [ ] `files_scanned` counters tracked: production file count and test file count
 - [ ] Each finding classified by severity
 - [ ] UC association attempted (explicit, file path, or orphaned)
 - [ ] Registry loaded and reconciled (new IDs, resolved detection)
 
 ### After Scan
-- [ ] `stub-registry.json` written with updated stats (including emptyTestFiles, emptyDescribeBlocks)
+- [ ] `stub-registry.json` written with updated stats (including emptyTestFiles, emptyDescribeBlocks, files_scanned)
+- [ ] Registry write verified (re-read and confirm `updatedAt` matches); halt with `STUBS HALTED — RUNNER_BROKEN (registry unwritable)` if it fails
 - [ ] `stub-report.md` written (UC scan only) with empty-test-file section
 - [ ] `status.json` and `changelog.md` updated
-- [ ] Headline status assigned (STUBS COMPLETE / STUBS APPLIED — UNVERIFIED / STUBS RUNNER_BROKEN / STUBS APPLIED — REGRESSION)
+- [ ] Headline status assigned per triple-condition: `STUBS COMPLETE` only when production == 0 AND WARNING-empty-test-files == 0 AND tests scanned > 0
 - [ ] Gate verdict displayed with next action
 
 ---

@@ -166,9 +166,21 @@ Write initial `.tl/release-status.json` with discovered PRs.
 **Pre-merge UC status gate (runs BEFORE presenting merge plan):**
 
 For each PR in the release candidate list:
-1. Identify the underlying UC(s) by reading:
-   - Graph: `MATCH (t:Task)-[:IN_WAVE]->() WHERE t.id IN [UC list] RETURN t.id, t.status`
-   - Fallback: `.tl/status.json` for each UC referenced in the PR branch name or commit messages
+1. Identify the underlying UC(s) and query the graph — **graph only, no JSON fallback**:
+   ```cypher
+   MATCH (t:Task)
+   WHERE t.id IN [<UC list>]
+   RETURN t.id, t.status, t.verification_evidence
+   ```
+   **If a Task node is missing (the query returns no row for a UC):**
+   - **HALT immediately.**
+   - Print:
+     ```
+     RELEASE HALTED — MISSING TASK NODE
+     UC### has no Task node in the graph. The graph may be out of sync.
+     Run /nacl-tl-diagnose to reconcile before retrying the release.
+     ```
+   - Do NOT fall back to `.tl/status.json`. Do NOT proceed.
 2. Branch on UC status:
 
    | UC status | Merge action |
@@ -177,7 +189,7 @@ For each PR in the release candidate list:
    | verified-pending (UNVERIFIED) | HALT: "PR #N has UC### with UNVERIFIED dev status. Merge without verification? [yes/no] Default: no". If user confirms → include with warning. If not → exclude from merge plan; report RELEASE HALTED — UNVERIFIED |
    | blocked | Same user gate as UNVERIFIED |
    | failed / REGRESSION | DO NOT include; report: "PR #N excluded — REGRESSION in UC###"; flag RELEASE INCOMPLETE — REGRESSION |
-   | Not found | Warn and include (backward-compat) |
+   | Not found (after node-missing HALT above was skipped via prior user confirmation) | Must not reach here — HALT was mandatory. This row exists only for documentation clarity. |
 
 Present the merge plan (including UC status column):
 
@@ -326,6 +338,28 @@ Read `.tl/changelog.md` entries since last tag. Group by type:
 ### Infrastructure
 - TECH-020: @nivo charting library integration
 ```
+
+**Changelog freshness cross-check (mandatory):**
+
+```bash
+# Date of the latest changelog entry (first ## line after last tag)
+CHANGELOG_DATE=$(grep -m1 '^## ' .tl/changelog.md | grep -oE '[0-9]{4}-[0-9]{2}-[0-9]{2}')
+
+# Date of the most recent PR merged into main since the last tag
+LAST_MERGE_DATE=$(gh pr list --state merged --base main --limit 20 \
+  --json mergedAt --jq '[.[].mergedAt] | sort | last | .[0:10]')
+```
+
+Compare the two dates:
+- If `CHANGELOG_DATE` is **more than 1 day older** than `LAST_MERGE_DATE`:
+  ```
+  WARNING — CHANGELOG MAY BE STALE
+  Latest changelog entry: {CHANGELOG_DATE}
+  Most recent PR merged:   {LAST_MERGE_DATE}
+  Delta: {N} days. Review .tl/changelog.md and add missing entries before tagging.
+  ```
+  Do NOT block the release, but print this warning prominently above the version bump line.
+- If `CHANGELOG_DATE` is within 1 day of `LAST_MERGE_DATE` (or ahead) → no warning.
 
 ### Step 6: CREATE GIT TAG
 
@@ -493,6 +527,7 @@ On start, if `.tl/release-status.json` exists:
 | `--dry-run` flag | Show merge plan + version bump, no action |
 | Session interrupted mid-merge | Resume from release-status.json, skip already-merged PRs |
 | Neo4j unavailable (Step 7) | Log warning, set graph.status = "warn", continue release |
+| Task node missing in graph (Step 2) | RELEASE HALTED — MISSING TASK NODE. Run /nacl-tl-diagnose. Do NOT fall back to status.json. |
 | PR merged but UC was UNVERIFIED | Halt BEFORE merge. Ask user: "UC### is UNVERIFIED — merge to main without test coverage? [yes/no] Default: no". Never auto-merge UNVERIFIED. If user answers yes, merge proceeds with override note. |
 | Any UC has REGRESSION status | RELEASE INCOMPLETE — REGRESSION. Do NOT merge, do NOT tag. |
 | All UCs PASS | Proceed normally; RELEASE COMPLETE headline |
@@ -507,8 +542,10 @@ On start, if `.tl/release-status.json` exists:
 ===============================================
 
 Merge:
-  #42  feat: UC-028 Funnel event tracking   — merged (squash) [PASS]
-  #45  feat: UC-029 Scene prompt display     — merged (squash) [PASS]
+  PR   Title                              Method   UC status    Evidence level
+  ---  ---------------------------------  -------  -----------  ---------------
+  #42  feat: UC-028 Funnel event tracking squash   PASS         test-GREEN (regression test path: .tl/tasks/UC028/regression-test.md)
+  #45  feat: UC-029 Scene prompt display  squash   PASS         test-GREEN (regression test path: .tl/tasks/UC029/regression-test.md)
 
 Deploy:
   CI: passed (4m 22s)
@@ -530,6 +567,20 @@ YouGile:
   Tasks closed: UC-028, UC-029
 
 ===============================================
+```
+
+**Per-UC evidence-level values** (populate from `t.verification_evidence` in the graph query from Step 2):
+
+| Evidence level | Meaning |
+|----------------|---------|
+| `test-GREEN` | Regression test ran RED→GREEN; path recorded in graph |
+| `test-UNVERIFIED` | Tests passed but no RED→GREEN artifact in graph |
+| `no-test` | No test file found; UC shipped under explicit user override |
+| `unknown` | Graph node existed but `verification_evidence` field is null/empty |
+
+If any UC in the merged set has evidence level `no-test` or `unknown`, append a footer line:
+```
+Verification gaps: UC-029 (no-test), UC-031 (unknown) — review before next release.
 ```
 
 If merge-only (no deploy verification configured):

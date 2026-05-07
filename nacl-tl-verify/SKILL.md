@@ -19,9 +19,10 @@ description: |
 - YouGile config (optional — may be unavailable)
 
 **Outputs this skill produces:**
-- Headline one of: VERIFY COMPLETE / VERIFY APPLIED — BLOCKED /
-  VERIFY APPLIED — UNVERIFIED / VERIFY APPLIED — NO_INFRA /
-  VERIFY APPLIED — RUNNER_BROKEN / VERIFY INCOMPLETE — REGRESSION
+- Headline one of: VERIFY COMPLETE (code-only) / VERIFY COMPLETE (E2E-verified) /
+  VERIFY APPLIED — BLOCKED / VERIFY APPLIED — UNVERIFIED /
+  VERIFY APPLIED — NO_INFRA / VERIFY APPLIED — RUNNER_BROKEN /
+  VERIFY INCOMPLETE — REGRESSION
 - Aggregate report with both code-only and E2E rationale fields
 - YouGile post when YouGile is reachable; "VERIFIED (local-only, not posted)"
   fallback otherwise
@@ -93,18 +94,19 @@ Reports always saved locally to `.tl/reports/`. Remote publish only if config.ya
 
 ## Headline Status Vocabulary
 
-The final report headline is always one of the six:
+The final report headline is always one of the following:
 
 | Headline | Condition |
 |----------|-----------|
-| `VERIFY COMPLETE` | verify-code returned PASS or PASS_NEEDS_E2E AND (if PASS_NEEDS_E2E) E2E passed |
+| `VERIFY COMPLETE (code-only)` | verify-code returned PASS AND integrity checks pass (see Step 3 integrity gate) |
+| `VERIFY COMPLETE (E2E-verified)` | verify-code returned PASS_NEEDS_E2E AND E2E passed AND integrity checks pass |
 | `VERIFY APPLIED — BLOCKED` | verify-code returned BLOCKED (pre-existing failures remain in suite) |
-| `VERIFY APPLIED — UNVERIFIED` | verify-code returned UNVERIFIED (no test covers the changed file) or NO_INFRA or RUNNER_BROKEN |
+| `VERIFY APPLIED — UNVERIFIED` | verify-code returned UNVERIFIED (no test covers the changed file) or NO_INFRA or RUNNER_BROKEN; OR verify-code returned PASS but failed the integrity gate (missing baseline evidence, zero tests collected, or empty runner command) |
 | `VERIFY APPLIED — NO_INFRA` | verify-code returned NO_INFRA specifically (surfaced separately for clarity) |
 | `VERIFY APPLIED — RUNNER_BROKEN` | verify-code returned RUNNER_BROKEN specifically (surfaced separately for clarity) |
 | `VERIFY INCOMPLETE — REGRESSION` | verify-code returned REGRESSION, or E2E test returned FAIL |
 
-The distinction between `VERIFY COMPLETE (code-only)` and `VERIFY COMPLETE (E2E-verified)` is recorded in the report body (see Step 5), not in the headline — both are `VERIFY COMPLETE`.
+**PASS headline variants are distinct by evidence level.** `VERIFY COMPLETE (code-only)` signals no browser test was run. `VERIFY COMPLETE (E2E-verified)` signals at least one E2E scenario was executed and passed. Downstream consumers (`nacl-tl-deliver`, `nacl-tl-release`) must not treat these as equivalent.
 
 ## Workflow: 6 Steps
 
@@ -126,8 +128,22 @@ The distinction between `VERIFY COMPLETE (code-only)` and `VERIFY COMPLETE (E2E-
 - Parse result: **PASS** / **PASS_NEEDS_E2E** / **UNVERIFIED** / **NO_INFRA** / **RUNNER_BROKEN** / **BLOCKED** / **REGRESSION** / **FAIL**
 - If **FAIL** or **REGRESSION** -- skip E2E, go to Step 5 with FAIL/REGRESSION status
 - If **UNVERIFIED** / **NO_INFRA** / **RUNNER_BROKEN** / **BLOCKED** -- skip E2E, go to Step 5 with that status (not PASS)
-- If **PASS** -- go to Step 5 directly (no E2E needed)
-- If **PASS_NEEDS_E2E** -- proceed to Step 4
+- If **PASS** or **PASS_NEEDS_E2E** -- run the integrity gate below before proceeding
+
+**Integrity gate (applies to both PASS and PASS_NEEDS_E2E):**
+
+Before accepting a PASS-family result from verify-code, assert ALL of the following:
+
+1. `testRunner.command` is non-empty (a real runner command was invoked, not a no-op).
+2. `testRunner.tests_collected > 0` (at least one test ran; zero collected means the runner is silently broken or the suite is empty).
+3. `baseline_failures` is present in the result (verify-code ran baseline capture, not just a single post-change run).
+4. `postfix_failures` is present in the result (the post-change failure set is recorded).
+
+If **any** of these assertions fail, downgrade the outcome to `VERIFY APPLIED — UNVERIFIED (verify-code returned PASS without baseline evidence)` and go to Step 5 with that status. Do NOT proceed to E2E or promote the PASS.
+
+If integrity gate passes:
+- If **PASS** -- go to Step 5 directly (no E2E needed); headline will be `VERIFY COMPLETE (code-only)`
+- If **PASS_NEEDS_E2E** -- proceed to Step 4; headline will be `VERIFY COMPLETE (E2E-verified)` only if E2E also passes
 
 ### Step 4: E2E TESTING (conditional)
 
@@ -152,6 +168,21 @@ mkdir -p .tl/reports/verify-[UC###]-[YYYY-MM-DD-HHMMSS]/
 Same as nacl-tl-qa Step 5b format: standalone HTML with inline CSS, summary table, test steps, screenshot grid, verdict badge.
 
 If no E2E was run (code-only PASS): generate a minimal report with code analysis results only.
+
+**Verify-code integrity fields — always include in the report (do not embed child report verbatim):**
+
+```
+Code Analysis Integrity:
+  Runner command:      {testRunner.command}
+  Tests collected:     {testRunner.tests_collected}
+  Baseline failures:   {baseline_failures.length} ({baseline_failures joined by ", " or "none"})
+  Postfix failures:    {postfix_failures.length} ({postfix_failures joined by ", " or "none"})
+  New failures:        {new_failures.length} ({new_failures joined by ", " or "none"})
+  Transitioned (fixed): {transitioned.length} ({transitioned joined by ", " or "none"})
+  Integrity gate:      PASSED | FAILED (reason: ...)
+```
+
+These fields must appear as discrete named fields in the report, not collapsed into the child skill's raw output block. The orchestrator is responsible for surfacing them so that downstream consumers (`nacl-tl-deliver`, `nacl-tl-release`, human testers) can judge evidence quality without re-parsing the verify-code sub-report.
 
 **After saving, tell the user the path:**
 ```
@@ -215,7 +246,8 @@ Actions after composing the report:
 
 | Headline | Column move |
 |----------|-------------|
-| `VERIFY COMPLETE` | ToRelease |
+| `VERIFY COMPLETE (code-only)` | ToRelease |
+| `VERIFY COMPLETE (E2E-verified)` | ToRelease |
 | `VERIFY INCOMPLETE — REGRESSION` | Reopened |
 | `VERIFY APPLIED — UNVERIFIED` | Reopened |
 | `VERIFY APPLIED — NO_INFRA` | Reopened |
@@ -239,17 +271,19 @@ For `VERIFY APPLIED — UNVERIFIED` / `NO_INFRA` / `RUNNER_BROKEN`: move to Reop
 
 ## Decision Matrix
 
-| Code Analysis Result | E2E Testing | Final Headline |
-|----------------------|-------------|----------------|
-| PASS | (skipped) | `VERIFY COMPLETE` |
-| PASS_NEEDS_E2E | PASS | `VERIFY COMPLETE` |
-| PASS_NEEDS_E2E | FAIL | `VERIFY INCOMPLETE — REGRESSION` |
-| FAIL | (skipped) | `VERIFY INCOMPLETE — REGRESSION` |
-| REGRESSION | (skipped) | `VERIFY INCOMPLETE — REGRESSION` |
-| UNVERIFIED | (skipped) | `VERIFY APPLIED — UNVERIFIED` |
-| NO_INFRA | (skipped) | `VERIFY APPLIED — NO_INFRA` |
-| RUNNER_BROKEN | (skipped) | `VERIFY APPLIED — RUNNER_BROKEN` |
-| BLOCKED | (skipped) | `VERIFY APPLIED — BLOCKED` |
+| Code Analysis Result | Integrity Gate | E2E Testing | Final Headline |
+|----------------------|----------------|-------------|----------------|
+| PASS | PASSED | (skipped) | `VERIFY COMPLETE (code-only)` |
+| PASS | FAILED | (skipped) | `VERIFY APPLIED — UNVERIFIED (verify-code returned PASS without baseline evidence)` |
+| PASS_NEEDS_E2E | PASSED | PASS | `VERIFY COMPLETE (E2E-verified)` |
+| PASS_NEEDS_E2E | PASSED | FAIL | `VERIFY INCOMPLETE — REGRESSION` |
+| PASS_NEEDS_E2E | FAILED | (skipped) | `VERIFY APPLIED — UNVERIFIED (verify-code returned PASS without baseline evidence)` |
+| FAIL | n/a | (skipped) | `VERIFY INCOMPLETE — REGRESSION` |
+| REGRESSION | n/a | (skipped) | `VERIFY INCOMPLETE — REGRESSION` |
+| UNVERIFIED | n/a | (skipped) | `VERIFY APPLIED — UNVERIFIED` |
+| NO_INFRA | n/a | (skipped) | `VERIFY APPLIED — NO_INFRA` |
+| RUNNER_BROKEN | n/a | (skipped) | `VERIFY APPLIED — RUNNER_BROKEN` |
+| BLOCKED | n/a | (skipped) | `VERIFY APPLIED — BLOCKED` |
 
 ## Without YouGile
 

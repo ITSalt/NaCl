@@ -99,7 +99,27 @@ Parse the diagnostic report to extract:
 - Affected UC/docs/code files
 - Health Score
 
-**Pre-flight freshness check:** For each discrepancy referencing a specific doc file, check if that file was modified AFTER the report date (`git log -1 --format="%ai" -- [doc_file]`). If the doc was updated after the report, re-verify the discrepancy before including it in the plan — it may already be fixed.
+**Pre-flight freshness check (AUTOMATED — run for every discrepancy):**
+
+For each discrepancy referencing a specific doc or code file, execute:
+
+```bash
+git log -1 --format="%ai" -- {file_path}
+```
+
+Compare the returned `commit_date` against the diagnostic report's generation
+timestamp (`diagnostic_report_date`, taken from the report header or file
+mtime).
+
+- If `commit_date > diagnostic_report_date`: the file was modified after the
+  report was generated. Skip this discrepancy — it may already be fixed. Add
+  it to a **"Skipped (already-fixed)"** list that will appear in the Phase 5
+  report under a dedicated section.
+- If `commit_date <= diagnostic_report_date` or git returns no commit: include
+  the discrepancy in the reconciliation plan as normal.
+- If `git log` fails (e.g., file untracked): treat as not-yet-fixed and include.
+
+Do not rely on file timestamps (mtime) — use git commit dates only.
 
 **Pre-flight unverified fix scan (MANDATORY before Phase 2):**
 
@@ -120,7 +140,12 @@ For each UNVERIFIED or BLOCKED fix found:
 
   Acknowledge that "documenting unverified behavior is intentional"? [yes/no]
   ```
-- If user acknowledges → proceed to Phase 2; headline will be RECONCILE APPLIED — UNVERIFIED
+- If user acknowledges → proceed to Phase 2; headline will be
+  **RECONCILE APPLIED — UNVERIFIED (documenting unverified upstream behavior)**
+  regardless of any subsequent steps or outcomes. This headline cannot be
+  upgraded to RECONCILE COMPLETE when UNVERIFIED fixes exist — even with
+  explicit user acknowledgment. Acknowledgment authorizes proceeding, not
+  re-labeling.
 - If user does not acknowledge → stop; recommend fixing the verification gap first
 - Record the acknowledgment in the Phase 5 report
 
@@ -280,6 +305,18 @@ For areas WITHOUT documentation:
    - For UC: brief description + main flow + endpoints
    - For protocol: event types + format + auth
    - For entity: schema + relations + lifecycle
+3. **Immediately after writing the doc, validate it against code** (re-read the
+   relevant source files and check all three of the following):
+   - **(a) Entity schema match** — every field in the doc exists in the code
+     schema (no phantom fields, no missing required fields).
+   - **(b) Main flow step count match** — the number of documented steps equals
+     the number of distinct handler/service steps in the code (±1 for minor
+     grouping differences; beyond that, reject the edit).
+   - **(c) Endpoint paths match** — every endpoint path listed in the doc
+     appears verbatim in the route definitions (use `grep -r` to confirm).
+   If any of the three checks fail, **reject the edit**, correct the doc, and
+   re-validate before moving on. Do not advance to the next item with a
+   failed validation.
 
 **Do NOT create full SA artifacts.** Reconcile aims for MINIMAL coverage of each implemented area. Full specification is the job of /nacl-sa-uc, /nacl-sa-domain.
 
@@ -302,6 +339,13 @@ For areas WITHOUT documentation:
 
 **Goal:** Verify reconcile was successful.
 
+**Precondition:** At least one of 4.1, 4.2 (widened), or 4.3 MUST produce
+evidence. If both `nacl-sa-validate` and `nacl-ba-validate` are unavailable,
+gap-check (4.2) becomes the mandatory fallback and MUST cover at least 10
+reconciled docs. This is not optional — a reconcile with zero validation
+evidence must not emit any RECONCILE headline; instead emit:
+`RECONCILE HALTED — VALIDATION UNAVAILABLE`.
+
 #### 4.1 sa-validate (optional)
 
 Try to run `/nacl-sa-validate --scope=full` via Skill tool.
@@ -312,14 +356,21 @@ Try to run `/nacl-sa-validate --scope=full` via Skill tool.
   - **Maximum 3 iterations** validate→fix→validate. After 3rd — report with remainder.
 - **If not available** (skill not loaded or Skill tool unavailable): Skip and note in report: "sa-validate skipped — skill not available in current context." Rely on gap-check (4.2) instead.
 
-#### 4.2 Re-run Gap Check (always runs)
+#### 4.2 Re-run Gap Check (mandatory when 4.1 and 4.3 both unavailable; always runs otherwise)
 
-This is the **mandatory** validation step. For the top-3 changed/created docs:
+This is the **fallback mandatory** validation step. Cover:
+- **At minimum the top-10 changed/created docs** when gap-check is the only
+  validation path (neither 4.1 nor 4.3 available).
+- At minimum the top-3 changed/created docs when 4.1 or 4.3 also ran.
+
+For each sampled doc:
 
 1. Read the updated doc
 2. Read the corresponding code
 3. Verify the doc now accurately describes the code
 4. Note any remaining discrepancies
+
+If fewer than 10 docs were reconciled in total, cover all of them.
 
 #### 4.3 ba-validate (optional, if BA artifacts exist)
 
@@ -339,11 +390,31 @@ npm test         # tests still pass
 
 ### Phase 5: REPORT
 
-Present final report to user (in user's language). Open with a per-task status
-table — one row per recent fix scanned in Phase 1, with columns: task ID,
-upstream fix status (PASS / UNVERIFIED / BLOCKED), user acknowledgment
-(yes/no/N-A), and whether docs were updated for that task. The aggregate
-RECONCILE headline is selected from the per-task statuses in the table.
+Present final report to user (in user's language). Open with the per-task
+status table below — one row per recent fix scanned in Phase 1. The aggregate
+RECONCILE headline is derived from this table: if any row has
+`upstream-fix-status = UNVERIFIED`, the headline is
+`RECONCILE APPLIED — UNVERIFIED (documenting unverified upstream behavior)`.
+
+```
+| source-task | upstream-fix-status          | doc-edit           | validation-result |
+|-------------|------------------------------|--------------------|-------------------|
+| TECH-001    | PASS                         | updated UC014.md   | gap-check: OK     |
+| UC-022      | UNVERIFIED (verified-pending)| updated api.md     | gap-check: OK     |
+| TECH-008    | SKIPPED (already-fixed)      | —                  | —                 |
+```
+
+Column definitions:
+- **source-task**: task ID from Phase 1 scan (`.tl/status.json` / git log)
+- **upstream-fix-status**: one of `PASS`, `UNVERIFIED (reason)`, `BLOCKED`,
+  `SKIPPED (already-fixed)`, `N/A` (discrepancy unrelated to a fix task)
+- **doc-edit**: which doc was changed, or `—` if skipped
+- **validation-result**: gap-check result, sa-validate result, or `—` if skipped
+
+Rows with `SKIPPED (already-fixed)` status are populated from the freshness
+check in Phase 1. They represent discrepancies where `commit_date >
+diagnostic_report_date` — the file was already updated after the report
+was generated.
 
 Then include:
 - Health Score before → after (raw → adjusted for UNVERIFIED tasks)
@@ -356,11 +427,18 @@ Then include:
 - Remaining issues (if any)
 - Recommendations for preventing future drift
 
-Headline selection:
-- No UNVERIFIED fixes found → RECONCILE COMPLETE
-- UNVERIFIED fixes found AND user acknowledged → RECONCILE APPLIED — UNVERIFIED
-- REGRESSION detected in recent code → RECONCILE HALTED — REGRESSION
+Headline selection (evaluated in order — first match wins):
+- REGRESSION detected in recent code →
+  `RECONCILE HALTED — REGRESSION`
   (Do NOT reconcile docs to match code that has a known REGRESSION)
+- Validation unavailable (neither 4.1 nor 4.2 nor 4.3 produced evidence) →
+  `RECONCILE HALTED — VALIDATION UNAVAILABLE`
+- ANY row in the per-task table has `upstream-fix-status = UNVERIFIED` →
+  `RECONCILE APPLIED — UNVERIFIED (documenting unverified upstream behavior)`
+  This applies whether or not the user acknowledged. Acknowledgment authorizes
+  proceeding; it does not change the headline.
+- All rows are PASS or SKIPPED (already-fixed) or N/A, and validation ran →
+  `RECONCILE COMPLETE`
 
 ---
 

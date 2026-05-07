@@ -459,7 +459,41 @@ After all development items have been processed:
      b. Re-scan (max 2 retries)
      c. If still critical -> record in state, warn in report
 
-3. Review conductor-state.json:
+3. Re-query Neo4j to confirm terminal state (graph is the source of truth):
+
+   ```cypher
+   // Phase 4 graph-truth gate — must run BEFORE reading conductor-state.json
+   MATCH (t:Task)
+   WHERE t.intake_id = $intakeId
+     AND t.status IN ['pending', 'in_progress']
+   RETURN t.id AS taskId, t.status AS currentStatus
+   ```
+
+   - Bind `$intakeId` to the current intake (from conductor-state.json header).
+   - If the query returns **any rows**: HALT immediately.
+     Post this advisory and do NOT advance to Phase 5:
+
+     ```
+     HALT — graph/JSON mismatch detected before Phase 5.
+
+     The following tasks are NOT in a terminal state in Neo4j
+     even though conductor-state.json marks them as done:
+
+       <taskId>  graph status: <currentStatus>
+
+     Do NOT proceed to delivery until the graph reflects the correct
+     terminal state (done / verified-pending / blocked / failed).
+
+     Resolution options:
+       [1] Re-run /nacl-tl-full <taskId> to replay and re-write graph status.
+       [2] Run /nacl-tl-diagnose to reconcile JSON vs graph manually.
+       [3] Abort this conductor run and investigate the crash.
+     ```
+
+   - If the query returns **zero rows**: all tasks are terminal in the graph.
+     Continue to step 4.
+
+4. Review conductor-state.json:
    - Count: done, failed, pending items
    - If ALL items done -> proceed to Phase 5
    - If SOME failed -> **USER GATE** (skip if `--yes`):
@@ -476,7 +510,7 @@ After all development items have been processed:
      ```
    - If ALL failed -> abort delivery, full failure report
 
-4. Update conductor-state.json: phase = "quality_gate_passed"
+5. Update conductor-state.json: phase = "quality_gate_passed"
 
 ---
 

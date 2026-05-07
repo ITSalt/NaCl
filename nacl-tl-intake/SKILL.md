@@ -152,7 +152,7 @@ ORDER BY uc.id
 
 Run one query per atom. Use the atom's core concept as `$keywords` (e.g., "image format", "share button", "deploy docs").
 
-#### Step 2b: Classify based on graph results
+#### Step 2b: Classify based on graph results — then require per-atom confirmation
 
 Apply this decision tree to each atom, using the query results:
 
@@ -161,22 +161,44 @@ Did sa_find_uc_by_keywords return matching UCs?
   |
   +-- YES, matching UC found with detail_status = 'detailed' or 'approved':
   |     The behavior IS specified. Is the atom reporting broken/wrong behavior?
-  |       -> YES: BUG (route to /nacl-tl-fix)
-  |       -> NO (wants different behavior): FEATURE (enhancement to existing UC)
+  |       -> YES: BUG  (confidence: HIGH, evidence: GRAPH)
+  |       -> NO (wants different behavior): FEATURE  (confidence: HIGH, evidence: GRAPH)
   |
   +-- YES, matching UC found with detail_status = 'draft' or 'stub':
   |     The behavior is partially specified.
-  |       -> Likely FEATURE (needs full specification)
+  |       -> Likely FEATURE  (confidence: MEDIUM, evidence: GRAPH)
   |
   +-- NO matching UC found:
   |     The behavior is NOT specified.
-  |       -> "X doesn't work" phrasing: Still likely BUG (impl exists without spec)
-  |       -> "Add X" / "I want X": FEATURE (new behavior)
-  |       -> Infrastructure/docs/process: TASK
+  |       -> "X doesn't work" phrasing: BUG  (confidence: MEDIUM, evidence: GRAPH)
+  |       -> "Add X" / "I want X": FEATURE  (confidence: MEDIUM, evidence: GRAPH)
+  |       -> Infrastructure/docs/process: TASK  (confidence: MEDIUM, evidence: GRAPH)
   |
   +-- Neo4j UNAVAILABLE (connection error):
         Fall back to keyword-based classification (Step 2c)
+        All atoms get confidence: LOW, evidence: HEURISTIC
 ```
+
+**Per-atom confirmation gate (mandatory — runs after classifying EACH atom before moving to the next):**
+
+After classifying atom #N, prompt the user:
+
+```
+Atom #N: "[atom title]"
+  Classified as: [TYPE]
+  Evidence: [GRAPH | HEURISTIC]
+  Reasoning: [one sentence: which UC matched / why no match / why heuristic used]
+
+  Correct? [yes / adjust / skip]
+```
+
+**`--yes` flag behavior:**
+- `--yes` auto-confirms **only** when `confidence: HIGH` AND `evidence: GRAPH` (exact graph match, `detail_status = detailed | approved`).
+- `--yes` does NOT bypass the prompt when confidence is MEDIUM or LOW, or when evidence is HEURISTIC. Re-prompt regardless of the flag.
+- "skip" drops the atom from the execution plan; user must explicitly re-add it later.
+- "adjust" accepts a corrected type from the user; record the manual override as `evidence: USER_OVERRIDE`.
+
+**Do NOT proceed to Step 3 (GROUP) until every atom has been confirmed or skipped.**
 
 #### Step 2c: Fallback -- keyword-based classification (when Neo4j is unavailable)
 
@@ -290,7 +312,8 @@ From your 5 requests, I identified:
   |        #3 edit+regen, #4 tabs                |
   | Reason: same screen, shared data model,      |
   |         #4 depends on #3, #3 depends on #2   |
-  | Graph evidence: No matching UCs found         |
+  | Graph evidence: No matching UCs found        |
+  | Evidence type: GRAPH                         |
   | Estimate: ~3-4 UCs, ~1 wave                  |
   | -> /nacl-sa-feature                         |
   |                                              |
@@ -298,7 +321,8 @@ From your 5 requests, I identified:
   | Items: #5 inpainting                         |
   | Reason: different API flow (img-to-img),     |
   |         can ship independently               |
-  | Graph evidence: No matching UCs found         |
+  | Graph evidence: No matching UCs found        |
+  | Evidence type: GRAPH                         |
   | Depends on: Feature 1 (needs tabs UI)        |
   | Estimate: ~1-2 UCs, ~1 wave                  |
   | -> /nacl-sa-feature (after Feature 1)       |
@@ -307,9 +331,10 @@ From your 5 requests, I identified:
   BUGS: 1
   +----------------------------------------------+
   | Bug 1: "Share button broken on mobile"       |
-  | Graph evidence: UC-012 "Share Content"        |
-  |   (status: detailed) -- behavior specified    |
-  | -> /nacl-tl-fix                                   |
+  | Graph evidence: UC-012 "Share Content"       |
+  |   (status: detailed) -- behavior specified   |
+  | Evidence type: GRAPH                         |
+  | -> /nacl-tl-fix                              |
   +----------------------------------------------+
 
   TASKS: 0
@@ -341,6 +366,7 @@ Approve? [yes / adjust / cancel]
 If YouGile is configured AND a parent task exists (from Step 0):
 
 1. For each feature/bug/task in the confirmed plan:
+   Wrap each API call with retry (3 attempts, 2-second back-off between attempts):
    ```
    create_task(
      title: "[Feature] Generation Controls" or "[Bug] Share button" or "[Task] Update deploy docs",
@@ -349,9 +375,30 @@ If YouGile is configured AND a parent task exists (from Step 0):
      stickers: { task_type: feature/bug/task, module: detected_module, source: agent }
    )
    ```
+   If all 3 attempts fail for any `create_task` call:
+   ```
+   INTAKE HALTED — RUNNER_BROKEN (YouGile linking failed)
+   Reason: create_task failed after 3 attempts for item "[item title]"
+   API error: [last error message]
+   Action: Fix YouGile connectivity or skip YouGile integration (remove yougile section from config.yaml).
+   ```
+   Stop immediately. Do not proceed to execution.
+
 2. Collect all child task IDs
 3. Link to parent: `update_task(parentTaskId, subtasks: [child1, child2, ...])`
+   Wrap with retry (3 attempts). If all 3 attempts fail:
+   ```
+   INTAKE HALTED — RUNNER_BROKEN (YouGile linking failed)
+   Reason: update_task (subtask linking to parent [parentTaskId]) failed after 3 attempts
+   API error: [last error message]
+   Child tasks created (not yet linked): [list of child task IDs]
+   Action: Manually link the listed child tasks to the parent card, then re-run from Step 7.
+   ```
+   Stop immediately.
+
 4. Post decomposition summary to parent task chat:
+   Wrap with retry (3 attempts). If all 3 attempts fail: log warning but do NOT halt — the summary
+   is informational only.
    ```
    send_task_message(parentTaskId, "
    Decomposed into N items:
@@ -404,14 +451,30 @@ Wave 2 (after Wave 1):
   +-- /nacl-sa-feature "Image Editing" (#5)  <-- depends on Feature 1 tabs UI
 ```
 
-**How to parallelize:** Use Agent tool to launch independent items as parallel agents within the same wave. Each agent runs its skill in isolation. Collect results before starting the next wave.
+**How to parallelize (concrete mechanism):**
+
+Parallelism is achieved by issuing ALL Agent tool calls for a wave inside a **single assistant message**. The Agent tool is called multiple times in the same response — one invocation per independent item. Do not issue them in separate messages; that would serialize them.
+
+```
+// Correct: single message, multiple Agent calls — runs in parallel
+[Message to Claude runtime]:
+  Agent(skill="/nacl-tl-fix", prompt="Share button broken on mobile")
+  Agent(skill="/nacl-sa-feature", prompt="Generation Controls: ...")
+
+// Incorrect: separate messages — serializes the wave
+[Message 1]: Agent(skill="/nacl-tl-fix", ...)
+[Message 2]: Agent(skill="/nacl-sa-feature", ...)   // waits for Message 1 to finish
+```
+
+After ALL Agent calls in the wave return, collect results before issuing the next wave.
 
 ```
 For each wave:
-  1. Launch all independent items as parallel Agent calls (single message)
-  2. Wait for ALL agents in the wave to complete
-  3. Collect results (FR numbers, fix summaries)
-  4. Start next wave
+  1. Identify all independent items in the wave (no unresolved deps on in-flight items)
+  2. Issue ALL Agent calls for this wave in a single message (true parallelism)
+  3. Wait for ALL agents in the wave to complete — do not start Wave N+1 until all of Wave N are done
+  4. Collect results (FR numbers, fix summaries, status fields)
+  5. Start next wave
 ```
 
 #### Between items: Progress report
@@ -430,24 +493,41 @@ After each skill completes, report to user:
 
 #### After all items: Final summary
 
+Choose the headline based on classification method used:
+- All atoms graph-backed (evidence: GRAPH): `INTAKE TRIAGE COMPLETE (graph-backed)`
+- Any atom heuristic-backed (evidence: HEURISTIC) OR any USER_OVERRIDE: `INTAKE TRIAGE APPLIED — UNVERIFIED (heuristic-backed)`
+
 ```
 ===============================================
-  INTAKE COMPLETE (graph-aware)
+  INTAKE TRIAGE COMPLETE (graph-backed)
+  -- OR --
+  INTAKE TRIAGE APPLIED — UNVERIFIED (heuristic-backed)
 ===============================================
 
 Processed: 6 requests -> 2 features, 1 bug, 0 tasks
-Classification method: Neo4j graph (sa_find_uc_by_keywords)
+Classification method: [Neo4j graph | keyword-fallback (Neo4j unavailable)]
+
++------+------------------------------------+---------+----------+
+| Atom | Title                              | Type    | Evidence |
++------+------------------------------------+---------+----------+
+| #1   | Image format selection             | FEATURE | GRAPH    |
+| #2   | Share button doesn't work          | BUG     | GRAPH    |
+| #3   | Update deploy docs                 | TASK    | HEURISTIC|
++------+------------------------------------+---------+----------+
 
 Bug 1: "Share button broken on mobile" -- fixed
   Matched UC-012 "Share Content" (detailed)
+  Evidence: GRAPH
   Fix applied via /nacl-tl-fix
 
 Feature 1: "Generation Controls" -- FR-003
   4 UCs specified (UC-030, UC-031, UC-032, UC-033)
+  Evidence: GRAPH
   Graph: new nodes created
 
 Feature 2: "Image Editing" -- FR-004
   2 UCs specified (UC-034, UC-035)
+  Evidence: GRAPH
   Depends on: FR-003
   Graph: new nodes created
 
@@ -506,9 +586,11 @@ If the user provides >10 items:
 
 If `mcp__neo4j__read-cypher` fails on the first query:
 1. Log warning: "Neo4j unavailable, falling back to keyword-based classification"
-2. Use Step 2c (fallback) for ALL atoms
-3. Route features to `/nacl-sa-feature` anyway (it has its own fallback handling)
-4. Continue the workflow normally -- graph unavailability does NOT block triage
+2. Use Step 2c (fallback) for ALL atoms; mark every atom `evidence: HEURISTIC`
+3. Per-atom confirmation gate still runs (heuristic classifications are MEDIUM confidence — `--yes` does NOT bypass)
+4. Route features to `/nacl-sa-feature` anyway (it has its own fallback handling)
+5. Final report headline: `INTAKE TRIAGE APPLIED — UNVERIFIED (heuristic-backed)`
+6. Graph unavailability does NOT block triage, but the result is always UNVERIFIED
 
 ### Ambiguous graph match
 
@@ -572,6 +654,53 @@ If `sa_find_uc_by_keywords` returns multiple UCs for an atom:
 # - /nacl-tl-fix creates fixes and updates docs
 # - /nacl-tl-dev creates TECH task implementations
 ```
+
+---
+
+## Contract
+
+This skill routes atoms to the following downstream skills. Each expects a specific input shape.
+
+### `/nacl-sa-feature`
+
+Receives: a feature description string (the grouped atom titles + context sentence).
+
+```
+/nacl-sa-feature "<Feature title>: <atom titles joined by comma>. Context: <one sentence>."
+```
+
+Example:
+```
+/nacl-sa-feature "Generation Controls: image format selection, show scene prompt, edit prompt and regenerate, tabs. Context: all on the same result page, sharing a regeneration-attempt data model."
+```
+
+### `/nacl-tl-fix`
+
+Receives: a bug description string matching the atom title + the matched UC ID.
+
+```
+/nacl-tl-fix "<atom title>" [--uc UC-NNN]
+```
+
+Example:
+```
+/nacl-tl-fix "Share button broken on mobile" --uc UC-012
+```
+
+### `/nacl-tl-dev`
+
+Receives: a task description string (for infrastructure, docs, or process tasks).
+
+```
+/nacl-tl-dev "<task description>"
+```
+
+Example:
+```
+/nacl-tl-dev "Update deploy docs for new server configuration"
+```
+
+**Drift note:** if any of the above skills change their invocation signature, this skill must be updated to match. Run `/nacl-tl-intake` against a test batch after any downstream skill update to verify routing still works.
 
 ---
 

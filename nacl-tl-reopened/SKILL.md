@@ -14,8 +14,8 @@ description: |
 
 **Inputs this skill consumes:**
 - nacl-tl-fix output (six-status vocabulary: PASS / BLOCKED / UNVERIFIED /
-  NO_INFRA / RUNNER_BROKEN / REGRESSION; status-aware headlines like
-  "FIX COMPLETE", "FIX APPLIED — UNVERIFIED", "FIX INCOMPLETE — REGRESSION")
+  NO_INFRA / RUNNER_BROKEN / REGRESSION; parsed from the authoritative `Status: <VALUE>`
+  line in the Step 8 report — report headline is decoration only)
 - nacl-tl-review verdict (APPROVED / CHANGES REQUESTED)
 - nacl-tl-stubs result (severity counts)
 
@@ -23,6 +23,19 @@ description: |
 - Rework report posted to YouGile task chat with `📊 Статус фикса` field
 - Status table mirroring nacl-tl-fix Step 7 (one row per substatus encountered)
 - Auto-ship gated on fix status == PASS
+
+**Reopened outcome headlines (Step 10):**
+| Condition | Headline |
+|-----------|----------|
+| Fix PASS, suite green, review approved | `REOPENED COMPLETE` |
+| Fix BLOCKED, user confirmed proceed | `REOPENED APPLIED — UNVERIFIED` (pre-existing failures) |
+| Fix UNVERIFIED (no test exercises change) | `REOPENED HALTED — UNVERIFIED (no regression test)` |
+| Fix NO_INFRA | `REOPENED HALTED — NO_INFRA` |
+| Fix RUNNER_BROKEN | `REOPENED HALTED — RUNNER_BROKEN` |
+| Fix REGRESSION | `REOPENED INCOMPLETE — REGRESSION` |
+| Re-run gate fails at Step 8 | `REOPENED INCOMPLETE — REGRESSION` |
+| Status: line missing from fix report | `REOPENED HALTED — UNVERIFIED (fix report unparseable)` |
+| Regression-test seam absent | `REOPENED HALTED — UNVERIFIED (regression-test seam not honored)` |
 
 **Downstream consumers of this output:**
 - Tester (human, via YouGile rework report)
@@ -135,12 +148,13 @@ For each task:
    |--------|-------------|-----------------|
    | "VERIFICATION REPORT" or "Автоматическая верификация" | /nacl-tl-verify, /nacl-tl-verify-code | Verdict (PASS/FAIL), findings[], data flow issues |
    | "QA REPORT" or "qa-report" | /nacl-tl-qa | Failed scenarios, screenshots, acceptance criteria gaps |
-   | "FIX COMPLETE" | /nacl-tl-fix (status PASS) | Fix level, files changed, regression test path |
-   | "FIX APPLIED — UNVERIFIED" | /nacl-tl-fix (status BLOCKED / UNVERIFIED / NO_INFRA / RUNNER_BROKEN) | Status, reason line, pre-existing failures if BLOCKED |
-   | "FIX APPLIED — BLOCKED" | /nacl-tl-fix (status BLOCKED, legacy header) | Status, baseline-confirmed unrelated failures |
-   | "FIX APPLIED — NO_INFRA" | /nacl-tl-fix (status NO_INFRA, legacy header) | Status, affected workspace |
-   | "FIX APPLIED — RUNNER_BROKEN" | /nacl-tl-fix (status RUNNER_BROKEN, legacy header) | Status, runner error |
-   | "FIX INCOMPLETE" or "FIX INCOMPLETE — REGRESSION" | /nacl-tl-fix (status REGRESSION) | New failures introduced, return-to-6f signal |
+   | `Status: PASS` line | /nacl-tl-fix (Step 8) | Fix level, files changed, regression test path, RED→GREEN |
+   | `Status: BLOCKED` line | /nacl-tl-fix (Step 8) | Reason line, pre-existing failure list |
+   | `Status: UNVERIFIED` line | /nacl-tl-fix (Step 8) | Reason line (no test exercises the change) |
+   | `Status: NO_INFRA` line | /nacl-tl-fix (Step 8) | Affected workspace |
+   | `Status: RUNNER_BROKEN` line | /nacl-tl-fix (Step 8) | Runner error detail |
+   | `Status: REGRESSION` line | /nacl-tl-fix (Step 8) | New failures introduced, return-to-6f signal |
+   | Note: report headline (`FIX COMPLETE`, `FIX APPLIED — UNVERIFIED`, etc.) | decoration only | do NOT classify from headline — parse `Status:` line |
    | "Отчёт разработки" or "Development report" | /nacl-tl-ship, previous /nacl-tl-reopened | What was already attempted, files changed |
    | Other comments | Analyst/PM/User | Additional context, priority notes, clarifications |
 
@@ -271,8 +285,10 @@ Add flags as appropriate:
 - Fix level (L0/L1/L2/L3)
 - Files changed
 - Tests added/updated
-- **Status line** — the six-status value: `PASS / BLOCKED / UNVERIFIED / NO_INFRA / RUNNER_BROKEN / REGRESSION`
-- **Report header** — `FIX COMPLETE`, `FIX APPLIED — UNVERIFIED`, or `FIX INCOMPLETE`
+- **`Status: <VALUE>` line** — the six-status value: `PASS / BLOCKED / UNVERIFIED / NO_INFRA / RUNNER_BROKEN / REGRESSION` (this is the authoritative classifier)
+- **Regression test path** — from the `Tests: Regression test:` field
+- **RED→GREEN field** — from the `Tests: RED→GREEN:` field
+- Report headline (`FIX COMPLETE`, `FIX APPLIED — UNVERIFIED`, `FIX INCOMPLETE`) — captured for context but NOT used for classification
 
 Proceed to Step 7.5 immediately after /nacl-tl-fix completes.
 
@@ -280,8 +296,29 @@ Proceed to Step 7.5 immediately after /nacl-tl-fix completes.
 
 **Goal:** Branch based on the six-status value from /nacl-tl-fix Step 8.
 
-Extract the `Status:` line from the /nacl-tl-fix report. Match against the vocabulary below
-(first match wins):
+#### Parsing rule — Status: line is the single source of truth
+
+Scan the /nacl-tl-fix report output for a line matching exactly:
+
+```
+Status: <VALUE>
+```
+
+where `<VALUE>` is one of: `PASS`, `BLOCKED`, `UNVERIFIED`, `NO_INFRA`, `RUNNER_BROKEN`, `REGRESSION`.
+
+- The `Status:` line is machine-readable and authoritative. The report headline (e.g. `FIX COMPLETE`, `FIX APPLIED — UNVERIFIED`) is **decoration only** — do NOT classify from it.
+- If no `Status:` line is found, or the value is not in the vocabulary above:
+  ```
+  REOPENED HALTED — UNVERIFIED (fix report unparseable)
+
+  The /nacl-tl-fix report contains no parseable "Status: <VALUE>" line.
+  Cannot determine fix outcome. Do not ship.
+
+  Action required: re-invoke /nacl-tl-fix and ensure it produces a complete Step 8 report.
+  ```
+  Post this advisory to YouGile task chat and halt. Do NOT proceed to Step 7.5.1 or Step 8.
+
+Branch on the parsed `<VALUE>`:
 
 ---
 
@@ -411,10 +448,86 @@ Do NOT ship.
 
 ---
 
+### Step 7.5.1: VERIFY REGRESSION-TEST SEAM — announce: "Step 7.5.1: VERIFY REGRESSION-TEST SEAM"
+
+**Goal:** Confirm that /nacl-tl-fix honored the test-author seam (Step 6d) by checking its report for regression-test evidence.
+
+**Only execute if Step 7.5 parsed a status other than `NO_INFRA` and other than `RUNNER_BROKEN`.** (Those two statuses cannot produce a regression test by definition — skip this step for them and proceed to Step 8 branching as normal.)
+
+Scan the /nacl-tl-fix Step 8 report for **both** of the following:
+
+1. **Regression-test path** — a file path under the `Tests:` / `Regression test:` section, e.g.:
+   ```
+   Regression test:  tests/orders/empty-cart.test.ts
+   ```
+   Accepted forms: any non-empty value that is not `"none — UNVERIFIED"` and not `"n/a — NO_INFRA"`.
+
+2. **RED→GREEN evidence** — a line matching:
+   ```
+   RED→GREEN:  ✓ ...
+   ```
+   or prose equivalent confirming the test was RED before the fix and GREEN after.
+
+**If either element is absent:**
+
+```
+REOPENED HALTED — UNVERIFIED (regression-test seam not honored)
+
+The /nacl-tl-fix report does not cite a regression-test file path and/or RED→GREEN
+transition. The fix-author seam (nacl-tl-regression-test, Step 6d of nacl-tl-fix)
+may not have run.
+
+Missing:
+  {Regression-test path: absent | RED→GREEN evidence: absent}
+
+Action required:
+  (a) Re-invoke /nacl-tl-fix and ensure /nacl-tl-regression-test runs at Step 6d,
+      OR
+  (b) Manually invoke /nacl-tl-regression-test "{bug description}" to create
+      a retroactive regression test, then confirm it transitions RED→GREEN.
+
+Do NOT proceed to review or ship until evidence exists.
+```
+
+Post this advisory to YouGile task chat and halt. Do NOT proceed to Step 8.
+
+**If both elements are present:** proceed to Step 8.
+
+---
+
 ### Step 8: REVIEW + STUBS — announce: "Step 8: REVIEW + STUBS"
 
 **Precondition:** Only reached if Step 7.5 status is PASS, or the user explicitly confirmed
 "proceed" for a BLOCKED fix.
+
+**Re-run gate (mandatory before invoking /nacl-tl-review or /nacl-tl-stubs):**
+
+Re-run the test suite on the current (reopened) branch to guard against environment
+drift between the moment /nacl-tl-fix ran and now:
+
+1. Locate the workspace: find the nearest `package.json` walking up from any changed file.
+2. Read its `scripts.test`.
+3. Run it. Record pass/fail counts.
+
+If the suite **fails**:
+```
+REOPENED INCOMPLETE — REGRESSION
+
+Tests were passing when /nacl-tl-fix completed, but re-running them on the reopened
+branch now produces failures.
+
+Failures:
+  {list of failing tests}
+
+Action required: investigate the new failures before proceeding to review.
+Do NOT invoke /nacl-tl-review or /nacl-tl-stubs. Do NOT ship.
+```
+Post this advisory to YouGile task chat and halt.
+
+If `scripts.test` is missing → note it as `NO_INFRA` (test-re-run skipped), proceed
+to review but include a warning in the Step 10 report.
+
+If the suite **passes:** proceed to review and stubs below.
 
 **Goal:** Quality gates after the fix.
 
@@ -525,12 +638,15 @@ update_task(id=<taskId>, columnId: config.yougile.columns.dev_done)
 **Single task:**
 ```
 ═══════════════════════════════════════════════════════
-  REOPENED TASK FIXED
+  <HEADLINE from Contract outcome-headline table above>
 ═══════════════════════════════════════════════════════
 
   Task: {CODE} — {title}
   Fix level: {L0/L1/L2/L3}
   Fix status: {PASS | BLOCKED | UNVERIFIED | NO_INFRA | RUNNER_BROKEN | REGRESSION}
+  Regression test: {path from nacl-tl-fix report, or "absent — HALTED"}
+  RED→GREEN: {confirmed | not confirmed | n/a}
+  Re-run suite: {PASS (N tests) | FAIL (list) | SKIPPED — NO_INFRA}
   Status: DevDone ✅
 
   Changes: {N files changed}

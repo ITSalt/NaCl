@@ -24,7 +24,28 @@ description: |
 
 **Downstream consumers of this output:**
 - Human user
-- nacl-tl-deliver (for staging) / nacl-tl-release (for production)
+- `nacl-tl-deliver` (staging) — reads: headline, per-task verification-status table
+- `nacl-tl-release` (production) — reads: headline, per-task verification-status table
+- `nacl-tl-conductor` — reads: headline to decide next orchestration phase
+- `nacl-tl-hotfix` — reads: headline to decide whether a hotfix deploy passed
+
+**Field schema each downstream consumer requires:**
+```
+Headline:  DEPLOY COMPLETE
+           DEPLOY HALTED — REGRESSION
+           DEPLOY HALTED — NO_INFRA
+           DEPLOY HALTED — RUNNER_BROKEN
+           DEPLOY HALTED — UNVERIFIED
+           DEPLOY INCOMPLETE — UNVERIFIED (health probe timeout)
+           DEPLOY HALTED — NO_INFRA (health contract undefined)
+
+Per-task status table (one row per deployed SHA):
+  SHA | source-task | source-verification-status | CI-status | health-status
+
+Health-status values: PASS | FAIL | TIMEOUT | SKIPPED
+CI-status values:     PASS | FAIL | SKIPPED
+source-verification-status: done (PASS) | verified-pending (UNVERIFIED) | blocked | failed | not-found
+```
 
 **Contract change discipline:**
 If this skill's output contract changes, every downstream consumer listed above
@@ -150,36 +171,70 @@ If pipeline fails:
 After pipeline succeeds:
 
 1. Read health endpoint from config: `config.yaml → deploy.[env].health_endpoint`
+   (fallback: `/api/health` — allowed only if a health contract is also defined; see step 3 below)
 2. Read deploy URL: `config.yaml → deploy.[env].url`
-3. Wait 10 seconds for server to restart
-4. Run health check:
+3. Read health contract from config: `config.yaml → deploy.[env].health_contract`
+   - `health_contract` must define at minimum: `expected_keys` (list of top-level response keys that must be present).
+   - Optional: `expected_values` (key→value pairs that must match exactly).
+   - If `health_contract` is absent or empty → HALT immediately:
+     **DEPLOY HALTED — NO_INFRA (health contract undefined)**
+     Do NOT proceed. A 200 response with no shape contract is unverifiable.
+4. Poll for liveness (replaces fixed sleep):
+   - Probe every **2 seconds** for up to **60 seconds**.
+   - On each probe, attempt `curl -s -w "\n%{http_code}" [url][health_endpoint]`.
+   - Stop polling as soon as the endpoint responds with HTTP 200.
+   - If 60 seconds elapse with no HTTP 200 → HALT:
+     **DEPLOY INCOMPLETE — UNVERIFIED (health probe timeout)**
+5. Validate response shape (required — HTTP 200 alone is not sufficient):
    ```bash
-   curl -s -o /dev/null -w "%{http_code}" [url][health_endpoint]
+   BODY=$(curl -s [url][health_endpoint])
+   # For each key in health_contract.expected_keys:
+   echo "$BODY" | jq --exit-status 'has("[key]")'
+   # For each entry in health_contract.expected_values:
+   echo "$BODY" | jq --exit-status '.[key] == [expected_value]'
    ```
-5. If 200 → PASS. Read response body for version info:
-   ```bash
-   curl -s [url][health_endpoint] | jq '.'
-   ```
-6. If not 200 → retry 3 times with 10s intervals
-7. If still failing → HALT the pipeline. Do NOT continue to YouGile update or
-   next deployment step. Report: DEPLOY HALTED — health check failed.
-   The health failure signals that the deployment is broken; reporting success
-   or partial success and continuing is a lie.
-8. Если health endpoint не отвечает и `config.yaml → vps.[env]` заполнен:
-   1. SSH-диагностика: `ssh -i {ssh_key} {user}@{ip}`
-   2. Проверить процессы: `pm2 status` / `docker ps`
-   3. Проверить логи: `journalctl -u app --since '5m ago'` / `docker logs --since 5m`
-   4. Проверить ресурсы: `df -h`, `free -m`
-   5. Включить результат в отчёт о сбое
-   6. HALT pipeline with diagnostic report. Do NOT proceed to Step 4 success path.
+   - If any `expected_keys` key is absent → FAIL shape validation.
+   - If any `expected_values` value mismatches → FAIL shape validation.
+   - Shape validation failure → HALT: **DEPLOY HALTED — health check failed (shape mismatch)**.
+   - On PASS: record `version` field from response body if present.
+6. If shape validation passes → health-status = PASS. Proceed to Step 4.
+7. On any non-200 HTTP response during polling (not timeout): retry counts against the
+   60-second budget. After budget is exhausted → same DEPLOY INCOMPLETE headline.
+8. If the health endpoint never responds and `config.yaml → vps.[env]` is populated,
+   run SSH diagnostics before halting:
+   1. Connect: `ssh -i {ssh_key} {user}@{ip}`
+   2. Check process manager: `pm2 status` or `docker ps`
+   3. Check recent logs: `journalctl -u app --since '5m ago'` or `docker logs --since 5m`
+   4. Check resources: `df -h`, `free -m`
+   5. Include all findings in the failure report.
+   6. HALT pipeline with the diagnostic report. Do NOT proceed to Step 4 success path.
 
 ### Step 4: YOUGILE UPDATE + REPORT
 
-The report opens with a per-task status table — one row per deployed commit
-SHA — containing: SHA, source-task ID, source-task verification status (read
-in Step 1.0), CI status, health status, and the aggregated DEPLOY headline.
+The report opens with a per-task status table. One row per deployed SHA.
 Per-task verification status is required in every report; this is the single
 source of truth that downstream readers consume.
+
+**Per-task status table (mandatory — include in every report):**
+
+```
+| SHA     | source-task | source-verification-status | CI-status | health-status |
+|---------|-------------|---------------------------|-----------|---------------|
+| abc1234 | UC-042      | done (PASS)               | PASS      | PASS          |
+| def5678 | TECH-007    | done (PASS)               | PASS      | PASS          |
+```
+
+- `SHA`: short commit hash (7 chars) being deployed
+- `source-task`: task ID from graph/status.json (or `not-found` if absent)
+- `source-verification-status`: one of `done (PASS)` / `verified-pending (UNVERIFIED)` / `blocked` / `failed` / `not-found`
+- `CI-status`: `PASS` / `FAIL` / `SKIPPED`
+- `health-status`: `PASS` / `FAIL` / `TIMEOUT` / `SKIPPED`
+
+Followed by the aggregated headline on a line by itself:
+
+```
+Headline: DEPLOY COMPLETE
+```
 
 **On success (pipeline passed AND health check passed):**
 - Move task to Done (if --production) or ToRelease (if --staging)

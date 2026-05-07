@@ -807,10 +807,28 @@ After each graph update, also update `.tl/status.json` to keep it in sync. Dev s
 
 ```
 1. Write to Neo4j (primary)
-2. Update .tl/status.json (secondary) -- same phase data
+2. IF Neo4j write succeeds -> update .tl/status.json (secondary) -- same phase data
+3. IF Neo4j write fails   -> DO NOT advance the phase; DO NOT update status.json;
+                             halt with error: "PHASE_ADVANCE_HALTED: Neo4j write failed"
 ```
 
-If Neo4j write fails, still update `status.json` and log the error. Do NOT stop execution for a graph write failure.
+**Rule:** both stores must be updated atomically, or neither advances. A partial write (JSON updated, graph not updated) creates JSON-vs-graph divergence that is difficult to recover from. Fail loud; do not silently continue.
+
+### Outage Recovery
+
+If Neo4j was unavailable during any part of the execution (e.g., write attempts failed, connection refused, or partial phase updates were logged), the operator **must** run `/nacl-tl-diagnose` before resuming orchestration. This reconciles JSON state against the graph and surfaces any divergence.
+
+**Procedure:**
+
+```
+1. Confirm Neo4j is back online (test connection)
+2. Run: /nacl-tl-diagnose
+3. Review the DIAGNOSTIC-REPORT.md — look for graph-JSON mismatches
+4. If mismatches found: graph is the source of truth; overwrite status.json with graph data
+5. Only after a clean diagnose (or explicit mismatch resolution) resume with /nacl-tl-full
+```
+
+Skipping this step and resuming directly risks the orchestrator reading stale JSON and advancing phases that the graph still shows as incomplete or failed.
 
 ---
 

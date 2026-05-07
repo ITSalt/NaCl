@@ -12,7 +12,7 @@ description: |
 ## Contract
 
 **Inputs this skill consumes:**
-- Per-UC dev statuses from .tl/status.json (six-status vocabulary)
+- Per-UC dev statuses: Neo4j graph (primary) / .tl/status.json (fallback when Neo4j unavailable)
 - /nacl-tl-verify results per UC
 - /nacl-tl-deploy result for the staging environment
 
@@ -246,9 +246,27 @@ Persists delivery progress for resumption:
 
 0. **Pre-verify dev status check:**
 
-   Before invoking /nacl-tl-verify for any UC, read its dev status from
-   `.tl/status.json`. UNVERIFIED dev status means /nacl-tl-verify is
-   operating on incomplete signal — the code may be untested.
+   Before invoking /nacl-tl-verify for any UC, resolve its dev status using
+   the following source-of-truth hierarchy:
+
+   **Primary source — Neo4j graph:**
+   Query each UC's Task node:
+   ```cypher
+   MATCH (t:Task {id: $ucId})
+   RETURN t.status AS status
+   ```
+   Use `mcp__neo4j__read-cypher`. If the Task node exists, its `status` field
+   is authoritative and overrides any value in `.tl/status.json`.
+
+   **Fallback — `.tl/status.json`:**
+   Use only when Neo4j is unavailable (connection error / timeout). Log:
+   ```
+   WARN: Neo4j unavailable — falling back to .tl/status.json for UC### dev status.
+         Graph may be ahead of file; results have reduced confidence.
+   ```
+
+   The graph always wins when both sources disagree. Example:
+   graph says `blocked` → status is BLOCKED even if `.tl/status.json` says `done`.
 
    | UC dev status | Action before verifying |
    |---------------|------------------------|
@@ -296,7 +314,12 @@ Persists delivery progress for resumption:
 
 6. Decision:
    - If ALL UCs PASS → proceed to Step 5
-   - If SOME UCs FAIL → report which failed, proceed to Step 5 for healthy UCs
+   - If SOME UCs FAIL → report which failed; **exclude FAIL UCs from the delivery
+     artifact** (they are not passed to Step 5, not stamped in Step 6, and their
+     IntakeItems are NOT written `delivered`). Proceed to Step 5 for PASS UCs only.
+     This exclusion is symmetric with the IntakeItem stamping rule in Step 6:
+     only PASS UCs ever receive the `delivered` stamp — FAIL UCs are explicitly
+     omitted, not silently skipped.
    - If ANY UC is UNVERIFIED (dev status) and user declined verify → **USER GATE**:
      "X UCs have UNVERIFIED dev status. Deliver partial set or halt?"
      - If user confirms partial delivery → proceed to Step 5 for PASS UCs only

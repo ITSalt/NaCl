@@ -71,7 +71,7 @@ Never push directly to main without explicit --force-push + double confirmation.
 /nacl-tl-hotfix ... --force-push               # skip PR, push directly to main (double confirmation)
 /nacl-tl-hotfix ... --rebase-feature           # after hotfix, rebase source feature branch from main
 /nacl-tl-hotfix ... --dry-run                  # analysis only, no git operations
-/nacl-tl-hotfix ... --yes                      # skip user gates
+/nacl-tl-hotfix ... --yes                      # skips non-safety prompts (task-list selection, module-detection confirmation). Does NOT bypass the pre-merge non-PASS gate at Step 6.
 ```
 
 ### Configuration Resolution
@@ -149,6 +149,17 @@ Example: `hotfix/cast-lectureid-uuid-generation-query`
 **Goal:** Get the fix code onto the hotfix branch.
 
 **Scenario 1 (from stash):**
+
+Before applying the stash, invoke `/nacl-tl-regression-test` against the current hotfix branch
+(which still has main's code — the stash has NOT been applied yet). Provide:
+- Bug description from the user's hotfix invocation
+- Affected source file(s) (infer from `git stash show -p stash@{0}` file list)
+- Current behavior (broken) and Expected behavior (fixed)
+
+The regression test MUST be RED on main's code before the stash is applied. If the test is GREEN
+(does not capture the bug), halt and ask the user to sharpen the bug description before retrying.
+Record the test path as `regression_test_path`.
+
 ```bash
 git stash apply stash@{0}
 ```
@@ -158,6 +169,17 @@ If conflicts:
 - Do NOT attempt to auto-resolve code conflicts.
 
 **Scenario 2 (cherry-pick):**
+
+Before cherry-picking, invoke `/nacl-tl-regression-test` against the current hotfix branch
+(which still has main's code — the cherry-pick has NOT been applied yet). Provide:
+- Bug description from the user's hotfix invocation
+- Affected source file(s) (infer from `git diff <commit>~1 <commit> --name-only`)
+- Current behavior (broken) and Expected behavior (fixed)
+
+The regression test MUST be RED on main's code before the cherry-pick is applied. If the test is
+GREEN (does not capture the bug), halt and ask the user to sharpen the bug description.
+Record the test path as `regression_test_path`.
+
 ```bash
 git cherry-pick <commit-hash> --no-commit
 ```
@@ -179,42 +201,10 @@ mandatory — the production main bar is higher than a feature branch.
 
 Branch on the status immediately:
 - **PASS** — proceed to Step 4.
-- **BLOCKED** — the fix was applied and a test transitioned, but pre-existing failures
-  remain in the suite. STOP and report:
-  ```
-  HOTFIX BLOCKED — BLOCKED
-  Fix applied but pre-existing test failures remain (baseline-confirmed).
-  Shipping a non-PASS fix to main is high-risk. Confirm to proceed? [yes/no]
-  Default: no
-  ```
-  Do NOT proceed past this point without explicit "yes".
-- **UNVERIFIED** — the fix was applied but no test exercises the change. STOP and report:
-  ```
-  HOTFIX BLOCKED — UNVERIFIED
-  Fix applied but no test exercises the change. Cannot machine-verify correctness.
-  Shipping a non-PASS fix to main is high-risk. Confirm to proceed? [yes/no]
-  Default: no
-  ```
-  Do NOT proceed past this point without explicit "yes".
-- **NO_INFRA** — the affected workspace has no test runner. STOP and report:
-  ```
-  HOTFIX BLOCKED — NO_INFRA
-  The workspace has no test runner (scripts.test missing).
-  Cannot verify the fix before shipping to main.
-  Recommended: set up test infra first (/nacl-tl-dev TECH-### "set up test runner").
-  Shipping a non-PASS fix to main is high-risk. Confirm to proceed? [yes/no]
-  Default: no
-  ```
-  Do NOT proceed past this point without explicit "yes".
-- **RUNNER_BROKEN** — the test runner could not execute. STOP and report:
-  ```
-  HOTFIX BLOCKED — RUNNER_BROKEN
-  The test runner failed to execute. Cannot verify the fix before shipping to main.
-  Recommended: diagnose the runner (/nacl-tl-diagnose) before hotfixing.
-  Shipping a non-PASS fix to main is high-risk. Confirm to proceed? [yes/no]
-  Default: no
-  ```
-  Do NOT proceed past this point without explicit "yes".
+- **BLOCKED / UNVERIFIED / NO_INFRA / RUNNER_BROKEN** — the fix is not cleanly verified.
+  Record the status and reason. Continue to Step 3.5 then Step 4.
+  **The mandatory user gate for all non-PASS statuses is at Step 6 — do not prompt here.**
+  (Step 6 gate is unconditional: it always prompts fresh, even when `--yes` was supplied.)
 - **REGRESSION** — the fix introduced new failures or its regression test is still RED. HALT:
   ```
   HOTFIX HALTED — REGRESSION
@@ -225,19 +215,71 @@ Branch on the status immediately:
   Record the new failures in YouGile task chat as advisory (user decides whether to
   open a new task). Do NOT proceed.
 
+### Step 3.5: VERIFY REGRESSION-TEST SEAM -- announce: "Step 3.5: VERIFY REGRESSION-TEST SEAM"
+
+**Goal:** Confirm that a regression test was actually written and ran RED→GREEN. This step applies
+to ALL scenarios.
+
+**Scenario 3:** Parse the `/nacl-tl-fix` Step 8 report for both of the following fields:
+
+```
+Regression test:  [path of new test (Path A) | "covered by existing test: [path]" (Path B) | ...]
+RED→GREEN:        [✓ confirmed at 6e and 6g (Path A) | ✓ existing test transitioned (Path B) | ...]
+```
+
+- If `Regression test:` field is missing, empty, or reads `"none — UNVERIFIED"`: emit:
+  ```
+  HOTFIX HALTED — UNVERIFIED (regression-test seam not honored)
+  /nacl-tl-fix did not produce a regression test (Path B "UNVERIFIED" or field absent).
+  Cannot confirm the fix is verifiable. Return to /nacl-tl-fix Step 6 with sharper inputs.
+  ```
+  HALT. Do NOT proceed.
+- If `RED→GREEN:` field is missing or reads `✗`: emit:
+  ```
+  HOTFIX HALTED — UNVERIFIED (regression-test seam not honored)
+  /nacl-tl-fix reported a test path but RED→GREEN evidence is absent or negative.
+  The test did not prove the fix works. Return to /nacl-tl-fix Step 6e/6g.
+  ```
+  HALT. Do NOT proceed.
+- Otherwise: record `regression_test_path` (exact absolute path from the field) and
+  `red_green_evidence` (the summary from the RED→GREEN line). Continue to Step 4.
+
+**Scenarios 1 and 2:** `regression_test_path` was recorded in Step 3 above (the test written
+before the stash/cherry-pick was applied). Confirm it is non-empty. If it is empty (the
+regression test invocation was skipped or failed to produce a path), halt:
+```
+HOTFIX HALTED — UNVERIFIED (regression-test seam not honored)
+No regression test path was recorded for Scenario {1|2}. Cannot proceed without test evidence.
+```
+
 ### Step 4: VALIDATE -- announce: "Step 4: VALIDATE"
 
-**Goal:** Verify the fix works on the main branch codebase.
+**Goal:** Verify the fix works on the main branch codebase, including a named regression-test run.
 
-1. Run tests for affected modules:
+1. **Run the regression test by file path** (from `regression_test_path` recorded in Step 3.5).
+   Use the workspace's `scripts.test` runner with a file-path or name filter so only this test
+   runs first:
+   ```bash
+   cd [module_path] && [test_cmd] --test-name-pattern "[test name]"
+   # or equivalent runner filter for vitest/jest/etc.
+   ```
+   The test MUST be GREEN. If it is RED (still failing after the fix was applied), halt:
+   ```
+   HOTFIX INCOMPLETE — REGRESSION
+   Regression test {regression_test_path} is still failing after the fix.
+   The fix does not address the bug. Return to Step 3 / /nacl-tl-fix Step 6f.
+   ```
+   HALT. Do NOT proceed.
+
+2. Run the full test suite for affected modules:
    ```bash
    cd [module_path] && [test_cmd]
    ```
-2. Run build:
+3. Run build:
    ```bash
    cd [module_path] && [build_cmd]
    ```
-3. If tests/build FAIL, distinguish the source of failure before deciding how to proceed:
+4. If tests/build FAIL, distinguish the source of failure before deciding how to proceed:
 
    **If /nacl-tl-fix returned NO_INFRA or RUNNER_BROKEN (Scenario 3):**
    The test failure is an infrastructure problem, not a code regression from the hotfix
@@ -269,7 +311,7 @@ Branch on the status immediately:
    These may be unrelated to the hotfix. Review before proceeding.
    ```
 
-4. Show impact summary:
+5. Show impact summary:
    ```bash
    git diff --stat main..HEAD
    ```
@@ -299,20 +341,23 @@ Branch on the status immediately:
 
 **Goal:** Get the fix to main via PR with auto-merge.
 
-**Pre-merge status gate (runs before the user gate):**
+**Pre-merge status gate (mandatory — runs before the user gate even when `--yes` was supplied):**
 
 Check the fix status captured in Step 3 (Scenario 3) or Step 4:
 
 - If status is **PASS**: proceed to the standard user gate below.
-- If status is **anything other than PASS** and the user has NOT yet explicitly confirmed
-  override (they were asked in Step 3 and answered "yes"): prepend the following additional
-  confirmation before presenting the standard PR plan:
+- If status is **anything other than PASS**: issue a **fresh unconditional prompt** regardless
+  of whether `--yes` was supplied at invocation time. The `--yes` flag does NOT satisfy this
+  gate. Present:
   ```
-  ⚠ Fix status: {STATUS}. Shipping a non-PASS fix to main is high-risk.
-  Confirm? [yes/no]
+  ⚠ Fix status: {STATUS}. Reason: {reason from Step 3 / Step 4}.
+  Shipping a non-PASS fix to main is high-risk and cannot be auto-confirmed.
+  Confirm to proceed? [yes/no]
   Default: no
   ```
   If the answer is not explicitly "yes", STOP. Do not create the PR.
+  This gate is unconditional: `--yes` scope is limited to non-safety prompts
+  (task-list selection, module-detection confirmation). It never bypasses this gate.
 
 **Present plan to user (unless `--yes`):**
 ```
@@ -350,11 +395,17 @@ gh pr create \
 **Fix status:** {PASS | BLOCKED | UNVERIFIED | NO_INFRA | RUNNER_BROKEN | REGRESSION}
 {if non-PASS: "**Note:** Fix shipped with explicit user override. Status reason: {reason}"}
 
+### Regression Test Evidence
+
+**Regression test:** {regression_test_path}
+**RED→GREEN evidence:** {red_green_evidence — e.g. "✓ confirmed at Step 6e (RED) and 6g (GREEN) by nacl-tl-fix" or "✓ confirmed RED on main before stash/cherry-pick, GREEN after"}
+
 ### Changes
 {git diff --stat summary}
 
 ### Test Plan
-- [x] Unit tests passing on hotfix branch
+- [x] Regression test GREEN on hotfix branch ({regression_test_path})
+- [x] Full unit test suite passing on hotfix branch
 - [x] Build succeeds
 - [ ] CI pipeline (auto-merge enabled)
 

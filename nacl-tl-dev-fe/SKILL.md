@@ -188,44 +188,49 @@ Run `scripts.test` once **before writing any test file**. Capture and store:
 
 Store output in `/tmp/UC###-fe-baseline.txt`. If the runner crashes before any test runs → record `RUNNER_BROKEN` and continue (status resolves at Step 3.5).
 
-#### Step 3.2 — Write Failing Tests
+#### Step 3.2 — DELEGATE: Write Failing Tests
 
-1. Create MSW handlers for all API endpoints from `api-contract.md`
-2. Create test fixtures with typed mock data
-3. Create test utility (`renderWithProviders`) if not present
-4. Write ALL test cases from `test-spec-fe.md` before any implementation
-5. Do NOT run tests yet — that is Step 3.3
+Invoke `nacl-tl-regression-test` as a sub-agent (subagent_type: developer). Pass:
 
-**Test Categories (from test-spec-fe.md):**
+```
+/nacl-tl-regression-test
+  mode=feature-dev
+  task_id=UC###
+  test_spec=.tl/tasks/UC###/test-spec-fe.md
+  acceptance=.tl/tasks/UC###/acceptance.md
+  api_contract=.tl/tasks/UC###/api-contract.md   (for endpoint mocks)
+  target_files=["<fe-workspace>/src/..."]         (target source files; may not exist yet)
+  layer=fe
+```
 
-| Category | Prefix | Tests |
-|----------|--------|-------|
-| Component Tests | CT | Render, user interactions, conditional rendering, loading/empty states |
-| Hook Tests | HT | Data fetching, mutations, error handling, query invalidation |
-| Form Tests | FT | Validation, submission, error display, loading state |
-| Integration Tests | IT | Full page flows, multi-component interactions, MSW-backed API |
-| Accessibility Tests | AT | Keyboard navigation, ARIA attributes, screen reader support |
-| Edge Cases | EC | Network failures, overflow, rapid clicks, empty data |
+The regression-test agent owns all test artifacts at write-time: test files, MSW handlers, and test fixtures. Do NOT write any of those files yourself in this step.
 
-**RTL Testing Rules:**
-- Use semantic queries (`getByRole`, `getByLabelText`) -- NOT `getByTestId`
-- Use `user-event` -- NOT `fireEvent`
-- Use `waitFor` for async assertions
-- Use `renderWithProviders` for context (QueryClient, providers)
-- Follow AAA pattern: Arrange, Act, Assert
-- One concept per test case
+Wait for the agent to return one of:
 
-#### Step 3.3 — VERIFY RED
+| Status | Meaning |
+|--------|---------|
+| `FEATURE-TEST WRITTEN` | Tests written and confirmed RED — proceed to Step 3.3 |
+| `FEATURE-TEST HALTED — NO_INFRA` | Runner missing or `test-spec-fe.md` absent — see below |
+| `FEATURE-TEST INVALID — NOT RED` | Tests passed immediately; spec or assertion is too lenient — re-invoke with sharper inputs |
+| `FEATURE-TEST FAILED TO RED` | Agent could not reach RED state — review blocker in agent output |
 
-Run `scripts.test` again (same command as Step 3.1). Confirm:
+**If `FEATURE-TEST HALTED — NO_INFRA`:**
 
-**(a)** The new tests appear in the failure set — they are actually failing, not silently skipped. Parse the output and check each new test name is present in the failure list.
+```
+DEV-FE HALTED — NO_INFRA
+nacl-tl-regression-test reports: <verbatim NO_INFRA message>
+Recommend: open a TECH task to set up the test runner or add test-spec-fe.md before continuing.
+```
 
-**(b)** No previously-passing test has flipped to fail.
+Stop. Do NOT proceed to implementation.
 
-If **(a)** fails: the new tests are not being discovered. Check file naming, MSW handler setup, `renderWithProviders` configuration, runner glob patterns. Fix and re-run before proceeding.
+#### Step 3.3 — VERIFY RED (consume regression-test output)
 
-If **(b)** fails: the test code has introduced a regression in the baseline. **Halt and ask the user** — do NOT proceed to implementation.
+The regression-test agent already ran the tests and confirmed RED. Do NOT re-run the full suite here — just consume the agent's report:
+
+1. Record the test file path, test names, and failure snippet from the agent's `FEATURE-TEST WRITTEN` report.
+2. Cross-check: confirm each test name listed in the report maps to a test case in `test-spec-fe.md`. If any test name is absent from the spec, flag it but do not block.
+3. Confirm no previously-passing test has flipped. The agent checks this in its Step 3; if the agent's report is silent on regressions, trust the agent's RED confirmation.
 
 **Commit RED:**
 

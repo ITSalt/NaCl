@@ -31,6 +31,13 @@ description: |
 - nacl-tl-deliver
 - nacl-tl-conductor
 
+**Upstream dependency (Workflow A only):**
+- `nacl-tl-regression-test mode=feature-dev` — writes test files in RED phase (A.2).
+  This skill is strictly the implementation author (GREEN phase, A.4). Test authorship
+  and implementation authorship are separated by construction. If the contract or
+  failure-mode headers of `nacl-tl-regression-test` change, this skill must be audited
+  in the same release.
+
 **Contract change discipline:**
 The 0.10.0→0.10.1 regression was caused by the absence of this discipline. `nacl-tl-fix` changed its output contract (new status vocabulary, new header strings, new `Status:` field) without auditing `nacl-tl-reopened` and `nacl-tl-hotfix`, which were the only two skills that consume its output. Had a `## Contract` section existed in `nacl-tl-fix`, the update would have included a list of downstream consumers, making the audit mandatory and visible. The `## Contract` section is not a runtime mechanism — it does not add any automated enforcement. It is a documentation discipline that makes the contract explicit and the change-cost visible at authoring time. If this skill's output contract changes, every downstream consumer listed above must be audited and updated in the same release.
 
@@ -160,28 +167,49 @@ Store output in `/tmp/TECH-###-baseline.txt` (or equivalent temp location). This
 
 If the runner crashes before any test runs → record `RUNNER_BROKEN` and continue (status will resolve at A.5).
 
-### A.2: RED Phase — Write Failing Tests (formerly A1)
+### A.2: RED Phase — Delegate Test Authorship (formerly A1)
 
-1. Create test file(s) based on `test-spec.md`
-2. Write ALL test cases before any implementation (AAA pattern: Arrange / Act / Assert)
-3. Do NOT run tests yet — that is A.3
+**Do NOT write test files yourself.** Test authorship is separated from implementation authorship. Invoke `nacl-tl-regression-test` as a sub-agent (developer subagent_type) with:
 
-### A.3: VERIFY RED
+```
+/nacl-tl-regression-test
+  mode=feature-dev
+  task_id=TECH-###
+  test_spec=.tl/tasks/TECH-###/test-spec.md
+  acceptance=.tl/tasks/TECH-###/acceptance.md
+  target_files=[<paths of source files the feature will live in — may not exist yet>]
+  layer=tech
+```
 
-Run `scripts.test` again (same command as A.1). Confirm:
+The sub-agent writes ONLY the test file. It verifies RED (the tests fail on the current codebase) and reports one of:
 
-**(a)** The new tests appear in the failure set (they are actually failing, not silently skipped).
-**(b)** No previously-passing test has flipped to fail.
+| Sub-agent report | Meaning | Action |
+|-----------------|---------|--------|
+| `FEATURE-TEST WRITTEN` | Tests written and confirmed RED | Proceed to A.4 |
+| `FEATURE-TEST HALTED — NO_INFRA` | No `scripts.test` or no `test-spec.md` | Halt with `DEV APPLIED — NO_INFRA`; recommend TECH task to set up runner or spec |
+| `FEATURE-TEST INVALID — NOT RED` | Tests pass on unimplemented code (test quality failure) | Halt; ask user to sharpen `test-spec.md` and re-invoke |
+| `FEATURE-TEST FAILED TO RED` | Sub-agent could not achieve RED for unrelated infra reason | Halt with `DEV APPLIED — RUNNER_BROKEN` |
 
-If **(a)** fails: the new test is not being discovered by the runner. Check file naming conventions, import paths, and runner glob patterns. Fix before proceeding.
+**STOP here and do not proceed to A.4 unless the sub-agent reported `FEATURE-TEST WRITTEN`.**
 
-If **(b)** fails: the test code itself has introduced a regression in the baseline. The test file is broken — **halt and ask the user** before touching production code.
+### A.3: VERIFY RED (delegated — confirm sub-agent output)
 
-**Commit RED:**
+RED verification is performed by the `nacl-tl-regression-test` sub-agent (see A.2 report). You do not re-run the test suite yourself in this step.
+
+Confirm from the sub-agent's report:
+
+**(a)** All test names from `test-spec.md` appear in the sub-agent's failure set.
+**(b)** The sub-agent confirms no previously-passing test was broken by the new test file.
+
+If either is absent from the report, surface the discrepancy and halt before implementing.
+
+**The sub-agent commits RED:**
 
 ```bash
 git commit -m "test(TECH-###): add failing tests for [feature]"
 ```
+
+(The sub-agent performs this commit. Do not duplicate it.)
 
 ### A.4: GREEN Phase — Minimal Implementation (formerly A2)
 
@@ -309,6 +337,14 @@ After completing the TDD or verification cycle, produce output with the followin
 | `NO_INFRA` | `DEV APPLIED — NO_INFRA` |
 | `RUNNER_BROKEN` | `DEV APPLIED — RUNNER_BROKEN` |
 | `REGRESSION` | `DEV INCOMPLETE — REGRESSION` |
+
+**Delegated-RED mapping (Workflow A):** when `nacl-tl-regression-test` reports a failure mode, map it to this skill's status vocabulary before emitting the headline:
+
+| nacl-tl-regression-test report | This skill's status | Headline |
+|--------------------------------|---------------------|---------|
+| `FEATURE-TEST HALTED — NO_INFRA` | `NO_INFRA` | `DEV APPLIED — NO_INFRA` |
+| `FEATURE-TEST INVALID — NOT RED` | `NO_INFRA` | `DEV APPLIED — NO_INFRA` (explain: test quality failure; sharpen test-spec.md) |
+| `FEATURE-TEST FAILED TO RED` | `RUNNER_BROKEN` | `DEV APPLIED — RUNNER_BROKEN` |
 
 **Never use a single "Ready for Review" header.** The headline must reflect the actual observed status.
 
@@ -496,9 +532,8 @@ Next step:
 
 - [ ] A.0 — DISCOVER RUNNER: scripts.test found in workspace package.json
 - [ ] A.1 — CAPTURE BASELINE: suite run before writing any test; baseline.txt stored
-- [ ] A.2 — Tests written (all cases from test-spec.md)
-- [ ] A.3 — VERIFY RED: new tests appear in failure set; no previously-passing test flipped
-- [ ] A.3 — Committed with `test(TECH-###):` prefix
+- [ ] A.2 — nacl-tl-regression-test sub-agent invoked (mode=feature-dev); reported `FEATURE-TEST WRITTEN`
+- [ ] A.3 — RED confirmed from sub-agent report: all test-spec.md names in failure set; no regressions in baseline
 - [ ] A.4 — Minimal implementation passes all tests
 - [ ] A.5 — VERIFY GREEN + COMPARE: delta computed against baseline; status determined
 - [ ] A.4 — Committed with `feat(TECH-###):` prefix

@@ -29,7 +29,7 @@ You are a **QA engineer** performing end-to-end testing of a completed UC by act
 Instrument:  MCP Playwright tools (NOT Playwright test framework)
 Perspective: Real user interacting with the application
 Evidence:    Screenshots at every step
-Verdict:     100% UI-testable criteria passed = PASS, anything else = FAIL
+Verdict:     ≥1 testable criterion exists + all pass + all screenshots present = QA COMPLETE; zero testable = QA HALTED — UNVERIFIED; infra down = QA HALTED — NO_INFRA; any criterion fails = QA INCOMPLETE — REGRESSION
 ```
 
 ---
@@ -75,7 +75,17 @@ playwright_navigate -> frontend URL (e.g., http://localhost:5173)
 playwright_navigate -> backend health (e.g., http://localhost:3000/api/health)
 ```
 
-Read `impl-brief.md` and `impl-brief-fe.md` to determine actual ports. If servers are unreachable, instruct the user to start them and exit.
+Read `impl-brief.md` and `impl-brief-fe.md` to determine actual ports.
+
+**HTTP-200 assertion:** both `playwright_navigate` calls must return HTTP 200. If either server returns a non-200 status or is unreachable:
+
+```
+→ emit: QA HALTED — NO_INFRA (frontend unreachable)   ← use exact label
+→ halt with explicit status; do NOT exit silently
+→ tell the user which URL failed and suggest starting the dev server
+```
+
+Do not proceed past this step unless both servers confirm HTTP 200.
 
 ### 3. Screenshots Directory
 
@@ -105,7 +115,19 @@ Files from `.tl/tasks/UC###/`:
 
 ## QA Workflow
 
-### Step 0: Find or Generate Scenario
+### Step 0: Testable-Criteria Gate
+
+Read `acceptance.md`. Count how many criteria have `ui_testable == true` (or equivalent — any criterion that can be verified through the browser).
+
+```
+IF count(ui_testable criteria) == 0:
+  → emit: QA HALTED — UNVERIFIED (no testable criteria)
+  → halt immediately; do NOT proceed to any Playwright calls
+```
+
+If at least one testable criterion exists, continue to the next step.
+
+### Step 0b: Find or Generate Scenario
 
 **Check for existing scenario:**
 ```
@@ -176,14 +198,20 @@ For each happy-path acceptance criterion:
 a. Navigate to the target page
    -> playwright_navigate(url)
    -> playwright_screenshot(name: "step-NN-description")
+   -> stat .tl/qa-screenshots/UC###/step-NN-description.png
+      IF file absent or empty: mark step FAIL, append "(screenshot missing)" to step record
 
 b. Perform user actions (use credentials from config.yaml → credentials.[role] for login/auth forms)
    -> playwright_fill / playwright_select / playwright_click
    -> playwright_screenshot(name: "step-NN-description")
+   -> stat .tl/qa-screenshots/UC###/step-NN-description.png
+      IF file absent or empty: mark step FAIL, append "(screenshot missing)" to step record
 
 c. Verify the expected result
    -> playwright_get_visible_text / playwright_get_visible_html / playwright_evaluate
    -> playwright_screenshot(name: "step-NN-description")
+   -> stat .tl/qa-screenshots/UC###/step-NN-description.png
+      IF file absent or empty: mark step FAIL, append "(screenshot missing)" to step record
 
 d. Record PASS or FAIL for this criterion
 ```
@@ -368,16 +396,20 @@ If `auto_create_bugs` section is missing → use defaults above.
 
 ### Step 6: Update Tracking
 
-**If PASS:** `phases.qa = "done"`, record `qa_completed`, `qa_verdict: "PASS"`
+**If QA COMPLETE:** `phases.qa = "done"`, record `qa_completed`, `qa_verdict: "QA COMPLETE"`
 
-**If FAIL:** `phases.qa = "failed"`, record `qa_completed`, `qa_verdict: "FAIL"`, `qa_failures` array
+**If QA APPLIED — UNVERIFIED:** `phases.qa = "unverified"`, record `qa_completed`, `qa_verdict: "QA APPLIED — UNVERIFIED"`, `qa_missing_screenshots` array
+
+**If QA INCOMPLETE — REGRESSION:** `phases.qa = "failed"`, record `qa_completed`, `qa_verdict: "QA INCOMPLETE — REGRESSION"`, `qa_failures` array
+
+**If QA HALTED — NO_INFRA or QA HALTED — UNVERIFIED:** `phases.qa = "halted"`, record `qa_halted`, `qa_verdict` set to the exact headline
 
 Append to `changelog.md`:
 
 ```markdown
 ## [YYYY-MM-DD HH:MM] QA: UC### - Title
 - Phase: E2E QA Testing
-- Verdict: PASS / FAIL
+- Verdict: QA COMPLETE / QA APPLIED — UNVERIFIED / QA HALTED — NO_INFRA / QA HALTED — UNVERIFIED / QA INCOMPLETE — REGRESSION
 - Criteria: N tested, N passed, N failed, N N/A
 - Bugs: N found (N critical, N major, N minor)
 ```
@@ -430,14 +462,31 @@ bug-001-incorrect-total-calculation.png
 
 ## Verdict Logic
 
-### PASS -- all conditions must be true:
+Headline vocabulary (use these exact labels):
 
+| Outcome | Headline |
+|---------|----------|
+| All testable criteria pass, all screenshots exist | `QA COMPLETE` |
+| All testable criteria pass but ≥1 screenshot missing | `QA APPLIED — UNVERIFIED` |
+| Servers were unreachable (halted at prerequisites) | `QA HALTED — NO_INFRA` |
+| Zero testable criteria exist (halted at gate) | `QA HALTED — UNVERIFIED` |
+| ≥1 testable criterion failed or regression detected | `QA INCOMPLETE — REGRESSION` |
+
+### QA COMPLETE (PASS) — all conditions must be true:
+
+- At least one UI-testable acceptance criterion exists (Step 0 gate passed)
 - Every UI-testable acceptance criterion has status PASS
+- Every test step's screenshot file exists on disk (stat check passed)
 - No CRITICAL bugs found
 - No MAJOR bugs in the main flow
 - Main flow completes end-to-end without errors
 
-### FAIL -- any condition triggers:
+### QA APPLIED — UNVERIFIED — triggers when:
+
+- All testable criteria passed BUT at least one screenshot is absent or empty
+- Evidence is incomplete; cannot fully confirm behavior
+
+### QA INCOMPLETE — REGRESSION (FAIL) — any condition triggers:
 
 - At least one UI-testable criterion has status FAIL
 - CRITICAL bug found (app crash, data loss, security issue)
@@ -493,12 +542,12 @@ On re-run of `/nacl-tl-qa UC###`:
 
 | Field | Value |
 |-------|-------|
-| Previous Verdict | FAIL |
+| Previous Verdict | QA INCOMPLETE — REGRESSION |
 | Reason for Re-run | BUG-001 fixed: validation error now displays |
 | Steps Re-tested | Steps 05, 06, 07 |
 | Bugs Fixed | BUG-001 resolved |
 | New Bugs Found | None |
-| Current Verdict | **PASS** |
+| Current Verdict | **QA COMPLETE** |
 ```
 
 5. Update the verdict and status.json accordingly
@@ -509,7 +558,7 @@ On re-run of `/nacl-tl-qa UC###`:
 
 | Situation | Action |
 |-----------|--------|
-| Dev servers not running | Report which servers are unreachable, instruct user to start them, exit |
+| Dev servers not running | Emit `QA HALTED — NO_INFRA (frontend unreachable)`, halt with explicit status (do not exit silently); tell user which URL failed |
 | Page not found (404) | Screenshot, record FAIL, suggest `/nacl-tl-dev-fe UC### --continue` |
 | Element not found | Screenshot current state, try alternative selectors, retry once, then FAIL |
 | Timeout / slow response | Wait up to 10s, retry once, then screenshot and FAIL |
@@ -523,7 +572,7 @@ On re-run of `/nacl-tl-qa UC###`:
 E2E QA Testing Complete
 
 Task: UC### [Title]
-Verdict: PASS / FAIL
+Verdict: QA COMPLETE / QA APPLIED — UNVERIFIED / QA HALTED — NO_INFRA / QA HALTED — UNVERIFIED / QA INCOMPLETE — REGRESSION
 
 Acceptance Criteria:
   Total: N | Tested: N | Passed: N | Failed: N | N/A: N
@@ -538,9 +587,12 @@ Reports:
   Online:   https://reports.example.com/qa-UC###-20260327/qa-report.html (if published)
 
 Next:
-  PASS -> /nacl-tl-ship UC### (commit + push)
-  FAIL -> /nacl-tl-dev-be UC### --continue  (backend fix)
-         /nacl-tl-dev-fe UC### --continue  (frontend fix)
+  QA COMPLETE              -> /nacl-tl-ship UC### (commit + push)
+  QA APPLIED — UNVERIFIED  -> re-run QA; verify screenshot tool output
+  QA HALTED — NO_INFRA     -> start dev servers, then re-run /nacl-tl-qa UC###
+  QA HALTED — UNVERIFIED   -> review acceptance.md; mark criteria as ui_testable where applicable
+  QA INCOMPLETE — REGRESSION -> /nacl-tl-dev-be UC### --continue  (backend fix)
+                               /nacl-tl-dev-fe UC### --continue  (frontend fix)
 ```
 
 ---
@@ -549,9 +601,10 @@ Next:
 
 ### Before Testing
 
+- [ ] Testable-criteria gate passed (≥1 ui_testable criterion confirmed)
 - [ ] Acceptance criteria read and understood
 - [ ] Task files read (task-be.md, task-fe.md, api-contract.md, impl-briefs)
-- [ ] Dev servers verified (both FE and BE reachable)
+- [ ] Dev servers verified — both FE and BE returned HTTP 200
 - [ ] Screenshots directory cleaned and created
 - [ ] Prerequisites verified (phases.sync = done, phases.stubs = done)
 
@@ -565,8 +618,9 @@ Next:
 ### After Testing
 
 - [ ] qa-report.md created with full evidence
-- [ ] Verdict determined (PASS or FAIL)
-- [ ] status.json updated (phases.qa = done or failed)
+- [ ] Screenshot existence verified for every step (stat checks passed)
+- [ ] Verdict determined using exact vocabulary (QA COMPLETE / QA APPLIED — UNVERIFIED / QA INCOMPLETE — REGRESSION)
+- [ ] status.json updated (phases.qa = done / unverified / failed / halted)
 - [ ] changelog.md updated with QA entry
 - [ ] Recovery recommendations included (if FAIL)
 
@@ -583,5 +637,8 @@ Next:
 
 | Verdict | Next Action |
 |---------|-------------|
-| PASS | `/nacl-tl-full UC###` -- finalize the task |
-| FAIL | `/nacl-tl-dev-be UC### --continue` or `/nacl-tl-dev-fe UC### --continue` -- fix and re-test |
+| QA COMPLETE | `/nacl-tl-full UC###` -- finalize the task |
+| QA APPLIED — UNVERIFIED | Re-run QA; verify screenshot tool output |
+| QA HALTED — NO_INFRA | Start dev servers, then re-run `/nacl-tl-qa UC###` |
+| QA HALTED — UNVERIFIED | Review `acceptance.md`; mark criteria as ui_testable where applicable |
+| QA INCOMPLETE — REGRESSION | `/nacl-tl-dev-be UC### --continue` or `/nacl-tl-dev-fe UC### --continue` -- fix and re-test |

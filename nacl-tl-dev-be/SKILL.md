@@ -146,42 +146,38 @@ Run `scripts.test` once **before writing any test file**. Capture and store:
 
 Store output in `/tmp/UC###-be-baseline.txt`. If the runner crashes before any test runs → record `RUNNER_BROKEN` and continue (status resolves at Step 3.5).
 
-#### Step 3.2 — Write Failing Tests
+#### Step 3.2 — Write Failing Tests (delegated to `nacl-tl-regression-test`)
 
-1. Create test file(s) based on `test-spec.md`
-2. Write ALL test cases before any implementation (AAA pattern: Arrange / Act / Assert)
-3. Do NOT run tests yet — that is Step 3.3
+Invoke `nacl-tl-regression-test` as a sub-agent. Do NOT write test files yourself in this step.
 
-**Test Structure (AAA Pattern):**
-
-```typescript
-describe('OrderService', () => {
-  describe('createOrder', () => {
-    it('should create order with valid data', () => {
-      // Arrange - Set up test data
-      const input = createTestInput();
-      // Act - Execute the behavior
-      const result = await orderService.createOrder(input);
-      // Assert - Verify outcome
-      expect(result).toMatchObject({ id: expect.any(String), status: 'NEW' });
-    });
-  });
-});
+```
+Agent: nacl-tl-regression-test
+  mode=feature-dev
+  task_id=<UC### or TECH-###>
+  test_spec=.tl/tasks/<UC###>/test-spec.md
+  acceptance=.tl/tasks/<UC###>/acceptance.md
+  api_contract=.tl/tasks/<UC###>/api-contract.md
+  target_files=[<list of BE source files the feature will live in>]
+  layer=be
 ```
 
-#### Step 3.3 — VERIFY RED
+Pass `api-contract.md` so the test author can verify that HTTP status codes, request shapes, and response shapes match the contract exactly.
 
-Run `scripts.test` again (same command as Step 3.1). Confirm:
+The sub-agent writes the test file and verifies RED before returning. You do not touch test files in this step.
 
-**(a)** The new tests appear in the failure set — they are actually failing, not silently skipped. Parse the output and check each new test name is present in the failure list.
+#### Step 3.3 — VERIFY RED (consume regression-test result)
 
-**(b)** No previously-passing test has flipped to fail (postfix baseline-passing tests still pass).
+Read the sub-agent's report. Branch on the outcome header:
 
-If **(a)** fails: the new tests are not being discovered. Check file naming, import paths, runner glob patterns. Fix and re-run before proceeding.
+| Regression-test report | Action |
+|------------------------|--------|
+| `FEATURE-TEST WRITTEN` | RED confirmed. Proceed to Step 4 (GREEN). |
+| `FEATURE-TEST HALTED — NO_INFRA` | **Halt immediately.** Record `DEV-BE APPLIED — NO_INFRA` and surface to user: "Test runner or test-spec missing. Open a TECH task before continuing." Do NOT implement. |
+| `FEATURE-TEST INVALID — NOT RED` | **Halt.** Surface to user: "Test author reports the test passes before implementation — spec or fixture is too lenient. Sharpen `test-spec.md` and re-invoke Step 3.2." Do NOT implement. |
+| `FEATURE-TEST FAILED TO RED` | **Halt.** The sub-agent could not confirm RED. Surface the failure message to the user and wait for guidance. Do NOT implement. |
+| Runner crashed / RUNNER_BROKEN | **Halt.** Record `DEV-BE APPLIED — RUNNER_BROKEN`. Recommend investigation before proceeding. |
 
-If **(b)** fails: the test code has introduced a regression in the baseline. **Halt and ask the user** — do NOT proceed to implementation.
-
-**Commit RED:**
+**Commit RED** (only after `FEATURE-TEST WRITTEN` is confirmed):
 
 ```bash
 git add .

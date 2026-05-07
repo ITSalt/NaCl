@@ -137,39 +137,63 @@ Locate the workspace owning the changed files (the nearest `package.json` walkin
 
 Do NOT invent a runner. Do NOT substitute `npx vitest`, `npx jest`, or any other command. The runner is exactly what the workspace declares.
 
-#### 5.2 Run the suite once
+#### 5.2 Run the suite twice — baseline then postfix
 
-Run the exact `scripts.test` command. Capture:
+**Baseline run (unchanged code):** before touching any files, run the exact `scripts.test` command on the current working tree. Capture:
 - Exit code
-- Number of tests collected
-- Pass/fail counts
+- `tests_collected` (number of tests discovered by the runner)
+- Set of failing test names → store as `baseline_failures`
 - stderr output
 
-If the runner exits non-zero before any test runs, or if stderr is non-empty and stdout is empty → record `RUNNER_BROKEN`.
+**Postfix run (after the change is applied):** run the same command again with the changed files in place. Capture:
+- Exit code
+- `tests_collected`
+- Set of failing test names → store as `postfix_failures`
+- stderr output
 
-If zero tests collected:
+If either run exits non-zero before any test runs, or if stderr is non-empty and stdout is empty → record `RUNNER_BROKEN`.
+
+If `tests_collected == 0` on either run:
 - Re-run against one known-good test file (e.g. the largest file in the workspace, or one referenced in `git log`).
 - If at least one test runs → the original glob simply didn't match. Continue.
 - If still zero tests → record `RUNNER_BROKEN`.
 
+**Derived sets** (computed after both runs):
+- `new_failures = postfix_failures − baseline_failures` (failures introduced by the change)
+- `transitioned = baseline_failures − postfix_failures` (failures that went away after the change)
+
 #### 5.3 Check test coverage for the changed file(s)
 
-Grep test files (`*.test.{ts,tsx,js,jsx}`, `*.spec.{ts,tsx,js,jsx}`) for any `import` or `require` of the module name(s) being verified.
+First, locate all test files (`*.test.{ts,tsx,js,jsx}`, `*.spec.{ts,tsx,js,jsx}`) in the workspace.
+
+**Empty-file guard:** count the total number of `it(` / `test(` / `it.each(` / `test.each(` call sites across all test files.
+- If test files exist but the total `it()` count is **zero**, the files are hollow stubs.
+  Record `NO_INFRA` with reason `empty test files — N test files found, 0 it() calls`.
+  Do NOT proceed to 5.4 with this workspace; treat it the same as a missing `scripts.test`.
+  (Exception: if a test file contains only `import * from './someFile.tests'` proxy-imports, note
+  `import-proxy pattern` as INFO and count the imported file's `it()` calls instead.)
+
+Then grep test files for any `import` or `require` of the module name(s) being verified.
 
 - If no test file imports the changed module → note `coverage_gap = true`.
 - If at least one test file imports the changed module → note `coverage_gap = false`.
 
 #### 5.4 Classify suite result
 
+**Precondition checked FIRST, before any exit-code logic:** `tests_collected > 0` must hold for the postfix run.
+- If `tests_collected == 0` after the known-good-file re-run fallback → `RUNNER_BROKEN`. Do not proceed further.
+
 | Condition | Suite result |
 |-----------|-------------|
-| `NO_INFRA` flag set (5.1) | `NO_INFRA` |
-| `RUNNER_BROKEN` flag set (5.2) | `RUNNER_BROKEN` |
-| Runner exited non-zero AND new failures present vs no-change baseline | `REGRESSION` |
-| Runner exited 0 AND `coverage_gap = true` | `UNVERIFIED` |
-| Runner exited 0 AND `coverage_gap = false` AND no UI changes | `PASS` |
-| Runner exited 0 AND `coverage_gap = false` AND UI changes present | `PASS_NEEDS_E2E` |
-| Runner exited 0 AND pre-existing failures remain (not introduced by this change) | `BLOCKED` |
+| `NO_INFRA` flag set (5.1 or 5.3 empty-file guard) | `NO_INFRA` |
+| `RUNNER_BROKEN` flag set (5.2 or 5.4 precondition) | `RUNNER_BROKEN` |
+| `new_failures.size > 0` | `REGRESSION` — list the failing test names from `new_failures` |
+| `new_failures.size == 0` AND `postfix_failures.size > 0` | `BLOCKED` — list the pre-existing failures from `postfix_failures` |
+| `postfix_failures.size == 0` AND `coverage_gap = true` | `UNVERIFIED` |
+| `postfix_failures.size == 0` AND `coverage_gap = false` AND no UI changes | `PASS` |
+| `postfix_failures.size == 0` AND `coverage_gap = false` AND UI changes present | `PASS_NEEDS_E2E` |
+
+Note: `BLOCKED` supersedes `UNVERIFIED` when pre-existing failures are present regardless of coverage gap.
 
 ### Step 6: RETURN RESULT
 
@@ -183,11 +207,19 @@ VERIFY_CODE_RESULT:
   summary: "one-line summary"
   testRunner:
     command: "npm test"          # exact scripts.test command, or "none — NO_INFRA"
-    collected: N                 # tests collected
+    collected: N                 # tests collected in postfix run
     passed: N
     failed: N
     coverageGap: true | false    # whether changed files have test coverage
     runnerOutput: "..."          # first 20 lines of stdout/stderr snippet
+    baseline_failures:           # set of test names that failed BEFORE the change
+      - "describe > test name"
+    postfix_failures:            # set of test names that failed AFTER the change
+      - "describe > test name"
+    new_failures:                # postfix_failures − baseline_failures (change introduced these)
+      - "describe > test name"
+    transitioned:                # baseline_failures − postfix_failures (change fixed these)
+      - "describe > test name"
   findings:
     - file: src/routes/analytics.ts
       line: 42
@@ -203,13 +235,13 @@ VERIFY_CODE_RESULT:
 ```
 
 **Decision logic summary:**
-- **PASS**: Static checks pass AND test suite ran AND changed file(s) covered by tests AND suite clean
+- **PASS**: Static checks pass AND `tests_collected > 0` AND `new_failures` is empty AND `postfix_failures` is empty AND `coverage_gap = false` AND no UI changes
 - **PASS_NEEDS_E2E**: Same as PASS, but UI changes detected — browser verification still needed
-- **UNVERIFIED**: Static checks pass, test suite ran and passed, but no test imports the changed file
-- **NO_INFRA**: `scripts.test` missing — static checks may have passed, but cannot be machine-verified
-- **RUNNER_BROKEN**: `scripts.test` exists but runner could not execute — environment issue
-- **BLOCKED**: Suite ran; change appears verified, but pre-existing unrelated failures remain
-- **REGRESSION**: Test suite reveals failures introduced by this change
+- **UNVERIFIED**: Static checks pass, suite ran with `tests_collected > 0`, `postfix_failures` is empty, but `coverage_gap = true`
+- **NO_INFRA**: `scripts.test` missing OR test files exist with zero `it()` calls (empty stubs) — `new_failures` and `postfix_failures` are meaningless
+- **RUNNER_BROKEN**: `scripts.test` exists but runner could not execute, or `tests_collected == 0` even after known-good-file re-run — environment issue
+- **BLOCKED**: `new_failures` is empty but `postfix_failures` is non-empty — pre-existing failures not introduced by this change; surfaces `postfix_failures` list
+- **REGRESSION**: `new_failures` is non-empty — change introduced test failures; surfaces `new_failures` list
 - **FAIL**: Static analysis found runtime errors or incorrect behavior (regardless of tests)
 
 ## Output Language

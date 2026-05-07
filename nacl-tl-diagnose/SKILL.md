@@ -178,6 +178,45 @@ Output metrics:
 
 ---
 
+### Step 1b: AGGREGATION (after all three agents return)
+
+Wait for **all three agents** to complete before proceeding.
+
+**On completion, evaluate each agent's output:**
+
+```
+For each agent result:
+  - If the agent returned valid JSON with required fields → status: success
+  - If the agent returned an error, empty output, or missing required fields → status: failed
+
+Aggregate status:
+  - All three succeeded → Data completeness: complete
+  - One or more failed  → Data completeness: partial (Agent #N failed: <reason>)
+
+Record this status in a variable COMPLETENESS_STATUS for inclusion in the final report.
+```
+
+**Partial-failure handling:**
+
+```
+IF Agent 1 failed:
+  - git metrics, fix_ratio, regression_ratio, regression_chains → unavailable
+  - Mark those metric rows as "N/A (git data unavailable)"
+
+IF Agent 2 failed:
+  - doc ages, doc lag, placeholders → unavailable
+  - Mark those metric rows as "N/A (doc data unavailable)"
+
+IF Agent 3 failed:
+  - build_pass, test_pass_rate, stub counts → unavailable
+  - Mark those metric rows as "N/A (code data unavailable)"
+
+Proceed with analysis on whatever data IS available.
+Do NOT abort the diagnostic — a partial report is better than no report.
+```
+
+---
+
 ### Step 2: ANALYSIS (main context)
 
 Receive results from 3 agents. Aggregate:
@@ -212,35 +251,68 @@ Output the metrics table in the user's language. Example structure:
 
 ```
 fix_ratio        = fix_commits / total_commits           (0.0 – 1.0)
+                   → not_assessable: git data unavailable  (if Agent 1 failed)
+
 fix_to_doc_ratio = doc_synced_fixes / total_fixes        (0.0 – 1.0)
                    where "doc-synced" = commit touches both src/ and (docs/ or .tl/)
+                   → not_assessable: git data unavailable  (if Agent 1 failed)
+
 regression_ratio = fix_commits_in_regression_chains / total_fix_commits  (0.0 – 1.0)
                    where "in chain" = file was fixed 2+ times within 5 consecutive commits
+                   → not_assessable: git data unavailable  (if Agent 1 failed)
+
 build_pass       = 1 if ALL sub-project builds succeed, else 0
+                   → not_assessable: code agent unavailable  (if Agent 3 failed)
+
 test_pass_rate   = tests_passed / tests_total            (0.0 – 1.0)
-                   if no tests exist, use 0.5 (neutral)
+                   → not_assessable: no test infra         (if Agent 3 reports "no tests configured" for ALL sub-projects)
+                   → not_assessable: code agent unavailable  (if Agent 3 failed)
+                   NOTE: do NOT substitute 0.5 — absence of tests is a distinct state,
+                         not a neutral mid-point.
 ```
 
-**Formula:**
+**Per-component score breakdown:**
 
 ```
-health_score =
-  (1 - fix_ratio) × 25              # Fewer fixes = better
-  + fix_to_doc_ratio × 25           # More doc-synced fixes = better
-  + (1 - regression_ratio) × 20     # Fewer regressions = better
-  + build_pass × 15                 # Build passes = 15 pts
-  + test_pass_rate × 15             # Proportional: 100% pass = 15, 50% = 7.5
+Report each component individually:
 
-If Agent 4 ran (server health available):
-  server_health_score = (staging_up × 0.5 + production_up × 0.5)  (0.0 – 1.0)
-                        where UP=1.0, DEGRADED=0.5, DOWN=0.0
-  Apply modifier: health_score = health_score × 0.85 + server_health_score × 15
+  git_quality_component:
+    fix_ratio_score    = (1 - fix_ratio) × 25         (or not_assessable)
+    doc_sync_score     = fix_to_doc_ratio × 25         (or not_assessable)
+    regression_score   = (1 - regression_ratio) × 20  (or not_assessable)
 
-Interpretation:
-  80-100: Healthy project
-  60-79:  Needs attention (targeted fixes)
-  40-59:  Serious problems (reconcile recommended)
-  0-39:   Critical state (reconcile mandatory)
+  build_component:
+    build_score        = build_pass × 15               (or not_assessable)
+
+  test_component:
+    test_score         = test_pass_rate × 15           (or not_assessable: no test infra)
+
+  server_component (if Agent 4 ran):
+    server_health_score = (staging_up × 0.5 + production_up × 0.5) × 15
+                          where UP=1.0, DEGRADED=0.5, DOWN=0.0
+```
+
+**Composite score rule:**
+
+```
+IF any component is not_assessable:
+  - Do NOT produce a single health_score number.
+  - Instead, produce a per-component breakdown table showing which
+    components have scores and which are not_assessable.
+  - State: "Composite score withheld — not all components are assessable."
+
+IF all components are assessable:
+  health_score =
+    fix_ratio_score + doc_sync_score + regression_score
+    + build_score + test_score
+    [+ server modifier if Agent 4 ran:
+       health_score = health_score × 0.85 + server_health_score]
+
+  Interpretation:
+    80-100: Healthy project
+    60-79:  Needs attention (targeted fixes)
+    40-59:  Serious problems (reconcile recommended)
+    0-39:   Critical state (reconcile mandatory)
 ```
 
 #### 2.3 Problem Clusters
@@ -267,16 +339,31 @@ Formulate hypotheses based on metrics:
 
 ```
 IF fix_to_doc_ratio < 10% AND regression_ratio > 30%:
-  → "Fixes without doc updates cause regression cycles"
+  → Hypothesis: "Fixes without doc updates cause regression cycles"
+    Required evidence: cite at least one regression chain where a hot file
+    was fixed without a corresponding doc/spec commit (show commit SHAs).
+    Without evidence → label as "candidate hypothesis (unverified)".
 
 IF doc_lag > 7 days for hot files:
-  → "Documentation is outdated, AI assistant works from stale specs"
+  → Hypothesis: "Documentation is outdated, AI assistant works from stale specs"
+    Required evidence: cite at least one specific file where code_date > doc_date,
+    showing the commit that drifted and the last doc-update commit (show SHAs and dates).
+    Without evidence → label as "candidate hypothesis (unverified)".
 
 IF doc_placeholders > 3:
-  → "Parts of the system are unspecified, no source of truth"
+  → Hypothesis: "Parts of the system are unspecified, no source of truth"
+    Required evidence: list the specific placeholder files found (filenames + line sample).
+    Without evidence → label as "candidate hypothesis (unverified)".
 
 IF build_fail OR test_fail:
-  → "Code doesn't build or tests fail — fix needed before diagnosis"
+  → Hypothesis: "Code doesn't build or tests fail — fix needed before diagnosis"
+    Required evidence: include the specific error output excerpt (last 5 lines of
+    build/test stderr) that confirms the failure.
+    Without evidence → label as "candidate hypothesis (unverified)".
+
+RULE: Every hypothesis emitted in the report MUST include its evidence block.
+      A hypothesis with no supporting evidence MUST be labeled
+      "candidate hypothesis (unverified)" rather than a confirmed finding.
 ```
 
 ---
@@ -286,6 +373,14 @@ IF build_fail OR test_fail:
 For the TOP-2 problem clusters, launch agents.
 
 **Scope cap:** Analyze at most **5 hottest files per cluster** (by modification count). This prevents excessive context usage while still capturing the main discrepancies.
+
+**Truncation warning:** If a cluster has more than 5 files, prepend the following line to that cluster's discrepancy list:
+
+```
+WARNING: Analyzed top-5 of N files in cluster "[CLUSTER_NAME]" — full analysis may reveal additional discrepancies.
+```
+
+(Replace N with the actual cluster file count.)
 
 ```
 For cluster [NAME]:
@@ -317,7 +412,8 @@ Report structure:
 **Project:** [name]
 **Date:** [date]
 **Period:** [since — now]
-**Health Score:** [0-100] ([interpretation])
+**Data completeness:** [complete | partial (Agent #N failed: reason)]
+**Health Score:** [0-100 (interpretation)] OR **Score withheld — per-component breakdown below**
 
 ## 1. Metrics
 [table from Step 2.1]
@@ -353,7 +449,23 @@ Report structure:
 - Then /nacl-tl-qa for critical UCs
 ```
 
-Present the report to the user and save as `DIAGNOSTIC-REPORT.md`.
+**Pre-finalize checklist** — before saving the file, verify every item below is present and non-empty. If any item is missing, fill it or explicitly mark it `N/A — data unavailable (reason)`:
+
+```
+[ ] Data completeness status (complete / partial — must appear at top of report)
+[ ] Section 1: Metrics table — all rows present; unavailable rows marked N/A
+[ ] Section 2: Regression Chains — present; "None found" is acceptable
+[ ] Section 3: Problem Clusters — at least one entry, or "No hot files in period"
+[ ] Section 4: Discrepancies — present; truncation warning included if cluster > 5 files
+[ ] Section 5: Root Cause Analysis — every hypothesis has an evidence block or is
+               labeled "candidate hypothesis (unverified)"
+[ ] Section 6: Recommendations — present and tied to the actual health score or
+               component breakdown
+[ ] Health score or per-component breakdown — single number only if all components
+    are assessable; otherwise per-component table with not_assessable labels
+```
+
+Only after all items are checked: present the report to the user and save as `DIAGNOSTIC-REPORT.md`.
 
 ---
 

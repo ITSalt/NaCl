@@ -107,26 +107,53 @@ If any check fails, report the issue and exit.
 | CRITICAL stubs found | **BLOCK** -- review impossible, return to developer |
 | Orphaned stubs (no UC reference) | **BLOCK** -- all stubs must be bound to a UC |
 | WARNING stubs (count <= 3) | **FLAG** in review, proceed with caution |
-| WARNING stubs (count > 3) | **FLAG** in review, require justification — must reference an existing TASK ticket or backlog item by ID. Free-text alone is insufficient. |
+| WARNING stubs (count > 3) | **VALIDATE JUSTIFICATION** — each stub comment must match the ticket-reference regex (see below); any that fail force phase rollback |
 | No stubs or only INFO | **PROCEED** normally |
 
 ### Warning Stub Justification Requirement
 
-When WARNING stub count exceeds 3, the developer must provide justification that:
-1. References an existing TASK ticket ID (e.g., `TECH-042`) or backlog item ID
-2. Explains why the stub cannot be resolved before review
+When WARNING stub count exceeds 3, each stub justification MUST satisfy the following regex (case-insensitive):
+
+```
+(UC|TECH|FR|BUG)-?\d+|https?://
+```
+
+The agent MUST scan the comment text of every WARNING stub and test it against this pattern. If **any** stub comment fails the regex match:
+
+1. Set the phase status back to `in_progress`.
+2. Halt the review and emit:
+
+```
+REVIEW HALTED — UNVERIFIED (stubs lack ticket references)
+
+The following stub justifications do not contain a valid ticket ID or URL:
+  - <File:Line>: "<comment text>"
+  - ...
+
+Required format: reference a ticket ID (e.g. UC014, TECH-042, FR-7, BUG99)
+or a full URL (https://...) in each stub comment.
+
+Action: update stub comments to include ticket references, re-run /nacl-tl-stubs, resubmit for review.
+Run: /nacl-tl-dev-be UC### --continue  |  /nacl-tl-dev-fe UC### --continue  |  /nacl-tl-dev TECH### --continue
+```
+
+A stub comment that passes the regex but still provides no meaningful context is a MAJOR issue recorded in the review — but does not force rollback. Only the absence of any ticket/URL token triggers rollback.
 
 Example acceptable justification:
 ```
 // STUB(UC014): placeholder until payment gateway is integrated — TECH-042
 ```
 
-Example unacceptable (free-text only):
+Example acceptable (URL):
 ```
-// TODO: add real implementation later
+// TODO: replace with real API — https://linear.app/team/issue/BACK-77
 ```
 
-A review that finds WARNING stubs > 3 with no ticket references must be REJECTED for that specific criterion, even if all other checks pass.
+Example unacceptable (free-text only — triggers rollback):
+```
+// TODO: add real implementation later
+// TODO: see backlog
+```
 
 ### Frontend-Specific Stub Checks (--fe only)
 
@@ -203,7 +230,7 @@ Set the appropriate phase in `status.json`:
 
 ### Step 3: Verify Acceptance Criteria
 
-Check each criterion from `acceptance.md`: Functional, Business Rules, Error Handling, Performance, Security. Document PASS or FAIL for each.
+Check each criterion from `acceptance.md`: Functional, Business Rules, Error Handling, Performance, Security. Document PASS, PARTIAL, or FAIL for each. PARTIAL means the criterion is partly met but has a gap that does not block (e.g., covered for happy path but missing an edge case).
 
 ### Step 4: Code Quality Review
 
@@ -268,15 +295,18 @@ Test files and production files for this UC are authored predominantly by the sa
 contributor (overlap: N%). This reduces the independence guarantee — the same
 author may have unconsciously tuned both the implementation and the tests.
 
-Recommended action: Invoke /nacl-tl-regression-test retroactively to validate
-one critical acceptance criterion for this UC. The regression test must be written
-independently and must verify the behavior described in acceptance.md, not the
-implementation in the production code.
-
 This flag does NOT block approval, but it must be visible in the review report.
 ```
 
-This check is non-blocking. A MAJOR flag does not prevent REVIEW COMPLETE or APPROVED, but it must appear in the review artifact and is visible to downstream consumers.
+In addition, the "Next Steps" section of the review artifact MUST include this exact line (substituting the UC identifier):
+
+```
+Recommend: `/nacl-tl-regression-test --retroactive UC###`
+```
+
+**Downstream contract:** `nacl-tl-ship` and `nacl-tl-deliver` MAY read the MAJOR test-author flag from the review artifact and gate progression on it (e.g., require the retroactive regression test to be filed before shipping). Whether they enforce this gate is their decision; this skill's obligation is to surface the flag and the recommendation so downstream consumers can act on it.
+
+This check is non-blocking at the review layer. A MAJOR flag does not prevent REVIEW COMPLETE or APPROVED, but it must appear in the review artifact and is visible to downstream consumers.
 
 ### Step 7: Document Issues
 
@@ -305,19 +335,25 @@ The headline is independent of the APPROVED / CHANGES REQUESTED verdict. It refl
 | Tests revealed new failures | `REVIEW INCOMPLETE — REGRESSION` |
 | Review blocked (CRITICAL stubs, or prerequisite unmet) | `REVIEW APPLIED — BLOCKED` |
 
-Both the headline and the APPROVED / CHANGES REQUESTED verdict appear in the review artifact:
+Both the headline and the APPROVED / CHANGES REQUESTED verdict appear in the review artifact as a **single combined status line** in this format:
 
 ```
-Headline: REVIEW COMPLETE
-Verdict:  APPROVED
+Workflow status: `REVIEW COMPLETE`. Code judgment: `APPROVED`. Action required: none.
 ```
 
-or:
+or when issues exist:
 
 ```
-Headline: REVIEW APPLIED — UNVERIFIED (test author overlap 80%)
-Verdict:  APPROVED (code quality checks pass; coverage independence caveat above)
+Workflow status: `REVIEW COMPLETE`. Code judgment: `CHANGES REQUESTED`. Action required: address 3 BE-3 stub-justifications.
 ```
+
+or when the runner could not fully verify:
+
+```
+Workflow status: `REVIEW APPLIED — UNVERIFIED (test author overlap 80%)`. Code judgment: `APPROVED`. Action required: `/nacl-tl-regression-test --retroactive UC###`.
+```
+
+The "Action required" field summarises the most urgent next step. If there are none, write `none`. This line MUST appear as the first content line of the review artifact's summary section.
 
 ### Step 9: Create Review Artifact
 
@@ -364,12 +400,13 @@ Append to `changelog.md`:
 
 ```markdown
 ## [YYYY-MM-DD HH:MM] REVIEW: UC### - Title (BE/FE/TECH)
-- Headline: REVIEW COMPLETE / REVIEW APPLIED — UNVERIFIED / ...
-- Stub Gate: PASSED / BLOCKED / WARNING (N)
+- Status: Workflow `REVIEW COMPLETE`. Judgment `APPROVED`. Action required: none.
+- Stub Gate: PASSED / BLOCKED / WARNING (N) / HALTED — UNVERIFIED
 - Result: approved / rejected
 - Issues: N blocker, N critical, N major, N minor
 - Tests: N passed, coverage X%
 - Test author independence: OK / MAJOR (N% overlap)
+- Checklist PARTIAL rows: N (details in artifact)
 ```
 
 ---
@@ -377,6 +414,11 @@ Append to `changelog.md`:
 ## Backend Review Checklist (8 Categories)
 
 Used for `--be` reviews and TECH reviews. Reference: `nacl-tl-core/references/review-checklist.md`.
+
+Each checklist row uses tri-state scoring:
+- **PASS** — fully satisfied
+- **PARTIAL** — partly satisfied; surfaces in the report but does not automatically block approval; the verdict aggregator decides
+- **FAIL** — not satisfied; treated as a blocker or critical issue depending on category
 
 ### 1. Code Correctness
 - [ ] Logic correctly implements requirements
@@ -433,6 +475,11 @@ Used for `--be` reviews and TECH reviews. Reference: `nacl-tl-core/references/re
 ## Frontend Review Checklist (10 Categories)
 
 Used for `--fe` reviews. Reference: `nacl-tl-core/references/fe-review-checklist.md`.
+
+Each checklist row uses tri-state scoring:
+- **PASS** — fully satisfied
+- **PARTIAL** — partly satisfied; surfaces in the report but does not automatically block approval; the verdict aggregator decides
+- **FAIL** — not satisfied; treated as a blocker or critical issue depending on category
 
 ### 1. Component Architecture
 - [ ] Business logic extracted from components into hooks/utilities
@@ -548,17 +595,16 @@ GOOD: "The test checks implementation details. Consider testing behavior instead
 Backend Code Review Complete
 
 Task: UC### [Title] (Backend)
-Headline: REVIEW COMPLETE
-Verdict: APPROVED / CHANGES REQUESTED
+Workflow status: `REVIEW COMPLETE`. Code judgment: `APPROVED`. Action required: none.
 
 Stub Check: No critical stubs / N warnings (non-blocking)
 Test Author Independence: OK / MAJOR (N% overlap — retroactive /nacl-tl-regression-test recommended)
 
 BE Checklist:
-  Code Correctness:  PASS    Error Handling:  PASS
-  Code Quality:      PASS    Testing:         PASS
-  Security:          PASS    Performance:     PASS
-  Documentation:     PASS    Git & Commits:   PASS
+  Code Correctness:  PASS/PARTIAL/FAIL    Error Handling:  PASS/PARTIAL/FAIL
+  Code Quality:      PASS/PARTIAL/FAIL    Testing:         PASS/PARTIAL/FAIL
+  Security:          PASS/PARTIAL/FAIL    Performance:     PASS/PARTIAL/FAIL
+  Documentation:     PASS/PARTIAL/FAIL    Git & Commits:   PASS/PARTIAL/FAIL
 
 Issues: N blocker, N critical, N major, N minor
 Tests: N passed, coverage N%
@@ -572,18 +618,17 @@ Next: /nacl-tl-dev-fe UC### (start frontend) or /nacl-tl-sync UC### (verify sync
 Frontend Code Review Complete
 
 Task: UC### [Title] (Frontend)
-Headline: REVIEW COMPLETE
-Verdict: APPROVED / CHANGES REQUESTED
+Workflow status: `REVIEW COMPLETE`. Code judgment: `APPROVED`. Action required: none.
 
 Stub Check: No critical stubs / N warnings (non-blocking)
 Test Author Independence: OK / MAJOR (N% overlap — retroactive /nacl-tl-regression-test recommended)
 
 FE Checklist:
-  Component Architecture:  PASS    API Integration:     PASS
-  TypeScript Quality:      PASS    Forms & Validation:  PASS
-  State Management:        PASS    Accessibility:       PASS
-  Responsive Design:       PASS    Performance:         PASS
-  Testing (RTL):           PASS    Stubs/Mocks Cleanup: PASS
+  Component Architecture:  PASS/PARTIAL/FAIL    API Integration:     PASS/PARTIAL/FAIL
+  TypeScript Quality:      PASS/PARTIAL/FAIL    Forms & Validation:  PASS/PARTIAL/FAIL
+  State Management:        PASS/PARTIAL/FAIL    Accessibility:       PASS/PARTIAL/FAIL
+  Responsive Design:       PASS/PARTIAL/FAIL    Performance:         PASS/PARTIAL/FAIL
+  Testing (RTL):           PASS/PARTIAL/FAIL    Stubs/Mocks Cleanup: PASS/PARTIAL/FAIL
 
 Issues: N blocker, N critical, N major, N minor
 Tests: N passed, coverage N%
@@ -597,11 +642,10 @@ Next: /nacl-tl-sync UC### (verify BE<>FE sync) or /nacl-tl-qa UC### (E2E testing
 TECH Code Review Complete
 
 Task: TECH### [Title]
-Headline: REVIEW COMPLETE
-Verdict: APPROVED / CHANGES REQUESTED
+Workflow status: `REVIEW COMPLETE`. Code judgment: `APPROVED`. Action required: none.
 
 Stub Check: No critical stubs
-BE Checklist (applied to TECH): All PASS / N issues
+BE Checklist (applied to TECH): All PASS / N PARTIAL / N FAIL
 Test Author Independence: OK / MAJOR (N% overlap)
 
 Next: /nacl-tl-status or /nacl-tl-next

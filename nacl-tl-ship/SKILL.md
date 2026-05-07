@@ -183,6 +183,11 @@ strategy = config.yaml → git.strategy (default: "feature-branch")
 **IMPORTANT:** If on a feature branch, ALWAYS commit there — regardless of whether
 the change "matches" the branch name. If user wants it on main → `/nacl-tl-hotfix`.
 
+**NOTE (conductor-driven invocations):** When this skill is invoked under
+`/nacl-tl-conductor`, the feature branch is pre-created by the conductor and may
+host multiple UCs in sequence. Do not require the branch name to match the UC ID —
+a mismatch is expected and must not halt the ship.
+
 #### Branch naming (when creating a new branch)
 
 | Source | Branch name | Example |

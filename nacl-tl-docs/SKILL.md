@@ -201,12 +201,87 @@ Update `status.json`:
 
 ### Step 10: Verify Documentation
 
-Run verification checks:
+Run each sub-step as a script, not a visual check. All three must pass before proceeding to Step 11.
 
-1. **Links work**: No broken internal links
-2. **Examples work**: Code examples are valid
-3. **Consistent**: Terminology matches codebase
-4. **Complete**: All new features documented
+#### Step 10.1: Automated link check
+
+Grep all markdown files in `docs/` for internal link targets:
+
+```bash
+grep -rEoh '\[.*?\]\(([^)]+)\)' docs/ \
+  | grep -v 'http' \
+  | sed 's/.*(\(.*\))/\1/' \
+  | while read -r target; do
+      [ -f "$target" ] || echo "BROKEN: $target"
+    done
+```
+
+- Count broken links.
+- If count > 0 → **stop**. Do not proceed to Step 11. Emit:
+
+```
+DOCS HALTED — UNVERIFIED (broken links: N)
+
+Broken link targets:
+  - <path>
+  ...
+
+Fix the links or remove the references before continuing.
+```
+
+#### Step 10.2: Code-example syntax check
+
+Extract every fenced code block from the updated doc files. For each block:
+
+- **TypeScript / JavaScript** — write the block to a temp file (e.g. `/tmp/nacl_doc_snippet_N.ts`) and run:
+  ```bash
+  npx tsc --noEmit --skipLibCheck /tmp/nacl_doc_snippet_N.ts 2>&1
+  ```
+- **Python** — write to `/tmp/nacl_doc_snippet_N.py` and run:
+  ```bash
+  python -m py_compile /tmp/nacl_doc_snippet_N.py 2>&1
+  ```
+- Other languages: skip syntax check but note "unchecked".
+
+Count blocks with non-zero exit codes. If count > 0 → **stop**. Emit:
+
+```
+DOCS HALTED — UNVERIFIED (code syntax errors: N)
+
+Failing snippets:
+  - <doc file>:<block index> (<language>): <error line>
+  ...
+
+Fix the examples before continuing.
+```
+
+If `npx` / `tsc` / `python` are unavailable, note the language and continue with status `DOCS HALTED — NO_INFRA` (see Output Summary).
+
+#### Step 10.3: Implementation-coverage audit
+
+Diff the implementation result files against the doc sections updated:
+
+1. List all `.tl/tasks/UC###/result-{be,fe}.md` files for the task.
+2. For each result file, confirm at least one updated doc section references the change (endpoint, function, config key, or component name mentioned in the result).
+3. Report any result files with zero doc coverage.
+
+If uncovered files exist:
+
+```
+DOCS COVERAGE GAP (N uncovered result files):
+  - .tl/tasks/UC###/result-be.md — no doc section references these changes
+  ...
+
+Options:
+  A) Update the relevant doc section and re-run Step 10.
+  B) Acknowledge the gap (provide reason) — status will be DOCS APPLIED — UNVERIFIED.
+```
+
+Await user response before proceeding to Step 11. If the user accepts with a reason, record it in `status.json` under `"coverage_gap_reason"`.
+
+#### Step 10 pass condition
+
+All three sub-steps must report zero issues (or user has explicitly acknowledged coverage gaps) before Step 11 is allowed.
 
 ### Step 11: Commit Documentation
 
@@ -304,30 +379,93 @@ Then re-submit for review:
 
 ## Output Summary
 
-After completion, display:
+After completion, display one of the following headers — first matching condition wins:
+
+---
+
+**All Step 10 checks pass:**
 
 ```
-Documentation Complete
+DOCS COMPLETE
 
 Task: UC### [Title]
-Status: ✅ DONE
+Status: DONE
 
 Documentation Updated:
   - README.md (feature list, usage)
   - docs/api/endpoint.md (new endpoint)
   - CHANGELOG.md (added entry)
 
+Verification:
+  - Internal links: OK (0 broken)
+  - Code examples: OK (0 syntax errors)
+  - Implementation coverage: OK (all result files covered)
+
 Commits:
   - docs(UC###): update documentation for [feature]
 
-Task Lifecycle Complete:
-  ✅ Plan    → Created task files
-  ✅ Dev     → TDD implementation
-  ✅ Review  → Code review passed
-  ✅ Docs    → Documentation updated
+Task Lifecycle:
+  PLAN   → Created task files
+  DEV    → TDD implementation
+  REVIEW → Code review passed
+  DOCS   → Documentation updated
 
 Run: /nacl-tl-status to see project progress
 Run: /nacl-tl-next to get next task
+```
+
+---
+
+**Broken links, syntax errors, or coverage gaps with user-acknowledged reason:**
+
+```
+DOCS APPLIED — UNVERIFIED
+
+Task: UC### [Title]
+Status: DONE (with acknowledged gaps)
+
+Documentation Updated:
+  - <list of files>
+
+Verification gaps:
+  - <e.g. broken links: 0, syntax errors: 1, coverage gap: acknowledged — reason: "legacy module, no result file">
+
+Commits:
+  - docs(UC###): update documentation for [feature]
+
+Action required: resolve gaps before next release or carry the acknowledged reason forward.
+```
+
+---
+
+**Test infra (tsc / python) unavailable to check code examples:**
+
+```
+DOCS HALTED — NO_INFRA
+
+Task: UC### [Title]
+
+Step 10.2 could not run: <tool> not available in this environment.
+
+Options:
+  A) Install <tool> and re-run Step 10.
+  B) Acknowledge — status will downgrade to DOCS APPLIED — UNVERIFIED.
+```
+
+---
+
+**Step 10 validation rejected (broken links or syntax errors not fixed):**
+
+```
+DOCS INCOMPLETE
+
+Task: UC### [Title]
+
+Blocking issues from Step 10:
+  - <broken links: N> or <code syntax errors: N>
+
+Documentation has NOT been committed.
+Fix the issues and re-run /nacl-tl-docs UC###.
 ```
 
 ## Documentation Quality Guidelines

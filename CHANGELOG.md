@@ -9,6 +9,110 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Added
 
 - **NaCl Analyst Tool** (`analyst-tool/`) -- local web application that wraps Excalidraw with a full board browser, sync-status sidebar, snapshot browser with diff overlay, and unified board + graph search.
+
+## [0.13.0] — 2026-05-07
+
+Single bundled release: honest reporting threaded through the remaining 22
+skills in one narrative. After 0.10.0 (bug-fix), 0.11.0 (verification), and
+0.12.0 (dev + orchestrators), the verification family, fix-derivative skills,
+operational gates, reporting-hygiene skills, and reliability layer all still
+had local PASS loopholes. 0.13.0 closes them.
+
+Four discipline patterns are propagated across the catalogue:
+1. Test-author isolation as an absolute principle (now applies to feature-dev,
+   not just bug-fix).
+2. Baseline-vs-postfix discipline gating every PASS.
+3. `Status:` line as the authoritative classifier; headlines are decoration.
+4. Neo4j graph as primary source of truth for operational gates.
+
+### Added
+
+**Test-author isolation seam:**
+- `nacl-tl-regression-test`: new `feature-dev` mode (alongside existing `bug-fix`).
+  Reads `test-spec.md` / `test-spec-fe.md` / `acceptance.md`; writes a test that
+  FAILS because the feature surface does not exist; emits `FEATURE-TEST WRITTEN`
+  / `FEATURE-TEST FAILED TO RED` / `FEATURE-TEST HALTED — NO_INFRA` /
+  `FEATURE-TEST INVALID — NOT RED`.
+- `nacl-tl-dev`, `nacl-tl-dev-be`, `nacl-tl-dev-fe`: delegate test authorship
+  to `nacl-tl-regression-test mode=feature-dev` — zero direct test-file
+  `Write` calls in TDD paths.
+
+**Verification family:**
+- `nacl-tl-verify-code`: baseline-and-postfix runs; `new_failures` /
+  `transitioned` set computation; `FAIL` added to status vocabulary;
+  `tests_collected > 0` precondition for any PASS.
+- `nacl-tl-qa`: Step 0 testable-criteria gate; HTTP-200 assertion on
+  prerequisite check; `stat` validation after every screenshot.
+- `nacl-tl-stubs`: sanity-seed against known stub marker; triple-condition
+  gate on `STUBS COMPLETE`; `STUBS APPLIED — REGRESSION` headline for empty
+  test files exceeding 50%.
+- `nacl-tl-verify`: integrity gate against verify-code result fields;
+  `VERIFY COMPLETE (code-only)` vs `VERIFY COMPLETE (E2E-verified)` headlines.
+
+**Fix-derivative skills:**
+- `nacl-tl-hotfix`: Step 3.5 regression-test seam audit; Scenarios 1/2
+  RED-on-main precondition; PR template fields for regression-test path and
+  RED→GREEN evidence.
+- `nacl-tl-reopened`: Step 7.5 `Status:` line parser; Step 7.5.1 seam audit;
+  Step 8 re-run gate before review/stubs.
+
+**Operational gates:**
+- `nacl-tl-deploy`: shape-validated health probe driven by
+  `deploy.{env}.health_contract` in `config.yaml`; poll-and-timeout instead
+  of fixed sleep; `## Contract` section; per-task status table.
+- `nacl-tl-reconcile`: automated freshness skip via `git log`; mandatory
+  validation path (≥10 docs gap-check fallback); per-task status table.
+- `nacl-tl-intake`: `## Contract` section; per-atom user gate; YouGile API
+  retry with explicit failure path.
+
+**Reporting hygiene:**
+- `nacl-tl-sync`: production-path mock-import detection (BLOCKER);
+  `grep -F` for endpoint paths; FE-test mock detection.
+- `nacl-tl-docs`: executable Step 10 (link check + `tsc --noEmit` + Python
+  `py_compile` + implementation-coverage audit).
+- `nacl-tl-review`: ticket-ID regex on stub justifications; tri-state
+  checklist (PASS / PARTIAL / FAIL); combined status line.
+- `nacl-tl-diagnose`: aggregation step for parallel sub-agents;
+  `not_assessable` tags replace 0.5 fills; root-cause hypotheses require
+  evidence; pre-finalize section checklist.
+
+**Reliability:**
+- `nacl-tl-conductor`: Cypher sentinel before Phase 4→5 advancement.
+- `nacl-tl-full`: dual-write fence on Neo4j failure; Outage Recovery section.
+- `nacl-tl-deliver`: graph-primary read at pre-verify gate; symmetric FAIL
+  exclusion.
+- `nacl-tl-release`: graph-only enforcement (no JSON fallback for status
+  gate); per-UC `UC status` and `Evidence level` columns; changelog freshness
+  cross-check.
+- `nacl-tl-ship`: documentation note for conductor-driven multi-UC branches
+  (no logic change — branch-switching remains forbidden).
+
+### Changed
+
+- `nacl-tl-verify-code` result schema: adds `baseline_failures`,
+  `postfix_failures`, `new_failures`, `transitioned` fields. Existing
+  consumers reading only `status` continue to work.
+- Vacuous PASS scenarios (no testable criteria, no `it()` calls, all-mock FE
+  tests) now produce explicit halt or UNVERIFIED statuses where 0.12.0 would
+  have returned PASS.
+- `nacl-tl-hotfix` `--yes` documentation: scope is "non-safety prompts only"
+  — does NOT bypass the pre-merge non-PASS gate at Step 6.
+- `nacl-tl-reopened` classification: `Status: {value}` is the authoritative
+  source; the report headline is decoration.
+- `nacl-tl-release` pre-merge gate: graph-only; missing Task nodes HALT
+  rather than fall back to `.tl/status.json`.
+
+### Removed
+
+- Legacy first-match-wins headline regex in `nacl-tl-reopened` Step 7.5.
+- 232/440 contradiction in `nacl-tl-stubs` between empty-test-file rule and
+  headline-vocabulary table.
+- Per-status escape hatches (BLOCKED/UNVERIFIED/NO_INFRA/RUNNER_BROKEN ship
+  paths) at `nacl-tl-hotfix` lines 199–217 — consolidated into the single
+  Step 6 mandatory gate.
+- Untranslated placeholder text in `nacl-tl-deploy` SSH-diagnostics block.
+
+
 - Sidebar with board tree, global search bar, and batch Regenerate / Sync actions.
 - Canvas zone: full `@excalidraw/excalidraw` component with diff overlay for comparing current scene against snapshots.
 - Status bar per board: `lastGeneratedAt`, `lastSyncedAt`, Regenerate / Sync / Analyze buttons.
