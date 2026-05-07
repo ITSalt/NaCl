@@ -98,7 +98,14 @@ def _expected_node_counts(ir: Dict[str, Any]) -> Dict[str, int]:
 def _expected_edge_counts(ir: Dict[str, Any], handoff: Dict[str, Any]) -> Dict[str, int]:
     counts: Counter[str] = Counter()
 
-    mod_by_name = {m["name"]: m["id"] for m in ir.get("modules", [])}
+    # Extended module lookup: name, English code (description), or ID suffix
+    mod_by_name: Dict[str, str] = {m["name"]: m["id"] for m in ir.get("modules", [])}
+    for m in ir.get("modules", []):
+        if m.get("description"):
+            mod_by_name.setdefault(m["description"], m["id"])
+        mod_id = m.get("id", "")
+        if mod_id.startswith("MOD-"):
+            mod_by_name.setdefault(mod_id[4:], mod_id)
     uc_set = {uc["id"] for uc in ir.get("use_cases", [])}
 
     for uc in ir.get("use_cases", []):

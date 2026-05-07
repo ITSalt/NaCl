@@ -197,15 +197,23 @@ def _node_batches(ir: Dict[str, Any], size: int) -> List[Dict[str, Any]]:
 def _edge_batches(ir: Dict[str, Any], size: int) -> List[Dict[str, Any]]:
     out: List[Dict[str, Any]] = []
 
-    # CONTAINS_UC: Module -> UseCase, resolve by module name
-    mod_by_name = {m["name"]: m["id"] for m in ir.get("modules", [])}
+    # CONTAINS_UC: Module -> UseCase, resolve by module name, description, or ID suffix
+    mod_by_name: Dict[str, str] = {m["name"]: m["id"] for m in ir.get("modules", [])}
+    for m in ir.get("modules", []):
+        # Also accept the English code stored in description (e.g. "core")
+        if m.get("description"):
+            mod_by_name.setdefault(m["description"], m["id"])
+        # Also accept the ID without "MOD-" prefix (e.g. "core" from "MOD-core")
+        mod_id = m.get("id", "")
+        if mod_id.startswith("MOD-"):
+            mod_by_name.setdefault(mod_id[4:], mod_id)
     contains_uc = []
     for uc in ir.get("use_cases", []):
         if uc.get("module") and uc["module"] in mod_by_name:
             contains_uc.append({"from": mod_by_name[uc["module"]], "to": uc["id"]})
     out.extend(_emit_edges("Module", "UseCase", "CONTAINS_UC", contains_uc, size))
 
-    # CONTAINS_ENTITY: Module -> DomainEntity, resolve by module name
+    # CONTAINS_ENTITY: Module -> DomainEntity, resolve by module name (same extended lookup)
     contains_entity = []
     for de in ir.get("domain_entities", []):
         if de.get("module") and de["module"] in mod_by_name:
