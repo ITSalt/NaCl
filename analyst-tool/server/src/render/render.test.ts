@@ -506,6 +506,127 @@ describe('renderBoard — activity renderer', () => {
   });
 });
 
+// ---------------------------------------------------------------------------
+// TC-1..TC-5: Activity renderer — diagram title (FR-001 / UC-003-BE)
+// ---------------------------------------------------------------------------
+
+describe('renderBoard — activity renderer title (FR-001)', () => {
+  it('TC-1: emits a title element with id === "title-UC-003"', async () => {
+    const { renderBoard } = await import('./index.js');
+
+    const driver = makeFakeDriver([
+      {
+        match: 'HAS_STEP',
+        rows: [
+          { uc_id: 'UC-003', uc_name: 'Regenerate Board from Graph', step_id: 'AS-UC003-01', step_desc: 'Click Regenerate', actor: 'User', step_number: { toNumber: () => 1, low: 1, high: 0 } },
+        ],
+      },
+    ]);
+
+    const scene = await renderBoard('activity', 'UC-003', driver);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const els = scene.elements as any[];
+    const titleEl = els.find((e: any) => String(e.id) === 'title-UC-003');
+    assert.ok(titleEl, 'scene must contain an element with id "title-UC-003"');
+  });
+
+  it('TC-2: title element has correct text, type, fontSize, strokeColor, and dimensions', async () => {
+    const { renderBoard } = await import('./index.js');
+
+    const driver = makeFakeDriver([
+      {
+        match: 'HAS_STEP',
+        rows: [
+          { uc_id: 'UC-003', uc_name: 'Regenerate Board from Graph', step_id: 'AS-UC003-01', step_desc: 'Click Regenerate', actor: 'User', step_number: { toNumber: () => 1, low: 1, high: 0 } },
+        ],
+      },
+    ]);
+
+    const scene = await renderBoard('activity', 'UC-003', driver);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const els = scene.elements as any[];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const titleEl = els.find((e: any) => String(e.id) === 'title-UC-003') as any;
+    assert.ok(titleEl, 'title element must exist');
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    assert.equal(String(titleEl.text), 'Regenerate Board from Graph (UC-003)', 'text must match FR-001 format: "${uc_name} (${ucId})"');
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    assert.equal(String(titleEl.type), 'text', 'type must be "text"');
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    assert.ok(Number(titleEl.fontSize) >= 20, `fontSize must be >= 20; got ${String(titleEl.fontSize)}`);
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    assert.equal(String(titleEl.strokeColor), '#1e1e1e', 'strokeColor must be #1e1e1e');
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    assert.ok(Number(titleEl.width) > 0, 'width must be non-zero');
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    assert.ok(Number(titleEl.height) > 0, 'height must be non-zero');
+  });
+
+  it('TC-3: title element survives assembleScene (not dropped from elements array)', async () => {
+    const { renderBoard } = await import('./index.js');
+
+    const driver = makeFakeDriver([
+      {
+        match: 'HAS_STEP',
+        rows: [
+          { uc_id: 'UC-003', uc_name: 'Regenerate Board from Graph', step_id: 'AS-UC003-01', step_desc: 'Click Regenerate', actor: 'User', step_number: { toNumber: () => 1, low: 1, high: 0 } },
+        ],
+      },
+    ]);
+
+    const scene = await renderBoard('activity', 'UC-003', driver);
+    // Iterate the full elements array post-assembleScene
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const allIds = (scene.elements as any[]).map((e: any) => String(e.id));
+    assert.ok(allIds.includes('title-UC-003'), `title-UC-003 must be in assembleScene output; found: [${allIds.join(', ')}]`);
+  });
+
+  it('TC-4: empty uc_name falls back to "(UC-003)" — no exception thrown, diagram still renders', async () => {
+    const { renderBoard } = await import('./index.js');
+
+    const driver = makeFakeDriver([
+      {
+        match: 'HAS_STEP',
+        rows: [
+          { uc_id: 'UC-003', uc_name: '', step_id: 'AS-UC003-01', step_desc: 'Click Regenerate', actor: 'User', step_number: { toNumber: () => 1, low: 1, high: 0 } },
+        ],
+      },
+    ]);
+
+    // Must not throw
+    const scene = await renderBoard('activity', 'UC-003', driver);
+    assert.equal(scene.type, 'excalidraw', 'scene type must be excalidraw');
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const els = scene.elements as any[];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const titleEl = els.find((e: any) => String(e.id) === 'title-UC-003') as any;
+    assert.ok(titleEl, 'title element must still be emitted when uc_name is empty');
+    // Decision: emit "(UC-003)" when uc_name is empty
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    assert.equal(String(titleEl.text), '(UC-003)', 'fallback text must be "(UC-003)" when uc_name is empty');
+  });
+
+  it('TC-5: title is the last element in the array (z-top, after bgRects and steps)', async () => {
+    const { renderBoard } = await import('./index.js');
+
+    const driver = makeFakeDriver([
+      {
+        match: 'HAS_STEP',
+        rows: [
+          { uc_id: 'UC-003', uc_name: 'Regenerate Board from Graph', step_id: 'AS-UC003-01', step_desc: 'Click Regenerate', actor: 'User', step_number: { toNumber: () => 1, low: 1, high: 0 } },
+        ],
+      },
+    ]);
+
+    const scene = await renderBoard('activity', 'UC-003', driver);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const els = scene.elements as any[];
+    const lastEl = els[els.length - 1] as any;
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    assert.equal(String(lastEl.id), 'title-UC-003', 'title element must be last in the elements array');
+  });
+});
+
 describe('renderBoard — ba-process renderer', () => {
   it('produces a scene with role swimlanes and workflow steps', async () => {
     const { renderBoard } = await import('./index.js');

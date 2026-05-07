@@ -488,18 +488,39 @@ export async function renderActivity(driver: Driver, ucId: string): Promise<Exca
     arrowElements.push(arrow);
   }
 
+  // Title text — centered above the swimlanes. Mirrors ba-process pattern.
+  // When uc_name is empty/missing, emit "(ucId)" — id-only form (per spec decision).
+  const uc_name = steps[0]?.uc_name ?? '';
+  const titleDisplayText = uc_name ? `${uc_name} (${ucId})` : `(${ucId})`;
+  const totalWidth = allNullActor
+    ? SWIMLANE_WIDTH
+    : SWIMLANE_WIDTH * 2 + SWIMLANE_GAP;
+  const titleText = makeText({
+    logicalId: `${ucId}::title`,
+    id: semIds.ucTitle(ucId),
+    x: 30,
+    y: -50,
+    width: Math.max(totalWidth - 60, 200),
+    height: 36,
+    text: titleDisplayText,
+    fontSize: 24,
+    strokeColor: '#1e1e1e',
+  });
+
   // Element order per SKILL.md §1095 Step 4:
   // 1. Swimlane background rects (lowest z-order)
   // 2. Swimlane header rects + header texts
   // 3. Step shapes + step texts
   // 4. Arrows
-  // 5. Warnings (free text above the diagram, drawn last so they're on top)
+  // 5. Warnings (free text above the diagram)
+  // 6. Title text (topmost — drawn last)
   const elements: AnyElement[] = [
     ...bgRects,
     ...headerElements,
     ...stepElements,
     ...arrowElements,
     ...warningElements,
+    titleText,
   ];
 
   return assembleScene(elements);
