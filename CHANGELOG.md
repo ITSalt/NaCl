@@ -9,6 +9,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Added
 
 - **NaCl Analyst Tool** (`analyst-tool/`) -- local web application that wraps Excalidraw with a full board browser, sync-status sidebar, snapshot browser with diff overlay, and unified board + graph search.
+- `inline-table-v1` SA adapter: table-format requirements parser (RQ-NNN-NN rows) as fallback when no `### FR-NNN:` headings are found.
+- `inline-table-v1` SA adapter: YAML frontmatter fallbacks for module ownership, form SCR-ID, and UC-ID resolution in requirements files.
+- `inline-table-v1` SA adapter: Module ID derived from English «Код» column (kebab-case value) instead of transliterated Russian name; projects without the column are unaffected.
+- `inline-table-v1` SA adapter: multi-column search for UC-IDs and domain-entity names in traceability-matrix rows (previously only `vals[1]` was checked).
+- `inline-table-v1` SA adapter: `ROL-NN` accepted alongside `ACT-NN` as BA role identifier in traceability-matrix role section.
+- `inline-table-v1` SA adapter: BRQ→requirement resolution now handles raw `RQ-NNN-NN` references in addition to canonical `REQ-*` IDs.
+- `audit_sa`, `generate_sa_cypher`, `validate_sa_ir`: extended module lookup accepts English code (stored in `description`) and `MOD-` suffix as aliases for module name.
+
+### Fixed
+
+- `inline-table-v1` SA adapter: skip summary rows (`Итого`, `Total`, `Всего`) and strip backtick/asterisk formatting from the «Код» column in the module table.
+- `inline-table-v1` SA adapter: deduplicate `HandoffEdge` pairs `(BP-*, UC-*)` — previously the same edge could be appended multiple times.
+- `validate_sa_ir` SV5: `Form.used_by_uc` check is now advisory-only (always PASS, collects info); secondary and deleted UC references are not a migration blocker.
 
 ## [0.15.0] — 2026-05-07
 
