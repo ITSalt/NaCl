@@ -16,16 +16,14 @@ default: correct links are left alone, conflicts are reported as `BLOCKED`.
 pilot. README, skills reference, methodology, setup, and install docs were
 updated to the 57-skill inventory.
 
-— The GitHub release includes `nacl-codex-skills-v0.16.0.tar.gz`, a direct
-archive of the full `skills-for-codex/` package.
+— Codex installation uses symlinks to a normal git checkout of the repository.
+Updates are ordinary `git pull`, not archive downloads.
 
 Fresh Codex install on macOS/Linux:
 
 ```sh
-mkdir -p "$HOME/.agents/nacl-codex-skills/v0.16.0" &&
-curl -L https://github.com/ITSalt/NaCl/releases/download/v0.16.0/nacl-codex-skills-v0.16.0.tar.gz -o /tmp/nacl-codex-skills-v0.16.0.tar.gz &&
-tar -xzf /tmp/nacl-codex-skills-v0.16.0.tar.gz -C "$HOME/.agents/nacl-codex-skills/v0.16.0" &&
-sh "$HOME/.agents/nacl-codex-skills/v0.16.0/skills-for-codex/scripts/install-user-symlinks.sh"
+git clone https://github.com/ITSalt/NaCl.git "$HOME/NaCl"
+sh "$HOME/NaCl/skills-for-codex/scripts/install-user-symlinks.sh"
 ```
 
 Full release notes: docs/releases/0.16.0-codex-skills-package/release-notes.md

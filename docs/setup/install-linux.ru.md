@@ -41,8 +41,8 @@ alias nacl-update='cd ~/NaCl && git pull && for dir in ~/NaCl/*/; do [ -f "$dir/
 ```
 
 Для установки скиллов выберите Claude Code или Codex в
-[инструкции по установке скиллов](install-skills.ru.md). Раздел Codex содержит
-команду установки из GitHub Release без клонирования репозитория.
+[инструкции по установке скиллов](install-skills.ru.md). Раздел Codex создаёт
+симлинки на git checkout, поэтому обновления приходят через `git pull`.
 
 ## Дальше
 

@@ -21,19 +21,18 @@ without copying files again.
 
 Do not use repo-local `.agents/skills/` wrappers for this project.
 
-## Fresh Install From GitHub Release
+## Fresh Install From Git Checkout
 
-Use this path on a machine where the NaCl repository is not cloned.
+Use this path on a machine where the NaCl repository is not cloned. Codex
+skills must be installed as symlinks to a git checkout, not copied from an
+archive. This keeps updates simple: `git pull` updates the canonical skill
+source for every project on the machine.
 
 ### macOS / Linux
 
-Linux requires `curl` and `tar`.
-
 ```sh
-mkdir -p "$HOME/.agents/nacl-codex-skills/v0.16.0" &&
-curl -L https://github.com/ITSalt/NaCl/releases/download/v0.16.0/nacl-codex-skills-v0.16.0.tar.gz -o /tmp/nacl-codex-skills-v0.16.0.tar.gz &&
-tar -xzf /tmp/nacl-codex-skills-v0.16.0.tar.gz -C "$HOME/.agents/nacl-codex-skills/v0.16.0" &&
-sh "$HOME/.agents/nacl-codex-skills/v0.16.0/skills-for-codex/scripts/install-user-symlinks.sh"
+git clone https://github.com/ITSalt/NaCl.git "$HOME/NaCl"
+sh "$HOME/NaCl/skills-for-codex/scripts/install-user-symlinks.sh"
 ```
 
 ### Windows WSL2
@@ -46,15 +45,8 @@ Run the macOS / Linux command inside WSL2. The install target is the WSL user's
 Run PowerShell as Administrator, or enable Developer Mode for symlinks.
 
 ```powershell
-$version = "v0.16.0"
-$base = Join-Path $HOME ".agents\nacl-codex-skills\$version"
-$archive = Join-Path $env:TEMP "nacl-codex-skills-$version.tar.gz"
-$url = "https://github.com/ITSalt/NaCl/releases/download/$version/nacl-codex-skills-$version.tar.gz"
-
-New-Item -ItemType Directory -Force -Path $base | Out-Null
-Invoke-WebRequest -Uri $url -OutFile $archive
-tar.exe -xzf $archive -C $base
-& "$base\skills-for-codex\scripts\install-user-symlinks.ps1"
+git clone https://github.com/ITSalt/NaCl.git "$HOME\NaCl"
+& "$HOME\NaCl\skills-for-codex\scripts\install-user-symlinks.ps1"
 ```
 
 ## Ask Codex To Install
@@ -64,7 +56,7 @@ Send this prompt to Codex on a machine where NaCl is not installed:
 ```text
 Install NaCl Codex skills globally on this machine.
 
-Download https://github.com/ITSalt/NaCl/releases/download/v0.16.0/nacl-codex-skills-v0.16.0.tar.gz, extract it to $HOME/.agents/nacl-codex-skills/v0.16.0, run the installer from skills-for-codex/scripts, and verify that $HOME/.agents/skills contains 57 NaCl skill symlinks and that each linked directory has SKILL.md. Use network or escalated permission if needed.
+Clone https://github.com/ITSalt/NaCl.git into $HOME/NaCl if it is not already present. If it is present, run git pull --ff-only there. Then run the Codex installer from $HOME/NaCl/skills-for-codex/scripts and verify that $HOME/.agents/skills contains 57 NaCl skill symlinks and that each linked directory has SKILL.md. Use network or escalated permission if needed.
 ```
 
 ## Symlink Mappings
@@ -90,6 +82,18 @@ sh skills-for-codex/scripts/install-user-symlinks.sh
 The installer is safe by default. It discovers all skill directories, creates
 missing symlinks, leaves existing correct symlinks unchanged, and prints
 `BLOCKED` without overwriting any existing path that is not the correct symlink.
+
+## Update
+
+```sh
+cd "$HOME/NaCl"
+git pull --ff-only
+sh skills-for-codex/scripts/install-user-symlinks.sh
+```
+
+Existing skill symlinks keep pointing to the checkout, so changed skills are
+available immediately after `git pull`. Re-run the installer after pulling to
+add links for newly introduced skill directories.
 
 ## Verify
 

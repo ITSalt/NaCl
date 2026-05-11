@@ -61,8 +61,8 @@ skill count and installation model.
 ### Notes
 
 - Root-level `nacl-*` Claude-oriented source skill folders remain unchanged.
-- GitHub release asset: `nacl-codex-skills-v0.16.0.tar.gz`, containing the
-  full `skills-for-codex/` package.
+- Codex skills are installed as symlinks to a git checkout, so updates arrive
+  through `git pull`.
 
 ## [0.15.0] — 2026-05-07
 

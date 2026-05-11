@@ -55,7 +55,8 @@ git clone https://github.com/ITSalt/NaCl.git ~/NaCl
 ### Install skills
 
 Choose Claude Code or Codex in [Skill Installation](install-skills.md). The
-Codex section includes a no-clone GitHub Release install command.
+Codex section installs symlinks to a git checkout so updates come from
+`git pull`.
 
 Add to `~/.zshrc` for easy updates:
 
