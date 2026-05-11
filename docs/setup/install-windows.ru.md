@@ -13,7 +13,9 @@
 wsl --install -d Ubuntu
 ```
 
-После перезагрузки откройте Ubuntu из меню Пуск и следуйте [инструкции для Linux](install-linux.ru.md).
+После перезагрузки откройте Ubuntu из меню Пуск и следуйте
+[инструкции для Linux](install-linux.ru.md). Для скиллов используйте
+[установку скиллов](install-skills.ru.md) и выберите Claude Code или Codex.
 
 Установите [Docker Desktop](https://docs.docker.com/desktop/install/windows-install/):
 - Settings > General > "Use the WSL 2 based engine" — включить
@@ -21,14 +23,18 @@ wsl --install -d Ubuntu
 
 ## Вариант B: Нативный (PowerShell)
 
-Установите: [Docker Desktop](https://docs.docker.com/desktop/install/windows-install/), [Node.js 20](https://nodejs.org/), [Git](https://git-scm.com/download/win)
+Установите: [Docker Desktop](https://docs.docker.com/desktop/install/windows-install/), [Node.js 20](https://nodejs.org/), [Git](https://git-scm.com/download/win), Claude Code или Codex
 
 ```powershell
 npm install -g @anthropic-ai/claude-code    # CLI; скиллы также работают в десктоп-приложении и расширениях IDE
 git clone https://github.com/ITSalt/NaCl.git $HOME\NaCl
 ```
 
-Подключение скиллов (PowerShell от имени администратора):
+Установка скиллов: выберите Claude Code или Codex в
+[инструкции по установке скиллов](install-skills.ru.md). Раздел Codex содержит
+нативные команды PowerShell.
+
+Короткий вариант для Claude Code (PowerShell от имени администратора):
 
 ```powershell
 $skillsDir = "$env:USERPROFILE\.claude\skills"
@@ -56,15 +62,17 @@ Get-ChildItem -Path "$HOME\NaCl\.claude\agents" -Filter "*.md" | ForEach-Object 
 }
 ```
 
-> Скиллы и агенты, подключённые к `~/.claude/` (или `%USERPROFILE%\.claude\` на нативном Windows), автоматически доступны на всех локальных платформах Claude Code: CLI, десктоп-приложение и расширения для IDE.
+> Скиллы и агенты, подключённые к `~/.claude/` (или `%USERPROFILE%\.claude\` на нативном Windows), автоматически доступны на всех локальных платформах Claude Code: CLI, десктоп-приложение и расширения для IDE. Codex использует `%USERPROFILE%\.agents\skills`.
 
 ## Типичные проблемы
 
 - **Окончания строк**: `git config --global core.autocrlf input` перед клонированием
 - **Длинные пути**: `git config --global core.longpaths true`
 - **Симлинки**: нужны права администратора или включённый Developer Mode
+- **Codex-скиллы**: нативная Windows-установка использует `%USERPROFILE%\.agents\skills`; WSL2 использует `~/.agents/skills` внутри WSL.
 
 ## Дальше
 
 - [Графовая инфраструктура](graph-setup.ru.md) — Neo4j + Excalidraw
+- [Установка скиллов](install-skills.ru.md) — Claude Code или Codex
 - [Быстрый старт](../quickstart.ru.md) — первый проект

@@ -9,6 +9,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Added
 
 - **NaCl Analyst Tool** (`analyst-tool/`) -- local web application that wraps Excalidraw with a full board browser, sync-status sidebar, snapshot browser with diff overlay, and unified board + graph search.
+- Runtime-specific skill installation docs for Claude Code and Codex, including
+  macOS, Linux, Windows WSL2, and Windows PowerShell commands.
+- Native PowerShell installer for Codex skill symlinks at
+  `skills-for-codex/scripts/install-user-symlinks.ps1`.
 - `inline-table-v1` SA adapter: table-format requirements parser (RQ-NNN-NN rows) as fallback when no `### FR-NNN:` headings are found.
 - `inline-table-v1` SA adapter: YAML frontmatter fallbacks for module ownership, form SCR-ID, and UC-ID resolution in requirements files.
 - `inline-table-v1` SA adapter: Module ID derived from English «Код» column (kebab-case value) instead of transliterated Russian name; projects without the column are unaffected.

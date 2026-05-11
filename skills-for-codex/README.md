@@ -32,7 +32,16 @@ Repo-local `.agents/skills/` wrappers are intentionally not used for this
 project. The installer discovers every `skills-for-codex/*/SKILL.md` directory
 and links it.
 
-See `INSTALL.md` for the reproducible installer, exact symlink mappings,
+For a fresh machine, install from the GitHub Release asset:
+
+```sh
+mkdir -p "$HOME/.agents/nacl-codex-skills/v0.16.0" &&
+curl -L https://github.com/ITSalt/NaCl/releases/download/v0.16.0/nacl-codex-skills-v0.16.0.tar.gz -o /tmp/nacl-codex-skills-v0.16.0.tar.gz &&
+tar -xzf /tmp/nacl-codex-skills-v0.16.0.tar.gz -C "$HOME/.agents/nacl-codex-skills/v0.16.0" &&
+sh "$HOME/.agents/nacl-codex-skills/v0.16.0/skills-for-codex/scripts/install-user-symlinks.sh"
+```
+
+See `INSTALL.md` for macOS, Linux, Windows WSL2, Windows PowerShell,
 verification commands, and uninstall instructions.
 
 ## References

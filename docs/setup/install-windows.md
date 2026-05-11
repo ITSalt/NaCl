@@ -32,7 +32,9 @@ In Docker Desktop Settings:
 
 Open your Ubuntu terminal and follow [Linux Setup](install-linux.md) from "Prerequisites" step 2 onward.
 
-All paths use Linux format (`~/NaCl`, `~/.claude/skills/`).
+All paths use Linux format (`~/NaCl`, `~/.claude/skills/`,
+`~/.agents/skills/`). For skills, use [Skill Installation](install-skills.md)
+and choose Claude Code or Codex.
 
 ## Option B: Native Windows (PowerShell)
 
@@ -41,7 +43,8 @@ All paths use Linux format (`~/NaCl`, `~/.claude/skills/`).
 - [Docker Desktop](https://docs.docker.com/desktop/install/windows-install/) with WSL2 backend
 - [Node.js 20](https://nodejs.org/) (Windows installer)
 - [Git for Windows](https://git-scm.com/download/win)
-- Claude Code: `npm install -g @anthropic-ai/claude-code` (CLI; skills also work in Desktop app and IDE extensions)
+- Claude Code or Codex as the agent runtime. Claude Code CLI:
+  `npm install -g @anthropic-ai/claude-code`
 
 ### 2. Clone the repository
 
@@ -49,9 +52,12 @@ All paths use Linux format (`~/NaCl`, `~/.claude/skills/`).
 git clone https://github.com/ITSalt/NaCl.git $HOME\NaCl
 ```
 
-### 3. Link skills
+### 3. Install skills
 
-PowerShell (run as Administrator for symlinks):
+Use [Skill Installation](install-skills.md) and choose Claude Code or Codex.
+The Codex section includes native PowerShell commands.
+
+Claude Code PowerShell shortcut (run as Administrator for symlinks):
 
 ```powershell
 $skillsDir = "$env:USERPROFILE\.claude\skills"
@@ -83,7 +89,7 @@ Get-ChildItem -Path "$HOME\NaCl\.claude\agents" -Filter "*.md" | ForEach-Object 
 Write-Host "Linked $((Get-ChildItem $agentsDir -Filter '*.md').Count) agents"
 ```
 
-> Skills and agents linked to `~/.claude/` (or `%USERPROFILE%\.claude\` on native Windows) are automatically available in all local Claude Code platforms: CLI, Desktop app, and IDE extensions.
+> Skills and agents linked to `~/.claude/` (or `%USERPROFILE%\.claude\` on native Windows) are automatically available in all local Claude Code platforms: CLI, Desktop app, and IDE extensions. Codex uses `%USERPROFILE%\.agents\skills`.
 
 > Note: Creating symlinks on Windows requires either Administrator privileges or Developer Mode enabled (Settings > Update & Security > For Developers).
 
@@ -100,6 +106,7 @@ cd $HOME\NaCl\yougile-setup; npm install; npm run build
 - **Path length**: Enable long paths in Windows: `git config --global core.longpaths true`
 - **Docker**: Ensure "Use WSL 2 based engine" is enabled in Docker Desktop settings.
 - **Claude Code config**: Config files are at `%USERPROFILE%\.claude\` on native Windows, `~/.claude/` in WSL2.
+- **Codex skills**: Native Windows installs use `%USERPROFILE%\.agents\skills`; WSL2 installs use the WSL user's `~/.agents/skills`.
 
 ## Graph Infrastructure
 
@@ -108,4 +115,5 @@ See [Graph Setup](graph-setup.md) for Docker + Neo4j + Excalidraw configuration.
 ## Next Steps
 
 - [Graph Setup](graph-setup.md) — Neo4j + Excalidraw
+- [Skill Installation](install-skills.md) — Claude Code or Codex
 - [Quick Start](../quickstart.md) — first project

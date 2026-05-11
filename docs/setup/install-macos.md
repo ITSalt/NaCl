@@ -30,19 +30,19 @@ Start Docker Desktop and ensure it's running.
 brew install node
 ```
 
-### 4. Claude Code
+### 4. Agent runtime
+
+Install Claude Code or Codex, depending on which agent runtime you use. For
+Claude Code CLI:
 
 ```bash
 npm install -g @anthropic-ai/claude-code
-```
-
-Authenticate:
-
-```bash
 claude login
 ```
 
-> This installs the CLI. NaCl skills also work with the [Claude Desktop app](https://claude.ai/download) and IDE extensions (VS Code, JetBrains) -- they share the same `~/.claude/skills/` directory.
+NaCl skills also work with the [Claude Desktop app](https://claude.ai/download),
+Claude Code IDE extensions, and Codex. Use the skill install guide below for
+the runtime-specific skill package.
 
 ## Installation
 
@@ -52,34 +52,10 @@ claude login
 git clone https://github.com/ITSalt/NaCl.git ~/NaCl
 ```
 
-### Link skills
+### Install skills
 
-```bash
-mkdir -p ~/.claude/skills
-
-for dir in ~/NaCl/*/; do
-  if [ -f "$dir/SKILL.md" ]; then
-    name=$(basename "$dir")
-    ln -sf "$dir" ~/.claude/skills/"$name"
-  fi
-done
-
-echo "Linked $(ls ~/.claude/skills/ | wc -l) skills"
-```
-
-### Link agents
-
-```bash
-mkdir -p ~/.claude/agents
-
-for file in ~/NaCl/.claude/agents/*.md; do
-  if [ -f "$file" ]; then
-    ln -sf "$file" ~/.claude/agents/"$(basename "$file")"
-  fi
-done
-
-echo "Linked $(ls ~/.claude/agents/ | wc -l) agents"
-```
+Choose Claude Code or Codex in [Skill Installation](install-skills.md). The
+Codex section includes a no-clone GitHub Release install command.
 
 Add to `~/.zshrc` for easy updates:
 
@@ -101,12 +77,17 @@ See [Graph Setup](graph-setup.md) for Docker + Neo4j + Excalidraw configuration.
 ## Verify
 
 ```bash
-ls ~/.claude/skills/ | wc -l    # should show ~57
-claude                           # start Claude Code (or open Desktop app / IDE extension)
-# Then type: /nacl-init --dry-run
+# Claude Code
+ls ~/.claude/skills/ | wc -l
+
+# Codex
+find ~/.agents/skills -maxdepth 1 -type l -name 'nacl-*' | wc -l
 ```
+
+Then open your agent runtime in a project and run `/nacl-init --dry-run`.
 
 ## Next Steps
 
 - [Graph Setup](graph-setup.md) — Neo4j + Excalidraw
+- [Skill Installation](install-skills.md) — Claude Code or Codex
 - [Quick Start](../quickstart.md) — first project

@@ -8,7 +8,7 @@ Get from zero to your first skill run in 10 minutes.
 
 ## Prerequisites
 
-- [Claude Code](https://claude.ai/code) installed and authenticated (CLI, Desktop app, or IDE extension -- see [Platform compatibility](../README.md#platform-compatibility))
+- Claude Code or Codex installed and authenticated
 - [Docker](https://docs.docker.com/get-docker/) installed and running
 - [Git](https://git-scm.com/)
 - [Node.js 18+](https://nodejs.org/) (only for optional CLI tools)
@@ -21,40 +21,15 @@ git clone https://github.com/ITSalt/NaCl.git ~/NaCl
 
 > Adjust `~/NaCl` to your preferred location. All instructions below use `$NACL_DIR` to refer to this path.
 
-## Step 2: Link skills to Claude Code
+## Step 2: Install skills for your agent runtime
 
-```bash
-mkdir -p ~/.claude/skills
+NaCl supports Claude Code and Codex. They use different user-level skill
+directories, so choose the section that matches your runtime:
 
-for dir in ~/NaCl/*/; do
-  if [ -f "$dir/SKILL.md" ]; then
-    name=$(basename "$dir")
-    ln -sf "$dir" ~/.claude/skills/"$name"
-  fi
-done
+- [Claude Code installation](setup/install-skills.md#claude-code)
+- [Codex installation](setup/install-skills.md#codex)
 
-echo "Linked $(ls ~/.claude/skills/ | wc -l) skills"
-```
-
-This creates symlinks so Claude Code discovers the skills as slash commands.
-
-### Link agents
-
-```bash
-mkdir -p ~/.claude/agents
-
-for file in ~/NaCl/.claude/agents/*.md; do
-  if [ -f "$file" ]; then
-    ln -sf "$file" ~/.claude/agents/"$(basename "$file")"
-  fi
-done
-
-echo "Linked $(ls ~/.claude/agents/ | wc -l) agents"
-```
-
-Agents define cognitive profiles (model, effort, tools) that orchestrator skills use when delegating work. Six agents ship with NaCl: `strategist` (Opus), `analyst`, `developer`, `verifier`, `operator` (Sonnet), and `scout` (Haiku).
-
-> **Platform note:** The `~/.claude/skills/` directory is shared across all local Claude Code platforms. Skills linked here are available in CLI, Desktop app, and IDE extensions.
+The guide includes macOS, Linux, Windows WSL2, and Windows PowerShell commands.
 
 ## Step 3: Start the graph infrastructure
 
@@ -106,7 +81,7 @@ Restart Claude Code to pick up the MCP server.
 
 ## Step 5: Initialize your first project
 
-Open Claude Code in your target project directory (CLI: run `claude` in terminal, or open the folder in Desktop app / IDE extension):
+Open your agent runtime in the target project directory:
 
 ```
 /nacl-init "My Project Name"
@@ -125,5 +100,6 @@ Claude will guide you through business analysis interactively, storing everythin
 - **Full pipeline**: [Workflows](workflows.md) -- end-to-end scenarios
 - **All skills**: [Skills Reference](skills-reference.md) -- complete catalog
 - **Architecture**: [Architecture](architecture.md) -- how it all fits together
+- **Skill installation**: [Claude Code or Codex](setup/install-skills.md)
 - **Platform setup**: [macOS](setup/install-macos.md) | [Linux](setup/install-linux.md) | [Windows](setup/install-windows.md)
 - **Optional tools**: [Docmost & YouGile](setup/optional-tools.md)

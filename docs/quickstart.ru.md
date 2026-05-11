@@ -8,7 +8,7 @@
 
 ## Предварительные требования
 
-- [Claude Code](https://claude.ai/code) установлен и аутентифицирован (CLI, десктоп-приложение или расширение для IDE -- см. [Совместимость платформ](../README.ru.md#совместимость-платформ))
+- Claude Code или Codex установлен и аутентифицирован
 - [Docker](https://docs.docker.com/get-docker/) установлен и запущен
 - [Git](https://git-scm.com/)
 - [Node.js 18+](https://nodejs.org/) (только для опциональных CLI-инструментов)
@@ -21,40 +21,15 @@ git clone https://github.com/ITSalt/NaCl.git ~/NaCl
 
 > Измените `~/NaCl` на удобный вам путь. Далее в инструкциях используется `$NACL_DIR`.
 
-## Шаг 2: Подключить скиллы к Claude Code
+## Шаг 2: Установить скиллы для вашей агентской среды
 
-```bash
-mkdir -p ~/.claude/skills
+NaCl поддерживает Claude Code и Codex. У них разные пользовательские директории
+для скиллов, поэтому выберите раздел под вашу среду:
 
-for dir in ~/NaCl/*/; do
-  if [ -f "$dir/SKILL.md" ]; then
-    name=$(basename "$dir")
-    ln -sf "$dir" ~/.claude/skills/"$name"
-  fi
-done
+- [Установка для Claude Code](setup/install-skills.ru.md#claude-code)
+- [Установка для Codex](setup/install-skills.ru.md#codex)
 
-echo "Подключено $(ls ~/.claude/skills/ | wc -l) скиллов"
-```
-
-Создаёт симлинки, чтобы Claude Code находил скиллы как слэш-команды.
-
-### Подключить агентов
-
-```bash
-mkdir -p ~/.claude/agents
-
-for file in ~/NaCl/.claude/agents/*.md; do
-  if [ -f "$file" ]; then
-    ln -sf "$file" ~/.claude/agents/"$(basename "$file")"
-  fi
-done
-
-echo "Подключено $(ls ~/.claude/agents/ | wc -l) агентов"
-```
-
-Агенты определяют когнитивные профили (модель, усилие, инструменты), которые скиллы-оркестраторы используют при делегировании работы. В NaCl входят 6 агентов: `strategist` (Opus), `analyst`, `developer`, `verifier`, `operator` (Sonnet) и `scout` (Haiku).
-
-> **Платформы:** Директория `~/.claude/skills/` общая для всех локальных платформ Claude Code. Скиллы, подключённые здесь, доступны в CLI, десктоп-приложении и расширениях для IDE.
+В инструкции есть команды для macOS, Linux, Windows WSL2 и Windows PowerShell.
 
 ## Шаг 3: Запустить графовую инфраструктуру
 
@@ -106,7 +81,7 @@ npm install -g @anthropic/neo4j-mcp
 
 ## Шаг 5: Инициализировать первый проект
 
-Откройте Claude Code в директории вашего проекта (CLI: выполните `claude` в терминале, или откройте папку в десктоп-приложении / расширении IDE):
+Откройте вашу агентскую среду в директории проекта:
 
 ```
 /nacl-init "Название проекта"
@@ -125,5 +100,6 @@ Claude проведёт вас через бизнес-анализ интера
 - **Полный пайплайн**: [Сценарии](workflows.ru.md) — готовые end-to-end сценарии
 - **Все скиллы**: [Каталог скиллов](skills-reference.ru.md) — полный справочник
 - **Архитектура**: [Архитектура](architecture.ru.md) — как всё устроено
+- **Установка скиллов**: [Claude Code или Codex](setup/install-skills.ru.md)
 - **Установка**: [macOS](setup/install-macos.ru.md) | [Linux](setup/install-linux.ru.md) | [Windows](setup/install-windows.ru.md)
 - **Доп. инструменты**: [Docmost и YouGile](setup/optional-tools.ru.md)

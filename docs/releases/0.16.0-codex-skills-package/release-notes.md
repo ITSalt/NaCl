@@ -62,6 +62,46 @@ Total: 57 installable Codex skills.
 
 ## Upgrade Notes
 
+### Fresh Codex Install
+
+Use this path on a machine where the NaCl repository is not cloned.
+
+macOS:
+
+```sh
+mkdir -p "$HOME/.agents/nacl-codex-skills/v0.16.0" &&
+curl -L https://github.com/ITSalt/NaCl/releases/download/v0.16.0/nacl-codex-skills-v0.16.0.tar.gz -o /tmp/nacl-codex-skills-v0.16.0.tar.gz &&
+tar -xzf /tmp/nacl-codex-skills-v0.16.0.tar.gz -C "$HOME/.agents/nacl-codex-skills/v0.16.0" &&
+sh "$HOME/.agents/nacl-codex-skills/v0.16.0/skills-for-codex/scripts/install-user-symlinks.sh"
+```
+
+Linux:
+
+```sh
+mkdir -p "$HOME/.agents/nacl-codex-skills/v0.16.0" &&
+curl -L https://github.com/ITSalt/NaCl/releases/download/v0.16.0/nacl-codex-skills-v0.16.0.tar.gz -o /tmp/nacl-codex-skills-v0.16.0.tar.gz &&
+tar -xzf /tmp/nacl-codex-skills-v0.16.0.tar.gz -C "$HOME/.agents/nacl-codex-skills/v0.16.0" &&
+sh "$HOME/.agents/nacl-codex-skills/v0.16.0/skills-for-codex/scripts/install-user-symlinks.sh"
+```
+
+Windows WSL2: run the Linux command inside WSL2.
+
+Windows PowerShell:
+
+```powershell
+$version = "v0.16.0"
+$base = Join-Path $HOME ".agents\nacl-codex-skills\$version"
+$archive = Join-Path $env:TEMP "nacl-codex-skills-$version.tar.gz"
+$url = "https://github.com/ITSalt/NaCl/releases/download/$version/nacl-codex-skills-$version.tar.gz"
+
+New-Item -ItemType Directory -Force -Path $base | Out-Null
+Invoke-WebRequest -Uri $url -OutFile $archive
+tar.exe -xzf $archive -C $base
+& "$base\skills-for-codex\scripts\install-user-symlinks.ps1"
+```
+
+### Existing Repository Checkout
+
 Run the installer from the repository root:
 
 ```sh

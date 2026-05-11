@@ -2,7 +2,7 @@
 
 # NaCl
 
-**NaCl** (Na + Cl) is a set of 57 slash-command skills for [Claude Code](https://docs.anthropic.com/en/docs/claude-code) that cover the entire software development lifecycle -- from business analysis and system specification to TDD development, code review, QA, and release. Business and system analysis artifacts live in a Neo4j graph database, so every requirement is queryable, traceable, and never lost in a wall of Markdown.
+**NaCl** (Na + Cl) is a set of 57 agent skills for Claude Code and Codex that cover the entire software development lifecycle -- from business analysis and system specification to TDD development, code review, QA, and release. Business and system analysis artifacts live in a Neo4j graph database, so every requirement is queryable, traceable, and never lost in a wall of Markdown.
 
 ## How It Works
 
@@ -57,7 +57,7 @@ All skills use the `nacl-{layer}-{action}` naming convention: **BA** = Business 
 
 ## Prerequisites
 
-- **Claude Code** -- [installation guide](https://docs.anthropic.com/en/docs/claude-code) (CLI, Desktop app, or IDE extension)
+- **Claude Code** or **Codex** as the agent runtime
 - **Docker** and **Docker Compose** -- for Neo4j
 - **Git** 2.30+
 - **Node.js** 18+
@@ -67,9 +67,17 @@ All skills use the `nacl-{layer}-{action}` naming convention: **BA** = Business 
 - **Docmost** -- wiki for publishing analysis and specification artifacts (`nacl-publish`)
 - **YouGile** -- project management board for task tracking (`yougile-setup`)
 
-### Platform compatibility
+### Runtime compatibility
 
-NaCl skills work on all **local** Claude Code platforms: CLI (terminal), Desktop app (Mac/Windows), and IDE extensions (VS Code, JetBrains). All share the same `~/.claude/skills/` directory -- skills installed once are available everywhere.
+NaCl ships skill packages for both Claude Code and Codex.
+
+- Claude Code uses root-level `nacl-*` skill folders installed into
+  `~/.claude/skills/`.
+- Codex uses the adapted `skills-for-codex/` package installed into
+  `$HOME/.agents/skills/`.
+
+See [Skill Installation](docs/setup/install-skills.md) for runtime-specific and
+OS-specific commands.
 
 > Skills do **not** work on claude.ai/code (web app) because it runs in a sandbox without local filesystem access.
 
@@ -88,18 +96,14 @@ NaCl skills work on all **local** Claude Code platforms: CLI (terminal), Desktop
    docker compose -f graph-infra/docker-compose.yml up -d    # Neo4j
    ```
 
-3. **Install skills into Claude Code**
+3. **Install skills for your agent runtime**
 
-   ```bash
-   # From the NaCl directory
-   claude install-skills .
-   ```
-
-   > This CLI command links skills to `~/.claude/skills/`. If you use the Desktop app or IDE extension without the CLI, see [manual linking](docs/quickstart.md#step-2-link-skills-to-claude-code).
+   Choose Claude Code or Codex and follow
+   [docs/setup/install-skills.md](docs/setup/install-skills.md).
 
 4. **Initialize your project**
 
-   Open Claude Code in your target project directory (CLI: `claude`, or open the project in Desktop app / IDE extension), then run:
+   Open your agent runtime in the target project directory, then run:
 
    ```
    /nacl-init "My Project"
