@@ -4,7 +4,7 @@
 
 # Каталог скиллов
 
-52 скилла, организованных по уровням и функциям. Все скиллы следуют конвенции `nacl-{слой}-{действие}`: **BA** = Business Analysis, **SA** = System Analysis, **TL** = TeamLead.
+57 скиллов, организованных по уровням и функциям. Все скиллы следуют конвенции `nacl-{слой}-{действие}`: **BA** = Business Analysis, **SA** = System Analysis, **TL** = TeamLead.
 
 ## Оркестраторы
 
@@ -36,7 +36,7 @@
 | `nacl-ba-analyze` | Анализ Excalidraw-борда | `/nacl-ba-analyze` |
 | `nacl-ba-sync` | Синхронизация борда с графом | `/nacl-ba-sync` |
 
-## SA — Системный анализ (9 скиллов)
+## SA — Системный анализ (10 скиллов)
 
 > Эти скиллы работают на русском языке.
 
@@ -50,6 +50,7 @@
 | `nacl-sa-validate` | Валидация спецификации | `/nacl-sa-validate` |
 | `nacl-sa-finalize` | Финализация: глоссарий, ADR, статистика | `/nacl-sa-finalize` |
 | `nacl-sa-feature` | Инкрементальная фича через граф | `/nacl-sa-feature "описание"` |
+| `nacl-sa-flags` | Аудит и заполнение exemption-флагов SA | `/nacl-sa-flags` |
 | `nacl-sa-full` | Оркестратор: все фазы SA | `/nacl-sa-full` |
 
 ## Утилиты (4 скилла)
@@ -61,7 +62,7 @@
 | `nacl-publish` | Публикация графа в Docmost |
 | `nacl-init` | Создание CLAUDE.md + config.yaml для нового проекта |
 
-## TL — TeamLead (24 скилла)
+## TL — TeamLead (26 скиллов)
 
 ### Планирование
 
@@ -109,6 +110,7 @@
 | `nacl-tl-reopened` | Переоткрытые задачи (QA failures) |
 | `nacl-tl-diagnose` | Диагностика здоровья проекта |
 | `nacl-tl-reconcile` | Синхронизация доков с кодом |
+| `nacl-tl-hotfix` | Экстренный hotfix в production/main |
 
 ### Документация и оркестрация
 

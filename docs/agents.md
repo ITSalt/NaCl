@@ -14,7 +14,7 @@ Claude models differ in reasoning depth and cost:
 | **Sonnet** | Balanced speed and quality | $15 | Code generation, structured content, testing |
 | **Haiku** | Fast, low-latency | $5 | Status queries, quick lookups, sync |
 
-Running all 55 skills on Opus wastes budget on tasks that Sonnet handles equally well. Running everything on Haiku loses quality where reasoning matters. The agent architecture routes each skill to the right model.
+Running all 57 skills on Opus wastes budget on tasks that Sonnet handles equally well. Running everything on Haiku loses quality where reasoning matters. The agent architecture routes each skill to the right model.
 
 ## Skill Frontmatter
 

@@ -23,6 +23,43 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - `inline-table-v1` SA adapter: deduplicate `HandoffEdge` pairs `(BP-*, UC-*)` — previously the same edge could be appended multiple times.
 - `validate_sa_ir` SV5: `Form.used_by_uc` check is now advisory-only (always PASS, collects info); secondary and deleted UC references are not a migration blocker.
 
+## [0.16.0] — 2026-05-11
+
+Codex packaging release. This release turns the Codex adaptation from a
+five-skill pilot into a complete installable package: all 57 migrated NaCl
+skills now exist under `skills-for-codex/`, the installer discovers every
+`SKILL.md` automatically, and the public documentation reflects the current
+skill count and installation model.
+
+### Added
+
+- 52 additional Codex skill adaptations under `skills-for-codex/`, completing
+  the migrated Codex package at 57 installable `SKILL.md` files.
+- `skills-for-codex/INSTALL.md` with user-level symlink installation,
+  verification, and uninstall commands.
+- `skills-for-codex/scripts/install-user-symlinks.sh` for safe installation
+  into `$HOME/.agents/skills/`.
+- Release documentation at
+  `docs/releases/0.16.0-codex-skills-package/`.
+
+### Changed
+
+- Codex skill installation now discovers every
+  `skills-for-codex/*/SKILL.md` directory instead of maintaining a fixed
+  five-skill pilot list.
+- Codex migration docs now mark the full migration as complete and reserve
+  follow-up work for polish, validation automation, and runtime discovery
+  checks.
+- README, skills reference, methodology, agent, and install docs now report
+  the current 57-skill set: 14 BA, 10 SA, 26 TL, 4 utilities, and 3 migration
+  skills.
+
+### Notes
+
+- Root-level `nacl-*` Claude-oriented source skill folders remain unchanged.
+- GitHub release asset: `nacl-codex-skills-v0.16.0.tar.gz`, containing the
+  full `skills-for-codex/` package.
+
 ## [0.15.0] — 2026-05-07
 
 Bundled release closing the dev `--continue` paths, the verifier and sync
@@ -717,7 +754,8 @@ Honest bug-fix skill: `nacl-tl-fix` is rewritten to enforce TDD ordering (regres
 - `nacl-project-init` skill for bootstrapping new projects (`05279ff`)
 - README and project documentation (`2622bb6`)
 
-[Unreleased]: https://github.com/itsalt/NaCl/compare/v0.10.0...HEAD
+[Unreleased]: https://github.com/itsalt/NaCl/compare/v0.16.0...HEAD
+[0.16.0]: https://github.com/itsalt/NaCl/compare/v0.15.0...v0.16.0
 [0.10.0]: https://github.com/itsalt/NaCl/compare/v0.9.0...v0.10.0
 [0.5.0]: https://github.com/itsalt/NaCl/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/itsalt/NaCl/compare/v0.3.0...v0.4.0

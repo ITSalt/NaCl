@@ -1,8 +1,8 @@
 # NaCl Skills For Codex
 
-This folder contains the pilot Codex adaptation of selected NaCl skills. The
-root-level `nacl-*` folders remain the Claude-oriented source skills and must
-not be modified by this migration.
+This folder contains the Codex adaptation of the NaCl skill set. The root-level
+`nacl-*` folders remain the Claude-oriented source skills and must not be
+modified by this migration.
 
 ## Principle
 
@@ -11,36 +11,37 @@ The goal is to keep graph-first analysis, BA/SA/TL layer boundaries, contracts,
 TDD discipline, orchestration contracts and gates, and honest verification while
 removing Claude-specific model routing and Task-agent assumptions.
 
-## Pilot Scope
+## Scope
 
-Only these skills are included in the pilot:
+The current Codex package contains all 57 migrated `SKILL.md` files:
 
-- `nacl-core`
-- `nacl-ba-context`
-- `nacl-sa-domain`
-- `nacl-tl-dev-be`
-- `nacl-tl-conductor`
+- `nacl-core`, `nacl-init`, `nacl-render`, `nacl-publish`
+- 14 `nacl-ba-*` business-analysis skills
+- 10 `nacl-sa-*` system-analysis skills
+- 26 `nacl-tl-*` TeamLead lifecycle skills
+- `nacl-migrate`, `nacl-migrate-ba`, `nacl-migrate-sa`
 
-No placeholder directories are created for unconverted skills. Additional skills
-should be migrated only after the pilot rules are reviewed and accepted.
+No placeholder directories are created. Every installable skill directory must
+contain a `SKILL.md` file.
 
 ## Installation
 
 The verified installation strategy is user-level symlinks from
 `$HOME/.agents/skills/` to the canonical skills under `skills-for-codex/`.
 Repo-local `.agents/skills/` wrappers are intentionally not used for this
-project.
+project. The installer discovers every `skills-for-codex/*/SKILL.md` directory
+and links it.
 
 See `INSTALL.md` for the reproducible installer, exact symlink mappings,
 verification commands, and uninstall instructions.
 
 ## References
 
-The pilot creates only three shared reference files upfront:
+The Codex package includes three shared reference files:
 
 - `references/migration-rules.md`
 - `references/orchestration-model.md`
 - `references/verification-vocabulary.md`
 
-Additional shared references, scripts, or assets may be copied here only after
-the pilot proves they are needed.
+Additional shared references, scripts, or assets should be added only when they
+remove real duplication across migrated skills.

@@ -101,7 +101,7 @@ See [Graph Setup](graph-setup.md) for Docker + Neo4j + Excalidraw configuration.
 ## Verify
 
 ```bash
-ls ~/.claude/skills/ | wc -l    # should show ~56
+ls ~/.claude/skills/ | wc -l    # should show ~57
 claude                           # start Claude Code (or open Desktop app / IDE extension)
 # Then type: /nacl-init --dry-run
 ```

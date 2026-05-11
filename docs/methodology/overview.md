@@ -4,7 +4,7 @@
 
 # The NaCl Methodology: Three Layers, One Graph
 
-NaCl is a set of 55 slash-command skills for Claude Code that cover the full software development lifecycle -- from business analysis through system specification to TDD development, code review, QA, and release. What makes NaCl different is not the number of skills but the methodology beneath them: a structured pipeline where all business and system analysis artifacts live in a Neo4j graph database, queryable by both humans and AI agents.
+NaCl is a set of 57 slash-command skills for Claude Code that cover the full software development lifecycle -- from business analysis through system specification to TDD development, code review, QA, and release. What makes NaCl different is not the number of skills but the methodology beneath them: a structured pipeline where all business and system analysis artifacts live in a Neo4j graph database, queryable by both humans and AI agents.
 
 This document explains the core ideas. The companion pages go deeper into each layer.
 
@@ -32,14 +32,14 @@ NaCl organizes work into three sequential layers. Each layer has its own skills,
 
 - **BA (Business Analysis)** -- 14 skills. Output language: Russian (for stakeholders and domain experts). Produces: system context, business processes, workflows, entities, roles, rules, and glossary. All stored as Neo4j nodes.
 
-- **SA (System Analysis)** -- 9 skills. Output language: Russian (for technical stakeholders). Produces: modules (bounded contexts), domain model, use cases with activity diagrams, forms, UI components, system roles, requirements. Also stored as Neo4j nodes.
+- **SA (System Analysis)** -- 10 skills. Output language: Russian (for technical stakeholders). Produces: modules (bounded contexts), domain model, use cases with activity diagrams, forms, UI components, system roles, requirements. Also stored as Neo4j nodes.
 
-- **TL (TeamLead)** -- 25 skills. Output language: English (for developers). Consumes the SA graph and produces task files, code (via TDD), code reviews, QA reports, commits, and releases. Artifacts live in the filesystem and Git.
+- **TL (TeamLead)** -- 26 skills. Output language: English (for developers). Consumes the SA graph and produces task files, code (via TDD), code reviews, QA reports, commits, and releases. Artifacts live in the filesystem and Git.
 
 The language split is intentional. Analysis documents are read by business stakeholders who work in Russian. Code, task files, commit messages, and PR descriptions are read by developers who work in English. Each skill's prompt is written in the output language, so Claude naturally produces artifacts in the correct language.
 
 ```
-BA Layer (14 skills)          SA Layer (9 skills)           TL Layer (25 skills)
+BA Layer (14 skills)          SA Layer (10 skills)          TL Layer (26 skills)
 ---------------------         ---------------------         ---------------------
 Stakeholders, processes,      Modules, domain model,        Tasks, waves,
 entities, roles, glossary,    use cases, forms, roles,      TDD code, review,

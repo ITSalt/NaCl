@@ -4,8 +4,9 @@
 
 - Use `skills-for-codex/` as the namespace.
 - Keep original skill names such as `nacl-core` and `nacl-tl-dev-be`.
-- Convert only the five-skill pilot first.
-- Use `SKILL.md` only during the pilot.
+- Convert the five-skill pilot first, then migrate the remaining skill set in
+  waves after the pilot rules are accepted.
+- Use `SKILL.md` as the Codex skill contract.
 - Do not add `agents/openai.yaml` unless a concrete Codex UI or routing metadata
   need is proven later.
 - Do not modify root-level `nacl-*` source skill folders.
@@ -41,15 +42,19 @@ not be written before that model exists.
 - Pre/post `git status --short` checks confirm only intended
   `skills-for-codex/` files were added or modified.
 
-## Pilot Status
+## Migration Status
 
 - Five-skill pilot created.
 - Static validation VERIFIED.
 - User-level symlink discovery VERIFIED.
 - Read-only invocation smoke test VERIFIED.
-- Next migration stage is Wave 2 conversion after install docs are committed.
+- Full Codex skill conversion completed: 57 installable `SKILL.md` files under
+  `skills-for-codex/`.
+- Installer updated to discover every `skills-for-codex/*/SKILL.md` directory
+  instead of linking the pilot list only.
 
 ## Rollout After Pilot
 
-After review, migrate remaining skills in waves: core/utilities, BA, SA, TL
-individual skills, orchestrators, then documentation and validation automation.
+Post-pilot migration is complete. Remaining follow-up work is documentation
+polish, validation automation, and runtime discovery checks as Codex skill
+support evolves.

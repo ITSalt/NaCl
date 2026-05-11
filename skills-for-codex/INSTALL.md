@@ -23,15 +23,15 @@ Do not use repo-local `.agents/skills/` wrappers for this project.
 
 ## Symlink Mappings
 
-The user-level install must contain these mappings:
+The user-level install must contain one symlink for every
+`skills-for-codex/*/SKILL.md` directory. At this release, that is 57 skill
+links.
 
-| User-level link | Canonical source |
-|---|---|
-| `$HOME/.agents/skills/nacl-core` | `skills-for-codex/nacl-core` |
-| `$HOME/.agents/skills/nacl-ba-context` | `skills-for-codex/nacl-ba-context` |
-| `$HOME/.agents/skills/nacl-sa-domain` | `skills-for-codex/nacl-sa-domain` |
-| `$HOME/.agents/skills/nacl-tl-dev-be` | `skills-for-codex/nacl-tl-dev-be` |
-| `$HOME/.agents/skills/nacl-tl-conductor` | `skills-for-codex/nacl-tl-conductor` |
+Mapping pattern:
+
+```text
+$HOME/.agents/skills/<skill> -> <repo>/skills-for-codex/<skill>
+```
 
 ## Install
 
@@ -41,27 +41,21 @@ From anywhere in the repository, run:
 sh skills-for-codex/scripts/install-user-symlinks.sh
 ```
 
-The installer is safe by default. It creates missing symlinks, leaves existing
-correct symlinks unchanged, and prints `BLOCKED` without overwriting any existing
-path that is not the correct symlink.
+The installer is safe by default. It discovers all skill directories, creates
+missing symlinks, leaves existing correct symlinks unchanged, and prints
+`BLOCKED` without overwriting any existing path that is not the correct symlink.
 
 ## Verify
 
-Check each installed skill link:
+Check the installed skill links:
 
 ```sh
-readlink "$HOME/.agents/skills/<skill>"
-test -f "$HOME/.agents/skills/<skill>/SKILL.md"
-```
-
-Replace `<skill>` with each pilot skill name:
-
-```text
-nacl-core
-nacl-ba-context
-nacl-sa-domain
-nacl-tl-dev-be
-nacl-tl-conductor
+find skills-for-codex -mindepth 2 -maxdepth 2 -name SKILL.md \
+  | sed 's#^skills-for-codex/##; s#/SKILL.md$##' \
+  | while read skill; do
+      readlink "$HOME/.agents/skills/$skill"
+      test -f "$HOME/.agents/skills/$skill/SKILL.md"
+    done
 ```
 
 Verify Codex discovery and read-only invocation:
@@ -73,14 +67,14 @@ codex debug prompt-input 'Use /nacl-core to explain NaCl verification vocabulary
 
 ## Uninstall
 
-Remove only the five user-level symlinks:
+Remove only the user-level symlinks created from this package:
 
 ```sh
-rm "$HOME/.agents/skills/nacl-core"
-rm "$HOME/.agents/skills/nacl-ba-context"
-rm "$HOME/.agents/skills/nacl-sa-domain"
-rm "$HOME/.agents/skills/nacl-tl-dev-be"
-rm "$HOME/.agents/skills/nacl-tl-conductor"
+find skills-for-codex -mindepth 2 -maxdepth 2 -name SKILL.md \
+  | sed 's#^skills-for-codex/##; s#/SKILL.md$##' \
+  | while read skill; do
+      rm "$HOME/.agents/skills/$skill"
+    done
 ```
 
 These commands remove the user-level links only. They do not remove canonical

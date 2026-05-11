@@ -4,7 +4,7 @@
 
 # Skills Reference
 
-NaCl provides **56 skills** organized by layer and function. All skills follow the `nacl-{layer}-{action}` naming convention: **BA** = Business Analysis, **SA** = System Analysis, **TL** = TeamLead. Skills are invoked as slash commands (e.g. `/nacl-tl-fix`, `/nacl-ba-full`) and can delegate to each other through sub-agent orchestration.
+NaCl provides **57 skills** organized by layer and function. All skills follow the `nacl-{layer}-{action}` naming convention: **BA** = Business Analysis, **SA** = System Analysis, **TL** = TeamLead. Skills are invoked as slash commands (e.g. `/nacl-tl-fix`, `/nacl-ba-full`) and can delegate to each other through sub-agent orchestration.
 
 > **See also:** [Skill Modifiers Reference](skill-modifiers.md) — full documentation of all flags, modes, and subcommands.
 
@@ -46,7 +46,7 @@ Business analysis skills that store all artifacts as Neo4j graph nodes and edges
 
 ---
 
-## SA Skills — System Analysis (9)
+## SA Skills — System Analysis (10)
 
 System analysis skills that produce technical specifications as Neo4j graph structures. These skills produce output in Russian by design.
 
@@ -59,6 +59,7 @@ System analysis skills that produce technical specifications as Neo4j graph stru
 | `nacl-sa-roles` | System roles and permission matrix through Neo4j: SystemRole, HAS_PERMISSION, MAPPED_TO. Modes: IMPORT_BA, CREATE, MODIFY, FULL. | `/nacl-sa-roles IMPORT_BA` | Modes: `IMPORT_BA`, `CREATE`, `MODIFY`, `FULL` |
 | `nacl-sa-ui` | UI architecture through Neo4j: navigation, components, form-domain mapping verification. | `/nacl-sa-ui verify` | Subcommands: `verify`, `components`, `navigation`, `full` |
 | `nacl-sa-feature` | Incremental feature specification via Neo4j. Impact analysis through Cypher traversal, selective SA skill invocation, FeatureRequest artifact. | `/nacl-sa-feature "Add payment support"` | — |
+| `nacl-sa-flags` | Audit and backfill SA validation exemption properties such as `has_ui`, `system_only`, `shared`, `internal`, and `field_category`. | `/nacl-sa-flags` | — |
 | `nacl-sa-validate` | Validate specification consistency through Cypher queries. Internal (L1-L6) and cross-validation BA to SA (XL6-XL9). | `/nacl-sa-validate` | Modes: `internal`, `ba-cross`; `--scope` |
 | `nacl-sa-finalize` | Finalize specification via Neo4j: statistics, glossary, ADR, traceability matrix, readiness assessment. | `/nacl-sa-finalize` | Modes: `full`, `module`, `stats-only` |
 
@@ -77,7 +78,7 @@ Shared libraries, rendering, and project scaffolding.
 
 ---
 
-## TL Skills — TeamLead (25)
+## TL Skills — TeamLead (26)
 
 TeamLead skills for the full development lifecycle -- from planning through release.
 

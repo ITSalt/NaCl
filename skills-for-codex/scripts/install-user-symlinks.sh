@@ -2,14 +2,6 @@
 
 set -u
 
-skills='
-nacl-core
-nacl-ba-context
-nacl-sa-domain
-nacl-tl-dev-be
-nacl-tl-conductor
-'
-
 script_path=$0
 case $script_path in
   */*) script_dir=$(CDPATH= cd "$(dirname "$script_path")" && pwd -P) ;;
@@ -19,6 +11,9 @@ esac
 repo_root=$(CDPATH= cd "$script_dir/../.." && pwd -P)
 source_dir="$repo_root/skills-for-codex"
 dest_dir="$HOME/.agents/skills"
+skills=$(find "$source_dir" -mindepth 2 -maxdepth 2 -name SKILL.md \
+  | sed "s#^$source_dir/##; s#/SKILL.md\$##" \
+  | sort)
 blocked=0
 created=0
 already_present=0

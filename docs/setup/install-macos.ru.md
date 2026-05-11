@@ -47,7 +47,7 @@ alias nacl-update='cd ~/NaCl && git pull && for dir in ~/NaCl/*/; do [ -f "$dir/
 ## Проверка
 
 ```bash
-ls ~/.claude/skills/ | wc -l    # должно показать ~56
+ls ~/.claude/skills/ | wc -l    # должно показать ~57
 claude                           # запустить Claude Code (или откройте десктоп-приложение / IDE)
 # Введите: /nacl-init --dry-run
 ```

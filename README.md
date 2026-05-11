@@ -2,7 +2,7 @@
 
 # NaCl
 
-**NaCl** (Na + Cl) is a set of 55 slash-command skills for [Claude Code](https://docs.anthropic.com/en/docs/claude-code) that cover the entire software development lifecycle -- from business analysis and system specification to TDD development, code review, QA, and release. Business and system analysis artifacts live in a Neo4j graph database, so every requirement is queryable, traceable, and never lost in a wall of Markdown.
+**NaCl** (Na + Cl) is a set of 57 slash-command skills for [Claude Code](https://docs.anthropic.com/en/docs/claude-code) that cover the entire software development lifecycle -- from business analysis and system specification to TDD development, code review, QA, and release. Business and system analysis artifacts live in a Neo4j graph database, so every requirement is queryable, traceable, and never lost in a wall of Markdown.
 
 ## How It Works
 
@@ -49,11 +49,11 @@ All skills use the `nacl-{layer}-{action}` naming convention: **BA** = Business 
 | Category | Prefix | Count | Description |
 |---|---|---|---|
 | **Business Analysis** | `nacl-ba-*` | 14 | Business processes, entities, roles, rules, glossary, validation. Output in Russian. |
-| **System Analysis** | `nacl-sa-*` | 9 | Architecture, domain model, use cases, UI, roles, validation. Output in Russian. |
-| **TeamLead** | `nacl-tl-*` | 25 | Full dev lifecycle: planning, TDD (BE/FE), code review, QA, deploy, release, hotfix, diagnostics. |
+| **System Analysis** | `nacl-sa-*` | 10 | Architecture, domain model, use cases, UI, roles, validation. Output in Russian. |
+| **TeamLead** | `nacl-tl-*` | 26 | Full dev lifecycle: planning, TDD (BE/FE), code review, QA, deploy, release, hotfix, diagnostics. |
 | **Utilities** | `nacl-*` | 4 | `nacl-core` (Cypher helpers), `nacl-render` (export), `nacl-publish` (Docmost sync), `nacl-init` (scaffolding). |
 | **Migration** | `nacl-migrate-*` | 3 | Deterministic Markdown → Neo4j graph migration with adapter pattern. |
-| | | **55** | |
+| | | **57** | |
 
 ## Prerequisites
 
@@ -155,7 +155,7 @@ Transferring a project's Neo4j graph between machines is a one-shot, encrypted e
 | [docs/quickstart.md](docs/quickstart.md) | Step-by-step setup and first run |
 | [docs/HANDOVER.md](docs/HANDOVER.md) | Runbook for exporting and importing a graph between machines |
 | [docs/architecture.md](docs/architecture.md) | Graph schema, skill interaction model, data flow |
-| [docs/skills-reference.md](docs/skills-reference.md) | Full catalog of all 56 skills with parameters and examples |
+| [docs/skills-reference.md](docs/skills-reference.md) | Full catalog of all 57 skills with parameters and examples |
 | [docs/graph-schema.md](docs/graph-schema.md) | Neo4j node/edge types, constraints, indexes |
 | [docs/configuration.md](docs/configuration.md) | `config.yaml` reference and environment variables |
 | [docs/methodology/](docs/methodology/) | BA/SA methodology deep dive: graph philosophy, validation, traceability |
@@ -175,8 +175,8 @@ The tool supports multiple projects from a single daemon: initialize each projec
 NaCl/
   .claude/agents/     6 cognitive agent definitions (strategist, analyst, developer, ...)
   nacl-ba-*/          14 business analysis skills
-  nacl-sa-*/           9 system analysis skills
-  nacl-tl-*/          25 development lifecycle skills
+  nacl-sa-*/          10 system analysis skills
+  nacl-tl-*/          26 development lifecycle skills
   nacl-migrate-*/      3 Markdown → Graph migration skills
   nacl-core/          shared Cypher helpers and graph utilities
   nacl-render/        Markdown and Excalidraw rendering
