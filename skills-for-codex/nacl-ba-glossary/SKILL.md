@@ -13,8 +13,21 @@ Maintain a graph-backed glossary for BA terminology. Glossary artifacts remain
 Russian by default unless the user explicitly requests another supported output
 language.
 
-Read `../nacl-core/SKILL.md`, `../references/migration-rules.md`, and
-`../references/verification-vocabulary.md` before executing the workflow.
+Read `../nacl-core/SKILL.md`, `../references/migration-rules.md`,
+`../references/verification-vocabulary.md`, and
+`../references/ba-codex-contract.md` before executing the workflow.
+
+## Mandatory Graph Execution Contract
+
+This is a graph writer. Apply the BA graph writer contract before glossary
+writes: resolve configuration, inspect schema/query references, check graph
+tooling, count existing `GlossaryTerm` records, load candidate source nodes, and
+show the term, definition, alias, and source-link plan. If graph tools or source
+nodes are missing, report `BLOCKED`.
+
+Full rebuild is destructive and requires explicit confirmation before deleting
+or replacing existing terms. After writes, read back term counts, `DEFINES`
+links, `ALIAS_OF` links, and coverage evidence.
 
 ## Operating Forms
 
@@ -38,6 +51,9 @@ Read `../nacl-core/SKILL.md`, `../references/migration-rules.md`, and
    graph write tools are available.
 8. Verify by graph read and report counts.
 
+The source phase order is mandatory: collection, definition, deduplication and
+alias confirmation, linking, verification.
+
 ## Definition Rules
 
 - Definitions are one or two sentences and understandable without hidden
@@ -47,6 +63,8 @@ Read `../nacl-core/SKILL.md`, `../references/migration-rules.md`, and
 - Record the source graph ID for each term whenever available.
 - SA terminology may be referenced only as an alignment hint; BA definitions
   remain grounded in BA graph context and user input.
+- `GlossaryTerm` nodes link to BA nodes through `DEFINES`; aliases use
+  `ALIAS_OF` and require user confirmation.
 
 ## Capabilities
 

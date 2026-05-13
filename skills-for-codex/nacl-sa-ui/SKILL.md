@@ -58,6 +58,23 @@ Commands:
 Do not introduce labels that are absent from the SA schema. Navigation is a
 component pattern unless the project schema explicitly defines another label.
 
+## Graph Contract
+
+Use only schema-supported UI records: `Form`, `FormField`, `Component`,
+`Form -[:HAS_FIELD]-> FormField`, `FormField -[:MAPS_TO]-> DomainAttribute`,
+`Component -[:USED_IN]-> Form`, and existing UC/form/role relationships. Do not
+create `Screen`, `NavigationRoute`, or other unsupported labels.
+
+`verify` is read-only until the user confirms a repair. It must distinguish
+input fields from display and action fields using `field_category`; missing
+`field_category` should be reported as a validation metadata issue rather than
+silently ignored.
+
+`components` and `navigation` must show component ids, component types,
+properties, route/menu metadata, linked forms, and role-access evidence before
+writes. After confirmed writes, read back component usage and route targets, and
+verify role access against `UseCase -[:ACTOR]-> SystemRole` where available.
+
 ## Capabilities
 
 ### May Do

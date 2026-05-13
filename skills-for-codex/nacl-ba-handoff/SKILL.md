@@ -12,8 +12,23 @@ Create a graph-backed BA to SA handoff package. Handoff reports remain Russian
 by default unless the user explicitly requests another supported output
 language.
 
-Read `../nacl-core/SKILL.md`, `../references/migration-rules.md`, and
-`../references/verification-vocabulary.md` before executing the workflow.
+Read `../nacl-core/SKILL.md`, `../references/migration-rules.md`,
+`../references/verification-vocabulary.md`, and
+`../references/ba-codex-contract.md` before executing the workflow.
+
+## Mandatory Graph Execution Contract
+
+This is a graph writer only for confirmed handoff edges. Apply the BA graph
+writer contract before writing `AUTOMATES_AS`, `REALIZED_AS`, `MAPPED_TO`,
+`IMPLEMENTED_BY`, or `SUGGESTS`: resolve configuration, inspect BA and handoff
+queries, check graph tooling, load BA prerequisites, load SA target candidates,
+and show proposed mappings with source evidence. If graph tools or BA data are
+missing, report `BLOCKED`.
+
+If SA graph data is absent, produce a BA-side handoff readiness report and mark
+cross-layer mapping evidence as `PARTIALLY_VERIFIED` or `NOT_RUN` according to
+scope. Never create SA artifacts from this skill. After confirmed edge writes,
+read back the traceability matrix and coverage stats.
 
 ## Operating Forms
 
@@ -37,6 +52,10 @@ Read `../nacl-core/SKILL.md`, `../references/migration-rules.md`, and
    candidates where SA artifacts are absent.
 6. Propose module grouping from process groups and related BA data.
 7. Compute coverage statistics from graph state and report the final status.
+
+The source phase order is mandatory: traceability matrix, automation scope,
+module suggestions, coverage stats. Each proposed edge batch has its own
+confirmation gate.
 
 ## Handoff Edges
 

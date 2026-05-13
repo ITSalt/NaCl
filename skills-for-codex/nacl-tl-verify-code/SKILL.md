@@ -9,6 +9,8 @@ description: |
 
 # NaCl TL Code Verification For Codex
 
+Read `../nacl-tl-core/SKILL.md` and `../nacl-tl-core/references/tl-codex-contract.md` before executing this workflow.
+
 Verify correctness, not style alone. TL artifacts and reports remain English.
 
 Read `../references/migration-rules.md` and
@@ -98,6 +100,19 @@ When execution is available:
 If no configured runner exists, report `BLOCKED`. If tests run but coverage is
 missing, report `PARTIALLY_VERIFIED` or `UNVERIFIED` based on the strength of
 the static evidence.
+
+## Source-Parity Requirements
+
+- Preserve the source distinction from review: verify execution path,
+  persistence, contracts, and tests rather than only judging code style.
+- For DB or durable-state changes, trace write and read paths and verify
+  recovery or transaction behavior when applicable.
+- Discover the configured runner from nearest `package.json` `scripts.test`.
+  Do not invent fallback commands.
+- Treat absent baseline evidence as weaker verification. Without baseline,
+  successful test output is at most `PARTIALLY_VERIFIED` unless the task is
+  explicitly code-inspection-only.
+- New postfix failures compared with baseline are `Status: FAILED`.
 
 ### Step 6: Return Result
 

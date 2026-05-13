@@ -9,6 +9,8 @@ description: |
 
 # NaCl TL Reconcile For Codex
 
+Read `../nacl-tl-core/SKILL.md` and `../nacl-tl-core/references/tl-codex-contract.md` before executing this workflow.
+
 Reconciliation is an exception workflow: docs catch up to current code reality.
 It should not change code.
 
@@ -22,6 +24,19 @@ It should not change code.
 6. Update documentation through the relevant BA, SA, or TL documentation
    behavior when available.
 7. Validate that documented behavior matches current code evidence.
+
+## Source-Parity Requirements
+
+- Preserve the source phases: diagnosis, plan, execute, validate, and report.
+- Documentation follows observed code reality during reconciliation; do not use
+  stale docs to overwrite current behavior.
+- Edits to BA/SA/TL docs, `.tl/` state, graph records, or tracker records
+  require an explicit plan, user confirmation, scoped writes, and read-back.
+- Validation must include a rerun gap check when graph validators or build/test
+  commands are unavailable. Missing validators or runners downgrade status;
+  they do not become success.
+- If graph and file state diverge after reconciliation, report
+  `Status: UNVERIFIED` until the divergence is inspected.
 
 ## Capabilities
 

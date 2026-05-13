@@ -56,6 +56,26 @@ Commands:
 Use SA id conventions from the graph or schema: `UC-NNN`, `{UC}-ASNN`,
 `FORM-*`, `{FORM}-FNN`, and `RQ-NNN`.
 
+## Graph Contract
+
+`stories` must derive candidates from
+`BusinessProcess -[:HAS_STEP]-> WorkflowStep` records where
+`WorkflowStep.stereotype='Автоматизируется'` and no
+`WorkflowStep -[:AUTOMATES_AS]-> UseCase` edge exists. Existing modules, UC
+ranges, and roles must be read before proposing ids or actors.
+
+`detail` must preserve the BA-to-SA chain:
+`WorkflowStep -[:AUTOMATES_AS]-> UseCase -[:USES_FORM]-> Form -[:HAS_FIELD]-> FormField -[:MAPS_TO]-> DomainAttribute`.
+BA rules become requirements through `BusinessRule -[:IMPLEMENTED_BY]-> Requirement`
+and `UseCase -[:HAS_REQUIREMENT]-> Requirement`.
+
+Canonical writes are `UseCase`, `ActivityStep`, `Form`, `FormField`,
+`Requirement`, `CONTAINS_UC`, `AUTOMATES_AS`, `ACTOR`, `DEPENDS_ON`,
+`HAS_STEP`, `USES_FORM`, `HAS_FIELD`, `MAPS_TO`, `HAS_REQUIREMENT`, and
+`IMPLEMENTED_BY`. Before each write batch, show the proposed ids, properties,
+source BA evidence, and relationship targets; after writes, read back with
+`sa_uc_full_context` and form-domain mapping checks.
+
 ## Capabilities
 
 ### May Do

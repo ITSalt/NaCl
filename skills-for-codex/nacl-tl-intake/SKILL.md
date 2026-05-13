@@ -9,6 +9,8 @@ description: |
 
 # NaCl TL Intake For Codex
 
+Read `../nacl-tl-core/SKILL.md` and `../nacl-tl-core/references/tl-codex-contract.md` before executing this workflow.
+
 Intake classifies and proposes work. It should stop for confirmation before
 creating graph or task-tracker artifacts.
 
@@ -24,6 +26,20 @@ creating graph or task-tracker artifacts.
 6. Present the decomposition and routing plan for user confirmation.
 7. Create intake or task artifacts only when tools and confirmation are
    available.
+
+## Source-Parity Requirements
+
+- Query graph context first when available: matching use cases, modules, roles,
+  entities, existing `Task` nodes, and active waves.
+- Classify each atom with visible evidence. If graph access is unavailable, use
+  keyword/file fallback only and report the lower confidence.
+- Stop at the user gate before creating feature requests, graph nodes, tracker
+  tasks, `.tl/` files, or downstream execution plans.
+- Preserve source routing semantics: features route to SA/TL planning, bugs to
+  `nacl-tl-fix`, TECH work to `nacl-tl-dev`, and reopened tracker work to
+  `nacl-tl-reopened`.
+- Do not auto-execute the downstream workflow unless the user explicitly
+  confirms that exact scope in the current turn.
 
 ## Capabilities
 

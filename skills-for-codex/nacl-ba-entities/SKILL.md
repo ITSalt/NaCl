@@ -13,8 +13,22 @@ Build and maintain the BA entity catalog in the graph. BA artifacts remain
 Russian by default unless the user explicitly requests another supported output
 language.
 
-Read `../nacl-core/SKILL.md`, `../references/migration-rules.md`, and
-`../references/verification-vocabulary.md` before executing the workflow.
+Read `../nacl-core/SKILL.md`, `../references/migration-rules.md`,
+`../references/verification-vocabulary.md`, and
+`../references/ba-codex-contract.md` before executing the workflow.
+
+## Mandatory Graph Execution Contract
+
+This is a graph writer. Apply the BA graph writer contract for `FULL`, `CREATE`,
+and `MODIFY`: resolve configuration, inspect schema/query references, check
+graph tooling, load current entities, attributes, states, workflow usage, rules,
+glossary links, and handoff links as needed, then present the candidate changes
+and impact. If graph tools or source graph data are unavailable, report
+`BLOCKED` and provide a graph-ready plan.
+
+Write only after explicit confirmation for the relevant entity, attribute,
+relationship, or state batch. Verify by reading back entity details,
+relationships, lifecycle data, and CRUD matrix rows.
 
 ## Operating Forms
 
@@ -37,13 +51,17 @@ and stop for explicit user confirmation before any write.
 
 1. Collect current entities and workflow usage from the graph.
 2. Confirm entity list and stereotypes:
-   `Vneshni dokument`, `Biznes-ob'ekt`, or `Rezul'tat`.
+   `Внешний документ`, `Бизнес-объект`, or `Результат`.
 3. For each entity, confirm business attributes using business-level types only.
 4. Confirm relationships, cardinalities, and optional state transitions.
 5. Write confirmed nodes and relationships when graph write tools are available.
 6. Query the graph to generate the CRUD matrix from actual usage edges.
 
 Stop after every major phase and ask the user whether to proceed.
+
+`FULL` must preserve source phase order: collect from graph, confirm entity
+identity and stereotypes, confirm attributes, confirm relationships, confirm
+states and transitions, then generate the CRUD matrix from graph reads.
 
 ### CREATE
 
@@ -61,6 +79,8 @@ change, then verify by graph read.
 - Entity IDs use `OBJ-NNN`.
 - Attribute IDs use `{OBJ}-A{NN}`.
 - State IDs use `{OBJ}-ST{NN}`.
+- Relationship writes use `HAS_ATTRIBUTE`, `HAS_STATE`, `TRANSITIONS_TO`, and
+  `RELATES_TO` with confirmed cardinality/type.
 - Attributes must avoid system fields and implementation data types.
 - Use idempotent writes keyed by stable IDs.
 

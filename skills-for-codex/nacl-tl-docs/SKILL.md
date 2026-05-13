@@ -8,6 +8,8 @@ description: |
 
 # NaCl TL Docs For Codex
 
+Read `../nacl-tl-core/SKILL.md` and `../nacl-tl-core/references/tl-codex-contract.md` before executing this workflow.
+
 Documentation is part of delivery. Read `../nacl-tl-core/SKILL.md` before
 changing TL documentation.
 
@@ -21,6 +23,20 @@ changing TL documentation.
 4. Present planned doc edits when changes are broad or ambiguous.
 5. Update docs and TL tracking files when file editing is available.
 6. Verify documentation completeness against acceptance and review evidence.
+
+## Source-Parity Requirements
+
+- Documentation work is gated by approved review and implementation evidence;
+  do not write docs from a speculative implementation.
+- Preserve source checks for README, API docs, user guide, changelog, TL
+  changelog, links, code examples, and implementation coverage.
+- If behavior contracts changed, synchronize the relevant docs before claiming
+  the task is documented.
+- File writes require confirmation and read-back. Tracker or graph updates
+  require available tooling, confirmation, and post-write evidence.
+- Missing review evidence, link checks, example checks, or implementation
+  coverage must report `BLOCKED`, `PARTIALLY_VERIFIED`, or `UNVERIFIED`, not
+  success.
 
 ## Capabilities
 

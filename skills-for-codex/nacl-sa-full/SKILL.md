@@ -74,10 +74,11 @@ requirements.
 
 Contract:
 
-- Inputs: BA handoff when available, user facts, constraints, and current graph
-  state.
+- Inputs: BA handoff when available, `ProcessGroup`, `BusinessProcess`,
+  automated `WorkflowStep`, `BusinessEntity`, `BusinessRole`, `BusinessRule`,
+  user facts, constraints, and current graph state.
 - Expected output: `Module`, module relationship, and non-functional
-  `Requirement` records or a graph-ready change plan.
+  `Requirement` records, `SUGGESTS` handoff edges, or a graph-ready change plan.
 - Downstream consumer: domain structure phase.
 - Gate: review module decomposition and context map before Phase 2.
 
@@ -92,7 +93,8 @@ Contract:
 - Inputs: confirmed module, BA entities when available, module scope, and
   business terminology.
 - Expected output: `DomainEntity`, `DomainAttribute`, `Enumeration`,
-  `EnumValue`, and relationship records or a graph-ready change plan.
+  `EnumValue`, `REALIZED_AS`, `TYPED_AS`, and relationship records or a
+  graph-ready change plan.
 - Downstream consumer: roles, use cases, forms, and requirements.
 - Gate: review each module's domain structure before the next module or Phase 3.
 
@@ -105,7 +107,8 @@ Contract:
 
 - Inputs: confirmed modules, domain structure, BA roles, and user facts.
 - Expected output: `SystemRole` records and permission or mapping relationships
-  or a graph-ready change plan.
+  including `MAPPED_TO` and `HAS_PERMISSION {crud}`, or a graph-ready change
+  plan.
 - Downstream consumer: use case registry.
 - Gate: review role and permission coverage before Phase 4.
 
@@ -118,7 +121,8 @@ Contract:
 
 - Inputs: confirmed modules, roles, BA automation candidates, and user facts.
 - Expected output: `UseCase` records and actor or module relationships or a
-  graph-ready change plan.
+  graph-ready change plan. BA automation candidates are `WorkflowStep` records
+  marked `stereotype='Автоматизируется'` and missing `AUTOMATES_AS`.
 - Downstream consumer: use case detail phase.
 - Gate: review use case registry and priority selection before Phase 5.
 
@@ -130,10 +134,11 @@ when the user confirms that scope.
 
 Contract:
 
-- Inputs: confirmed use case, role set, domain structure, and acceptance
-  criteria.
+- Inputs: confirmed use case, `AUTOMATES_AS` BA context, role set, domain
+  structure, BA rules, and acceptance criteria.
 - Expected output: `ActivityStep`, `Form`, `FormField`, functional
-  `Requirement`, and binding relationship records or a graph-ready change plan.
+  `Requirement`, `HAS_STEP`, `USES_FORM`, `HAS_FIELD`, `MAPS_TO`,
+  `HAS_REQUIREMENT`, and `IMPLEMENTED_BY` records or a graph-ready change plan.
 - Downstream consumer: UI and validation phases.
 - Gate: review each detailed use case before continuing.
 
@@ -145,7 +150,8 @@ navigation.
 Contract:
 
 - Inputs: confirmed forms, fields, domain attributes, roles, and use cases.
-- Expected output: `Component` records and UI relationship records or a
+- Expected output: `Component` records, `USED_IN` relationships, navigation
+  component properties, repaired `MAPS_TO` edges when confirmed, or a
   graph-ready change plan.
 - Downstream consumer: validation and publication.
 - Gate: review UI structure before Phase 7.
@@ -189,6 +195,21 @@ readiness cannot be checked, report `UNVERIFIED`.
 
 Run TL planning only when the user confirms and the required procedure or tools
 are available.
+
+## Read-Back And Status Rules
+
+After every phase that writes graph data, inspect the downstream output and read
+back the relevant subgraph before opening the next phase gate. Use named queries
+where relevant: `sa_module_overview`, `sa_domain_model`,
+`sa_uc_full_context`, `sa_form_domain_mapping`, `sa_uc_dependencies`,
+`sa_statistics_summary`, `sa_readiness_assessment`, `sa_feature_scope`, and
+handoff coverage queries.
+
+If a specialist phase returns `FAILED`, stop and report the failing contract. If
+it returns `BLOCKED`, identify the missing input, tool, permission, or
+confirmation. If it returns `PARTIALLY_VERIFIED` or `UNVERIFIED`, ask the user
+whether to proceed with known risk before advancing. If a phase is intentionally
+skipped, record `NOT_RUN` with a reason.
 
 ## Capabilities
 

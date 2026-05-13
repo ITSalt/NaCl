@@ -8,6 +8,8 @@ description: |
 
 # NaCl TL Deploy For Codex
 
+Read `../nacl-tl-core/SKILL.md` and `../nacl-tl-core/references/tl-codex-contract.md` before executing this workflow.
+
 Deployment monitoring observes pipeline and health evidence. It does not assume
 that a push has happened unless evidence identifies the deployed commit.
 
@@ -20,6 +22,19 @@ that a push has happened unless evidence identifies the deployed commit.
 4. Run health checks and optional diagnostics when configured.
 5. Update graph or local tracking only when confirmed.
 6. Return a deployment evidence table.
+
+## Source-Parity Requirements
+
+- Preserve source platform detection and deployment identification before
+  monitoring any pipeline.
+- Tie deployment evidence to the expected commit, PR, task, or release tag. If
+  the deployed commit cannot be established, report `Status: UNVERIFIED`.
+- CI success is not deploy success. Health checks must be inspected separately
+  when the target has a health endpoint.
+- Production-impacting actions and tracker/graph updates require explicit
+  confirmation and read-back.
+- Missing CI tooling, deployment config, environment URL, credentials, or health
+  target is `BLOCKED`, `PARTIALLY_VERIFIED`, or `UNVERIFIED`.
 
 ## Capabilities
 

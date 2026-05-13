@@ -10,6 +10,8 @@ description: |
 
 # NaCl TL Reopened Workflow For Codex
 
+Read `../nacl-tl-core/SKILL.md` and `../nacl-tl-core/references/tl-codex-contract.md` before executing this workflow.
+
 Drive reopened items back through repair and verification. TL artifacts and
 reports remain English.
 

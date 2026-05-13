@@ -14,7 +14,8 @@ BA artifacts remain Russian where the NaCl methodology requires Russian.
 
 Read `../references/orchestration-model.md`,
 `../references/migration-rules.md`, `../references/verification-vocabulary.md`,
-and `../nacl-core/SKILL.md` before executing this skill.
+`../references/ba-codex-contract.md`, and `../nacl-core/SKILL.md` before
+executing this skill.
 
 ## Contract
 
@@ -45,6 +46,7 @@ Downstream consumers:
 
 - Use the shared Codex orchestration procedure from
   `../references/orchestration-model.md`.
+- Apply the BA orchestrator contract from `../references/ba-codex-contract.md`.
 - Each phase handoff must state inputs consumed, expected graph output, allowed
   verification status, downstream consumer, and handling for `VERIFIED`,
   `FAILED`, `PARTIALLY_VERIFIED`, `BLOCKED`, `NOT_RUN`, and `UNVERIFIED`.
@@ -55,6 +57,8 @@ Downstream consumers:
 - Stop after each phase and ask the user whether to proceed to the next phase.
 - Do not write graph data, modify files, publish, or move to the next major
   phase without explicit user confirmation.
+- Never mark a delegated phase complete until its output has been inspected and
+  its graph or graph-ready evidence is compatible with the phase contract.
 
 ## Workflow
 
@@ -69,9 +73,15 @@ or graph access exists. Detect existing BA graph state for `SystemContext`,
 Report detected state with closed vocabulary. Stop and ask the user to confirm
 the starting phase.
 
+If graph tools are unavailable, Phase 0 must still inspect file-based schema and
+query references where possible, then report graph state as `BLOCKED` or
+`UNVERIFIED` and continue only with a graph-ready plan approved by the user.
+
 ### Phase 1: Context
 
-Use the `nacl-ba-context` procedure when available.
+Use the `nacl-ba-context` procedure when the current environment can execute
+that specialist contract; otherwise run the same phase locally and report the
+missing mechanism as `BLOCKED` or `UNVERIFIED`.
 
 Contract:
 
@@ -166,6 +176,9 @@ business rule binding.
 Report each check with the closed vocabulary. Critical findings require a user
 decision before fixes are applied or the workflow advances.
 
+Validation is read-only. Repairs must be routed back through the owning writer
+skill and confirmed before any mutation.
+
 ### Phase 9: BA-To-SA Handoff
 
 Coordinate traceability and SA readiness preparation.
@@ -193,7 +206,8 @@ cannot be checked, report `UNVERIFIED`.
 - Coordinate full BA graph creation through phase contracts and gates.
 - Read workspace configuration, schemas, queries, and existing graph state when
   available.
-- Use supported graph tools or downstream procedures when available.
+- Use supported graph tools or downstream procedures only after checking that
+  the current environment can execute them.
 - Review downstream output before advancing workflow state.
 
 ### Must Not Do

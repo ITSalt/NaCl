@@ -40,6 +40,23 @@ existing architecture.
 When BA data is incomplete, state the gap, propose clearly marked assumptions,
 and create assumption requirements only after user confirmation.
 
+## Graph Contract
+
+Pre-flight must check `graph-infra/schema/sa-schema.cypher` and the relevant
+query files when readable. If graph tools are unavailable, stop before
+persistence and return a graph-ready change plan with `Status: BLOCKED`.
+
+Canonical writes are limited to `Module`, architectural `Requirement` records,
+`ProcessGroup -[:SUGGESTS]-> Module`, `Module -[:DEPENDS_ON]-> Module`, and
+ownership relationships supported by the schema such as `CONTAINS_UC` and
+`CONTAINS_ENTITY`. Do not introduce unsupported architecture labels or
+relationships.
+
+Before each write batch, show candidate module ids, names, UC ranges, bounded
+context rationale, dependency direction, dependency type, NFR text, and BA
+source evidence. After confirmed writes, read back with `sa_module_overview`,
+handoff coverage queries, or equivalent graph reads and report observed counts.
+
 ## Capabilities
 
 ### May Do

@@ -39,6 +39,23 @@ Use `full` for all finalization phases, `module` for one module, and
 readiness to the selected module while still noting cross-module dependencies
 that affect readiness.
 
+## Evidence Contract
+
+Finalization is read-only unless the user explicitly confirms decision-record
+writes. Run or emulate the named reads `sa_statistics_summary`,
+`sa_glossary_extract`, `sa_readiness_assessment`, `sa_module_overview`, and the
+handoff traceability and coverage queries when graph tooling is available.
+
+Statistics and readiness must come from graph reads, not generated markdown. If
+BA graph data is missing, report BA-to-SA traceability as
+`PARTIALLY_VERIFIED`, `BLOCKED`, or `UNVERIFIED` according to the missing
+evidence instead of marking readiness complete.
+
+Decision records may be written only as schema-supported `Requirement` records,
+for example with `type='adr'`, after showing the proposed decision text,
+rationale, affected modules, and source evidence. Read back those records before
+claiming they were persisted.
+
 ## Capabilities
 
 ### May Do

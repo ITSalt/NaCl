@@ -4,11 +4,19 @@ All notable changes to NaCl (Natural Agent Control Language) will be documented 
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [Unreleased]
+## [2.6.0] — 2026-05-13
 
 ### Added
 
 - **NaCl Analyst Tool** (`analyst-tool/`) -- local web application that wraps Excalidraw with a full board browser, sync-status sidebar, snapshot browser with diff overlay, and unified board + graph search.
+- `skills-for-codex/nacl-tl-core/` as a Codex-side shared TL reference skill,
+  including `references/tl-codex-contract.md` for graph, status, mutation,
+  runner, TDD, gate, and Codex orchestration rules.
+- Codex BA/SA/TL review handoff documents under `skills-for-codex/` for the
+  completed contract-hardening passes.
+- `skills-for-codex/references/ba-codex-contract.md` and
+  `skills-for-codex/scripts/nacl-init-project.sh` as shared Codex support
+  artifacts.
 - Runtime-specific skill installation docs for Claude Code and Codex, including
   macOS, Linux, Windows WSL2, and Windows PowerShell commands.
 - Native PowerShell installer for Codex skill symlinks at
@@ -23,9 +31,29 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- Codex BA skills now require explicit graph-write confirmation, graph-ready
+  fallback plans, and read-back evidence instead of generic "when available"
+  persistence language.
+- Codex SA orchestration and specialist skills now preserve graph labels,
+  relationships, handoff edges, phase gates, and closed-vocabulary reporting
+  more closely to the source methodology.
+- Codex TL skills now share the hardened TL lifecycle contract: closed
+  `Status:` parsing, graph-first/file-fallback rules, configured
+  `scripts.test` discovery, RED-first discipline, baseline/post-change
+  comparison, and separated review/sync/stub/QA/docs/ship/verify/deploy/release
+  gates.
+- `nacl-init` for Codex now separates project-name input from mutation approval
+  and delegates scaffold writes to the deterministic init runner.
+- `skills-for-codex/scripts/install-user-symlinks.sh` now reports blocked
+  destination creation or symlink creation failures instead of assuming success.
 - `inline-table-v1` SA adapter: skip summary rows (`Итого`, `Total`, `Всего`) and strip backtick/asterisk formatting from the «Код» column in the module table.
 - `inline-table-v1` SA adapter: deduplicate `HandoffEdge` pairs `(BP-*, UC-*)` — previously the same edge could be appended multiple times.
 - `validate_sa_ir` SV5: `Form.used_by_uc` check is now advisory-only (always PASS, collects info); secondary and deleted UC references are not a migration blocker.
+
+### Changed
+
+- Codex install documentation now expects 58 user-level skill symlinks, matching
+  every `skills-for-codex/*/SKILL.md` directory.
 
 ## [0.16.0] — 2026-05-11
 
@@ -758,7 +786,8 @@ Honest bug-fix skill: `nacl-tl-fix` is rewritten to enforce TDD ordering (regres
 - `nacl-project-init` skill for bootstrapping new projects (`05279ff`)
 - README and project documentation (`2622bb6`)
 
-[Unreleased]: https://github.com/itsalt/NaCl/compare/v0.16.0...HEAD
+[Unreleased]: https://github.com/itsalt/NaCl/compare/v2.6.0...HEAD
+[2.6.0]: https://github.com/itsalt/NaCl/compare/v2.5.0...v2.6.0
 [0.16.0]: https://github.com/itsalt/NaCl/compare/v0.15.0...v0.16.0
 [0.10.0]: https://github.com/itsalt/NaCl/compare/v0.9.0...v0.10.0
 [0.5.0]: https://github.com/itsalt/NaCl/compare/v0.4.0...v0.5.0

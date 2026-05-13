@@ -9,6 +9,8 @@ description: |
 
 # NaCl TL Sync For Codex
 
+Read `../nacl-tl-core/SKILL.md` and `../nacl-tl-core/references/tl-codex-contract.md` before executing this workflow.
+
 Sync verification compares both sides to the API contract. Read
 `../nacl-tl-core/SKILL.md` and the task `api-contract.md` first.
 
@@ -23,6 +25,20 @@ Sync verification compares both sides to the API contract. Read
 5. Check endpoint test coverage for changed endpoints.
 6. Write sync report and update tracking files when file editing is available
    and confirmed.
+
+## Source-Parity Requirements
+
+- Preserve source categories: endpoint compliance, request DTOs, response DTOs,
+  error handling, authentication, shared types, mock elimination, and
+  WebSocket/SSE events when applicable.
+- Runtime verification must discover BE and FE `scripts.test` commands from
+  their nearest `package.json` files. Missing or broken runners are details
+  under the closed top-level status.
+- Mock usage in FE tests and production code must be checked separately; mocks
+  are not acceptable evidence for BE/FE synchronization.
+- Result files and API contracts are required inputs. Missing files report
+  `Status: BLOCKED`, not success.
+- Report/tracking writes require confirmation and read-back.
 
 ## Capabilities
 

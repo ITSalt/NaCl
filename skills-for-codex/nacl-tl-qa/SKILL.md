@@ -9,6 +9,8 @@ description: |
 
 # NaCl TL QA For Codex
 
+Read `../nacl-tl-core/SKILL.md` and `../nacl-tl-core/references/tl-codex-contract.md` before executing this workflow.
+
 QA checks behavior, not implementation internals. Read `../nacl-tl-core/SKILL.md`
 and task acceptance criteria before testing.
 
@@ -22,6 +24,18 @@ and task acceptance criteria before testing.
 6. Capture screenshots or equivalent evidence for significant steps.
 7. Write `qa-report.md` and update tracking files when file editing is available
    and confirmed.
+
+## Source-Parity Requirements
+
+- QA is a user-visible behavior gate, separate from code review and code
+  verification.
+- Run browser/server checks only when the required app, credentials, routes,
+  data, and tooling are available. Missing infrastructure is `Status: BLOCKED`
+  or `Status: NOT_RUN`, not a pass.
+- Evidence must include the executed scenario, observed result, and any
+  screenshot, log, or trace available from the tooling.
+- Acceptance criteria that are not exercised must be listed as unverified.
+- Tracker, graph, and report writes require confirmation and read-back.
 
 ## Capabilities
 

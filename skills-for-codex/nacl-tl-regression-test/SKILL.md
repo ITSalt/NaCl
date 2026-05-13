@@ -9,6 +9,8 @@ description: |
 
 # NaCl TL Regression Test Author For Codex
 
+Read `../nacl-tl-core/SKILL.md` and `../nacl-tl-core/references/tl-codex-contract.md` before executing this workflow.
+
 This skill writes tests before implementation. It does not fix code. Read
 `../nacl-tl-core/SKILL.md` and the relevant task or bug evidence first.
 
@@ -24,6 +26,20 @@ This skill writes tests before implementation. It does not fix code. Read
    implementation.
 6. Report the test file, command, observed result, and next implementation
    handoff.
+
+## Source-Parity Requirements
+
+- Preserve both source modes: bug-fix and feature-dev. The caller must provide
+  enough context to identify the mode, expected behavior, unchanged behavior,
+  target files, and command.
+- The test author writes tests only. Do not edit production implementation or
+  silently weaken assertions to make the test pass.
+- Discover the test framework and configured runner from existing project
+  files. Do not invent fallback runners.
+- RED evidence is mandatory unless the workflow reports the absence honestly as
+  `BLOCKED`, `PARTIALLY_VERIFIED`, or `UNVERIFIED`.
+- Return a machine-readable result that callers can consume: test files,
+  command, observed RED output, skipped evidence, and top-level `Status:`.
 
 ## Capabilities
 

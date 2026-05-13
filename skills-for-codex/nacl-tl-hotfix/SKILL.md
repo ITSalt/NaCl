@@ -9,6 +9,8 @@ description: |
 
 # NaCl TL Hotfix For Codex
 
+Read `../nacl-tl-core/SKILL.md` and `../nacl-tl-core/references/tl-codex-contract.md` before executing this workflow.
+
 Coordinate emergency fixes conservatively. TL artifacts and reports remain
 English.
 

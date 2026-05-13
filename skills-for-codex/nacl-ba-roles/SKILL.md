@@ -12,8 +12,21 @@ Maintain business roles as graph-backed BA artifacts. Role descriptions remain
 Russian by default unless the user explicitly requests another supported output
 language.
 
-Read `../nacl-core/SKILL.md`, `../references/migration-rules.md`, and
-`../references/verification-vocabulary.md` before executing the workflow.
+Read `../nacl-core/SKILL.md`, `../references/migration-rules.md`,
+`../references/verification-vocabulary.md`, and
+`../references/ba-codex-contract.md` before executing the workflow.
+
+## Mandatory Graph Execution Contract
+
+This is a graph writer. Apply the BA graph writer contract before creating or
+repairing role data: resolve configuration, inspect schema/query references,
+check graph tooling, load `BusinessProcess`, `WorkflowStep`, `BusinessRole`,
+`OWNS`, `PARTICIPATES_IN`, and `PERFORMED_BY` data, then show the candidate role
+registry or matrix repair. If graph tools or process data are missing, report
+`BLOCKED`.
+
+Write only after explicit confirmation. Read back `ba_role_process_matrix` or
+role-specific participation evidence before reporting `VERIFIED`.
 
 ## Operating Forms
 
@@ -36,12 +49,17 @@ Read `../nacl-core/SKILL.md`, `../references/migration-rules.md`, and
    differences.
 6. Write confirmed nodes and relationships when graph write tools are available.
 
+Stop after each phase and ask for confirmation before advancing. Matrix repairs
+are graph writes and require their own confirmation.
+
 ## Role Rules
 
 - A business role is an organizational unit or job position, not a system role.
 - An IT system may perform automated steps but must not own a business process.
 - Role IDs use `ROL-NN` and are never reused.
 - Responsibilities come from graph context or user input, not generic practice.
+- Role-process matrix semantics use `OWNS`, `PARTICIPATES_IN`, and
+  `PERFORMED_BY`; system roles remain SA artifacts and are out of scope here.
 
 ## Capabilities
 

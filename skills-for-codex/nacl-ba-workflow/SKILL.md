@@ -12,8 +12,23 @@ Create workflow decomposition for an existing business process in the graph.
 Workflow artifacts remain Russian by default unless the user explicitly
 requests another supported output language.
 
-Read `../nacl-core/SKILL.md`, `../references/migration-rules.md`, and
-`../references/verification-vocabulary.md` before executing the workflow.
+Read `../nacl-core/SKILL.md`, `../references/migration-rules.md`,
+`../references/verification-vocabulary.md`, and
+`../references/ba-codex-contract.md` before executing the workflow.
+
+## Mandatory Graph Execution Contract
+
+This is a graph writer. Apply the BA graph writer contract before Phase 6:
+resolve configuration, inspect BA schema/query references, check graph tooling,
+load the target `BusinessProcess`, existing roles, entities, and workflow
+steps, then show the confirmed step table and relationship set. If graph tools
+or the target process are unavailable, report `BLOCKED` and provide a
+graph-ready plan.
+
+Graph writes are allowed only after the user confirms steps, stereotypes,
+performers, artifacts, decisions, and flow. After writing, read back
+`ba_workflow_steps`-equivalent data plus relationship counts before reporting
+success.
 
 ## Input
 
@@ -35,7 +50,7 @@ If the process is missing or not decomposable, report `BLOCKED`.
 
 1. Phase 1: ask the user for ordered steps: who does what, in what order, and
    what documents are used. Assign `{BP}-S{NN}` IDs.
-2. Phase 2: propose stereotypes: `Biznes-funktsiya` or `Avtomatiziruetsya`.
+2. Phase 2: propose stereotypes: `Бизнес-функция` or `Автоматизируется`.
 3. Phase 3: bind each step to exactly one performer.
 4. Phase 4: bind documents and entities as inputs, outputs, or modifications.
 5. Phase 5: capture decision points, branches, exceptions, and flow order.
@@ -45,6 +60,10 @@ If the process is missing or not decomposable, report `BLOCKED`.
 
 Stop after every phase and ask the user whether to proceed.
 
+Phase 6 must persist `WorkflowStep` nodes and `HAS_STEP`, `NEXT_STEP`,
+`PERFORMED_BY`, `READS`, `PRODUCES`, and `MODIFIES` relationships. Decision
+diamonds are represented as `WorkflowStep` records with decision semantics.
+
 ## Workflow Rules
 
 - The graph is authoritative; diagrams are generated views.
@@ -52,6 +71,8 @@ Stop after every phase and ask the user whether to proceed.
 - The agent structures IDs, tables, stereotypes, bindings, and diagrams.
 - Maximum of 12 steps before proposing subprocess decomposition.
 - Do not add steps absent from the user's description.
+- IDs follow `{BP}-S{NN}` for steps and source-compatible decision or exception
+  suffixes when branches are modeled.
 
 ## Capabilities
 

@@ -54,6 +54,25 @@ When graph write tooling is available and the user confirms, write
 records. Then read back the written records when possible and report status with
 the closed vocabulary.
 
+## Graph Contract
+
+Use canonical SA labels only: `DomainEntity`, `DomainAttribute`, `Enumeration`,
+and `EnumValue`. Use `Module -[:CONTAINS_ENTITY]-> DomainEntity`,
+`DomainEntity -[:HAS_ATTRIBUTE]-> DomainAttribute`,
+`DomainEntity -[:RELATES_TO {rel_type, cardinality}]-> DomainEntity`,
+`DomainEntity -[:HAS_ENUM]-> Enumeration`, and
+`Enumeration -[:HAS_VALUE]-> EnumValue`.
+
+BA-to-SA traceability must use `BusinessEntity -[:REALIZED_AS]-> DomainEntity`
+and `EntityAttribute -[:TYPED_AS]-> DomainAttribute`. A domain entity or
+attribute created from BA data must identify its BA source before writes; if BA
+data is unavailable for `IMPORT_BA` or `FULL`, report `BLOCKED`.
+
+Before writes, present the module owner, entity ids, attribute ids and data
+types, enum ids and values, relationship cardinalities, and traceability edges.
+After confirmed writes, read back with `sa_domain_model`,
+`sa_module_overview`, handoff entity coverage, or equivalent graph reads.
+
 ## Capabilities
 
 ### May Do

@@ -12,8 +12,21 @@ Coordinate board-centered BA work without duplicating the specialist skills.
 Artifacts remain Russian by default unless the user explicitly requests another
 supported output language.
 
-Read `../nacl-core/SKILL.md`, `../references/migration-rules.md`, and
-`../references/verification-vocabulary.md` before executing the workflow.
+Read `../nacl-core/SKILL.md`, `../references/migration-rules.md`,
+`../references/verification-vocabulary.md`, and
+`../references/ba-codex-contract.md` before executing the workflow.
+
+## Mandatory Orchestrator Contract
+
+This is an orchestrator, not a replacement for specialist skills. Resolve the
+active board from explicit argument, current session state, or latest board in
+`graph.boards_dir`; report `BLOCKED` if no board or source file is available.
+Before every command, state the specialist contract, expected output, downstream
+consumer, and gate.
+
+Do not write graph data directly. `sync`, enrichment, validation, and handoff
+must run through their owning skill contracts. Inspect delegated output before
+advancing and stop after every major phase for explicit confirmation.
 
 ## Commands
 
@@ -56,6 +69,11 @@ If no board is found, report `BLOCKED` and provide the next required input.
 - `handoff`: coordinate `nacl-ba-handoff` after validation evidence is available.
 - `full`: stop between import review, sync, enrichment, validation, and handoff
   for explicit user confirmation.
+
+The source command set is mandatory: `new`, `import`, `analyze`, `sync`,
+`status`, `enrich`, `validate`, `handoff`, and `full`. `sync` must run a
+pre-sync completeness check and ask for confirmation when material board issues
+exist.
 
 ## Capabilities
 

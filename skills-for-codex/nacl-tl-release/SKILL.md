@@ -9,6 +9,8 @@ description: |
 
 # NaCl TL Release For Codex
 
+Read `../nacl-tl-core/SKILL.md` and `../nacl-tl-core/references/tl-codex-contract.md` before executing this workflow.
+
 Release is a gated workflow. It should aggregate evidence before any production
 state changes.
 
@@ -24,6 +26,21 @@ state changes.
 6. Run post-release health checks.
 7. Update changelog and release report when file editing is available and
    confirmed.
+
+## Source-Parity Requirements
+
+- Release readiness requires verified task evidence, clean or understood git
+  state, passing required local checks, CI evidence, deploy evidence, health
+  evidence, docs/changelog evidence, and stub gate evidence.
+- Do not promote `BLOCKED`, `FAILED`, or `UNVERIFIED` work unless the user gives
+  an explicit override for that exact risk; the final `Status:` must still be
+  honest.
+- Tag creation, pushing, release publication, deployment, tracker moves, and
+  graph updates require confirmation and read-back.
+- Tie every release tag or deployed commit back to verified task and delivery
+  evidence.
+- Missing CI, deploy, health, docs, changelog, or release artifact evidence
+  downgrades the release report.
 
 ## Capabilities
 

@@ -13,8 +13,23 @@ Define system boundaries for the BA layer. BA artifacts produced by this skill
 remain Russian unless the user explicitly requests another supported output
 language.
 
-Read `../nacl-core/SKILL.md`, `../references/migration-rules.md`, and
-`../references/verification-vocabulary.md` before executing the workflow.
+Read `../nacl-core/SKILL.md`, `../references/migration-rules.md`,
+`../references/verification-vocabulary.md`, and
+`../references/ba-codex-contract.md` before executing the workflow.
+
+## Mandatory Graph Execution Contract
+
+This is a graph writer. Before any write, run the BA graph writer contract:
+resolve `config.yaml`, inspect BA schema/query references, check graph read and
+write tool availability, load existing `SystemContext`, `Stakeholder`,
+`ExternalEntity`, and `DataFlow` records, then show the candidate change set.
+If graph tools or schema references are unavailable, report `BLOCKED` and
+produce a graph-ready plan with labels, IDs, properties, and relationships.
+
+User answers to BA questions are facts, not mutation approval. Stop before each
+write batch and ask for explicit confirmation. After writing, read back the
+system context through `ba_system_context`-equivalent graph data and report
+counts and IDs with a closed-vocabulary status.
 
 ## Workflow
 
@@ -23,18 +38,24 @@ Read `../nacl-core/SKILL.md`, `../references/migration-rules.md`, and
 Ask for system name, automation goals, stakeholders, in-scope areas,
 out-of-scope areas, constraints, assumptions, and success criteria. Summarize in
 Russian and stop for explicit confirmation before any graph write.
+Persist only confirmed `SystemContext` and `Stakeholder` candidates through
+`HAS_STAKEHOLDER`, then read them back.
 
 ### Phase 2: External Entities
 
 Ask which users, external systems, and organizations interact with the system.
 Summarize the proposed entities and stop for explicit confirmation before any
 graph write.
+Persist only confirmed `ExternalEntity` candidates through
+`HAS_EXTERNAL_ENTITY`, then read them back.
 
 ### Phase 3: Data Flows
 
 For each external entity, identify incoming and outgoing data flows. Summarize
 direction, data, trigger, frequency, and sensitivity. Stop for explicit
 confirmation before any graph write.
+Persist only confirmed `DataFlow` candidates and `HAS_FLOW` relationships, then
+read them back.
 
 ### Phase 4: Context Verification
 
@@ -52,6 +73,7 @@ When graph write tooling is available and the user confirms, persist:
 - `DataFlow` nodes using IDs like `DFL-001`;
 - relationships from the system context to stakeholders, external entities, and
   flows.
+- source-compatible IDs: `SYS-001`, `STK-01`, `EXT-01`, `DFL-001`.
 
 If graph tooling is unavailable, do not simulate persistence. Report:
 

@@ -56,13 +56,13 @@ Send this prompt to Codex on a machine where NaCl is not installed:
 ```text
 Install NaCl Codex skills globally on this machine.
 
-Clone https://github.com/ITSalt/NaCl.git into $HOME/NaCl if it is not already present. If it is present, run git pull --ff-only there. Then run the Codex installer from $HOME/NaCl/skills-for-codex/scripts and verify that $HOME/.agents/skills contains 57 NaCl skill symlinks and that each linked directory has SKILL.md. Use network or escalated permission if needed.
+Clone https://github.com/ITSalt/NaCl.git into $HOME/NaCl if it is not already present. If it is present, run git pull --ff-only there. Then run the Codex installer from $HOME/NaCl/skills-for-codex/scripts and verify that $HOME/.agents/skills contains 58 NaCl skill symlinks and that each linked directory has SKILL.md. Use network or escalated permission if needed.
 ```
 
 ## Symlink Mappings
 
 The user-level install must contain one symlink for every
-`skills-for-codex/*/SKILL.md` directory. At this release, that is 57 skill
+`skills-for-codex/*/SKILL.md` directory. At this release, that is 58 skill
 links.
 
 Mapping pattern:

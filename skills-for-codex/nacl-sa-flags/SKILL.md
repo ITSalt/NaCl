@@ -44,6 +44,23 @@ Default backfill is conservative: missing `has_ui` is derived from `USES_FORM`;
 missing `system_only`, `shared`, and `internal` default to `false`; missing
 `field_category` defaults to `input`. Manual overrides are authoritative.
 
+## Graph Contract
+
+This skill writes only metadata properties on existing nodes:
+`UseCase.has_ui`, `SystemRole.system_only`, `DomainEntity.shared`,
+`DomainAttribute.internal`, and `FormField.field_category`. It must not create
+or delete nodes, relationships, permissions, requirements, forms, fields, or
+domain semantics.
+
+Every mutating command has three steps: audit current values, show the exact
+node ids and property deltas, then stop for confirmation. After confirmed
+writes, rerun the audit or targeted read-back and report updated missing counts.
+
+`set-batch` must reject ambiguous ids and unsupported properties. If a batch
+file cannot be read or contains changes outside the managed property set, report
+`Status: BLOCKED` and do not apply partial writes unless the user explicitly
+approves a narrowed batch.
+
 ## Capabilities
 
 ### May Do

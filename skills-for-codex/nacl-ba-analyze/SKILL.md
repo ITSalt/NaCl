@@ -12,8 +12,21 @@ description: |
 Analyze an Excalidraw board as a BA artifact. Reports stay in Russian unless
 the user explicitly requests another supported output language.
 
-Read `../nacl-core/SKILL.md`, `../references/migration-rules.md`, and
-`../references/verification-vocabulary.md` before executing the workflow.
+Read `../nacl-core/SKILL.md`, `../references/migration-rules.md`,
+`../references/verification-vocabulary.md`, and
+`../references/ba-codex-contract.md` before executing the workflow.
+
+## Mandatory Board Analysis Contract
+
+This skill is read-only for board and graph content. Resolve `graph.boards_dir`
+from `config.yaml` with fallback `graph-infra/boards`, parse Excalidraw JSON
+structurally, preserve full `customData`, and compare only non-deleted elements.
+If the board cannot be found or parsed, report `BLOCKED`.
+
+Snapshot writes are allowed by the source workflow; report file writes require a
+user request. Graph comparison uses read tools only and must be reported as
+`NOT_RUN`, `BLOCKED`, or `PARTIALLY_VERIFIED` when graph tools or synced
+elements are unavailable.
 
 ## Workflow
 
@@ -34,6 +47,9 @@ Read `../nacl-core/SKILL.md`, `../references/migration-rules.md`, and
 Graph comparison is read-only. Report writing to a file is allowed only when the
 user explicitly requests it.
 
+The source phase order is mandatory: read board, completeness analysis,
+snapshot diff, graph comparison for synced elements, report.
+
 ## Board Rules
 
 - Use `customData.nodeId`, `nodeType`, `confidence`, and `synced` as the board
@@ -44,6 +60,8 @@ user explicitly requests it.
   broken flow.
 - Do not mutate board content during analysis except for snapshot/report files
   explicitly covered by the workflow.
+- Snapshot content must include element IDs, type, resolved text, geometry, and
+  full `customData`.
 
 ## Capabilities
 

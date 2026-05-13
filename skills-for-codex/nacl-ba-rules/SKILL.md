@@ -12,8 +12,20 @@ Maintain the BA business-rule catalog in the graph. Rule artifacts remain
 Russian by default unless the user explicitly requests another supported output
 language.
 
-Read `../nacl-core/SKILL.md`, `../references/migration-rules.md`, and
-`../references/verification-vocabulary.md` before executing the workflow.
+Read `../nacl-core/SKILL.md`, `../references/migration-rules.md`,
+`../references/verification-vocabulary.md`, and
+`../references/ba-codex-contract.md` before executing the workflow.
+
+## Mandatory Graph Execution Contract
+
+This is a graph writer. Apply the BA graph writer contract before rule writes:
+resolve configuration, inspect schema/query references, check graph tooling,
+load entities, attributes, workflow steps, process links, roles, existing
+rules, and traceability targets, then present candidate rules with source
+evidence. If graph tools or source nodes are unavailable, report `BLOCKED`.
+
+Write only confirmed `BusinessRule` records and binding relationships. Verify
+with `ba_rules_catalog`-equivalent read-back and rule-specific target checks.
 
 ## Operating Forms
 
@@ -47,6 +59,9 @@ Read `../nacl-core/SKILL.md`, `../references/migration-rules.md`, and
 Stop before classification, traceability, and graph writes unless the user has
 confirmed the previous output.
 
+The source phase order is mandatory: pre-checks, extraction, classification,
+traceability, catalog generation, validation, report.
+
 ## Rule Constraints
 
 - Rules must have a name, type, formulation, source, and traceability target
@@ -54,6 +69,8 @@ confirmed the previous output.
 - Do not create duplicate rules with the same formulation and target.
 - Candidate extraction can suggest rules, but the user confirms final wording.
 - Rules belong in the graph, not in generated project files.
+- Relationship semantics are `CONSTRAINS`, `APPLIES_IN`, `AFFECTS`, and
+  `APPLIES_AT_STEP`.
 
 ## Capabilities
 

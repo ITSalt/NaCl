@@ -9,6 +9,8 @@ description: |
 
 # NaCl TL Full For Codex
 
+Read `../nacl-tl-core/SKILL.md` and `../nacl-tl-core/references/tl-codex-contract.md` before executing this workflow.
+
 Coordinate graph-aware TL execution without assuming a separate isolated runner.
 TL artifacts and reports remain English.
 

@@ -9,6 +9,8 @@ description: |
 
 # NaCl TL Deliver For Codex
 
+Read `../nacl-tl-core/SKILL.md` and `../nacl-tl-core/references/tl-codex-contract.md` before executing this workflow.
+
 Deliver coordinates existing TL phases. Read `../nacl-tl-core/SKILL.md`,
 `../nacl-tl-ship/SKILL.md`, `../nacl-tl-verify/SKILL.md`, and
 `../nacl-tl-deploy/SKILL.md` when those files are available.
@@ -25,6 +27,19 @@ Deliver coordinates existing TL phases. Read `../nacl-tl-core/SKILL.md`,
 5. Record delivery state in `.tl/delivery-status.json` when file editing is
    available and confirmed.
 6. Return a per-task delivery table with evidence.
+
+## Source-Parity Requirements
+
+- Preserve the six source delivery steps: pre-check, ship, wait for CI, verify,
+  deploy health check, and graph/tracker state update.
+- Maintain `.tl/delivery-status.json` semantics only after confirmed file
+  writes and read-back.
+- `--skip-verify` and `--skip-deploy` are allowed only as explicit user scope
+  choices and must appear as skipped evidence in the final report.
+- Production delivery requires stronger confirmation and must tie the deployed
+  state back to verified task evidence.
+- CI, verify, deploy, graph, and tracker failures block or downgrade delivery;
+  they cannot be hidden under a successful ship step.
 
 ## Capabilities
 

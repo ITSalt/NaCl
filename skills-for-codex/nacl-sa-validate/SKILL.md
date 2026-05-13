@@ -72,6 +72,39 @@ Reporting:
 - Use `BLOCKED` for missing graph access, missing schema, unavailable BA layer
   for requested BA-to-SA checks, or absent required scope.
 
+## Severity And Result Semantics
+
+Validation never writes graph data or files. Migration or repair Cypher may be
+shown as a recommendation only, and must be executed by another confirmed
+workflow.
+
+Severity groups:
+
+- `CRITICAL`: broken traceability, missing mandatory relationships, duplicate
+  ids, dangling scope, or schema drift that blocks TL planning.
+- `WARNING`: incomplete optional coverage, unmapped BA data, missing exemption
+  flags, or readiness gaps that can be intentionally deferred.
+- `INFO`: statistics, intentionally skipped checks, or advisory cleanup.
+
+Overall status calculation:
+
+- `FAILED` when any requested level has unresolved `CRITICAL` findings.
+- `PARTIALLY_VERIFIED` when some requested levels run but others are `BLOCKED`
+  or `NOT_RUN`, or when BA-to-SA checks cannot run for missing BA data.
+- `VERIFIED` only when every requested level ran and no `CRITICAL` findings
+  remain.
+- `BLOCKED` when validation cannot start because graph read access, schema data,
+  or required scope is missing.
+- `UNVERIFIED` when the result cannot be checked against graph state.
+
+Use named validation and SA query expectations where available, including
+`sa_uc_full_context`, `sa_domain_model`, `sa_form_domain_mapping`,
+`sa_module_overview`, `sa_uc_dependencies`, `sa_statistics_summary`,
+`sa_readiness_assessment`, handoff coverage queries, and validation queries such
+as `val_orphaned_form_fields`, `val_uc_without_requirements`,
+`val_entity_without_uc`, `val_disconnected_nodes`, and
+`val_ba_sa_consistency`.
+
 ## Capabilities
 
 ### May Do

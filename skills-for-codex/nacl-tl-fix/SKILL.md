@@ -1,142 +1,336 @@
 ---
 name: nacl-tl-fix
 description: |
-  Repair NaCl TL defects with spec-first analysis, strict TDD for testable
-  bugs, documentation updates when behavior contracts changed, validation, and
-  honest reporting. Use when fixing a bug, repairing review findings, handling
-  a reopened issue, or for compatibility with `/nacl-tl-fix`.
+  Repair NaCl TL defects with spec-first analysis, strict RED-first regression
+  testing, documentation synchronization before code when behavior contracts
+  changed, graph-aware UC discovery, validation, changelog evidence, and honest
+  reporting. Use when fixing a bug, repairing review findings, handling a
+  reopened issue, or for compatibility with `/nacl-tl-fix`.
 ---
 
 # NaCl TL Spec-First Fix For Codex
 
+Read `../nacl-tl-core/SKILL.md` and `../nacl-tl-core/references/tl-codex-contract.md` before executing this workflow.
+
 Fix defects without widening scope. TL artifacts and reports remain English.
 
-Read `../references/migration-rules.md` and
-`../references/verification-vocabulary.md` before executing the workflow.
+Read these references before executing:
 
-## Contract
+- `../references/migration-rules.md`
+- `../references/verification-vocabulary.md`
+- `../nacl-core/SKILL.md`
+- `../nacl-tl-core/SKILL.md`
+- `../nacl-tl-core/references/fix-classification-rules.md`
+- `../nacl-tl-core/references/sa-doc-update-matrix.md`
+- `../nacl-tl-core/references/tdd-workflow.md`
 
-Inputs consumed:
+## Critical Rule: Execute All 8 Steps
 
-- bug description, review finding, reopened issue, or explicit file scope;
-- relevant `.tl/tasks/` artifacts when available;
-- current code and tests;
-- applicable BA, SA, API, or TL documentation when the defect changes expected
-  behavior.
+Execute every step in order and announce it before acting:
 
-Outputs produced:
+```text
+Step 1: TRIAGE
+Step 2: CONTEXT LOAD
+Step 3: GAP-CHECK
+Step 4: DEFINE CORRECT BEHAVIOR
+Step 5: FIX DOCS
+Step 6: APPLY FIX
+Step 7: VALIDATE
+Step 8: REPORT
+```
 
-- repaired code, tests, and documentation when editing is available;
-- changelog or result updates when editing is available and justified;
-- final report using the closed verification vocabulary.
+Do not jump straight to code. Do not skip triage, graph-aware UC discovery,
+context loading, gap-check, documentation synchronization, baseline capture,
+RED-first evidence, validation, or the final report. If a step cannot run,
+report it with a Codex status and continue only when the workflow allows it.
 
-Downstream consumers:
+## Invocation
 
-- review;
-- hotfix;
-- reopened workflow;
-- conductor and shipping workflows.
+The user can describe the bug in natural language. They do not need to provide a
+UC or TECH id.
+
+Supported flags:
+
+- `--dry-run`: execute Steps 1-4 only; do not edit files.
+- `--l1`: force code-only classification only after Step 3 confirms docs are
+  current.
+- `--uc UC###`: pin the affected UC, but still run graph/file context checks.
+- `--from-review`: metadata-only marker. Add `Invocation source: review` to the
+  report and changelog; do not relax gates.
+- `--auto-ship`: after a fully verified fix, invoke `nacl-tl-ship` only with
+  explicit user confirmation available in the current session. Never hotfix
+  implicitly.
+
+## Fix Levels
+
+Use `../nacl-tl-core/references/fix-classification-rules.md` as the source of
+truth.
+
+| Level | Condition | Docs action |
+|---|---|---|
+| L0 | Environment or infrastructure issue, not a code/docs defect. | No docs unless deploy/dev docs are stale. |
+| L1 | Docs are current; code does not match them. | Do not edit docs. |
+| L2 | Docs exist but describe outdated or incorrect behavior. | Update docs before code. |
+| L3 | No docs exist for the affected area. | Create the smallest missing contract before code. |
+
+Missing `scripts.test` is not L0. It is a verification outcome
+`Fix outcome: NO_INFRA`.
 
 ## Workflow
 
-### Step 1: Triage
+### Step 1: TRIAGE
 
-Classify the fix level:
+Goal: identify the defect area, affected UC/docs/tasks, and likely verification
+path.
 
-- L0: test-only or verification-only correction.
-- L1: code fix with existing docs still correct.
-- L2: code fix plus updates to existing docs or contracts.
-- L3: missing behavior contract; create the smallest necessary docs before
-  coding.
+1. If the user provided failing command output, test names, stack traces, or
+   error text, inspect that evidence before reading implementation code.
+2. Read `config.yaml` when available.
+3. If `config.yaml` has a `graph` section, attempt graph-enhanced UC discovery
+   before file grep. Use available graph tools only; do not claim graph access
+   if tools are unavailable.
 
-Identify current behavior, expected behavior, unchanged behavior, affected
-files, and likely verification path.
+   Query pattern:
 
-### Step 2: Load Context
+   ```cypher
+   MATCH (uc:UseCase)
+   WHERE toLower(uc.name) CONTAINS toLower($keyword)
+      OR toLower(coalesce(uc.description, '')) CONTAINS toLower($keyword)
+   RETURN uc.id AS id, uc.name AS name, uc.detail_status AS status
+   ORDER BY uc.id
+   ```
 
-Read only the scope needed to prove the defect and prevent collateral damage:
-task files, API contracts, relevant code, tests, and existing docs.
+   Extract 2-3 meaningful keywords from the bug description. If graph tools are
+   unavailable, report `Status: BLOCKED` for graph triage with the reason, then
+   fall back to file search.
+4. File fallback: search code, `.tl/tasks/`, `docs/14-usecases/`,
+   `docs/12-domain/`, `docs/15-interfaces/`, API contracts, and recent
+   changelog/status files.
+5. Identify affected code files, UCs, docs, `.tl/tasks/`, and test workspace.
+6. For DB/env/migration/deploy errors, inspect config and migration/deploy files
+   before treating it as code drift.
 
-If required context is unavailable, report `BLOCKED` with the missing input.
+Triage output must include: problem, affected UC(s), affected docs, affected
+tasks, affected code files, graph triage status, and initial verification path.
 
-### Step 3: Gap Check
+### Step 2: CONTEXT LOAD
 
-Decide whether the issue is code drift, spec drift, missing tests, missing
-docs, environment configuration, or ambiguous acceptance criteria.
+Read only the scope needed to prove the defect and prevent collateral damage.
 
-Ask the user for confirmation before creating or changing behavior contracts
-for L2 or L3 fixes.
+Preferred order:
 
-### Step 4: Define Correct Behavior
+1. Affected UC specs from `docs/14-usecases/`.
+2. Relevant domain entities/enums from `docs/12-domain/`.
+3. Screen specs from `docs/15-interfaces/screens/` for UI bugs.
+4. `.tl/tasks/*/api-contract.md`, task files, review findings, and result files.
+5. Affected source and test files.
+6. `.tl/status.json` and `.tl/changelog.md`.
 
-Write a short behavior definition before editing code:
+For L0 environment issues, read only relevant config, migration, deploy, CI, and
+runtime evidence. If required context is missing, report `Status: BLOCKED` and
+name the missing input.
 
-- Current Behavior: what fails now.
-- Expected Behavior: what must happen after the fix.
-- Unchanged Behavior: paths that must keep working.
-- Verification: exact test or command evidence required.
+### Step 3: GAP-CHECK
 
-### Step 5: Update Docs For L2 Or L3
+Compare documentation, graph/task contracts, and code before editing.
 
-For L2, update existing docs or contracts that no longer match the intended
-behavior. For L3, create the smallest missing contract needed to make the fix
-testable and reviewable.
+For each affected area:
 
-Stop at the user gate before proceeding if docs or contracts are changed.
+- docs/graph contract: what behavior is specified;
+- code behavior: what the implementation does;
+- observed bug: what fails;
+- discrepancy: code drift, spec drift, missing docs, missing tests,
+  environment issue, or ambiguous acceptance criteria;
+- fix level: L0/L1/L2/L3.
 
-### Step 6: Apply Fix With TDD
+For L2/L3, prepare the documentation change plan and stop at the user gate
+before mutating docs or code. For `--dry-run`, stop after Step 4 with
+`Status: NOT_RUN` for mutation steps.
 
-For testable bugs:
+### Step 4: DEFINE CORRECT BEHAVIOR
 
-1. Discover the configured test command.
-2. Run a baseline before editing and capture existing failures.
-3. RED: add or update a regression test that fails for the defect.
-4. GREEN: make the minimal code change that passes the regression test.
-5. REFACTOR: clean up only after tests pass.
-6. Re-run the same command and compare failures to the baseline.
+Write the behavior contract before editing:
 
-For infrastructure-only bugs, use the documented verification command with the
-same baseline and post-change comparison discipline.
+```markdown
+## Correct Behavior Definition
 
-### Step 7: Validate
+### Current Behavior
+- What happens now.
 
-Verify:
+### Expected Behavior
+- What must happen after the fix.
 
-- no new failures appeared compared with the baseline;
-- the regression test or verification command covers the reported defect;
-- unchanged behavior has not been broken;
-- docs still describe the implemented behavior for L2 and L3;
-- adjacent UCs, shared types, endpoints, and components are not obviously
-  broken.
+### Unchanged Behavior
+- Paths, UCs, endpoints, states, and components that must keep working.
 
-### Step 8: Report
+### Verification
+- Exact test command or verification command required.
+```
 
-Return a report with:
+For L0, define the required environment/config action. For L1, tie expected
+behavior to existing docs. For L2/L3, tie expected behavior to the docs that
+will be updated or created in Step 5.
 
-- problem and root cause;
-- fix level;
-- behavior definition;
-- files changed;
-- tests or commands run;
-- baseline versus post-change comparison;
-- docs changed or not changed with rationale;
-- final `Status: <VALUE>` using only the closed vocabulary;
-- next action based on that status.
+### Step 5: FIX DOCS
+
+For L0/L1, explicitly report `Docs updated: none` with rationale and proceed.
+
+For L2/L3, update docs before production code. Use
+`../nacl-tl-core/references/sa-doc-update-matrix.md`:
+
+- enum/status or state transition: domain/enumeration docs, normally via the
+  `nacl-sa-domain` procedure when available;
+- endpoint contract: `.tl/tasks/*/api-contract.md` and affected UC spec;
+- new endpoint or UC flow change: affected UC spec, normally via `nacl-sa-uc`
+  procedure when available;
+- screen/UI behavior: `docs/15-interfaces/screens/`;
+- DB schema behavior: domain entity docs;
+- deploy/CI behavior: deploy/development docs;
+- no docs for the area: create the smallest L3 contract needed for this bug,
+  not a full new feature specification.
+
+Present changed/created docs and the code-fix plan. Do not proceed to Step 6 for
+L2/L3 until the user explicitly confirms the behavior contract and docs change.
+
+### Step 6: APPLY FIX
+
+For L0, apply only the environment/config/migration repair and skip the code TDD
+sub-flow. Verification still happens in Step 7.
+
+For L1/L2/L3 code changes, follow this order:
+
+1. Restate Current/Expected/Unchanged behavior from Step 4.
+2. Discover the owning workspace by walking up from affected files to the
+   nearest `package.json`. Read `scripts.test`. Do not invent fallback runners.
+3. Capture baseline by running exactly that test command. Record collected
+   tests, failing tests, and whether the runner started cleanly. Missing
+   `scripts.test` flags `Fix outcome: NO_INFRA`; runner startup/collection
+   failure flags `Fix outcome: RUNNER_BROKEN`.
+4. Pick path:
+   - Path B if an existing test imports or covers the target module.
+   - Path A if no useful existing test covers the target.
+5. Path A only: run the `nacl-tl-regression-test` procedure before production
+   code changes. It must write only the regression test and verify the focused
+   test is RED. If Codex subagents are not explicitly available for this turn,
+   perform it as a separate local phase and do not edit production code until
+   RED evidence exists.
+6. Apply the minimal production fix. No opportunistic refactors.
+7. Re-run the same full test command from the baseline. Record postfix failures
+   and RED-to-GREEN evidence.
+
+### Step 7: VALIDATE
+
+Determine the workflow-specific fix outcome from the captured evidence:
+
+| Condition | Fix outcome | Codex status |
+|---|---|---|
+| `scripts.test` missing. | `NO_INFRA` | `BLOCKED` |
+| Runner failed before tests or zero-test sanity check confirms misconfiguration. | `RUNNER_BROKEN` | `BLOCKED` |
+| New failures appeared compared with baseline. | `REGRESSION` | `FAILED` |
+| Path A regression test did not turn RED to GREEN. | `REGRESSION` | `FAILED` |
+| A regression or existing failing test turned RED to GREEN and postfix suite has no failures. | `PASS` | `VERIFIED` |
+| A target test turned RED to GREEN but unrelated baseline failures remain. | `BLOCKED` | `PARTIALLY_VERIFIED` |
+| No test evidence exercises the change. | `UNVERIFIED` | `UNVERIFIED` |
+
+Validation must also include:
+
+- L2/L3 mini SA validation: docs now describe implemented behavior.
+- Impact check: adjacent UCs, shared endpoints, shared types, shared state,
+  shared components, and consumers.
+- Changelog update in `.tl/changelog.md` when editing is available:
+
+  ```markdown
+  ### [YYYY-MM-DD] nacl-tl-fix: <brief description>
+  - **Level:** L0/L1/L2/L3
+  - **Fix outcome:** PASS / BLOCKED / UNVERIFIED / NO_INFRA / RUNNER_BROKEN / REGRESSION
+  - **Status:** VERIFIED / FAILED / PARTIALLY_VERIFIED / BLOCKED / NOT_RUN / UNVERIFIED
+  - **Root cause:** ...
+  - **Affected UC:** UC-### or infrastructure
+  - **Docs updated:** ...
+  - **Code changed:** ...
+  - **Tests:** ...
+  - **Pre-existing failures:** ...
+  - **Invocation source:** review
+  ```
+
+  Include the invocation source line only for `--from-review`.
+
+### Step 8: REPORT
+
+Never skip the final report. Use the user's language unless TL artifacts require
+English.
+
+Report template:
+
+```text
+<FIX COMPLETE | FIX APPLIED - UNVERIFIED | FIX INCOMPLETE>
+
+Problem: ...
+Invocation source: review (--from-review)  # only when applicable
+Root cause: ...
+Level: L0/L1/L2/L3
+Fix outcome: PASS | BLOCKED | UNVERIFIED | NO_INFRA | RUNNER_BROKEN | REGRESSION
+Status: VERIFIED | FAILED | PARTIALLY_VERIFIED | BLOCKED | NOT_RUN | UNVERIFIED
+
+Graph triage:
+  Status: ...
+  Evidence: ...
+
+Docs updated:
+  ...
+
+Changes applied:
+  ...
+
+Tests:
+  Runner: ...
+  Baseline: ...
+  Regression test: ...
+  RED-to-GREEN: ...
+  Postfix: ...
+  New failures: ...
+  Pre-existing failures: ...
+
+Impact check:
+  ...
+
+Remaining discrepancies docs/code:
+  ...
+
+Next step:
+  ...
+```
+
+Header mapping:
+
+- `PASS` -> `FIX COMPLETE`
+- `REGRESSION` -> `FIX INCOMPLETE`
+- `BLOCKED`, `UNVERIFIED`, `NO_INFRA`, `RUNNER_BROKEN` -> `FIX APPLIED -
+  UNVERIFIED`
+
+For `--auto-ship`, only continue to `nacl-tl-ship` when `Fix outcome: PASS` and
+the user has explicitly confirmed shipping. Never invoke `nacl-tl-hotfix`
+automatically.
 
 ## Capabilities
 
 ### May Do
 
-- Read bug, review, reopened, task, code, test, and contract context.
-- Edit code, tests, docs, and TL result files when workspace permissions allow.
-- Run configured test or verification commands when available.
-- Produce repair reports and changelog entries when justified.
+- Read bug, review, reopened, task, code, test, graph, and contract context.
+- Query graph tools when available and configured.
+- Edit code, tests, docs, and TL changelog/result files when workspace
+  permissions and gates allow.
+- Run configured test or verification commands.
+- Produce repair reports with both fix outcome and Codex verification status.
 
 ### Must Not Do
 
-- Apply a code fix before defining expected and unchanged behavior.
-- Skip a failing regression test for testable bugs unless the user accepts a
-  blocked TDD path.
+- Apply a code fix before triage, context load, gap-check, behavior definition,
+  and required docs updates.
+- Skip graph-aware UC discovery when `config.yaml` has graph configuration.
+- Skip a RED regression test for testable bugs unless the workflow reports the
+  blocked/unverified path honestly.
+- Invent fallback runners when `scripts.test` is missing or broken.
 - Widen the fix into unrelated refactoring or feature work.
 - Commit, push, deploy, or change branches without explicit user request or
   workflow confirmation.
@@ -144,21 +338,24 @@ Return a report with:
 ### Conditional Tools And Actions
 
 - File edits require writable workspace access.
-- Test and verification commands require dependencies and configured runners.
+- Graph reads require configured graph tooling; otherwise report graph triage as
+  `BLOCKED` and use file fallback.
+- Test execution requires dependencies and configured workspace commands.
 - Documentation changes that alter behavior require a user gate.
-- Delegation is conditional on supported tools being available in the current
-  Codex environment.
+- Separate test-authoring workflow is required for Path A; Codex subagents are
+  used only when explicitly available and permitted.
 
 ### Blocked Or Unverified Reporting
 
-- Use `BLOCKED` when context, permissions, confirmation, dependencies, or
-  configured commands are missing.
-- Use `NOT_RUN` when a check is intentionally skipped.
-- Use `PARTIALLY_VERIFIED` when the defect is fixed but some required evidence
-  is missing.
-- Use `UNVERIFIED` when coverage or behavior evidence is ambiguous.
-- Use `FAILED` when tests, static checks, or behavior checks run and violate
-  the fix contract.
+- Use `BLOCKED` when context, permissions, confirmation, dependencies,
+  graph tooling, or configured commands are missing.
+- Use `NOT_RUN` when a check is intentionally skipped, including dry-run
+  mutation steps.
+- Use `PARTIALLY_VERIFIED` when the target fix has evidence but unrelated
+  baseline failures remain.
+- Use `UNVERIFIED` when no evidence exercises the change.
+- Use `FAILED` when tests, static checks, or behavior checks run and violate the
+  fix contract.
 
 ## Source Comparison
 
@@ -166,22 +363,25 @@ Return a report with:
 
 ### Preserved Methodology
 
-- Spec-first bug repair.
-- L0 through L3 fix classification.
-- RED, GREEN, REFACTOR discipline for testable bugs.
-- Documentation gates for changed behavior contracts.
-- Baseline comparison and final repair report.
+- Mandatory 8-step spec-first bug repair workflow.
+- Graph-enhanced UC discovery before grep fallback.
+- L0/L1/L2/L3 fix classification.
+- Documentation synchronization before code for L2/L3.
+- RED-first regression test discipline and baseline/postfix comparison.
+- Changelog evidence, impact check, and final status-aware report.
 
 ### Removed Claude Mechanics
 
 - Runtime routing fields in frontmatter.
-- Mandatory external regression-test execution assumptions.
-- Legacy status and headline vocabulary outside the closed set.
-- Automatic shipping behavior as active fix behavior.
+- Claude-only subagent assumptions as mandatory execution mechanics.
+- Non-Codex outcome words as top-level verification statuses.
+- Automatic shipping without Codex confirmation.
 
 ### Codex Replacement Behavior
 
-- Execute the repair workflow directly when tools are available.
-- Treat external help as optional and environment-dependent.
-- Use closed statuses with reason fields for runner, infra, and evidence gaps.
-- Keep shipping and git actions behind explicit confirmation.
+- Execute the same workflow directly when tools are available.
+- Preserve `PASS`, `NO_INFRA`, `RUNNER_BROKEN`, and related fix outcomes as
+  report details.
+- Map final top-level status to the Codex closed verification vocabulary.
+- Treat graph, browser, test, and delegation tools as conditional and report
+  gaps honestly.

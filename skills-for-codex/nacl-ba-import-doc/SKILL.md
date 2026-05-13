@@ -13,8 +13,21 @@ Extract BA content from a client document and generate or append to an
 Excalidraw board. Board labels and BA artifacts remain Russian by default unless
 the user explicitly requests another supported output language.
 
-Read `../nacl-core/SKILL.md`, `../references/migration-rules.md`, and
-`../references/verification-vocabulary.md` before executing the workflow.
+Read `../nacl-core/SKILL.md`, `../references/migration-rules.md`,
+`../references/verification-vocabulary.md`, and
+`../references/ba-codex-contract.md` before executing the workflow.
+
+## Mandatory Board Generation Contract
+
+This skill is board-only. It must not write graph data. Resolve
+`graph.boards_dir` from `config.yaml` with fallback `graph-infra/boards`, parse
+or extract source evidence, and generate structurally valid Excalidraw JSON.
+If the source document cannot be read or the board cannot be written, report
+`BLOCKED`.
+
+Every generated shape must have bound text and full `customData`; every fact
+must keep source document and page or section traceability when determinable.
+Sync is delegated to `nacl-ba-sync`.
 
 ## Workflow
 
@@ -32,6 +45,9 @@ Read `../nacl-core/SKILL.md`, `../references/migration-rules.md`, and
 
 The workflow is board-only and does not write to the graph.
 
+The source phase order is mandatory: analyze document, structure content,
+generate Excalidraw, write board, report.
+
 ## Document Rules
 
 - DOCX, PDF, plain text, and Markdown may produce process boards.
@@ -42,6 +58,8 @@ The workflow is board-only and does not write to the graph.
 - Every generated shape must have a bound text element.
 - Confidence colors and background colors come from core board conventions.
 - When appending, use collision-resistant element IDs.
+- Orphaned documents must be called out; do not silently infer step links when
+  the source evidence does not support them.
 
 ## Capabilities
 

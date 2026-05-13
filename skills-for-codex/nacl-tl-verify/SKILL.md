@@ -9,6 +9,8 @@ description: |
 
 # NaCl TL Verify For Codex
 
+Read `../nacl-tl-core/SKILL.md` and `../nacl-tl-core/references/tl-codex-contract.md` before executing this workflow.
+
 Verification aggregates code-check and QA evidence. Read `../nacl-tl-core/SKILL.md`
 and the relevant task files before executing.
 
@@ -22,6 +24,20 @@ and the relevant task files before executing.
 5. Perform integrity checks on evidence, report files, and task mapping.
 6. Write verification reports and update local, graph, or tracker state when
    tools and confirmation are available.
+
+## Source-Parity Requirements
+
+- Preserve source steps: identify task, move to testing only when confirmed,
+  code analysis, conditional E2E, compose report/artifacts, and final tracker
+  move only when confirmed.
+- Use `nacl-tl-verify-code` and QA/browser checks as separate evidence
+  channels. One channel cannot substitute for the other when the task requires
+  both.
+- Parse downstream `Status:` lines and keep their raw evidence in the report.
+- Missing E2E infrastructure, browser tooling, runtime environment, task
+  context, or tracker tooling must downgrade to `PARTIALLY_VERIFIED`,
+  `BLOCKED`, or `UNVERIFIED`.
+- Tracker, graph, or report writes require confirmation and read-back.
 
 ## Capabilities
 

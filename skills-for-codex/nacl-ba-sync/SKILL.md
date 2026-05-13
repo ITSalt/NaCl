@@ -12,8 +12,22 @@ Bridge a visual Excalidraw board and the structured BA graph. Sync reports
 remain Russian by default unless the user explicitly requests another supported
 output language.
 
-Read `../nacl-core/SKILL.md`, `../references/migration-rules.md`, and
-`../references/verification-vocabulary.md` before executing the workflow.
+Read `../nacl-core/SKILL.md`, `../references/migration-rules.md`,
+`../references/verification-vocabulary.md`, and
+`../references/ba-codex-contract.md` before executing the workflow.
+
+## Mandatory Board-To-Graph Contract
+
+This is the board-to-graph writer. Resolve `graph.boards_dir`, parse
+Excalidraw JSON structurally, inspect schema/query references, check graph read
+and write tooling, classify elements, then show a sync summary and context plan.
+If board access, graph tools, context selection, or confirmation is missing,
+report `BLOCKED`.
+
+Do not update the board file as synced until graph writes and read-back
+verification succeed for the affected elements. On terminal failure, preserve
+the board and update the meta sidecar failure state when filesystem writes are
+available.
 
 ## Workflow
 
@@ -32,12 +46,19 @@ Read `../nacl-core/SKILL.md`, `../references/migration-rules.md`, and
 8. Read back graph state, update board `customData` and visual sync markers when
    filesystem writes are available, write sidecar metadata, and report results.
 
+The source phase order is mandatory: read and validate board, determine
+process context, sync new elements, sync relationships, sync changed elements,
+update board/meta sidecar, report.
+
 ## Sync Rules
 
 - Use idempotent writes keyed by stable IDs.
 - Skip synced-and-unchanged elements.
 - Reuse existing `nodeId` for dirty synced elements.
 - Deduplicate roles by confirmed name where appropriate.
+- Relationship inference uses arrow bindings and swimlane containment:
+  `NEXT_STEP`, `READS`, `PRODUCES`, `MODIFIES`, `PERFORMED_BY`,
+  `PARTICIPATES_IN`, and `OWNS` where source evidence supports them.
 - If a partial failure occurs, write sidecar failure details when possible and
   report `PARTIALLY_VERIFIED` or `FAILED` with evidence.
 

@@ -9,6 +9,8 @@ description: |
 
 # NaCl TL Review For Codex
 
+Read `../nacl-tl-core/SKILL.md` and `../nacl-tl-core/references/tl-codex-contract.md` before executing this workflow.
+
 Review is a gate between implementation and downstream sync, QA, docs, or ship
 phases. Read `../nacl-tl-core/SKILL.md` before reviewing.
 
@@ -22,6 +24,20 @@ phases. Read `../nacl-tl-core/SKILL.md` before reviewing.
    data persistence expectations.
 5. Produce findings ordered by severity with file references.
 6. Update review reports or TL tracking files when available and confirmed.
+
+## Source-Parity Requirements
+
+- Preserve the three source modes: backend `--be`, frontend `--fe`, and TECH
+  with their distinct input files, review artifacts, and phase fields.
+- Run the stub gate before quality review: inspect the registry/report and scan
+  changed files for `TODO`, `FIXME`, `STUB`, `MOCK`, and `HACK`.
+- Review TDD evidence, test output, acceptance criteria, API contracts,
+  persistence, security, error handling, and test author independence.
+- A review approval is not verification of runtime behavior. Missing test
+  output, missing result files, or missing task specs blocks or downgrades the
+  review.
+- Review report or phase tracking writes require confirmation and read-back.
+  Without confirmation, report findings inline and leave state unchanged.
 
 ## Capabilities
 

@@ -9,6 +9,8 @@ description: |
 
 # NaCl TL Diagnose For Codex
 
+Read `../nacl-tl-core/SKILL.md` and `../nacl-tl-core/references/tl-codex-contract.md` before executing this workflow.
+
 Diagnose and recommend next actions. Do not implement fixes in this skill.
 
 ## Workflow
@@ -21,6 +23,20 @@ Diagnose and recommend next actions. Do not implement fixes in this skill.
 5. Write `DIAGNOSTIC-REPORT.md` only when file editing is available and the user
    confirms.
 6. Recommend which NaCl skill or manual action should run next.
+
+## Source-Parity Requirements
+
+- Preserve the source diagnostic dimensions: git health, documentation health,
+  code health, optional server health, aggregation, targeted gap analysis, and
+  final diagnostic report.
+- Use parallel collection only when subagents are explicitly available and the
+  work is non-overlapping. Otherwise collect directly and report any skipped
+  dimension as `NOT_RUN` or `PARTIALLY_VERIFIED`.
+- Treat green tests as one signal, not as proof that docs, TL status, stubs,
+  CI, or runtime behavior are healthy.
+- A diagnostic report write requires confirmation and read-back. Without a
+  confirmed write, provide the report inline and keep repository state
+  unchanged.
 
 ## Capabilities
 

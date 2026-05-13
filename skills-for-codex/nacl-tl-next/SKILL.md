@@ -8,6 +8,8 @@ description: |
 
 # NaCl TL Next For Codex
 
+Read `../nacl-tl-core/SKILL.md` and `../nacl-tl-core/references/tl-codex-contract.md` before executing this workflow.
+
 Recommend a single next action unless the user asks for a list.
 
 ## Workflow
@@ -21,6 +23,19 @@ Recommend a single next action unless the user asks for a list.
    priority, and available context.
 5. Return one recommended command with rationale, plus parallel options when
    requested.
+
+## Source-Parity Requirements
+
+- Use `tl_active_wave`, `tl_actionable_tasks`, `tl_blocked_tasks`, and
+  `tl_task_scoring` when graph access is available.
+- Respect `DEPENDS_ON` and `IN_WAVE`; do not recommend a task with unfinished
+  dependencies as actionable.
+- Use canonical task and wave IDs from graph or `.tl/` evidence. Do not invent
+  task IDs, waves, priorities, or dependency state.
+- In `.tl/` fallback mode, label the result as fallback-derived and omit
+  graph-only scoring or SA coverage claims.
+- This is a read-only recommendation skill; file, graph, or tracker updates are
+  out of scope unless the user starts a separate confirmed workflow.
 
 ## Capabilities
 

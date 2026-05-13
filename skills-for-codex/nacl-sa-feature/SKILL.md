@@ -43,6 +43,28 @@ Feature request ids must avoid collisions across `.tl/feature-requests`,
 `:FeatureRequest` nodes, and legacy graph nodes whose `id` already matches an
 `FR-*` pattern. Reserved tombstone prefixes must not be allocated for new work.
 
+## Phase Contract Details
+
+Phase 1 must load enough current graph state to classify the request. If graph
+search or traversal is unavailable, do not infer impacted scope from memory;
+return `Status: BLOCKED` or a clearly labeled user-confirmation plan.
+
+Phase 2 must use `sa_impact_analysis`, `sa_find_uc_by_keywords`,
+`sa_feature_scope`, `sa_module_overview`, or equivalent graph reads. The impact
+matrix must distinguish new modules, modified modules, new entities, modified
+entities, new UCs, modified UCs, UI/form changes, role/permission changes, and
+requirements.
+
+Phase 3 writes only the confirmed affected scope and preserves dependency order:
+architecture before domain, domain before roles and UC detail, UC detail before
+UI, and UI before validation. If a specialist SA skill is available, use that
+skill's contract and inspect its result before continuing.
+
+Phase 6 persistence must create `FeatureRequest` with documented properties and
+link it with `INCLUDES_UC {kind}`, `AFFECTS_MODULE`, `AFFECTS_ENTITY`, and
+optionally `RAISES_REQUIREMENT`. After confirmed graph and file writes, read the
+`FeatureRequest` subgraph back before reporting success.
+
 ## Capabilities
 
 ### May Do

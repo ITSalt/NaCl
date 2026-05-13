@@ -9,6 +9,8 @@ description: |
 
 # NaCl TL Plan For Codex
 
+Read `../nacl-tl-core/SKILL.md` and `../nacl-tl-core/references/tl-codex-contract.md` before executing this workflow.
+
 Planning creates implementation artifacts from SA graph data. Read
 `../nacl-core/SKILL.md` and `../nacl-tl-core/SKILL.md` first.
 
@@ -24,6 +26,21 @@ Planning creates implementation artifacts from SA graph data. Read
 6. Generate self-sufficient task files, API contracts, master plan, status, and
    changelog entries from templates.
 7. Verify file structure and graph task counts when possible.
+
+## Source-Parity Requirements
+
+- Use `graph-infra/schema/tl-schema.cypher` and
+  `graph-infra/queries/tl-queries.cypher` as the source for TL labels,
+  relationships, properties, and named query expectations.
+- Preserve the SA-to-TL handoff: each generated `Task` must trace back from a
+  `UseCase -[:GENERATES]-> Task` edge when graph writes are in scope.
+- Preserve `Task`, `Wave`, and `APIEndpoint` creation semantics, including
+  `IN_WAVE`, `DEPENDS_ON`, `IMPLEMENTS`, `CONSUMES`, and `PRODUCES`.
+- Write `.tl/tasks/<TASK_ID>/` files, `.tl/master-plan.md`, `.tl/status.json`,
+  or graph nodes only after a presented plan and explicit user confirmation.
+- After any confirmed write, read back the generated task files and graph nodes;
+  if read-back cannot run, report `Status: UNVERIFIED` or `Status: BLOCKED`.
+- In fallback-only mode, do not claim graph completeness or SA coverage.
 
 ## Capabilities
 

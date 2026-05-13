@@ -12,8 +12,19 @@ Run read-only validation of BA graph data and optional BA-to-SA coverage.
 Validation reports remain Russian by default unless the user explicitly requests
 another supported output language.
 
-Read `../nacl-core/SKILL.md`, `../references/migration-rules.md`, and
-`../references/verification-vocabulary.md` before executing the workflow.
+Read `../nacl-core/SKILL.md`, `../references/migration-rules.md`,
+`../references/verification-vocabulary.md`, and
+`../references/ba-codex-contract.md` before executing the workflow.
+
+## Mandatory Read-Only Contract
+
+This skill is strictly read-only. Resolve configuration, inspect BA schema/query
+references, check graph read tooling, and verify BA graph data before running
+checks. If graph read tooling or BA data is unavailable, report `BLOCKED`.
+
+For `cross` and `full`, check whether SA graph data exists before cross-layer
+checks. Missing SA data is not success: report cross checks as `NOT_RUN` or the
+overall result as `PARTIALLY_VERIFIED` when internal checks ran.
 
 ## Scope
 
@@ -55,6 +66,10 @@ Read `../nacl-core/SKILL.md`, `../references/migration-rules.md`, and
    checks, and final verification status.
 
 This skill must not write to the graph or filesystem.
+
+Severity remains separate from final status: critical or warning findings can
+drive `FAILED`, while skipped checks use `NOT_RUN`; the top-level status must
+come from the closed vocabulary.
 
 ## Capabilities
 

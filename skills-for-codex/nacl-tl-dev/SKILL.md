@@ -10,6 +10,8 @@ description: |
 
 # NaCl TL TECH Development For Codex
 
+Read `../nacl-tl-core/SKILL.md` and `../nacl-tl-core/references/tl-codex-contract.md` before executing this workflow.
+
 Implement TECH scope only. TL artifacts and reports remain English.
 
 Read `../references/migration-rules.md` and

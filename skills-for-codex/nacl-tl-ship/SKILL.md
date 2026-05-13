@@ -9,6 +9,8 @@ description: |
 
 # NaCl TL Ship For Codex
 
+Read `../nacl-tl-core/SKILL.md` and `../nacl-tl-core/references/tl-codex-contract.md` before executing this workflow.
+
 Shipping mutates git and possibly external trackers. It is confirmation-gated.
 
 ## Workflow
@@ -22,6 +24,20 @@ Shipping mutates git and possibly external trackers. It is confirmation-gated.
 6. Execute approved git operations and record evidence.
 7. Update graph or tracker metadata only when tooling exists and confirmation is
    given.
+
+## Source-Parity Requirements
+
+- Read `config.yaml` before git decisions. Respect `git.strategy`,
+  `git.main_branch`, branch prefix, build command, test command, and deploy
+  settings when present.
+- Inspect dirty state before staging. Stage only intended files and show the
+  staged path list before commit.
+- In feature-branch strategy, do not commit to the base branch. If the current
+  branch is wrong, stop and ask.
+- Prior verification evidence gates shipping. Local checks are a sanity check,
+  not a replacement for upstream review/verify status.
+- Commit, push, PR creation, tracker updates, graph updates, and deploy handoff
+  all require confirmation and read-back evidence.
 
 ## Capabilities
 

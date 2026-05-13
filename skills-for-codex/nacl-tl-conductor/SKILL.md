@@ -9,6 +9,8 @@ description: |
 
 # NaCl TL Conductor For Codex
 
+Read `../nacl-tl-core/SKILL.md` and `../nacl-tl-core/references/tl-codex-contract.md` before executing this workflow.
+
 Coordinate the TL workflow without assuming isolated task runners. TL artifacts
 and reports remain English.
 

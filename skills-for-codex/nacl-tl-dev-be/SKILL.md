@@ -9,6 +9,8 @@ description: |
 
 # NaCl TL Backend Development For Codex
 
+Read `../nacl-tl-core/SKILL.md` and `../nacl-tl-core/references/tl-codex-contract.md` before executing this workflow.
+
 Implement backend task scope only. TL artifacts and reports remain English.
 
 Read `../references/migration-rules.md` and

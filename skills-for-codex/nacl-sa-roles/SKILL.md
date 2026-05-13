@@ -46,6 +46,23 @@ Keep roles distinct by module or access level. Prefer a small role set; if the
 proposal grows beyond seven roles, ask whether decomposition or role grouping
 should be revisited.
 
+## Graph Contract
+
+Use `BusinessRole -[:MAPPED_TO]-> SystemRole` for BA-to-SA role traceability,
+`SystemRole -[:HAS_PERMISSION {crud}]-> DomainEntity` for CRUD access, and
+`UseCase -[:ACTOR]-> SystemRole` for UC actors. Do not collapse
+`BusinessRole` and `SystemRole`; they are separate layers.
+
+Permission CRUD strings must be explicit and limited to actual access such as
+`C`, `R`, `U`, `D`, or combinations. Do not create `HAS_PERMISSION` edges for
+no-access matrix cells. Restricted permissions must preserve data-scope notes
+as properties or requirements only when the schema and user confirmation allow.
+
+Before writes, show role ids, BA mappings, permission matrix, data-scope rules,
+actor edges, and any infrastructure-only roles with `system_only` rationale.
+After confirmed writes, read back mapped roles, permissions, actor coverage, and
+unmapped BA roles before reporting success.
+
 ## Capabilities
 
 ### May Do

@@ -8,6 +8,8 @@ description: |
 
 # NaCl TL Status For Codex
 
+Read `../nacl-tl-core/SKILL.md` and `../nacl-tl-core/references/tl-codex-contract.md` before executing this workflow.
+
 Status is read-only. It should not modify graph, files, git, or task trackers.
 
 ## Workflow
@@ -20,6 +22,19 @@ Status is read-only. It should not modify graph, files, git, or task trackers.
 4. Compute progress, blockers, phase status, QA evidence, stub evidence, and SA
    coverage when graph data supports it.
 5. Return a concise status report with data-source notes.
+
+## Source-Parity Requirements
+
+- Use `tl_progress_stats`, `tl_progress_by_wave`, `tl_phase_progress`,
+  `tl_blocked_tasks`, and `tl_active_wave` when graph access is available.
+- Compute phase progress from `phase_be`, `phase_fe`, `phase_sync`,
+  `phase_review_be`, `phase_review_fe`, and `phase_qa`.
+- Include SA coverage only when graph evidence supports it through SA-to-TL
+  handoff data. Never derive SA coverage from `.tl/status.json` alone.
+- When falling back to `.tl/`, print a fallback note and treat graph-only
+  metrics as `UNVERIFIED` or omit them.
+- This skill is read-only. It must not normalize status files, update graph
+  nodes, or move tracker items.
 
 ## Capabilities
 

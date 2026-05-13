@@ -18,7 +18,10 @@ blocked=0
 created=0
 already_present=0
 
-mkdir -p "$dest_dir"
+if ! mkdir -p "$dest_dir"; then
+  echo "BLOCKED install: cannot create destination directory $dest_dir"
+  exit 1
+fi
 
 resolve_dir() {
   CDPATH= cd "$1" 2>/dev/null && pwd -P
@@ -41,9 +44,13 @@ for skill in $skills; do
   fi
 
   if [ ! -e "$dest_path" ] && [ ! -L "$dest_path" ]; then
-    ln -s "$source_path" "$dest_path"
-    echo "CREATED $skill: $dest_path -> $source_path"
-    created=$((created + 1))
+    if ln -s "$source_path" "$dest_path" 2>/dev/null; then
+      echo "CREATED $skill: $dest_path -> $source_path"
+      created=$((created + 1))
+    else
+      echo "BLOCKED $skill: failed to create symlink: $dest_path -> $source_path"
+      blocked=$((blocked + 1))
+    fi
     continue
   fi
 
