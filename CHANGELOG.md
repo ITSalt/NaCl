@@ -4,7 +4,7 @@ All notable changes to NaCl (Natural Agent Control Language) will be documented 
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [2.6.0] — 2026-05-13
+## [2.7.0] — 2026-05-13
 
 ### Added
 
@@ -786,8 +786,8 @@ Honest bug-fix skill: `nacl-tl-fix` is rewritten to enforce TDD ordering (regres
 - `nacl-project-init` skill for bootstrapping new projects (`05279ff`)
 - README and project documentation (`2622bb6`)
 
-[Unreleased]: https://github.com/itsalt/NaCl/compare/v2.6.0...HEAD
-[2.6.0]: https://github.com/itsalt/NaCl/compare/v2.5.0...v2.6.0
+[Unreleased]: https://github.com/itsalt/NaCl/compare/v2.7.0...HEAD
+[2.7.0]: https://github.com/itsalt/NaCl/compare/v2.6.0...v2.7.0
 [0.16.0]: https://github.com/itsalt/NaCl/compare/v0.15.0...v0.16.0
 [0.10.0]: https://github.com/itsalt/NaCl/compare/v0.9.0...v0.10.0
 [0.5.0]: https://github.com/itsalt/NaCl/compare/v0.4.0...v0.5.0
