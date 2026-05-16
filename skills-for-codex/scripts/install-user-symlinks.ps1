@@ -12,6 +12,39 @@ $alreadyPresent = 0
 
 New-Item -ItemType Directory -Force -Path $destDir | Out-Null
 
+function Get-LinkTargetPath {
+  param([System.IO.FileSystemInfo]$Item)
+
+  $target = @($Item.Target)[0]
+  if (-not $target) {
+    return $null
+  }
+
+  try {
+    return (Resolve-Path $target).Path
+  }
+  catch {
+    return $null
+  }
+}
+
+function New-SkillLink {
+  param(
+    [string]$Path,
+    [string]$Target,
+    [string]$Name
+  )
+
+  try {
+    New-Item -ItemType SymbolicLink -Path $Path -Target $Target | Out-Null
+    Write-Output "CREATED $Name`: $Path -> $Target"
+  }
+  catch {
+    New-Item -ItemType Junction -Path $Path -Target $Target | Out-Null
+    Write-Output "CREATED_JUNCTION $Name`: $Path -> $Target"
+  }
+}
+
 $skills = Get-ChildItem -Path $sourceDir -Directory |
   Where-Object { Test-Path (Join-Path $_.FullName "SKILL.md") } |
   Sort-Object Name
@@ -33,24 +66,23 @@ foreach ($skill in $skills) {
   }
 
   if (-not (Test-Path $destPath)) {
-    New-Item -ItemType SymbolicLink -Path $destPath -Target $sourcePath | Out-Null
-    Write-Output "CREATED $($skill.Name): $destPath -> $sourcePath"
+    New-SkillLink -Path $destPath -Target $sourcePath -Name $skill.Name
     $created++
     continue
   }
 
   $destItem = Get-Item $destPath -Force
-  if ($destItem.LinkType -eq "SymbolicLink") {
+  if ($destItem.LinkType -eq "SymbolicLink" -or $destItem.LinkType -eq "Junction") {
     $sourceReal = (Resolve-Path $sourcePath).Path
-    $targetReal = (Resolve-Path $destItem.Target).Path
-    if ($sourceReal -eq $targetReal) {
+    $targetReal = Get-LinkTargetPath -Item $destItem
+    if ($targetReal -and $sourceReal -eq $targetReal) {
       Write-Output "ALREADY_PRESENT $($skill.Name): $destPath -> $($destItem.Target)"
       $alreadyPresent++
       continue
     }
   }
 
-  Write-Output "BLOCKED $($skill.Name): destination exists and is not the correct symlink: $destPath"
+  Write-Output "BLOCKED $($skill.Name): destination exists and is not the correct symlink or junction: $destPath"
   $blocked++
 }
 

@@ -38,7 +38,8 @@ done
 
 ### Windows PowerShell
 
-Run PowerShell as Administrator, or enable Developer Mode for symlinks.
+The installer creates directory symlinks when Windows allows it. If symlink
+creation is unavailable, it falls back to directory junctions.
 
 ```powershell
 git clone https://github.com/ITSalt/NaCl.git "$HOME\NaCl"
@@ -77,8 +78,8 @@ Start Claude Code in a project and run:
 ## Codex
 
 Codex uses the `skills-for-codex/` package from a normal git checkout. Do not
-install Codex skills from copied archives: symlinks must point to the repository
-so `git pull` updates the skills for every project on the machine.
+install Codex skills from copied archives: links must point to the repository so
+`git pull` updates the skills for every project on the machine.
 
 ### macOS
 
@@ -101,7 +102,8 @@ Run the Linux command inside WSL2. The install target is the WSL user's
 
 ### Windows PowerShell
 
-Run PowerShell as Administrator, or enable Developer Mode for symlinks.
+The installer creates directory symlinks when Windows allows it. If symlink
+creation is unavailable, it falls back to directory junctions.
 
 ```powershell
 git clone https://github.com/ITSalt/NaCl.git "$HOME\NaCl"
@@ -115,7 +117,7 @@ If Codex is running on a machine where NaCl is not installed, send this prompt:
 ```text
 Install NaCl Codex skills globally on this machine.
 
-Clone https://github.com/ITSalt/NaCl.git into $HOME/NaCl if it is not already present. If it is present, run git pull --ff-only there. Then run the Codex installer from $HOME/NaCl/skills-for-codex/scripts and verify that $HOME/.agents/skills contains 58 NaCl skill symlinks and that each linked directory has SKILL.md. Use network or escalated permission if needed.
+Clone https://github.com/ITSalt/NaCl.git into $HOME/NaCl if it is not already present. If it is present, run git pull --ff-only there. Then run the Codex installer from $HOME/NaCl/skills-for-codex/scripts and verify that $HOME/.agents/skills contains 58 NaCl skill links and that each linked directory has SKILL.md. Use network or escalated permission if needed.
 ```
 
 ### Verify Codex
@@ -144,6 +146,6 @@ git pull --ff-only
 sh skills-for-codex/scripts/install-user-symlinks.sh
 ```
 
-The symlinks continue to point to the same checkout, so existing skills update
+The skill links continue to point to the same checkout, so existing skills update
 as soon as `git pull` completes. Re-running the installer is only needed to add
 new skill directories or repair missing links.

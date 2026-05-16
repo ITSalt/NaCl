@@ -14,8 +14,8 @@ The verified user-level Codex install location is:
 $HOME/.agents/skills/
 ```
 
-Use symlinks from `$HOME/.agents/skills/` to `skills-for-codex/` instead of
-copies. Symlinks keep one canonical source of truth, avoid drift between the
+Use links from `$HOME/.agents/skills/` to `skills-for-codex/` instead of
+copies. Links keep one canonical source of truth, avoid drift between the
 repository and the user install, and make future skill updates visible to Codex
 without copying files again.
 
@@ -24,7 +24,7 @@ Do not use repo-local `.agents/skills/` wrappers for this project.
 ## Fresh Install From Git Checkout
 
 Use this path on a machine where the NaCl repository is not cloned. Codex
-skills must be installed as symlinks to a git checkout, not copied from an
+skills must be installed as links to a git checkout, not copied from an
 archive. This keeps updates simple: `git pull` updates the canonical skill
 source for every project on the machine.
 
@@ -42,7 +42,8 @@ Run the macOS / Linux command inside WSL2. The install target is the WSL user's
 
 ### Windows PowerShell
 
-Run PowerShell as Administrator, or enable Developer Mode for symlinks.
+The installer creates directory symlinks when Windows allows it. If symlink
+creation is unavailable, it falls back to directory junctions.
 
 ```powershell
 git clone https://github.com/ITSalt/NaCl.git "$HOME\NaCl"
@@ -56,12 +57,12 @@ Send this prompt to Codex on a machine where NaCl is not installed:
 ```text
 Install NaCl Codex skills globally on this machine.
 
-Clone https://github.com/ITSalt/NaCl.git into $HOME/NaCl if it is not already present. If it is present, run git pull --ff-only there. Then run the Codex installer from $HOME/NaCl/skills-for-codex/scripts and verify that $HOME/.agents/skills contains 58 NaCl skill symlinks and that each linked directory has SKILL.md. Use network or escalated permission if needed.
+Clone https://github.com/ITSalt/NaCl.git into $HOME/NaCl if it is not already present. If it is present, run git pull --ff-only there. Then run the Codex installer from $HOME/NaCl/skills-for-codex/scripts and verify that $HOME/.agents/skills contains 58 NaCl skill links and that each linked directory has SKILL.md. Use network or escalated permission if needed.
 ```
 
-## Symlink Mappings
+## Link Mappings
 
-The user-level install must contain one symlink for every
+The user-level install must contain one symlink or junction for every
 `skills-for-codex/*/SKILL.md` directory. At this release, that is 58 skill
 links.
 
@@ -80,8 +81,9 @@ sh skills-for-codex/scripts/install-user-symlinks.sh
 ```
 
 The installer is safe by default. It discovers all skill directories, creates
-missing symlinks, leaves existing correct symlinks unchanged, and prints
-`BLOCKED` without overwriting any existing path that is not the correct symlink.
+missing links, leaves existing correct symlinks or junctions unchanged, and
+prints `BLOCKED` without overwriting any existing path that is not the correct
+link.
 
 ## Update
 
@@ -91,7 +93,7 @@ git pull --ff-only
 sh skills-for-codex/scripts/install-user-symlinks.sh
 ```
 
-Existing skill symlinks keep pointing to the checkout, so changed skills are
+Existing skill links keep pointing to the checkout, so changed skills are
 available immediately after `git pull`. Re-run the installer after pulling to
 add links for newly introduced skill directories.
 
@@ -124,7 +126,7 @@ Test-Path "$HOME\.agents\skills\nacl-core\SKILL.md"
 
 ## Uninstall
 
-Remove only the user-level symlinks created from this package:
+Remove only the user-level links created from this package:
 
 ```sh
 find skills-for-codex -mindepth 2 -maxdepth 2 -name SKILL.md \

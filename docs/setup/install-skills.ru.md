@@ -38,8 +38,8 @@ done
 
 ### Windows PowerShell
 
-Запустите PowerShell от имени администратора или включите Developer Mode для
-создания симлинков.
+Инсталлятор создаёт directory symlink, если Windows это позволяет. Если
+создание symlink недоступно, он использует directory junction.
 
 ```powershell
 git clone https://github.com/ITSalt/NaCl.git "$HOME\NaCl"
@@ -78,7 +78,7 @@ ls "$HOME/.claude/skills" | wc -l
 ## Codex
 
 Codex использует адаптированный пакет `skills-for-codex/` из обычного git
-checkout. Не устанавливайте Codex-скиллы из скопированных архивов: симлинки
+checkout. Не устанавливайте Codex-скиллы из скопированных архивов: ссылки
 должны указывать в репозиторий, чтобы `git pull` обновлял скиллы для всех
 проектов на машине.
 
@@ -103,8 +103,8 @@ sh "$HOME/NaCl/skills-for-codex/scripts/install-user-symlinks.sh"
 
 ### Windows PowerShell
 
-Запустите PowerShell от имени администратора или включите Developer Mode для
-создания симлинков.
+Инсталлятор создаёт directory symlink, если Windows это позволяет. Если
+создание symlink недоступно, он использует directory junction.
 
 ```powershell
 git clone https://github.com/ITSalt/NaCl.git "$HOME\NaCl"
@@ -119,7 +119,7 @@ git clone https://github.com/ITSalt/NaCl.git "$HOME\NaCl"
 ```text
 Install NaCl Codex skills globally on this machine.
 
-Clone https://github.com/ITSalt/NaCl.git into $HOME/NaCl if it is not already present. If it is present, run git pull --ff-only there. Then run the Codex installer from $HOME/NaCl/skills-for-codex/scripts and verify that $HOME/.agents/skills contains 58 NaCl skill symlinks and that each linked directory has SKILL.md. Use network or escalated permission if needed.
+Clone https://github.com/ITSalt/NaCl.git into $HOME/NaCl if it is not already present. If it is present, run git pull --ff-only there. Then run the Codex installer from $HOME/NaCl/skills-for-codex/scripts and verify that $HOME/.agents/skills contains 58 NaCl skill links and that each linked directory has SKILL.md. Use network or escalated permission if needed.
 ```
 
 ### Проверка Codex
@@ -148,6 +148,6 @@ git pull --ff-only
 sh skills-for-codex/scripts/install-user-symlinks.sh
 ```
 
-Симлинки продолжают указывать на тот же checkout, поэтому существующие скиллы
+Ссылки продолжают указывать на тот же checkout, поэтому существующие скиллы
 обновляются сразу после `git pull`. Повторный запуск installer нужен только
 для новых директорий скиллов или восстановления отсутствующих ссылок.

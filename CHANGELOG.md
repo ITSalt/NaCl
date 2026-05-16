@@ -4,6 +4,22 @@ All notable changes to NaCl (Natural Agent Control Language) will be documented 
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [2.7.1] - 2026-05-16
+
+### Fixed
+
+- `skills-for-codex/scripts/install-user-symlinks.ps1` now falls back from
+  Windows directory symlinks to directory junctions when symlink creation is not
+  available.
+- The Windows Codex installer now treats both correct `SymbolicLink` and
+  `Junction` skill links as valid, so repeated installs do not block on
+  junction-based user-level skill entries.
+
+### Changed
+
+- Codex skill installation docs now describe skill links instead of requiring
+  symlinks only, and document the Windows junction fallback path.
+
 ## [2.7.0] — 2026-05-13
 
 ### Added
