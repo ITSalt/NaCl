@@ -4,6 +4,85 @@ All notable changes to NaCl (Natural Agent Control Language) will be documented 
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.17.0] — 2026-05-21
+
+Single-skill release. `/nacl-tl-fix` gains entity-driven graph impact
+traversal, a migration-verification sub-flow, a data-flow impact survey,
+and an `L3-feature` routing exit that stops the skill from acting as a
+feature factory. Full release notes:
+`docs/releases/0.17.0-fix-skill-impact-and-routing/release-notes.md`.
+
+### Added
+
+- `nacl-tl-fix` Step 1: three-stage Cypher impact traversal. Stage 1
+  resolves the touched `DomainEntity` from the affected file / SQL table /
+  changed column. Stage 2 enumerates every UC that reads or writes the
+  entity via `CONSUMES | PRODUCES | MUTATES | REFERENCES | AFFECTS_ENTITY`
+  plus 2-hop `DEPENDENCY` neighbours. Stage 3 keeps the legacy keyword UC
+  search as a secondary probe. The TRIAGE table must list every UC
+  returned by Stage 2; missing the entity is a hard `IMPACT_UNVERIFIED`
+  flag in the Step 8 report.
+- `nacl-tl-fix` Fix Levels table: `L3-spec-gap` and `L3-feature`
+  classifications. `L3-spec-gap` covers a missing UC node / enum value /
+  minor doc for a code path that already works; `L3-feature` covers
+  requests whose resolution requires creating a new HTTP route, new DB
+  column, new graph entity, new FE page/component, or new enum
+  transition.
+- `nacl-tl-fix` Step 3: `L3-feature` routing exit. Classification of
+  `L3-feature` stops the workflow before Step 4. The skill prints a
+  routing report (reason, affected entities from Stage 2, verbatim
+  `/nacl-sa-feature "<description>"` command, fresh-session explanation,
+  disambiguation path into `/nacl-tl-intake`) and exits without writing
+  any files or graph nodes.
+- `nacl-tl-fix` Step 6M: migration verification sub-flow. Pre-check the
+  migrator manifest (drizzle `meta/_journal.json`, knex
+  `knex_migrations`, prisma timestamped dir, custom fallback); run
+  declared migrate command; post-check DB state with
+  `SELECT COUNT(*) WHERE <pre-migration-condition>` (must return 0).
+  Silent skips become `RUNNER_BROKEN`. Step 8 report gains a
+  `Migration verification:` block.
+- `nacl-tl-fix` Step 6c: brand-new-file anchor for Path A. Files not in
+  the git tree before the fix force `Path A` unconditionally; the import
+  grep is treated as meaningless for them. Closes the historical
+  "no import found ⇒ Path B" inversion.
+- `nacl-tl-fix` Step 7.5: data-flow survey replacing the two-bullet
+  impact check. Five mandatory items: read paths, write paths,
+  refresh / sync / cache / re-derivation, snapshot vs source-of-truth,
+  adjacent UCs / shared types. Items 1–4 unanswered ⇒ status downgrades
+  to `UNVERIFIED`.
+- `nacl-tl-fix`: new `## Routing — When /nacl-tl-fix vs /nacl-tl-intake`
+  preamble. Explains the new TRIAGE neighbour output and when to prefer
+  `/nacl-tl-intake` for ambiguous requests.
+- `nacl-tl-fix`: `--force-l3-spec-gap` flag — escape hatch for genuine
+  Step 3 mis-classifications. Bypasses the `L3-feature` routing exit and
+  treats the request as `L3-spec-gap`.
+
+### Changed
+
+- `nacl-tl-fix` Step 1: keyword UC-name search is no longer the primary
+  graph probe. It is Stage 3, secondary to the entity-driven traversal.
+- `nacl-tl-fix` Step 5: the previous "For L3 (create new docs): create
+  minimal specification" subsection is renamed to "For L3-spec-gap" and
+  restricted to (one enum value | one transition | one UC node for an
+  existing route | one minor doc addition). A "Forbidden under
+  L3-spec-gap" list escalates new UCs alongside new code, new API
+  endpoints, and new entities back to `L3-feature` — Step 5 aborts and
+  returns to Step 3 for reclassification.
+- `nacl-tl-fix` edge case "Bug in area with no docs at all": rewritten
+  to route to `/nacl-sa-feature` instead of "create MINIMAL
+  specification". Inline spec-creation for new code paths is explicitly
+  forbidden.
+
+### Fixed
+
+- `nacl-tl-fix` no longer treats `npm run migrate` exit-0 as proof that
+  the migration applied. The DB post-check `SELECT` is the proof; the
+  exit code is not.
+- `nacl-tl-fix` no longer silently falls back to grep when the graph is
+  available. `IMPACT_UNVERIFIED` is a hard flag in the Step 8 report
+  whenever Stage 1 returns no entity match, so the gap is visible
+  instead of hidden.
+
 ## [2.7.1] - 2026-05-16
 
 ### Fixed

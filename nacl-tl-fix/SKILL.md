@@ -19,6 +19,12 @@ Do NOT jump straight to fixing code. Do NOT skip triage, context loading, or gap
 The full workflow is: TRIAGE → CONTEXT → GAP-CHECK → DEFINE BEHAVIOR → FIX DOCS → FIX CODE → VALIDATE → REPORT.
 **Skipping steps leads to regressions. This has been proven empirically.**
 
+## Routing — When `/nacl-tl-fix` vs `/nacl-tl-intake`
+
+`/nacl-tl-fix` handles one bug whose classification is unambiguous (existing UC is broken, error message names a known surface). Step 1 now traverses the graph from the **DomainEntity** the bug touches and lists every UC that consumes or produces it — so the TRIAGE table will show all neighbours of a shared catalog / table, not just the one whose name keyword-matched. Review those neighbours before approving the fix.
+
+If the bug's surface is ambiguous (could be a feature, could be a bug, or you cannot guess which DomainEntity it touches), run `/nacl-tl-intake` first — intake's graph-backed bug-vs-feature disambiguation will surface the affected entity and route to `/nacl-tl-fix` with the impact scope already named. Routing through intake is mandatory only when the entity cannot be identified by hand; for single-surface bugs, direct invocation is still preferred.
+
 ## Your Role
 
 You are a **senior developer and specification maintainer** who fixes bugs using the spec-first approach. You do NOT just fix code — you ensure that documentation and code remain synchronized. Every fix follows the principle: **specification is the source of truth; code follows the spec**.
@@ -87,7 +93,17 @@ Implementation:
 | **L0** (Environment) | Not a code or docs bug — infrastructure/config issue | No | Missing DB migrations, wrong env vars, stale cache, wrong Node version |
 | **L1** (Code-only) | Docs are current and describe correct behavior. Code doesn't match | No | CSS bug, null check, wrong condition, test DB out of sync |
 | **L2** (Spec-sync) | Docs exist but describe OLD behavior. Code evolved past docs | Yes, update | Enum added, API changed, flow changed |
-| **L3** (Spec-create) | No docs exist for this area | Yes, create | SSE protocol, new auth provider, payments |
+| **L3-spec-gap** (inline minor spec) | Code path exists and works; only a UC node / enum value / minor doc is missing. Fix is < 1 file. | Yes, minor inline addition | Missing enum value an existing endpoint already returns; missing UC node for an existing route |
+| **L3-feature** (NOT a fix — route to `/nacl-sa-feature`) | Code path does NOT exist. The "fix" would require creating new behavior. | n/a — exits at Step 3 | "Restart button missing" (no BE endpoint, no FE component, no enum transition); "Add SSE protocol" (no SSE infra exists); new auth provider; payments |
+
+**Classification criterion for L3.** If Step 3 GAP-CHECK shows that resolving the request would require creating **any** of the following — **classify as L3-feature, not L3-spec-gap**:
+- a new HTTP route, GraphQL field, or RPC method
+- a new DB column, table, or migration introducing a new schema concept
+- a new graph entity (DomainEntity, UseCase, Module, Enumeration)
+- a new FE page or top-level component
+- a new enum transition that the existing state machine doesn't allow
+
+L3-feature is not a bug. It is a feature request that arrived via the wrong skill. The fix skill does NOT implement it — Step 3 prints a routing report and exits. Implementing a feature inline through this skill bypasses graph impact analysis, FeatureRequest artifact creation, planning waves, and TDD discipline — and historically produces UNVERIFIED ships with dynamic-import-style code that proper planning would have caught.
 
 **Tests are treated as code (L1), not as specification.** Test failures alone do not escalate to L2 unless the underlying spec is also stale. (However: a regression test for the bug is mandatory for L1+ and must be written via `/nacl-tl-regression-test` BEFORE the fix is applied — see Step 6. The classification level above is independent of test-writing — it determines what happens to *docs*, not whether a regression test is required.)
 
@@ -108,19 +124,43 @@ Use reference: `nacl-tl-core/references/fix-classification-rules.md` (if availab
 2. If there's a stack trace or error message — find the source file in code
 3. If not — search by keywords in the codebase (grep)
 4. **If the error is a DB/environment issue** (column not found, relation does not exist, env var missing) — check migration status and environment before analyzing code. This is likely L0.
-5. **Graph-enhanced UC search (optional):** If `config.yaml` has a `graph` section — use Neo4j to find affected UCs before falling back to grep:
+5. **Graph-enhanced impact traversal (REQUIRED if `config.yaml` has a `graph` section).**
+   Keyword UC-name search is not enough: many bugs touch a DB table / catalog / shared entity whose owner UC has a name that does not contain the user's error keywords. The agent must traverse the graph from the **DomainEntity** the bug touches and enumerate **every** UC that reads or writes it. A representative failure mode: a provider catalog adapter ships a bad string, the fix changes the static catalog source, but the refresh-job UC (write path) and the profile-autofill UC (read path) are silently missed because keyword search returns only the dispatcher UC whose name happens to contain the error keyword.
+
+   **Stage 1 — identify the touched DomainEntity.** From the affected file(s) / SQL table / changed column, derive the entity name (look at `.tl/changelog.md`, `.tl/feature-requests/*.md`, or use the file path stem as a substring probe):
    ```cypher
-   // sa_find_uc_by_keywords — extract 2-3 keywords from the problem description
+   MATCH (e:DomainEntity)
+   WHERE toLower(e.name) CONTAINS toLower($entity_keyword)
+      OR toLower(coalesce(e.physical_name, '')) CONTAINS toLower($entity_keyword)
+   RETURN e.id AS id, e.name AS name
+   ORDER BY e.id
+   ```
+
+   **Stage 2 — enumerate every UC that reads or writes the entity (1 + 2 hops).** Run once per matched entity:
+   ```cypher
+   MATCH (e:DomainEntity {id: $entity_id})
+   OPTIONAL MATCH (uc:UseCase)-[r:CONSUMES|PRODUCES|MUTATES|REFERENCES|AFFECTS_ENTITY]->(e)
+   OPTIONAL MATCH (uc2:UseCase)-[:DEPENDENCY|DEPENDS_ON]->(uc)
+   RETURN uc.id AS uc_id, uc.name AS uc_name, type(r) AS role,
+          collect(distinct uc2.id) AS depends_on
+   ORDER BY uc.id
+   ```
+
+   **Stage 3 — keyword UC search (SECONDARY probe).** Run the original keyword query in case the user's error message names a UC whose entity isn't yet linked in the graph:
+   ```cypher
    MATCH (uc:UseCase)
    WHERE toLower(uc.name) CONTAINS toLower($keywords)
       OR toLower(coalesce(uc.description, '')) CONTAINS toLower($keywords)
    RETURN uc.id AS id, uc.name AS name, uc.detail_status AS status
    ORDER BY uc.id
    ```
-   Run via `mcp__neo4j__read-cypher`. If Neo4j is unavailable or returns empty — fall back to file-based grep (step 6).
+
+   Run all three via `mcp__neo4j__read-cypher`. **Union the results.** Every UC returned by Stage 2 must appear in the TRIAGE output below — not only the dispatcher / error-site UC. If Neo4j is unavailable or Stage 1 returned no entity match, log `IMPACT_UNVERIFIED` in the Step 8 report (a hard flag the user will see) and fall back to grep.
+
 6. Identify:
    - **Affected code files** (backend routes, frontend components, hooks, services)
-   - **Affected UCs** — from graph query (step 5) or match files to docs/14-usecases/ (by naming convention or grep for UC ID in task files)
+   - **Affected UCs** — UNION of Stage 2 (entity-driven) and Stage 3 (keyword) results from step 5; if graph unavailable, grep for UC IDs in task files
+   - **Affected DomainEntity / Module** — from Stage 1 (record the entity ID so Step 7.5 can re-traverse if needed)
    - **Affected docs** — which files in docs/ describe this area
    - **Affected .tl/tasks/** — which tasks are related
 
@@ -174,9 +214,51 @@ For each affected UC/area:
 1. Read what docs describe (expected behavior)
 2. Read what code does (actual behavior)
 3. Compare and identify discrepancies
-4. Classify fix level (L0/L1/L2/L3) using the table above
+4. Classify fix level (L0 / L1 / L2 / L3-spec-gap / L3-feature) using the table above. Apply the **L3 classification criterion** literally: if any new HTTP route, DB column, graph entity, FE page/component, or enum transition would be required, the classification is `L3-feature`.
 
 **For L0:** If triage identified an environment issue, classify immediately and skip to Step 4.
+
+**For L3-feature — STOP HERE.** Do not proceed to Step 4. Do not write any files. Do not create any graph nodes. Do not invoke `/nacl-sa-uc` or any other SA-writing skill. Instead, print the **routing report** below and exit. This is the single most important guardrail in the skill — it exists because previous L3 sessions silently turned the fix skill into a feature factory: they shipped new endpoints + components + UC nodes without graph impact analysis, without a FeatureRequest artifact, without a development plan, and without TDD — leaving the project with `UNVERIFIED` ships and stranded code.
+
+**Routing report format for L3-feature (present in user's language):**
+
+```
+┌──────────────────────────────────────────────────────────┐
+│ NOT A BUG — THIS IS A FEATURE REQUEST                    │
+├──────────────────────────────────────────────────────────┤
+│ Reason: GAP-CHECK found that resolving this request     │
+│   would require creating:                                │
+│     - <list each from the L3 criterion: e.g., "a new    │
+│       POST /tasks/:id/restart route", "a new            │
+│       RestartTaskButton FE component", "a new           │
+│       enum transition failed → queued">                  │
+│   Fix skill does not implement features. The proper     │
+│   skill is /nacl-sa-feature (incremental feature        │
+│   specification with graph impact analysis), followed   │
+│   by /nacl-tl-plan and /nacl-tl-dev-*.                   │
+│                                                          │
+│ Affected entities (from Step 1 Stage 2 traversal):       │
+│   - <DomainEntity / Module / UC neighbours found>        │
+│                                                          │
+│ Recommended command (run in a fresh session):           │
+│   /nacl-sa-feature "<verbatim user description>"        │
+│                                                          │
+│ Why a fresh session: the feature skill needs a clean    │
+│ context window — the triage state from this session     │
+│ will contaminate its impact analysis.                    │
+│                                                          │
+│ If you believe this IS a bug (the code path exists       │
+│ and you just couldn't find it during GAP-CHECK):         │
+│   - re-run /nacl-tl-fix with the specific file/line     │
+│     reference, or                                        │
+│   - run /nacl-tl-intake "<description>" first for       │
+│     graph-backed disambiguation.                         │
+└──────────────────────────────────────────────────────────┘
+```
+
+After printing this, **exit**. Do not announce Step 4. Do not ask the user for permission to proceed. The user's reply with the routing report is sufficient — they will invoke `/nacl-sa-feature` themselves in a fresh session.
+
+**Escape hatch (rare):** If the user truly wants to handle a small spec gap inline and Step 3 mis-classified, they can re-invoke with `/nacl-tl-fix --force-l3-spec-gap "<description>"`. This bypasses the L3-feature exit and treats the request as `L3-spec-gap` (inline minor spec is permitted). Without this flag, L3-feature always exits.
 
 При необходимости воспроизвести баг в браузере или на сервере:
 - Тестовые доступы: `config.yaml → credentials.[role]` (email, password, phone)
@@ -258,16 +340,26 @@ Use reference: `nacl-tl-core/references/sa-doc-update-matrix.md`
 - UC flow rewrite → invoke `/nacl-sa-uc --mode=update` via Skill tool
 - Small point edits (a number, URL, field name) → edit directly
 
-#### For L3 (create new docs):
+#### For L3-spec-gap (add a missing minor element):
 
-Create **minimal specification** — just enough for the current fix:
-- New protocol doc (SSE, webhook, etc.)
-- New API contract
-- Mini UC-spec (only for the affected area)
+The code path already exists. Only a small spec element is missing: an enum value an endpoint already returns, a UC node for an existing route, a documented transition the state machine already permits. The fix is the spec addition + at most one tiny code touch (e.g., adding the enum value to a TS union to match what the BE already emits).
 
-**Do NOT create full UCs from scratch** — that's the job of /nacl-sa-uc.
+Permitted scope:
+- One enum value or one transition added to `docs/12-domain/enumerations/*.md`
+- One UC node added to the graph via direct Cypher write (justified inline) **only when** the route, handler, and component already exist
+- One minor doc addition (a paragraph, a row in a table)
 
-#### → USER GATE (L2/L3 only)
+**Forbidden** under L3-spec-gap — these escalate the request back to L3-feature:
+- Creating a new UC node alongside new code (route, component, hook)
+- Inventing a new API endpoint or response shape
+- Adding a new entity, attribute, or relationship to the domain model
+- Anything matching the L3-feature criterion in the Fix Levels table
+
+If during Step 5 the agent notices any of the forbidden items is required, **abort Step 5, return to Step 3, reclassify as L3-feature, and exit via the routing report**. Do not silently continue.
+
+L3-feature requests never reach Step 5. They exited at Step 3.
+
+#### → USER GATE (L2 / L3-spec-gap only)
 
 Present to user (in their language):
 1. Which docs will be changed/created
@@ -276,6 +368,7 @@ Present to user (in their language):
 
 **Do NOT proceed without explicit user confirmation.**
 **L0/L1 fixes proceed without USER GATE** unless `--confirm` flag is used.
+**L3-feature does not reach this gate** — it already exited at Step 3.
 
 ---
 
@@ -283,9 +376,53 @@ Present to user (in their language):
 
 **Goal:** Fix the issue according to the (updated) specification, with the regression test written **before** the fix so RED→GREEN is verified by construction.
 
-**For L0 (Environment):** apply infrastructure fix only — migrations, env vars, caches, configs. Skip the TDD sub-flow below; jump to Step 7.
+**For L0 (Environment):** apply infrastructure fix only — migrations, env vars, caches, configs. Skip the TDD sub-flow below; jump to Step 7. **If the fix involves a new SQL migration, run the migration-verification sub-flow 6M below before jumping to Step 7.**
 
-**For L1 / L2 / L3 (any code change):** follow the TDD-ordered sub-steps 6a→6h. Step 7 then determines the final status.
+**For L1 / L2 / L3 (any code change):** follow the TDD-ordered sub-steps 6a→6h. Step 7 then determines the final status. **If the fix adds a new SQL migration alongside the code change, also run the migration-verification sub-flow 6M below.**
+
+#### 6M — Migration verification sub-flow (runs whenever the fix adds or modifies a SQL migration)
+
+Migration files are a known silent-failure surface. `npm run migrate` (drizzle, knex, prisma, …) can exit 0 while skipping a new file if the migrator's manifest does not know about it. A representative failure mode: a fix adds a stray `migrations/NNNN_*.sql` that is not registered in the drizzle `meta/_journal.json` (or the equivalent manifest for other migrators) — `migrate` exits 0, the agent reports "migration applied cleanly", and the DB rows are unchanged in reality. The mismatch is only visible by querying the DB directly.
+
+The agent MUST run all three checks below and record each result in the Step 8 report. If any check fails, status is `RUNNER_BROKEN` (not `PASS`).
+
+**6M.1 — Pre-check: migrator manifest.** Before running migrate, confirm the new `.sql` file is registered in the migrator's manifest:
+
+| Migrator | Manifest file | Check |
+|----------|--------------|-------|
+| drizzle  | `<migrations-dir>/meta/_journal.json` | new filename's `tag` appears in `entries` array |
+| knex     | `knex_migrations` DB table (no file) | post-check only — see 6M.3 |
+| prisma   | `prisma/migrations/<ts>_<name>/migration.sql` + dir naming | filename matches `<timestamp>_<name>` pattern |
+| custom   | per-project — read `package.json` `scripts.migrate` target | follow that script's contract |
+
+Detect the migrator by reading `package.json` dependencies (`drizzle-orm`, `knex`, `@prisma/client`, …) and the `scripts.migrate` command. If the manifest does not list the new file, **register it before running migrate** (drizzle: append an entry to `_journal.json` with the next `idx` and a matching `tag`). Treat the missing entry as an artifact of the fix itself, not a separate bug — the fix is not complete until the manifest is updated.
+
+**6M.2 — Run migrate.** Exit code 0 is necessary but not sufficient. Capture stdout to compare against 6M.3.
+
+**6M.3 — Post-check: DB state.** Run an explicit `SELECT` that proves the migration's effect. The shape:
+
+```sql
+-- The pre-migration condition must now return zero rows.
+SELECT COUNT(*) FROM <table> WHERE <condition the migration was supposed to eliminate>;
+-- Example for a catalog-prefix-removal fix:
+-- SELECT COUNT(*) FROM <profile_table>       WHERE <name_col> LIKE '<old-prefix>%';
+-- SELECT COUNT(*) FROM <catalog_entry_table> WHERE <name_col> LIKE '<old-prefix>%';
+```
+
+Both must return 0. If either returns > 0, the migration silently skipped — status `RUNNER_BROKEN`, return to 6M.1 and investigate the manifest. Do not proceed.
+
+For projects where direct DB access is awkward (no `psql`, no MCP DB tool), the post-check can be a service-level query through an existing API endpoint or a debug script — but it must be empirical, not "migrate said it worked."
+
+**6M.4 — Record in report.** Step 8's "Changes applied" section must include the migration verification line:
+
+```
+Migration verification:
+  Manifest:  registered in <manifest-file> (✓) or "registered now: <entry added>"
+  Migrate:   <command> → exit 0, stdout shows: "<key line>"
+  DB check:  <SELECT> returned <N> rows pre-migration, 0 rows post-migration ✓
+```
+
+Trust the DB, not the exit code. Claims need evidence; exit codes are not evidence.
 
 #### TDD-ordered sub-steps (L1+)
 
@@ -302,13 +439,23 @@ Present to user (in their language):
     resolve to NO_INFRA or RUNNER_BROKEN at Step 7).
 
 6c  PICK PATH.
-      - Grep test files for an import of any changed/about-to-change source
-        module(s).
+      - **First anchor — brand-new files force Path A.** If ANY file the
+        fix is about to add did not exist in the git tree before this fix
+        (check via `git ls-files` or `git status` — untracked / newly-staged
+        files count as new), the path is **Path A** by definition. A file
+        that did not exist could not have been imported by any test, so the
+        import grep is meaningless for it. Do not let "the grep returned no
+        matches" become "Path B (no test needed)" — that is the exact
+        inversion that has silently shipped untested code in past sessions.
+      - Otherwise: grep test files for an import of any changed/about-to-change
+        source module(s).
       - If at least one test file imports the target → Path B (existing
         coverage). Note: the imported test may or may not actually exercise
         the bug — Step 7 will resolve that via baseline comparison.
       - Otherwise → Path A (no test imports the file; a new regression test
         is required).
+      - Reminder: "no import found" ⇒ Path A. Never Path B. Path B requires
+        a positive grep hit on an existing test file.
 
 6d  (Path A only) WRITE REGRESSION TEST FIRST.
     Invoke /nacl-tl-regression-test as a separate sub-agent (developer
@@ -402,10 +549,23 @@ Notes:
 - Verify against code: do docs now describe what code does?
 - Check L4 (form↔domain) and L5 (UC→form) for affected UCs.
 
-#### 7.5 Impact check
+#### 7.5 Impact check — data-flow survey (MANDATORY)
 
-- Other UCs using the same endpoints/components?
-- Adjacent UCs broken? Check imports, shared types, shared state.
+A bug fix is not complete until the agent has reasoned about every code path that touches the same data the fix changed. The two-bullet check this used to be was too weak — it routinely let catalog-style fixes ship without ever opening the refresh / re-derivation write-path that would have re-introduced the bug on the next refresh cycle.
+
+Answer **every** item below explicitly in the Step 8 report. "Not applicable" is a valid answer, but it must be stated, not omitted.
+
+1. **Read paths.** For every UC returned by Step 1 Stage 2 with role `CONSUMES` / `REFERENCES`: identify the code file that realizes that read (grep for the UC ID, DomainEntity name, or table name). Open it. State, in the report: "UC-XXX reads via `<file:line>` — verified no regression."
+
+2. **Write paths.** For every UC returned with role `PRODUCES` / `MUTATES` / `AFFECTS_ENTITY`: identify the code that writes the data. **Critical** when the fix included a one-time data migration — the write path is what would re-populate the table after the migration runs. State in the report: "UC-XXX writes via `<file:line>` — confirmed it now produces the corrected form."
+
+3. **Refresh / sync / cache / re-derivation.** Ask explicitly: "Is there any code — periodic job, manual button, startup seed, cache rebuild, provider list-models call — that re-derives this data from an upstream source?" If yes, name the file and confirm the upstream source itself is now correct (not just the DB row). This is the question that catches "the migration fixed the DB but the next Refresh will undo it."
+
+4. **Snapshot vs source-of-truth.** If the change included a SQL migration that mutates rows, identify whether the source-of-truth for those rows lives in code (a hardcoded catalog, a seed file, a config) or in user data. If in code: the migration is a one-time backfill, and the code change is the durable fix — confirm both are aligned. If in user data: state that no re-derivation will occur.
+
+5. **Adjacent UCs / shared types.** Standard impact check: imports, shared types, shared state across the UCs identified in Step 1.
+
+If any item in 1–4 cannot be answered with a concrete file path and a stated verification, the fix status downgrades to `UNVERIFIED` for the Step 8 report (the agent does not silently call PASS while neighbours are unexamined).
 
 #### 7.6 Update `.tl/changelog`
 
@@ -546,13 +706,14 @@ If `--auto-ship` is set:
 
 ## Handling Edge Cases
 
-### Bug in area with no docs at all (L3)
+### Bug in area with no docs at all — usually L3-feature, not a bug
 
-If triage found NO docs for the affected area:
+If triage found NO docs AND no code path for the affected behavior, the request is almost always a **feature** that arrived via the wrong skill. Apply the L3 classification criterion from the Fix Levels table:
 
-1. In Step 4: create Kiro-style bugfix spec (Current → Expected → Unchanged)
-2. In Step 5: create MINIMAL specification
-3. In Report: recommend "/nacl-sa-uc for full specification of this area"
+- If the request would require creating any new HTTP route, DB column, graph entity, FE page/component, or enum transition → **classify as L3-feature**, exit at Step 3 with the routing report, and recommend `/nacl-sa-feature`. Do not create files. Do not write graph nodes. Do not invoke `/nacl-sa-uc`.
+- If the code path exists (the route runs, the component renders) and only a small spec element is missing (one enum value, one UC node retroactively documenting an existing route) → classify as `L3-spec-gap` and follow Step 5's L3-spec-gap subsection.
+
+The historical mistake — creating "minimal specifications" inline as cover for shipping new endpoints + components + UC nodes — is now explicitly forbidden. The fix skill is not a feature factory; `/nacl-sa-feature` is.
 
 ### Bug affects multiple UCs
 
