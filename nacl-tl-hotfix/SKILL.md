@@ -368,6 +368,45 @@ Show impact summary:
 git diff --stat main..HEAD
 ```
 
+### Step 4.3: WRITE EVIDENCE TO GRAPH -- announce: "Step 4.3: WRITE EVIDENCE"
+
+**Goal:** Stamp `Task.verification_evidence` for every affected Task node so
+that release/reporting tooling sees the proof of RED→GREEN (taxonomy:
+`nacl-core/SKILL.md` § Task.verification_evidence).
+
+1. Collect the affected task IDs from `/nacl-tl-fix`'s Step 8 triage report
+   (the **Affected UCs** list, plus any BUG-### / TECH-### the fix declared).
+   If the fix report contained `IMPACT_UNVERIFIED`, do NOT guess — log a warning
+   and skip the graph write. The PR still proceeds, but the release skill will
+   surface this UC as a verification gap until the operator reconciles.
+
+2. Compose `$evidence`:
+   - Step 4.2 result **PASS** + `regression_test_path` from fix:
+     `$evidence = 'test-GREEN:' + regression_test_path` (normalise to repo-relative).
+   - Step 4.2 result **BLOCKED** (pre-existing failures, override pending at Step 6):
+     `$evidence = 'test-UNVERIFIED'` (write only after the Step 6 override is
+     confirmed; do NOT write at Step 4.3 in this case — see Step 6).
+   - Step 4.2 result **NO_INFRA / RUNNER_BROKEN**:
+     skip the write (Step 6 gate will record the explicit override into the
+     PR description, but the Task node carries no positive evidence).
+
+3. Cypher (PASS path only at this step):
+
+   ```cypher
+   UNWIND $affectedTaskIds AS taskId
+   MATCH (t:Task {id: taskId})
+   SET t.verification_evidence = $evidence,
+       t.updated = datetime()
+   ```
+
+   Use `mcp__neo4j__write-cypher`. If Neo4j is unavailable, log a warning
+   and continue — the PR is the source of truth for the test path until
+   the operator runs `/nacl-tl-reconcile`. Do NOT block the hotfix on a
+   graph-write failure.
+
+4. If the user passed `--force-push` (bypasses PR), still write evidence:
+   the test path is no less real because the operator skipped the PR gate.
+
 ### Step 5: COMMIT -- announce: "Step 5: COMMIT"
 
 **Goal:** Create a clean commit on the hotfix branch.

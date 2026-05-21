@@ -584,11 +584,15 @@ Files:
   Modified: N files
 
 Verification:
-  Runner:         [exact scripts.test command or verification command, or "none — NO_INFRA"]
-  Baseline:       [N tests collected, K failing] or [service states] or "skipped (NO_INFRA)"
-  Postfix:        [N tests collected, K failing] or [service states] or "skipped"
-  Baseline diff:  [list of transitions, or "none — UNVERIFIED", or "pre-existing: [list] — BLOCKED"]
-  New failures:   [list — only if REGRESSION; otherwise "none"]
+  Runner:           [exact scripts.test command or verification command, or "none — NO_INFRA"]
+  Baseline:         [N tests collected, K failing] or [service states] or "skipped (NO_INFRA)"
+  Regression test:  [repo-relative path of test written by /nacl-tl-regression-test
+                     mode=feature-dev | "none — UNVERIFIED" | "n/a — NO_INFRA"]
+  Postfix:          [N tests collected, K failing] or [service states] or "skipped"
+  Baseline diff:    [list of transitions, or "none — UNVERIFIED", or "pre-existing: [list] — BLOCKED"]
+  New failures:     [list — only if REGRESSION; otherwise "none"]
+
+The `Regression test:` line is **mandatory** when Status ∈ {PASS, UNVERIFIED, BLOCKED}. Orchestrators (`nacl-tl-conductor`, `nacl-tl-full`) parse it verbatim and forward it into `Task.verification_evidence` in the graph (see `nacl-core/SKILL.md` § Task.verification_evidence). The path must be repo-relative.
 
 Commits: N
   - feat(infra): description

@@ -19,6 +19,8 @@ user-facing workflow skill.
 - Read project `config.yaml` before graph-aware work when file access is
   available.
 - Use only statuses from `../references/verification-vocabulary.md`.
+- Honour the evidence taxonomy in `../references/verification-evidence.md`
+  whenever a skill writes a terminal `Task.status` to the graph.
 - Apply confirmation gates from `../references/migration-rules.md`.
 - Do not select or constrain the runtime model.
 

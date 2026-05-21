@@ -86,6 +86,11 @@ Reason: regression detected in backend test suite
 Create or return a backend result report with changed files, test command,
 baseline comparison, and closed-vocabulary status.
 
+Include a canonical line `Regression test: <repo-relative path>` (or
+`Regression test: none — UNVERIFIED` / `Regression test: n/a — BLOCKED`)
+so the orchestrator can forward it into `Task.verification_evidence`
+per `../references/verification-evidence.md`.
+
 ## Capabilities
 
 ### May Do

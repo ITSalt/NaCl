@@ -372,8 +372,18 @@ Your job:
    f. If still rejected after 3 -> mark as FAILED:
       MATCH (t:Task {id: $taskId}) SET t.status = 'failed', t.updated = datetime()
       Continue to next task
-   g. If approved -> update graph:
-      MATCH (t:Task {id: $taskId}) SET t.status = 'done', t.updated = datetime()
+   g. If approved -> update graph (per `nacl-core/SKILL.md` § Task.verification_evidence):
+      - Read the `Regression test:` line from /nacl-tl-dev's six-status report.
+        Compose $evidence:
+          - PASS + parseable path → 'test-GREEN:<path>'
+          - PASS + `--no-test` override → 'no-test'
+          - PASS + missing/unparseable `Regression test:` → HALT
+            ("FULL HALTED — UNVERIFIED (TECH-###: PASS without Regression test path)")
+        Do NOT skip the SET on $evidence.
+      MATCH (t:Task {id: $taskId})
+      SET t.status = 'done',
+          t.verification_evidence = $evidence,
+          t.updated = datetime()
 
 2. After all TECH tasks: Launch Task agent: /nacl-tl-stubs (full scan baseline)
 
@@ -542,12 +552,45 @@ For each UC (sequentially):
 
   STEP 8 -- Documentation  <- MANDATORY, final step
     Launch Task agent: /nacl-tl-docs UC###
-    Aggregate UC status from all phase statuses:
-      - If ALL phases were PASS: SET t.status = 'done'
-      - If ANY phase was UNVERIFIED: SET t.status = 'verified-pending'
-      - If ANY phase was BLOCKED (with override): SET t.status = 'blocked'
+    Aggregate UC status from all phase statuses, and write
+    `Task.verification_evidence` per `nacl-core/SKILL.md` taxonomy.
+
+    Collect regression-test paths from the BE/FE dev sub-skill reports
+    (the canonical `Regression test:` line emitted by /nacl-tl-dev-be and
+    /nacl-tl-dev-fe). Compose the evidence value:
+      - If both BE and FE PASS with `Regression test:` paths:
+          $evidence = 'test-GREEN:<be_path>;<fe_path>'
+        (semicolon-joined; preserves both sides for the release Evidence column)
+      - If only one side PASS with path, the other absent/n-a:
+          $evidence = 'test-GREEN:<path>'
+      - If any phase UNVERIFIED:
+          $evidence = 'test-UNVERIFIED'
+      - If any phase BLOCKED (with override) and no UNVERIFIED:
+          $evidence = 'test-UNVERIFIED'  (no RED→GREEN proof on this UC)
+      - If user passed `--no-test` to /nacl-tl-full:
+          $evidence = 'no-test'
+
+    Cypher:
+      MATCH (t:Task {id: $taskId})
+      SET t.status = $aggregatedStatus,        // 'done' | 'verified-pending' | 'blocked'
+          t.verification_evidence = $evidence, // see table above
+          t.updated = datetime()
+
+    Branching for $aggregatedStatus:
+      - If ALL phases were PASS: $aggregatedStatus = 'done'
+      - If ANY phase was UNVERIFIED: $aggregatedStatus = 'verified-pending'
+      - If ANY phase was BLOCKED (with override): $aggregatedStatus = 'blocked'
+
     Write aggregated status to .tl/status.json for this UC
     UC is considered DONE only when ALL phases PASS
+
+    HALT contract: If $aggregatedStatus = 'done' but no `Regression test:`
+    path was parsed from either BE or FE report (and `--no-test` was NOT
+    passed), HALT with:
+      "WAVE HALTED — UNVERIFIED (UC###: aggregated PASS without parseable
+       Regression test path; refusing to write t.status='done' without evidence)"
+    Do NOT silently write evidence = '' or skip the SET — that is the bug
+    that produced the v0.13.0 "Verification gap" reports.
 
 REMINDER: Do NOT return WAVE_RESULT after Step 1 or Step 3. Continue executing
 Steps 2 through 8 before considering any UC complete.

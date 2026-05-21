@@ -16,7 +16,8 @@ and reports remain English.
 
 Read `../references/orchestration-model.md`,
 `../references/migration-rules.md`, `../references/verification-vocabulary.md`,
-and `../nacl-core/SKILL.md` before executing this skill.
+`../references/verification-evidence.md`, and `../nacl-core/SKILL.md` before
+executing this skill.
 
 ## Contract
 
@@ -89,6 +90,23 @@ Run available verification and delivery steps only with user confirmation and
 available tools. Use `PARTIALLY_VERIFIED` when only part of the required gate
 can be checked.
 
+**Evidence-completeness gate (mandatory before declaring batch COMPLETE):**
+Query the graph for every Task in scope:
+
+```cypher
+MATCH (t:Task)
+WHERE t.intake_id = $intakeId
+  AND t.status IN ['done', 'verified-pending', 'blocked']
+  AND (t.verification_evidence IS NULL OR t.verification_evidence = '')
+RETURN t.id
+```
+
+If the query returns any rows, report `Status: BLOCKED` with reason
+"`verification_evidence` missing on terminal tasks" and list the IDs.
+Do not advance to Phase 5. See `../references/verification-evidence.md`
+for the writer contract; the missing evidence is a writer-side bug,
+not a reporting issue — do not patch it manually from the orchestrator.
+
 ### Phase 5: Final Report
 
 Return a per-item table:
@@ -97,7 +115,20 @@ Return a per-item table:
 Item | Phase | Status | Reason | Evidence
 ```
 
-Use only statuses from `verification-vocabulary.md`.
+The Evidence column is sourced from `Task.verification_evidence` in the
+graph (taxonomy: `../references/verification-evidence.md`). The same string
+will appear in the release report's Evidence-level column — if it is
+empty or `unknown` at this point, the release workflow will flag a
+verification gap. Use only statuses from `verification-vocabulary.md`.
+
+If any item has evidence `test-UNVERIFIED` or `no-test`, append a footer:
+
+```text
+Verification gaps: <Item> (<evidence>) — release will surface this.
+```
+
+Mirror of the release-workflow footer; emitted here so the user is not
+surprised later.
 
 ## Capabilities
 

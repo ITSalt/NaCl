@@ -256,10 +256,15 @@ When `--skip-verify` is supplied, this skill:
    ```cypher
    MATCH (t:Task {id: $ucId})
    SET t.verification_skip_reason = 'deliver --skip-verify',
-       t.verification_skip_at = datetime()
+       t.verification_skip_at = datetime(),
+       t.verification_evidence = 'no-test'  // explicit user override at delivery
    ```
    Use `mcp__neo4j__write-cypher`. Failure to write is logged as a warning but
-   does not change the headline.
+   does not change the headline. The `verification_evidence = 'no-test'` write
+   is mandatory under `--skip-verify`: the operator has explicitly accepted
+   shipping without a verified RED→GREEN seam, so the release skill must
+   record that decision in its Evidence-level column (see
+   `nacl-core/SKILL.md` § Task.verification_evidence).
 4. **Records the skip flag in the audit trail** — `delivery-status.json` gains
    `"verify": {"status": "skipped", "reason": "--skip-verify", "skipped_ucs": [...]}`,
    and the same line appears in the final report.

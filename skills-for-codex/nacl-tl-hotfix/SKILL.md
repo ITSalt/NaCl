@@ -91,6 +91,13 @@ The hotfix is shippable only when the required checks are `VERIFIED`. If some
 required checks cannot run, report `PARTIALLY_VERIFIED`, `BLOCKED`, or
 `UNVERIFIED` with the exact missing evidence.
 
+When the hotfix is `VERIFIED` and a regression test path is recorded, write
+`Task.verification_evidence = 'test-GREEN:<repo-relative path>'` to every
+affected Task node before proceeding to Step 6 (taxonomy:
+`../references/verification-evidence.md`). If graph tooling is unavailable,
+log the gap in the report; do not block the hotfix on a graph-write failure,
+but do not declare evidence "written" either.
+
 ### Step 6: Pull Request And Merge Gate
 
 Prepare a pull request summary only when requested and tooling is available.

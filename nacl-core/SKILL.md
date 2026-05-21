@@ -60,6 +60,48 @@ Schema files: `graph-infra/schema/`
 - `sa-schema.cypher` — SA layer (12 node types)
 - `tl-schema.cypher` — TL layer (3 node types)
 
+## Task.verification_evidence — Taxonomy
+
+`Task.verification_evidence` is a string property on TL `Task` nodes that records *how* a task was verified. It is **read** by `nacl-tl-release` (Step 2 pre-merge gate and the final report Evidence-level column) and **must be written** by every skill that advances a Task to a terminal status. Leaving it `NULL` on a `done` task causes the release skill to surface a "Verification gap" — that is a data-integrity failure, not normal output.
+
+### Values
+
+| Value | When to write | Written by |
+|---|---|---|
+| `test-GREEN:<artifact_path>` | PASS + regression test ran RED→GREEN. `<artifact_path>` is a repo-relative path to the test file (e.g. `apps/web/src/__tests__/funnel.spec.ts`) or to the task's regression-test record (`.tl/tasks/<TASK_ID>/regression-test.md`). | conductor Phase 3, tl-full Phase 7, tl-fix terminal step, tl-deliver, tl-hotfix |
+| `test-UNVERIFIED` | Code applied but RED→GREEN not confirmed (no regression test, or sub-skill returned `UNVERIFIED`). Paired with `t.status = 'verified-pending'`. | Same writers as above |
+| `no-test` | PASS under explicit user `--no-test` (or equivalent) override. Paired with `t.status = 'done'`. | Same writers as above |
+| `null` (unset) | Reserved for `t.status ∈ {'failed', 'blocked'}` — those tasks are excluded from release scope, so an evidence string would be misleading. | n/a |
+
+### Format rules
+
+- Single string, no JSON.
+- `test-GREEN` payload after `:` is a forward-slash repo-relative path; no quoting, no scheme.
+- Use the test file path when one exists, otherwise the `.tl/tasks/<TASK_ID>/regression-test.md` artifact path.
+- `test-UNVERIFIED` and `no-test` carry no payload — exactly those literal strings.
+
+### Reader contract
+
+`nacl-tl-release` parses `verification_evidence` like this:
+- Prefix `test-GREEN:` → `Evidence level = test-GREEN`, path extracted for the report column.
+- Literal `test-UNVERIFIED` → `Evidence level = test-UNVERIFIED`.
+- Literal `no-test` → `Evidence level = no-test`.
+- `NULL` / empty / unrecognised → `Evidence level = unknown` → "Verification gap" footer.
+
+Sources: `nacl-tl-release/SKILL.md:183`, `:615-622`.
+
+### Writer obligation
+
+Every skill in this list MUST set `verification_evidence` in the same Cypher statement that sets `t.status` to a terminal value:
+
+- `nacl-tl-conductor` — Phase 3 graph-write block (PASS / UNVERIFIED writes).
+- `nacl-tl-full` — Phase 7 final aggregation graph-write.
+- `nacl-tl-fix` — terminal graph-write after fix verified.
+- `nacl-tl-deliver` — stamping after delivery validation.
+- `nacl-tl-hotfix` — hotfix Task node graph-write.
+
+Skills that only *read* terminal status (`nacl-tl-release`, `nacl-tl-deploy`, `nacl-tl-reconcile`) do NOT write this field. They may, however, gate on it: if a writer leaves it NULL, an orchestrator gate (e.g. conductor Phase 4) MUST HALT and surface the contract violation.
+
 ## Graph Skills Registry
 
 ### BA Layer (14 skills)

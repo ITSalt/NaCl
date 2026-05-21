@@ -111,10 +111,14 @@ Failure:       [first 5-10 lines of the test failure output, to confirm it
                 actually caught the bug rather than failing for an unrelated
                 reason like a missing import]
 
+Regression test: [repo-relative path of the test file]
+
 Caller:        Apply the fix now, then re-run the suite. The test must turn
                GREEN. If it does not, the fix did not address the bug.
 ═══════════════════════════════════════════
 ```
+
+The final `Regression test: <path>` line is **mandatory** — orchestrators (`nacl-tl-fix`, `nacl-tl-conductor`, `nacl-tl-full`) parse it verbatim and forward it into `Task.verification_evidence` in the graph (see `nacl-core/SKILL.md` § Task.verification_evidence). The path must be repo-relative (forward slashes, no leading `./` or `/`).
 
 ### Failure-mode reports — bug-fix
 
@@ -225,11 +229,15 @@ Failure:       [first 5-10 lines of the failure output for the first test,
                 to confirm the failure is caused by the missing feature, not
                 by a tooling error]
 
+Regression test: [repo-relative path of the test file]
+
 Caller:        Implement the feature now, then re-run the suite.
                Each test above must turn GREEN. If any do not, the
                implementation does not satisfy the spec.
 ═══════════════════════════════════════════
 ```
+
+The final `Regression test: <path>` line is **mandatory** in both modes — orchestrators (`nacl-tl-dev-be`, `nacl-tl-dev-fe`, `nacl-tl-dev`, `nacl-tl-conductor`, `nacl-tl-full`) parse it verbatim and forward it into `Task.verification_evidence` in the graph (see `nacl-core/SKILL.md` § Task.verification_evidence). The path must be repo-relative (forward slashes, no leading `./` or `/`). If multiple test files were created in one invocation, emit one `Regression test:` line per file.
 
 ### Failure-mode reports — feature-dev
 

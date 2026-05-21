@@ -541,13 +541,17 @@ Files:
   Modified: N files (+XX/-YY lines)
 
 Tests:
-  Runner:         [exact scripts.test command actually run, or "none — NO_INFRA"]
-  Baseline:       [N tests collected, K failing] or "skipped (RUNNER_BROKEN)"
-  RED verified:   [yes — new tests appeared in failure set] or [no — HALT, see Step 3.3]
-  Postfix:        [N tests collected, K failing] or "skipped"
-  Baseline diff:  [list of transitions, or "none — UNVERIFIED", or "pre-existing: [list] — BLOCKED"]
-  New failures:   [list — only if REGRESSION; otherwise "none"]
-  Coverage:       XX%
+  Runner:           [exact scripts.test command actually run, or "none — NO_INFRA"]
+  Baseline:         [N tests collected, K failing] or "skipped (RUNNER_BROKEN)"
+  Regression test:  [repo-relative path of test written by /nacl-tl-regression-test
+                     mode=feature-dev | "none — UNVERIFIED" | "n/a — NO_INFRA"]
+  RED verified:     [yes — new tests appeared in failure set] or [no — HALT, see Step 3.3]
+  Postfix:          [N tests collected, K failing] or "skipped"
+  Baseline diff:    [list of transitions, or "none — UNVERIFIED", or "pre-existing: [list] — BLOCKED"]
+  New failures:     [list — only if REGRESSION; otherwise "none"]
+  Coverage:         XX%
+
+The `Regression test:` line is **mandatory** when Status ∈ {PASS, UNVERIFIED, BLOCKED}. Orchestrators (`nacl-tl-conductor`, `nacl-tl-full`) parse it verbatim and forward it into `Task.verification_evidence` in the graph (see `nacl-core/SKILL.md` § Task.verification_evidence). The path must be repo-relative.
 
 Endpoints Implemented:
   POST /api/xxx

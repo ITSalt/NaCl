@@ -438,14 +438,40 @@ For each BUG item:
 #### Updating Task Node Status in Neo4j
 
 After each item completes, update the corresponding Task node using the
-aggregated sub-skill status. Graph writes are GATED on verification status:
+aggregated sub-skill status. Graph writes are GATED on verification status,
+and every terminal write MUST also set `t.verification_evidence` so that
+`nacl-tl-release` can report Evidence level without a "Verification gap"
+warning (see `nacl-core/SKILL.md` § Task.verification_evidence).
+
+##### Deriving `$evidence` from the sub-skill report
+
+Before issuing the Cypher write, parse the sub-skill report (`nacl-tl-full` /
+`nacl-tl-fix`) for the `Regression test:` line (case-sensitive, exactly that
+prefix). The value of `$evidence` follows this table:
+
+| Sub-skill `Status:` | `Regression test:` value | `$evidence` |
+|---|---|---|
+| PASS | `<repo-relative path>` | `'test-GREEN:' + <path>` |
+| PASS | `"covered by existing test: <path>"` | `'test-GREEN:' + <path>` (path extracted from the suffix) |
+| PASS | `"none — UNVERIFIED"` or missing | **HALT** — `CONDUCTOR HALTED — UNVERIFIED (PASS report missing Regression test line: <taskId>)`. Do NOT write `done`. |
+| PASS + `--no-test` user override active | `"none — UNVERIFIED"` allowed | `'no-test'` (only path; explicit override must be present in conductor invocation) |
+| UNVERIFIED | any | `'test-UNVERIFIED'` |
+| BLOCKED | any | `'test-UNVERIFIED'` (the test seam did not transition; surface as such) |
+| REGRESSION / NO_INFRA / RUNNER_BROKEN | any | not written — task moves to `failed`; `verification_evidence` stays NULL by design |
+
+`<repo-relative path>` must be a forward-slash path without a leading `./`.
+If the sub-skill returned an absolute path, normalise to repo-relative
+(strip the project root prefix) before composing `$evidence`.
+
+##### Graph writes
 
 ```cypher
 // PASS — task verified and committed
 MATCH (t:Task {id: $taskId})
 SET t.status = 'done',
     t.commit = $commitHash,
-    t.completed_at = datetime()
+    t.completed_at = datetime(),
+    t.verification_evidence = $evidence  // 'test-GREEN:<path>' or 'no-test'
 ```
 
 ```cypher
@@ -453,6 +479,7 @@ SET t.status = 'done',
 MATCH (t:Task {id: $taskId})
 SET t.status = 'verified-pending',
     t.unverified_reason = $reason,
+    t.verification_evidence = 'test-UNVERIFIED',
     t.updated = datetime()
 ```
 
@@ -461,6 +488,7 @@ SET t.status = 'verified-pending',
 MATCH (t:Task {id: $taskId})
 SET t.status = 'blocked',
     t.blocked_reason = $reason,
+    t.verification_evidence = 'test-UNVERIFIED',
     t.updated = datetime()
 ```
 
@@ -471,12 +499,21 @@ SET t.status = 'failed',
     t.failed_phase = $failedPhase,
     t.failure_reason = $reason,
     t.failed_at = datetime()
+// verification_evidence is intentionally NOT set — release-skill excludes
+// failed tasks from the merge plan, so no evidence is required.
 ```
 
 **Rule:** t.status = 'done' is written ONLY when sub-skill status is PASS.
 For UNVERIFIED: write 'verified-pending'. For BLOCKED: write 'blocked'.
 For REGRESSION/NO_INFRA/RUNNER_BROKEN: write 'failed'.
 This keeps the graph in sync with the actual verification state.
+
+**Evidence rule:** `t.verification_evidence` is written for every terminal
+state EXCEPT `failed`. A PASS report that does not carry a parseable
+`Regression test: <path>` line is treated as a contract violation — the
+conductor HALTs rather than write `done` without evidence. The only way
+to land `'no-test'` evidence is via an explicit user `--no-test` override
+on the conductor invocation; bare PASS reports must produce `test-GREEN`.
 
 ---
 
@@ -524,6 +561,50 @@ After all development items have been processed:
      ```
 
    - If the query returns **zero rows**: all tasks are terminal in the graph.
+     Continue to step 3b.
+
+3b. **Evidence-completeness gate** — verify every `done` / `verified-pending`
+   / `blocked` task carries `verification_evidence`. This closes the gap
+   that would otherwise surface as a "Verification gap" at release time
+   (see `nacl-core/SKILL.md` § Task.verification_evidence).
+
+   ```cypher
+   // Phase 4 evidence-completeness gate — must run AFTER step 3 succeeds
+   MATCH (t:Task)
+   WHERE t.intake_id = $intakeId
+     AND t.status IN ['done', 'verified-pending', 'blocked']
+     AND (t.verification_evidence IS NULL OR t.verification_evidence = '')
+   RETURN t.id AS taskId, t.status AS currentStatus
+   ```
+
+   - Bind `$intakeId` to the current intake (from conductor-state.json header).
+   - If the query returns **any rows**: HALT immediately.
+     Post this advisory and do NOT advance to Phase 5:
+
+     ```
+     HALT — verification_evidence missing on terminal tasks.
+
+     The following tasks reached a terminal status but have no evidence
+     string in Neo4j. `nacl-tl-release` would surface this as a
+     "Verification gap" — that is a contract violation, not normal output.
+
+       <taskId>  graph status: <currentStatus>  evidence: NULL
+
+     This is a writer bug: every Phase 3 graph write (PASS / UNVERIFIED /
+     BLOCKED) must set `t.verification_evidence` per the taxonomy in
+     `nacl-core/SKILL.md`. Resolution options:
+
+       [1] Re-run /nacl-tl-full <taskId> — replay the task; the writer
+           should populate evidence on the second pass.
+       [2] Run /nacl-tl-diagnose to inspect the graph state.
+       [3] Abort this conductor run and patch the writer that left
+           evidence NULL.
+
+     Do NOT manually set evidence to bypass this gate — that masks the
+     underlying writer regression.
+     ```
+
+   - If the query returns **zero rows**: all terminal tasks carry evidence.
      Continue to step 4.
 
 4. Review conductor-state.json:
@@ -587,13 +668,17 @@ Duration: 2h 14m
 Scope source: Neo4j graph
 
 Development:
-  TECH-001: Shared types setup            (commit abc1234)  -- DONE        [PASS]
-  UC028: Image format selection            (commit def5678)  -- DONE        [PASS]
-  UC029: Scene prompt display              (no commit)       -- UNVERIFIED  [UNVERIFIED]
-  BUG-003: Share button on mobile          (commit 789abcd)  -- DONE        [PASS]
+  TECH-001: Shared types setup    (commit abc1234)  -- DONE        [PASS]        Evidence: test-GREEN (backend/src/__tests__/shared-types.spec.ts)
+  UC028: Image format selection   (commit def5678)  -- DONE        [PASS]        Evidence: test-GREEN (frontend/src/components/__tests__/format-selector.spec.tsx)
+  UC029: Scene prompt display     (no commit)       -- UNVERIFIED  [UNVERIFIED]  Evidence: test-UNVERIFIED
+  BUG-003: Share button on mobile (commit 789abcd)  -- DONE        [PASS]        Evidence: test-GREEN (frontend/src/__tests__/share-button.spec.tsx)
 
   Result: 3/4 items completed
   Status summary: 3 PASS, 1 UNVERIFIED, 0 BLOCKED, 0 REGRESSION
+
+  Evidence is sourced from `Task.verification_evidence` in Neo4j
+  (taxonomy: `nacl-core/SKILL.md`). The same string is what
+  `nacl-tl-release` will surface in its Evidence-level column.
 
 Quality:
   Stubs: 0 critical, 3 warnings
@@ -614,6 +699,8 @@ Problems:
      See .tl/tasks/UC029/sync-report.md
      Fix manually: /nacl-tl-full --task UC029
 
+Verification gaps: UC029 (test-UNVERIFIED) — release will surface this.
+
 Next:
   /nacl-tl-release              -- production release
   /nacl-tl-full --task UC029    -- fix unverified UC
@@ -624,6 +711,25 @@ Headline: CONDUCTOR APPLIED — UNVERIFIED
 (Use CONDUCTOR COMPLETE when all items PASS; CONDUCTOR INCOMPLETE — REGRESSION
  when any item has REGRESSION status.)
 ```
+
+The `Verification gaps:` footer is rendered when any terminal-state task in
+the current intake has `verification_evidence` ∈ {`test-UNVERIFIED`,
+`no-test`}. It mirrors the footer `nacl-tl-release` emits, so the user is
+never surprised by a release-time gap report when the conductor itself
+already declared COMPLETE. The footer is computed from the same Cypher
+query the release skill runs:
+
+```cypher
+MATCH (t:Task)
+WHERE t.intake_id = $intakeId
+  AND t.status IN ['done', 'verified-pending', 'blocked']
+  AND t.verification_evidence IN ['test-UNVERIFIED', 'no-test']
+RETURN t.id, t.verification_evidence
+ORDER BY t.id
+```
+
+If the result is empty, the footer is omitted entirely (no `Verification
+gaps: none` line — silence is the positive signal).
 
 ---
 

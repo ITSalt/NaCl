@@ -40,6 +40,11 @@ This skill writes tests before implementation. It does not fix code. Read
   `BLOCKED`, `PARTIALLY_VERIFIED`, or `UNVERIFIED`.
 - Return a machine-readable result that callers can consume: test files,
   command, observed RED output, skipped evidence, and top-level `Status:`.
+- Emit a canonical line `Regression test: <repo-relative path>` in the final
+  report (one line per test file). Orchestrators
+  (`nacl-tl-conductor`, `nacl-tl-full`, `nacl-tl-dev-*`) parse this line
+  verbatim and forward it into `Task.verification_evidence` per
+  `../references/verification-evidence.md`.
 
 ## Capabilities
 

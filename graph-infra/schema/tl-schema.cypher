@@ -75,7 +75,9 @@ CREATE INDEX index_apiendpoint_path
 //   phase_qa: String,
 //   priority: String,         // "critical"|"high"|"medium"|"low"
 //   created: DateTime,
-//   updated: DateTime
+//   updated: DateTime,
+//   verification_evidence: String  // "test-GREEN:<path>" | "test-UNVERIFIED" | "no-test"
+//                                  // — see nacl-core/SKILL.md § Task.verification_evidence
 // }
 //
 

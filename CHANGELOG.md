@@ -4,6 +4,100 @@ All notable changes to NaCl (Natural Agent Control Language) will be documented 
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.18.0] — 2026-05-21
+
+Methodological-gap release. 0.13.0 introduced a reader for
+`Task.verification_evidence` in `/nacl-tl-release` but no writer was ever
+landed; every release call surfaced "Verification gap" regardless of how
+thoroughly the conductor had verified the work. 0.18.0 closes the gap:
+canonical taxonomy in one place, explicit writers in every skill that
+advances a Task to a terminal status, and an orchestrator-side
+evidence-completeness gate that HALTs before release rather than letting
+the release skill be the first to detect the missing field. Full release
+notes:
+`docs/releases/0.18.0-evidence-writer-contract/release-notes.md`.
+
+### Added
+
+- `nacl-core/SKILL.md` — new § Task.verification_evidence: canonical
+  taxonomy (`test-GREEN:<path>` / `test-UNVERIFIED` / `no-test` / NULL),
+  format rules, writer list, reader contract. Single source of truth;
+  individual skills reference this section rather than restate it.
+- `skills-for-codex/references/verification-evidence.md` — Codex-pilot
+  parallel reference using the closed VERIFIED / FAILED /
+  PARTIALLY_VERIFIED / BLOCKED / NOT_RUN / UNVERIFIED vocabulary.
+- `nacl-tl-conductor` Phase 3 — `t.verification_evidence` is now written
+  in the same Cypher statement as `t.status` for PASS / UNVERIFIED /
+  BLOCKED branches. The PASS branch parses the sub-skill report's
+  canonical `Regression test:` line to compose `test-GREEN:<path>`.
+- `nacl-tl-conductor` Phase 4 — new evidence-completeness gate. A second
+  graph-truth query checks every terminal-state task in scope for
+  non-empty `verification_evidence`; HALTs before Phase 5 with an
+  explicit writer-contract advisory if any task is missing the field.
+- `nacl-tl-conductor` Phase 6 — Development per-item table gains an
+  Evidence column showing the same string the release skill will surface;
+  optional `Verification gaps:` footer mirrors the release skill exactly
+  when any task carries `test-UNVERIFIED` or `no-test`.
+- `nacl-tl-full` Step 8 — terminal aggregator now collects regression-test
+  paths from BE and FE dev sub-skill reports and writes evidence in the
+  same Cypher block as `t.status`. Wave 0 TECH path Step 1.g gets the
+  same treatment.
+- `nacl-tl-deliver` `--skip-verify` branch — writes
+  `verification_evidence = 'no-test'` to every Task in scope alongside
+  the existing `verification_skip_reason`. The operator's explicit
+  decision to skip verification is recorded positively, not left to the
+  release skill to infer as `unknown`.
+- `nacl-tl-hotfix` Step 4.3 (new) — writes
+  `verification_evidence = 'test-GREEN:<path>'` to every affected Task
+  node when Step 4.2 returned PASS. Collected from `/nacl-tl-fix`'s
+  Step 8 triage report's "Affected UCs" list.
+- `nacl-tl-regression-test` — both `REGRESSION TEST WRITTEN` (bug-fix
+  mode) and `FEATURE-TEST WRITTEN` (feature-dev mode) report blocks gain
+  a canonical machine-readable `Regression test: <repo-relative path>`
+  line. One line per test file when multiple files were written in one
+  invocation.
+- `nacl-tl-dev-be`, `nacl-tl-dev-fe`, `nacl-tl-dev` — the primary report
+  template's `Tests:` / `Verification:` block gains a `Regression test:`
+  row that orchestrators parse verbatim.
+- `graph-infra/schema/tl-schema.cypher` — `verification_evidence` is
+  documented in the extended Task properties comment.
+
+### Changed
+
+- `nacl-tl-conductor` Phase 3 PASS branch — a PASS report without a
+  parseable `Regression test:` line now HALTs the conductor instead of
+  writing `done` with empty evidence. The only path to `'no-test'`
+  evidence is an explicit user `--no-test` override on the conductor
+  invocation.
+- `nacl-tl-full` Step 8 — aggregated `done` status without a parseable
+  regression-test path from either BE or FE report HALTs the wave with
+  `WAVE HALTED — UNVERIFIED (UC###: aggregated PASS without parseable
+  Regression test path)`. The TECH path Step 1.g gains the same HALT
+  contract.
+- Codex pilot mirrors — `nacl-core`, `nacl-tl-conductor`, `nacl-tl-full`,
+  `nacl-tl-deliver`, `nacl-tl-hotfix`, `nacl-tl-regression-test`,
+  `nacl-tl-dev`, `nacl-tl-dev-be`, `nacl-tl-dev-fe` reference the new
+  evidence-taxonomy file in their rules / contract sections.
+
+### Fixed
+
+- "Verification gap" footer in `/nacl-tl-release` no longer triggers on
+  every release for tasks that completed correctly through the conductor.
+  The footer now reflects a genuine evidence gap (an explicit
+  `no-test` / `test-UNVERIFIED` value), not a missing-writer bug.
+
+### Notes
+
+- No invocation syntax changed. No graph property was renamed or removed.
+- Legacy `done` tasks that predate this release retain
+  `verification_evidence = NULL` and will be surfaced once by the
+  release skill's "Verification gap" footer, prompting reconciliation via
+  `/nacl-tl-diagnose` or a small manual Cypher patch when the regression
+  test path is known.
+- `nacl-tl-fix` itself is intentionally unchanged — it produces the
+  canonical `Regression test:` report line; orchestrators consume it and
+  own the graph writes.
+
 ## [0.17.0] — 2026-05-21
 
 Single-skill release. `/nacl-tl-fix` gains entity-driven graph impact

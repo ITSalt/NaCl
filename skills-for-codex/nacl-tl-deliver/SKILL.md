@@ -36,6 +36,11 @@ Deliver coordinates existing TL phases. Read `../nacl-tl-core/SKILL.md`,
   writes and read-back.
 - `--skip-verify` and `--skip-deploy` are allowed only as explicit user scope
   choices and must appear as skipped evidence in the final report.
+- Under `--skip-verify`, write `Task.verification_evidence = 'no-test'` for
+  every Task in scope (taxonomy: `../references/verification-evidence.md`).
+  This records the explicit operator override so the release workflow's
+  Evidence-level column reflects the decision instead of defaulting to
+  `unknown`.
 - Production delivery requires stronger confirmation and must tie the deployed
   state back to verified task evidence.
 - CI, verify, deploy, graph, and tracker failures block or downgrade delivery;

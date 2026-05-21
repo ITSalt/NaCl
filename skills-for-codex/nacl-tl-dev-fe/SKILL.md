@@ -103,6 +103,10 @@ Create or return `result-fe.md` with:
 - baseline versus post-change comparison;
 - RED, GREEN, REFACTOR evidence;
 - API contract alignment notes;
+- a canonical line `Regression test: <repo-relative path>` (or
+  `Regression test: none — UNVERIFIED` / `Regression test: n/a — BLOCKED`)
+  so the orchestrator can forward it into `Task.verification_evidence`
+  per `../references/verification-evidence.md`;
 - final `Status: <VALUE>` using only the closed vocabulary.
 
 Tracking may move forward only on `VERIFIED` or on `PARTIALLY_VERIFIED` with an
