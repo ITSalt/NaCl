@@ -103,9 +103,73 @@ RETURN t.id
 
 If the query returns any rows, report `Status: BLOCKED` with reason
 "`verification_evidence` missing on terminal tasks" and list the IDs.
-Do not advance to Phase 5. See `../references/verification-evidence.md`
+Do not advance to Phase 4.5. See `../references/verification-evidence.md`
 for the writer contract; the missing evidence is a writer-side bug,
 not a reporting issue — do not patch it manually from the orchestrator.
+
+### Phase 4.5: Cross-artifact reconciliation
+
+Phase 4 confirms the graph is internally consistent. Phase 4.5 confirms
+the graph agrees with the other artifacts the chain produces.
+
+Read every source of truth and run the pairwise checks below. Any
+disagreement emits `Status: BLOCKED` with a per-pair delta report.
+
+**Sources of truth (six):**
+
+1. `.tl/status.json` — per-intake / per-UC totals.
+2. `.tl/conductor-state.json` — per-phase markers (`phase`,
+   `techTasks[*].status`, `ucTasks[*].status`).
+3. `.tl/changelog.md` — released FR / UC / fix entries.
+4. **Live Neo4j graph** — node counts and `Task.status` /
+   `verification_evidence` / `release_tag` properties.
+5. `.tl/release-status.json` — last release outcome.
+6. `.tl/exceptions/` — active signed exceptions (W4 schema; expired
+   entries are recorded but do not satisfy gates).
+
+**Live graph reads only — no `.cypher` export fallback.** A stale
+export is by definition out-of-date and would reintroduce the drift
+class this gate exists to catch. If the project's graph container is
+unreachable, report `Status: BLOCKED` with workflow detail
+`graph_unavailable`. Do not fall back. Operators who must ship
+despite an unreachable graph file a signed exception against gate
+`graph-stale` (per W4 schema in `.tl/exceptions/_template.yaml`).
+
+**Pairwise cross-checks:**
+
+| Pair | Sources | Assertion |
+|---|---|---|
+| P-S1 | `.tl/status.json` totals vs live graph counts | totals match for `tasks`, `use_cases`, `modules`. |
+| P-S2 | `.tl/changelog.md` vs graph `FeatureRequest` | every FR named in the most recent changelog section exists as a `FeatureRequest` node. |
+| P-S3 | `.tl/release-status.json.release_tag` vs graph `release_tag` | tag in JSON appears on ≥1 `FeatureRequest` or intake `Task`. |
+| P-S4 | `.tl/conductor-state.json.phase` vs `.tl/status.json` terminal statuses | if phase advanced to `quality_gate_passed`, no `pending` / `in_progress` Tasks remain in status.json. |
+| P-S5 | `.tl/conductor-state.json.{techTasks, ucTasks}[*].status` vs graph `Task.status` | per-task entries match (mapped through the closed-set vocabulary). |
+
+A pair PASSES iff the assertion holds; or holds after an active
+signed exception is applied. Expired exceptions do not satisfy a
+pair.
+
+**Worked examples (mapped to W0 baseline):**
+
+- *Karatov FR-007 in changelog but not in live graph* — P-S2
+  fires. Report `Status: BLOCKED` with workflow detail
+  `artifact-drift`; resolution is to replay the SA-feature step
+  or file a `graph-stale` exception.
+- *Karatov conductor-state says "typecheck clean" but CI red* —
+  P-S4 + P-S5 fire. Phase advance was premature; resolution is
+  to drive non-terminal tasks to a terminal state before re-running
+  the gate.
+
+**Reconciliation evidence artifact:** on PASS (or PASS under an
+active signed exception), write `.tl/reconciliation/<ISO-8601>.json`
+per the template at `/Users/maxnikitin/projects/NaCl/.tl/
+reconciliation/_template.json`. Required fields: `timestamp`,
+`intake_id`, `sources_checked`, `deltas` (per-pair with `pair_id`,
+`assertion`, `outcome`, `details`), `active_exceptions`,
+`expired_exceptions`, `terminal_status` (closed-set).
+
+Only on `terminal_status == VERIFIED` does the workflow advance to
+Phase 5.
 
 ### Phase 5: Final Report
 

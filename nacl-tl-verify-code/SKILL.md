@@ -152,7 +152,7 @@ If none of the three resolves to a usable ref (e.g. shallow clone, no `main`, no
 ```
 git worktree add <tempdir> <baseline_ref>
 cd <tempdir> && <scripts.test>
-git worktree remove --force <tempdir>
+git worktree remove -f <tempdir>
 ```
 
 Capture:

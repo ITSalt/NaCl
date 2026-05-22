@@ -52,18 +52,119 @@ Commands:
 2. Propose menu hierarchy, routes, role access, order, and parent menu.
 3. Store navigation as `Component` nodes with navigation properties when
    confirmed.
-4. Verify routes point to existing forms or use cases and role access matches UC
-   actors.
+4. **For every Form whose UseCase has `actor != SYSTEM`, capture each
+   inbound nav-action site as a `HAS_INBOUND_ACTION` edge from the source
+   Component to the Form (see "Form Spec Template" and "Graph Rule — UI
+   Reachability" below).**
+5. Verify routes point to existing forms or use cases and role access matches UC
+   actors. Run the reachability query
+   (`nacl-sa-ui/references/reachability.cypher` § 4 — `ui_reachability_blockers`)
+   and refuse to leave this phase while any actor-triggered UC has no
+   inbound nav-action from a reachable Component.
 
 Do not introduce labels that are absent from the SA schema. Navigation is a
 component pattern unless the project schema explicitly defines another label.
+
+## Form Spec Template
+
+Every Form node carries these required sections. The first three are
+created by upstream skills; the fourth — Nav Actions — is the W7
+addition and is required for any Form whose UseCase has
+`actor != SYSTEM`.
+
+| Section | Status | Edge | Owner |
+|---------|--------|------|-------|
+| Fields | required | `HAS_FIELD` | `nacl-sa-uc detail` |
+| Domain mapping | required | `MAPS_TO` | `nacl-sa-uc detail` / `verify` here |
+| Used-In Components | required | `USED_IN` | `components` here |
+| **Nav Actions** | **required if actor != SYSTEM** | **`HAS_INBOUND_ACTION`** | **`navigation` here, Phase 3.3** |
+
+### Nav Actions — required for actor-triggered UCs
+
+For every Form whose UseCase has `actor != SYSTEM`, enumerate the
+inbound action sites that expose it to the user: which screen, nav
+item, global menu point, or sibling-page CTA carries the user-visible
+affordance that opens this Form.
+
+Each affordance is one `HAS_INBOUND_ACTION` edge from the source
+`Component` to the `Form`, with properties:
+
+- `affordance` — short kind label (`primary CTA`, `menu item`,
+  `row-link`, `empty-state CTA`, etc.).
+- `label` — exact visible text on the affordance (e.g. `New upload`).
+- `updated` — write timestamp.
+
+#### Worked example — transcriber missing-upload-button
+
+Transcriber UC-100 ("Upload audio") had a complete Form
+(`FORM-Upload`) with fields, domain mappings, and `USED_IN` edges to a
+rendering Component for `/upload`. Yet on production the catalog page
+at `/catalog` had no upload button: the only way to reach `/upload`
+was to type the URL. The Form spec was page-local and silent on
+inbound nav-actions, so the reviewer could not see the missing button
+from a diff.
+
+The methodology fix: UC-100's Form spec must declare every inbound
+affordance. For UC-100 the captured edges would be:
+
+```
+HAS_INBOUND_ACTION:
+  - CMP-CatalogPage   →  FORM-Upload   affordance="primary CTA"        label="New upload"
+  - CMP-NavSidebar    →  FORM-Upload   affordance="menu item"          label="Upload"
+  - CMP-EmptyState    →  FORM-Upload   affordance="empty-state CTA"    label="Upload your first audio"
+```
+
+With those edges in the graph, the rule below would have caught the
+missing button before the page shipped.
+
+### Graph Rule — UI Reachability
+
+An actor-triggered UseCase (actor != SYSTEM) without a
+`HAS_INBOUND_ACTION` edge from a reachable Component is a blocker. A
+reachable Component is one transitively reachable from any navigation
+root via `parent_menu` / route mounting.
+
+The Cypher template for the blocker query and the reachable-component
+traversal lives at `nacl-sa-ui/references/reachability.cypher`. The
+template publishes two queries:
+
+1. `ui_reachability_blockers` — returns every (UC, Form) pair where
+   actor != SYSTEM and the Form has no inbound `HAS_INBOUND_ACTION`
+   from a reachable Component. Each row carries
+   `reason ∈ { 'no-form', 'no-inbound-action', 'unreachable-component' }`.
+2. `reachable_components_form_a` / `_form_b` — returns the transitive
+   set of Components reachable from any navigation root.
+
+This skill (sa-ui, Codex flavor) declares the rule and ships the
+Cypher template. Consumers are out of scope here and unchanged by
+this wave:
+
+- `nacl-sa-validate` runs `ui_reachability_blockers` as an internal
+  validator check; non-empty result forces validator `BLOCKED`.
+  Override requires a signed exception (W4).
+- `nacl-tl-review` (primary-owner exception declared in W7 scope_in)
+  runs the same query scoped to the affected UCs and refuses
+  APPROVED when any affected UC appears in the result.
+
+Exemption flags recognised by sa-validate (consumer-side, not
+implemented here):
+
+- `UseCase.actor = 'SYSTEM'` — excluded by the query.
+- `UseCase.has_ui = false` — no Form; rule does not apply.
+- `UseCase.entrypoint_type IN ['deep-link-only', 'embed-only']` —
+  intentional URL-only access (invitation links, third-party iframes);
+  each requires a signed exception.
 
 ## Graph Contract
 
 Use only schema-supported UI records: `Form`, `FormField`, `Component`,
 `Form -[:HAS_FIELD]-> FormField`, `FormField -[:MAPS_TO]-> DomainAttribute`,
-`Component -[:USED_IN]-> Form`, and existing UC/form/role relationships. Do not
-create `Screen`, `NavigationRoute`, or other unsupported labels.
+`Component -[:USED_IN]-> Form`,
+`Component -[:HAS_INBOUND_ACTION { affordance, label, updated }]-> Form`,
+and existing UC/form/role relationships. Do not create `Screen`,
+`NavigationRoute`, or other unsupported labels. The
+`HAS_INBOUND_ACTION` edge is the W7 addition required for actor !=
+SYSTEM forms; see "Form Spec Template" below.
 
 `verify` is read-only until the user confirms a repair. It must distinguish
 input fields from display and action fields using `field_category`; missing

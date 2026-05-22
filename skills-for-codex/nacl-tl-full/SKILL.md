@@ -80,9 +80,27 @@ Supported compatibility phrases:
 - `/nacl-tl-full --wave N`
 - `/nacl-tl-full --task UC###`
 - `/nacl-tl-full --feature FR-NNN`
-- `/nacl-tl-full --skip-plan`
-- `/nacl-tl-full --skip-qa`
 - `/nacl-tl-full --yes`
+
+Removed in W9-ci-clean-checkout:
+
+- The SKIP-PLAN full-lifecycle flag formerly accepted by this skill
+  — Phase 0 already auto-detects an already-populated graph
+  (Task/Wave nodes present) and skips the planning subagent launch
+  in that case. The flag was redundant; its only remaining use was
+  bypassing planning when the graph WAS empty, which is precisely
+  the case planning exists to handle. There is no inline override
+  that resurrects the flag.
+
+Removed in W3-blocking-qa:
+
+- The bulk-QA-skip flag formerly accepted by this skill — QA bypass
+  at the full-lifecycle layer is no longer an operator flag. For
+  stage-level skips of `LIVE_PROVIDER_SMOKE` / `PROD_GOLDEN_PATH`
+  only, invoke `/nacl-tl-qa UC### --skip-e2e` directly. If a
+  mandatory stage ends up `NOT_RUN`, aggregate is forced to
+  `UNVERIFIED` and a W4 signed exception is required to advance.
+  Bulk-bypass needs route through W4 emergency mode.
 
 Treat parameters as scope and gate preferences. They do not imply that any
 specific delegation mechanism exists.
@@ -95,9 +113,12 @@ Check graph connectivity and graph schema availability when graph tools exist.
 Probe for `Task` and `Wave` records. If graph access is unavailable, report
 `BLOCKED` unless the user explicitly changes scope to a non-graph workflow.
 
-Check `.tl/` planning files when file access exists. If planning is missing and
-`--skip-plan` is absent, run or invoke the planning procedure only when the
-current environment supports it and the user confirms.
+Check `.tl/` planning files when file access exists. If planning is missing,
+run or invoke the planning procedure only when the current environment
+supports it and the user confirms. If planning is already populated (Task and
+Wave records present in the graph), skip the planning procedure silently —
+the previous SKIP-PLAN flag was removed in W9-ci-clean-checkout because
+graph-state detection makes it unnecessary.
 
 Stop and present the detected plan, selected scope, not-run phases, and required
 confirmation unless `--yes` was explicitly provided.
@@ -132,7 +153,7 @@ Each use case lifecycle has these steps:
 4. Frontend review.
 5. Backend-frontend synchronization.
 6. Stub scan.
-7. QA unless `--skip-qa` was confirmed.
+7. QA (the `nacl-tl-qa` skill applies its six-stage decomposition and aggregate rule; the bulk-QA-skip flag was removed at this layer in W3).
 8. Documentation.
 
 Contract for each step:

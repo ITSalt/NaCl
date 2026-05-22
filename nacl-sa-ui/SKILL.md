@@ -39,6 +39,7 @@ Before executing any command, read and internalize:
 - **`graph-infra/schema/sa-schema.cypher`** --- SA node labels, constraints, relationship types (Component, Form, FormField, DomainAttribute).
 - **`graph-infra/queries/sa-queries.cypher`** --- Named queries (sa_form_domain_mapping, sa_module_overview).
 - **`graph-infra/queries/validation-queries.cypher`** --- Validation queries (val_orphaned_form_fields, val_entity_without_uc).
+- **`nacl-sa-ui/references/reachability.cypher`** --- Cypher template for the UI-reachability rule (HAS_INBOUND_ACTION edge schema, blocker query, reachable-component traversal). Owned by this skill; consumed by `nacl-sa-validate` and `nacl-tl-review`.
 
 ---
 
@@ -466,6 +467,120 @@ Next: `/nacl-sa-ui navigation` to define navigation structure.
 
 ---
 
+## Form Spec Template
+
+Every Form node in the graph has the following required sections. The
+sections marked **REQUIRED** must be populated before the Form is
+considered specified.
+
+| Section | Status | Description |
+|---------|--------|-------------|
+| Fields (HAS_FIELD edges) | REQUIRED | Created by `nacl-sa-uc detail` (FormFields with `MAPS_TO` to DomainAttributes). |
+| Domain mapping (MAPS_TO) | REQUIRED | Verified by `verify` command above. |
+| Used-In Components (USED_IN) | REQUIRED | Created by `components` command — which Components render as part of this Form's screen. |
+| **Nav Actions (HAS_INBOUND_ACTION)** | **REQUIRED for actor != SYSTEM** | **Created by `navigation` command — which Components expose a user affordance (button, menu item, link, CTA) that triggers this Form.** |
+| Layout patterns | OPTIONAL | Component composition for the Form. |
+
+### Nav Actions (HAS_INBOUND_ACTION) — REQUIRED for actor-triggered UCs
+
+**Every Form whose UseCase has `actor != SYSTEM` MUST enumerate the
+inbound action sites that expose it to the user**: which screen, which
+nav item, which global menu point, which CTA on a sibling page carries
+the user-visible affordance that opens this Form.
+
+This subsection answers the question that page-local Form specs do not:
+"how does the user get here?" A Form spec that lists fields, validation,
+and outbound mutations but omits inbound nav-actions creates *negative
+space* — the reviewer cannot see "the upload button is missing on
+/catalog" from a code diff because the spec never said the button
+should exist there.
+
+#### Worked example — Transcriber UC-100 missing-upload-button
+
+Transcriber UC-100 ("Upload audio") had a fully specified Form
+(`FORM-Upload`):
+
+- Fields: audio_file, language_select, transcription_provider, submit_button.
+- Domain mapping: every required field MAPS_TO a DomainAttribute.
+- Used-In Components: FORM-Upload was rendered by CMP-UploadPage at route
+  `/upload`.
+
+Yet on production, the user landing on `/catalog` had no way to reach
+`/upload`. The catalog page rendered a list of past transcriptions with
+an "open" button per row (UC-001), but no "new upload" CTA anywhere.
+The route `/upload` was mounted; the only way to use it was to type
+the URL.
+
+The fix (`0ec0a4e` "feat(catalog): add upload CTA") added a button on
+the catalog page. The methodology fix is this subsection: UC-100's Form
+spec should have declared:
+
+```
+Nav Actions (HAS_INBOUND_ACTION):
+  - Component: CMP-CatalogPage      Action: "New upload" button (primary CTA, top-right)
+  - Component: CMP-NavSidebar        Action: "Upload" menu item (under "Library")
+  - Component: CMP-EmptyState        Action: "Upload your first audio" CTA (visible when catalog is empty)
+```
+
+With these declarations recorded as `HAS_INBOUND_ACTION` edges in the
+graph, the reachability rule (see below) would have caught the missing
+button **before** the page shipped: the rule reports
+`reason='no-inbound-action'` for any actor-triggered UC whose Form has
+zero `HAS_INBOUND_ACTION` edges, and `reason='unreachable-component'`
+when the only inbound edges originate from Components not transitively
+reachable from a navigation root.
+
+#### Capture procedure during `navigation` Phase 2
+
+When proposing the menu structure, also ask for each user-triggered
+Form: "Which Components expose a user affordance to open this Form?
+List every inbound action site." Record one HAS_INBOUND_ACTION edge per
+site in Phase 3 (see Phase 3.3 below). Do NOT record HAS_INBOUND_ACTION
+for Forms whose UC has actor=SYSTEM (machine-triggered) or for Forms
+explicitly flagged `UseCase.has_ui = false`.
+
+### Graph Rule — UI Reachability
+
+**An actor-triggered UseCase (actor != SYSTEM) without a
+`HAS_INBOUND_ACTION` edge from a reachable Component is a blocker.**
+
+A "reachable Component" is one transitively reachable from the root
+navigation entrypoint via `parent_menu` / route mounting. The traversal
+walks the `parent_menu` chain rooted at a Component with
+`parent_menu IS NULL` and `component_type='navigation'`.
+
+The Cypher template for both queries (the blocker query and the
+reachable-component traversal) lives at
+`nacl-sa-ui/references/reachability.cypher`. The two queries are:
+
+1. **`ui_reachability_blockers`** — returns every (UC, Form) pair whose
+   actor != SYSTEM and whose Form lacks an inbound HAS_INBOUND_ACTION
+   edge from a reachable Component. Each row is a blocker with
+   `reason ∈ { 'no-form', 'no-inbound-action', 'unreachable-component' }`.
+2. **`reachable_components_form_a` / `_form_b`** — returns the
+   transitive set of Components reachable from any navigation root,
+   used by sa-validate / tl-review evidence sections and for debugging.
+
+**Consumers** (this skill does not change them, but declares the rule
+they consume):
+- `nacl-sa-validate` runs `ui_reachability_blockers` as an internal L-rule
+  check. Any non-empty result set forces validator status `BLOCKED`.
+  Override requires a signed exception (W4).
+- `nacl-tl-review` (primary-owner exception declared in W7 scope_in) runs
+  the same query scoped to the UCs affected by the current review and
+  refuses APPROVED when any affected UC appears in the result.
+
+**Exemption flags** (recognised by sa-validate; not implemented here):
+- `UseCase.actor = 'SYSTEM'` — machine-triggered; excluded by the
+  WHERE clause in `ui_reachability_blockers`.
+- `UseCase.has_ui = false` — UC has no Form; not subject to the rule.
+- `UseCase.entrypoint_type IN ['deep-link-only', 'embed-only']` —
+  intentional URL-only or embed-only UCs (invitation links, e-mail
+  CTAs, third-party iframes). Each requires a signed exception that
+  names the operational context.
+
+---
+
 # Command: `navigation`
 
 ## Purpose
@@ -633,6 +748,37 @@ RETURN c.id AS nav_id, f.id AS form_id
 
 This creates the full chain: `Navigation -> Form -> FormField -> DomainAttribute -> DomainEntity`
 
+#### 3.3 Create HAS_INBOUND_ACTION edges (required for actor != SYSTEM)
+
+For every Form whose UseCase has `actor != SYSTEM`, capture each
+Component that exposes a user affordance (button, menu item, link, CTA)
+to open the Form. One `HAS_INBOUND_ACTION` edge per affordance site.
+
+```cypher
+// create_has_inbound_action
+MATCH (c:Component {id: $sourceComponentId})
+MATCH (f:Form {id: $formId})
+MERGE (c)-[r:HAS_INBOUND_ACTION]->(f)
+SET r.affordance = $affordance,    // e.g. "primary CTA", "menu item", "row-level link"
+    r.label      = $label,          // visible label, e.g. "New upload"
+    r.updated    = datetime()
+RETURN c.id AS source_component_id, f.id AS form_id, r.label AS label
+```
+
+Parameters:
+- `$sourceComponentId` --- Component that exposes the affordance (e.g. `"CMP-CatalogPage"`).
+- `$formId` --- Form opened by the affordance (e.g. `"FORM-Upload"`).
+- `$affordance` --- short kind label (`"primary CTA"`, `"menu item"`, `"row-link"`, `"empty-state CTA"`, etc.).
+- `$label` --- exact visible text the user sees on the affordance.
+
+After creating HAS_INBOUND_ACTION edges, immediately verify by running
+`ui_reachability_blockers` from `nacl-sa-ui/references/reachability.cypher`.
+If the result set is non-empty, present the blockers to the user and
+stop the phase — every blocker must be resolved (by adding the missing
+affordance to the spec, by re-routing the affordance to a reachable
+Component, or by registering a signed exception under W4) before the
+navigation phase completes.
+
 ---
 
 ### Phase 4: Report
@@ -771,6 +917,7 @@ If `verify` finds data fields but no DomainAttributes exist at all:
 | Edge | From | To | Properties |
 |------|------|----|------------|
 | USED_IN | Component | Form | --- |
+| HAS_INBOUND_ACTION | Component | Form | `affordance`, `label`, `updated` — created during `navigation` Phase 3.3; required for actor-triggered UCs (W7). |
 | MAPS_TO | FormField | DomainAttribute | --- (fix only, normally created by nacl-sa-uc) |
 
 ---
@@ -807,6 +954,28 @@ RETURN c.id AS component_id, c.name AS component_name
 MATCH (f:Form)
 WHERE NOT (:Component)-[:USED_IN]->(f)
 RETURN f.id AS form_id, f.name AS form_name
+```
+
+**Cypher --- UI reachability blockers (actor-triggered UCs with no inbound nav-action from a reachable Component):**
+
+```cypher
+// val_ui_reachability_blockers
+// Full template: nacl-sa-ui/references/reachability.cypher § 4 (ui_reachability_blockers)
+// Returns one row per (UC, Form) blocker with reason ∈ {'no-form', 'no-inbound-action', 'unreachable-component'}.
+MATCH (uc:UseCase)-[:ACTOR]->(role:SystemRole)
+WHERE coalesce(role.name, '') <> 'SYSTEM'
+OPTIONAL MATCH (uc)-[:USES_FORM]->(f:Form)
+OPTIONAL MATCH (c:Component)-[:HAS_INBOUND_ACTION]->(f)
+WITH uc, role, f, collect(DISTINCT c) AS inbound_components
+WITH uc, role, f,
+     CASE
+       WHEN f IS NULL THEN 'no-form'
+       WHEN size(inbound_components) = 0 THEN 'no-inbound-action'
+       ELSE NULL
+     END AS reason
+WHERE reason IS NOT NULL
+RETURN uc.id AS uc_id, coalesce(f.id, '<no-form>') AS form_id, reason
+ORDER BY uc_id, form_id
 ```
 
 **Cypher --- entities with no UI surface (no FormField maps to them):**
@@ -864,6 +1033,8 @@ RETURN total_data_fields, mapped_fields,
 - [ ] User confirmed navigation structure
 - [ ] Navigation Component nodes created
 - [ ] USED_IN edges linked to forms
+- [ ] **HAS_INBOUND_ACTION edges captured for every Form whose UC actor != SYSTEM (Phase 3.3)**
+- [ ] **`val_ui_reachability_blockers` query returns empty result set — or every remaining blocker is covered by a signed exception (W4)**
 - [ ] Navigation report presented
 
 ### Before completing `full`

@@ -28,23 +28,96 @@ Deliver coordinates existing TL phases. Read `../nacl-tl-core/SKILL.md`,
    available and confirmed.
 6. Return a per-task delivery table with evidence.
 
+## Clean-Checkout Gate (Strict-Only; W9-ci-clean-checkout)
+
+Before VERIFIED is granted (and before Step 5 deploy health check), the
+clean-checkout gate runs against the wave-tip commit. It exists because
+17 of the ~60 baseline signals are config / infra / CI drift that only
+surface on a clean runner (pnpm version mismatch, Prisma generate
+missing, TEST_DATABASE_URL unset, non-TS runtime assets absent from
+build output, pm2 entry-point confusion).
+
+Procedure (when tools and confirmation permit; otherwise BLOCKED):
+
+1. Identify wave-tip commit and project package manager (from
+   `config.yaml → build.package_manager`, `package.json`
+   `packageManager` field, or lockfile detection). Mixed managers in a
+   single workspace are reported `BLOCKED — clean-checkout-pm-ambiguous`.
+2. Shallow clone the wave-tip commit into a fresh directory. The
+   directory MUST NOT inherit `node_modules/`, `dist/`, `.next/`, or
+   `prisma/generated/`.
+3. Install with `--frozen-lockfile` (or equivalent). Install failure →
+   `BLOCKED — clean-checkout-install-failed`.
+4. Build all workspaces (`pnpm -r build` or equivalent). Build failure
+   → `BLOCKED — clean-checkout-build-failed`. If
+   `build.requires_prisma_generate: true`, missing prisma generate at
+   build time → `BLOCKED — clean-checkout-prisma-generate-missing`.
+5. Verify every entry in `config.yaml → runtime_assets` exists under
+   the built artifact tree. Missing any required runtime asset is a
+   `BLOCKED — clean-checkout-runtime-assets-missing`, NOT a WARNING.
+6. Migrate (only if `build.migrate_cmd` is configured) against the
+   scratch database identified by `build.test_database_url`. Missing
+   URL when migrate would run → `BLOCKED — clean-checkout-test-database-url-undefined`.
+7. Run-smoke: boot the entrypoint (`build.entrypoint` or
+   `package.json` `main` or `dist/index.js`), wait for a port bind
+   (60s timeout — exceeding it produces
+   `BLOCKED — clean-checkout-entrypoint-no-port`, the transcriber
+   pm2 pattern), call `/api/health`, then call each path in
+   `deploy.smoke.endpoints`. Default endpoint list is `["/api/health"]`
+   which records `PASS_HEALTH_ONLY` (not full smoke). Non-2xx →
+   `BLOCKED — clean-checkout-smoke-failed`.
+8. Capture evidence to `.tl/clean-checkout/<commit>.json` with fields
+   commit, started_at, completed_at, build_status, migrate_status,
+   smoke_status, runtime_assets_verified, terminal_status, and
+   blocker_detail (only on BLOCKED). Schema reference:
+   `.tl/clean-checkout/_template.json`.
+
+Override paths (no inline flag exists):
+
+- Signed exception under `.tl/exceptions/<exception_id>.yaml` with
+  `affected_gates` enumerating the specific clean-checkout detail.
+- Emergency mode (`NACL_EMERGENCY=1` plus reason and owner env
+  vars). Advances under recorded bypass; closed Status: is
+  `PARTIALLY_VERIFIED` with `(emergency-bypass)` suffix.
+
+Worked examples: the Karatov pnpm/Prisma/TEST_DATABASE_URL cluster (the
+first clean CI runner surfaced drift after green local + green review)
+and the transcriber ffmpeg / pm2 entry / prompt-markdown cluster
+(non-TS runtime assets disappeared from `dist/` and the wrong file was
+treated as the pm2 entrypoint). Both clusters now produce a
+`BLOCKED — clean-checkout-<detail>` headline at delivery rather than a
+production incident.
+
 ## Source-Parity Requirements
 
-- Preserve the six source delivery steps: pre-check, ship, wait for CI, verify,
-  deploy health check, and graph/tracker state update.
+- Preserve the six source delivery steps plus the W9 clean-checkout
+  gate between verify and deploy health check: pre-check, ship, wait
+  for CI, verify, clean-checkout, deploy health check, and graph /
+  tracker state update.
 - Maintain `.tl/delivery-status.json` semantics only after confirmed file
-  writes and read-back.
-- `--skip-verify` and `--skip-deploy` are allowed only as explicit user scope
-  choices and must appear as skipped evidence in the final report.
-- Under `--skip-verify`, write `Task.verification_evidence = 'no-test'` for
-  every Task in scope (taxonomy: `../references/verification-evidence.md`).
-  This records the explicit operator override so the release workflow's
-  Evidence-level column reflects the decision instead of defaulting to
-  `unknown`.
+  writes and read-back. The state file gains a `clean_checkout` block
+  (status, commit, artifact_path) alongside the existing ship/ci/verify/
+  deploy/graph blocks; resumption inspects it in order before Step 5.
+- The SKIP-VERIFY and SKIP-DEPLOY flags were REMOVED in
+  W4-blocking-release. Their literal tokens are scrubbed from this
+  skill's prose. Verify and deploy-health are mandatory steps.
+  Override paths: (a) signed exception under
+  `.tl/exceptions/<exception_id>.yaml` enumerating specific
+  `affected_gates`, OR (b) emergency mode (three env vars —
+  `NACL_EMERGENCY=1`, `NACL_EMERGENCY_REASON`,
+  `NACL_EMERGENCY_OWNER`). Neither path re-enables the removed
+  flags. See `nacl-tl-core/references/emergency-mode.md` and
+  `nacl-tl-release/SKILL.md` § "Release Blocking Gates
+  (Strict-Only)".
+- The `no-test` evidence string is no longer producible by this
+  skill — the removed flag was its only producer.
 - Production delivery requires stronger confirmation and must tie the deployed
   state back to verified task evidence.
 - CI, verify, deploy, graph, and tracker failures block or downgrade delivery;
   they cannot be hidden under a successful ship step.
+- HEALTH_ONLY evidence (a green `/health` probe) is NOT
+  product-readiness evidence on its own. The W3 `PROD_GOLDEN_PATH`
+  stage is the product-readiness signal at the release-time gate.
 
 ## Capabilities
 

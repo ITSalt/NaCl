@@ -45,6 +45,229 @@ The spec-first approach is supported by:
 
 ---
 
+## Spec-First Prerequisite (Strict-Only) — W10 binding
+
+**L1+ blocked without preceding spec-update commit; override via signed exception only.**
+
+For any fix classified L1 or higher (i.e. anything that touches production
+code — L1, L2, L3-spec-gap; L3-feature already exits at Step 3), this skill
+**refuses to enter Step 6 (APPLY FIX)** unless the fix chain already contains
+at least one **spec-update commit** that precedes the first code-fix commit.
+
+A **spec-update commit** is any commit that mutates one of the following:
+
+1. **Graph state** — at least one of the following Neo4j node labels was
+   created or modified by the commit (detected via the W5 reconciliation
+   primitives, see "Detection logic" below):
+   `DomainEntity`, `DomainAttribute`, `Enumeration`, `UseCase`,
+   `FormField`, `Module`, `Requirement`, `FeatureRequest`,
+   `BusinessRule`, `Activity`.
+2. **`.tl/*` schema artifact** — at least one of:
+   `.tl/tasks/<TASK_ID>/task-{be,fe}.md`,
+   `.tl/tasks/<TASK_ID>/api-contract.md`,
+   `.tl/tasks/<TASK_ID>/spec.md`,
+   `.tl/feature-requests/<FR-ID>.md`,
+   `.tl/specs/<UC>.md`,
+   any fixture under `.tl/fixtures/`.
+3. **SA-layer docs** (legacy markdown projects without graph) — at least
+   one of: `docs/12-domain/**`, `docs/14-usecases/**`,
+   `docs/15-interfaces/**`, `docs/16-requirements/**`.
+
+A commit that touches *only* code under `src/`, `backend/`, `frontend/`,
+`packages/`, or `tests/` (other than fixture files) — including a commit
+whose subject begins with `fix(...)` — is a **code-fix commit**, not a
+spec-update commit, regardless of the message.
+
+### Why this gate exists
+
+Karatov-procontent shipped Wave 4 with `a7eb747 docs(SA): UC-105/UC-106/UC-107
+post-commit emit timing (L2)` landing **AFTER** the FIX-B code wave
+(`01f2fcb`, `135b14b`, `6ed12ac`, `3acb2fd`) — the spec caught up to code,
+not the other way around. The DIAGNOSTIC-REPORT.md dated 2026-05-18 measured
+**39% of fixes never updated documentation at all**. Every undocumented
+fix made the next post-mortem harder because the spec snapshot used to
+diagnose drift was itself unreliable (Karatov post-mortem § 1 patterns
+2 & 3, § 3.12, § "Process/docs catch-up" row of the bucket table).
+
+The Step 6 entry gate below makes that pattern impossible to repeat without
+an audited signed exception.
+
+### Detection logic (uses W5 reconciliation primitives)
+
+The detection runs at Step 6 entry, after Step 5 USER GATE has resolved
+(or been skipped for L1). It reads the same six sources of truth that
+`nacl-tl-conductor` Phase 4.5 reads, scoped to the fix chain rather than
+the intake:
+
+1. **Define the fix chain.** The fix chain is the sequence of commits
+   between the merge-base of the current branch with `main` (or
+   `config.yaml → git.main_branch`) and `HEAD`. On direct-strategy
+   projects (`config.yaml → git.strategy == "direct"`), the fix chain is
+   the commits between the last tag and `HEAD` instead.
+
+   ```bash
+   git rev-list --reverse <merge-base>..HEAD
+   ```
+
+2. **Classify each commit.** For each commit in the chain, run:
+   ```bash
+   git diff-tree --no-commit-id --name-only -r <sha>
+   ```
+   Apply the lists above:
+   - Any path matching the graph-mutation detector (see Step 6.SF-3 below)
+     OR matching a `.tl/*` schema artifact OR matching the SA-layer docs
+     globs → commit is a **spec-update commit**.
+   - Otherwise → commit is a **code-fix commit**.
+
+3. **Detect graph mutation in a commit.** Direct file-level inspection is
+   not enough — graph writes live outside the file tree. The detection
+   reads the W5-style "graph delta" between two snapshots, but scoped to
+   the commit boundary:
+
+   a. If the project has a `graph-infra/exports/<commit>.cypher` artifact
+      (the canonical per-commit export written by `nacl-publish`), diff
+      the commit's export against its parent's export. Any non-empty diff
+      that adds or modifies a node with one of the labels listed under
+      (1) above is a graph mutation.
+
+   b. If no per-commit export exists, fall back to the commit's
+      `.tl/changelog.md` entry: a commit whose `.tl/changelog.md`
+      addition references `/nacl-sa-*` skill invocation (e.g. "via
+      /nacl-sa-domain", "via /nacl-sa-uc") is treated as a graph-mutation
+      commit. The fallback is recorded as `graph-mutation-by-changelog`
+      in the Step 8 report.
+
+   c. If neither (a) nor (b) is available, the detection emits
+      `Status: BLOCKED` with workflow detail `graph-delta-unobservable`
+      and refuses to enter Step 6. A signed exception against the
+      gate `spec-first-prerequisite` is the only override (see below).
+
+4. **Apply the spec-first invariant.** Let `first_code_idx` be the index
+   of the first code-fix commit in the chain, and let
+   `last_spec_idx_before_code` be the maximum index among spec-update
+   commits strictly preceding `first_code_idx`.
+
+   - **PASS** if `last_spec_idx_before_code` exists (≥ 0) — there is a
+     spec-update commit before any code-fix commit, satisfying the
+     spec-first ordering for this fix chain.
+   - **FAIL** if no spec-update commit precedes the first code-fix
+     commit, OR if the chain contains code-fix commits but no
+     spec-update commits at all.
+
+5. **Cross-check against `.tl/status.json` and `.tl/changelog.md`.** As a
+   secondary safeguard (the same `status.json` + `changelog.md` pair
+   that W5 Phase 4.5 reads):
+   - If `.tl/status.json` records a `phases.docs: done` or `phases.spec:
+     done` entry whose timestamp is strictly before the first code-fix
+     commit timestamp, the chain has spec-update evidence even if no
+     graph mutation was detected. Record this as
+     `spec-update-by-status-json` in the Step 8 report.
+   - If `.tl/changelog.md` has an entry whose timestamp precedes the
+     first code-fix commit and whose body mentions any of the L2/L3
+     doc-update categories (enum/status, API endpoint, UC flow, screen
+     spec — see Step 5 matrix), record as `spec-update-by-changelog`.
+
+6. **Compose the verdict.** PASS iff (4) PASS OR (5) records at least
+   one spec-update signal predating the first code-fix commit. FAIL
+   otherwise.
+
+### Step 6 entry gate (the refusal)
+
+At the start of Step 6, immediately after announcing
+"Step 6: APPLY FIX" and before any code-touching action:
+
+```
+Step 6.SF-1: SPEC-FIRST PREREQUISITE CHECK
+  classification:        <L0 | L1 | L2 | L3-spec-gap>
+  fix_chain_commits:     <N> commits between <merge-base>..HEAD
+  spec_update_commits:   <list of SHAs classified spec-update, or "none">
+  code_fix_commits:      <list of SHAs classified code-fix, or "none">
+  first_code_fix_idx:    <index in chain, or "n/a — no code-fix yet">
+  last_spec_idx_before_code: <index, or "none">
+  status.json signal:    <spec-update-by-status-json | none>
+  changelog signal:      <spec-update-by-changelog | none>
+  verdict:               <PASS | FAIL>
+```
+
+Apply the rules in order — first match wins:
+
+| # | Condition | Action |
+|---|---|---|
+| 1 | classification is `L0` | SKIP gate. Proceed to Step 6 sub-flow 6M / TDD. (L0 is environment / infra, not spec-touching.) |
+| 2 | `--dry-run` is set | SKIP gate. The check is recorded in the Step 8 report but does not refuse, since no code is written. |
+| 3 | verdict is `PASS` | Proceed to Step 6 sub-flow. Record the satisfying spec-update commit SHA in the Step 8 report. |
+| 4 | verdict is `FAIL` AND a valid signed exception against gate `spec-first-prerequisite` exists for this project at `.tl/exceptions/` (W4 schema; unexpired; specific `affected_gates`; concrete `reason`; valid `followup_task`) | Proceed to Step 6 sub-flow. Record the `exception_id`, `expiry`, and `followup_task` in the Step 8 report. The header becomes `FIX APPLIED — UNVERIFIED (spec-first-bypassed-by-signed-exception)`. |
+| 5 | verdict is `FAIL` AND no valid signed exception exists | REFUSE. Halt with `Status: BLOCKED` and workflow detail `spec-first-prerequisite-missing`. Do not touch production code. Print the refusal advisory below and exit. |
+| 6 | detection emitted `Status: BLOCKED (graph-delta-unobservable)` AND no signed exception against gate `spec-first-prerequisite` exists | REFUSE with workflow detail `graph-delta-unobservable`. |
+
+#### Refusal advisory (rule 5)
+
+```
+┌──────────────────────────────────────────────────────────┐
+│ FIX HALTED — SPEC-FIRST PREREQUISITE MISSING             │
+├──────────────────────────────────────────────────────────┤
+│ Classification: L1 (code change without spec update)    │
+│                                                          │
+│ The fix chain contains <N> code-fix commit(s) but no    │
+│ preceding spec-update commit. The W10 Spec-First         │
+│ prerequisite requires that every L1+ fix be preceded by  │
+│ a graph mutation or a .tl/* schema artifact change in   │
+│ the same chain.                                          │
+│                                                          │
+│ Without that ordering, the post-mortem record shows      │
+│ that 39% of fixes never update docs (Karatov, 2026-05-  │
+│ 18). The fix skill refuses to ship into that pattern.    │
+│                                                          │
+│ Three legitimate paths forward (no flag bypass):         │
+│   [1] Re-run Step 5 (FIX DOCS) and commit the spec      │
+│       update FIRST. Then re-invoke /nacl-tl-fix and the │
+│       gate passes by construction.                       │
+│   [2] If Step 3 classified L2/L3 but Step 5 was         │
+│       skipped, return to Step 3 and re-classify.        │
+│   [3] If the fix is genuinely L1 (docs ARE current and  │
+│       complete) and the detection has a false negative  │
+│       (e.g. an external code-mode workspace where the   │
+│       spec lives outside .tl/ and outside the graph),   │
+│       file a signed exception against gate              │
+│       `spec-first-prerequisite` per W4 schema:          │
+│       - affected_gates: [spec-first-prerequisite]       │
+│       - reason: <concrete justification of the L1       │
+│         classification + why no spec update is needed> │
+│       - expiry: ≤ 24h                                    │
+│       - followup_task: <UC or TECH that audits the     │
+│         classification>                                  │
+│                                                          │
+│ Status: BLOCKED                                          │
+│ Workflow detail: spec-first-prerequisite-missing         │
+└──────────────────────────────────────────────────────────┘
+```
+
+#### Worked example — the Karatov 39% pattern
+
+The historical episode that motivates this gate (Karatov post-mortem
+§ 3.12 and § "Process/docs catch-up"):
+
+- **Chain on `main` between Wave 4 close and the FIX-B audit:**
+  `01f2fcb` (code: wire post-commit task events L2),
+  `c83e84f` (code: valid UUID fixtures), `92da5c7` (code: schema namespace),
+  `135b14b` (code: gate post-commit emits), `6ed12ac` (code: cancel/fail
+  race correctness), `3acb2fd` (code: lock tasks row FOR UPDATE),
+  `a7eb747` (docs: UC-105/UC-106/UC-107 post-commit emit timing).
+- **Order of spec vs code:** the docs commit (`a7eb747`) lands LAST.
+  Every preceding commit is a code-fix commit. There is no spec-update
+  commit before any code-fix commit.
+- **W10 verdict:** FAIL. First code-fix is `01f2fcb` at index 0;
+  `last_spec_idx_before_code` is `none`. Rule 5 fires. Refusal advisory
+  prints. Status: `BLOCKED`, workflow detail
+  `spec-first-prerequisite-missing`.
+- **Operator paths:** (1) commit the SA spec updates first, with the L2
+  classification reasoning, then re-run the fix wave; (2) file a signed
+  exception per the W4 schema if Wave 4 must close on emergency
+  grounds. Path (1) is what would have made the next post-mortem read
+  the spec snapshot as truth instead of as drift.
+
+---
+
 ## Invocation
 
 The user describes the problem in natural language. They do NOT need to specify UC or TECH IDs:
@@ -258,7 +481,7 @@ For each affected UC/area:
 
 After printing this, **exit**. Do not announce Step 4. Do not ask the user for permission to proceed. The user's reply with the routing report is sufficient — they will invoke `/nacl-sa-feature` themselves in a fresh session.
 
-**Escape hatch (rare):** If the user truly wants to handle a small spec gap inline and Step 3 mis-classified, they can re-invoke with `/nacl-tl-fix --force-l3-spec-gap "<description>"`. This bypasses the L3-feature exit and treats the request as `L3-spec-gap` (inline minor spec is permitted). Without this flag, L3-feature always exits.
+**Escape hatch (rare):** If the user truly wants to handle a small spec gap inline and Step 3 mis-classified, they can re-invoke with `/nacl-tl-fix --treat-as-l3-spec-gap "<description>"`. This bypasses the L3-feature exit and treats the request as `L3-spec-gap` (inline minor spec is permitted). Without this flag, L3-feature always exits. (Flag renamed in W4-blocking-release from its legacy name — which contained the literal token scrubbed by the W4 grep acceptance check — to `--treat-as-l3-spec-gap`. Behavior unchanged.)
 
 При необходимости воспроизвести баг в браузере или на сервере:
 - Тестовые доступы: `config.yaml → credentials.[role]` (email, password, phone)
@@ -378,7 +601,7 @@ Present to user (in their language):
 
 **For L0 (Environment):** apply infrastructure fix only — migrations, env vars, caches, configs. Skip the TDD sub-flow below; jump to Step 7. **If the fix involves a new SQL migration, run the migration-verification sub-flow 6M below before jumping to Step 7.**
 
-**For L1 / L2 / L3 (any code change):** follow the TDD-ordered sub-steps 6a→6h. Step 7 then determines the final status. **If the fix adds a new SQL migration alongside the code change, also run the migration-verification sub-flow 6M below.**
+**For L1 / L2 / L3 (any code change):** first run the **Spec-First Prerequisite Check** (sub-step 6.SF) — see the "Spec-First Prerequisite (Strict-Only)" section above. Only after the gate returns PASS (or is bypassed by a valid signed exception against `spec-first-prerequisite`) do you proceed to TDD sub-steps 6a→6h. Step 7 then determines the final status. **If the fix adds a new SQL migration alongside the code change, also run the migration-verification sub-flow 6M below.**
 
 #### 6M — Migration verification sub-flow (runs whenever the fix adds or modifies a SQL migration)
 
@@ -573,6 +796,8 @@ If any item in 1–4 cannot be answered with a concrete file path and a stated v
 ### [YYYY-MM-DD] nacl-tl-fix: [brief description]
 - **Level:** L0/L1/L2/L3
 - **Status:** PASS / BLOCKED / UNVERIFIED / NO_INFRA / RUNNER_BROKEN
+- **Spec-first verdict:** PASS / FAIL (bypassed-by-EXC-...) / SKIPPED (L0) / SKIPPED (--dry-run)
+- **Spec-update commit (if PASS):** <SHA> (<message>)
 - **Root cause:** [what was wrong]
 - **Affected UC:** UC-### (or "infrastructure")
 - **Docs updated:** [list] or "none (L0/L1)"
@@ -598,6 +823,9 @@ Header by status:
 | `NO_INFRA` (rule 1) | `FIX APPLIED — UNVERIFIED` (no test runner for this layer) |
 | `RUNNER_BROKEN` (rule 2) | `FIX APPLIED — UNVERIFIED` (test runner could not execute) |
 | `REGRESSION` (rules 3, 4) | `FIX INCOMPLETE` (the fix did not pass its own regression test, or introduced new failures) |
+| `BLOCKED` (Step 6.SF rule 5 — spec-first prerequisite missing) | `FIX HALTED — SPEC-FIRST PREREQUISITE MISSING` (no spec-update commit precedes the first code-fix commit; no signed exception against `spec-first-prerequisite` exists) |
+| `BLOCKED` (Step 6.SF rule 6 — graph-delta-unobservable) | `FIX HALTED — SPEC-FIRST GRAPH DELTA UNOBSERVABLE` (no per-commit export and no changelog/status.json fallback signal; cannot verify spec-first ordering) |
+| Step 6.SF rule 4 (bypassed by signed exception) | `FIX APPLIED — UNVERIFIED (spec-first-bypassed-by-signed-exception)` — Step 7 status applies as usual; the spec-first bypass is recorded but does not promote the headline above `FIX APPLIED — UNVERIFIED`. |
 
 #### Template — present in user's language
 

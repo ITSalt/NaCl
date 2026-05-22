@@ -563,10 +563,11 @@ Next steps:
   Full lifecycle (dev + staging deploy):
     /nacl-tl-conductor --items FR-003,FR-004
 
-  Development only (no delivery):
-    /nacl-tl-conductor --items FR-003,FR-004 --skip-deliver
+  Development only (no delivery — call the dev chain directly):
+    /nacl-tl-plan --feature FR-003
+    /nacl-tl-full --feature FR-003
 
-  Step by step:
+  Step by step (with delivery):
     /nacl-tl-plan --feature FR-003
     /nacl-tl-full --feature FR-003
     /nacl-tl-deliver --feature FR-003

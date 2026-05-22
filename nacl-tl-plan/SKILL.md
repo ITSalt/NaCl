@@ -67,6 +67,7 @@ Phase 1: READ SA GRAPH
   |
   +-- Modules, UseCases, DomainEntities, Dependencies
   +-- Priorities, SystemRoles
+  +-- External Contracts Gate (W6, Step 1.6) — BLOCKED if missing/stub
   |
 Phase 2: WAVE PLANNING
   |
@@ -159,6 +160,151 @@ RETURN labels(n)[0] AS label, count(n) AS count
 - **Overwrite** -- delete existing TL data and re-plan
 - **Increment** -- add new tasks/waves to existing plan
 - **Abort** -- cancel planning
+
+### Step 1.6: External Contracts Gate (W6)
+
+**Purpose.** For every UC in planning scope, refuse to generate a task when
+the UC references an external provider/protocol whose
+`.tl/external-contracts/<slug>.md` is absent. This is a consumer-side read
+of the artifact written by `nacl-sa-architect` during its External Contracts
+phase (W6 plan brief, declared primary-owner exception). Strict-only — there
+is no inline `--skip-external-contract` flag.
+
+**Why this check exists.** 13 of ~60 postmortem signals across two NaCl
+projects were external-API / wire-protocol gaps (kie.ai in both projects,
+TUS upload, base_url divergence, reverse-proxy URL scheme, ffmpeg/ffprobe
+runtime — see `docs/retrospectives/transcriber-runtime-baseline.md` §§
+A1–A9, B1–B7). Local tests passed; the product did not work. The
+`nacl-tl-sync` Wire-Evidence Gate (W2) already downgrades sync to
+`UNVERIFIED` when wire-evidence is absent. W6 makes the artifact concrete
+upstream so the gate has something to point at.
+
+#### 1.6.1: Discover external dependencies
+
+```cypher
+// mcp__neo4j__read-cypher
+// Per-UC external-contract requirements via graph
+MATCH (uc:UseCase)
+WHERE uc.id IN $uc_ids
+OPTIONAL MATCH (uc)-[:REQUIRES_EXTERNAL]->(ec:ExternalContract)
+OPTIONAL MATCH (m:Module)-[:CONTAINS_UC]->(uc)
+OPTIONAL MATCH (m)-[:DEPENDS_ON_EXTERNAL]->(mec:ExternalContract)
+RETURN uc.id AS uc_id,
+       collect(DISTINCT {id: ec.id, name: ec.name, kind: ec.kind,
+                         file_path: ec.file_path}) AS uc_direct,
+       collect(DISTINCT {id: mec.id, name: mec.name, kind: mec.kind,
+                         file_path: mec.file_path}) AS via_module
+```
+
+The union of `uc_direct` and `via_module` is the set of external contracts
+the UC's tasks must reference at generation time.
+
+#### 1.6.2: File-system existence and stub check
+
+For each `ExternalContract` row returned above, verify the file referenced
+by `ec.file_path`:
+
+1. **File absent on disk** → record `external-contract-missing` for `(uc_id,
+   contract_id)`.
+2. **File present but required sections empty / "TBD" / stub** → record
+   `external-contract-stub`. The required sections are 1–8 and 10–11 of the
+   template (`.tl/external-contracts/_template.md`). Section 9 is required
+   when `ec.kind == 'provider'`. Section 7 must be filled OR explicitly
+   marked `N/A — no file URLs`.
+
+Both conditions are blockers; the only override is a signed exception under
+the W4 schema (no inline flag).
+
+#### 1.6.3: Example check logic (pseudocode)
+
+```text
+violations = []
+for uc in scope:
+  required_contracts = graph_query(uc.id)  # Step 1.6.1
+  for contract in required_contracts:
+    if not file_exists(contract.file_path):
+      violations.append({
+        uc_id: uc.id, contract_id: contract.id,
+        contract_name: contract.name, contract_kind: contract.kind,
+        reason: "external-contract-missing",
+        expected_path: contract.file_path,
+        remedy: "Run /nacl-sa-architect External Contracts phase OR file " +
+                "signed exception under W4 schema."
+      })
+      continue
+    sections = parse_required_sections(contract.file_path)
+    missing_required = []
+    for section in [1,2,3,4,5,6,7,8,10,11]:
+      if not sections[section].filled_non_stub:
+        missing_required.append(section)
+    if contract.kind == 'provider' and not sections[9].filled_non_stub:
+      missing_required.append(9)
+    if missing_required:
+      violations.append({
+        uc_id: uc.id, contract_id: contract.id,
+        contract_name: contract.name,
+        reason: "external-contract-stub",
+        missing_sections: missing_required,
+        expected_path: contract.file_path,
+        remedy: "Complete sections " + missing_required + " of " +
+                contract.file_path + " OR file signed exception (W4)."
+      })
+
+if violations:
+  # Cluster violations per UC. Surface the full list.
+  for v in violations:
+    log(v.uc_id, v.contract_name, v.reason, v.expected_path)
+  emit_headline("PLAN HALTED — EXTERNAL_CONTRACT_MISSING")
+  emit_status("BLOCKED")
+  exit_without_writing_anything()
+```
+
+The example above is a sketch. The skill's implementation MUST:
+
+- Surface every violation (do NOT short-circuit after the first one — the
+  operator needs the complete list to either author the missing contracts
+  or to scope a signed exception).
+- Refuse to write any TL node, any Wave node, any task file, or any
+  `.tl/status.json` / `.tl/master-plan.md` / `.tl/changelog.md` entry until
+  the gate passes OR a signed exception covering every violation is on disk.
+- Emit `Status: BLOCKED` workflow detail `external-contract-missing` (when
+  the file is absent) or `external-contract-stub` (when sections are
+  unfilled). See **Output Summary** below for the full headline / status
+  contract.
+
+#### 1.6.4: Worked example — UC-300 referencing kie.ai
+
+```
+graph: UC-300 -[:REQUIRES_EXTERNAL]-> (ExternalContract {id: 'ext-kie',
+        name: 'kie.ai', kind: 'provider',
+        file_path: '.tl/external-contracts/kie.md'})
+
+case A: .tl/external-contracts/kie.md exists, all required sections filled
+  → gate PASSES; UC-300 task generation proceeds.
+
+case B: .tl/external-contracts/kie.md absent
+  → gate FAILS with external-contract-missing.
+  → headline: PLAN HALTED — EXTERNAL_CONTRACT_MISSING
+  → status:   BLOCKED
+  → remedy:   /nacl-sa-architect External Contracts phase, or signed
+              exception under W4 schema.
+
+case C: file exists but Section 9 (Model namespace) is "TBD"
+  → gate FAILS with external-contract-stub; missing_sections: [9].
+  → headline: PLAN HALTED — EXTERNAL_CONTRACT_STUB
+  → status:   BLOCKED
+```
+
+The same flow applies for any protocol (TUS, SSE, etc.) — the `kind`
+property on `ExternalContract` toggles the Section-9 requirement only.
+
+#### 1.6.5: Strict-only language
+
+There is no inline `--skip-external-contract` flag. There is no
+`gate_mode: legacy` carve-out. The `project_kind: prototype` config does
+NOT relax this gate; prototypes are the PR/CI carve-out, not the contract
+carve-out. The only override is a signed exception under the W4 schema
+covering every violation by `(uc_id, contract_id)` tuple.
 
 ---
 
@@ -742,11 +888,13 @@ MATCH (n) WHERE n:Task OR n:Wave DETACH DELETE n
 - Module, UseCase, ActivityStep, DomainEntity, DomainAttribute
 - Enumeration, EnumValue, Form, FormField
 - Requirement, SystemRole, Component, APIEndpoint
+- ExternalContract (consumed by Step 1.6 External Contracts Gate)
 
 # SA layer edges:
 - CONTAINS_UC, CONTAINS_ENTITY, HAS_STEP, USES_FORM, HAS_FIELD
 - MAPS_TO, HAS_ATTRIBUTE, HAS_REQUIREMENT, DEPENDS_ON, ACTOR
 - HAS_ENUM, HAS_VALUE, EXPOSES, RELATES_TO
+- DEPENDS_ON_EXTERNAL, REQUIRES_EXTERNAL (Step 1.6)
 
 # TL layer nodes (for incremental check):
 - Task, Wave
@@ -756,6 +904,9 @@ MATCH (n) WHERE n:Task OR n:Wave DETACH DELETE n
 - sa_uc_dependencies (sa-queries.cypher)
 - sa_module_overview (sa-queries.cypher)
 - tl_uc_task_context (tl-queries.cypher)
+
+# Filesystem reads (Step 1.6 External Contracts Gate):
+- .tl/external-contracts/<slug>.md  (per ExternalContract.file_path)
 ```
 
 ### Writes (Neo4j -- via mcp__neo4j__write-cypher)
@@ -806,9 +957,11 @@ by `nacl-tl-fix`.
 
 | Headline | Status | When |
 |----------|--------|------|
-| `PLAN COMPLETE` | `PASS` | Every UC has activity steps AND requirements; no TL nodes pre-existed (or overwrite was confirmed); all task files generated. |
+| `PLAN COMPLETE` | `PASS` | Every UC has activity steps AND requirements; no TL nodes pre-existed (or overwrite was confirmed); External Contracts Gate (Step 1.6) passes for every UC; all task files generated. |
 | `PLAN APPLIED — PARTIAL (incomplete SA inputs)` | `UNVERIFIED` | At least one UC has missing activity steps or requirements. Task files were generated; impl-brief notes pending; `partial_inputs` recorded in `status.json`. |
 | `PLAN HALTED — NO_SA_DATA` | `BLOCKED` | Pre-flight returned zero SA nodes. No TL nodes or task files created. |
+| `PLAN HALTED — EXTERNAL_CONTRACT_MISSING` | `BLOCKED` (workflow detail `external-contract-missing`) | At least one UC in scope references an `ExternalContract` whose `.tl/external-contracts/<slug>.md` is absent on disk. Step 1.6 lists every `(uc_id, contract_name, expected_path)` triple. No TL nodes or task files created. |
+| `PLAN HALTED — EXTERNAL_CONTRACT_STUB` | `BLOCKED` (workflow detail `external-contract-stub`) | At least one referenced contract file exists but has empty or "TBD" required sections (1–8, 10, 11; plus 9 for providers; plus 7 unless explicitly "N/A"). Step 1.6 lists every `(uc_id, contract_name, missing_sections)` triple. No TL nodes or task files created. |
 
 ---
 
@@ -884,9 +1037,71 @@ Then re-run /nacl-tl-plan.
 
 ---
 
+**External Contracts Gate refused (Step 1.6) — contract file absent:**
+
+```
+PLAN HALTED — EXTERNAL_CONTRACT_MISSING
+
+Status: BLOCKED
+Workflow detail: external-contract-missing
+Project: [Name]
+Source: Neo4j SA layer ({N} UCs queried)
+
+Missing external-contract files:
+  UC300 → ext-kie (kie.ai, provider) — expected .tl/external-contracts/kie.md
+  UC100 → ext-tus (TUS upload, protocol) — expected .tl/external-contracts/tus.md
+  ...
+
+No TL nodes or task files were created.
+
+Remedy:
+  1. Run /nacl-sa-architect; complete the External Contracts phase
+     for every missing contract.
+  2. OR file a signed exception under the W4 schema covering every
+     (uc_id, contract_id) tuple listed above.
+Then re-run /nacl-tl-plan.
+```
+
+---
+
+**External Contracts Gate refused (Step 1.6) — contract file present but stub:**
+
+```
+PLAN HALTED — EXTERNAL_CONTRACT_STUB
+
+Status: BLOCKED
+Workflow detail: external-contract-stub
+Project: [Name]
+Source: Neo4j SA layer ({N} UCs queried)
+
+Stub external-contract files:
+  UC300 → ext-kie (.tl/external-contracts/kie.md)
+    missing required sections: [9 Model namespace, 10 Fixture-test path]
+  ...
+
+No TL nodes or task files were created.
+
+Remedy:
+  1. Complete the listed sections of each contract file.
+  2. OR file a signed exception under the W4 schema covering every
+     (uc_id, contract_id) tuple listed above.
+Then re-run /nacl-tl-plan.
+```
+
+---
+
 ## Quality Checklist
 
 Before completing, verify:
+
+### External Contracts Gate (Step 1.6)
+- [ ] Every UC in scope has been queried for `REQUIRES_EXTERNAL` and (via its Module) `DEPENDS_ON_EXTERNAL` edges
+- [ ] Every referenced `ExternalContract.file_path` exists on disk
+- [ ] Every contract file has required sections 1–8, 10, 11 filled (non-stub)
+- [ ] Provider contracts (`kind == 'provider'`) also have section 9 (Model namespace) filled
+- [ ] Section 7 (File URL reachability) is filled OR explicitly "N/A — no file URLs"
+- [ ] No inline `--skip-external-contract` flag was used (does not exist)
+- [ ] Any signed exceptions cover every `(uc_id, contract_id)` violation tuple
 
 ### Task files
 - [ ] Every UC has exactly 8 files (task-be, task-fe, test-spec, test-spec-fe, impl-brief, impl-brief-fe, acceptance, api-contract)

@@ -52,6 +52,7 @@ Before executing any command, read and internalize:
 - **`graph-infra/schema/sa-schema.cypher`** --- SA node labels, constraints, relationship types.
 - **`graph-infra/queries/sa-queries.cypher`** --- Named queries (sa_uc_full_context, sa_form_domain_mapping).
 - **`graph-infra/queries/handoff-queries.cypher`** --- BA-to-SA traceability queries.
+- **`nacl-sa-uc/references/runtime-contract.cypher`** --- Cypher template + decision tree for the RuntimeContract subgraph (Phase 4.5). Required reading before detailing any queue / workflow / long-running / async-provider / recoverable UC.
 
 ---
 
@@ -329,14 +330,16 @@ Detail a specific UseCase by creating its full subgraph: ActivitySteps, Forms, F
 ## Workflow
 
 ```
-+------------------+     +------------------+     +------------------+     +------------------+     +------------------+
-| Phase 1          |     | Phase 2          |     | Phase 3          |     | Phase 4          |     | Phase 5          |
-| Read UC +        |---->| Activity         |---->| Forms +          |---->| Requirements     |---->| Validation +     |
-| BA Context       |     | Steps            |     | Form-Domain Map  |     |                  |     | Report           |
-+------------------+     +------------------+     +------------------+     +------------------+     +------------------+
++----------+     +----------+     +----------+     +----------+     +-------------+     +----------+
+| Phase 1  |     | Phase 2  |     | Phase 3  |     | Phase 4  |     | Phase 4.5   |     | Phase 5  |
+| Read UC +|---->| Activity |---->| Forms +  |---->| Require- |---->| Runtime     |---->| Valid.+  |
+| BA Ctx   |     | Steps    |     | Domain   |     | ments    |     | Contract    |     | Report   |
++----------+     +----------+     +----------+     +----------+     +-------------+     +----------+
 ```
 
 **Do not proceed to the next phase without explicit user confirmation.**
+
+**Phase 4.5 (Runtime Contract) is MANDATORY for any UC with queue, workflow, long-running, async-provider, or recoverable characteristics.** See the Phase 4.5 section below for the decision tree, required fields, and worked examples. UCs that fail the decision tree skip Phase 4.5 and proceed straight to Phase 5 with `runtime_contract: not_required` recorded on the UC node.
 
 ---
 
@@ -706,6 +709,104 @@ RETURN brq.id AS brq_id, rq.id AS rq_id
 
 ---
 
+### Phase 4.5: Runtime Contract (FSM / queue / workflow durable state)
+
+Wave: W8-runtime-fsm. Mandatory for any UC with queue / workflow / long-running / async-provider / recoverable characteristics. The contract captures the **durable** state machine, transaction boundaries, locks, emitted events with pre-commit / post-commit lifecycle, retry semantics, cancel-while-X race resolution, recovery procedure after a process crash, and idempotency key strategy.
+
+**Why this phase exists.** Postmortems across two production NaCl projects converge on the same diagnosis: TS types and graph artifacts matched on both sides of every interface, but the durable runtime did not. Two worked examples drive this phase:
+
+- **Karatov UC-112 "restart-after-failed-with-running-tasks" silent no-op** — pressing "Restart" on a failed task returned 200 but the task stayed `failed`. `enqueue()` used `INSERT … ON CONFLICT DO NOTHING`; the previous `failed` queue_items row still existed, so the insert was silently suppressed. The UC spec was silent on the `failed → pending` transition; it specified that restart re-enqueues, but did not declare the DB-level pre-condition (delete the previous queue_items row in the same transaction) nor the 409 `TASK_NOT_RESTARTABLE` branch for non-restartable terminal states. A correct Runtime Contract would have made both explicit and the bug would have been impossible to ship.
+- **Transcriber UC-107 / UC-150 / UC-202 "cancel-while-failing race"** — the worker commit transaction missed a row-level `FOR UPDATE` lock; cancel and fail could fire concurrently against the same row, terminal-state ordering was unspecified, and both writes won non-deterministically. A correct Runtime Contract would have declared `row_for_update` on both the `fail` and `cancel` transitions and a `RESOLVES_RACE_WITH` edge naming cancel as the winner; fail would reacquire the lock, observe `status=cancelled`, and exit without a state change.
+
+#### 4.5.1 Decision tree — is a Runtime Contract MANDATORY for this UC?
+
+A Runtime Contract is mandatory if **any** of the following is true:
+
+1. **Async step keywords (Q1).** The UC has at least one `System`-type ActivityStep whose description references queue / worker / async / job / poll / schedule / cron / outbox / saga / restart / retry / cancel.
+2. **State-bearing domain entity (Q2).** The UC produces or modifies a BusinessEntity that has a `status` / `state` / `lifecycle` / `phase` attribute (state machine on the domain side).
+3. **Async external provider (Q3).** The UC has a Requirement linked to an external-contracts.md provider marked `sync_vs_async = "async"`. NOTE: provider linkage lands in W6; until then, ask the user explicitly.
+4. **Behavioral requirement (Q4).** The UC has a `behavioral`-type Requirement whose text contains retry / restart / cancel / recover / resume / idempotent.
+5. **Async dependency (Q5).** The UC has a `DEPENDS_ON` edge to another UC whose name or description includes worker / queue / dispatcher / scheduler.
+
+Run the decision tree query from `nacl-sa-uc/references/runtime-contract.cypher` § 7 and present the verdict to the user. The query is heuristic — confirm with the user before BLOCKING.
+
+If the verdict is **not mandatory**, record `uc.runtime_contract = 'not_required'` and skip to Phase 5:
+
+```cypher
+MATCH (uc:UseCase {id: $ucId})
+SET uc.runtime_contract = 'not_required',
+    uc.updated = datetime()
+RETURN uc.id AS id;
+```
+
+If the verdict is **mandatory**, proceed with the contract authoring below. If the user refuses to author a contract, stop with `BLOCKED — runtime_contract_missing` and do not advance to Phase 5.
+
+#### 4.5.2 Required fields (all eight)
+
+For every mandatory contract, the user must confirm — and the graph must record — **all eight** of the following:
+
+| # | Field | Where it lives | Why it matters |
+|---|---|---|---|
+| 1 | **State machine** (states + transitions) | `RuntimeState`, `RuntimeTransition` nodes | Without an enumerated FSM, unreachable states ship as "happy path only". |
+| 2 | **DB transaction boundary per transition** | `RuntimeTransition.txn_boundary` ∈ `single_tx \| no_tx \| saga \| outbox` | Default is `single_tx`; `no_tx` and `saga` MUST be justified in `cancel_race_note`. Karatov restart bug = `txn_boundary` ambiguity. |
+| 3 | **Lock acquisition strategy** | `RuntimeTransition.lock_strategy` ∈ `row_for_update \| row_skip_locked \| advisory_lock \| no_lock` + `RuntimeLock` nodes | Transcriber cancel-race = missing `row_for_update`. |
+| 4 | **Emitted events with lifecycle (pre-commit vs post-commit)** | `RuntimeEvent.lifecycle` ∈ `pre_commit \| post_commit` + `EMITS_EVENT` edges | `post_commit` is the safe default; `pre_commit` events fire before the row is durable and MUST be justified explicitly. |
+| 5 | **Retry semantics per transition** | `RuntimeTransition.retry_policy` ∈ `no_retry \| fixed \| exponential \| bounded_n` + `retry_parameters` JSON | Silent infinite retry burns provider quota; missing bounds caused the kie.ai 404 storm. |
+| 6 | **Cancel-while-X race resolution** | `RuntimeTransition.cancel_race_note` + `RESOLVES_RACE_WITH` edges between racing transitions | Transcriber cancel-race = no declared winner; both writes were non-deterministic. |
+| 7 | **Recovery procedure after process crash** | `RecoveryProcedure` node + `HAS_RECOVERY` edge | Karatov "restart-with-running-tasks" originated in a missing recovery procedure for in-flight tasks at worker boot. |
+| 8 | **Idempotency key strategy** | `IdempotencyKey` node + `USES_IDEMPOTENCY_KEY` edge; `RuntimeTransition.idempotency_key_ref` per transition | Without an idempotency key, retried requests double-process; `ON CONFLICT DO NOTHING` is NOT a substitute (Karatov UC-112 proved this). |
+
+A contract that omits any of the eight is `BLOCKED — runtime_contract_incomplete`.
+
+#### 4.5.3 Disambiguation — RuntimeContract vs Requirement
+
+A Requirement is a **statement** ("the system must cancel running tasks"). A RuntimeContract is the **operational machine** that proves a class of behavioral Requirements ("cancel-while-failing — cancel wins, fail re-reads the lock and exits"). When a behavioral Requirement says "retry the provider with exponential backoff", the Requirement node stays; the contract holds the actual `retry_policy = 'exponential'` and the `retry_parameters` JSON. Link them with `IMPLEMENTED_BY` (Requirement → RuntimeTransition) when the relationship is direct.
+
+#### 4.5.4 Author the contract (Cypher writes)
+
+Use the templates in `nacl-sa-uc/references/runtime-contract.cypher`:
+
+- § 5.1 — create the `RuntimeContract` root and `CONTAINS_RUNTIME_CONTRACT` edge.
+- § 5.2 — create states, `HAS_STATE`, `HAS_INITIAL_STATE`, `HAS_TERMINAL_STATE` edges.
+- § 5.3 — create transitions with `FROM_STATE`, `TO_STATE`, `txn_boundary`, `lock_strategy`, `retry_policy`, `retry_parameters`, `cancel_race_note`.
+- § 5.4 — create `RuntimeLock`, `RuntimeEvent` nodes and `ACQUIRES_LOCK`, `EMITS_EVENT` edges.
+- § 5.5 — create `RESOLVES_RACE_WITH` edges between racing transitions.
+- § 5.6 — create `IdempotencyKey` and `RecoveryProcedure` with `USES_IDEMPOTENCY_KEY` and `HAS_RECOVERY` edges.
+
+ID convention: `{UC}-RC` for the root, `{UC}-RC-S{NN}` for states, `{UC}-RC-T{NN}` for transitions, `{UC}-RC-E{NN}` for events, `{UC}-RC-L{NN}` for locks, `{UC}-RC-IK{NN}` for idempotency keys, `{UC}-RC-R{NN}` for recovery procedures.
+
+#### 4.5.5 Read-back and present
+
+Run the read-back query in `runtime-contract.cypher` § 6 and present the full subgraph to the user before advancing to Phase 5:
+
+```
+Runtime Contract for {UC-ID}:
+  States ({N}): {list with initial / terminal markers}
+  Transitions ({M}):
+    | # | name | from -> to | trigger | txn_boundary | lock_strategy | retry_policy | idempotency_key | cancel_race_note |
+  Events ({E}): {list with lifecycle (pre/post-commit) and transport}
+  Locks ({L}): {list with resource and mode}
+  Idempotency keys ({IK}): {list with source / scope / ttl}
+  Recovery procedures ({R}): {list with trigger / action}
+  Cancel-race edges: {list of RESOLVES_RACE_WITH with winner and rule}
+
+Mandatory-field checklist:
+  [OK / MISSING] State machine
+  [OK / MISSING] Txn boundary per transition
+  [OK / MISSING] Lock strategy per transition
+  [OK / MISSING] Emitted events with lifecycle
+  [OK / MISSING] Retry semantics per transition
+  [OK / MISSING] Cancel-while-X race resolution
+  [OK / MISSING] Recovery procedure
+  [OK / MISSING] Idempotency key strategy
+
+Confirm to advance to Phase 5?
+```
+
+If any of the eight is MISSING, refuse to advance — stop with `BLOCKED — runtime_contract_incomplete`.
+
+---
+
 ### Phase 5: Validation and Report
 
 #### 5.1 Full UC subgraph query
@@ -959,20 +1060,35 @@ If `detail` finds no DomainEntity realized from related BA entities:
 
 ```yaml
 # Neo4j (via MCP):
-- mcp__neo4j__write-cypher   # UseCase, ActivityStep, Form, FormField, Requirement nodes
+- mcp__neo4j__write-cypher   # UseCase, ActivityStep, Form, FormField, Requirement,
+                              # RuntimeContract, RuntimeState, RuntimeTransition,
+                              # RuntimeEvent, RuntimeLock, IdempotencyKey,
+                              # RecoveryProcedure nodes
                               # AUTOMATES_AS, CONTAINS_UC, ACTOR, HAS_STEP, USES_FORM,
-                              # HAS_FIELD, MAPS_TO, HAS_REQUIREMENT, IMPLEMENTED_BY edges
+                              # HAS_FIELD, MAPS_TO, HAS_REQUIREMENT, IMPLEMENTED_BY,
+                              # CONTAINS_RUNTIME_CONTRACT, HAS_STATE,
+                              # HAS_INITIAL_STATE, HAS_TERMINAL_STATE,
+                              # HAS_TRANSITION, FROM_STATE, TO_STATE, ACQUIRES_LOCK,
+                              # EMITS_EVENT, RESOLVES_RACE_WITH,
+                              # USES_IDEMPOTENCY_KEY, HAS_RECOVERY edges
 ```
 
 ### Node types created
 
 | Node | Properties |
 |------|------------|
-| UseCase | id, name, actor, priority, status, detail_status, created, updated |
+| UseCase | id, name, actor, priority, status, detail_status, runtime_contract, created, updated |
 | ActivityStep | id, description, actor, order, form_ref, updated |
 | Form | id, name, description, updated |
 | FormField | id, name, label, field_type, required, order, updated |
 | Requirement | id, description, source, rq_type, updated |
+| RuntimeContract | id, uc_id, mandatory_reason, created, updated |
+| RuntimeState | id, name, is_initial, is_terminal, description |
+| RuntimeTransition | id, name, trigger, txn_boundary, lock_strategy, retry_policy, retry_parameters, idempotency_key_ref, cancel_race_note |
+| RuntimeEvent | id, name, lifecycle, transport |
+| RuntimeLock | id, resource, mode, timeout_ms |
+| IdempotencyKey | id, source, scope, ttl_seconds |
+| RecoveryProcedure | id, trigger, action, description |
 
 ### Edge types created
 
@@ -987,6 +1103,18 @@ If `detail` finds no DomainEntity realized from related BA entities:
 | MAPS_TO | FormField | DomainAttribute | --- |
 | HAS_REQUIREMENT | UseCase | Requirement | --- |
 | IMPLEMENTED_BY | BusinessRule | Requirement | --- |
+| CONTAINS_RUNTIME_CONTRACT | UseCase | RuntimeContract | --- |
+| HAS_STATE | RuntimeContract | RuntimeState | --- |
+| HAS_INITIAL_STATE | RuntimeContract | RuntimeState | --- |
+| HAS_TERMINAL_STATE | RuntimeContract | RuntimeState | --- |
+| HAS_TRANSITION | RuntimeContract | RuntimeTransition | --- |
+| FROM_STATE | RuntimeTransition | RuntimeState | --- |
+| TO_STATE | RuntimeTransition | RuntimeState | --- |
+| ACQUIRES_LOCK | RuntimeTransition | RuntimeLock | --- |
+| EMITS_EVENT | RuntimeTransition | RuntimeEvent | --- |
+| RESOLVES_RACE_WITH | RuntimeTransition | RuntimeTransition | rule, winner, note |
+| USES_IDEMPOTENCY_KEY | RuntimeContract | IdempotencyKey | --- |
+| HAS_RECOVERY | RuntimeContract | RecoveryProcedure | --- |
 
 ---
 
@@ -1014,6 +1142,10 @@ If `detail` finds no DomainEntity realized from related BA entities:
 - [ ] Requirements derived from BA rules + validation + behavior
 - [ ] Requirement nodes created, HAS_REQUIREMENT edges created
 - [ ] IMPLEMENTED_BY edges created (BusinessRule -> Requirement)
+- [ ] **Runtime Contract decision tree run** (Phase 4.5)
+- [ ] If mandatory: **RuntimeContract subgraph authored with all eight required fields** (state machine, txn boundary per transition, lock strategy per transition, emitted events with lifecycle, retry semantics, cancel-while-X race resolution, recovery procedure, idempotency key strategy) — CRITICAL
+- [ ] If mandatory: CONTAINS_RUNTIME_CONTRACT edge created (UseCase -> RuntimeContract)
+- [ ] If not mandatory: `uc.runtime_contract = 'not_required'` recorded on the UC node
 - [ ] UC detail_status updated to `'detailed'`
 - [ ] Full UC subgraph query run for verification
 - [ ] Validation report presented to user

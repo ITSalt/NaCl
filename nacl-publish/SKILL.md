@@ -192,6 +192,136 @@ Before any Docmost command, verify:
 
 ---
 
+## Pre-publish reconciliation gate
+
+`nacl-publish` writes externally-visible artifacts (Docmost pages,
+Excalidraw boards). Publishing inconsistent state to Docmost makes
+the drift visible to stakeholders and harder to retract than an
+internal `.tl/` artifact. This gate is mandatory **before any
+Docmost write** (full `docmost`, `docmost-incremental`, and
+`boards-link` commands). Preview-only commands (`docmost-preview`)
+are exempt.
+
+The gate compares the **live graph** (the source publish is about
+to derive from) against `.tl/changelog.md` (the record of what has
+been shipped). If these two disagree, the publish is refused.
+
+**Live graph reads only — no `.cypher` export fallback.** Exports
+are stale by definition the moment the next graph mutation lands,
+and a publish run that consumed an export would push stale pages to
+Docmost. If the graph container is unreachable, the gate emits
+`Status: BLOCKED` with workflow detail `graph_unavailable` and the
+publish refuses. The fix is to bring the graph container up
+(`docker compose up -d` from `graph-infra/`), not to swap in an
+export. Operators who must publish under an unreachable graph file
+a W4 signed exception against gate `graph-stale` — the exception
+does NOT re-enable export fallback; it accepts that the publish
+ran against unreconciled state.
+
+### Step 1: Reach the live graph
+
+Use the project-resolved Bolt endpoint:
+
+```cypher
+RETURN 1 AS ok
+```
+
+On failure: HALT.
+
+```
+HALT — graph_unavailable (pre-publish reconciliation).
+
+The live Neo4j graph is unreachable. A stale .cypher export is
+NOT an acceptable substitute — publishing it to Docmost would
+push out-of-date pages to stakeholders.
+
+Resolution: bring the project graph container up and rerun, or
+file a signed exception (.tl/exceptions/) against gate
+`graph-stale`.
+
+Status: BLOCKED (workflow detail: graph_unavailable)
+```
+
+### Step 2: Read graph state and changelog
+
+```cypher
+// Single round-trip read of the comparison surface:
+OPTIONAL MATCH (fr:FeatureRequest)
+WITH collect({ id: fr.id, release_tag: fr.release_tag }) AS fr_list
+OPTIONAL MATCH (uc:UseCase)
+WITH fr_list, collect(uc.id) AS uc_list
+OPTIONAL MATCH (t:Task)
+WITH fr_list, uc_list, collect({
+  id: t.id, release_tag: t.release_tag,
+  evidence: coalesce(t.verification_evidence, '')
+}) AS task_list
+RETURN fr_list, uc_list, task_list
+```
+
+Read `.tl/changelog.md` and parse the most recent released
+section: every `FR-NNN` / `UC-NNN` mentioned, the release tag
+header, and any `release-status.json` cross-reference.
+
+### Step 3: Cross-checks (publish-scope subset)
+
+Reuses pairs from the W5 reconciliation taxonomy but scoped to the
+publish target:
+
+| Pair | Sources | Assertion |
+|---|---|---|
+| P-P1 | `.tl/changelog.md` released FR list vs graph `FeatureRequest` | every released `FR-NNN` in the latest changelog section exists as `FeatureRequest {id: 'FR-NNN'}` in the live graph. |
+| P-P2 | `.tl/changelog.md` released UC list vs graph `UseCase` | every released `UC-NNN` in the latest changelog section exists as `UseCase {id: 'UC-NNN'}`. |
+| P-P3 | `.tl/release-status.json.release_tag` vs graph `release_tag` properties | if the JSON release tag is non-null, the live graph carries that tag on ≥1 `FeatureRequest` or `Task` node. (Skip if `.tl/release-status.json` is absent — the gate does not require it; absence is logged.) |
+
+An assertion that fails under no active signed exception is a hard
+refusal.
+
+### Step 4: Refuse on disagreement
+
+If any of P-P1 … P-P3 fails, refuse the publish:
+
+```
+REFUSED — changelog and live graph disagree.
+
+nacl-publish writes externally-visible Docmost pages and refuses
+to publish stale or contradictory state.
+
+P-P1  changelog.md vs live graph FeatureRequest
+      .tl/changelog.md (section "0.18.0 ...") references FR-007;
+      live graph has NO FeatureRequest {id: 'FR-007'}.
+
+Active signed exceptions against `graph-stale`: none.
+
+Resolution options:
+  [1] Run /nacl-tl-conductor (or /nacl-sa-feature FR-007) to
+      reconcile graph state with the changelog claim.
+  [2] If the changelog is correct and the graph is genuinely
+      stale, file a signed exception against `graph-stale` and
+      rerun.
+
+Status: BLOCKED (workflow detail: publish-drift)
+```
+
+### Step 5: Record reconciliation evidence
+
+On PASS (or PASS-under-exception), write the publish-side
+reconciliation evidence:
+
+```
+.tl/reconciliation/<ISO-8601-utc>-publish.json
+```
+
+Same schema as the conductor's reconciliation artifact
+(see `/Users/maxnikitin/projects/NaCl/.tl/reconciliation/
+_template.json`) but with `sources_checked` scoped to the publish
+subset and `terminal_status` recorded against the publish gate
+specifically.
+
+Only on `terminal_status == VERIFIED` does the publish proceed to
+the actual Docmost write steps.
+
+---
+
 ## Command: `/nacl-publish docmost`
 
 Full publish -- generate markdown from graph for every artifact and create/update all pages in Docmost.

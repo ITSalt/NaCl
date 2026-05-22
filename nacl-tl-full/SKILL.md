@@ -146,9 +146,22 @@ Connection: read from config.yaml graph section (see nacl-core/SKILL.md → Grap
 /nacl-tl-full --wave N            # Execute only wave N
 /nacl-tl-full --task UC###        # Full lifecycle for one UC only
 /nacl-tl-full --feature FR-NNN    # Execute only the wave created for feature request FR-NNN
-/nacl-tl-full --skip-plan         # Skip planning (.tl/ already exists, graph already populated)
-/nacl-tl-full --skip-qa           # Skip E2E QA testing
 /nacl-tl-full --yes               # Skip START GATE confirmation, begin execution immediately
+
+# Removed in W9-ci-clean-checkout: the SKIP-PLAN full-lifecycle flag.
+#   Planning is no longer skippable via flag. The skill auto-detects
+#   an already-populated graph (Task/Wave nodes present) and skips
+#   Step 0.2 silently in that case. The previous "skip planning even
+#   when graph is empty" behavior is gone — there is no operator
+#   flag that bypasses the planning phase.
+
+# Removed in W3-blocking-qa: the bulk-QA-skip full-lifecycle flag.
+#   QA bypass at the full-lifecycle layer is no longer an operator flag.
+#   Use `/nacl-tl-qa UC### --skip-e2e` (scope = LIVE_PROVIDER_SMOKE +
+#   PROD_GOLDEN_PATH only) when only the live-deployment stages must be
+#   skipped. Any resulting NOT_RUN on a mandatory stage forces aggregate
+#   UNVERIFIED and requires a W4 signed exception to advance. Bulk-bypass
+#   needs route through W4 emergency mode.
 ```
 
 ---
@@ -183,7 +196,7 @@ IF .tl/.planning.lock EXISTS:
 
 ### Step 0.2: Run Planning
 
-If `--skip-plan` is NOT set and graph has no Task nodes, launch `/nacl-tl-plan` as a **Task agent** (subagent):
+If the graph has no Task nodes, launch `/nacl-tl-plan` as a **Task agent** (subagent). If Task/Wave nodes already exist, skip this step silently — the previous SKIP-PLAN flag was removed in W9-ci-clean-checkout because graph-state detection makes it unnecessary:
 
 ```
 Launch Task agent: /nacl-tl-plan
@@ -376,9 +389,13 @@ Your job:
       - Read the `Regression test:` line from /nacl-tl-dev's six-status report.
         Compose $evidence:
           - PASS + parseable path → 'test-GREEN:<path>'
-          - PASS + `--no-test` override → 'no-test'
           - PASS + missing/unparseable `Regression test:` → HALT
             ("FULL HALTED — UNVERIFIED (TECH-###: PASS without Regression test path)")
+          (The NO-TEST flag that previously emitted 'no-test'
+          evidence was REMOVED in W4-blocking-release. The literal
+          token is scrubbed from this skill's prose. Bulk-bypass
+          routes through emergency mode — see
+          nacl-tl-core/references/emergency-mode.md.)
         Do NOT skip the SET on $evidence.
       MATCH (t:Task {id: $taskId})
       SET t.status = 'done',
@@ -567,8 +584,11 @@ For each UC (sequentially):
           $evidence = 'test-UNVERIFIED'
       - If any phase BLOCKED (with override) and no UNVERIFIED:
           $evidence = 'test-UNVERIFIED'  (no RED→GREEN proof on this UC)
-      - If user passed `--no-test` to /nacl-tl-full:
-          $evidence = 'no-test'
+      (The NO-TEST flag — previously the only path to 'no-test'
+      evidence — was REMOVED in W4-blocking-release. The 'no-test'
+      evidence string is no longer producible by this skill. The
+      bulk-bypass use case routes through emergency mode; see
+      nacl-tl-core/references/emergency-mode.md.)
 
     Cypher:
       MATCH (t:Task {id: $taskId})
@@ -585,12 +605,14 @@ For each UC (sequentially):
     UC is considered DONE only when ALL phases PASS
 
     HALT contract: If $aggregatedStatus = 'done' but no `Regression test:`
-    path was parsed from either BE or FE report (and `--no-test` was NOT
-    passed), HALT with:
+    path was parsed from either BE or FE report, HALT with:
       "WAVE HALTED — UNVERIFIED (UC###: aggregated PASS without parseable
        Regression test path; refusing to write t.status='done' without evidence)"
     Do NOT silently write evidence = '' or skip the SET — that is the bug
-    that produced the v0.13.0 "Verification gap" reports.
+    that produced the v0.13.0 "Verification gap" reports. (The NO-TEST
+    flag that previously offered an escape hatch from this HALT was
+    REMOVED in W4-blocking-release; emergency mode is the only bulk-
+    bypass path now.)
 
 REMINDER: Do NOT return WAVE_RESULT after Step 1 or Step 3. Continue executing
 Steps 2 through 8 before considering any UC complete.
@@ -994,20 +1016,44 @@ RETURN DISTINCT w.number AS wave
 
 Equivalent to `--wave N` where N is the wave assigned to this FR.
 
-### --skip-plan
+### SKIP-PLAN flag (REMOVED in W9-ci-clean-checkout)
 
-Skip Phase 0 planning. Assume `.tl/` already populated and graph already has Task/Wave nodes. Start from Phase 1 (or resume).
+The SKIP-PLAN flag (was: "skip Phase 0 planning; assume `.tl/`
+already populated and graph already has Task/Wave nodes") was
+REMOVED in W9-ci-clean-checkout. Phase 0 already detects an
+already-populated graph (Task/Wave count > 0 in the probe query)
+and skips the `/nacl-tl-plan` Task-agent launch in that case. The
+flag was redundant; its only remaining use case was bypassing
+planning when the graph WAS empty, which is exactly the case the
+planning phase exists to handle. Removing the flag eliminates a
+class of "delivered without a plan" episodes.
 
-### --skip-qa
+There is no override that resurrects the flag. Operators wanting
+to force a re-plan should clear Task/Wave nodes (or invoke
+`/nacl-tl-plan` directly with explicit scope) before re-running
+`/nacl-tl-full`.
 
-Skip QA phase in all UC lifecycles. Per Cross-cutting principle P4 (skip ⇒ unverified, never PASS), this flag forces the wave aggregate headline to `FULL APPLIED — UNVERIFIED (qa skipped)`. The flag:
+### Bulk-QA-skip flag (REMOVED in W3-blocking-qa)
 
-- Records `phase_qa = 'skipped'` (not `'pending'`) on every UC Task in the wave, plus `Task.verification_skip_reason = 'full --skip-qa'`.
-- Forbids downstream stamping. The wave aggregate cannot promote any UC to `done` while `phase_qa = 'skipped'`. The wave terminates with `FULL APPLIED — UNVERIFIED (qa skipped)`; UCs that completed every other phase land at `verified-pending` rather than `done`.
-- Is recorded in `status.json` (`run.skip_flags = ['qa']`) and surfaced in the END GATE report under "Skipped phases".
-- Requires a separate explicit operator override before any UC moves to `done` / `delivered` / `released`. The override path is: re-run `/nacl-tl-full --task UC###` (or `/nacl-tl-qa UC###` plus a manual reconcile) without `--skip-qa`.
+The bulk-QA-skip flag (previously documented at this position) was
+removed from this skill in W3-blocking-qa. QA bypass at the
+full-lifecycle layer is no longer an operator flag — the
+SKIP-as-PASS failure mode it produced (transcriber UC-200/UC-300
+provider-skip episode) is what W3 closed.
 
-The previous "Tasks go directly from stubs to docs ... `phase_qa` stays `pending`" path is removed — `pending` is misleading for skipped work because it implies "still to be executed in this run".
+Alternatives:
+
+- **Single-stage skip (live-deployment stages only):** invoke
+  `/nacl-tl-qa UC### --skip-e2e`. Its scope is exactly
+  `LIVE_PROVIDER_SMOKE` and `PROD_GOLDEN_PATH`. The four pre-deployment
+  stages (`COMPONENT_QA`, `LOCAL_RUNTIME_QA`, `WIRE_CONTRACT_QA`,
+  `PROVIDER_FIXTURE_QA`) still run. If either skipped stage is
+  mandatory for the UC (per the matrix or project override), aggregate
+  is forced to `UNVERIFIED` — a W4 signed exception with
+  `affected_gates` naming the specific stage(s) is required to advance.
+- **Bulk-bypass needs:** route through W4 emergency mode (loudly
+  recorded; not a silent flag). See nacl-tl-release / nacl-tl-core for
+  the emergency-mode invocation.
 
 ---
 

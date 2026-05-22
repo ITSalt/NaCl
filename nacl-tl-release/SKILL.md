@@ -62,11 +62,37 @@ Version follows SemVer. Changelog comes from .tl/changelog.md.
 /nacl-tl-release --minor               # force minor version bump
 /nacl-tl-release --major               # force major version bump
 /nacl-tl-release --patch               # force patch version bump
-/nacl-tl-release --skip-merge          # skip merge + deploy steps (tag only, old behavior)
 /nacl-tl-release --dry-run             # show what would be merged + version bump, no action
 /nacl-tl-release --pr 42,45            # merge specific PRs (skip discovery)
 /nacl-tl-release --yes                 # skip user confirmation gates
 ```
+
+### Removed Flags (W4-blocking-release)
+
+Five flags were REMOVED in W4-blocking-release across the chain.
+The literal flag tokens have been scrubbed from this skill's prose
+to satisfy the W4 grep acceptance check (a literal-token search
+across the skill family must return empty). The removed flags are
+identified here by descriptive name only:
+
+| Removed flag (descriptive name) | Replacement |
+|---|---|
+| the SKIP-MERGE flag (was: tag-only mode bypassing the merge action) | For prototype projects with `git.strategy == "direct"`, the merge action is skipped by configuration (no PRs to merge). For standard projects, every release goes through PR + CI. Direct-strategy releases on `project_kind: prototype` require a signed exception with `affected_gates: [skipped-pr, skipped-ci]`. |
+| the SKIP-VERIFY flag (was: bypass staging verification; lived on `nacl-tl-deliver`, consumed here) | Removed at source in W4. The release-time read of `verification_evidence = 'no-test'` no longer has an upstream producer. Bulk-bypass routes through emergency mode (see below). |
+| the SKIP-DEPLOY flag (was: bypass health check; lived on `nacl-tl-deliver`, consumed here) | Removed at source in W4. Missing PROD_GOLDEN_PATH evidence is now a release-blocker. |
+| the NO-TEST flag (was: permitted `no-test` evidence; lived on `nacl-tl-full` / `nacl-tl-conductor`, consumed here) | Removed at source in W4. `no-test` evidence is no longer producible by the chain. |
+| the FORCE flag (was: per-skill bypass; lived on `nacl-tl-reconcile`, consumed here transitively) | Removed at source in W4. |
+
+(W3 also removed the bulk-QA-skip flag; W5 will remove the SKIP-
+DELIVER flag; W9 will remove the SKIP-PLAN flag. None of these are
+re-enabled by signed exceptions.)
+
+The bulk-bypass use case those flags served is now routed through
+**emergency mode** — see
+`nacl-tl-core/references/emergency-mode.md`. Emergency mode is a
+separate top-level invocation pattern (three env vars), NOT a
+flag, and is loudly recorded in `release-status.json` +
+`.tl/changelog.md` + `.tl/emergencies/<timestamp>-<slug>.yaml`.
 
 ### Configuration Resolution
 
@@ -114,23 +140,230 @@ Persists release progress for resumption:
 
 ---
 
+## Release Blocking Gates (Strict-Only)
+
+**Introduced in:** W4-blocking-release.
+
+The release skill refuses VERIFIED → release-tag / promote when ANY
+of the six conditions below holds. These gates are **strict-only** —
+strict is the single, unconditional mode; there is no fallback
+branch, no `--skip-*` flag, and no inline operator-prompt override.
+The only sanctioned override paths are: (a) a signed exception under
+the schema below, and (b) emergency mode (separate invocation,
+loudly recorded — see `nacl-tl-core/references/emergency-mode.md`).
+
+The Karatov stale-graph episode (live graph 1,083 nodes vs
+handover-artifact 970 nodes; `/nacl-sa-validate full = FAIL` with 1
+CRITICAL + 156 WARNINGs; release proceeded under operator override)
+and the transcriber health-only episode (`/api/health` returned 200
+OK but no upload golden path ever executed; first real call 404'd)
+are the canonical episodes these gates exist to prevent.
+
+### The Six Block Conditions
+
+| # | Condition | Refusal headline | Workflow detail |
+|---|---|---|---|
+| 1 | Upstream `tl-sync` verdict is `UNVERIFIED` (per W2) — wire-evidence missing for any UC with `actor != SYSTEM` | `RELEASE HALTED — UNVERIFIED (upstream-sync-unverified)` | `upstream-sync-unverified` |
+| 2 | `tl-qa` aggregate is `UNVERIFIED` (per W3) — a mandatory stage (typically `LIVE_PROVIDER_SMOKE` or `PROD_GOLDEN_PATH`) is `NOT_RUN`, OR aggregate weakest-stage rule yielded `UNVERIFIED` | `RELEASE HALTED — UNVERIFIED (upstream-qa-unverified)` | `upstream-qa-unverified` |
+| 3 | **Graph staleness detected** — snapshot vs live mismatch on the project's Neo4j instance. **Baseline MUST come from a live capture; never from a stale `.cypher` export.** A `_summary.json` captured pre-release (live node count, label histogram, rel-type histogram) is compared to the current live state via direct Cypher query. Any node-count delta > 0 OR any label histogram delta OR any rel-type histogram delta = STALE. | `RELEASE HALTED — UNVERIFIED (graph-stale)` | `graph-stale` |
+| 4 | `/nacl-sa-validate full` reports `Status: FAIL` with at least one finding at `severity: CRITICAL` | `RELEASE HALTED — UNVERIFIED (sa-validate-critical)` | `sa-validate-critical` |
+| 5 | **Missing PROD_GOLDEN_PATH evidence.** A bare HTTP 200 from `/health` is `HEALTH_ONLY` evidence and is **never product-readiness evidence**. The release requires a `PROD_GOLDEN_PATH` evidence string in the QA aggregate (per W3 six-stage decomposition) for every UC where the matrix marks `PROD_GOLDEN_PATH` mandatory. | `RELEASE HALTED — UNVERIFIED (missing-prod-golden-path)` | `missing-prod-golden-path` |
+| 6 | **PR / CI skipped without `project_kind: prototype` AND a signed exception.** Direct-strategy releases (no PR, no CI) are permitted only when `config.yaml` declares `project_kind: prototype` AND `.tl/exceptions/` contains a valid (unexpired, well-formed) exception with `affected_gates` including the literal `skipped-pr` and / or `skipped-ci` matching what is actually skipped. | `RELEASE HALTED — UNVERIFIED (skipped-pr-without-prototype-exception)` or `(skipped-ci-without-prototype-exception)` | `skipped-pr-without-prototype-exception` or `skipped-ci-without-prototype-exception` |
+
+### HEALTH_ONLY vs PROD_GOLDEN_PATH
+
+`HEALTH_ONLY` evidence:
+
+- Is the literal HTTP response from `{production_url}{health_endpoint}` returning 200 OK.
+- Confirms the deploy reached a running process and the process can serve at least one HTTP request.
+- **Does NOT confirm** that any product flow executed end-to-end against production data, against the production database, against the production provider keys, or with production-grade payload sizes.
+- Is the kind of evidence Step 3b of this skill collects.
+- Is **NEVER** product-readiness evidence on its own. The transcriber episode (health green; upload golden path 404 on first real call) is the canonical proof.
+
+`PROD_GOLDEN_PATH` evidence (per W3 six-stage decomposition):
+
+- Is a recorded end-to-end run of the UC's primary happy path against production: real auth, real database write, real provider call (with real provider key when applicable), real artifact returned.
+- Lives in the QA aggregate as the `qa-stage:prod-golden-path:VERIFIED` evidence string (or `qa-stage:prod-golden-path:NOT_RUN` when the stage did not run).
+- Is required by the release gate (condition #5 above) for every UC where the W3 mandatory-stage matrix marks `PROD_GOLDEN_PATH` mandatory.
+
+The release skill MUST distinguish between the two: condition #5
+fires when `PROD_GOLDEN_PATH` is missing or `NOT_RUN` on a UC where
+the matrix marks it mandatory, EVEN IF the Step 3b `/health` probe
+returned 200. The health probe is a complement to
+`PROD_GOLDEN_PATH`, not a substitute.
+
+### `project_kind=prototype` + Signed Exception (the PR/CI carve-out)
+
+**The carve-out is conjunctive.** A direct-strategy release without
+PR and without CI is permitted only when **both**:
+
+1. `config.yaml` declares `project_kind: prototype`, AND
+2. A signed exception exists with `affected_gates` enumerating
+   exactly the gate names being skipped (`skipped-pr`,
+   `skipped-ci`, or both).
+
+Neither condition alone is sufficient. Prototype-mode without an
+exception → block. Exception without prototype-mode → block (the
+exception is rejected at load time as malformed —
+`exception-prototype-only-gate-on-standard-project`).
+
+See `nacl-tl-core/references/config-schema.md` § "W4 PR/CI
+Carve-Out (binding)".
+
+### Signed Exception Schema (Binding)
+
+`.tl/exceptions/<exception_id>.yaml` is the only override mechanism
+for the six block conditions above (other than emergency mode). The
+schema is defined in `.tl/exceptions/_template.yaml`. The eight
+required fields are:
+
+| Field | Type | Notes |
+|---|---|---|
+| `exception_id` | string, format `EXC-YYYY-MM-DD-<slug>` | enforced via regex `^EXC-\d{4}-\d{2}-\d{2}-[a-z0-9][a-z0-9-]*$` |
+| `owner` | string | GitHub handle (no `@`) or team name |
+| `reason` | string | concrete justification; the literals `"urgent"`, `"blocked"`, `"needed for demo"`, and any single-word value are rejected |
+| `created_at` | ISO-8601 timestamp (UTC) | wall-clock at file creation |
+| `expiry` | ISO-8601 timestamp (UTC) | wall-clock at which the exception STOPS overriding |
+| `affected_gates` | list of strings | MUST enumerate specific gate names; `["*"]`, `["all"]`, or any catch-all token is rejected |
+| `affected_projects` | list of strings | project ids the exception applies to |
+| `followup_task` | string | task id or in-repo path of the follow-up that closes the underlying issue |
+
+Recognised gate names for `affected_gates` (W4 release-skill set):
+`skipped-pr`, `skipped-ci`, `upstream-sync-unverified`,
+`upstream-qa-unverified`, `graph-stale`, `sa-validate-critical`,
+`missing-prod-golden-path`. (The cross-skill set — `repo-checks-RED`,
+`wire-evidence-missing`, `LIVE_PROVIDER_SMOKE`, etc. — is documented
+in `.tl/exceptions/_template.yaml` header.)
+
+#### The Four Binding Rules
+
+1. **Expired = blocker.** When `expiry` is in the past at the
+   moment the gate is evaluated, the exception is treated as
+   ABSENT. The named gate refuses VERIFIED again with no grace
+   period. Workflow detail: `exception-expired`.
+
+2. **No silent extension.** Editing the `expiry` of an existing
+   exception file is detected as schema tampering (the release
+   skill records exception-file content-hashes in
+   `release-status.json` on first read; a hash mismatch on the
+   same `exception_id` triggers refusal with workflow detail
+   `exception-id-reused-without-renewal`).
+
+3. **Renewal requires a new `exception_id`.** The id format
+   embeds the creation date and a slug; a renewal is a new file
+   with a new id (typically `EXC-<renewal-date>-<same-slug>-r2`).
+   The renewal's `reason` field references the prior id.
+
+4. **No blanket overrides.** `affected_gates` MUST enumerate
+   specific gate names. `["*"]`, `["all"]`, `["any"]`, or any
+   catch-all token is rejected at load time with workflow detail
+   `exception-affects-blanket-gates`. Each gate the operator
+   wants to override is listed individually.
+
+#### Surfacing
+
+Signed exceptions consumed by a release run are surfaced in
+**three places**:
+
+1. **Release notes** — the GitHub release body (Step 8) includes a
+   `## Active exceptions` section listing every exception consumed,
+   with `exception_id`, `affected_gates`, `expiry`, and
+   `followup_task`.
+
+2. **`.tl/release-status.json`** — under a new `"exceptions"` key:
+   ```json
+   "exceptions": [
+     {
+       "exception_id": "EXC-2026-05-22-stale-graph-procontent",
+       "affected_gates": ["graph-stale"],
+       "expiry": "2026-05-23T08:35:00Z",
+       "followup_task": "TECH-042-graph-refresh"
+     }
+   ]
+   ```
+
+3. **`.tl/conductor-state.json`** — every active exception that
+   affects a wave-tip commit is appended to the `exceptions[]`
+   array maintained by the conductor (W5 owns the conductor
+   reconciliation that keeps this array in sync).
+
+#### Removed-Flag Rule
+
+The five W4-owned removed flags (SKIP-MERGE, SKIP-VERIFY, SKIP-
+DEPLOY, NO-TEST, FORCE — see the table in the "Removed Flags"
+section above) and the cross-wave removed flags (the bulk-QA-skip
+flag owned by W3, the SKIP-DELIVER flag owned by W5, the SKIP-PLAN
+flag owned by W9) are **NOT re-enabled by signed exceptions**.
+The flag surface is gone. Bulk-bypass routes through emergency
+mode only.
+
+### Emergency Mode (the bulk-bypass path)
+
+When a release must advance past one or more of the six block
+conditions in a situation that signed exceptions cannot anticipate
+(production outage, security rollback, ransomware response), the
+operator invokes **emergency mode**.
+
+Emergency mode is **not** a `--skip-*` flag. It is a triple of
+environment variables set on the same shell command:
+
+```bash
+NACL_EMERGENCY=1 \
+NACL_EMERGENCY_REASON="prod 500s on /api/release/v0.18.0 — rolling back" \
+NACL_EMERGENCY_OWNER="magznikitin" \
+  claude --skill nacl-tl-release
+```
+
+All three are REQUIRED. Behavior:
+
+- Every Strict-Only gate still evaluates.
+- Every gate that would have refused VERIFIED prints a bypass
+  banner naming itself (one per gate, on stderr).
+- The skill advances past the refusal and writes a structured
+  event to `.tl/emergencies/<UTC-timestamp>-<slug>.yaml`.
+- `release-status.json` gets an `"emergency"` key with the event
+  id and bypassed-gate list.
+- `.tl/changelog.md` gets a blockquote line under the in-flight
+  version heading naming the bypass.
+- The terminal `Status:` carries the suffix `(emergency-bypass)`
+  and is NEVER promoted to `VERIFIED`.
+
+Full schema and rules: `nacl-tl-core/references/emergency-mode.md`.
+Event-file template: `.tl/emergencies/_template.yaml`.
+
+Emergency mode does NOT re-enable any removed flag, does NOT silence
+the gates, and does NOT extend over multiple invocations.
+
+---
+
 ## Workflow: 9 Steps
 
 ### Step 0: PRE-CHECK
 
 1. Read `config.yaml` → resolve all settings (see table above)
 
-2. If `--skip-merge` OR `git.strategy == "direct"`:
+2. If `git.strategy == "direct"`:
    - Skip the **merge** action of Step 2 (no `gh pr merge` calls).
+   - **Enforce the W4 PR/CI carve-out (binding):** verify that
+     `config.yaml` declares `project_kind: prototype` AND that a
+     signed exception under `.tl/exceptions/` lists
+     `skipped-pr` (and `skipped-ci` if CI is also skipped) in its
+     `affected_gates`. If either condition is missing, refuse with
+     `Status: BLOCKED` and one of the workflow details
+     `skipped-pr-without-prototype-exception` /
+     `skipped-ci-without-prototype-exception`. Do NOT proceed to
+     Step 3. (For `project_kind: standard`, `git.strategy == "direct"`
+     itself is a configuration error and the prelude refuses with
+     workflow detail `direct-strategy-on-standard-project`.)
    - **DO NOT** skip the UC status gate. The gate at the top of Step 2
      (graph query, status branching, REGRESSION exclusion, MISSING TASK
      NODE halt) MUST run in every mode (P1 / 0.14.0 contract). The
-     skip flag changes which artifacts are produced, not whether the
-     gate runs.
-   - Run the gate over the candidate UC list collected in Step 1, or — if
-     `--skip-merge`/direct mode bypasses Step 1 entirely — over the UCs
-     associated with commits since the last tag (`gh pr list --state merged
-     --base {main_branch}` since `git describe --tags --abbrev=0`).
+     direct-strategy carve-out changes which artifacts are produced,
+     not whether the gate runs.
+   - Run the gate over the candidate UC list collected in Step 1, or
+     — if direct-mode bypasses Step 1 entirely — over the UCs
+     associated with commits since the last tag (`gh pr list --state
+     merged --base {main_branch}` since `git describe --tags --abbrev=0`).
    - After the gate, jump to Step 3 (verify production deployment).
 
 3. Check for existing `.tl/release-status.json`:
@@ -291,7 +524,10 @@ CI FAILED after merge to {main_branch}.
 Run: {run_url}
 
 PRs already merged: #42, #45
-These commits are on {main_branch}. Fix the issue and re-run /nacl-tl-release --skip-merge.
+These commits are on {main_branch}. Fix the issue on a follow-up
+PR (or via /nacl-tl-hotfix for critical production bugs), wait for
+CI green, then re-run /nacl-tl-release. The release skill will pick
+up where it left off via .tl/release-status.json.
 ```
 Do NOT proceed to tagging.
 
@@ -303,7 +539,8 @@ curl -sf "{production_url}{health_endpoint}" --max-time 10
 ```
 Retry 3 times with 10-second intervals.
 
-If health check fails — **HALT by default**:
+If health check fails — **HALT** (strict; no inline operator
+override; W4-blocking-release):
 ```
 RELEASE HALTED — UNVERIFIED (production health failed)
 Production health endpoint did not return 200 OK after 3 retries.
@@ -312,24 +549,29 @@ Tag has NOT been pushed.
 Resolution options:
   [1] Wait for deploy propagation and re-run /nacl-tl-release.
   [2] Investigate production with /nacl-tl-deploy --production.
-  [3] Operator override (see below) to release the tag with a
-      RELEASE INCOMPLETE — UNVERIFIED headline and changelog annotation.
+  [3] File a signed exception under .tl/exceptions/ with
+      affected_gates: [missing-prod-golden-path] (see
+      .tl/exceptions/_template.yaml).
+  [4] Invoke emergency mode (NACL_EMERGENCY=1 +
+      NACL_EMERGENCY_REASON + NACL_EMERGENCY_OWNER); the run will
+      advance with a (emergency-bypass) suffix and will NOT be
+      VERIFIED — see nacl-tl-core/references/emergency-mode.md.
 ```
 
-**Operator override (interactive, OFF by default):**
-If the operator chooses to proceed despite the failed health check, the
-release continues but with non-PASS reporting (P4):
-- Headline: `RELEASE INCOMPLETE — UNVERIFIED (production health failed, operator override)`.
-- Changelog annotation: append a `> Health check FAILED at release time
-  ({timestamp}); released under operator override. Verify production
-  manually.` blockquote under the version heading in `.tl/changelog.md`
-  before Step 5 aggregation.
-- Tag is pushed but `release-status.json` records
-  `"health": {"status": "failed_override", "reason": "<text>"}`.
+The inline operator-prompt override was removed in W4-blocking-
+release. `HEALTH_ONLY` evidence (a green `/health` probe with no
+PROD_GOLDEN_PATH execution) is no longer product-readiness
+evidence. Mere health success does NOT permit release tagging; the
+release skill enforces condition #5 of the Strict-Only gate
+(`missing-prod-golden-path`) independently of this probe.
 
-If no `deploy.production.url` configured → skip health check, warn
-"No production URL configured, skipping health check." (No halt — the
-operator opted out of automated health verification at config time.)
+If no `deploy.production.url` is configured AND the project
+declares `project_kind: prototype` AND a signed exception covers
+`affected_gates: [missing-prod-golden-path]`, this step records
+`"health": {"status": "skipped_by_exception", "exception_id": "..."}`
+and proceeds. Otherwise (no production URL, no exception) the
+release refuses with `Status: BLOCKED` and workflow detail
+`no-production-url-without-exception`.
 
 ---
 
@@ -454,23 +696,62 @@ release.
 Parameter:
 - `$version` — the new release version string, e.g. `"v1.3.0"`
 
-**Failure tolerance:** If Neo4j is unavailable or the query errors, log a warning and
-continue — do NOT block the release:
+**Failure handling (W4-blocking-release — strict):** If Neo4j is
+unavailable or the query errors, this step **refuses VERIFIED**:
 ```
-WARN: Could not stamp IntakeItems with release version in Neo4j.
-      Graph state may be stale — reconcile later with /nacl-tl-diagnose.
+RELEASE HALTED — UNVERIFIED (graph-stale)
+Could not stamp IntakeItems with release version in Neo4j.
+Graph state may be stale — reconcile via /nacl-tl-diagnose +
+nacl-publish before retrying.
+
+Resolution options:
+  [1] Bring Neo4j up, run /nacl-tl-diagnose, then re-run /nacl-tl-release.
+  [2] File a signed exception under .tl/exceptions/ with
+      affected_gates: [graph-stale] (see .tl/exceptions/_template.yaml).
+  [3] Invoke emergency mode (loud, recorded, not VERIFIED).
 ```
 
-Update `release-status.json`:
+`STALE_GRAPH is a release-blocker, not a follow-up.` (W4 binding
+rule.) The previous "log a warning and continue" path was removed
+in W4-blocking-release after the Karatov stale-graph episode (live
+graph 1,083 nodes vs handover-artifact 970 nodes; release proceeded
+under operator override; FR-007 in changelog but not visibly in
+graph).
+
+**Pre-flight graph-staleness check (NEW in W4):** Before running
+the stamping query, capture the **live** node count, label
+histogram, and rel-type histogram via direct Cypher (NOT from any
+cached `.cypher` export, NOT from any `_summary.json` written
+earlier in the run — those baselines are stale by construction).
+Compare against the release-status.json `graph.baseline` field
+captured at Step 0 (also live). Any delta on:
+
+- total node count
+- any label-count entry
+- any rel-type-count entry
+
+is a STALE_GRAPH refusal. Workflow detail: `graph-stale`. The
+baseline-from-stale-export episode (Karatov) is the canonical
+prevention case.
+
+On success, update `release-status.json`:
 ```json
 "graph": {
   "status": "done",
   "version": "v1.3.0",
-  "updated": 3
+  "updated": 3,
+  "baseline": {
+    "nodes": 1083,
+    "labels": { "DomainAttribute": 179, "WorkflowStep": 132, "...": 0 },
+    "rels": { "HAS_ATTRIBUTE": 263, "...": 0 }
+  }
 }
 ```
 
-Use `"warn"` as status if the query failed.
+The `baseline` block is REQUIRED — it is the live capture that the
+NEXT release will diff against. A release that fails to write
+`graph.baseline` is in a corrupt state and the next release will
+refuse with `Status: BLOCKED (graph-baseline-missing)`.
 
 → **Output:** count of IntakeItem nodes stamped with the release version
 
@@ -558,22 +839,29 @@ On start, if `.tl/release-status.json` exists:
 
 | Scenario | Behavior |
 |----------|----------|
-| `git.strategy == "direct"` | Skip the merge action of Step 2 (no PRs to merge). UC status gate STILL runs over commits-since-last-tag. |
-| `--skip-merge` flag | Skip the merge action of Step 2 (tag-only). UC status gate STILL runs over commits-since-last-tag (0.14.0 contract). |
-| No PRs found in ToRelease or GitHub | Skip Steps 1-3, proceed to version/tag |
+| `git.strategy == "direct"` on `project_kind: prototype` with signed exception covering `skipped-pr`/`skipped-ci` | Skip the merge action of Step 2 (no PRs to merge). UC status gate STILL runs over commits-since-last-tag. |
+| `git.strategy == "direct"` on `project_kind: standard` | `RELEASE HALTED — UNVERIFIED (direct-strategy-on-standard-project)` — refuse VERIFIED. |
+| `git.strategy == "direct"` on `project_kind: prototype` WITHOUT signed exception | `RELEASE HALTED — UNVERIFIED (skipped-pr-without-prototype-exception)` — refuse VERIFIED. |
+| No PRs found in ToRelease or GitHub | Skip Steps 1-3, proceed to version/tag (still subject to Strict-Only gates) |
 | One PR has merge conflicts | Stop at that PR, report which merged / which remain |
-| CI fails after merge | Stop before tagging, report. User fixes on main or reverts |
-| No CI configured | Skip CI wait, proceed to health check |
-| No production URL configured | Skip health check, warn |
+| CI fails after merge | Stop before tagging, report. User fixes via follow-up PR or `/nacl-tl-hotfix`. |
+| No CI configured | `RELEASE HALTED — UNVERIFIED (skipped-ci-without-prototype-exception)` unless covered by signed exception. |
+| No production URL configured | `RELEASE HALTED — UNVERIFIED (no-production-url-without-exception)` unless covered by signed exception with `affected_gates: [missing-prod-golden-path]`. The Step 3b "skip and warn" path was removed in W4-blocking-release (transcriber health-only episode prevention). |
 | No changes since last tag | Report "nothing to release" |
 | Single PR release | Same flow, one PR in list |
 | `--dry-run` flag | Show merge plan + version bump, no action |
 | Session interrupted mid-merge | Resume from release-status.json, skip already-merged PRs |
-| Neo4j unavailable (Step 7) | Log warning, set graph.status = "warn", continue release |
+| Neo4j unavailable (Step 7) | `RELEASE HALTED — UNVERIFIED (graph-stale)` — refuse VERIFIED. (Was: log warning, continue. Removed in W4-blocking-release per Karatov stale-graph episode.) |
+| Live graph differs from baseline (Step 7 pre-flight) | `RELEASE HALTED — UNVERIFIED (graph-stale)` — refuse VERIFIED. |
+| `/nacl-sa-validate full` returns CRITICAL findings | `RELEASE HALTED — UNVERIFIED (sa-validate-critical)` — refuse VERIFIED. |
+| Upstream `tl-sync` verdict is UNVERIFIED | `RELEASE HALTED — UNVERIFIED (upstream-sync-unverified)` — refuse VERIFIED. (W2.) |
+| Upstream `tl-qa` aggregate is UNVERIFIED | `RELEASE HALTED — UNVERIFIED (upstream-qa-unverified)` — refuse VERIFIED. (W3.) |
+| PROD_GOLDEN_PATH evidence missing on a UC where the W3 matrix marks it mandatory | `RELEASE HALTED — UNVERIFIED (missing-prod-golden-path)` — refuse VERIFIED. HEALTH_ONLY is NOT a substitute. |
 | Task node missing in graph (Step 2) | RELEASE HALTED — MISSING TASK NODE. Run /nacl-tl-diagnose. Do NOT fall back to status.json. |
 | PR merged but UC was UNVERIFIED | Halt BEFORE merge. Ask user: "UC### is UNVERIFIED — merge to main without test coverage? [yes/no] Default: no". Never auto-merge UNVERIFIED. If user answers yes, merge proceeds with override note. |
 | Any UC has REGRESSION status | RELEASE INCOMPLETE — REGRESSION. Do NOT merge, do NOT tag. |
-| All UCs PASS | Proceed normally; RELEASE COMPLETE headline |
+| `NACL_EMERGENCY=1` + companion env vars set | Emergency mode: every Strict-Only gate refusal prints a banner, the run advances, the terminal Status: carries `(emergency-bypass)` suffix (NEVER VERIFIED), event recorded in `.tl/emergencies/`. See `nacl-tl-core/references/emergency-mode.md`. |
+| All Strict-Only gates pass AND all UCs PASS | Proceed normally; RELEASE COMPLETE headline |
 
 ---
 
@@ -635,23 +923,57 @@ to the final report:
 Excluded from this release artifact (no IntakeItem stamped):
   IntakeItem  Underlying UC  UC status         Skip reason
   ----------  -------------  ----------------  -------------------------------
-  FAM-58      UC-029         verified-pending  deliver --skip-verify
-  FAM-61      UC-031         blocked           deliver health failed (override)
+  FAM-58      UC-029         verified-pending  upstream-qa-unverified
+  FAM-61      UC-031         blocked           upstream-sync-unverified
 
 These items remain in the graph as 'delivered' but were NOT stamped with
 the release version. Re-run /nacl-tl-deliver after restoring PASS status,
 then re-run /nacl-tl-release for those items.
 ```
 
+The pre-W4 skip-reason vocabulary (`deliver SKIP-VERIFY-FLAG`,
+`deliver health failed (override)`) is no longer producible — those
+flag-driven and override-driven exclusions were removed in
+W4-blocking-release. Current exclusion reasons map to the
+six Strict-Only block conditions documented above plus the
+upstream verdict tokens (`upstream-sync-unverified`,
+`upstream-qa-unverified`).
+
 **Headline selection (P1 — `Status:` is the authoritative classifier):**
 
   RELEASE COMPLETE
-    — every candidate UC PASS, health 200 OK, tag pushed.
-  RELEASE INCOMPLETE — UNVERIFIED (production health failed, operator override)
-    — Step 3b health failed and operator chose to proceed; tag pushed
-      with changelog annotation; excluded items still excluded.
+    — every candidate UC PASS, every Strict-Only gate PASSED (or
+      covered by a valid signed exception), health 200 OK, tag pushed.
+  RELEASE COMPLETE — emergency-bypass
+    — emergency mode invoked; one or more Strict-Only gates were
+      bypassed under NACL_EMERGENCY=1; tag pushed; Status: carries
+      (emergency-bypass) suffix; closed-set status is
+      PARTIALLY_VERIFIED, never VERIFIED.
   RELEASE HALTED — UNVERIFIED (production health failed)
-    — Step 3b health failed and no operator override; tag NOT pushed.
+    — Step 3b health failed; tag NOT pushed. (No inline operator
+      override exists post-W4; override paths are signed exception
+      or emergency mode only.)
+  RELEASE HALTED — UNVERIFIED (upstream-sync-unverified)
+    — W2 upstream tl-sync verdict is UNVERIFIED.
+  RELEASE HALTED — UNVERIFIED (upstream-qa-unverified)
+    — W3 upstream tl-qa aggregate is UNVERIFIED.
+  RELEASE HALTED — UNVERIFIED (graph-stale)
+    — Step 7 pre-flight or query detected stale graph (Karatov
+      episode prevention).
+  RELEASE HALTED — UNVERIFIED (sa-validate-critical)
+    — `/nacl-sa-validate full` reported FAIL with CRITICAL findings.
+  RELEASE HALTED — UNVERIFIED (missing-prod-golden-path)
+    — PROD_GOLDEN_PATH evidence missing on a UC where the W3
+      mandatory-stage matrix marks it mandatory (transcriber
+      episode prevention; HEALTH_ONLY is not a substitute).
+  RELEASE HALTED — UNVERIFIED (skipped-pr-without-prototype-exception)
+    — direct-strategy release with no PR and `config.yaml` does
+      NOT declare `project_kind: prototype` OR no signed exception
+      covers `skipped-pr`.
+  RELEASE HALTED — UNVERIFIED (skipped-ci-without-prototype-exception)
+    — direct-strategy release with no CI and `config.yaml` does
+      NOT declare `project_kind: prototype` OR no signed exception
+      covers `skipped-ci`.
   RELEASE HALTED — UNVERIFIED
     — operator declined an UNVERIFIED-UC user gate at Step 2.
   RELEASE HALTED — MISSING TASK NODE

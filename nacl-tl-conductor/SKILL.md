@@ -88,9 +88,20 @@ Read `nacl-core/SKILL.md` for:
 /nacl-tl-conductor --items FR-001,FR-002,BUG-003    # batch items from intake
 /nacl-tl-conductor --feature FR-001                  # single feature request
 /nacl-tl-conductor --branch feature/sprint-42        # explicit branch name
-/nacl-tl-conductor --skip-deliver                    # dev only, no delivery
-/nacl-tl-conductor --skip-qa                         # skip pre-ship QA in dev cycle
 /nacl-tl-conductor --yes                             # skip user gates
+
+# Removed in W3-blocking-qa: the bulk-QA-skip conductor flag.
+#   QA bypass at the conductor layer is no longer an operator flag.
+#   Bulk-bypass needs route through W4 emergency mode. Single-stage
+#   skip needs (LIVE_PROVIDER_SMOKE / PROD_GOLDEN_PATH only) route
+#   through `/nacl-tl-qa UC### --skip-e2e` plus a W4 signed exception
+#   when a mandatory stage would be NOT_RUN.
+#
+# Removed in W5-reconciliation: `--skip-deliver`. There is no
+#   operator flag that suppresses Phase 5 DELIVERY. A run that does
+#   not need delivery should not invoke the conductor; use the
+#   per-skill development chain (`/nacl-tl-full` etc.) directly.
+#   Emergency bypass routes through W4 emergency mode.
 ```
 
 ### Configuration Resolution
@@ -309,7 +320,14 @@ For each UC in wave order (sequential within wave, wave-by-wave):
 1. Update conductor-state.json: UC### status = "in_progress"
 
 2. Launch sub-agent (Task tool):
-   Execute /nacl-tl-full --task UC### --skip-plan [--skip-qa if conductor has --skip-qa]
+   Execute /nacl-tl-full --task UC###
+   (The previous SKIP-PLAN pass-through was removed in W9-ci-clean-checkout
+   — /nacl-tl-full auto-detects an already-populated graph and skips its
+   planning subagent in that case, so the flag became redundant. The
+   previous bulk-QA-skip pass-through was removed in W3-blocking-qa. QA
+   bypass is no longer a flag; users who need stage-level skip pass
+   `--skip-e2e` directly to /nacl-tl-qa, and any resulting NOT_RUN on a
+   mandatory stage requires a W4 signed exception.)
    
    This runs the full 8-step UC lifecycle:
    BE dev -> BE review -> FE dev -> FE review -> Sync -> Stubs -> QA -> Docs
@@ -454,7 +472,7 @@ prefix). The value of `$evidence` follows this table:
 | PASS | `<repo-relative path>` | `'test-GREEN:' + <path>` |
 | PASS | `"covered by existing test: <path>"` | `'test-GREEN:' + <path>` (path extracted from the suffix) |
 | PASS | `"none — UNVERIFIED"` or missing | **HALT** — `CONDUCTOR HALTED — UNVERIFIED (PASS report missing Regression test line: <taskId>)`. Do NOT write `done`. |
-| PASS + `--no-test` user override active | `"none — UNVERIFIED"` allowed | `'no-test'` (only path; explicit override must be present in conductor invocation) |
+| PASS (the NO-TEST flag was REMOVED in W4-blocking-release; the `'no-test'` evidence string is no longer producible by this skill — see "Removed Flags" note below) | (n/a) | (n/a) |
 | UNVERIFIED | any | `'test-UNVERIFIED'` |
 | BLOCKED | any | `'test-UNVERIFIED'` (the test seam did not transition; surface as such) |
 | REGRESSION / NO_INFRA / RUNNER_BROKEN | any | not written — task moves to `failed`; `verification_evidence` stays NULL by design |
@@ -511,9 +529,24 @@ This keeps the graph in sync with the actual verification state.
 **Evidence rule:** `t.verification_evidence` is written for every terminal
 state EXCEPT `failed`. A PASS report that does not carry a parseable
 `Regression test: <path>` line is treated as a contract violation — the
-conductor HALTs rather than write `done` without evidence. The only way
-to land `'no-test'` evidence is via an explicit user `--no-test` override
-on the conductor invocation; bare PASS reports must produce `test-GREEN`.
+conductor HALTs rather than write `done` without evidence. The NO-TEST
+flag (which used to permit `'no-test'` evidence on PASS reports) was
+REMOVED in W4-blocking-release; `'no-test'` evidence is no longer
+producible by this skill. Bare PASS reports must produce `test-GREEN`
+or the conductor HALTs.
+
+### Removed Flags (W4-blocking-release)
+
+The NO-TEST flag (was: "PASS + the NO-TEST override → 'no-test'
+evidence") was REMOVED in W4-blocking-release. Its literal token
+is scrubbed from this skill's prose. The bypass use case routes
+through emergency mode — see
+`nacl-tl-core/references/emergency-mode.md`. Emergency mode does
+NOT re-enable the removed flag; under emergency mode the
+conductor STILL HALTs on a PASS report without a parseable
+`Regression test:` line, prints the halt banner, advances under
+the recorded bypass, and emits `Status: PARTIALLY_VERIFIED` with
+the `(emergency-bypass)` suffix on the closure headline.
 
 ---
 
@@ -628,7 +661,222 @@ After all development items have been processed:
 
 ---
 
-### Phase 5: DELIVERY (skip if `--skip-deliver`)
+### Phase 4.5: Cross-artifact reconciliation
+
+Phase 4 closed the evidence-completeness gate (every terminal Task in
+the graph carries a `verification_evidence` string). That guarantees
+the **graph alone is internally consistent**. It does NOT guarantee
+that the five other artifacts the chain produces — `.tl/status.json`,
+`.tl/conductor-state.json`, `.tl/changelog.md`,
+`.tl/release-status.json` — agree with the graph, with each other, or
+with the signed-exception inventory. Codex postmortem episode 9–10
+(Karatov FR-007 in `.tl/changelog.md` but not in the live graph;
+`.tl/conductor-state.json` declaring "typecheck clean" while CI
+reported the opposite) is exactly this drift class. This wave-gate
+catches it before the final report.
+
+**Sources of truth (six):**
+
+| # | Source | Read by Phase 4.5 |
+|---|---|---|
+| 1 | `.tl/status.json` | JSON file. Per-intake / per-UC status totals (`done`, `unverified`, `blocked`, `failed`). |
+| 2 | `.tl/conductor-state.json` | JSON file. Per-phase markers (`phase`, `techTasks[*].status`, `ucTasks[*].status`, `delivery.status`). |
+| 3 | `.tl/changelog.md` | Markdown file. Per-version sections listing FR-IDs / UC-IDs / fix entries shipped. |
+| 4 | **Live Neo4j graph** | Cypher reads against the running per-project graph container. Node counts for `Module`, `UseCase`, `Task`, `FeatureRequest`; `t.status`, `t.verification_evidence`, `t.intake_id`, `fr.release_tag` properties. |
+| 5 | `.tl/release-status.json` | JSON file. Last release outcome — `release_tag`, `health.status`, `graph.status`. |
+| 6 | `.tl/exceptions/` | YAML files (W4 schema). Active exceptions (expiry > now) vs expired exceptions (expiry ≤ now). Expired entries make their referenced gates blocking again. |
+
+**Live graph reads only — no `.cypher` export fallback.** A stale
+`graph-infra/exports/*.cypher.gz` file is by definition out-of-date
+the moment the next graph write lands; consuming it would reintroduce
+exactly the drift class this gate exists to catch. If the project's
+graph container is unreachable, the gate refuses to advance and emits
+`Status: BLOCKED` with workflow detail `graph_unavailable` (see
+"Unreachable graph" below). Operators who need to ship despite an
+unavailable graph must file a signed exception (W4 schema) against
+the `graph-stale` gate — the exception does NOT re-enable export
+fallback; it accepts that the reconciliation gate is bypassed for
+that release.
+
+#### Step 1: Reach the live graph
+
+Use the project-resolved Bolt endpoint (per `config.yaml →
+graph.neo4j_bolt_port`, default `3587`):
+
+```cypher
+RETURN 1 AS ok
+```
+
+If the call fails (container down, port mismatch, auth refusal):
+HALT. Do NOT advance to Phase 5.
+
+```
+HALT — graph_unavailable (Phase 4.5 reconciliation).
+
+The live Neo4j graph at bolt://localhost:<port> is unreachable.
+A stale .cypher export is NOT an acceptable substitute (W5
+binding: live graph reads only).
+
+Resolution options:
+  [1] Bring the project graph container up (docker compose up -d
+      from graph-infra/) and rerun this conductor invocation —
+      the gate resumes from Phase 4.5.
+  [2] If the graph cannot be made live, file a signed exception
+      against gate `graph-stale` (.tl/exceptions/) and rerun.
+      Emergency bypass routes through W4 emergency mode.
+
+Status: BLOCKED (workflow detail: graph_unavailable)
+```
+
+#### Step 2: Read the six sources
+
+Read each artifact once into a local variable. Treat absence as data
+(e.g. missing `.tl/release-status.json` → `release_status = null`,
+recorded as a NULL row in the delta report, not silently skipped).
+
+```cypher
+// Graph-side aggregate read (single round trip):
+MATCH (m:Module)            WITH count(m)  AS modules
+MATCH (uc:UseCase)          WITH modules, count(uc) AS use_cases
+MATCH (t:Task)              WITH modules, use_cases, count(t) AS tasks
+MATCH (t:Task)
+  WHERE t.intake_id = $intakeId
+WITH modules, use_cases, tasks, collect({
+  id: t.id, status: t.status,
+  evidence: coalesce(t.verification_evidence, '')
+}) AS intake_tasks
+OPTIONAL MATCH (fr:FeatureRequest)
+WITH modules, use_cases, tasks, intake_tasks,
+     collect({ id: fr.id, release_tag: fr.release_tag }) AS feature_requests
+RETURN modules, use_cases, tasks, intake_tasks, feature_requests
+```
+
+Also read active exceptions from `.tl/exceptions/`:
+
+```python
+# Pseudo: filter exceptions to the intake's affected_projects
+# and `expiry > now`. Expired exceptions are recorded but treated
+# as ABSENT for reconciliation purposes (their referenced gates
+# become blocking again per W4).
+```
+
+#### Step 3: Pairwise cross-checks (5 binding pairs)
+
+Each row below is an independent assertion. Any FAIL emits
+`Status: BLOCKED` with the per-pair delta report (Step 4). A pair
+is satisfied iff the assertion holds **after** active signed
+exceptions are applied. Expired exceptions do NOT satisfy any
+assertion.
+
+| Pair | Sources | Assertion |
+|---|---|---|
+| **P-S1** | `.tl/status.json` totals vs live graph counts | `status.json.totals.tasks == graph.tasks` AND `status.json.totals.use_cases == graph.use_cases` AND `status.json.totals.modules == graph.modules`. |
+| **P-S2** | `.tl/changelog.md` entries vs graph `FeatureRequest` nodes | For every `FR-NNN` mentioned in the most recent changelog section, the live graph contains a `FeatureRequest {id: 'FR-NNN'}`. (FRs not yet shipped MAY exist in graph but not in changelog — the assertion is unidirectional changelog → graph.) |
+| **P-S3** | `.tl/release-status.json` `release_tag` vs graph `release_tag` property | If `.tl/release-status.json.release_tag` is non-null, the graph has ≥1 `FeatureRequest {release_tag: <same>}` OR ≥1 `Task {release_tag: <same>}` for the intake. |
+| **P-S4** | `.tl/conductor-state.json` phase markers vs `.tl/status.json` terminal statuses | If `conductor-state.json.phase == "quality_gate_passed"`, then every entry in `status.json.tasks[*].status` for the intake is terminal (`done` / `verified-pending` / `blocked` / `failed`). No `pending` / `in_progress` may remain. |
+| **P-S5** | `.tl/conductor-state.json` per-task entries vs live graph `Task.status` | For every `taskId` in `conductor-state.json.{techTasks, ucTasks}`, the live graph `Task {id: <id>, intake_id: <intake>}.status` matches the JSON `status` field (mapped through the closed-set vocabulary: JSON `done` ↔ graph `done` / `verified-pending`; JSON `failed` ↔ graph `failed`; etc.). |
+
+In addition, recording-only (informational, not blocking):
+
+- **Exception inventory:** for every active signed exception
+  referenced by any pair above, record `(exception_id, owner, expiry,
+  affected_gates)` in the reconciliation artifact. Expired exceptions
+  whose presence would have satisfied a pair are listed as `EXPIRED`
+  and the corresponding pair becomes FAILING again — the gate fires.
+
+#### Step 4: Delta report (on any FAIL)
+
+If any of P-S1 … P-S5 fails, HALT and emit a per-pair delta. Example
+(Karatov-style FR-007 changelog vs graph mismatch):
+
+```
+HALT — cross-artifact reconciliation failed at Phase 4.5.
+
+The following sources of truth disagree. The conductor refuses
+to declare CONDUCTOR COMPLETE on inconsistent state.
+
+P-S2  changelog.md vs live graph FeatureRequest
+      .tl/changelog.md mentions FR-007 in section "0.18.0 — verification-
+      evidence writer contract" (line 142) but the live graph contains
+      NO FeatureRequest {id: 'FR-007'}.
+      delta = ['FR-007' present in changelog; missing from graph]
+
+P-S4  conductor-state.json vs status.json
+      conductor-state.json.phase = "quality_gate_passed" but
+      status.json.tasks['UC-105'].status = "in_progress". A
+      conductor-state advance past quality_gate_passed requires
+      every task to be terminal in status.json.
+      delta = ['UC-105' in_progress in status.json]
+
+Active signed exceptions against affected gates: none.
+
+Resolution options:
+  [1] Replay the missing graph write (FR-007 was emitted to
+      changelog by a release that did not commit its graph
+      mutations). Run /nacl-sa-feature FR-007 to reissue.
+  [2] Resolve the orphaned terminal in conductor-state.json
+      by re-running /nacl-tl-full UC-105 to drive UC-105 to
+      a terminal state in BOTH artifacts.
+  [3] If you accept the drift consciously (e.g. FR was rolled
+      back but changelog kept the historical entry), file a
+      signed exception against `graph-stale` referencing this
+      intake and rerun. Note: this is NOT a deliver-time bypass
+      — Phase 5 still runs against the unreconciled state.
+
+Status: BLOCKED (workflow detail: artifact-drift)
+```
+
+The Codex postmortem episode-10 "Karatov live graph 1083 nodes vs
+handover artifact 970 nodes" surfaces here as `P-S1` failing (the
+handover snapshot at `tests/fixtures/graph-snapshots/karatov-
+procontent/_summary.json` shows 1083 nodes; a stale `.tl/status.json`
+reflecting the 970-node handover would disagree). The
+`conductor-state-says-clean-but-CI-says-red` episode surfaces here as
+`P-S4` failing (conductor-state advancing to
+`quality_gate_passed` while status.json still has CI-red Tasks in
+non-terminal status).
+
+#### Step 5: Write reconciliation evidence
+
+If all pairs pass (or pass under active signed exceptions), write
+the reconciliation artifact to:
+
+```
+.tl/reconciliation/<ISO-8601-utc>.json
+```
+
+Format follows `/Users/maxnikitin/projects/NaCl/.tl/reconciliation/
+_template.json`. Required fields:
+
+- `timestamp` — wall-clock UTC, same string as the filename basename.
+- `intake_id` — the conductor's current intake.
+- `sources_checked` — list of 6, each with `name`, `path` (relative
+  to project root), `read_at`, `summary` (counts where applicable).
+- `deltas` — per-pair object with `pair_id` (P-S1 … P-S5),
+  `assertion`, `outcome` (`PASS` / `FAIL` / `PASS_UNDER_EXCEPTION`),
+  `details` (per-side values).
+- `active_exceptions` — list of exception entries that influenced
+  outcome (each: `exception_id`, `affected_gates`, `expiry`).
+- `expired_exceptions` — list of exception entries whose expiry has
+  passed; recorded for audit, do not satisfy any pair.
+- `terminal_status` — closed-set status (`VERIFIED` if all PASS or
+  PASS_UNDER_EXCEPTION; `BLOCKED` if any FAIL; `BLOCKED` with
+  workflow detail `graph_unavailable` if Step 1 failed).
+
+Only on `terminal_status == VERIFIED` does the conductor advance
+to Phase 5.
+
+#### Worked examples (mapped to the W0 baseline)
+
+| Episode | Source | Pair that fires | Outcome |
+|---|---|---|---|
+| Karatov FR-007 in changelog but not in graph | `karatov-procontent-postmortem-codex.md` § 4 | P-S2 | `BLOCKED` — changelog references FR-007; graph has no `FeatureRequest {id: 'FR-007'}`. Operator can replay the SA-feature step or file a `graph-stale` exception. |
+| Karatov conductor-state says "typecheck clean" but CI red | `karatov-procontent-postmortem.md` § 3.12 | P-S4 + P-S5 | `BLOCKED` — `conductor-state.json.phase == quality_gate_passed` but `status.json` still has tasks in non-terminal; graph `Task.status` also disagrees with conductor JSON. The seven-commit remediation that landed at 17:35 on 2026-05-11 would have been blocked at 17:07 by this gate. |
+| Karatov 1083-node live graph vs 970-node stale handover | `W0-baseline.md` anomaly #7 | P-S1 | `BLOCKED` — `status.json.totals.tasks` reflects the stale 970-node snapshot; live graph reports 1083 nodes. Bringing the graph live + rerunning is the fix. |
+
+---
+
+### Phase 5: DELIVERY
 
 1. Update conductor-state.json: phase = "delivery"
 

@@ -18,11 +18,54 @@ and `../nacl-render/SKILL.md` before publishing.
    configuration.
 2. Preview the publish scope and changed pages or boards.
 3. Stop for confirmation before external writes or board file edits.
-4. Generate Markdown through render behavior and publish create/update actions
+4. **Run the pre-publish reconciliation gate** (see below). On any
+   disagreement: refuse the publish.
+5. Generate Markdown through render behavior and publish create/update actions
    through available documentation tooling.
-5. Generate board files or link board references only when the required tooling
+6. Generate board files or link board references only when the required tooling
    and paths are available.
-6. Update the publish manifest when file editing is available and confirmed.
+7. Update the publish manifest when file editing is available and confirmed.
+
+## Pre-publish reconciliation
+
+Publishing inconsistent state to Docmost makes drift visible to
+stakeholders and harder to retract than an internal `.tl/` artifact.
+Before any external write, compare the **live graph** against
+`.tl/changelog.md` (and `.tl/release-status.json` when present).
+Preview-only operations are exempt.
+
+**Live graph reads only — no `.cypher` export fallback.** A stale
+export would push out-of-date pages to Docmost; the W5 binding
+forbids this fallback. If the graph container is unreachable, report
+`Status: BLOCKED` with workflow detail `graph_unavailable` and refuse
+the publish. Operators who must publish despite an unreachable graph
+file a signed exception against gate `graph-stale` (W4 schema in
+`.tl/exceptions/_template.yaml`); the exception does not re-enable
+the export path.
+
+**Cross-checks (publish subset):**
+
+| Pair | Sources | Assertion |
+|---|---|---|
+| P-P1 | `.tl/changelog.md` released FR list vs graph `FeatureRequest` | every FR named in the latest changelog section exists as a `FeatureRequest` node in the live graph. |
+| P-P2 | `.tl/changelog.md` released UC list vs graph `UseCase` | every UC named in the latest changelog section exists as a `UseCase` node. |
+| P-P3 | `.tl/release-status.json.release_tag` vs graph `release_tag` | if the JSON tag is non-null, the live graph carries it on ≥1 `FeatureRequest` / `Task` node (assertion is informational when JSON is absent). |
+
+A pair PASSES iff the assertion holds, or holds under an active
+signed exception. Expired exceptions do not satisfy a pair.
+
+**Refusal on disagreement:** report `Status: BLOCKED` with workflow
+detail `publish-drift` and a per-pair delta. Do not write to
+Docmost. Do not write boards. Resolution is to reconcile the
+graph (run the relevant SA / TL skill) or file a `graph-stale`
+exception.
+
+**Reconciliation evidence:** on PASS, write
+`.tl/reconciliation/<ISO-8601>-publish.json` per the schema at
+`/Users/maxnikitin/projects/NaCl/.tl/reconciliation/_template.json`.
+Required fields: `timestamp`, `intake_id` (or `null` for a
+publish-only run), `sources_checked`, `deltas`,
+`active_exceptions`, `expired_exceptions`, `terminal_status`.
 
 ## Capabilities
 

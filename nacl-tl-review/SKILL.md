@@ -89,6 +89,232 @@ If any check fails, report the issue and exit.
 
 ---
 
+## Repo-wide Check Gate (Mandatory, Strict-Only)
+
+**CRITICAL**: Before any quality review, the agent MUST run repo-wide
+lint, typecheck, and test commands on the **wave-tip commit** (the HEAD
+commit of the branch under review). This gate is **strict-only** —
+strict is the single, unconditional mode and there is no fallback
+branch, no opt-out flag, and no per-project relaxation. The Karatov
+Wave 4 false-PASS (lint red + typecheck red + 3 unwired publishers at
+17:07 on 2026-05-11) is the canonical episode this gate exists to
+prevent.
+
+### Commands
+
+Run all three on the wave-tip commit, in this order:
+
+```
+pnpm -r lint
+pnpm -r typecheck
+pnpm -r test
+```
+
+The commands are **literal**. Do not substitute `npm` for `pnpm`, do
+not drop the `-r` (recursive across workspaces), do not skip a stage
+because "the project doesn't have that script." Each missing script
+counts as `unrunnable`, not as `pass`.
+
+### Gate Decision
+
+| Condition | Action |
+|-----------|--------|
+| All three commands run AND all three exit 0 | **PROCEED** to stub gate; record `repo-checks-GREEN:<wave-tip-commit>` as evidence |
+| Any command exits non-zero (red checks) | **REFUSE** VERIFIED — emit `REVIEW APPLIED — BLOCKED (repo-checks-RED)` |
+| Any command did not run (unrun, missing script, runner crash) | **REFUSE** VERIFIED — emit `REVIEW APPLIED — BLOCKED (repo-checks-UNRUN)` |
+| Any command is unrunnable on this workspace (e.g. no pnpm, no workspace root) | **REFUSE** VERIFIED — emit `REVIEW APPLIED — BLOCKED (repo-checks-UNRUNNABLE)` |
+
+**VERIFIED refused if repo checks are red/unrun on wave-tip — override
+requires signed exception (W4).** The signed-exception schema is
+defined by W4; until W4 lands, the only override path is for an
+operator to file a signed exception under the schema W4 will publish.
+There is no inline operator-prompt override at this gate. Strict is
+the single, unconditional mode for this gate — every project moves
+through it the same way.
+
+### Recording the Evidence
+
+When all three commands pass on the wave-tip commit, write the literal
+string `repo-checks-GREEN:<commit-sha>` to the review artifact (the
+`Evidence` section) and to `Task.verification_evidence` alongside any
+test-GREEN payload already written. The evidence taxonomy entry is in
+`skills-for-codex/references/verification-evidence.md`.
+
+When the gate refuses VERIFIED, write the closed Codex `Status: BLOCKED`
+with workflow detail `repo-checks-RED` / `repo-checks-UNRUN` /
+`repo-checks-UNRUNNABLE` as applicable. Do NOT promote the verdict to
+`APPROVED`. Do NOT proceed to Step 8 verdict assignment with any
+PASS-family headline.
+
+### Project-kind interaction
+
+`config.yaml` may declare `project_kind: standard` (default) or
+`project_kind: prototype`. **The repo-wide check gate applies in both
+modes.** `project_kind: prototype` only governs the W4 PR/CI carve-outs
+for direct-strategy releases; it does NOT relax local repo-check
+expectations. A prototype with red `pnpm -r typecheck` still has
+VERIFIED refused at this gate.
+
+See `nacl-tl-core/references/config-schema.md` for the `project_kind`
+specification.
+
+---
+
+## Nav-actions consumer check (Mandatory, Strict-Only)
+
+**CRITICAL**: For every UC affected by the current review, the agent
+MUST verify two reachability conditions before any PASS-family
+headline is emitted:
+
+1. The UC's Form has populated `HAS_INBOUND_ACTION` edges (per W7
+   "Nav Actions" subsection of `nacl-sa-ui/SKILL.md`).
+2. The QA evidence for the UC references at least one natural
+   entrypoint path — i.e. a route reached by clicking through the
+   affordance, not a route entered via direct URL paste.
+
+This check is the consumer-side read of the W7 graph rule. This skill
+does not own the rule, the Cypher, or the edges; it owns the
+consumer-side refusal that prevents an unreachable UC from clearing
+review. Primary-owner exception for this consumer touch is declared
+in the W7 plan scope_in (`nacl-tl-review (consumer-side: graph-rule
+check — primary-owner exception, declared here)`).
+
+### Scope of the check
+
+The check applies to every affected UC of the review (typically one
+UC per `--be` / `--fe` invocation, multiple for batch review). An
+affected UC is exempt only when one of the following exemption flags
+is set on the UseCase node in the graph:
+
+- `UseCase.actor = 'SYSTEM'` — machine-triggered, no user
+  affordance required.
+- `UseCase.has_ui = false` — no Form attached.
+- `UseCase.entrypoint_type IN ['deep-link-only', 'embed-only']` —
+  intentional URL-only or embed-only UC; each such exemption
+  requires a signed exception under the W4 schema referencing the
+  operational context (invitation link, partner iframe, etc.).
+
+An affected UC that is NOT exempt and that fails either of the two
+conditions above triggers refusal.
+
+### Procedure
+
+#### Condition 1 — populated nav-actions
+
+Run the W7 reachability blocker query from
+`nacl-sa-ui/references/reachability.cypher` § 4
+(`ui_reachability_blockers`), scoped to the affected UCs:
+
+```cypher
+// nav_actions_consumer_check
+MATCH (uc:UseCase) WHERE uc.id IN $affected_uc_ids
+MATCH (uc)-[:ACTOR]->(role:SystemRole)
+WHERE coalesce(role.name, '') <> 'SYSTEM'
+  AND coalesce(uc.has_ui, true) = true
+  AND NOT coalesce(uc.entrypoint_type, '') IN ['deep-link-only', 'embed-only']
+OPTIONAL MATCH (uc)-[:USES_FORM]->(f:Form)
+OPTIONAL MATCH (c:Component)-[:HAS_INBOUND_ACTION]->(f)
+WITH uc, f, collect(DISTINCT c) AS inbound_components
+WHERE f IS NULL OR size(inbound_components) = 0
+RETURN uc.id AS uc_id,
+       coalesce(f.id, '<no-form>') AS form_id,
+       CASE WHEN f IS NULL THEN 'no-form' ELSE 'no-inbound-action' END AS reason
+```
+
+Any row in the result set is a blocker. The check fails.
+
+#### Condition 2 — QA evidence references a natural entrypoint
+
+The check is satisfied when at least one QA evidence artifact for the
+UC explicitly records a navigation step from a parent screen to the
+UC's Form via a captured `HAS_INBOUND_ACTION` affordance.
+
+The reviewer reads the QA artifacts (`.tl/tasks/UC###/qa-*.md` and
+linked screenshots / Playwright traces). Acceptable evidence shapes:
+
+- A Playwright trace whose first navigation step opens the parent
+  screen at its canonical route, followed by a `click` on a locator
+  matching a `HAS_INBOUND_ACTION.label` value, followed by an
+  assertion at the target Form's route.
+- A QA report section "Entrypoint path" listing `Parent screen →
+  affordance label → target Form`, with a screenshot of the parent
+  screen rendering the affordance.
+- An E2E test file imported by the test suite whose journey assertion
+  starts from a parent route and reaches the target Form via an
+  affordance click — and which produced output at Step 6a above.
+
+If no such evidence is found, the check fails for the UC.
+
+### Gate Decision
+
+| Condition | Action |
+|-----------|--------|
+| Both conditions hold for every non-exempt affected UC | **PROCEED**; record `nav-actions-GREEN:<uc_id>,<uc_id>,…` as evidence (one per affected UC); proceed to Step 8 with PASS-family headline allowed |
+| Condition 1 fails for any non-exempt affected UC | **REFUSE** VERIFIED — emit `REVIEW APPLIED — BLOCKED (nav-actions-missing)`; the `Code judgment` line is `CHANGES REQUESTED` |
+| Condition 1 holds but Condition 2 fails for any non-exempt affected UC | **REFUSE** VERIFIED — emit `REVIEW APPLIED — BLOCKED (nav-actions-no-natural-entrypoint-evidence)`; verdict is `CHANGES REQUESTED` |
+| UC is exempt under `actor=SYSTEM` / `has_ui=false` / `entrypoint_type ∈ {deep-link-only, embed-only}` AND the exemption is recorded on the UseCase node OR carried by a signed exception (W4) | **EXEMPT**; record `nav-actions-EXEMPT:<uc_id>:<reason>` and proceed |
+
+**VERIFIED refused if nav-actions are missing or the QA evidence does
+not reference a natural entrypoint — override requires signed
+exception (W4).** The signed-exception schema is the same one used by
+the W1 repo-wide check gate; until W4 lands, the only override path
+is a signed exception filed under the schema W4 will publish. There
+is no inline operator-prompt override at this gate.
+
+### Project-kind interaction
+
+`project_kind: prototype` does NOT relax this gate. A prototype that
+ships an actor-triggered UC without a populated nav-actions section
+or without natural-entrypoint QA evidence still has VERIFIED refused
+at this gate. `project_kind` governs only the W4 PR/CI carve-outs
+for direct-strategy releases.
+
+See `nacl-tl-core/references/config-schema.md` for `project_kind` and
+`nacl-sa-ui/references/reachability.cypher` for the full query
+templates.
+
+### Recording the Evidence
+
+When the check passes for every non-exempt affected UC, write
+`nav-actions-GREEN:<uc-id>,<uc-id>,…` (comma-separated) to the
+review artifact's `Evidence` section and to
+`Task.verification_evidence` alongside any test-GREEN /
+repo-checks-GREEN evidence already written. For exempt UCs, write
+`nav-actions-EXEMPT:<uc-id>:<reason>` on a separate line.
+
+When the gate refuses, write the closed Codex `Status: BLOCKED`
+with workflow detail `nav-actions-missing` or
+`nav-actions-no-natural-entrypoint-evidence`. Do NOT promote the
+verdict to `APPROVED`. Do NOT proceed to Step 8 verdict assignment
+with any PASS-family headline.
+
+### Worked example — Transcriber UC-100 missing-upload-button
+
+Transcriber UC-100 ("Upload audio") was shipped with a fully
+specified `FORM-Upload` (fields, validation, mutation) and a working
+`/upload` route, yet the catalog page at `/catalog` carried no
+upload button. UC-100's review at the time emitted `REVIEW COMPLETE`
+because the page-local Form spec was satisfied. The Nav-actions
+consumer check would have caught the gap:
+
+1. **Condition 1** — `nav_actions_consumer_check` with
+   `$affected_uc_ids = ['UC-100']` returns one row
+   `{uc_id: 'UC-100', form_id: 'FORM-Upload', reason: 'no-inbound-action'}`
+   because no Component carried a HAS_INBOUND_ACTION edge to
+   FORM-Upload.
+2. The check FAILS. Headline becomes
+   `REVIEW APPLIED — BLOCKED (nav-actions-missing)`; verdict
+   `CHANGES REQUESTED`; action required: "add HAS_INBOUND_ACTION
+   edges per `nacl-sa-ui/SKILL.md` Nav Actions subsection; re-run
+   `/nacl-sa-ui navigation` to capture the catalog page upload CTA;
+   re-submit for review."
+
+The methodology stops the false-PASS at the review boundary instead
+of letting it ship and surface as a production-only "where is the
+upload button" report.
+
+---
+
 ## Stub Verification Gate (Mandatory)
 
 **CRITICAL**: Before the review can proceed, the agent MUST verify stubs. This gate runs before any code quality checks.
@@ -280,7 +506,7 @@ Run the baseline using `git worktree add` (mirroring `nacl-tl-sync` Step 7.2):
 ```
 git worktree add <tempdir> <baseline_ref>
 cd <tempdir> && <scripts.test>
-git worktree remove --force <tempdir>
+git worktree remove -f <tempdir>
 ```
 
 Capture `baseline_failures` and compute `new_failures = postfix_failures − baseline_failures`. The worktree is removed on every exit path.
@@ -352,7 +578,10 @@ The headline is independent of the APPROVED / CHANGES REQUESTED verdict. It refl
 
 | Condition | Headline | `APPROVED` allowed? |
 |-----------|----------|---------------------|
-| Tests ran AND passed AND no warnings above threshold AND baseline resolved AND `new_failures.size == 0` | `REVIEW COMPLETE` | yes |
+| Repo-wide gate GREEN AND nav-actions check GREEN/EXEMPT AND tests ran AND passed AND no warnings above threshold AND baseline resolved AND `new_failures.size == 0` | `REVIEW COMPLETE` | yes |
+| Repo-wide gate RED / UNRUN / UNRUNNABLE on wave-tip | `REVIEW APPLIED — BLOCKED (repo-checks-*)` | no — VERIFIED refused; override requires signed exception (W4) |
+| Nav-actions check fails (Condition 1: missing HAS_INBOUND_ACTION on non-exempt affected UC) | `REVIEW APPLIED — BLOCKED (nav-actions-missing)` | no — VERIFIED refused; override requires signed exception (W4) |
+| Nav-actions check fails (Condition 2: QA evidence has no natural-entrypoint path) | `REVIEW APPLIED — BLOCKED (nav-actions-no-natural-entrypoint-evidence)` | no — VERIFIED refused; override requires signed exception (W4) |
 | Tests ran AND passed AND test author independence flag (MAJOR) | `REVIEW APPLIED — UNVERIFIED` | no |
 | Tests ran AND passed AND no test imports the changed file(s) | `REVIEW APPLIED — UNVERIFIED` | no |
 | Tests ran AND postfix has failures BUT baseline could not be resolved | `REVIEW APPLIED — UNVERIFIED (no baseline)` | no |
@@ -831,6 +1060,20 @@ Before deep review, verify these first:
 ### Before Starting
 - [ ] Review mode identified (`--be`, `--fe`, or TECH)
 - [ ] Result file exists; status is `ready_for_review`
+
+### Repo-wide Check Gate
+- [ ] `pnpm -r lint` run on wave-tip commit; exit 0 captured
+- [ ] `pnpm -r typecheck` run on wave-tip commit; exit 0 captured
+- [ ] `pnpm -r test` run on wave-tip commit; exit 0 captured
+- [ ] `repo-checks-GREEN:<commit-sha>` recorded as evidence OR `REVIEW APPLIED — BLOCKED (repo-checks-*)` emitted
+- [ ] No signed-exception override accepted at this layer without W4 schema validation
+
+### Nav-actions Consumer Check (W7)
+- [ ] Affected UC ids identified for the current review
+- [ ] Exemption flags read from graph (`actor`, `has_ui`, `entrypoint_type`)
+- [ ] `nav_actions_consumer_check` Cypher run; empty result OR every blocker covered by exemption / signed exception
+- [ ] QA evidence inspected for at least one natural-entrypoint path per non-exempt affected UC
+- [ ] `nav-actions-GREEN:<uc-ids>` recorded OR `nav-actions-EXEMPT:<uc-id>:<reason>` per exempt UC OR `REVIEW APPLIED — BLOCKED (nav-actions-*)` emitted
 
 ### Stub Gate
 - [ ] Registry read; files scanned for markers

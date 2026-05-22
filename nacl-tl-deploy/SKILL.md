@@ -36,6 +36,9 @@ Headline:  DEPLOY COMPLETE
            DEPLOY HALTED — NO_INFRA
            DEPLOY HALTED — RUNNER_BROKEN
            DEPLOY HALTED — UNVERIFIED
+           DEPLOY HALTED — BLOCKED (clean-checkout-artifact-missing)
+           DEPLOY HALTED — BLOCKED (clean-checkout-commit-mismatch)
+           DEPLOY HALTED — BLOCKED (clean-checkout-<blocker_detail>)
            DEPLOY INCOMPLETE — UNVERIFIED (health probe timeout)
            DEPLOY HALTED — NO_INFRA (health contract undefined)
 
@@ -93,6 +96,7 @@ If health check fails → alert + suggest rollback.
 | YouGile done column | config.yaml → yougile.columns.done |
 | VPS staging | `config.yaml → vps.staging` (ip, user, ssh_key) — SSH-диагностика при сбое health-check |
 | VPS production | `config.yaml → vps.production` (ip, user, ssh_key) — аналогично |
+| Clean-checkout artifact | `.tl/clean-checkout/<commit>.json` — produced by `nacl-tl-deliver` Step 4b. Required for every deploy (W9). Absent / mismatch / BLOCKED without exception → `DEPLOY HALTED — BLOCKED (clean-checkout-*)`. |
 
 If deploy section missing → error (cannot monitor deployment without URL).
 If YouGile missing → skip task moves, report locally.
@@ -115,7 +119,31 @@ Detect CI/CD platform from the project:
 
 ### Step 1: IDENTIFY DEPLOYMENT
 
-0. **Pre-monitor verification gate:**
+0. **Pre-monitor clean-checkout artifact gate (W9-ci-clean-checkout):**
+
+   Before evaluating the upstream verification gate (0a), confirm that
+   a clean-checkout evidence artifact exists for the commit being
+   deployed.
+
+   ```
+   commit       = the SHA selected by Step 0 / Step 1.1
+   artifact     = .tl/clean-checkout/<commit>.json   (in the repo root
+                  of the deploying workspace)
+   ```
+
+   | Artifact state | Deploy action |
+   |---------------|---------------|
+   | Present, `terminal_status: PASS`, `commit` field matches the deployed SHA | Proceed to step 0a (upstream verification). |
+   | Present, `commit` field DOES NOT match the deployed SHA | HALT: `DEPLOY HALTED — BLOCKED (clean-checkout-commit-mismatch)`. The wave-tip evidence is for a different commit; deploy refuses to ship a commit that was never clean-checkout-verified. |
+   | Present, `terminal_status: BLOCKED`, no signed exception covering the named `blocker_detail` | HALT: `DEPLOY HALTED — BLOCKED (clean-checkout-<blocker_detail>)`. |
+   | Present, `terminal_status: BLOCKED`, signed exception covers `blocker_detail` | Proceed with a `(clean-checkout-bypass)` banner on the final report and an event in `.tl/emergencies/` if the bypass route was emergency-mode (not exception). |
+   | Absent | HALT unconditionally: `DEPLOY HALTED — BLOCKED (clean-checkout-artifact-missing)`. There is NO inline override flag. The operator must (a) re-run `/nacl-tl-deliver` (which produces the artifact in Step 4b) or (b) file a signed exception with `affected_gates: [clean-checkout-artifact-missing]` for a one-shot carve-out. |
+
+   The clean-checkout artifact is the gate-quality evidence that the
+   deployed commit was built + smoked from a fresh tree, not a warm
+   local cache. Without a matching artifact, deploy emits `BLOCKED`.
+
+0a. **Pre-monitor verification gate:**
 
    Before monitoring any pipeline, confirm the code being deployed came from
    tasks with verified development status. Read from graph or status.json:
@@ -286,5 +314,10 @@ These are created during project setup by `/nacl-tl-dev TECH-001` (infrastructur
 ## References
 
 - `config.yaml` → deploy section (URLs, health endpoints)
+- `.tl/clean-checkout/<commit>.json` — required clean-checkout evidence
+  artifact produced by `nacl-tl-deliver` Step 4b (W9). Schema:
+  `.tl/clean-checkout/_template.json`.
 - `nacl-tl-ship/SKILL.md` — triggers the deploy via push
+- `nacl-tl-deliver/SKILL.md` § "Step 4b: CLEAN-CHECKOUT GATE" — the
+  upstream producer of the artifact this skill consumes.
 - `nacl-tl-release/SKILL.md` — follows after successful production deploy

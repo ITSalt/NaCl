@@ -66,8 +66,22 @@ Reconciliation is the **exception** to spec-first. When drift has accumulated, w
 /nacl-tl-reconcile --report=DIAGNOSTIC-REPORT.md  # use existing report
 /nacl-tl-reconcile --scope=UC014                # specific UC only
 /nacl-tl-reconcile --dry-run                    # plan only, no changes
-/nacl-tl-reconcile --force                      # skip USER GATE (for programmatic use)
 ```
+
+### Removed Flags (W4-blocking-release)
+
+The FORCE flag (was: "skip USER GATE for programmatic use") was
+REMOVED in W4-blocking-release. Its literal token is scrubbed
+from this skill's prose. The per-task / per-discrepancy USER GATE
+is now mandatory in every invocation; there is no programmatic
+auto-confirm. Reactive bulk-bypass routes through emergency mode
+(`NACL_EMERGENCY=1` + companion env vars). See
+`nacl-tl-core/references/emergency-mode.md`. Under emergency mode
+the gate still evaluates, the prompt is still printed, the
+operator must still answer; emergency mode's recorded effect is
+that an unanswered or "no" prompt does NOT halt the run — it
+records the bypass to `.tl/emergencies/`. Emergency mode does
+NOT silently auto-confirm.
 
 ---
 
@@ -236,17 +250,22 @@ Present plan and wait for approval. Include:
 - Scope estimate
 - Warning: reconcile fixes only docs, not code
 
-**Do NOT proceed without explicit user confirmation** (unless `--force` flag
-is set).
+**Do NOT proceed without explicit user confirmation.** The FORCE
+flag that previously offered a programmatic auto-confirm escape
+hatch was REMOVED in W4-blocking-release; per-task and per-
+discrepancy confirmation are mandatory. Reactive bulk-bypass
+routes through emergency mode (see "Removed Flags" in the
+Invocation block).
 
-`--force` scope is **strictly limited** to the per-task confirmation prompts
-in this user gate and the per-discrepancy prompts inside Phase 3. It does
-NOT bypass the unverified-upstream acknowledgment gate (Phase 1's
-`UNVERIFIED upstream fix detected` prompt). When any upstream fix is
-`UNVERIFIED`, the user MUST still explicitly acknowledge that documenting
-unverified behavior is intentional, regardless of `--force`. This gate is
-separate, unconditional, and recorded verbatim in the Phase 5 report under
-"Unverified fix acknowledgments".
+The unverified-upstream acknowledgment gate (Phase 1's `UNVERIFIED
+upstream fix detected` prompt) remains separate and unconditional.
+When any upstream fix is `UNVERIFIED`, the user MUST explicitly
+acknowledge that documenting unverified behavior is intentional.
+This gate is recorded verbatim in the Phase 5 report under
+"Unverified fix acknowledgments". Emergency mode does NOT
+auto-acknowledge; under emergency mode the prompt still prints and
+the operator's answer is still required — emergency mode only
+records that the prompt was reached and the run advanced.
 
 **For --dry-run:** Present the plan and exit without starting Phase 3.
 

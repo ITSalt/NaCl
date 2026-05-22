@@ -60,11 +60,29 @@ Fail fast with clear diagnostics.
 /nacl-tl-deliver                          # deliver current branch
 /nacl-tl-deliver --branch feature/FR-001  # deliver specific branch
 /nacl-tl-deliver --feature FR-001         # deliver by feature request ID
-/nacl-tl-deliver --skip-verify            # push + CI only, no staging verification
-/nacl-tl-deliver --skip-deploy            # push + CI + verify, no health check
 /nacl-tl-deliver --env staging            # target environment (default: staging)
 /nacl-tl-deliver --env production         # target production (extra safety checks)
 ```
+
+### Removed Flags (W4-blocking-release)
+
+The SKIP-VERIFY flag (was: "push + CI only, no staging
+verification") and the SKIP-DEPLOY flag (was: "push + CI + verify,
+no health check") were REMOVED in W4-blocking-release. Their
+literal tokens are scrubbed from this skill's prose. The bypass
+use case routes through:
+
+- **Signed exceptions** (for known, planned carve-outs) — file
+  under `.tl/exceptions/<exception_id>.yaml` with explicit
+  `affected_gates`; consumed by the release skill. See
+  `nacl-tl-release/SKILL.md` § "Release Blocking Gates
+  (Strict-Only)".
+- **Emergency mode** (for reactive bulk-bypass) — three env vars
+  on the invoking shell. See
+  `nacl-tl-core/references/emergency-mode.md`.
+
+Neither path re-enables the removed flags. The flag surface is
+gone.
 
 ### Configuration Resolution
 
@@ -74,6 +92,12 @@ Fail fast with clear diagnostics.
 | Base branch | `git.main_branch` > `modules.[name].git_base_branch` > fallback `"main"` |
 | Build command | `modules.[name].build_cmd` > workspace `package.json` `scripts.build`. **No `npm run build` fallback.** Missing → `DELIVER HALTED — NO_INFRA (scripts.build undeclared)` (P2). |
 | Test command | `modules.[name].test_cmd` > workspace `package.json` `scripts.test`. **No `npm test` fallback.** Missing → `DELIVER HALTED — NO_INFRA (scripts.test undeclared)` (P2). |
+| Package manager | `build.package_manager` > `package.json` `packageManager` > lockfile detection. Mixed → `BLOCKED (clean-checkout-pm-ambiguous)` (Step 4b). |
+| Runtime assets | `runtime_assets` (list of paths relative to build output, per workspace). Missing assets in clean-checkout → `BLOCKED (clean-checkout-runtime-assets-missing)` (Step 4b). See `nacl-tl-core/references/config-schema.md` § `runtime_assets`. |
+| Smoke endpoints | `deploy.smoke.endpoints` (list of paths). Default: `["/api/health"]` (records `PASS_HEALTH_ONLY`). |
+| Entrypoint | `build.entrypoint` > `package.json` `main` > `dist/index.js`. |
+| Migrate cmd | `build.migrate_cmd` > undefined (then migrate stage `SKIPPED`). |
+| Test database URL | `build.test_database_url` > undefined (then BLOCKED if migrate would run). |
 | Staging URL | `deploy.staging.url` > no default |
 | Health endpoint | `deploy.staging.health_endpoint` > fallback `/api/health` |
 | CI platform | `deploy.ci_platform` > detect from `.github/workflows/` |
@@ -106,6 +130,11 @@ Persists delivery progress for resumption:
   "verify": {
     "status": "in_progress",
     "ucs": ["UC028", "UC029"]
+  },
+  "clean_checkout": {
+    "status": "pending",
+    "commit": null,
+    "artifact_path": null
   },
   "deploy": {
     "status": "pending"
@@ -242,41 +271,30 @@ Persists delivery progress for resumption:
 
 ---
 
-### Step 4: VERIFY (skip if `--skip-verify`)
+### Step 4: VERIFY (mandatory; W4-blocking-release)
 
-**`--skip-verify` semantics (P4 — skip ⇒ unverified, never PASS):**
+The SKIP-VERIFY flag was removed in W4-blocking-release. Step 4 is
+now mandatory on every delivery. The `verification_evidence =
+'no-test'` write that the removed flag used to produce is no
+longer producible by this skill — the release skill consumed that
+evidence string only as an artifact of the removed flag.
 
-When `--skip-verify` is supplied, this skill:
-1. **Sets the aggregated headline to** `DELIVER APPLIED — UNVERIFIED (skipped: --skip-verify)`.
-   The PASS-headline path is unreachable; the skill cannot emit `DELIVER COMPLETE`
-   under this flag.
-2. **Refuses to stamp IntakeItems** as `delivered` in Step 6 — no `i.status = 'delivered'`
-   write occurs for any UC in this delivery, regardless of upstream dev status.
-3. **Writes the skip reason to the graph** for every Task node in scope:
-   ```cypher
-   MATCH (t:Task {id: $ucId})
-   SET t.verification_skip_reason = 'deliver --skip-verify',
-       t.verification_skip_at = datetime(),
-       t.verification_evidence = 'no-test'  // explicit user override at delivery
-   ```
-   Use `mcp__neo4j__write-cypher`. Failure to write is logged as a warning but
-   does not change the headline. The `verification_evidence = 'no-test'` write
-   is mandatory under `--skip-verify`: the operator has explicitly accepted
-   shipping without a verified RED→GREEN seam, so the release skill must
-   record that decision in its Evidence-level column (see
-   `nacl-core/SKILL.md` § Task.verification_evidence).
-4. **Records the skip flag in the audit trail** — `delivery-status.json` gains
-   `"verify": {"status": "skipped", "reason": "--skip-verify", "skipped_ucs": [...]}`,
-   and the same line appears in the final report.
-5. Skips all Step 4 sub-steps (0–6) below. Step 5 (deploy health) still runs.
-   Step 6 honours rule (2) above: no IntakeItem stamping under skip.
+Override paths (single-run carve-outs):
 
-A separate explicit operator override is required to move any IntakeItem to
-`delivered` after a `--skip-verify` run. That override is not part of this
-skill — it must be a user-initiated reconcile or follow-up `/nacl-tl-deliver`
-without `--skip-verify`.
+- **Signed exception** for a planned carve-out. The exception lives
+  in `.tl/exceptions/<exception_id>.yaml`; it does NOT relax this
+  step, but it lets the downstream release skill accept the
+  resulting `UNVERIFIED` aggregate for the specific gates the
+  exception names. The deliverable carve-out targets are
+  `upstream-qa-unverified` and `LIVE_PROVIDER_SMOKE` /
+  `PROD_GOLDEN_PATH` (W3 names).
+- **Emergency mode** (`NACL_EMERGENCY=1` + companion env vars)
+  for reactive bulk-bypass. The deliver run prints a bypass
+  banner per refusal, writes an event under `.tl/emergencies/`,
+  and produces a `(emergency-bypass)` Status: suffix. See
+  `nacl-tl-core/references/emergency-mode.md`.
 
-When `--skip-verify` is NOT supplied, Step 4 proceeds as below:
+Step 4 proceeds as below in every standard delivery:
 
 0. **Pre-verify dev status check:**
 
@@ -364,14 +382,203 @@ When `--skip-verify` is NOT supplied, Step 4 proceeds as below:
 
 ---
 
-### Step 5: DEPLOY HEALTH CHECK (skip if `--skip-deploy`)
+### Step 4b: CLEAN-CHECKOUT GATE (Strict-Only; W9-ci-clean-checkout)
+
+This gate runs AFTER Step 4 VERIFY but BEFORE Step 5 DEPLOY HEALTH
+CHECK on every delivery. It exists because 17 of the ~60 baseline
+signals (the largest single bucket) are config / infra / CI drift
+that ONLY surface on a clean runner: pnpm version mismatch,
+Prisma generate missing, TEST_DATABASE_URL unset, tsconfig
+divergence, drizzle journal drift, pm2 entry-point confusion, and
+non-TS runtime assets (ffmpeg, ffprobe, prompt markdown, fonts,
+locale data) absent from build output. The pattern is "first CI
+run on a clean runner exposes drift after the wave is declared
+done." A pre-existing local `node_modules/` and a warm
+`dist/` mask these failures; only a shallow clone into a fresh
+directory followed by a full install + build + smoke catches them.
+
+VERIFIED is refused unless this gate completes with PASS.
+
+#### Procedure
+
+1. **Determine wave-tip commit and project package manager:**
+   - `commit = $(git rev-parse HEAD)` on the branch being delivered.
+   - `package_manager = config.yaml → build.package_manager` (default
+     resolved from `packageManager` field in `package.json` if
+     present, else from lockfile presence: `pnpm-lock.yaml` → pnpm,
+     `package-lock.json` → npm, `yarn.lock` → yarn). The clean-checkout
+     gate uses this single resolved value; mixed package managers in
+     one workspace fail the gate with `BLOCKED — clean-checkout-pm-ambiguous`.
+
+2. **Shallow clone into a fresh directory:**
+   ```bash
+   tmpdir=$(mktemp -d -t nacl-clean-checkout-XXXXXX)
+   git clone --depth 1 --branch "$branch" "$repo_url" "$tmpdir/repo"
+   cd "$tmpdir/repo"
+   git checkout "$commit"
+   ```
+   - The directory MUST be fresh (no inherited `node_modules/`,
+     `dist/`, `.next/`, `prisma/generated/`, or other build cache).
+     Local pnpm/yarn/npm caches MAY be reused (this is a CI runner
+     simulation, not an offline test).
+
+3. **Install:**
+   ```bash
+   # pnpm: respects packageManager field and pnpm-lock.yaml
+   pnpm install --frozen-lockfile
+   # npm: npm ci
+   # yarn: yarn install --frozen-lockfile
+   ```
+   - If install fails → BLOCKED with `clean-checkout-install-failed`.
+     Capture stderr tail (50 lines) to evidence.
+
+4. **Build (all workspaces):**
+   ```bash
+   pnpm -r build       # or: npm run build / yarn build
+   ```
+   - If build fails → BLOCKED with `clean-checkout-build-failed`.
+   - If `config.yaml → build.requires_prisma_generate: true`, the
+     build step MUST include `prisma generate` upstream of the
+     compile (either via a `prebuild` script or a workspace-level
+     equivalent). Missing → BLOCKED with `clean-checkout-prisma-generate-missing`.
+
+5. **Verify runtime assets present in build output:**
+
+   Read `config.yaml → runtime_assets` (list of paths relative to
+   each workspace's build-output root). For each entry, assert the
+   file or directory exists under the built artifact tree. Missing
+   any required runtime asset → **BLOCKED**, NOT a WARNING.
+
+   See `nacl-tl-core/references/config-schema.md` § `runtime_assets`
+   for the schema and defaults for common project shapes.
+
+6. **Migrate (only if DB tooling is present):**
+   - If `config.yaml → build.migrate_cmd` is set, run it against a
+     scratch database (the URL comes from
+     `config.yaml → build.test_database_url` — if absent, the gate
+     reports BLOCKED with `clean-checkout-test-database-url-undefined`
+     when the migrate step would otherwise run).
+   - If no DB tooling configured → migrate stage is recorded as
+     `SKIPPED` (not BLOCKED) and the gate proceeds.
+
+7. **Run-smoke (boot the entrypoint, hit health, hit one product endpoint):**
+   ```bash
+   pnpm start &        # or: node dist/index.js, or service-specific entry
+   PID=$!
+   # Wait for health (curl loop with timeout)
+   # Hit /api/health -> expect 200
+   # Hit one product endpoint named in config.yaml -> deploy.smoke.endpoints[0] -> expect 2xx
+   kill $PID
+   ```
+   - Entrypoint resolution comes from `config.yaml → build.entrypoint`
+     (default: `package.json` `main` field, else `dist/index.js`).
+   - Product-endpoint smoke list comes from
+     `config.yaml → deploy.smoke.endpoints` (list of paths; default:
+     `["/api/health"]` for projects without product surface; if
+     defaulted, this is recorded as `health-only` smoke evidence
+     and the smoke status is `PASS_HEALTH_ONLY`).
+   - Any non-2xx → BLOCKED with `clean-checkout-smoke-failed` plus
+     the failing path.
+   - Entrypoint that fails to bind a port within 60s → BLOCKED with
+     `clean-checkout-entrypoint-no-port`. This is the
+     transcriber `dist/index.js` vs `dist/server.js` pattern.
+
+8. **Capture evidence to `.tl/clean-checkout/<commit>.json`** (artifact
+   schema: see `.tl/clean-checkout/_template.json`). Fields:
+   - `commit`
+   - `started_at`, `completed_at` (ISO-8601 UTC)
+   - `build_status`: `PASS` | `FAIL`
+   - `migrate_status`: `PASS` | `FAIL` | `SKIPPED`
+   - `smoke_status`: `PASS` | `PASS_HEALTH_ONLY` | `FAIL`
+   - `runtime_assets_verified`: list of `{path, present: bool}`
+   - `terminal_status`: `PASS` | `BLOCKED`
+   - `blocker_detail`: workflow-detail string (only when terminal_status = BLOCKED)
+
+#### Override paths (single-run carve-outs)
+
+The gate does NOT support an inline override flag. Bypass paths:
+
+- **Signed exception** under `.tl/exceptions/<exception_id>.yaml`
+  with `affected_gates` enumerating one of:
+  `clean-checkout-install-failed`, `clean-checkout-build-failed`,
+  `clean-checkout-smoke-failed`,
+  `clean-checkout-runtime-assets-missing`,
+  `clean-checkout-prisma-generate-missing`,
+  `clean-checkout-test-database-url-undefined`,
+  `clean-checkout-entrypoint-no-port`,
+  `clean-checkout-pm-ambiguous`.
+- **Emergency mode** (`NACL_EMERGENCY=1` plus
+  `NACL_EMERGENCY_REASON` and `NACL_EMERGENCY_OWNER`). The gate
+  advances under a recorded bypass; closed Status: is
+  `PARTIALLY_VERIFIED` with `(emergency-bypass)` suffix. The
+  evidence artifact still records the underlying BLOCKED detail.
+
+Neither path re-enables a `--skip-clean-checkout` flag; no such
+flag exists.
+
+#### Worked examples (from baseline retrospectives)
+
+**Karatov pnpm/Prisma/TEST_DATABASE_URL cluster.** Local dev had
+pnpm-lock.yaml, a warm `node_modules/`, and a populated dev
+database. The first clean CI runner failed at three layers:
+(a) pnpm version mismatch (the lockfile demanded a newer pnpm
+than the runner had — `packageManager` field undeclared); (b)
+`prisma generate` missing from the build step (local dev had run
+it eagerly at install time); (c) `TEST_DATABASE_URL` unset in CI,
+causing migration to silently target the local dev DB during
+build. Each was caught only after green local + green review.
+The clean-checkout gate would have blocked at step 3 (install),
+step 4 (build → `clean-checkout-prisma-generate-missing`), and
+step 6 (`clean-checkout-test-database-url-undefined`)
+respectively, on the first delivery attempt.
+
+**Transcriber ffmpeg / pm2 entry / prompt-markdown cluster.**
+The build emitted `dist/*.js` cleanly but omitted non-TS assets:
+the `worker/src/llm/prompts/{ru,en}/protocol.md` templates
+disappeared (tsc copies only `.ts`), the `ffprobe` binary was
+expected on `PATH` but the container image did not ship one, and
+pm2's ecosystem entry pointed at `dist/server.js` (factory file
+returning `buildApp()`) instead of `dist/index.js` (the file that
+calls `.listen()`). The clean-checkout gate would have caught:
+(a) missing prompt markdown via `runtime_assets: [worker/dist/llm/prompts/ru/protocol.md, worker/dist/llm/prompts/en/protocol.md]`
+→ `clean-checkout-runtime-assets-missing`; (b) entrypoint that
+never binds a port → `clean-checkout-entrypoint-no-port`; (c)
+ffprobe absence via `runtime_assets: [bin/ffprobe]` on the
+built-artifact bundle. None of these reach the runtime in
+production if the gate runs against a fresh checkout.
+
+#### Headline contribution
+
+- Clean-checkout PASS + Step 5 PASS → DELIVER COMPLETE.
+- Clean-checkout BLOCKED, no exception, no emergency →
+  **DELIVER HALTED — UNVERIFIED (clean-checkout-<detail>)**.
+  IntakeItems are NOT stamped delivered.
+- Clean-checkout BLOCKED, signed exception covers the specific
+  detail → delivery proceeds with a banner; closed Status: is
+  `PARTIALLY_VERIFIED` and IntakeItems are stamped delivered with
+  `i.delivery_note` referencing the exception_id.
+- Clean-checkout BLOCKED, emergency mode → delivery proceeds with
+  `(emergency-bypass)` suffix; closed Status: is
+  `PARTIALLY_VERIFIED`; IntakeItems are NOT stamped delivered.
+
+---
+
+### Step 5: DEPLOY HEALTH CHECK (mandatory; W4-blocking-release)
+
+The SKIP-DEPLOY flag was removed in W4-blocking-release. The
+inline operator health-failure override was also removed. Step 5
+is now mandatory on every delivery; failure refuses VERIFIED with
+no inline opt-out.
 
 1. Read staging URL from config:
    ```
    url = config.yaml → deploy.staging.url
    health = config.yaml → deploy.staging.health_endpoint (default: /api/health)
    ```
-   - If no staging URL configured → skip health check, report "no staging URL configured"
+   - If no staging URL configured → `DELIVER HALTED — UNVERIFIED
+     (no-staging-url-without-exception)`. Override paths are
+     signed exception (`affected_gates: [missing-prod-golden-path]`
+     plus an explicit staging-url carve-out) or emergency mode.
 
 2. Wait for deployment propagation (15 seconds)
 
@@ -381,33 +588,27 @@ When `--skip-verify` is NOT supplied, Step 4 proceeds as below:
    ```
    - Retry 3 times with 10s intervals.
    - If 200 OK → deployment healthy. Continue.
-   - If still failing after 3 retries → **HALT by default** with
-     `DELIVER HALTED — UNVERIFIED (health failed)`. Do NOT stamp IntakeItems
-     as delivered. The operator may re-run `/nacl-tl-deliver` after fixing
-     the deploy or apply an explicit override (see step 3a).
+   - If still failing after 3 retries → **HALT**:
+     ```
+     DELIVER HALTED — UNVERIFIED (health failed)
+     Staging health endpoint did not return 200 OK after 3 retries.
+     IntakeItems have NOT been stamped as delivered.
 
-3a. **Operator health-failure override (interactive):**
-    If the operator chooses to acknowledge the health failure and proceed
-    anyway (e.g. known transient infra issue), the headline downgrades to:
-    ```
-    DELIVER APPLIED — UNVERIFIED (health failed, operator override)
-    ```
-    IntakeItem stamping is still refused (Step 6 honours the same rule as
-    `--skip-verify`). The override and reason are written to
-    `delivery-status.json`:
-    ```json
-    "deploy": {
-      "status": "unhealthy_override",
-      "operator_override_reason": "<text>",
-      "override_at": "<iso8601>"
-    }
-    ```
-    and to the graph for each Task in scope:
-    ```cypher
-    MATCH (t:Task {id: $ucId})
-    SET t.verification_skip_reason = 'deliver health failed, operator override',
-        t.verification_skip_at = datetime()
-    ```
+     Resolution options:
+       [1] Fix the staging deploy and re-run /nacl-tl-deliver.
+       [2] File a signed exception under .tl/exceptions/ with
+           affected_gates: [missing-prod-golden-path] for the
+           release-time gate, then re-run.
+       [3] Invoke emergency mode (NACL_EMERGENCY=1 +
+           NACL_EMERGENCY_REASON + NACL_EMERGENCY_OWNER); the
+           delivery advances with a (emergency-bypass) suffix
+           and is NEVER promoted to VERIFIED.
+     ```
+   - HEALTH_ONLY (a green `/health` probe with no `PROD_GOLDEN_PATH`
+     execution) is **not** product-readiness evidence. A green
+     probe here only certifies that staging accepts HTTP; it does
+     NOT replace the W3 `PROD_GOLDEN_PATH` evidence requirement at
+     the release-time gate.
 
 4. YouGile: post deployment confirmation to task chat (if configured)
 
@@ -525,23 +726,33 @@ Graph:
 
 YouGile: tasks moved to ToRelease
 
-Headline selection:
+Headline selection (W4-blocking-release strict):
   DELIVER COMPLETE
-    — all UCs PASS, --skip-verify NOT used, health check OK.
-  DELIVER APPLIED — UNVERIFIED (skipped: --skip-verify)
-    — verification skipped via flag; no IntakeItem stamped delivered;
-      Task.verification_skip_reason written to graph.
-  DELIVER APPLIED — UNVERIFIED (health failed, operator override)
-    — health check failed and operator chose to proceed; no IntakeItem
-      stamped delivered; skip reason written to graph.
+    — all UCs PASS, every mandatory step ran, health check OK.
+  DELIVER COMPLETE — emergency-bypass
+    — emergency mode (NACL_EMERGENCY=1) invoked; one or more
+      mandatory steps refused VERIFIED; the delivery advanced
+      under a recorded bypass; closed Status: is PARTIALLY_VERIFIED.
   DELIVER APPLIED — UNVERIFIED
-    — any UC has UNVERIFIED dev status (general non-skip case).
+    — any UC has UNVERIFIED dev status; no IntakeItem stamped
+      delivered for the UNVERIFIED UC; PASS UCs are stamped normally.
   DELIVER HALTED — UNVERIFIED (health failed)
-    — health check failed and no operator override was given.
+    — Step 5 health check failed; no inline override (W4 strict).
+  DELIVER HALTED — UNVERIFIED (clean-checkout-<detail>)
+    — Step 4b clean-checkout gate (W9) failed at install / build /
+      smoke / runtime-asset / prisma / entrypoint / pm-ambiguous;
+      detail names the specific failure. IntakeItems NOT stamped.
+  DELIVER HALTED — UNVERIFIED (no-staging-url-without-exception)
+    — no staging URL configured and no signed exception covers it.
   DELIVER HALTED — NO_INFRA (scripts.{test|build} undeclared)
     — declared workspace command missing; no fallback (P2).
   DELIVER INCOMPLETE — REGRESSION
     — any UC has REGRESSION status.
+
+The pre-W4 vocabulary (`DELIVER APPLIED — UNVERIFIED (skipped:
+SKIP-VERIFY-FLAG)` and `DELIVER APPLIED — UNVERIFIED (health
+failed, operator override)`) is no longer producible — the flag
+and the inline operator override were removed.
 
 Next:
   /nacl-tl-release          — when ready for production
@@ -591,11 +802,12 @@ On start, if `.tl/delivery-status.json` exists and branch matches:
 1. Read status file
 2. Find first incomplete step:
    ```
-   ship.status != "done"    → resume from Step 2
-   ci.status != "done"      → resume from Step 3
-   verify.status != "done"  → resume from Step 4
-   deploy.status != "done"  → resume from Step 5
-   graph.status != "done"   → resume from Step 6
+   ship.status != "done"             → resume from Step 2
+   ci.status != "done"               → resume from Step 3
+   verify.status != "done"           → resume from Step 4
+   clean_checkout.status != "done"   → resume from Step 4b
+   deploy.status != "done"           → resume from Step 5
+   graph.status != "done"            → resume from Step 6
    all done                 → show report
    ```
 

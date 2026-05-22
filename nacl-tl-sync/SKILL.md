@@ -171,7 +171,7 @@ If none of the three resolves → record `UNVERIFIED (no baseline)` for that wor
 ```
 git worktree add <tempdir> <baseline_ref>
 cd <tempdir> && <workspace_scripts.test>
-git worktree remove --force <tempdir>
+git worktree remove -f <tempdir>
 ```
 
 Capture per workspace: `baseline_failures` (set of failing test names), `tests_collected`, exit code, stderr.
@@ -228,9 +228,126 @@ Apply these rules in order — first match wins. `BLOCKED` is reserved exclusive
 | 6 | `be_postfix_failures` and `fe_postfix_failures` both empty AND at least one has `coverage_gap = true` | `UNVERIFIED` |
 | 7 | At least one workspace has `postfix_failures.size > 0` AND `new_failures.size == 0` AND `postfix_failures ⊆ baseline_failures` for every workspace with failures | `BLOCKED` — list `pre_existing` failures per workspace |
 
+### Step 7b: Wire-Evidence Gate (Mandatory, Strict-Only)
+
+**CRITICAL**: Static type-alignment and runtime test passing are necessary
+but not sufficient for SYNC COMPLETE. Sync must also confirm **wire-evidence**
+for any UC where the system makes calls to an external surface
+(`UseCase.actor != SYSTEM` in the graph, or, equivalently, any UC whose
+spec lists a human or external-provider actor).
+
+This gate is **strict-only** — strict is the single, unconditional mode.
+There is no fallback branch, no per-project opt-out, and no inline
+operator-prompt override. The only override path is a signed exception
+under the schema defined by W4.
+
+#### Two evidence dimensions, named separately
+
+| Dimension | What it proves | Sufficient for VERIFIED? |
+|---|---|---|
+| **type-alignment** | BE DTO and FE consumer agree on field names, optionality, and TS types at compile time. Categories 1–6 above. | No — necessary but not sufficient when `actor != SYSTEM`. |
+| **wire-evidence** | A *runnable* artifact exercises the actual wire format end-to-end: byte-on-the-wire request, byte-on-the-wire response, real header set, real status code, real envelope. | Yes — required for VERIFIED when `actor != SYSTEM`. |
+
+Type-alignment is the eight categories Step 5 already enforces.
+Wire-evidence is a new gate beneath them.
+
+#### Recognised wire-evidence shapes
+
+A UC has wire-evidence if at least one of these artifacts is present and
+referenced in the sync report:
+
+1. **`wire-evidence:fixture:<path>`** — a runnable test that loads a
+   recorded response fixture (HTTP body, headers, status) and asserts
+   the BE/FE code parses/produces it without mocking. The fixture file
+   must be a real captured response — not a synthetic shape implied by
+   the TS type. `<path>` is repo-relative to the fixture file or the
+   test that drives it.
+2. **`wire-evidence:contract-test:<path>`** — a runnable contract test
+   that asserts the wire-format contract against the live provider in a
+   sandboxed environment (provider sandbox endpoint, test API key, or
+   provider-supplied mock server hosted by the provider — not an in-repo
+   mock). `<path>` is repo-relative to the test file.
+3. **`wire-evidence:live-smoke:<timestamp>`** — captured output of a
+   live call to the real provider, with the ISO-8601 timestamp of
+   capture. The capture artifact (request, response, status code) must
+   be committed to the repo or stored in a release-attached location
+   referenced by the sync report.
+
+`UseCase.actor == SYSTEM` (purely internal UCs with no external surface)
+is exempt from wire-evidence. The exemption is property-driven, not
+operator-driven.
+
+#### Gate Decision
+
+| Condition | Action |
+|-----------|--------|
+| `actor == SYSTEM` (no external surface) | **PROCEED** — wire-evidence not required; record `wire-evidence: n/a (actor=SYSTEM)` in the report. |
+| `actor != SYSTEM` AND ≥1 wire-evidence shape present and runnable | **PROCEED** — record the evidence string(s) in the sync report under "Wire Evidence" and in `Task.verification_evidence`. |
+| `actor != SYSTEM` AND no wire-evidence shape present | **REFUSE VERIFIED** — downgrade verdict to `UNVERIFIED`; headline `SYNC APPLIED — UNVERIFIED (wire-evidence missing)`. Type-alignment passing does NOT promote this to PASS. |
+| `actor != SYSTEM` AND a referenced wire-evidence artifact does not exist on disk OR does not run cleanly | **REFUSE VERIFIED** — downgrade to `UNVERIFIED (wire-evidence stale)` and list the broken artifact. |
+
+**VERIFIED requires wire-evidence for `actor != SYSTEM`; override via
+signed exception only.** There is no inline operator-prompt override at
+this gate. Strict is the single, unconditional mode — every project and
+every UC with an external actor moves through it the same way.
+
+#### Worked examples (from the W0 baseline)
+
+**Example 1 — Karatov FE-sync UNVERIFIED-normalization episode.**
+Karatov Wave 5 closed with all six FE sync verdicts normalized to
+UNVERIFIED because the FE tests relied on MSW (`setupServer(`) rather
+than wire-level parity with the BE — see `fe_coverage_gap = true`
+mechanics at Step 7.3b. Under the new gate, MSW interception is not
+wire-evidence: the request never leaves the FE. Outcome under the new
+rule: `SYNC APPLIED — UNVERIFIED (wire-evidence missing)`. To advance
+to VERIFIED the UC must add a `wire-evidence:fixture:<path>` test that
+loads a recorded BE response and asserts the FE parses it, OR a
+`wire-evidence:contract-test:<path>` against a real BE process started
+in the test suite — not in-process MSW.
+
+**Example 2 — Transcriber kie.ai `404 model not found` episode.**
+UC-300 in transcriber: TECH-011 named the abstraction `ILlmProvider`,
+the BE and FE TS types matched, the `vi.mock(...)` unit tests passed,
+sync emitted `SYNC COMPLETE`. The live request to `kie.ai` returned
+`HTTP 404 model not found` on first prod call because the endpoint
+shape was Anthropic-flavored (not OpenAI-flavored as the unit tests
+assumed) and the model namespace was wrong. Under the new gate, no
+`wire-evidence:*` was recorded for UC-300 (`actor = LLM_PROVIDER ≠
+SYSTEM`). Outcome under the new rule: `SYNC APPLIED — UNVERIFIED
+(wire-evidence missing)` — the type alignment alone is not VERIFIED-
+grade. Closing the gap requires either a recorded fixture of a real
+kie.ai response (`wire-evidence:fixture:tests/fixtures/kie-ai/protocol-response.json`)
+or a sandboxed live call (`wire-evidence:live-smoke:2026-05-19T22:28:00Z`).
+
+W6 will provide the per-provider `external-contracts.md` artifact that
+captures the wire shape; tl-sync only requires the existence of *some*
+wire-evidence shape — fixture, contract test, or live smoke.
+
+#### Recording the Evidence
+
+When wire-evidence is present and runnable, write the literal evidence
+string (e.g. `wire-evidence:fixture:tests/fixtures/kie-ai/protocol-response.json`)
+to the sync report's "Wire Evidence" section AND to
+`Task.verification_evidence` alongside any `test-GREEN:` or
+`repo-checks-GREEN:<commit>` payload already written. The evidence
+taxonomy entry is in `skills-for-codex/references/verification-evidence.md`.
+
+A single `verification_evidence` value MAY combine
+`repo-checks-GREEN:<commit>` (from review), `test-GREEN:<path>` (from
+the regression-test seam), and one or more `wire-evidence:*` entries,
+separated by single spaces.
+
 ### Step 8: Generate sync-report.md
 
 Write `.tl/tasks/UC###/sync-report.md` using `nacl-tl-core/templates/sync-report-template.md`.
+
+The report MUST include a top-level "Wire Evidence" section listing,
+for each UC under the sync scope:
+
+- `actor` (from the UC graph node)
+- recorded wire-evidence string(s) or `wire-evidence: missing`
+- runnability check result (artifact exists on disk; if it's a runnable
+  test, the test was run and exit 0 was observed)
 
 ### Step 9: Update Tracking
 
@@ -347,7 +464,10 @@ Only check if the contract defines events. Compare event names, payload shapes, 
 
 ## Verdict Logic
 
-Static checks alone determine FAIL (blockers found). The runtime check from Step 7 determines whether a blocker-free sync is SYNC COMPLETE or a qualified status.
+Static checks alone determine FAIL (blockers found). The runtime check from
+Step 7 determines whether a blocker-free sync is in the PASS family. The
+wire-evidence gate from Step 7b then determines whether a runtime-clean sync
+can be promoted to SYNC COMPLETE for UCs with `actor != SYSTEM`.
 
 Apply rules in order — first match wins:
 
@@ -360,6 +480,10 @@ elif runtime_result == "RUNNER_BROKEN":
   verdict = "RUNNER_BROKEN"  →  headline: SYNC APPLIED — RUNNER_BROKEN
 elif runtime_result == "REGRESSION":
   verdict = "REGRESSION"  →  headline: SYNC INCOMPLETE — REGRESSION
+elif wire_evidence_required and not wire_evidence_present:
+  # Step 7b strict-only gate. actor != SYSTEM AND no recognised
+  # wire-evidence:* artifact present and runnable.
+  verdict = "UNVERIFIED"  →  headline: SYNC APPLIED — UNVERIFIED (wire-evidence missing)
 elif (mock_warnings > 0) or (fe_coverage_gap == true) or (runtime_result == "UNVERIFIED"):
   verdict = "UNVERIFIED"  →  headline: SYNC APPLIED — UNVERIFIED
 elif runtime_result == "BLOCKED":
@@ -369,6 +493,12 @@ elif runtime_result == "PASS" and warning_count > 0:
 else:
   verdict = "PASS"  →  headline: SYNC COMPLETE
 ```
+
+`wire_evidence_required` is `true` when the UC's graph node carries
+`actor != SYSTEM` (any human or external-provider actor). It is `false`
+for purely internal UCs. The flag is property-driven, not operator-
+driven; there is no `--skip-wire-evidence` flag and no inline override.
+The only override is a signed exception under the schema defined by W4.
 
 **Mock-specific verdict notes:**
 - `mock_blockers > 0`: a production file (non-test, non-fixture, non-stories) imports from a mock module. This is an incompatibility that causes runtime drift — treated identically to a structural BLOCKER.
@@ -381,6 +511,7 @@ else:
 | `SYNC COMPLETE` (with warnings) | Proceed with warnings included in QA/review checklist |
 | `SYNC INCOMPLETE — REGRESSION` | Return to `/nacl-tl-dev-be UC### --continue` or `/nacl-tl-dev-fe UC### --continue` |
 | `SYNC APPLIED — UNVERIFIED` | Endpoint paths not covered by any test — add coverage or accept gap |
+| `SYNC APPLIED — UNVERIFIED (wire-evidence missing)` | Add a `wire-evidence:fixture:<path>`, `wire-evidence:contract-test:<path>`, or `wire-evidence:live-smoke:<timestamp>` artifact, OR file a signed exception under the W4 schema. No inline override. |
 | `SYNC APPLIED — NO_INFRA` | One or both workspaces missing test runner — add infra |
 | `SYNC APPLIED — RUNNER_BROKEN` | Runner crashed — diagnose environment before proceeding |
 | `SYNC APPLIED — BLOCKED` | Pre-existing unrelated failures — user decides whether to proceed |
@@ -625,6 +756,14 @@ If a referenced source file does not exist on disk, mark as BLOCKER in the repor
 - [ ] FE test files scanned for `jest.mock(` / `vi.mock(` / `setupServer(` / `mockapi.` patterns; `fe_coverage_gap` recorded
 - [ ] Production paths scanned for mock imports (`import .* from .*mock`); `mock_blockers` and `mock_warnings` counts recorded
 - [ ] Runtime result classified (PASS / UNVERIFIED / NO_INFRA / RUNNER_BROKEN / REGRESSION / BLOCKED)
+
+### During Wire-Evidence Gate (Step 7b)
+- [ ] UC `actor` resolved from graph (`SYSTEM` vs. external/human)
+- [ ] If `actor != SYSTEM`: at least one `wire-evidence:fixture:<path>`, `wire-evidence:contract-test:<path>`, or `wire-evidence:live-smoke:<timestamp>` artifact identified
+- [ ] Artifact existence on disk confirmed
+- [ ] If the artifact is a runnable test, it was run and exited 0
+- [ ] Recorded evidence string(s) appended to `Task.verification_evidence`
+- [ ] No inline override applied (override path is a signed exception under W4 only)
 
 ### After Verification
 - [ ] sync-report.md created with all sections filled (including runtime check section)

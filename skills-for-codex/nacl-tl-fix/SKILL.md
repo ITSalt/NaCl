@@ -76,6 +76,146 @@ truth.
 Missing `scripts.test` is not L0. It is a verification outcome
 `Fix outcome: NO_INFRA`.
 
+## Spec-First Prerequisite (Strict-Only) — W10 binding
+
+**L1+ blocked without preceding spec-update commit; override via signed exception only.**
+
+For any fix classified L1 or higher (L1, L2, L3 — L0 environment fixes are
+exempt), this skill refuses to enter Step 6 (APPLY FIX) unless the fix
+chain already contains at least one **spec-update commit** that precedes
+the first code-fix commit.
+
+A **spec-update commit** is any commit that mutates one of the following:
+
+1. **Graph state** — creates or modifies a node with one of these Neo4j
+   labels: `DomainEntity`, `DomainAttribute`, `Enumeration`, `UseCase`,
+   `FormField`, `Module`, `Requirement`, `FeatureRequest`,
+   `BusinessRule`, `Activity`. Detection uses the W5 reconciliation
+   primitives (live graph reads only; no `.cypher` export fallback).
+2. **`.tl/*` schema artifact** — `.tl/tasks/<TASK_ID>/task-{be,fe}.md`,
+   `.tl/tasks/<TASK_ID>/api-contract.md`,
+   `.tl/tasks/<TASK_ID>/spec.md`,
+   `.tl/feature-requests/<FR-ID>.md`,
+   `.tl/specs/<UC>.md`, fixtures under `.tl/fixtures/`.
+3. **SA-layer docs** — `docs/12-domain/**`, `docs/14-usecases/**`,
+   `docs/15-interfaces/**`, `docs/16-requirements/**`.
+
+A commit that touches only code under `src/`, `backend/`, `frontend/`,
+`packages/`, or `tests/` (other than fixture files) is a **code-fix
+commit**, regardless of its message subject.
+
+### Why this gate exists
+
+Karatov DIAGNOSTIC-REPORT.md (2026-05-18) measured 39% of fixes never
+updated docs. The canonical episode: `a7eb747` "docs(SA): UC-105/UC-106/
+UC-107 post-commit emit timing (L2)" landed AFTER the FIX-B code wave
+(`01f2fcb`, `135b14b`, `6ed12ac`, `3acb2fd`) — docs caught up to code
+instead of leading it. Every undocumented fix made the next post-mortem
+less trustworthy. This gate makes the pattern impossible to repeat
+without an audited signed exception.
+
+### Detection logic (uses W5 reconciliation primitives)
+
+Run at Step 6 entry, after Step 5 has resolved:
+
+1. **Define the fix chain.** Commits between `<merge-base of HEAD with
+   main>..HEAD`. For direct-strategy projects, commits between the last
+   tag and `HEAD`.
+
+2. **Classify each commit.** Read its file list (`git diff-tree
+   --no-commit-id --name-only -r <sha>`). Match against the spec-update
+   detector lists above. Code-touch-only commits are code-fix commits.
+
+3. **Detect graph mutation per commit.** Graph writes live outside the
+   tree. Resolve in this order:
+
+   a. If `graph-infra/exports/<commit>.cypher` exists, diff the commit's
+      export against its parent's export. Any added/modified node with
+      one of the listed labels is a graph mutation.
+   b. Else if `.tl/changelog.md` addition in the commit references
+      `/nacl-sa-*` skill invocation, treat as a graph-mutation commit;
+      record `graph-mutation-by-changelog` in the report.
+   c. Else report `Status: BLOCKED` with workflow detail
+      `graph-delta-unobservable`. The only override is a signed
+      exception against gate `spec-first-prerequisite`.
+
+4. **Apply the invariant.** PASS iff there exists at least one
+   spec-update commit whose index in the chain is strictly less than
+   the index of the first code-fix commit. FAIL otherwise.
+
+5. **Secondary signals from W5 source-of-truth set.**
+   - `.tl/status.json` with `phases.docs: done` or `phases.spec: done`
+     timestamped before the first code-fix commit →
+     `spec-update-by-status-json` signal recorded.
+   - `.tl/changelog.md` entry timestamped before the first code-fix
+     commit and describing an L2/L3 doc update →
+     `spec-update-by-changelog` signal recorded.
+   Either signal also satisfies the gate.
+
+### Step 6 entry gate
+
+| # | Condition | Action |
+|---|---|---|
+| 1 | classification is `L0` | SKIP. Proceed to Step 6 sub-flow. |
+| 2 | `--dry-run` is set | SKIP. Record in report; no code is written. |
+| 3 | verdict is PASS | Proceed. Record satisfying spec-update commit SHA. |
+| 4 | verdict is FAIL AND valid signed exception against `spec-first-prerequisite` exists per W4 schema | Proceed. Header: `FIX APPLIED — UNVERIFIED (spec-first-bypassed-by-signed-exception)`. Record `exception_id`, `expiry`, `followup_task`. |
+| 5 | verdict is FAIL AND no signed exception | REFUSE. `Status: BLOCKED`, workflow detail `spec-first-prerequisite-missing`. Print refusal advisory. Exit. |
+| 6 | detection emitted `graph-delta-unobservable` AND no signed exception | REFUSE. Workflow detail `graph-delta-unobservable`. |
+
+### Refusal advisory (rule 5)
+
+```text
+FIX HALTED — SPEC-FIRST PREREQUISITE MISSING
+
+Classification: L<n>
+Fix chain commits: <N>
+Spec-update commits: none (or list)
+Code-fix commits: <list>
+First code-fix commit: <SHA>
+
+The W10 Spec-First prerequisite requires that every L1+ fix be
+preceded by a graph mutation or a .tl/* schema artifact change in
+the same fix chain. Karatov 2026-05-18 DIAGNOSTIC-REPORT measured
+39% of fixes never updated docs; this gate refuses to ship into
+that pattern.
+
+Three legitimate paths forward:
+  [1] Commit the spec update first (Step 5). Re-invoke.
+  [2] Re-classify in Step 3 if L2/L3 was incorrectly downgraded.
+  [3] File a signed exception against gate
+      `spec-first-prerequisite` per W4 schema:
+        affected_gates: [spec-first-prerequisite]
+        reason: <concrete justification + why no spec update>
+        expiry: <= 24h
+        followup_task: <UC or TECH that audits the gap>
+
+Status: BLOCKED
+Workflow detail: spec-first-prerequisite-missing
+```
+
+### Worked example — the Karatov 39% pattern
+
+Fix chain on `main` between Wave 4 close and the FIX-B audit:
+
+```
+01f2fcb  fix(UC-105/UC-106/UC-107): wire post-commit task events    [code-fix]
+c83e84f  fix(tests): valid UUID fixtures                            [code-fix]
+92da5c7  fix(tests): schema namespace in task.cancel.sse.test       [code-fix]
+135b14b  fix(UC-107/UC-150/UC-202): gate post-commit emits           [code-fix]
+6ed12ac  fix(UC-107/UC-150/UC-202): cancel/fail race correctness    [code-fix]
+3acb2fd  fix(UC-107/UC-202): lock tasks row FOR UPDATE              [code-fix]
+a7eb747  docs(SA): UC-105/UC-106/UC-107 post-commit emit timing     [spec-update]
+```
+
+The single spec-update commit lands LAST. W10 verdict: FAIL. First
+code-fix is `01f2fcb` at index 0; no spec-update commit precedes it.
+Rule 5 fires. `Status: BLOCKED`, workflow detail
+`spec-first-prerequisite-missing`. Operator paths: (1) reorder by
+committing the SA update first and rebasing, or (2) sign an exception
+if emergency closure is genuine. Path (1) is what would keep the next
+post-mortem readable.
+
 ## Workflow
 
 ### Step 1: TRIAGE
@@ -197,7 +337,12 @@ L2/L3 until the user explicitly confirms the behavior contract and docs change.
 For L0, apply only the environment/config/migration repair and skip the code TDD
 sub-flow. Verification still happens in Step 7.
 
-For L1/L2/L3 code changes, follow this order:
+For L1/L2/L3 code changes, first run the **Spec-First Prerequisite Check**
+(see the "Spec-First Prerequisite (Strict-Only)" section above). The gate
+must return PASS — or rule 4 must apply via a valid signed exception against
+`spec-first-prerequisite` — before any production code is touched.
+
+Then follow this order:
 
 1. Restate Current/Expected/Unchanged behavior from Step 4.
 2. Discover the owning workspace by walking up from affected files to the
@@ -224,6 +369,8 @@ Determine the workflow-specific fix outcome from the captured evidence:
 
 | Condition | Fix outcome | Codex status |
 |---|---|---|
+| Step 6 entry gate refused: spec-first-prerequisite-missing (no signed exception). | `SPEC_FIRST_MISSING` | `BLOCKED` |
+| Step 6 entry gate refused: graph-delta-unobservable (no signed exception). | `GRAPH_DELTA_UNOBSERVABLE` | `BLOCKED` |
 | `scripts.test` missing. | `NO_INFRA` | `BLOCKED` |
 | Runner failed before tests or zero-test sanity check confirms misconfiguration. | `RUNNER_BROKEN` | `BLOCKED` |
 | New failures appeared compared with baseline. | `REGRESSION` | `FAILED` |
@@ -231,6 +378,7 @@ Determine the workflow-specific fix outcome from the captured evidence:
 | A regression or existing failing test turned RED to GREEN and postfix suite has no failures. | `PASS` | `VERIFIED` |
 | A target test turned RED to GREEN but unrelated baseline failures remain. | `BLOCKED` | `PARTIALLY_VERIFIED` |
 | No test evidence exercises the change. | `UNVERIFIED` | `UNVERIFIED` |
+| Step 6 entry gate bypassed by valid signed exception against `spec-first-prerequisite`. | the test-derived outcome above applies, but headline carries `(spec-first-bypassed-by-signed-exception)` | the test-derived Codex status applies, capped at `UNVERIFIED` |
 
 Validation must also include:
 
@@ -242,8 +390,10 @@ Validation must also include:
   ```markdown
   ### [YYYY-MM-DD] nacl-tl-fix: <brief description>
   - **Level:** L0/L1/L2/L3
-  - **Fix outcome:** PASS / BLOCKED / UNVERIFIED / NO_INFRA / RUNNER_BROKEN / REGRESSION
+  - **Fix outcome:** PASS / BLOCKED / UNVERIFIED / NO_INFRA / RUNNER_BROKEN / REGRESSION / SPEC_FIRST_MISSING / GRAPH_DELTA_UNOBSERVABLE
   - **Status:** VERIFIED / FAILED / PARTIALLY_VERIFIED / BLOCKED / NOT_RUN / UNVERIFIED
+  - **Spec-first verdict:** PASS / FAIL (bypassed-by-EXC-...) / SKIPPED (L0 | --dry-run)
+  - **Spec-update commit (if PASS):** <SHA> (<message>)
   - **Root cause:** ...
   - **Affected UC:** UC-### or infrastructure
   - **Docs updated:** ...
@@ -307,6 +457,12 @@ Header mapping:
 - `REGRESSION` -> `FIX INCOMPLETE`
 - `BLOCKED`, `UNVERIFIED`, `NO_INFRA`, `RUNNER_BROKEN` -> `FIX APPLIED -
   UNVERIFIED`
+- `SPEC_FIRST_MISSING` -> `FIX HALTED - SPEC-FIRST PREREQUISITE MISSING`
+- `GRAPH_DELTA_UNOBSERVABLE` -> `FIX HALTED - SPEC-FIRST GRAPH DELTA UNOBSERVABLE`
+- Spec-first bypass via valid signed exception against
+  `spec-first-prerequisite` -> appended suffix
+  `(spec-first-bypassed-by-signed-exception)` on the otherwise-derived
+  header; status capped at `UNVERIFIED`.
 
 For `--auto-ship`, only continue to `nacl-tl-ship` when `Fix outcome: PASS` and
 the user has explicitly confirmed shipping. Never invoke `nacl-tl-hotfix`

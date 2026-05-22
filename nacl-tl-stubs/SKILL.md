@@ -19,8 +19,10 @@ description: |
 **Outputs this skill produces:**
 - stub-registry.json with severity counts (CRITICAL / MAJOR / WARNING) and `files_scanned: { production: N, tests: M }`
 - Headline one of:
-  - `STUBS COMPLETE` — production stubs == 0 AND WARNING-empty-test-files == 0 AND tests scanned > 0
+  - `STUBS COMPLETE` — production stubs == 0 AND WARNING-empty-test-files == 0 AND tests scanned > 0 AND every candidate-for-closure stub passed shape-validation (W10 binding)
   - `STUBS APPLIED — UNVERIFIED (test files: 0)` — no test files were in scope
+  - `STUBS APPLIED — UNVERIFIED (shape-unvalidated: <stub-id>)` — stub looked closed but no runtime data sample was available to compare against the spec
+  - `STUBS APPLIED — UNVERIFIED (shape-mismatch: <stub-id>, field: ...)` — runtime data diverged from the spec's required-field set or types
   - `STUBS HALTED — RUNNER_BROKEN` — grep seed failed, filesystem unreadable, or registry unwritable
   - `STUBS APPLIED — REGRESSION (empty test files: N)` — empty-test-file count exceeds threshold
   - `STUBS APPLIED — REGRESSION` — stub count grew vs. prior registry (and regression-empty threshold not met)
@@ -61,7 +63,129 @@ Scan:       Thorough -- check all marker types, code patterns, AND empty test st
 Classify:   Strict -- security and data integrity stubs are always CRITICAL
 Track:      Persistent -- stubs are never deleted, only resolved
 Gate:       Enforced -- critical stubs block review, QA, and release
+Closure:    Shape-validated -- runtime data matches the spec's field types and
+            required-field set; absence of TODO is NOT sufficient
 ```
+
+---
+
+## Closure Criterion: Shape Validation (W10 binding)
+
+**This skill no longer treats "absence of TODO marker" as evidence that a stub
+is closed.** The W10 binding replaces "no TODO" with **shape-validation**:
+a stub is closed iff a sample of runtime data flowing through the code path
+that previously carried the stub matches the spec's field types AND covers
+the spec's required-field set.
+
+### Why this change
+
+Karatov post-mortem § "Stub/mock leak" row (commit `8522d1d`
+"fix(admin): unstub WORKFLOW_STEPS + categories envelope + WSC dropdown
+paging") shipped because the stub satisfied "no TODO" but held fake IDs
+that downstream consumers (the WSC dropdown, the category filter) read
+as load-bearing data. The scanner saw "STUB-EMPTY-TEST-FILE? no. TODO
+markers? no. return-as-any? no." and emitted `STUBS COMPLETE`. The next
+real call returned 422 — the shape was wrong, not just the marker.
+
+The empty-test-file scenario (44-stub case in 0.11.0) added one form
+of shape evidence — at least one `it(`/`test(` call site must exist.
+W10 extends that to: at least one assertion against the spec's
+required-field set must execute (and pass) for every stub the scanner
+removed from the registry.
+
+### Validation procedure (per closed stub)
+
+When the scanner detects that a previously-tracked stub no longer
+matches its file:line + pattern (and thus is a candidate for
+`resolvedAt`), apply the shape-validation procedure BEFORE marking
+the stub resolved:
+
+1. **Load the spec.** Resolve the stub's `uc` field (or, for unattributed
+   stubs, the UC associated with the stub's file via the path-to-UC
+   mapping in `.tl/tasks/<UC>/result-{be,fe}.md`). Read the spec for
+   that UC:
+   - the `FormField` entries (graph-backed projects) or the API contract
+     in `.tl/tasks/<UC>/api-contract.md` (markdown projects);
+   - the required-field set (graph property `required: true` on
+     `FormField`, or `* required` in the API contract);
+   - the field types (graph `data_type` on `FormField` /
+     `DomainAttribute`, or the TypeScript / Zod type in the contract).
+
+2. **Sample runtime data.** Locate at least one runtime sample of the
+   data shape the stub used to satisfy. Acceptable sources in order:
+   a. A wire-evidence fixture written by `nacl-tl-sync` for the same
+      UC (`wire-evidence:fixture:<path>` value on the UC's Task node).
+      Read the captured response body.
+   b. A unit/integration test asserting against the same shape — must
+      include at least one assertion on each required field's presence
+      AND its type.
+   c. A live smoke recording (`wire-evidence:live-smoke:<timestamp>`).
+   d. A captured `qa-stage:provider-fixture` or
+      `qa-stage:wire-contract` artifact recorded by `nacl-tl-qa`.
+
+   If NONE of (a)-(d) is available, the closure cannot be validated.
+   Record headline `STUBS APPLIED — UNVERIFIED (shape-unvalidated:
+   <stub-id>)` and refuse to set `resolvedAt`. The stub remains
+   unresolved in the registry.
+
+3. **Compare.** For each required-field entry in the spec:
+   - presence: the sampled data MUST include the field;
+   - type: the field's runtime type MUST match the spec type (string
+     vs number vs object vs array; nullable iff spec says so).
+
+   Optional fields (spec says not-required) are not blocking, but if
+   present in the sample MUST type-match.
+
+4. **Record the evidence.** On a successful comparison, write a
+   `stub-shape-validated:<spec-ref>` entry into the UC's Task
+   `verification_evidence` string (see
+   `skills-for-codex/references/verification-evidence.md` for format).
+   The stub's registry entry gets `resolvedAt` set AND a
+   `shape_validated: true` field referencing the same `<spec-ref>`.
+
+5. **On mismatch.** If any required field is missing or any type
+   diverges, the stub is NOT closed. Emit headline `STUBS APPLIED —
+   UNVERIFIED (shape-mismatch: <stub-id>, field: <name>, expected:
+   <type>, observed: <type-or-missing>)`. The stub registry entry
+   remains unresolved. The fix author must reopen the stub.
+
+### Worked example — the empty-test-file false-PASS scenario
+
+A historical pattern that this gate now catches:
+
+A developer removes a `// TODO: implement workflow steps catalog`
+stub from `src/admin/workflow-steps.service.ts` and ships a function
+that returns `[]`. The test file `workflow-steps.test.ts` exists but
+contains:
+
+```typescript
+describe('WorkflowStepsService', () => {
+  it('returns a value', () => {
+    expect(svc.list()).toBeDefined();
+  });
+});
+```
+
+Pre-W10 result: the scanner finds no TODO, no STUB marker, the test
+file is non-empty (1 `it(` call), no empty-describe block. Headline:
+`STUBS COMPLETE`. The fake-empty-array ships.
+
+Post-W10 result:
+- The stub was previously tracked at `STUB-NNN` with `uc: UC-302` (the
+  WorkflowStepConfig UC).
+- Spec lookup: `FormField`s under UC-302 require `id` (uuid), `name`
+  (string), `step_order` (int), `kind` (enum).
+- Sample runtime data: the existing test asserts only
+  `toBeDefined()` — no required-field assertion exists. There is no
+  wire-evidence fixture for UC-302. Sources (a)-(d) all empty.
+- Validation outcome: refuse closure. Headline `STUBS APPLIED —
+  UNVERIFIED (shape-unvalidated: STUB-NNN)`. Registry keeps
+  `resolvedAt: null`.
+- Operator path: write a contract assertion against the four required
+  fields (or record a wire-evidence fixture), rerun. On the next
+  scan, the assertion executes against real-shaped data, the
+  shape-validation procedure compares to the spec, the stub closes
+  with `stub-shape-validated:UC-302:FormField:workflow-step`.
 
 ---
 
@@ -271,7 +395,21 @@ Load `.tl/stub-registry.json` (or initialize empty).
 
 - **Existing match** (same file + type, line within +/-5): update line number, keep original ID and `createdAt`
 - **New stub**: assign next sequential ID (`STUB-NNN`), set `createdAt` to now
-- **Previously tracked, not found**: set `resolvedAt` to now (stub was removed from code)
+- **Previously tracked, not found**: candidate for `resolvedAt` — but
+  **closure now requires shape-validation per the W10 binding**. Run
+  the four-step procedure in "Closure Criterion: Shape Validation"
+  above. Only when the procedure returns success do you set
+  `resolvedAt: now` AND `shape_validated: true` AND
+  `shape_evidence: <spec-ref>` on the registry entry.
+
+  - Shape-unvalidated candidates (no runtime data source available):
+    keep `resolvedAt: null`. Add a flag
+    `shape_validation_blocked: true` and a reason field. Headline
+    downgrades to `STUBS APPLIED — UNVERIFIED (shape-unvalidated:
+    <stub-id>)`.
+  - Shape-mismatch candidates: keep `resolvedAt: null`. Add
+    `shape_mismatch: { field, expected, observed }`. Headline
+    `STUBS APPLIED — UNVERIFIED (shape-mismatch: <stub-id>)`.
 
 IDs are never reused. Entries are never deleted. Resolved stubs keep their ID permanently.
 
@@ -294,7 +432,17 @@ Write `.tl/stub-registry.json`. **After writing, verify the file is readable and
       "id": "STUB-001", "file": "src/orders/order.service.ts", "line": 45,
       "type": "STUB", "severity": "CRITICAL",
       "text": "// STUB(UC001): returns empty array",
-      "uc": "UC001", "createdAt": "ISO", "resolvedAt": null
+      "uc": "UC001", "createdAt": "ISO", "resolvedAt": null,
+      "shape_validated": false
+    },
+    {
+      "id": "STUB-002", "file": "src/admin/workflow-steps.service.ts", "line": 12,
+      "type": "STUB", "severity": "WARNING",
+      "text": "// STUB: TODO removed in 8522d1d but never shape-validated",
+      "uc": "UC302", "createdAt": "ISO", "resolvedAt": null,
+      "shape_validated": false,
+      "shape_validation_blocked": true,
+      "shape_validation_reason": "no wire-evidence fixture, no contract test, no live-smoke for UC302"
     },
     {
       "id": "STUB-045", "file": "src/orders/order.test.ts", "line": 1,
@@ -339,11 +487,20 @@ Mapping rules (apply in order; first match wins):
    headline `STUBS APPLIED — REGRESSION (empty test files: N)`.
 4. No test files matched the runner's pattern (zero test files scanned) ⇒
    `phases.stubs: unverified`, headline `STUBS HALTED — NO_INFRA`.
-5. Warnings present (and triple-condition for COMPLETE not met) ⇒
+5. Any candidate-for-closure stub had shape-validation BLOCKED (no runtime
+   data source) ⇒ `phases.stubs: unverified`, headline
+   `STUBS APPLIED — UNVERIFIED (shape-unvalidated: <stub-id>)`.
+6. Any candidate-for-closure stub failed shape-validation (mismatch) ⇒
+   `phases.stubs: unverified`, headline
+   `STUBS APPLIED — UNVERIFIED (shape-mismatch: <stub-id>)`.
+7. Warnings present (and quadruple-condition for COMPLETE not met) ⇒
    `phases.stubs: unverified`, headline `STUBS APPLIED — UNVERIFIED`.
-6. Triple condition met (production stubs == 0 AND empty-test-files == 0
-   AND test files actually scanned > 0) ⇒ `phases.stubs: done`, headline
-   `STUBS COMPLETE`.
+8. Quadruple condition met (production stubs == 0 AND empty-test-files == 0
+   AND test files actually scanned > 0 AND every candidate-for-closure
+   stub has `shape_validated: true` with a recorded `<spec-ref>`) ⇒
+   `phases.stubs: done`, headline `STUBS COMPLETE`. The accompanying
+   `verification_evidence` write on the UC's Task node MUST include a
+   `stub-shape-validated:<spec-ref>` entry per closed stub.
 
 Append to `.tl/changelog.md`:
 
@@ -405,13 +562,15 @@ The final headline of a stub scan run must use one of:
 
 | Headline | Condition |
 |----------|-----------|
-| `STUBS COMPLETE` | ALL three conditions met: (1) production stubs == 0, AND (2) empty-test-file count (WARNING severity) == 0, AND (3) test files were actually scanned (test file count > 0) |
+| `STUBS COMPLETE` | ALL four conditions met: (1) production stubs == 0, AND (2) empty-test-file count (WARNING severity) == 0, AND (3) test files were actually scanned (test file count > 0), AND (4) every candidate-for-closure stub has `shape_validated: true` with a recorded `<spec-ref>` (W10 binding) |
 | `STUBS APPLIED — UNVERIFIED (test files: 0)` | Scan ran but scope had no test files at all; cannot assess test coverage debt |
+| `STUBS APPLIED — UNVERIFIED (shape-unvalidated: <stub-id>)` | Stub looked closed (TODO removed) but no runtime data sample (wire-evidence fixture / contract test / live-smoke / qa-stage fixture) is available to compare against the spec's required-field set |
+| `STUBS APPLIED — UNVERIFIED (shape-mismatch: <stub-id>, field: <name>, expected: <type>, observed: <type-or-missing>)` | Shape-validation procedure ran and found a required-field divergence between spec and sampled runtime data |
 | `STUBS HALTED — RUNNER_BROKEN` | Grep sanity-seed failed, filesystem read failed, or registry write failed; scan could not complete or could not be persisted |
 | `STUBS APPLIED — REGRESSION (empty test files: N)` | Empty-test-file (WARNING) count exceeds threshold: > 10 files OR > 50% of scanned test files |
 | `STUBS APPLIED — REGRESSION` | Prior stub count (from previous registry) was lower than current count (stubs grew), and the regression-empty-file threshold is not met |
 
-**`STUBS COMPLETE` is reserved for zero-unresolved-stubs AND zero WARNING-empty-test-files AND at least one test file was scanned.** A result of "0 production stubs found" does NOT produce `STUBS COMPLETE` if empty test files were detected or if no test files were scanned at all.
+**`STUBS COMPLETE` is reserved for zero-unresolved-stubs AND zero WARNING-empty-test-files AND at least one test file was scanned AND shape-validated closure of every candidate stub.** A result of "0 production stubs found" does NOT produce `STUBS COMPLETE` if empty test files were detected, if no test files were scanned, or if any candidate-for-closure stub failed shape-validation (shape-unvalidated OR shape-mismatch).
 
 The `files_scanned` field in the report must carry `{ production: N, tests: M }`. When `tests == 0`, the headline is downgraded to `STUBS APPLIED — UNVERIFIED (test files: 0)` regardless of production stub count.
 
@@ -497,9 +656,11 @@ Gate: STUBS COMPLETE -- Task can proceed to review.
 | Filesystem read fails | Halt. Headline: `STUBS HALTED — RUNNER_BROKEN` |
 | Registry write fails | Halt. Headline: `STUBS HALTED — RUNNER_BROKEN (registry unwritable)` |
 | Grep sanity-seed not found | Halt. Headline: `STUBS HALTED — RUNNER_BROKEN (grep sanity-seed failed)` |
-| Scan finds nothing AND test files were scanned (tests > 0) AND no WARNING-empty-test-files | Valid clean result. Report "0 stubs". Headline: `STUBS COMPLETE` |
+| Scan finds nothing AND test files were scanned (tests > 0) AND no WARNING-empty-test-files AND every candidate-for-closure stub passed shape-validation | Valid clean result. Report "0 stubs". Headline: `STUBS COMPLETE` |
 | Scan finds nothing AND test files == 0 | Headline: `STUBS APPLIED — UNVERIFIED (test files: 0)` — cannot assess coverage debt |
 | Scan finds empty test files (WARNING) > 10 or > 50% of test files | Headline: `STUBS APPLIED — REGRESSION (empty test files: N)` |
+| Candidate-for-closure stub has no runtime data sample (no fixture / contract test / live-smoke / qa-stage fixture for the UC) | Headline: `STUBS APPLIED — UNVERIFIED (shape-unvalidated: <stub-id>)`. Keep `resolvedAt: null`. |
+| Candidate-for-closure stub's sampled data diverges from the spec's required-field set or field types | Headline: `STUBS APPLIED — UNVERIFIED (shape-mismatch: <stub-id>, field: ...)`. Keep `resolvedAt: null`. |
 
 ---
 
@@ -556,7 +717,8 @@ Gate: STUBS COMPLETE -- Task can proceed to review.
 - [ ] Registry write verified (re-read and confirm `updatedAt` matches); halt with `STUBS HALTED — RUNNER_BROKEN (registry unwritable)` if it fails
 - [ ] `stub-report.md` written (UC scan only) with empty-test-file section
 - [ ] `status.json` and `changelog.md` updated
-- [ ] Headline status assigned per triple-condition: `STUBS COMPLETE` only when production == 0 AND WARNING-empty-test-files == 0 AND tests scanned > 0
+- [ ] **Shape-validation procedure applied to every candidate-for-closure stub (W10 binding)**: spec loaded, runtime sample identified, required-field set + types compared. `shape_validated: true` + `shape_evidence: <spec-ref>` recorded on registry entry; `stub-shape-validated:<spec-ref>` written to UC Task `verification_evidence`.
+- [ ] Headline status assigned per quadruple-condition: `STUBS COMPLETE` only when production == 0 AND WARNING-empty-test-files == 0 AND tests scanned > 0 AND every candidate-for-closure stub is shape-validated
 - [ ] Gate verdict displayed with next action
 
 ---

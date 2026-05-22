@@ -23,6 +23,45 @@ that a push has happened unless evidence identifies the deployed commit.
 5. Update graph or local tracking only when confirmed.
 6. Return a deployment evidence table.
 
+## Clean-Checkout Artifact Gate (W9-ci-clean-checkout)
+
+Before evaluating upstream task verification, this skill MUST locate
+the clean-checkout evidence artifact for the commit being deployed:
+
+```
+.tl/clean-checkout/<commit>.json
+```
+
+The artifact is produced by `nacl-tl-deliver` Step 4b (clean-checkout
+gate) on a shallow clone of the wave-tip commit. It records build /
+migrate / smoke / runtime-asset evidence with a `commit` field and a
+`terminal_status` of `PASS` or `BLOCKED`. Artifact schema reference:
+`.tl/clean-checkout/_template.json`.
+
+Behavior:
+
+- Artifact present, `terminal_status: PASS`, `commit` matches the
+  deployed SHA → proceed to upstream verification gate.
+- Artifact present, `commit` does NOT match → report
+  `DEPLOY HALTED — BLOCKED (clean-checkout-commit-mismatch)`. The
+  wave-tip evidence is for a different commit; deploy refuses to
+  ship a commit that was never clean-checkout-verified.
+- Artifact present, `terminal_status: BLOCKED`, no signed exception
+  covers `blocker_detail` → report
+  `DEPLOY HALTED — BLOCKED (clean-checkout-<blocker_detail>)`.
+- Artifact present, `terminal_status: BLOCKED`, signed exception
+  covers `blocker_detail` → proceed with `(clean-checkout-bypass)`
+  banner on the final report.
+- Artifact absent → report
+  `DEPLOY HALTED — BLOCKED (clean-checkout-artifact-missing)`. There
+  is NO inline override flag. The operator must either re-run
+  `/nacl-tl-deliver` (which produces the artifact) or file a signed
+  exception with `affected_gates: [clean-checkout-artifact-missing]`.
+
+The clean-checkout artifact is the evidence that the deployed commit
+was built and smoked from a fresh tree, not a warm local cache.
+Without it, deploy emits `BLOCKED`.
+
 ## Source-Parity Requirements
 
 - Preserve source platform detection and deployment identification before
@@ -65,7 +104,9 @@ that a push has happened unless evidence identifies the deployed commit.
 ### Blocked Or Unverified Reporting
 
 - Use `BLOCKED` when environment config, CI tooling, health target, or
-  confirmation is missing.
+  confirmation is missing, OR when the W9 clean-checkout artifact is
+  absent / mismatched / BLOCKED-without-exception for the deployed
+  commit.
 - Use `FAILED` when CI or health evidence fails.
 - Use `PARTIALLY_VERIFIED` when CI is checked but health or task mapping is not.
 - Use `NOT_RUN` when a diagnostic path is skipped by request.

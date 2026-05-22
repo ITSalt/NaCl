@@ -549,7 +549,7 @@ Next steps:
   * Ship and deploy to staging:
     /nacl-tl-deliver                    (push + verify + deploy)
   * Or use conductor for managed delivery:
-    /nacl-tl-conductor --skip-deliver   (if not yet committed)
+    /nacl-tl-conductor                  (full lifecycle including delivery)
   * Run /nacl-tl-status for the final project report
   * Review .tl/changelog.md for full history
 
