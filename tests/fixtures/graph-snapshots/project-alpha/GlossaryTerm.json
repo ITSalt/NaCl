@@ -1,0 +1,161 @@
+[
+  {
+    "labels": [
+      "GlossaryTerm"
+    ],
+    "properties": {
+      "synonyms": [
+        "ювелирка",
+        "jewelry",
+        "изделие"
+      ],
+      "deprecated": false,
+      "term": "Украшение",
+      "definition": "Ювелирное изделие, для которого создаётся контент. Поддерживаемые типы хранятся в реестре Category и могут быть отключены.",
+      "id": "GLO-001",
+      "category": "domain"
+    }
+  },
+  {
+    "labels": [
+      "GlossaryTerm"
+    ],
+    "properties": {
+      "synonyms": [
+        "Category",
+        "категория"
+      ],
+      "deprecated": false,
+      "term": "Категория украшения",
+      "definition": "Тип изделия из реестра Category. Init-значения: КОЛЬЦО, СЕРЬГИ, ПОДВЕСКА. БРОШЬ — отклоняется через CategoryMapping (BR-2). Ключ Category.name хранится upper-case.",
+      "id": "GLO-002",
+      "category": "domain"
+    }
+  },
+  {
+    "labels": [
+      "GlossaryTerm"
+    ],
+    "properties": {
+      "synonyms": [
+        "ring"
+      ],
+      "deprecated": false,
+      "term": "КОЛЬЦО",
+      "definition": "Категория украшения. Поддерживается во всех workflow.",
+      "id": "GLO-003",
+      "category": "domain"
+    }
+  },
+  {
+    "labels": [
+      "GlossaryTerm"
+    ],
+    "properties": {
+      "synonyms": [
+        "earrings"
+      ],
+      "deprecated": false,
+      "term": "СЕРЬГИ",
+      "definition": "Категория украшения. Поддерживается; в Model Prompt применяется правило BR-4 (масштабирование размеров × 0.8 для размерных описаний).",
+      "id": "GLO-004",
+      "category": "domain"
+    }
+  },
+  {
+    "labels": [
+      "GlossaryTerm"
+    ],
+    "properties": {
+      "synonyms": [
+        "pendant"
+      ],
+      "deprecated": false,
+      "term": "ПОДВЕСКА",
+      "definition": "Категория украшения. Поддерживается; правило BR-4 применяется как для СЕРЕГ.",
+      "id": "GLO-005",
+      "category": "domain"
+    }
+  },
+  {
+    "labels": [
+      "GlossaryTerm"
+    ],
+    "properties": {
+      "synonyms": [
+        "brooch"
+      ],
+      "deprecated": false,
+      "definition": "Категория украшения, отключённая на уровне CategoryMapping (resolved_category_name=null = REJECTED). Может быть переключена админом без релиза кода (BR-2).",
+      "term": "БРОШЬ",
+      "id": "GLO-006",
+      "category": "domain"
+    }
+  },
+  {
+    "labels": [
+      "GlossaryTerm"
+    ],
+    "properties": {
+      "synonyms": [
+        "Retouch",
+        "retouch_workflow"
+      ],
+      "deprecated": false,
+      "term": "Ретушь",
+      "definition": "Workflow_type=retouch: ретушь предметного фото украшения. Принимает 1-2 исходных фото. Использует Verifier по умолчанию.",
+      "id": "GLO-007",
+      "category": "domain"
+    }
+  },
+  {
+    "labels": [
+      "GlossaryTerm"
+    ],
+    "properties": {
+      "synonyms": [
+        "Model",
+        "model_workflow",
+        "фото на модели"
+      ],
+      "deprecated": false,
+      "term": "Модель",
+      "definition": "Workflow_type=model: фото украшения на модели. ModelProfile (пол × возрастная группа) обязателен. Использует Verifier по умолчанию. В Full-flow на вход подаётся retouched_url из BP-002.",
+      "id": "GLO-008",
+      "category": "domain"
+    }
+  },
+  {
+    "labels": [
+      "GlossaryTerm"
+    ],
+    "properties": {
+      "synonyms": [
+        "Interior",
+        "interior_workflow",
+        "lifestyle"
+      ],
+      "deprecated": false,
+      "term": "Интерьер",
+      "definition": "Workflow_type=interior: интерьерное / lifestyle-фото. Verifier по умолчанию OFF (BR-7). В Full-flow на вход подаётся retouched_url из BP-002.",
+      "id": "GLO-009",
+      "category": "domain"
+    }
+  },
+  {
+    "labels": [
+      "GlossaryTerm"
+    ],
+    "properties": {
+      "synonyms": [
+        "Video",
+        "video_workflow"
+      ],
+      "deprecated": false,
+      "definition": "Workflow_type=video: короткое видео (5 сек по умолчанию). ModelProfile применим. В Full-flow на вход подаётся model_url из BP-003. Verifier по умолчанию OFF.",
+      "term": "Видео",
+      "id": "GLO-010",
+      "category": "domain"
+    }
+  }
+]

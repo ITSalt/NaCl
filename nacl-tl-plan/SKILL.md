@@ -173,7 +173,7 @@ is no inline `--skip-external-contract` flag.
 **Why this check exists.** 13 of ~60 postmortem signals across two NaCl
 projects were external-API / wire-protocol gaps (kie.ai in both projects,
 TUS upload, base_url divergence, reverse-proxy URL scheme, ffmpeg/ffprobe
-runtime — see `docs/retrospectives/transcriber-runtime-baseline.md` §§
+runtime — see `docs/retrospectives/project-beta-runtime-baseline.md` §§
 A1–A9, B1–B7). Local tests passed; the product did not work. The
 `nacl-tl-sync` Wire-Evidence Gate (W2) already downgrades sync to
 `UNVERIFIED` when wire-evidence is absent. W6 makes the artifact concrete

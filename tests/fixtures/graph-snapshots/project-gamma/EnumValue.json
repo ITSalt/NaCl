@@ -1,0 +1,112 @@
+[
+  {
+    "labels": [
+      "EnumValue"
+    ],
+    "properties": {
+      "description": "Binary grading: pass or fail",
+      "id": "ev-100",
+      "label": "Pass/Fail",
+      "value": "pass_fail"
+    }
+  },
+  {
+    "labels": [
+      "EnumValue"
+    ],
+    "properties": {
+      "description": "Numeric grading within grade_min..grade_max range",
+      "id": "ev-101",
+      "label": "Numeric",
+      "value": "numeric"
+    }
+  },
+  {
+    "labels": [
+      "EnumValue"
+    ],
+    "properties": {
+      "description": "On-site lecture",
+      "id": "ev-102",
+      "label": "In Person",
+      "value": "in_person"
+    }
+  },
+  {
+    "labels": [
+      "EnumValue"
+    ],
+    "properties": {
+      "description": "Online remote lecture",
+      "id": "ev-103",
+      "label": "Remote",
+      "value": "remote"
+    }
+  },
+  {
+    "labels": [
+      "EnumValue"
+    ],
+    "properties": {
+      "description": "Presentation slides for the lecture",
+      "id": "ev-104",
+      "label": "Presentation",
+      "value": "presentation"
+    }
+  },
+  {
+    "labels": [
+      "EnumValue"
+    ],
+    "properties": {
+      "description": "Downloadable material for students",
+      "id": "ev-105",
+      "label": "Student Material",
+      "value": "student_material"
+    }
+  },
+  {
+    "labels": [
+      "EnumValue"
+    ],
+    "properties": {
+      "description": "Uploaded file stored on server",
+      "label": "File",
+      "id": "ev-106",
+      "value": "file"
+    }
+  },
+  {
+    "labels": [
+      "EnumValue"
+    ],
+    "properties": {
+      "description": "External URL link",
+      "id": "ev-107",
+      "label": "URL",
+      "value": "url"
+    }
+  },
+  {
+    "labels": [
+      "EnumValue"
+    ],
+    "properties": {
+      "description": "Lecture is scheduled but not yet open",
+      "id": "ev-108",
+      "label": "Scheduled",
+      "value": "scheduled"
+    }
+  },
+  {
+    "labels": [
+      "EnumValue"
+    ],
+    "properties": {
+      "description": "Lecture is open — materials and HW are accessible",
+      "id": "ev-109",
+      "label": "Open",
+      "value": "open"
+    }
+  }
+]

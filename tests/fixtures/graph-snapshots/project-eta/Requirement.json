@@ -1,0 +1,172 @@
+[
+  {
+    "labels": [
+      "Requirement"
+    ],
+    "properties": {
+      "uc_ids": [],
+      "migrated_at": "2026-04-13T14:03:30.587000000+00:00",
+      "created": "2026-04-13T14:03:30.587000000+00:00",
+      "ba_trace": [],
+      "kind": "NFR",
+      "description": "Обновление данных заказа и чата -- не более 1 с от момента изменения в БД",
+      "id": "REQ-NFR011",
+      "priority": "",
+      "updated": "2026-04-13T14:03:30.587000000+00:00",
+      "source_file": "docs/06-requirements/nfr.md"
+    }
+  },
+  {
+    "labels": [
+      "Requirement"
+    ],
+    "properties": {
+      "uc_ids": [],
+      "migrated_at": "2026-04-13T14:03:30.587000000+00:00",
+      "created": "2026-04-13T14:03:30.587000000+00:00",
+      "ba_trace": [],
+      "kind": "NFR",
+      "description": "Обратное геокодирование при перемещении карты -- не чаще 1 раза в 500 мс",
+      "id": "REQ-NFR012",
+      "priority": "",
+      "updated": "2026-04-13T14:03:30.587000000+00:00",
+      "source_file": "docs/06-requirements/nfr.md"
+    }
+  },
+  {
+    "labels": [
+      "Requirement"
+    ],
+    "properties": {
+      "uc_ids": [],
+      "migrated_at": "2026-04-13T14:03:30.587000000+00:00",
+      "created": "2026-04-13T14:03:30.587000000+00:00",
+      "ba_trace": [],
+      "kind": "NFR",
+      "description": "Загрузка списка заказов порциями, без блокировки UI",
+      "id": "REQ-NFR013",
+      "priority": "",
+      "updated": "2026-04-13T14:03:30.587000000+00:00",
+      "source_file": "docs/06-requirements/nfr.md"
+    }
+  },
+  {
+    "labels": [
+      "Requirement"
+    ],
+    "properties": {
+      "uc_ids": [],
+      "migrated_at": "2026-04-13T14:03:30.587000000+00:00",
+      "created": "2026-04-13T14:03:30.587000000+00:00",
+      "ba_trace": [],
+      "kind": "NFR",
+      "description": "Автомасштабирование карты по расстоянию между маркерами",
+      "id": "REQ-NFR014",
+      "priority": "",
+      "updated": "2026-04-13T14:03:30.587000000+00:00",
+      "source_file": "docs/06-requirements/nfr.md"
+    }
+  },
+  {
+    "labels": [
+      "Requirement"
+    ],
+    "properties": {
+      "uc_ids": [],
+      "migrated_at": "2026-04-13T14:03:30.587000000+00:00",
+      "created": "2026-04-13T14:03:30.587000000+00:00",
+      "ba_trace": [],
+      "kind": "NFR",
+      "description": "OTP-верификация не должна зависать при отсутствии ответа сервера",
+      "id": "REQ-NFR021",
+      "priority": "",
+      "updated": "2026-04-13T14:03:30.587000000+00:00",
+      "source_file": "docs/06-requirements/nfr.md"
+    }
+  },
+  {
+    "labels": [
+      "Requirement"
+    ],
+    "properties": {
+      "uc_ids": [],
+      "migrated_at": "2026-04-13T14:03:30.587000000+00:00",
+      "created": "2026-04-13T14:03:30.587000000+00:00",
+      "ba_trace": [],
+      "kind": "NFR",
+      "description": "FCM-токен должен быть получен даже при временной недоступности сервиса",
+      "id": "REQ-NFR022",
+      "priority": "",
+      "updated": "2026-04-13T14:03:30.587000000+00:00",
+      "source_file": "docs/06-requirements/nfr.md"
+    }
+  },
+  {
+    "labels": [
+      "Requirement"
+    ],
+    "properties": {
+      "uc_ids": [],
+      "migrated_at": "2026-04-13T14:03:30.587000000+00:00",
+      "created": "2026-04-13T14:03:30.587000000+00:00",
+      "ba_trace": [],
+      "kind": "NFR",
+      "description": "Realtime-подписки должны автоматически восстанавливаться после потери соединения",
+      "id": "REQ-NFR023",
+      "priority": "",
+      "updated": "2026-04-13T14:03:30.587000000+00:00",
+      "source_file": "docs/06-requirements/nfr.md"
+    }
+  },
+  {
+    "labels": [
+      "Requirement"
+    ],
+    "properties": {
+      "uc_ids": [],
+      "migrated_at": "2026-04-13T14:03:30.587000000+00:00",
+      "created": "2026-04-13T14:03:30.587000000+00:00",
+      "ba_trace": [],
+      "kind": "NFR",
+      "description": "Приложение должно корректно обрабатывать ошибки API и показывать пользователю понятное сообщение",
+      "id": "REQ-NFR024",
+      "priority": "",
+      "updated": "2026-04-13T14:03:30.587000000+00:00",
+      "source_file": "docs/06-requirements/nfr.md"
+    }
+  },
+  {
+    "labels": [
+      "Requirement"
+    ],
+    "properties": {
+      "uc_ids": [],
+      "migrated_at": "2026-04-13T14:03:30.587000000+00:00",
+      "created": "2026-04-13T14:03:30.587000000+00:00",
+      "ba_trace": [],
+      "kind": "NFR",
+      "description": "Все API-вызовы авторизуются JWT-токеном",
+      "id": "REQ-NFR031",
+      "priority": "",
+      "updated": "2026-04-13T14:03:30.587000000+00:00",
+      "source_file": "docs/06-requirements/nfr.md"
+    }
+  },
+  {
+    "labels": [
+      "Requirement"
+    ],
+    "properties": {
+      "uc_ids": [],
+      "migrated_at": "2026-04-13T14:03:30.587000000+00:00",
+      "created": "2026-04-13T14:03:30.587000000+00:00",
+      "ba_trace": [],
+      "kind": "NFR",
+      "description": "Данные таблиц доступны только владельцу записи",
+      "id": "REQ-NFR032",
+      "priority": "",
+      "updated": "2026-04-13T14:03:30.587000000+00:00",
+      "source_file": "docs/06-requirements/nfr.md"
+    }
+  }
+]

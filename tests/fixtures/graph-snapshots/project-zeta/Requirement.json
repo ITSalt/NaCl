@@ -1,0 +1,192 @@
+[
+  {
+    "labels": [
+      "Requirement"
+    ],
+    "properties": {
+      "uc_ids": [
+        "UC-F01"
+      ],
+      "migrated_at": "2026-04-13T14:04:51.442000000+00:00",
+      "created": "2026-04-13T14:04:51.442000000+00:00",
+      "kind": "FR",
+      "ba_trace": [],
+      "description": "Система должна требовать заполнения хотя бы одного из полей обратной связи (positivetext или negativetext)",
+      "id": "REQ-RQ-F01-01",
+      "priority": "Высокий",
+      "updated": "2026-04-13T14:04:51.442000000+00:00",
+      "source_file": "docs/06-requirements/UC-F01-requirements.md"
+    }
+  },
+  {
+    "labels": [
+      "Requirement"
+    ],
+    "properties": {
+      "uc_ids": [
+        "UC-F01"
+      ],
+      "migrated_at": "2026-04-13T14:04:51.442000000+00:00",
+      "created": "2026-04-13T14:04:51.442000000+00:00",
+      "kind": "FR",
+      "ba_trace": [],
+      "description": "Система должна ограничивать длину каждого поля обратной связи до 2000 символов",
+      "id": "REQ-RQ-F01-02",
+      "priority": "Средний",
+      "updated": "2026-04-13T14:04:51.442000000+00:00",
+      "source_file": "docs/06-requirements/UC-F01-requirements.md"
+    }
+  },
+  {
+    "labels": [
+      "Requirement"
+    ],
+    "properties": {
+      "uc_ids": [
+        "UC-F02"
+      ],
+      "migrated_at": "2026-04-13T14:04:51.442000000+00:00",
+      "created": "2026-04-13T14:04:51.442000000+00:00",
+      "kind": "FR",
+      "ba_trace": [],
+      "description": "Feedback Learner Agent должен анализировать обратную связь и определять, к каким слоям (target_layers) она относится",
+      "id": "REQ-RQ-F02-01",
+      "priority": "Высокий",
+      "updated": "2026-04-13T14:04:51.442000000+00:00",
+      "source_file": "docs/06-requirements/UC-F02-requirements.md"
+    }
+  },
+  {
+    "labels": [
+      "Requirement"
+    ],
+    "properties": {
+      "uc_ids": [
+        "UC-F02"
+      ],
+      "migrated_at": "2026-04-13T14:04:51.442000000+00:00",
+      "created": "2026-04-13T14:04:51.442000000+00:00",
+      "kind": "FR",
+      "ba_trace": [],
+      "description": "При конфликте с существующим аддоном Agent должен обновлять существующий FeedbackPromptAddon, а не создавать дубликат",
+      "id": "REQ-RQ-F02-02",
+      "priority": "Высокий",
+      "updated": "2026-04-13T14:04:51.442000000+00:00",
+      "source_file": "docs/06-requirements/UC-F02-requirements.md"
+    }
+  },
+  {
+    "labels": [
+      "Requirement"
+    ],
+    "properties": {
+      "uc_ids": [
+        "UC-F02"
+      ],
+      "migrated_at": "2026-04-13T14:04:51.442000000+00:00",
+      "created": "2026-04-13T14:04:51.442000000+00:00",
+      "kind": "FR",
+      "ba_trace": [],
+      "description": "Система должна устанавливать isactive = true для аддонов с confidencescore >= 0.5 и is_active = false для остальных",
+      "id": "REQ-RQ-F02-03",
+      "priority": "Высокий",
+      "updated": "2026-04-13T14:04:51.442000000+00:00",
+      "source_file": "docs/06-requirements/UC-F02-requirements.md"
+    }
+  },
+  {
+    "labels": [
+      "Requirement"
+    ],
+    "properties": {
+      "uc_ids": [
+        "UC-F02"
+      ],
+      "migrated_at": "2026-04-13T14:04:51.442000000+00:00",
+      "created": "2026-04-13T14:04:51.442000000+00:00",
+      "kind": "FR",
+      "ba_trace": [],
+      "description": "Система должна устанавливать VersionFeedback.applied = true после успешной обработки обратной связи",
+      "id": "REQ-RQ-F02-04",
+      "priority": "Высокий",
+      "updated": "2026-04-13T14:04:51.442000000+00:00",
+      "source_file": "docs/06-requirements/UC-F02-requirements.md"
+    }
+  },
+  {
+    "labels": [
+      "Requirement"
+    ],
+    "properties": {
+      "uc_ids": [
+        "UC-F02"
+      ],
+      "migrated_at": "2026-04-13T14:04:51.442000000+00:00",
+      "created": "2026-04-13T14:04:51.442000000+00:00",
+      "kind": "FR",
+      "ba_trace": [],
+      "description": "Аддон с confidence_score < 0.5 должен требовать ручной проверки пользователем (уведомление)",
+      "id": "REQ-RQ-F02-05",
+      "priority": "Средний",
+      "updated": "2026-04-13T14:04:51.442000000+00:00",
+      "source_file": "docs/06-requirements/UC-F02-requirements.md"
+    }
+  },
+  {
+    "labels": [
+      "Requirement"
+    ],
+    "properties": {
+      "uc_ids": [
+        "UC-F03"
+      ],
+      "migrated_at": "2026-04-13T14:04:51.442000000+00:00",
+      "created": "2026-04-13T14:04:51.442000000+00:00",
+      "kind": "FR",
+      "ba_trace": [],
+      "description": "Система должна отображать список аддонов шаблона с полями: addontext, targetlayers, confidencescore, isactive, sourcefeedbackids",
+      "id": "REQ-RQ-F03-01",
+      "priority": "Средний",
+      "updated": "2026-04-13T14:04:51.442000000+00:00",
+      "source_file": "docs/06-requirements/UC-F03-requirements.md"
+    }
+  },
+  {
+    "labels": [
+      "Requirement"
+    ],
+    "properties": {
+      "uc_ids": [
+        "UC-F03"
+      ],
+      "migrated_at": "2026-04-13T14:04:51.442000000+00:00",
+      "created": "2026-04-13T14:04:51.442000000+00:00",
+      "kind": "FR",
+      "ba_trace": [],
+      "description": "Пользователь должен иметь возможность редактировать addontext и targetlayers аддона",
+      "id": "REQ-RQ-F03-02",
+      "priority": "Средний",
+      "updated": "2026-04-13T14:04:51.442000000+00:00",
+      "source_file": "docs/06-requirements/UC-F03-requirements.md"
+    }
+  },
+  {
+    "labels": [
+      "Requirement"
+    ],
+    "properties": {
+      "uc_ids": [
+        "UC-F03"
+      ],
+      "migrated_at": "2026-04-13T14:04:51.442000000+00:00",
+      "created": "2026-04-13T14:04:51.442000000+00:00",
+      "kind": "FR",
+      "ba_trace": [],
+      "description": "Пользователь должен иметь возможность переключать is_active (активировать/деактивировать) аддон",
+      "id": "REQ-RQ-F03-03",
+      "priority": "Средний",
+      "updated": "2026-04-13T14:04:51.442000000+00:00",
+      "source_file": "docs/06-requirements/UC-F03-requirements.md"
+    }
+  }
+]

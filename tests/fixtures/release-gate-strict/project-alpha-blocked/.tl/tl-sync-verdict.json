@@ -1,0 +1,20 @@
+{
+  "skill": "nacl-tl-sync",
+  "wave_tip_commit": "abc1234deadbeef",
+  "verdict": "UNVERIFIED",
+  "workflow_detail": "wire-evidence-missing",
+  "ucs": [
+    {
+      "uc": "UC-200",
+      "actor": "USER",
+      "wire_evidence": "missing",
+      "reason": "no recorded contract test or live-smoke artifact for the api.kie.example.invalid provider call; W2 requires wire-evidence for actor != SYSTEM"
+    },
+    {
+      "uc": "UC-300",
+      "actor": "USER",
+      "wire_evidence": "missing",
+      "reason": "similar — Anthropic-shaped envelope is type-aligned mock, not contract"
+    }
+  ]
+}

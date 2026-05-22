@@ -42,6 +42,19 @@ Each use case is committed atomically. QA runs at two levels: locally during dev
 
 - **Config-driven workflow.** Each project has a `config.yaml` that controls git strategy (direct vs feature-branch), Neo4j connection, Docmost space, YouGile board, and other project-specific settings.
 
+## Strict mode (since 2.8.0)
+
+NaCl 2.8.0 transitions the skill chain from **evidence-descriptive** to **evidence-blocking** gates. Missing evidence — a `BLOCKED` task, an `UNVERIFIED` sub-skill, an unanswered external-contract gap, a stale graph — halts the chain instead of being downgraded to "explained." Eight skip flags were removed (`--skip-merge`, `--skip-verify`, `--skip-deploy`, `--skip-qa`, `--skip-deliver`, `--skip-plan`, `--no-test`, `--force`); only `--skip-e2e` is retained with explicit scope. Closure skills (`nacl-tl-release`, `nacl-tl-conductor`, `nacl-tl-deliver`) refuse to declare success on any task with terminal state in `{UNVERIFIED, BLOCKED, FAILED, NOT_RUN}`. The only sanctioned overrides are signed exceptions under `.tl/exceptions/` and one-shot emergency mode under `.tl/emergencies/`.
+
+The rules live in long-form references under `nacl-tl-core/references/`:
+[`strict-mode-changes.md`](nacl-tl-core/references/strict-mode-changes.md) (what changed),
+[`gate-fire-catalog.md`](nacl-tl-core/references/gate-fire-catalog.md) (the eleven canonical gate-fires),
+[`project-gap-closure.md`](nacl-tl-core/references/project-gap-closure.md) (planning runbook for upgrading a pre-2.8 project),
+[`config-schema.md`](nacl-tl-core/references/config-schema.md) (`config.yaml` schema with strict-mode keys),
+and [`emergency-mode.md`](nacl-tl-core/references/emergency-mode.md) (entering/exiting emergency mode safely).
+
+Pre-2.8 projects should start at `project-gap-closure.md` — expect immediate gate fires on first run and use signed exceptions to schedule remediation across waves.
+
 ## What's Inside
 
 All skills use the `nacl-{layer}-{action}` naming convention: **BA** = Business Analysis, **SA** = System Analysis, **TL** = TeamLead.

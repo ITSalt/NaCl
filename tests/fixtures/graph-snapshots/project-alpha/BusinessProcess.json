@@ -1,0 +1,172 @@
+[
+  {
+    "labels": [
+      "BusinessProcess"
+    ],
+    "properties": {
+      "output": "Session со списком Task в статусе COMPLETED; сформированный набор ассетов; записи в GenerationLog",
+      "phase": "TO-BE",
+      "note": "Зонтичный процесс: оркестрирует запуск одного или нескольких workflow-процессов (BP-002..BP-006) и управляет гейтингом доступа (BR-13)",
+      "input": "Фото украшения (1–2 файла), опциональные текстовые требования, выбор режима (Full-flow / Single)",
+      "goal": "Пользователь открывает сессию, загружает фото украшения и выбирает режим (полный флоу или одна задача); система управляет жизненным циклом Session и Task от старта до завершения",
+      "owner_role": "End User",
+      "name": "Сессия создания контента",
+      "trigger": "Пользователь инициирует новую сессию в UI",
+      "id": "BP-001",
+      "has_decomposition": true
+    }
+  },
+  {
+    "labels": [
+      "BusinessProcess"
+    ],
+    "properties": {
+      "output": "Ретушированное изображение 2K 3:4 в Cloud.ru S3; VerificationReport; запись в GenerationLog",
+      "phase": "TO-BE",
+      "note": "Шаги: ImageDesc → RetouchPrompt → QueueItem → CreateImage → Verifier (опц.) → Save. Verifier включён по умолчанию (BR-5). Лимит ретраев конфигурируется (BR-6)",
+      "input": "Фото украшения (1–2), категория украшения, промпт-шаблон (category × ModelProfile), параметры шага из WorkflowStepConfig",
+      "goal": "Сгенерировать ретушированное фото украшения с применением LLM Image-генератора и верификацией результата",
+      "owner_role": "System",
+      "name": "Workflow Retouch",
+      "trigger": "Task с workflow=RETOUCH переведён в статус QUEUED",
+      "id": "BP-002",
+      "has_decomposition": true
+    }
+  },
+  {
+    "labels": [
+      "BusinessProcess"
+    ],
+    "properties": {
+      "output": "Фото на модели в Cloud.ru S3; VerificationReport; запись в GenerationLog",
+      "phase": "TO-BE",
+      "note": "Специфическое правило: для ПОДВЕСКА/СЕРЬГИ коэффициент масштабирования размеров (BR-4) применяется при сборке промпта. Verifier включён (BR-5)",
+      "input": "Фото украшения (1), категория, ModelProfile (пол × возрастная группа), требования к позе/стилю, параметры шага",
+      "goal": "Сгенерировать фото украшения на модели с учётом ModelProfile и верификацией результата",
+      "owner_role": "System",
+      "name": "Workflow Model",
+      "trigger": "Task с workflow=MODEL переведён в статус QUEUED",
+      "id": "BP-003",
+      "has_decomposition": true
+    }
+  },
+  {
+    "labels": [
+      "BusinessProcess"
+    ],
+    "properties": {
+      "output": "Интерьерное изображение в Cloud.ru S3; запись в GenerationLog",
+      "phase": "TO-BE",
+      "note": "Verifier отключён (BR-7). Шаги: ImageDesc → InteriorPrompt → QueueItem → CreateImage → Save",
+      "input": "Фото украшения (1), категория, опциональные требования к интерьеру/lifestyle, параметры шага",
+      "goal": "Сгенерировать интерьерное / lifestyle-фото украшения без шага верификации",
+      "owner_role": "System",
+      "name": "Workflow Interior",
+      "trigger": "Task с workflow=INTERIOR переведён в статус QUEUED",
+      "id": "BP-004",
+      "has_decomposition": true
+    }
+  },
+  {
+    "labels": [
+      "BusinessProcess"
+    ],
+    "properties": {
+      "output": "Видеофайл в Cloud.ru S3; запись в GenerationLog",
+      "phase": "TO-BE",
+      "note": "Verifier отключён (BR-7). Асинхронная генерация с техническим retry (до 10 раз, BR-7). Длина видео — конфиг админа (BR-15)",
+      "input": "Фото украшения (1), категория, требования к видео, длительность из конфига шага",
+      "goal": "Сгенерировать короткое видео (5 сек по умолчанию) на основе фото украшения с асинхронным поллингом провайдера",
+      "owner_role": "System",
+      "name": "Workflow Video",
+      "trigger": "Task с workflow=VIDEO переведён в статус QUEUED",
+      "id": "BP-005",
+      "has_decomposition": true
+    }
+  },
+  {
+    "labels": [
+      "BusinessProcess"
+    ],
+    "properties": {
+      "output": "Полный набор ассетов по всем четырём типам в Cloud.ru S3; записи в GenerationLog",
+      "phase": "TO-BE",
+      "note": "Хардкод-workflow (BR-8): порядок и структура шагов зафиксированы в коде/YAML, через админку не меняются — только параметры шагов. Default-цепочка: Retouch → Model → Video → Interior",
+      "input": "Фото украшения (1–2), опциональные требования, дефолтный ModelProfile (переопределяемый пользователем)",
+      "goal": "Выполнить четыре workflow последовательно (Retouch → Model → Video → Interior) в рамках одной сессии и вернуть полный набор ассетов",
+      "owner_role": "System",
+      "name": "Full-flow (последовательная цепочка)",
+      "trigger": "Пользователь выбрал режим «Полный флоу» при создании сессии",
+      "id": "BP-006",
+      "has_decomposition": true
+    }
+  },
+  {
+    "labels": [
+      "BusinessProcess"
+    ],
+    "properties": {
+      "output": "Обновлённый ассет в Cloud.ru S3; новая запись в GenerationLog",
+      "phase": "TO-BE",
+      "note": "Отдельный edit-агент с собственным промптом (BR-19). Предыдущее изображение на вход НЕ подаётся — только исходные параметры + новые комментарии. Лимита правок нет",
+      "input": "Task-id с готовым ассетом, новые текстовые требования пользователя, исходные параметры задачи",
+      "goal": "Пользователь запрашивает доработку уже сгенерированного ассета, указывая новые требования; edit-агент перегенерирует ассет с обновлённым промптом",
+      "owner_role": "End User",
+      "name": "Правка готового ассета (edit-agent)",
+      "trigger": "Пользователь нажимает «Правка» на готовом ассете и вводит комментарий",
+      "id": "BP-007",
+      "has_decomposition": true
+    }
+  },
+  {
+    "labels": [
+      "BusinessProcess"
+    ],
+    "properties": {
+      "output": "Завершённый/отклонённый QueueItem; разрешение на вызов провайдера",
+      "phase": "TO-BE",
+      "note": "Сквозной системный процесс (BR-17): все workflow BP-002..BP-006 обязаны проходить через очередь. Параметры очереди (concurrency, приоритет) управляются Admin через BP-102",
+      "input": "QueueItem с параметрами задачи, приоритет, параметры concurrency из конфига",
+      "goal": "Обеспечить соблюдение лимитов concurrency нейро-провайдеров, приоритизацию задач и возможность одновременного запуска нескольких задач от одного пользователя",
+      "owner_role": "System",
+      "name": "Управление очередью генераций",
+      "trigger": "Любой workflow создаёт QueueItem перед вызовом внешнего генератора",
+      "id": "BP-008",
+      "has_decomposition": true
+    }
+  },
+  {
+    "labels": [
+      "BusinessProcess"
+    ],
+    "properties": {
+      "output": "Обновлённая запись PromptTemplate в БД",
+      "phase": "TO-BE",
+      "note": "Разрез: category × ModelProfile (пол × возрастная группа). Типы промптов: Retouch, Model, Video, Interior, Mask (расширяемый). BR-3, BR-12",
+      "input": "Выбор категории, ModelProfile, типа промпта; текст нового/изменённого шаблона",
+      "goal": "Admin создаёт, просматривает и редактирует промпт-шаблоны в разрезе (category × ModelProfile × тип промпта)",
+      "owner_role": "Admin",
+      "name": "Управление промпт-шаблонами",
+      "trigger": "Admin инициирует редактирование каталога промптов",
+      "id": "BP-101",
+      "has_decomposition": true
+    }
+  },
+  {
+    "labels": [
+      "BusinessProcess"
+    ],
+    "properties": {
+      "output": "Обновлённая запись WorkflowStepConfig в БД",
+      "phase": "TO-BE",
+      "note": "Covers: BR-4 (коэффициент масштабирования + стоп-слова per workflow × category), BR-5 (Verifier on/off + порог), BR-6 (лимит ретраев), BR-14 (размер/соотношение), BR-15 (длина видео), BR-17 (параметры очереди)",
+      "input": "Выбор workflow и шага; новые значения параметров WorkflowStepConfig",
+      "goal": "Admin настраивает параметры исполнения каждого шага workflow без изменения кода: провайдер/модель, on/off Verifier, промпт верификатора, пороги, лимиты ретраев, размер изображения, длина видео, параметры очереди",
+      "owner_role": "Admin",
+      "name": "Управление параметрами шагов workflow",
+      "trigger": "Admin инициирует изменение конфигурации workflow",
+      "id": "BP-102",
+      "has_decomposition": true
+    }
+  }
+]

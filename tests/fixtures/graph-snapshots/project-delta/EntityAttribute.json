@@ -1,0 +1,162 @@
+[
+  {
+    "labels": [
+      "EntityAttribute"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-19T21:02:56.774000000+00:00",
+      "created": "2026-04-19T21:02:56.774000000+00:00",
+      "name": "id",
+      "description": "UUID — уникальный идентификатор сессии",
+      "id": "OBJ-001-A01",
+      "type": "",
+      "updated": "2026-04-19T21:02:56.774000000+00:00",
+      "source_file": "docs/02-business-entities/entities/OBJ-001-session.md",
+      "required": true
+    }
+  },
+  {
+    "labels": [
+      "EntityAttribute"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-19T21:02:56.774000000+00:00",
+      "created": "2026-04-19T21:02:56.774000000+00:00",
+      "name": "createdAt",
+      "description": "Дата и время создания сессии",
+      "id": "OBJ-001-A04",
+      "type": "",
+      "updated": "2026-04-19T21:02:56.774000000+00:00",
+      "source_file": "docs/02-business-entities/entities/OBJ-001-session.md",
+      "required": true
+    }
+  },
+  {
+    "labels": [
+      "EntityAttribute"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-19T21:02:56.774000000+00:00",
+      "created": "2026-04-19T21:02:56.774000000+00:00",
+      "name": "updatedAt",
+      "description": "Дата и время последнего обновления",
+      "id": "OBJ-001-A05",
+      "type": "",
+      "updated": "2026-04-19T21:02:56.774000000+00:00",
+      "source_file": "docs/02-business-entities/entities/OBJ-001-session.md",
+      "required": true
+    }
+  },
+  {
+    "labels": [
+      "EntityAttribute"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-19T21:02:56.774000000+00:00",
+      "created": "2026-04-19T21:02:56.774000000+00:00",
+      "name": "deviceFingerprint",
+      "description": "Отпечаток устройства (для rate limiting)",
+      "id": "OBJ-001-A06",
+      "type": "",
+      "updated": "2026-04-19T21:02:56.774000000+00:00",
+      "source_file": "docs/02-business-entities/entities/OBJ-001-session.md",
+      "required": false
+    }
+  },
+  {
+    "labels": [
+      "EntityAttribute"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-19T21:02:56.774000000+00:00",
+      "created": "2026-04-19T21:02:56.774000000+00:00",
+      "name": "sessionId",
+      "description": "UUID — ссылка на OBJ-001 (Сессия пользователя)",
+      "id": "OBJ-002-A01",
+      "type": "",
+      "updated": "2026-04-19T21:02:56.774000000+00:00",
+      "source_file": "docs/02-business-entities/entities/OBJ-002-answers.md",
+      "required": true
+    }
+  },
+  {
+    "labels": [
+      "EntityAttribute"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-19T21:02:56.774000000+00:00",
+      "created": "2026-04-19T21:02:56.774000000+00:00",
+      "name": "place",
+      "description": "Текст — ответ на вопрос \"Где это происходит?\"",
+      "id": "OBJ-002-A02",
+      "type": "",
+      "updated": "2026-04-19T21:02:56.774000000+00:00",
+      "source_file": "docs/02-business-entities/entities/OBJ-002-answers.md",
+      "required": true
+    }
+  },
+  {
+    "labels": [
+      "EntityAttribute"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-19T21:02:56.774000000+00:00",
+      "created": "2026-04-19T21:02:56.774000000+00:00",
+      "name": "action",
+      "description": "Текст — ответ на вопрос \"Что происходит вокруг?\"",
+      "id": "OBJ-002-A03",
+      "type": "",
+      "updated": "2026-04-19T21:02:56.774000000+00:00",
+      "source_file": "docs/02-business-entities/entities/OBJ-002-answers.md",
+      "required": true
+    }
+  },
+  {
+    "labels": [
+      "EntityAttribute"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-19T21:02:56.774000000+00:00",
+      "created": "2026-04-19T21:02:56.774000000+00:00",
+      "name": "feeling",
+      "description": "Текст — ответ на вопрос \"Что чувствуешь внутри?\"",
+      "id": "OBJ-002-A04",
+      "type": "",
+      "updated": "2026-04-19T21:02:56.774000000+00:00",
+      "source_file": "docs/02-business-entities/entities/OBJ-002-answers.md",
+      "required": true
+    }
+  },
+  {
+    "labels": [
+      "EntityAttribute"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-19T21:02:56.774000000+00:00",
+      "created": "2026-04-19T21:02:56.774000000+00:00",
+      "name": "meaning",
+      "description": "Текст — ответ на вопрос \"Про что эта история?\"",
+      "id": "OBJ-002-A05",
+      "type": "",
+      "updated": "2026-04-19T21:02:56.774000000+00:00",
+      "source_file": "docs/02-business-entities/entities/OBJ-002-answers.md",
+      "required": true
+    }
+  },
+  {
+    "labels": [
+      "EntityAttribute"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-19T21:02:56.774000000+00:00",
+      "created": "2026-04-19T21:02:56.774000000+00:00",
+      "name": "title",
+      "description": "Текст — ответ на вопрос \"Как называется твоя история?\"",
+      "id": "OBJ-002-A06",
+      "type": "",
+      "updated": "2026-04-19T21:02:56.774000000+00:00",
+      "source_file": "docs/02-business-entities/entities/OBJ-002-answers.md",
+      "required": true
+    }
+  }
+]

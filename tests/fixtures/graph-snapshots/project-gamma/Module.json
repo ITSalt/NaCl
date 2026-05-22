@@ -1,0 +1,129 @@
+[
+  {
+    "labels": [
+      "Module"
+    ],
+    "properties": {
+      "uc_range_start": 1,
+      "uc_range_end": 99,
+      "created": "2026-04-06T00:19:10.339000000+00:00",
+      "name": "Auth",
+      "description": "Authentication, authorization, JWT session management, refresh token rotation, rate limiting via @fastify/rate-limit, Fastify plugin chain (authenticate, checkActive, checkRole, checkEnrollment preHandler hooks)",
+      "id": "mod-auth",
+      "status": "active"
+    }
+  },
+  {
+    "labels": [
+      "Module"
+    ],
+    "properties": {
+      "uc_range_start": 100,
+      "uc_range_end": 199,
+      "created": "2026-04-06T00:19:11.884000000+00:00",
+      "name": "Users",
+      "description": "User management, enrollment lifecycle (active/expired/closed), promo codes, AIQuotaOverride per student, BullMQ delayed jobs for enrollment transitions",
+      "id": "mod-users",
+      "status": "active"
+    }
+  },
+  {
+    "labels": [
+      "Module"
+    ],
+    "properties": {
+      "uc_range_start": 200,
+      "uc_range_end": 299,
+      "created": "2026-04-06T00:19:13.546000000+00:00",
+      "name": "Courses",
+      "description": "Course templates, lectures, lecture materials (course-level content), grading system configuration (pass_fail/numeric)",
+      "id": "mod-courses",
+      "status": "active"
+    }
+  },
+  {
+    "labels": [
+      "Module"
+    ],
+    "properties": {
+      "uc_range_start": 300,
+      "uc_range_end": 399,
+      "created": "2026-04-06T00:19:15.773000000+00:00",
+      "name": "Groups",
+      "description": "Group instances with schedule, GroupLecture, GroupLectureMaterial, schedule generator, lecture opening via BullMQ delayed jobs, progress dashboard",
+      "id": "mod-groups",
+      "status": "active"
+    }
+  },
+  {
+    "labels": [
+      "Module"
+    ],
+    "properties": {
+      "uc_range_start": 400,
+      "uc_range_end": 499,
+      "created": "2026-04-06T00:19:17.154000000+00:00",
+      "name": "Submissions",
+      "description": "Homework submissions, versioning (SubmissionVersion), files/links, teacher comments, grading workflow",
+      "id": "mod-submissions",
+      "status": "active"
+    }
+  },
+  {
+    "labels": [
+      "Module"
+    ],
+    "properties": {
+      "uc_range_start": 500,
+      "uc_range_end": 599,
+      "created": "2026-04-06T00:19:20.319000000+00:00",
+      "name": "AI Studio",
+      "description": "AI generation pipeline (Generation, GenerationResult, AIModel registry from YAML), 6 model groups, sync/async processing, BullMQ queues, multi-turn conversations, variant comparison, SSE via Fastify reply.hijack() + Redis Pub/Sub, 4-level quota inheritance, advisory locks",
+      "id": "mod-ai-studio",
+      "status": "active"
+    }
+  },
+  {
+    "labels": [
+      "Module"
+    ],
+    "properties": {
+      "uc_range_start": 600,
+      "uc_range_end": 699,
+      "created": "2026-04-06T00:19:22.553000000+00:00",
+      "name": "Mattermost",
+      "description": "Mattermost integration: team-per-group architecture, bot notifications (DM + channel), channel management, alumni community, password sync, user lifecycle sync",
+      "id": "mod-mattermost",
+      "status": "active"
+    }
+  },
+  {
+    "labels": [
+      "Module"
+    ],
+    "properties": {
+      "uc_range_start": 700,
+      "uc_range_end": 799,
+      "created": "2026-04-06T00:19:24.909000000+00:00",
+      "name": "Files",
+      "description": "MinIO integration: private bucket with presigned URLs, multipart upload via @fastify/multipart (up to 1GB submissions/2GB group materials), purpose-based upload paths and limits, temp file cleanup (24h for ref images)",
+      "id": "mod-files",
+      "status": "active"
+    }
+  },
+  {
+    "labels": [
+      "Module"
+    ],
+    "properties": {
+      "uc_range_end": 899,
+      "uc_range_start": 800,
+      "updated_at": "2026-05-21T12:17:01.234000000+00:00",
+      "name": "API Gateway",
+      "created_at": "2026-05-21T12:17:01.234000000+00:00",
+      "description": "OpenAI-compatible external API gateway under /v1/* on project-gamma.example.invalid. Long-lived bearer API keys per student-enrollment, mandatory X-Learn-Lecture-Id header, shared quota with AI Studio UI. Strict OpenAI compatibility for chat completions and images; async submit+poll (or webhook) for videos. Built as a thin adapter over aiStudioService.createGeneration.",
+      "id": "mod-api-gateway",
+      "layer": "application"
+    }
+  }
+]

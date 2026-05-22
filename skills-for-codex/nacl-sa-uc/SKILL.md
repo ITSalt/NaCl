@@ -100,13 +100,13 @@ process crash, and idempotency key strategy.
 
 Worked examples that drive this phase:
 
-- **Karatov UC-112 "restart-after-failed-with-running-tasks" silent
+- **Project-Alpha UC-112 "restart-after-failed-with-running-tasks" silent
   no-op.** Pressing Restart on a failed task returned 200 but the task
   stayed `failed` because `INSERT … ON CONFLICT DO NOTHING` suppressed
   the re-enqueue silently. The UC spec was silent on the `failed → pending`
   transition's pre-condition (delete the previous `queue_items` row in
   the same transaction) and on the 409 `TASK_NOT_RESTARTABLE` branch.
-- **Transcriber UC-107 / UC-150 / UC-202 "cancel-while-failing race".**
+- **Project-Beta UC-107 / UC-150 / UC-202 "cancel-while-failing race".**
   Worker commit TX missed a row-level `FOR UPDATE` lock; cancel and fail
   fired concurrently against the same row, terminal-state ordering was
   unspecified, both writes won non-deterministically.

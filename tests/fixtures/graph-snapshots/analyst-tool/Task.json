@@ -1,0 +1,102 @@
+[
+  {
+    "labels": [
+      "Task"
+    ],
+    "properties": {
+      "phase_qa": "pending",
+      "agent": "nacl-tl-dev-be",
+      "created": "2026-05-07T11:57:55.989000000+00:00",
+      "commit": "134772a",
+      "phase_sync": "pending",
+      "phase_review_fe": "pending",
+      "title": "Activity renderer: add diagram title element",
+      "type": "uc-be",
+      "priority": "high",
+      "wave": 1,
+      "phase_review_be": "pending",
+      "feature_request": "FR-001",
+      "completed_at": "2026-05-07T13:39:58.039000000+00:00",
+      "phase_be": "pending",
+      "phase_fe": "pending",
+      "id": "UC-003-BE",
+      "updated": "2026-05-07T11:57:55.989000000+00:00",
+      "status": "done"
+    }
+  },
+  {
+    "labels": [
+      "Task"
+    ],
+    "properties": {
+      "phase_qa": "pending",
+      "agent": "nacl-tl-dev-be",
+      "created": "2026-05-07T11:57:55.989000000+00:00",
+      "commit": "480f3dc",
+      "phase_sync": "pending",
+      "phase_review_fe": "pending",
+      "title": "/boards: include UC/BP label field",
+      "type": "uc-be",
+      "priority": "high",
+      "wave": 1,
+      "phase_review_be": "pending",
+      "feature_request": "FR-001",
+      "completed_at": "2026-05-07T13:39:58.039000000+00:00",
+      "phase_be": "pending",
+      "phase_fe": "pending",
+      "id": "UC-008-BE",
+      "updated": "2026-05-07T11:57:55.989000000+00:00",
+      "status": "done"
+    }
+  },
+  {
+    "labels": [
+      "Task"
+    ],
+    "properties": {
+      "note": "no-op for FR-001 (renderer change is plain Excalidraw text; FE has nothing to do)",
+      "phase_qa": "pending",
+      "agent": "nacl-tl-dev-fe",
+      "created": "2026-05-07T11:57:55.989000000+00:00",
+      "phase_sync": "pending",
+      "phase_review_fe": "pending",
+      "title": "Activity board UI (no-op for FR-001)",
+      "type": "uc-fe",
+      "priority": "low",
+      "wave": 2,
+      "phase_review_be": "pending",
+      "feature_request": "FR-001",
+      "completed_at": "2026-05-07T13:48:05.640000000+00:00",
+      "phase_be": "pending",
+      "phase_fe": "pending",
+      "id": "UC-003-FE",
+      "updated": "2026-05-07T11:57:55.989000000+00:00",
+      "status": "done"
+    }
+  },
+  {
+    "labels": [
+      "Task"
+    ],
+    "properties": {
+      "phase_qa": "pending",
+      "agent": "nacl-tl-dev-fe",
+      "created": "2026-05-07T11:57:55.989000000+00:00",
+      "commit": "1deb758",
+      "phase_sync": "pending",
+      "phase_review_fe": "pending",
+      "title": "Sidebar: render label subtitle",
+      "type": "uc-fe",
+      "priority": "high",
+      "wave": 2,
+      "phase_review_be": "pending",
+      "feature_request": "FR-001",
+      "completed_at": "2026-05-07T13:48:04.497000000+00:00",
+      "phase_be": "pending",
+      "phase_fe": "pending",
+      "id": "UC-008-FE",
+      "updated": "2026-05-07T11:57:55.989000000+00:00",
+      "status": "done"
+    }
+  }
+]

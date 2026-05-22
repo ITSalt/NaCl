@@ -1,0 +1,26 @@
+[
+  {
+    "labels": [
+      "Stakeholder"
+    ],
+    "properties": {
+      "role": "Business Analyst / Solution Architect",
+      "interest": "Browses, edits, and round-trips Excalidraw boards; triggers skill regeneration and graph sync; switches active projects via the UI",
+      "name": "BA/SA Practitioner (Analyst)",
+      "id": "STAKEHOLDER-ANALYST",
+      "source_file": "CLAUDE.md"
+    }
+  },
+  {
+    "labels": [
+      "Stakeholder"
+    ],
+    "properties": {
+      "role": "Developer / Release Engineer",
+      "interest": "Ships analyst-tool releases bundled with the NaCl framework; owns renderer correctness, schema evolution, and public-repo hygiene; runs /nacl-tl-release and canary grep before tagging",
+      "name": "NaCl Framework Maintainer",
+      "id": "STAKEHOLDER-FRAMEWORK-MAINTAINER",
+      "source_file": "CLAUDE.md"
+    }
+  }
+]

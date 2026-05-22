@@ -1,0 +1,32 @@
+[
+  {
+    "labels": [
+      "HandoffPackage"
+    ],
+    "properties": {
+      "phase": "BA→SA Handoff",
+      "summary": "BA-модель Project Alpha готова к SA-фазе. 12 BP в 3 ProcessGroup, 14 BusinessEntity, 3 BusinessRole, 20 BusinessRule, 53 GlossaryTerm. Validation PASSED (0 critical).",
+      "entity_count": 14,
+      "glossary_count": 53,
+      "process_count": 12,
+      "created_at": "2026-05-04T11:45:00.000000000+00:00",
+      "automation_strategy": "Automated-шаги (80) + SemiAutomated (8) = UC-кандидаты. Manual (15) = пользовательские UC (UI-формы). Decision (28) = служебные узлы внутри UC, не отдельные UC.",
+      "next_phase": "nacl-sa-full: проектирование архитектуры, модулей, UC, форм, API-контрактов из этой BA-модели",
+      "manual_step_count": 15,
+      "ba_validation_report": "VR-001",
+      "automation_scope_count": 80,
+      "semi_automated_step_count": 8,
+      "proposed_sa_modules": [
+        "MOD-CONTENT (Создание контента: BP-001..BP-007)",
+        "MOD-QUEUE (Очередь и интеграция провайдеров: BP-008)",
+        "MOD-ADMIN (Управление справочниками: BP-101, BP-102, BP-103)",
+        "MOD-REPORTING (Аналитика: BP-201)"
+      ],
+      "workflow_step_count": 131,
+      "id": "HP-001",
+      "decision_step_count": 28,
+      "role_count": 3,
+      "rule_count": 20
+    }
+  }
+]

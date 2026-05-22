@@ -1,0 +1,180 @@
+[
+  {
+    "labels": [
+      "Module"
+    ],
+    "properties": {
+      "migrated_at": "2026-05-06T18:39:45.877000000+00:00",
+      "created": "2026-04-19T21:04:34.651000000+00:00",
+      "deprecated": true,
+      "name": "landing-module",
+      "iteration": "1+ (MVP)",
+      "description": "Привлечение и конверсия в Telegram",
+      "deprecated_by": "FR-028",
+      "id": "MOD-landing-module",
+      "updated": "2026-05-06T18:39:45.877000000+00:00",
+      "source_file": "docs/10-architecture/module-tree.md",
+      "related_process_ids": [
+        "BP-001",
+        "BP-002"
+      ]
+    }
+  },
+  {
+    "labels": [
+      "Module"
+    ],
+    "properties": {
+      "migrated_at": "2026-05-06T18:39:45.877000000+00:00",
+      "created": "2026-04-19T21:04:34.651000000+00:00",
+      "name": "generation-module",
+      "iteration": "2+",
+      "description": "Интервью и AI-оркестрация",
+      "id": "MOD-generation-module",
+      "updated": "2026-05-06T18:39:45.877000000+00:00",
+      "source_file": "docs/10-architecture/module-tree.md",
+      "related_process_ids": [
+        "BP-003",
+        "BP-004",
+        "BP-005"
+      ]
+    }
+  },
+  {
+    "labels": [
+      "Module"
+    ],
+    "properties": {
+      "migrated_at": "2026-05-06T18:39:45.877000000+00:00",
+      "created": "2026-04-19T21:04:34.651000000+00:00",
+      "name": "memories-module",
+      "iteration": "3+",
+      "description": "Загрузка фото, запись голоса, видеогенерация воспоминаний",
+      "id": "MOD-memories-module",
+      "updated": "2026-05-06T18:39:45.877000000+00:00",
+      "source_file": "docs/10-architecture/module-tree.md",
+      "related_process_ids": []
+    }
+  },
+  {
+    "labels": [
+      "Module"
+    ],
+    "properties": {
+      "migrated_at": "2026-05-06T18:39:45.877000000+00:00",
+      "created": "2026-04-19T21:04:34.651000000+00:00",
+      "name": "conversion-module",
+      "iteration": "2+",
+      "description": "Результат, лиды и шеринг",
+      "id": "MOD-conversion-module",
+      "updated": "2026-05-06T18:39:45.877000000+00:00",
+      "source_file": "docs/10-architecture/module-tree.md",
+      "related_process_ids": [
+        "BP-006",
+        "BP-007",
+        "BP-008"
+      ]
+    }
+  },
+  {
+    "labels": [
+      "Module"
+    ],
+    "properties": {
+      "migrated_at": "2026-05-06T18:39:45.877000000+00:00",
+      "created": "2026-04-19T21:04:34.651000000+00:00",
+      "name": "payment-module",
+      "iteration": "2+",
+      "description": "Оплата и подписки",
+      "id": "MOD-payment-module",
+      "updated": "2026-05-06T18:39:45.877000000+00:00",
+      "source_file": "docs/10-architecture/module-tree.md",
+      "related_process_ids": [
+        "BP-011"
+      ]
+    }
+  },
+  {
+    "labels": [
+      "Module"
+    ],
+    "properties": {
+      "deploy_unit": "apps/admin",
+      "migrated_at": "2026-05-06T18:39:45.877000000+00:00",
+      "created": "2026-04-19T21:04:34.651000000+00:00",
+      "deploy_host": "admin.project-delta.ru",
+      "name": "admin-module",
+      "iteration": "2+",
+      "description": "Управление и аналитика",
+      "id": "MOD-admin-module",
+      "updated": "2026-05-06T18:39:45.877000000+00:00",
+      "source_file": "docs/10-architecture/module-tree.md",
+      "related_process_ids": [
+        "BP-009",
+        "BP-010"
+      ]
+    }
+  },
+  {
+    "labels": [
+      "Module"
+    ],
+    "properties": {
+      "migrated_at": "2026-05-06T18:39:45.877000000+00:00",
+      "created": "2026-04-19T21:04:34.651000000+00:00",
+      "name": "shared/core",
+      "iteration": "1+",
+      "description": "Сквозная инфраструктура",
+      "id": "MOD-shared-core",
+      "updated": "2026-05-06T18:39:45.877000000+00:00",
+      "source_file": "docs/10-architecture/module-tree.md",
+      "related_process_ids": []
+    }
+  },
+  {
+    "labels": [
+      "Module"
+    ],
+    "properties": {
+      "migrated_at": "2026-05-06T18:39:45.877000000+00:00",
+      "created": "2026-04-19T21:04:34.651000000+00:00",
+      "name": "client-storage",
+      "iteration": "1+ (расширение)",
+      "description": "Клиентское хранилище и мульти-сессии",
+      "id": "MOD-client-storage",
+      "updated": "2026-05-06T18:39:45.877000000+00:00",
+      "source_file": "docs/10-architecture/module-tree.md",
+      "related_process_ids": []
+    }
+  },
+  {
+    "labels": [
+      "Module"
+    ],
+    "properties": {
+      "deploy_unit": "apps/marketing",
+      "created": "2026-05-05T21:23:17.294000000+00:00",
+      "name": "marketing-module",
+      "deploy_host": "project-delta.ru",
+      "description": "Marketing apex (project-delta.ru) — лендинги для привлечения, многозначное (множественные лендинги в будущем). Без auth-зависимостей.",
+      "iteration": "1",
+      "id": "MOD-marketing-module",
+      "updated": "2026-05-05T21:23:17.294000000+00:00"
+    }
+  },
+  {
+    "labels": [
+      "Module"
+    ],
+    "properties": {
+      "deploy_unit": "apps/app",
+      "created": "2026-05-05T21:23:17.294000000+00:00",
+      "name": "dashboard-module",
+      "deploy_host": "app.project-delta.ru",
+      "description": "User dashboard (app.project-delta.ru) — единый продуктовый surface: дашборд, генерация, оплата, профиль, memories. Auth-gated.",
+      "iteration": "1",
+      "id": "MOD-dashboard-module",
+      "updated": "2026-05-05T21:23:17.294000000+00:00"
+    }
+  }
+]

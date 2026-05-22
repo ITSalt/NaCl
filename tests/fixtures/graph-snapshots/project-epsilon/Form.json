@@ -1,0 +1,152 @@
+[
+  {
+    "labels": [
+      "Form"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T15:03:49.116000000+00:00",
+      "created": "2026-04-13T09:15:35.055000000+00:00",
+      "module": "data-import",
+      "name": "ArticleCoefficientImportForm — Загрузка коэффициентов для артикулов",
+      "id": "FORM-article-coefficient-import-form",
+      "original_id": "article-coefficient-import-form",
+      "updated": "2026-04-13T15:03:49.116000000+00:00",
+      "source_file": "docs/15-interfaces/screens/article-coefficient-import-form.md"
+    }
+  },
+  {
+    "labels": [
+      "Form"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T15:03:49.116000000+00:00",
+      "created": "2026-04-13T09:15:35.055000000+00:00",
+      "module": "data-import",
+      "name": "ArticleImportForm — Загрузка справочника артикулов",
+      "id": "FORM-article-import-form",
+      "original_id": "article-import-form",
+      "updated": "2026-04-13T15:03:49.116000000+00:00",
+      "source_file": "docs/15-interfaces/screens/article-import-form.md"
+    }
+  },
+  {
+    "labels": [
+      "Form"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T15:03:49.116000000+00:00",
+      "created": "2026-04-13T09:15:35.055000000+00:00",
+      "module": "warehouse-notification",
+      "name": "BarcodeSendForm — Отправка файла штрихкодов коробов сотруднику склада",
+      "id": "FORM-barcode-send-form",
+      "original_id": "barcode-send-form",
+      "updated": "2026-04-13T15:03:49.116000000+00:00",
+      "source_file": "docs/15-interfaces/screens/barcode-send-form.md"
+    }
+  },
+  {
+    "labels": [
+      "Form"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T15:03:49.116000000+00:00",
+      "created": "2026-04-13T09:15:35.055000000+00:00",
+      "module": "demand-planning",
+      "name": "CalculationApproveForm — Форма утверждения расчёта",
+      "id": "FORM-calculation-approve-form",
+      "original_id": "calculation-approve-form",
+      "updated": "2026-04-13T15:03:49.116000000+00:00",
+      "source_file": "docs/15-interfaces/screens/calculation-approve-form.md"
+    }
+  },
+  {
+    "labels": [
+      "Form"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T15:03:49.116000000+00:00",
+      "created": "2026-04-13T09:15:35.055000000+00:00",
+      "module": "demand-planning",
+      "name": "DailyCalculationCreateForm — Форма создания ежедневного расчёта",
+      "id": "FORM-daily-calculation-create-form",
+      "original_id": "daily-calculation-create-form",
+      "updated": "2026-04-13T15:03:49.116000000+00:00",
+      "source_file": "docs/15-interfaces/screens/daily-calculation-create-form.md"
+    }
+  },
+  {
+    "labels": [
+      "Form"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T15:03:49.116000000+00:00",
+      "created": "2026-04-13T09:15:35.055000000+00:00",
+      "module": "1c-integration",
+      "name": "DeliveryOrderApproveForm — Подтверждение резервирования в 1С",
+      "id": "FORM-delivery-order-approve-form",
+      "original_id": "delivery-order-approve-form",
+      "updated": "2026-04-13T15:03:49.116000000+00:00",
+      "source_file": "docs/15-interfaces/screens/delivery-order-approve-form.md"
+    }
+  },
+  {
+    "labels": [
+      "Form"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T15:03:49.116000000+00:00",
+      "created": "2026-04-13T09:15:35.055000000+00:00",
+      "module": "order-generation",
+      "name": "DeliveryOrderCreateForm — Формирование заявки на поставку",
+      "id": "FORM-delivery-order-create-form",
+      "original_id": "delivery-order-create-form",
+      "updated": "2026-04-13T15:03:49.116000000+00:00",
+      "source_file": "docs/15-interfaces/screens/delivery-order-create-form.md"
+    }
+  },
+  {
+    "labels": [
+      "Form"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T15:03:49.116000000+00:00",
+      "created": "2026-04-13T09:15:35.055000000+00:00",
+      "module": "1c-integration",
+      "name": "DeliveryOrderExportForm — Экспорт заявки на поставку в 1С",
+      "id": "FORM-delivery-order-export-form",
+      "original_id": "delivery-order-export-form",
+      "updated": "2026-04-13T15:03:49.116000000+00:00",
+      "source_file": "docs/15-interfaces/screens/delivery-order-export-form.md"
+    }
+  },
+  {
+    "labels": [
+      "Form"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T15:03:49.116000000+00:00",
+      "created": "2026-04-13T09:15:35.055000000+00:00",
+      "module": "order-generation",
+      "name": "DeliveryOrderList — Список заявок на поставку",
+      "id": "FORM-delivery-order-list",
+      "original_id": "delivery-order-list",
+      "updated": "2026-04-13T15:03:49.116000000+00:00",
+      "source_file": "docs/15-interfaces/screens/delivery-order-list.md"
+    }
+  },
+  {
+    "labels": [
+      "Form"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T15:03:49.116000000+00:00",
+      "created": "2026-04-13T09:15:35.055000000+00:00",
+      "module": "order-generation",
+      "name": "DiscountOrderCreateForm — Формирование заявки Дискаунтер",
+      "id": "FORM-discount-order-create-form",
+      "original_id": "discount-order-create-form",
+      "updated": "2026-04-13T15:03:49.116000000+00:00",
+      "source_file": "docs/15-interfaces/screens/discount-order-create-form.md"
+    }
+  }
+]

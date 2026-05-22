@@ -1,0 +1,112 @@
+[
+  {
+    "labels": [
+      "Component"
+    ],
+    "properties": {
+      "component_type": "layout",
+      "name": "AppLayout",
+      "description": "Sidebar + Header + Content Area. RBAC-filtered navigation.",
+      "id": "comp-001"
+    }
+  },
+  {
+    "labels": [
+      "Component"
+    ],
+    "properties": {
+      "component_type": "layout",
+      "name": "Sidebar",
+      "description": "Navigation menu filtered by role (teacher/student) and enrollment status (active/expired)",
+      "id": "comp-002"
+    }
+  },
+  {
+    "labels": [
+      "Component"
+    ],
+    "properties": {
+      "component_type": "layout",
+      "name": "Header",
+      "description": "Logo, breadcrumbs, group switcher (students), user menu",
+      "id": "comp-003"
+    }
+  },
+  {
+    "labels": [
+      "Component"
+    ],
+    "properties": {
+      "component_type": "layout",
+      "name": "GroupSwitcher",
+      "description": "Dropdown in header for students to switch between enrolled groups (active highlighted, expired grayed)",
+      "id": "comp-004"
+    }
+  },
+  {
+    "labels": [
+      "Component"
+    ],
+    "properties": {
+      "component_type": "form",
+      "name": "LoginForm",
+      "description": "Email + password, used in UC-001",
+      "id": "comp-005"
+    }
+  },
+  {
+    "labels": [
+      "Component"
+    ],
+    "properties": {
+      "component_type": "form",
+      "name": "RegisterForm",
+      "description": "Email + password + name + promo code, used in UC-002",
+      "id": "comp-006"
+    }
+  },
+  {
+    "labels": [
+      "Component"
+    ],
+    "properties": {
+      "component_type": "form",
+      "name": "ChangePasswordForm",
+      "description": "Current + new password, used in UC-005/UC-006",
+      "id": "comp-007"
+    }
+  },
+  {
+    "labels": [
+      "Component"
+    ],
+    "properties": {
+      "component_type": "table",
+      "name": "DataTable",
+      "description": "Generic table with search, filters, pagination, sorting. Used across: student list, lectures, grades, generations",
+      "id": "comp-008"
+    }
+  },
+  {
+    "labels": [
+      "Component"
+    ],
+    "properties": {
+      "component_type": "table",
+      "name": "GradesMatrix",
+      "description": "Specialized matrix: students x lectures for teacher. Used in UC-407",
+      "id": "comp-009"
+    }
+  },
+  {
+    "labels": [
+      "Component"
+    ],
+    "properties": {
+      "component_type": "form",
+      "name": "MarkdownEditor",
+      "description": "Textarea with markdown preview. Used in course/lecture descriptions, HW descriptions",
+      "id": "comp-010"
+    }
+  }
+]

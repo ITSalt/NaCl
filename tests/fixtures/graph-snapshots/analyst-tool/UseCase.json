@@ -1,0 +1,209 @@
+[
+  {
+    "labels": [
+      "UseCase"
+    ],
+    "properties": {
+      "actor": "Analyst",
+      "user_story": "As an Analyst, I want to open an .excalidraw board from the sidebar so that I can inspect or edit its content in a full-featured canvas.",
+      "module": "M-BACKEND-API",
+      "name": "Open Board in Editor",
+      "id": "UC-001",
+      "priority": "primary",
+      "has_ui": true,
+      "acceptance_criteria": [
+        "Given a board exists on disk, when I click it in the sidebar, then GET /boards/:name returns 200 with the file contents.",
+        "Given the board loads, when the Excalidraw canvas mounts, then the elements are visible.",
+        "Given an unknown board name, when I request it, then the server returns 404.",
+        "Given a board is selected, when the URL changes, then the active board is reflected in the StatusBar."
+      ],
+      "source_file": "server/src/routes/boards.ts"
+    }
+  },
+  {
+    "labels": [
+      "UseCase"
+    ],
+    "properties": {
+      "actor": "Analyst",
+      "user_story": "As an Analyst, I want my canvas edits to be auto-saved so that I never lose work and the board state on disk reflects my latest changes.",
+      "module": "M-WEB-UI",
+      "name": "Edit and Save Board",
+      "id": "UC-002",
+      "priority": "primary",
+      "has_ui": true,
+      "acceptance_criteria": [
+        "Given the canvas is loaded, when I edit elements, then a debounced PUT /boards/:name fires with the new payload.",
+        "Given a save is in flight, when it succeeds, then the board status transitions from dirty to clean.",
+        "Given a save fails, when the error is returned, then the StatusBar surfaces the error and retains dirty state.",
+        "Given concurrent edits, when the server receives them, then the last-write-wins payload is persisted."
+      ],
+      "source_file": "web/src/components/CanvasHost.tsx"
+    }
+  },
+  {
+    "labels": [
+      "UseCase"
+    ],
+    "properties": {
+      "actor": "Analyst",
+      "user_story": "As an Analyst, I want to regenerate a board from the Neo4j graph so that the diagram reflects the current source-of-truth model.",
+      "module": "M-SKILL-RUNNER",
+      "name": "Regenerate Board from Graph",
+      "id": "UC-003",
+      "priority": "primary",
+      "has_ui": true,
+      "acceptance_criteria": [
+        "Given a renderable board, when I click Regenerate, then the server invokes the deterministic renderer via the skill runner.",
+        "Given an import-only board, when it is selected, then the Regenerate button is disabled.",
+        "Given Regenerate succeeds, when the run completes, then the StatusBar shows an updated last-generated timestamp.",
+        "Given Regenerate is already running, when I click again, then the button is disabled until the prior run finishes."
+      ],
+      "source_file": "server/src/routes/skills.ts"
+    }
+  },
+  {
+    "labels": [
+      "UseCase"
+    ],
+    "properties": {
+      "actor": "Analyst",
+      "user_story": "As an Analyst, I want to push my board edits back to the Neo4j graph so that downstream consumers see the new state.",
+      "module": "M-SKILL-RUNNER",
+      "name": "Sync Board to Graph",
+      "id": "UC-004",
+      "priority": "primary",
+      "has_ui": true,
+      "acceptance_criteria": [
+        "Given a dirty board, when I click Sync, then skill-runner invokes /nacl-ba-sync via the itsalt-pinch Pacer.",
+        "Given Sync completes, when the run record is written, then the StatusBar shows an updated last-synced timestamp.",
+        "Given the Pacer wrapper is unavailable, when Sync is triggered, then the server returns a structured error.",
+        "Given Sync is in progress, when I navigate away, then the run continues and is reflected in run history."
+      ],
+      "source_file": "server/src/services/skill-runner.ts"
+    }
+  },
+  {
+    "labels": [
+      "UseCase"
+    ],
+    "properties": {
+      "actor": "Analyst",
+      "user_story": "As an Analyst, I want to switch the active NaCl project from the project picker so that the boards, graph, and skills resolve to the project I care about.",
+      "module": "M-BACKEND-API",
+      "name": "Switch Active Project",
+      "id": "UC-005",
+      "priority": "primary",
+      "has_ui": true,
+      "acceptance_criteria": [
+        "Given multiple registered projects, when I open the picker, then GET /projects lists them.",
+        "Given I select a project, when activate is called, then ~/.nacl/projects.json marks it active and the sidebar reloads.",
+        "Given the cwd has config.yaml but is not registered, when the app loads, then an Unregistered banner is shown.",
+        "Given the registry is empty and no cwd config, when the app loads, then the empty-projects placeholder is shown."
+      ],
+      "source_file": "server/src/routes/projects.ts"
+    }
+  },
+  {
+    "labels": [
+      "UseCase"
+    ],
+    "properties": {
+      "actor": "Analyst",
+      "user_story": "As an Analyst, I want to browse historical snapshots of a board, view a diff against the current version, and restore an earlier state.",
+      "module": "M-BACKEND-API",
+      "name": "View and Restore Snapshot",
+      "id": "UC-006",
+      "priority": "primary",
+      "has_ui": true,
+      "acceptance_criteria": [
+        "Given a board with no snapshots, when I open the browser, then an empty state is shown.",
+        "Given a snapshot file exists on disk, when the browser refreshes, then the snapshot is listed with its timestamp.",
+        "Given I select a snapshot, when I view diff, then the differences against the current board are visualised.",
+        "Given I click Restore, when the confirmation is accepted, then the snapshot content overwrites the current board."
+      ],
+      "source_file": "server/src/routes/snapshots.ts"
+    }
+  },
+  {
+    "labels": [
+      "UseCase"
+    ],
+    "properties": {
+      "actor": "Analyst",
+      "user_story": "As an Analyst, I want to render a markdown document from the graph so that specs (BA/SA) stay in lockstep with the graph model.",
+      "module": "M-SKILL-RUNNER",
+      "name": "Render Markdown from Graph",
+      "id": "UC-007",
+      "priority": "primary",
+      "has_ui": true,
+      "acceptance_criteria": [
+        "Given a renderable markdown target, when I trigger render, then the server walks the deterministic pipeline in server/src/render/markdown.",
+        "Given render succeeds, when the response returns, then the markdown file on disk is updated atomically.",
+        "Given the graph is empty for the requested document, when render runs, then an explicit no-content outcome is returned.",
+        "Given a render error, when surfaced, then the run record captures the failure with stderr."
+      ],
+      "source_file": "server/src/routes/render.ts"
+    }
+  },
+  {
+    "labels": [
+      "UseCase"
+    ],
+    "properties": {
+      "actor": "Analyst",
+      "user_story": "As an Analyst, I want to see all boards in the active project grouped by kind so that I can quickly find the one to work on.",
+      "module": "M-BACKEND-API",
+      "name": "List Boards",
+      "id": "UC-008",
+      "priority": "secondary",
+      "has_ui": true,
+      "acceptance_criteria": [
+        "Given the active project resolves, when GET /boards is called, then the response lists boards grouped (e.g. Imports).",
+        "Given a board is added on disk, when the sidebar refreshes, then the new board appears.",
+        "Given no boards exist, when listed, then an empty array is returned."
+      ],
+      "source_file": "server/src/routes/boards.ts"
+    }
+  },
+  {
+    "labels": [
+      "UseCase"
+    ],
+    "properties": {
+      "actor": "Analyst",
+      "user_story": "As an Analyst, I want the tool to know which boards are renderable from the graph so that Regenerate is offered only where it is safe.",
+      "module": "M-BACKEND-API",
+      "name": "Discover Renderable Boards",
+      "id": "UC-009",
+      "priority": "secondary",
+      "has_ui": false,
+      "acceptance_criteria": [
+        "Given a board mapped to a deterministic renderer, when discovery runs, then it is flagged renderable=true.",
+        "Given an Imports board with no renderer, when discovery runs, then it is flagged renderable=false.",
+        "Given discovery results, when consumed by the UI, then the Regenerate button enablement matches the flag."
+      ],
+      "source_file": "server/src/routes/boards.ts"
+    }
+  },
+  {
+    "labels": [
+      "UseCase"
+    ],
+    "properties": {
+      "actor": "Analyst",
+      "user_story": "As an Analyst, I want to see last-generated and last-synced timestamps for a board so that I know how fresh it is.",
+      "module": "M-BACKEND-API",
+      "name": "Get Board Status",
+      "id": "UC-010",
+      "priority": "secondary",
+      "has_ui": true,
+      "acceptance_criteria": [
+        "Given a board with prior runs, when its status is fetched, then last_generated and last_synced are returned.",
+        "Given a board with no runs, when status is fetched, then both timestamps are null.",
+        "Given a successful regenerate, when status is re-fetched, then last_generated is updated."
+      ],
+      "source_file": "server/src/routes/boards.ts"
+    }
+  }
+]

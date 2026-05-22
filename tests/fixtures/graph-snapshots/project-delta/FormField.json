@@ -1,0 +1,142 @@
+[
+  {
+    "labels": [
+      "FormField"
+    ],
+    "properties": {
+      "field_category": "display",
+      "created": "2026-04-20T07:06:07.869000000+00:00",
+      "name": "heroTitle",
+      "id": "FLD-001-01",
+      "label": "Расскажи об одном счастливом дне",
+      "type": "display",
+      "field_type": "display"
+    }
+  },
+  {
+    "labels": [
+      "FormField"
+    ],
+    "properties": {
+      "field_category": "display",
+      "created": "2026-04-20T07:06:07.869000000+00:00",
+      "name": "heroSubtitle",
+      "id": "FLD-001-02",
+      "label": "Ответь на 5 вопросов",
+      "type": "display",
+      "field_type": "display"
+    }
+  },
+  {
+    "labels": [
+      "FormField"
+    ],
+    "properties": {
+      "field_category": "action",
+      "created": "2026-04-20T07:06:07.869000000+00:00",
+      "name": "ctaButton",
+      "id": "FLD-001-03",
+      "label": "Начать/Продолжить историю",
+      "type": "button",
+      "field_type": "button"
+    }
+  },
+  {
+    "labels": [
+      "FormField"
+    ],
+    "properties": {
+      "field_category": "action",
+      "created": "2026-04-20T07:06:07.869000000+00:00",
+      "name": "promoCodeLink",
+      "id": "FLD-001-04",
+      "label": "Ввести промокод",
+      "type": "button",
+      "field_type": "button"
+    }
+  },
+  {
+    "labels": [
+      "FormField"
+    ],
+    "properties": {
+      "created": "2026-04-20T07:06:07.869000000+00:00",
+      "field_category": "input",
+      "name": "recoveryCodeInput",
+      "id": "FLD-001-05",
+      "label": "Код восстановления сессии",
+      "type": "text_input",
+      "field_type": "text"
+    }
+  },
+  {
+    "labels": [
+      "FormField"
+    ],
+    "properties": {
+      "created": "2026-04-20T07:06:07.869000000+00:00",
+      "field_category": "action",
+      "name": "recoveryCodeSubmit",
+      "id": "FLD-001-06",
+      "label": "Найти",
+      "type": "button",
+      "field_type": "button"
+    }
+  },
+  {
+    "labels": [
+      "FormField"
+    ],
+    "properties": {
+      "created": "2026-04-20T07:06:07.869000000+00:00",
+      "field_category": "display",
+      "name": "subscriptionProgress",
+      "id": "FLD-001-07",
+      "label": "Прогресс подписки",
+      "type": "display",
+      "field_type": "display"
+    }
+  },
+  {
+    "labels": [
+      "FormField"
+    ],
+    "properties": {
+      "field_category": "display",
+      "created": "2026-04-20T07:06:07.869000000+00:00",
+      "name": "storyCarousel",
+      "id": "FLD-001-08",
+      "label": "Карусель сохранённых историй",
+      "type": "display",
+      "field_type": "display"
+    }
+  },
+  {
+    "labels": [
+      "FormField"
+    ],
+    "properties": {
+      "field_category": "display",
+      "created": "2026-04-20T07:06:07.869000000+00:00",
+      "name": "progressBar",
+      "id": "FLD-002-01",
+      "label": "Прогресс 1..5",
+      "type": "display",
+      "field_type": "display"
+    }
+  },
+  {
+    "labels": [
+      "FormField"
+    ],
+    "properties": {
+      "field_category": "display",
+      "created": "2026-04-20T07:06:07.869000000+00:00",
+      "name": "questionText",
+      "id": "FLD-002-02",
+      "label": "Текст вопроса",
+      "type": "display",
+      "field_type": "display"
+    }
+  }
+]

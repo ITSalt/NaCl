@@ -1,0 +1,12 @@
+{
+  "intake_id": "FR-100",
+  "totals": {
+    "tasks": 2,
+    "use_cases": 1,
+    "modules": 1
+  },
+  "tasks": [
+    { "id": "TECH-100", "status": "done", "verification_evidence": "test-GREEN (backend/src/__tests__/shared-types.spec.ts)" },
+    { "id": "UC-100",   "status": "done", "verification_evidence": "test-GREEN (frontend/src/components/__tests__/uc100.spec.tsx)" }
+  ]
+}

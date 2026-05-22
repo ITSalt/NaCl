@@ -1,0 +1,43 @@
+event_id: "EMG-2026-05-22-prod-rollback"
+
+invocation:
+  timestamp_utc: "2026-05-22T18:42:11Z"
+  skill: "nacl-tl-release"
+  env:
+    NACL_EMERGENCY: "1"
+    NACL_EMERGENCY_REASON: "prod 500s on /api/release/v0.18.0 — rolling back"
+    NACL_EMERGENCY_OWNER: "magznikitin"
+  cwd: "/home/project-owner/projects/NaCl/tests/fixtures/release-gate-strict/project-alpha-blocked"
+  project: "project-alpha"
+
+bypassed_gates:
+  - gate: "direct-strategy-on-standard-project"
+    refusal_message: "RELEASE HALTED — UNVERIFIED (direct-strategy-on-standard-project): config.yaml declares project_kind: standard but git.strategy: direct. Direct-strategy releases require project_kind: prototype AND a signed exception covering skipped-pr/skipped-ci."
+
+  - gate: "upstream-sync-unverified"
+    refusal_message: "RELEASE HALTED — UNVERIFIED (upstream-sync-unverified): tl-sync verdict is UNVERIFIED (wire-evidence-missing on UC-200, UC-300)."
+
+  - gate: "upstream-qa-unverified"
+    refusal_message: "RELEASE HALTED — UNVERIFIED (upstream-qa-unverified): tl-qa aggregate is UNVERIFIED (LIVE_PROVIDER_SMOKE NOT_RUN on UC-200, UC-300; mandatory per matrix)."
+
+  - gate: "missing-prod-golden-path"
+    refusal_message: "RELEASE HALTED — UNVERIFIED (missing-prod-golden-path): PROD_GOLDEN_PATH NOT_RUN on UC-200, UC-300 (matrix marks mandatory). HEALTH_ONLY is not a substitute."
+
+  - gate: "graph-stale"
+    refusal_message: "RELEASE HALTED — UNVERIFIED (graph-stale): live graph 1,083 nodes vs baseline 970 nodes (+113 node delta). Run nacl-publish refresh OR file signed exception with affected_gates: [graph-stale]."
+
+  - gate: "sa-validate-critical"
+    refusal_message: "RELEASE HALTED — UNVERIFIED (sa-validate-critical): /nacl-sa-validate full reports FAIL with 1 CRITICAL (form-domain-coverage on UC-200) and 156 WARNINGs."
+
+skill_outcome:
+  headline: "RELEASE COMPLETE — emergency-bypass"
+  status: "PARTIALLY_VERIFIED"
+
+postmortem_feed:
+  tagged: true
+  next_postmortem: "docs/retrospectives/<next_release>-postmortem.md"
+
+side_effects:
+  release_status_json_appended: true
+  changelog_md_appended: true
+  bypass_banner_printed_per_gate: true

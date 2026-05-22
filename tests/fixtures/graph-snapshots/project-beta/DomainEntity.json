@@ -1,0 +1,92 @@
+[
+  {
+    "labels": [
+      "DomainEntity"
+    ],
+    "properties": {
+      "shared": false,
+      "created": "2026-05-18T06:35:21.947000000+00:00",
+      "module": "mod-common",
+      "name": "Meeting",
+      "description": "Root aggregate representing a single meeting being processed. Owns Recording, Transcript, Protocol references and tracks overall pipeline status.",
+      "id": "ent-001",
+      "updated": "2026-05-18T06:35:21.947000000+00:00",
+      "status": "draft"
+    }
+  },
+  {
+    "labels": [
+      "DomainEntity"
+    ],
+    "properties": {
+      "shared": false,
+      "created": "2026-05-18T06:35:21.947000000+00:00",
+      "module": "mod-ingest",
+      "name": "Recording",
+      "description": "Metadata for the uploaded video file (filename, size, MIME, storage path). Physical file lives in EXT-04 Object Storage.",
+      "id": "ent-002",
+      "updated": "2026-05-18T06:35:21.947000000+00:00",
+      "status": "draft"
+    }
+  },
+  {
+    "labels": [
+      "DomainEntity"
+    ],
+    "properties": {
+      "shared": false,
+      "created": "2026-05-18T06:35:21.947000000+00:00",
+      "module": "mod-transcription",
+      "name": "TranscriptionJob",
+      "description": "Async job tracking the ASR+diarization pipeline for a recording. Surfaces success/failure and error details.",
+      "id": "ent-003",
+      "updated": "2026-05-18T06:35:21.947000000+00:00",
+      "status": "draft"
+    }
+  },
+  {
+    "labels": [
+      "DomainEntity"
+    ],
+    "properties": {
+      "shared": false,
+      "created": "2026-05-18T06:35:21.947000000+00:00",
+      "module": "mod-transcription",
+      "name": "Transcript",
+      "description": "Persisted verbatim speaker-attributed transcript from ASR+diarization. Segments stored inline at MVP scope.",
+      "id": "ent-004",
+      "updated": "2026-05-18T06:35:21.947000000+00:00",
+      "status": "draft"
+    }
+  },
+  {
+    "labels": [
+      "DomainEntity"
+    ],
+    "properties": {
+      "shared": false,
+      "created": "2026-05-18T06:35:21.947000000+00:00",
+      "module": "mod-protocol",
+      "name": "ProtocolGenerationJob",
+      "description": "Async job tracking LLM-based protocol generation for a transcript. Auto-created when transcription completes.",
+      "id": "ent-005",
+      "updated": "2026-05-18T06:35:21.947000000+00:00",
+      "status": "draft"
+    }
+  },
+  {
+    "labels": [
+      "DomainEntity"
+    ],
+    "properties": {
+      "shared": false,
+      "created": "2026-05-18T06:35:21.947000000+00:00",
+      "module": "mod-protocol",
+      "name": "Protocol",
+      "description": "Persisted meeting protocol Markdown produced by LLM and refined by user. Sections: participants, topics, decisions, action items. Version-incremented on save.",
+      "id": "ent-006",
+      "updated": "2026-05-18T06:35:21.947000000+00:00",
+      "status": "draft"
+    }
+  }
+]

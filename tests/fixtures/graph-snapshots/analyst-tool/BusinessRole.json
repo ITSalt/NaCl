@@ -1,0 +1,22 @@
+[
+  {
+    "labels": [
+      "BusinessRole"
+    ],
+    "properties": {
+      "responsibilities": [
+        "Browses and edits Excalidraw boards",
+        "Triggers Regenerate / Sync / Analyze skills",
+        "Switches active project via project picker",
+        "Reviews board snapshots and graph diffs"
+      ],
+      "full_name": "Analyst",
+      "authority": "Full read/write access to all boards and skill triggers within the active project (no per-board ACL)",
+      "name": "Analyst",
+      "id": "BR-ANALYST",
+      "is_human": true,
+      "department": "Business Analysis & Solution Architecture",
+      "source_file": "CLAUDE.md"
+    }
+  }
+]

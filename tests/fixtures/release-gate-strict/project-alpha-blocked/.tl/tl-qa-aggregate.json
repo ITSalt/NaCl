@@ -1,0 +1,25 @@
+{
+  "skill": "nacl-tl-qa",
+  "aggregate": "UNVERIFIED",
+  "aggregate_rule": "weakest non-NOT_RUN stage, with mandatory-NOT_RUN floor",
+  "workflow_detail": "mandatory-stage-NOT_RUN",
+  "stages": {
+    "COMPONENT_QA": "VERIFIED",
+    "LOCAL_RUNTIME_QA": "VERIFIED",
+    "WIRE_CONTRACT_QA": "VERIFIED",
+    "PROVIDER_FIXTURE_QA": "VERIFIED",
+    "LIVE_PROVIDER_SMOKE": "NOT_RUN",
+    "PROD_GOLDEN_PATH": "NOT_RUN"
+  },
+  "mandatory_stages_per_uc": {
+    "UC-200": ["COMPONENT_QA", "LOCAL_RUNTIME_QA", "WIRE_CONTRACT_QA", "PROVIDER_FIXTURE_QA", "LIVE_PROVIDER_SMOKE", "PROD_GOLDEN_PATH"],
+    "UC-300": ["COMPONENT_QA", "LOCAL_RUNTIME_QA", "WIRE_CONTRACT_QA", "PROVIDER_FIXTURE_QA", "LIVE_PROVIDER_SMOKE", "PROD_GOLDEN_PATH"]
+  },
+  "missing_mandatory_evidence": [
+    { "uc": "UC-200", "stage": "LIVE_PROVIDER_SMOKE" },
+    { "uc": "UC-200", "stage": "PROD_GOLDEN_PATH" },
+    { "uc": "UC-300", "stage": "LIVE_PROVIDER_SMOKE" },
+    { "uc": "UC-300", "stage": "PROD_GOLDEN_PATH" }
+  ],
+  "note": "Project-Beta provider-skip + Project-Alpha stale-graph combined episode shape."
+}

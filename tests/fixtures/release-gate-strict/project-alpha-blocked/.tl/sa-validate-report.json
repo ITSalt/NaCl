@@ -1,0 +1,27 @@
+{
+  "skill": "nacl-sa-validate",
+  "mode": "full",
+  "status": "FAIL",
+  "summary": {
+    "critical_count": 1,
+    "warning_count": 156,
+    "info_count": 12
+  },
+  "findings_excerpt": [
+    {
+      "level": "L4",
+      "severity": "CRITICAL",
+      "rule": "form-domain-coverage",
+      "message": "Form FRM-200-upload has no MAPS_TO edge to any DomainEntity — handoff incomplete",
+      "uc": "UC-200"
+    },
+    {
+      "level": "L2",
+      "severity": "WARNING",
+      "rule": "missing-uc-state-machine",
+      "message": "UseCase UC-200 has no UseCaseState nodes; activity-diagram detail missing",
+      "uc": "UC-200"
+    }
+  ],
+  "note": "Project-Alpha-shape: 1 CRITICAL + 156 WARNINGs (matches the live episode at 2026-05-21)."
+}

@@ -1,0 +1,96 @@
+{
+  "project": "project-zeta",
+  "bolt_port": 7691,
+  "status": "REACHABLE",
+  "labels": [
+    {
+      "label": "ActivityStep",
+      "count": 123
+    },
+    {
+      "label": "DomainAttribute",
+      "count": 62
+    },
+    {
+      "label": "Requirement",
+      "count": 49
+    },
+    {
+      "label": "FormField",
+      "count": 43
+    },
+    {
+      "label": "EnumValue",
+      "count": 34
+    },
+    {
+      "label": "UseCase",
+      "count": 10
+    },
+    {
+      "label": "Form",
+      "count": 8
+    },
+    {
+      "label": "Enumeration",
+      "count": 7
+    },
+    {
+      "label": "DomainEntity",
+      "count": 6
+    },
+    {
+      "label": "SystemRole",
+      "count": 2
+    }
+  ],
+  "total_nodes": 344,
+  "total_rels": 508,
+  "rel_types": [
+    {
+      "type": "HAS_STEP",
+      "count": 123
+    },
+    {
+      "type": "NEXT_STEP",
+      "count": 113
+    },
+    {
+      "type": "HAS_ATTRIBUTE",
+      "count": 62
+    },
+    {
+      "type": "HAS_REQUIREMENT",
+      "count": 49
+    },
+    {
+      "type": "HAS_FIELD",
+      "count": 43
+    },
+    {
+      "type": "MAPS_TO",
+      "count": 43
+    },
+    {
+      "type": "HAS_VALUE",
+      "count": 34
+    },
+    {
+      "type": "ACTOR",
+      "count": 12
+    },
+    {
+      "type": "HAS_PERMISSION",
+      "count": 12
+    },
+    {
+      "type": "USES_FORM",
+      "count": 10
+    },
+    {
+      "type": "HAS_ENUM",
+      "count": 7
+    }
+  ],
+  "sample_label_count": 10
+}

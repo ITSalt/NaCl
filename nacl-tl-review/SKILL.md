@@ -95,7 +95,7 @@ If any check fails, report the issue and exit.
 lint, typecheck, and test commands on the **wave-tip commit** (the HEAD
 commit of the branch under review). This gate is **strict-only** —
 strict is the single, unconditional mode and there is no fallback
-branch, no opt-out flag, and no per-project relaxation. The Karatov
+branch, no opt-out flag, and no per-project relaxation. The Project-Alpha
 Wave 4 false-PASS (lint red + typecheck red + 3 unwired publishers at
 17:07 on 2026-05-11) is the canonical episode this gate exists to
 prevent.
@@ -288,9 +288,9 @@ with workflow detail `nav-actions-missing` or
 verdict to `APPROVED`. Do NOT proceed to Step 8 verdict assignment
 with any PASS-family headline.
 
-### Worked example — Transcriber UC-100 missing-upload-button
+### Worked example — Project-Beta UC-100 missing-upload-button
 
-Transcriber UC-100 ("Upload audio") was shipped with a fully
+Project-Beta UC-100 ("Upload audio") was shipped with a fully
 specified `FORM-Upload` (fields, validation, mutation) and a working
 `/upload` route, yet the catalog page at `/catalog` carried no
 upload button. UC-100's review at the time emitted `REVIEW COMPLETE`

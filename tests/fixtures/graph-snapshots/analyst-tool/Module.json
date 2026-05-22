@@ -1,0 +1,67 @@
+[
+  {
+    "labels": [
+      "Module"
+    ],
+    "properties": {
+      "name": "Backend API",
+      "description": "HTTP REST API and WebSocket bridge for board CRUD, project switching, skill triggering, snapshots, search, diagnostics, render endpoints. Hosts the route layer that delegates to services.",
+      "id": "M-BACKEND-API",
+      "bounded_context": "External-facing contract (routes + WS) for the analyst-tool",
+      "codebase_path": "server/src/routes, server/src/index.ts",
+      "source_file": "server/src/index.ts"
+    }
+  },
+  {
+    "labels": [
+      "Module"
+    ],
+    "properties": {
+      "name": "Renderers",
+      "description": "Deterministic TypeScript renderers that transform Neo4j graph state into Excalidraw scenes (4 board kinds) and Markdown documents (6 subtypes). Source-of-truth for graph→board content.",
+      "id": "M-RENDERERS",
+      "bounded_context": "Graph-to-artefact transformation",
+      "codebase_path": "server/src/render",
+      "source_file": "server/src/render/index.ts"
+    }
+  },
+  {
+    "labels": [
+      "Module"
+    ],
+    "properties": {
+      "name": "Skill Runner",
+      "description": "Subprocess orchestration via itsalt-pinch Pacer with run-queue for concurrency control, skill invocation (regenerate/sync/analyze/render-md), and lifecycle event broadcasting.",
+      "id": "M-SKILL-RUNNER",
+      "bounded_context": "Skill-invocation lifecycle",
+      "codebase_path": "server/src/services/skill-runner.ts, server/src/services/pinch.ts, server/src/services/run-queue.ts",
+      "source_file": "server/src/services/skill-runner.ts"
+    }
+  },
+  {
+    "labels": [
+      "Module"
+    ],
+    "properties": {
+      "name": "Web UI",
+      "description": "Vite + React + Zustand frontend embedding the Excalidraw editor; project picker, board navigator, canvas host, status bar, run panel, snapshot browser.",
+      "id": "M-WEB-UI",
+      "bounded_context": "Analyst interactive surface",
+      "codebase_path": "web/src",
+      "source_file": "web/src/App.tsx"
+    }
+  },
+  {
+    "labels": [
+      "Module"
+    ],
+    "properties": {
+      "name": "E2E Suite",
+      "description": "Playwright end-to-end tests covering load, canvas, search, status bar, snapshots, multi-project switch.",
+      "id": "M-E2E",
+      "bounded_context": "Executable specification & regression coverage",
+      "codebase_path": "e2e/specs",
+      "source_file": "e2e/playwright.config.ts"
+    }
+  }
+]

@@ -1,0 +1,131 @@
+[
+  {
+    "labels": [
+      "Wave"
+    ],
+    "properties": {
+      "number": 0,
+      "created": "2026-05-06T16:17:27.298000000+00:00",
+      "name": "Infrastructure",
+      "id": "WAVE-0",
+      "task_files_generated": true,
+      "planned_at": "2026-05-06T16:43:31.434000000+00:00",
+      "status": "planned"
+    }
+  },
+  {
+    "labels": [
+      "Wave"
+    ],
+    "properties": {
+      "number": 1,
+      "created": "2026-05-06T16:17:27.298000000+00:00",
+      "name": "Auth & Admin BE foundation",
+      "id": "WAVE-1",
+      "planned_at": "2026-05-06T17:15:23.699000000+00:00",
+      "status": "planned"
+    }
+  },
+  {
+    "labels": [
+      "Wave"
+    ],
+    "properties": {
+      "number": 2,
+      "created": "2026-05-06T16:17:27.298000000+00:00",
+      "name": "Auth/Admin FE + Queue infra BE",
+      "id": "WAVE-2",
+      "planned_at": "2026-05-06T17:58:19.384000000+00:00",
+      "status": "planned"
+    }
+  },
+  {
+    "labels": [
+      "Wave"
+    ],
+    "properties": {
+      "number": 3,
+      "created": "2026-05-06T16:17:27.298000000+00:00",
+      "name": "Workflow engine + session/task BE",
+      "id": "WAVE-3",
+      "planned_at": "2026-05-06T18:14:16.842000000+00:00",
+      "status": "planned"
+    }
+  },
+  {
+    "labels": [
+      "Wave"
+    ],
+    "properties": {
+      "number": 4,
+      "created": "2026-05-06T16:17:27.298000000+00:00",
+      "name": "Content BE remainder + Reporting BE",
+      "id": "WAVE-4",
+      "planned_at": "2026-05-06T19:47:55.123000000+00:00",
+      "status": "planned"
+    }
+  },
+  {
+    "labels": [
+      "Wave"
+    ],
+    "properties": {
+      "number": 5,
+      "created": "2026-05-06T16:17:27.298000000+00:00",
+      "name": "User-facing FE",
+      "id": "WAVE-5",
+      "planned_at": "2026-05-06T19:57:51.353000000+00:00",
+      "status": "planned"
+    }
+  },
+  {
+    "labels": [
+      "Wave"
+    ],
+    "properties": {
+      "number": 6,
+      "created": "2026-05-06T16:17:27.298000000+00:00",
+      "name": "POST_MVP (deferred)",
+      "id": "WAVE-6",
+      "planned_at": "2026-05-06T20:52:48.281000000+00:00",
+      "status": "planned"
+    }
+  },
+  {
+    "labels": [
+      "Wave"
+    ],
+    "properties": {
+      "number": 7,
+      "name": "FR-001 — Inline first task + auto session name",
+      "id": "WAVE-7",
+      "planned_at": "2026-05-13T04:48:22.587000000+00:00",
+      "feature_request": "FR-001",
+      "status": "planned"
+    }
+  },
+  {
+    "labels": [
+      "Wave"
+    ],
+    "properties": {
+      "number": 8,
+      "name": "FR-002 — Session context on task detail page",
+      "id": "WAVE-8",
+      "status": "pending"
+    }
+  },
+  {
+    "labels": [
+      "Wave"
+    ],
+    "properties": {
+      "number": 9,
+      "name": "FR-003 — api.kie.example.invalid text-LLM models support",
+      "id": "WAVE-9",
+      "planned_at": "2026-05-18T08:01:31.589000000+00:00",
+      "feature_request": "FR-003",
+      "status": "planned"
+    }
+  }
+]

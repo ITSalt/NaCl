@@ -1,0 +1,172 @@
+[
+  {
+    "labels": [
+      "DomainAttribute"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T14:03:26.751000000+00:00",
+      "created": "2026-04-13T14:03:26.751000000+00:00",
+      "name": "id",
+      "description": "Идентификатор станции",
+      "id": "DE-charging-A01",
+      "type": "`uuid`",
+      "updated": "2026-04-13T14:03:26.751000000+00:00",
+      "constraints": "",
+      "source_file": "docs/02-domain/entities/charging.md",
+      "required": true
+    }
+  },
+  {
+    "labels": [
+      "DomainAttribute"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T14:03:26.751000000+00:00",
+      "created": "2026-04-13T14:03:26.751000000+00:00",
+      "name": "idChargingStationModel",
+      "description": "Модель станции",
+      "id": "DE-charging-A02",
+      "type": "`uuid`",
+      "updated": "2026-04-13T14:03:26.751000000+00:00",
+      "constraints": "",
+      "source_file": "docs/02-domain/entities/charging.md",
+      "required": true
+    }
+  },
+  {
+    "labels": [
+      "DomainAttribute"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T14:03:26.751000000+00:00",
+      "created": "2026-04-13T14:03:26.751000000+00:00",
+      "name": "serialNumber",
+      "description": "Серийный номер",
+      "id": "DE-charging-A03",
+      "type": "`text`",
+      "updated": "2026-04-13T14:03:26.751000000+00:00",
+      "constraints": "",
+      "source_file": "docs/02-domain/entities/charging.md",
+      "required": true
+    }
+  },
+  {
+    "labels": [
+      "DomainAttribute"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T14:03:26.751000000+00:00",
+      "created": "2026-04-13T14:03:26.751000000+00:00",
+      "name": "status",
+      "description": "Бизнес-статус станции",
+      "id": "DE-charging-A04",
+      "type": "`ChargingStationStatus`",
+      "updated": "2026-04-13T14:03:26.751000000+00:00",
+      "constraints": "",
+      "source_file": "docs/02-domain/entities/charging.md",
+      "required": false
+    }
+  },
+  {
+    "labels": [
+      "DomainAttribute"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T14:03:26.751000000+00:00",
+      "created": "2026-04-13T14:03:26.751000000+00:00",
+      "name": "vendor",
+      "description": "Производитель (из OCPP BootNotification)",
+      "id": "DE-charging-A05",
+      "type": "`text`",
+      "updated": "2026-04-13T14:03:26.751000000+00:00",
+      "constraints": "",
+      "source_file": "docs/02-domain/entities/charging.md",
+      "required": false
+    }
+  },
+  {
+    "labels": [
+      "DomainAttribute"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T14:03:26.751000000+00:00",
+      "created": "2026-04-13T14:03:26.751000000+00:00",
+      "name": "model",
+      "description": "Модель (из OCPP)",
+      "id": "DE-charging-A06",
+      "type": "`text`",
+      "updated": "2026-04-13T14:03:26.751000000+00:00",
+      "constraints": "",
+      "source_file": "docs/02-domain/entities/charging.md",
+      "required": false
+    }
+  },
+  {
+    "labels": [
+      "DomainAttribute"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T14:03:26.751000000+00:00",
+      "created": "2026-04-13T14:03:26.751000000+00:00",
+      "name": "firmware_version",
+      "description": "Версия прошивки",
+      "id": "DE-charging-A07",
+      "type": "`text`",
+      "updated": "2026-04-13T14:03:26.751000000+00:00",
+      "constraints": "",
+      "source_file": "docs/02-domain/entities/charging.md",
+      "required": false
+    }
+  },
+  {
+    "labels": [
+      "DomainAttribute"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T14:03:26.751000000+00:00",
+      "created": "2026-04-13T14:03:26.751000000+00:00",
+      "name": "ocpp_protocol",
+      "description": "Версия протокола OCPP",
+      "id": "DE-charging-A08",
+      "type": "`text`",
+      "updated": "2026-04-13T14:03:26.751000000+00:00",
+      "constraints": "",
+      "source_file": "docs/02-domain/entities/charging.md",
+      "required": false
+    }
+  },
+  {
+    "labels": [
+      "DomainAttribute"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T14:03:26.751000000+00:00",
+      "created": "2026-04-13T14:03:26.751000000+00:00",
+      "name": "ocpp_status",
+      "description": "OCPP-статус станции (Available, Charging, Faulted и т.д.)",
+      "id": "DE-charging-A09",
+      "type": "`text`",
+      "updated": "2026-04-13T14:03:26.751000000+00:00",
+      "constraints": "",
+      "source_file": "docs/02-domain/entities/charging.md",
+      "required": false
+    }
+  },
+  {
+    "labels": [
+      "DomainAttribute"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T14:03:26.751000000+00:00",
+      "created": "2026-04-13T14:03:26.751000000+00:00",
+      "name": "connection_status",
+      "description": "Статус подключения (online/offline/stale)",
+      "id": "DE-charging-A10",
+      "type": "`station_connection_status`",
+      "updated": "2026-04-13T14:03:26.751000000+00:00",
+      "constraints": "",
+      "source_file": "docs/02-domain/entities/charging.md",
+      "required": false
+    }
+  }
+]

@@ -1,0 +1,20 @@
+{
+  "branch": "feature/FR-100-clean-fixture",
+  "baseBranch": "main",
+  "intake_id": "FR-100",
+  "items": [
+    { "id": "FR-100", "type": "feature", "ucs": ["UC-100"] }
+  ],
+  "started": "2026-05-22T08:00:00Z",
+  "phase": "quality_gate_passed",
+  "techTasks": [
+    { "id": "TECH-100", "status": "done", "commit": "aaaa111" }
+  ],
+  "ucTasks": [
+    { "id": "UC-100", "wave": 1, "status": "done", "commit": "bbbb222" }
+  ],
+  "bugFixes": [],
+  "delivery": {
+    "status": "pending"
+  }
+}

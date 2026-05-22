@@ -79,7 +79,7 @@ fallback branch and no inline override.
 
 ### Worked examples (from the W0 baseline)
 
-**Karatov FE-sync UNVERIFIED-normalization episode.** Wave 5 closed
+**Project-Alpha FE-sync UNVERIFIED-normalization episode.** Wave 5 closed
 with all six FE sync verdicts normalized to UNVERIFIED because FE
 tests relied on MSW (`setupServer(`) rather than wire-level parity.
 MSW interception is not wire-evidence: the request never leaves the
@@ -90,7 +90,7 @@ response and asserts the FE parses it, OR a
 `wire-evidence:contract-test:<path>` against a real BE process — not
 in-process MSW.
 
-**Transcriber kie.ai `404 model not found` episode.** UC-300: BE and
+**Project-Beta kie.ai `404 model not found` episode.** UC-300: BE and
 FE TS types matched, `vi.mock(...)` unit tests passed, sync emitted
 PASS. The live request to `kie.ai` returned `HTTP 404 model not
 found` on the first prod call because the endpoint shape was

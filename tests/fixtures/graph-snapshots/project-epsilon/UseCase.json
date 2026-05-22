@@ -1,0 +1,224 @@
+[
+  {
+    "labels": [
+      "UseCase"
+    ],
+    "properties": {
+      "complexity": "",
+      "migrated_at": "2026-04-13T15:03:37.423000000+00:00",
+      "created": "2026-04-13T09:15:22.300000000+00:00",
+      "ba_trace": [],
+      "module": "core",
+      "description": "Аутентификация пользователя по email и паролю с созданием сессии и предоставлением доступа к функциям, соответствующим его роли.",
+      "priority": "primary",
+      "source_file": "docs/14-usecases/UC001-vkhod-v-sistemu.md",
+      "actor": "Все роли системы: productmanager, analyst, marketplacemanager, admin",
+      "name": "Вход в систему",
+      "iteration": "",
+      "id": "UC-001",
+      "original_id": "UC001",
+      "updated": "2026-04-13T15:03:37.423000000+00:00"
+    }
+  },
+  {
+    "labels": [
+      "UseCase"
+    ],
+    "properties": {
+      "complexity": "",
+      "migrated_at": "2026-04-13T15:03:37.423000000+00:00",
+      "created": "2026-04-13T09:15:22.300000000+00:00",
+      "ba_trace": [
+        "BP-001"
+      ],
+      "module": "data-import",
+      "description": "Загрузить файл «Список артикулов» из 1С, чтобы система располагала актуальным справочником товаров с характеристиками для последующего расчёта потребностей.",
+      "priority": "primary",
+      "source_file": "docs/14-usecases/UC101-zagruzka-spravochnika-artikulov.md",
+      "actor": "product_manager — Товарник",
+      "name": "Загрузка справочника артикулов",
+      "iteration": "",
+      "id": "UC-101",
+      "original_id": "UC101",
+      "updated": "2026-04-13T15:03:37.423000000+00:00"
+    }
+  },
+  {
+    "labels": [
+      "UseCase"
+    ],
+    "properties": {
+      "complexity": "",
+      "migrated_at": "2026-04-13T15:03:37.423000000+00:00",
+      "created": "2026-04-13T09:15:22.300000000+00:00",
+      "ba_trace": [
+        "BP-002"
+      ],
+      "module": "demand-planning",
+      "description": "Создать документ «Ежедневный расчёт заказа» и запустить расчёт потребностей, чтобы система автоматически определила необходимые объёмы пополнения по всем артикулам и складам.",
+      "priority": "primary",
+      "source_file": "docs/14-usecases/UC202-zapusk-ezhednevnogo-rascheta.md",
+      "actor": "product_manager — Товарник",
+      "name": "Запуск ежедневного расчёта",
+      "iteration": "",
+      "id": "UC-202",
+      "original_id": "UC202",
+      "updated": "2026-04-13T15:03:37.423000000+00:00"
+    }
+  },
+  {
+    "labels": [
+      "UseCase"
+    ],
+    "properties": {
+      "complexity": "",
+      "migrated_at": "2026-04-13T15:03:37.423000000+00:00",
+      "created": "2026-04-13T09:15:22.300000000+00:00",
+      "ba_trace": [
+        "BP-003"
+      ],
+      "module": "demand-planning",
+      "description": "Открыть сформированный отчёт о потребностях, проверить корректность расчётных значений, при необходимости исключить отдельные позиции через файл исключений, и перейти к утверждению расчёта.",
+      "priority": "primary",
+      "source_file": "docs/14-usecases/UC203-prosmotr-otcheta-o-potrebnostyakh.md",
+      "actor": "analyst — Аналитик / Руководитель товарного направления",
+      "name": "Просмотр отчёта о потребностях",
+      "iteration": "",
+      "id": "UC-203",
+      "original_id": "UC203",
+      "updated": "2026-04-13T15:03:37.423000000+00:00"
+    }
+  },
+  {
+    "labels": [
+      "UseCase"
+    ],
+    "properties": {
+      "complexity": "",
+      "migrated_at": "2026-04-13T15:03:37.423000000+00:00",
+      "created": "2026-04-13T09:15:22.300000000+00:00",
+      "ba_trace": [
+        "BP-003"
+      ],
+      "module": "demand-planning",
+      "description": "Перевести расчёт в статус «Утверждён» или вернуть его на доработку, чтобы зафиксировать ответственное решение о переходе к формированию заявок.",
+      "priority": "primary",
+      "source_file": "docs/14-usecases/UC204-utverzhdenie-otcheta.md",
+      "actor": "analyst — Аналитик / Руководитель товарного направления",
+      "name": "Утверждение отчёта о потребностях",
+      "iteration": "",
+      "id": "UC-204",
+      "original_id": "UC204",
+      "updated": "2026-04-13T15:03:37.423000000+00:00"
+    }
+  },
+  {
+    "labels": [
+      "UseCase"
+    ],
+    "properties": {
+      "complexity": "",
+      "migrated_at": "2026-04-13T15:03:37.423000000+00:00",
+      "created": "2026-04-13T09:15:22.300000000+00:00",
+      "ba_trace": [
+        "BP-002"
+      ],
+      "module": "demand-planning",
+      "description": "Автоматически запросить карточки товаров через WB API при запуске расчёта, чтобы данные о наличии и характеристиках позиций на WB были актуальными без ручного ввода.",
+      "priority": "primary",
+      "source_file": "docs/14-usecases/UC205-poluchenie-kartochek-wb.md",
+      "actor": "Система (автоматически) — запускается как подпроцесс UC202",
+      "name": "Получение карточек товаров WB",
+      "iteration": "",
+      "id": "UC-205",
+      "original_id": "UC205",
+      "updated": "2026-04-13T15:03:37.423000000+00:00"
+    }
+  },
+  {
+    "labels": [
+      "UseCase"
+    ],
+    "properties": {
+      "complexity": "",
+      "migrated_at": "2026-04-13T15:03:37.423000000+00:00",
+      "created": "2026-04-13T09:15:22.300000000+00:00",
+      "ba_trace": [
+        "BP-002"
+      ],
+      "module": "demand-planning",
+      "description": "Автоматически запросить карточки товаров через Ozon API при запуске расчёта, чтобы данные о наличии и характеристиках позиций на Ozon были актуальными без ручного ввода.",
+      "priority": "primary",
+      "source_file": "docs/14-usecases/UC206-poluchenie-kartochek-ozon.md",
+      "actor": "Система (автоматически) — запускается как подпроцесс UC202",
+      "name": "Получение карточек товаров Ozon",
+      "iteration": "",
+      "id": "UC-206",
+      "original_id": "UC206",
+      "updated": "2026-04-13T15:03:37.423000000+00:00"
+    }
+  },
+  {
+    "labels": [
+      "UseCase"
+    ],
+    "properties": {
+      "complexity": "",
+      "migrated_at": "2026-04-13T15:03:37.423000000+00:00",
+      "created": "2026-04-13T09:15:22.300000000+00:00",
+      "ba_trace": [],
+      "module": "order-generation",
+      "description": "Сформировать файлы заявки на поставку по сегменту (WB или Ozon) с разбивкой по складам, чтобы передать точный объём товара на каждый склад маркетплейса в нужный срок.\n\nUser Story: \"Как менеджер маркетплейсов, я хочу сформировать файлы заявки на поставку по сегменту (WB или Ozon) с разбивкой по складам, чтобы передать точный объём товара на каждый склад маркетплейса в нужный срок.\"",
+      "priority": "primary",
+      "source_file": "docs/14-usecases/UC301-formirovanie-zayavki-na-postavku.md",
+      "actor": "marketplace_manager — Менеджер маркетплейсов\nanalyst — Аналитик / Руководитель ТН",
+      "name": "Формирование заявки на поставку",
+      "iteration": "",
+      "id": "UC-301",
+      "original_id": "UC301",
+      "updated": "2026-04-13T15:03:37.423000000+00:00"
+    }
+  },
+  {
+    "labels": [
+      "UseCase"
+    ],
+    "properties": {
+      "complexity": "",
+      "migrated_at": "2026-04-13T15:03:37.423000000+00:00",
+      "created": "2026-04-13T09:15:22.300000000+00:00",
+      "ba_trace": [],
+      "module": "order-generation",
+      "description": "Сформировать отдельную заявку на поставку для канала Дискаунтер, чтобы обеспечить пополнение этого сегмента независимо от основных складов WB и Ozon.\n\nUser Story: \"Как менеджер маркетплейсов, я хочу сформировать отдельную заявку на поставку для канала Дискаунтер, чтобы обеспечить пополнение этого сегмента независимо от основных складов WB и Ozon.\"",
+      "priority": "primary",
+      "source_file": "docs/14-usecases/UC302-formirovanie-zayavki-diskaunter.md",
+      "actor": "marketplace_manager — Менеджер маркетплейсов\nanalyst — Аналитик / Руководитель ТН",
+      "name": "Формирование заявки Дискаунтер",
+      "iteration": "",
+      "id": "UC-302",
+      "original_id": "UC302",
+      "updated": "2026-04-13T15:03:37.423000000+00:00"
+    }
+  },
+  {
+    "labels": [
+      "UseCase"
+    ],
+    "properties": {
+      "complexity": "",
+      "migrated_at": "2026-04-13T15:03:37.423000000+00:00",
+      "created": "2026-04-13T09:15:22.300000000+00:00",
+      "ba_trace": [],
+      "module": "order-generation",
+      "description": "Сформировать заявку на производство на основе дефицита в утверждённом отчёте, чтобы своевременно запустить выпуск ювелирных изделий, которых не хватает для покрытия потребности.\n\nUser Story: \"Как менеджер маркетплейсов, я хочу сформировать заявку на производство на основе дефицита в утверждённом отчёте, чтобы своевременно запустить выпуск ювелирных изделий, которых не хватает для покрытия потребности.\"",
+      "priority": "primary",
+      "source_file": "docs/14-usecases/UC303-formirovanie-zayavki-na-proizvodstvo.md",
+      "actor": "marketplace_manager — Менеджер маркетплейсов\nanalyst — Аналитик / Руководитель ТН",
+      "name": "Формирование заявки на производство",
+      "iteration": "",
+      "id": "UC-303",
+      "original_id": "UC303",
+      "updated": "2026-04-13T15:03:37.423000000+00:00"
+    }
+  }
+]

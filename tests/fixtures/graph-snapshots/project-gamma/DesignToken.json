@@ -1,0 +1,92 @@
+[
+  {
+    "labels": [
+      "DesignToken"
+    ],
+    "properties": {
+      "note": "Hex picked in Phase 4. Prototype hint: indigo (#6366f1).",
+      "scope": "UC-519",
+      "name": "--category-text",
+      "id": "DT-category-text",
+      "label": "Текст",
+      "css_var": "var(--category-text)",
+      "category": "ai-spending-category",
+      "updated": "2026-04-30T09:05:22.075000000+00:00"
+    }
+  },
+  {
+    "labels": [
+      "DesignToken"
+    ],
+    "properties": {
+      "note": "Hex picked in Phase 4. Prototype hint: teal (#14b8a6).",
+      "scope": "UC-519",
+      "name": "--category-image-standard",
+      "id": "DT-category-image-standard",
+      "label": "Изображения стандарт",
+      "css_var": "var(--category-image-standard)",
+      "category": "ai-spending-category",
+      "updated": "2026-04-30T09:05:22.075000000+00:00"
+    }
+  },
+  {
+    "labels": [
+      "DesignToken"
+    ],
+    "properties": {
+      "note": "Hex picked in Phase 4. Prototype hint: amber (#f59e0b).",
+      "scope": "UC-519",
+      "name": "--category-image-premium",
+      "id": "DT-category-image-premium",
+      "label": "Изображения премиум",
+      "css_var": "var(--category-image-premium)",
+      "category": "ai-spending-category",
+      "updated": "2026-04-30T09:05:22.075000000+00:00"
+    }
+  },
+  {
+    "labels": [
+      "DesignToken"
+    ],
+    "properties": {
+      "note": "Hex picked in Phase 4. Prototype hint: rose (#f43f5e).",
+      "scope": "UC-519",
+      "name": "--category-video-fast",
+      "id": "DT-category-video-fast",
+      "label": "Видео быстрое",
+      "css_var": "var(--category-video-fast)",
+      "category": "ai-spending-category",
+      "updated": "2026-04-30T09:05:22.075000000+00:00"
+    }
+  },
+  {
+    "labels": [
+      "DesignToken"
+    ],
+    "properties": {
+      "note": "Hex picked in Phase 4. Prototype hint: red (#ef4444).",
+      "scope": "UC-519",
+      "name": "--category-video-quality",
+      "id": "DT-category-video-quality",
+      "label": "Видео качество",
+      "css_var": "var(--category-video-quality)",
+      "category": "ai-spending-category",
+      "updated": "2026-04-30T09:05:22.075000000+00:00"
+    }
+  },
+  {
+    "labels": [
+      "DesignToken"
+    ],
+    "properties": {
+      "note": "Hex picked in Phase 4. Prototype hint: purple (#a855f7).",
+      "scope": "UC-519",
+      "name": "--category-music",
+      "id": "DT-category-music",
+      "label": "Музыка",
+      "css_var": "var(--category-music)",
+      "category": "ai-spending-category",
+      "updated": "2026-04-30T09:05:22.075000000+00:00"
+    }
+  }
+]

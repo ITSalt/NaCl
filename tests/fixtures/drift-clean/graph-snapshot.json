@@ -1,0 +1,22 @@
+{
+  "$note": [
+    "Snapshot of a LIVE Neo4j read for this fixture. In production the W5",
+    "gate reads this state via mcp__neo4j__read-cypher against the running",
+    "graph container — NEVER from a .cypher export file. This JSON is a",
+    "test-time stand-in that mirrors what the live read would return.",
+    "Live-graph-only binding: see nacl-tl-conductor/SKILL.md Phase 4.5."
+  ],
+  "counts": {
+    "modules": 1,
+    "use_cases": 1,
+    "tasks": 2,
+    "feature_requests": 1
+  },
+  "intake_tasks": [
+    { "id": "TECH-100", "intake_id": "FR-100", "status": "done", "verification_evidence": "test-GREEN (backend/src/__tests__/shared-types.spec.ts)" },
+    { "id": "UC-100",   "intake_id": "FR-100", "status": "done", "verification_evidence": "test-GREEN (frontend/src/components/__tests__/uc100.spec.tsx)" }
+  ],
+  "feature_requests": [
+    { "id": "FR-100", "release_tag": "v0.1.0" }
+  ]
+}

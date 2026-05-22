@@ -152,10 +152,10 @@ The only sanctioned override paths are: (a) a signed exception under
 the schema below, and (b) emergency mode (separate invocation,
 loudly recorded — see `nacl-tl-core/references/emergency-mode.md`).
 
-The Karatov stale-graph episode (live graph 1,083 nodes vs
+The Project-Alpha stale-graph episode (live graph 1,083 nodes vs
 handover-artifact 970 nodes; `/nacl-sa-validate full = FAIL` with 1
 CRITICAL + 156 WARNINGs; release proceeded under operator override)
-and the transcriber health-only episode (`/api/health` returned 200
+and the project-beta health-only episode (`/api/health` returned 200
 OK but no upload golden path ever executed; first real call 404'd)
 are the canonical episodes these gates exist to prevent.
 
@@ -178,7 +178,7 @@ are the canonical episodes these gates exist to prevent.
 - Confirms the deploy reached a running process and the process can serve at least one HTTP request.
 - **Does NOT confirm** that any product flow executed end-to-end against production data, against the production database, against the production provider keys, or with production-grade payload sizes.
 - Is the kind of evidence Step 3b of this skill collects.
-- Is **NEVER** product-readiness evidence on its own. The transcriber episode (health green; upload golden path 404 on first real call) is the canonical proof.
+- Is **NEVER** product-readiness evidence on its own. The project-beta episode (health green; upload golden path 404 on first real call) is the canonical proof.
 
 `PROD_GOLDEN_PATH` evidence (per W3 six-stage decomposition):
 
@@ -713,7 +713,7 @@ Resolution options:
 
 `STALE_GRAPH is a release-blocker, not a follow-up.` (W4 binding
 rule.) The previous "log a warning and continue" path was removed
-in W4-blocking-release after the Karatov stale-graph episode (live
+in W4-blocking-release after the Project-Alpha stale-graph episode (live
 graph 1,083 nodes vs handover-artifact 970 nodes; release proceeded
 under operator override; FR-007 in changelog but not visibly in
 graph).
@@ -731,7 +731,7 @@ captured at Step 0 (also live). Any delta on:
 - any rel-type-count entry
 
 is a STALE_GRAPH refusal. Workflow detail: `graph-stale`. The
-baseline-from-stale-export episode (Karatov) is the canonical
+baseline-from-stale-export episode (Project-Alpha) is the canonical
 prevention case.
 
 On success, update `release-status.json`:
@@ -846,12 +846,12 @@ On start, if `.tl/release-status.json` exists:
 | One PR has merge conflicts | Stop at that PR, report which merged / which remain |
 | CI fails after merge | Stop before tagging, report. User fixes via follow-up PR or `/nacl-tl-hotfix`. |
 | No CI configured | `RELEASE HALTED — UNVERIFIED (skipped-ci-without-prototype-exception)` unless covered by signed exception. |
-| No production URL configured | `RELEASE HALTED — UNVERIFIED (no-production-url-without-exception)` unless covered by signed exception with `affected_gates: [missing-prod-golden-path]`. The Step 3b "skip and warn" path was removed in W4-blocking-release (transcriber health-only episode prevention). |
+| No production URL configured | `RELEASE HALTED — UNVERIFIED (no-production-url-without-exception)` unless covered by signed exception with `affected_gates: [missing-prod-golden-path]`. The Step 3b "skip and warn" path was removed in W4-blocking-release (project-beta health-only episode prevention). |
 | No changes since last tag | Report "nothing to release" |
 | Single PR release | Same flow, one PR in list |
 | `--dry-run` flag | Show merge plan + version bump, no action |
 | Session interrupted mid-merge | Resume from release-status.json, skip already-merged PRs |
-| Neo4j unavailable (Step 7) | `RELEASE HALTED — UNVERIFIED (graph-stale)` — refuse VERIFIED. (Was: log warning, continue. Removed in W4-blocking-release per Karatov stale-graph episode.) |
+| Neo4j unavailable (Step 7) | `RELEASE HALTED — UNVERIFIED (graph-stale)` — refuse VERIFIED. (Was: log warning, continue. Removed in W4-blocking-release per Project-Alpha stale-graph episode.) |
 | Live graph differs from baseline (Step 7 pre-flight) | `RELEASE HALTED — UNVERIFIED (graph-stale)` — refuse VERIFIED. |
 | `/nacl-sa-validate full` returns CRITICAL findings | `RELEASE HALTED — UNVERIFIED (sa-validate-critical)` — refuse VERIFIED. |
 | Upstream `tl-sync` verdict is UNVERIFIED | `RELEASE HALTED — UNVERIFIED (upstream-sync-unverified)` — refuse VERIFIED. (W2.) |
@@ -958,13 +958,13 @@ upstream verdict tokens (`upstream-sync-unverified`,
   RELEASE HALTED — UNVERIFIED (upstream-qa-unverified)
     — W3 upstream tl-qa aggregate is UNVERIFIED.
   RELEASE HALTED — UNVERIFIED (graph-stale)
-    — Step 7 pre-flight or query detected stale graph (Karatov
+    — Step 7 pre-flight or query detected stale graph (Project-Alpha
       episode prevention).
   RELEASE HALTED — UNVERIFIED (sa-validate-critical)
     — `/nacl-sa-validate full` reported FAIL with CRITICAL findings.
   RELEASE HALTED — UNVERIFIED (missing-prod-golden-path)
     — PROD_GOLDEN_PATH evidence missing on a UC where the W3
-      mandatory-stage matrix marks it mandatory (transcriber
+      mandatory-stage matrix marks it mandatory (project-beta
       episode prevention; HEALTH_ONLY is not a substitute).
   RELEASE HALTED — UNVERIFIED (skipped-pr-without-prototype-exception)
     — direct-strategy release with no PR and `config.yaml` does

@@ -151,18 +151,18 @@ pair.
 
 **Worked examples (mapped to W0 baseline):**
 
-- *Karatov FR-007 in changelog but not in live graph* — P-S2
+- *Project-Alpha FR-007 in changelog but not in live graph* — P-S2
   fires. Report `Status: BLOCKED` with workflow detail
   `artifact-drift`; resolution is to replay the SA-feature step
   or file a `graph-stale` exception.
-- *Karatov conductor-state says "typecheck clean" but CI red* —
+- *Project-Alpha conductor-state says "typecheck clean" but CI red* —
   P-S4 + P-S5 fire. Phase advance was premature; resolution is
   to drive non-terminal tasks to a terminal state before re-running
   the gate.
 
 **Reconciliation evidence artifact:** on PASS (or PASS under an
 active signed exception), write `.tl/reconciliation/<ISO-8601>.json`
-per the template at `/Users/maxnikitin/projects/NaCl/.tl/
+per the template at `/home/project-owner/projects/NaCl/.tl/
 reconciliation/_template.json`. Required fields: `timestamp`,
 `intake_id`, `sources_checked`, `deltas` (per-pair with `pair_id`,
 `assertion`, `outcome`, `details`), `active_exceptions`,

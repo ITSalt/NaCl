@@ -1,0 +1,214 @@
+[
+  {
+    "labels": [
+      "UseCase"
+    ],
+    "properties": {
+      "actor": "AUTHOR",
+      "user_story": "As an Author, I want to see all my meetings with their current pipeline status, so I know which are ready and which are still processing.",
+      "system_uc": true,
+      "created": "2026-05-18T07:01:52.727000000+00:00",
+      "detail_status": "complete",
+      "name": "View meeting catalog",
+      "id": "UC-001",
+      "priority": "MVP",
+      "updated": "2026-05-18T07:21:52.040000000+00:00",
+      "has_ui": true,
+      "acceptance_criteria": [
+        "GIVEN at least one Meeting exists, WHEN I open the catalog, THEN I see a list of meetings sorted by updated_at descending.",
+        "EACH row shows: title (or filename fallback), status badge (per ENUM-MeetingStatus), language, uploaded_at, duration if available.",
+        "GIVEN a meeting in a transient state (UPLOADING / TRANSCRIBING / PROTOCOL_GENERATING), THEN its row shows a progress indicator that auto-refreshes."
+      ],
+      "status": "identified"
+    }
+  },
+  {
+    "labels": [
+      "UseCase"
+    ],
+    "properties": {
+      "actor": "AUTHOR",
+      "user_story": "As an Author, I want to open a meeting and see its status, recording info, and links to transcript/protocol, so I have a single entry point per meeting.",
+      "system_uc": true,
+      "created": "2026-05-18T07:01:52.727000000+00:00",
+      "detail_status": "complete",
+      "name": "View meeting detail",
+      "id": "UC-002",
+      "priority": "MVP",
+      "updated": "2026-05-18T07:21:52.040000000+00:00",
+      "has_ui": true,
+      "acceptance_criteria": [
+        "GIVEN a Meeting, WHEN I open its detail page, THEN I see: title, language, status, recording metadata (filename, size, duration), and current job error_reason when FAILED.",
+        "GIVEN status >= TRANSCRIPT_READY, THEN a link to view the transcript is visible (UC-201).",
+        "GIVEN status >= PROTOCOL_READY, THEN a link to review/edit the protocol is visible (UC-301)."
+      ],
+      "status": "identified"
+    }
+  },
+  {
+    "labels": [
+      "UseCase"
+    ],
+    "properties": {
+      "actor": "AUTHOR",
+      "user_story": "As an Author, I want to delete a meeting and all its derived artifacts, so I can clean up obsolete or sensitive recordings.",
+      "system_uc": true,
+      "created": "2026-05-18T07:01:52.727000000+00:00",
+      "detail_status": "complete",
+      "name": "Delete meeting",
+      "id": "UC-003",
+      "priority": "MVP",
+      "updated": "2026-05-18T07:21:52.040000000+00:00",
+      "has_ui": true,
+      "acceptance_criteria": [
+        "GIVEN any Meeting, WHEN I confirm deletion, THEN the Meeting, its Recording (storage object removed), Transcript, Protocol, and all jobs are deleted.",
+        "GIVEN deletion succeeds, THEN I am returned to the catalog (UC-001) with a confirmation toast.",
+        "WHILE a job is IN_PROGRESS, deletion is disabled (or shows confirmation that an in-flight job will be marked FAILED)."
+      ],
+      "status": "identified"
+    }
+  },
+  {
+    "labels": [
+      "UseCase"
+    ],
+    "properties": {
+      "actor": "AUTHOR",
+      "user_story": "As an Author, I want to upload a 300-500 MB meeting video with an optional language hint, so the system starts transcription.",
+      "source_bp": "BP-001",
+      "created": "2026-05-18T07:01:52.727000000+00:00",
+      "detail_status": "complete",
+      "name": "Upload meeting video",
+      "id": "UC-100",
+      "priority": "MVP",
+      "updated": "2026-05-18T07:06:59.315000000+00:00",
+      "has_ui": true,
+      "acceptance_criteria": [
+        "GIVEN a valid MP4/MKV/MOV file <= 500 MB (BRQ-001, BRQ-002), WHEN I upload, THEN the system accepts, creates Meeting + Recording + TranscriptionJob, and shows status UPLOADING -> TRANSCRIBING.",
+        "GIVEN a file > 500 MB or wrong MIME, WHEN I attempt upload, THEN the system rejects before storage with a clear error.",
+        "GIVEN a corrupt file (BRQ-003), WHEN validation fails, THEN the system rejects with a user-facing error.",
+        "I can choose RU or EN as the language hint; leaving it blank means auto-detect (BRQ-005)."
+      ],
+      "status": "identified"
+    }
+  },
+  {
+    "labels": [
+      "UseCase"
+    ],
+    "properties": {
+      "actor": "SYSTEM",
+      "user_story": "As the SYSTEM, I dequeue a queued TranscriptionJob, run ASR + diarization on the recording, resolve speaker names, and persist a verbatim Transcript with status updates.",
+      "source_bp": "BP-002",
+      "created": "2026-05-18T07:01:52.727000000+00:00",
+      "detail_status": "complete",
+      "name": "Process transcription pipeline",
+      "id": "UC-200",
+      "priority": "MVP",
+      "updated": "2026-05-18T07:08:18.704000000+00:00",
+      "has_ui": false,
+      "acceptance_criteria": [
+        "GIVEN a QUEUED TranscriptionJob, WHEN a worker picks it up, THEN job.status -> IN_PROGRESS and started_at is set.",
+        "GIVEN ASR succeeds, THEN Transcript is persisted, speakers resolved per BRQ-021, Meeting.status -> TRANSCRIPT_READY, job.status -> COMPLETED, and a ProtocolGenerationJob is auto-created (BRQ-007).",
+        "GIVEN ASR fails, THEN job.status -> FAILED with non-null error_reason (BRQ-010), and Meeting.status -> FAILED; terminal states are immutable (BRQ-009)."
+      ],
+      "status": "identified"
+    }
+  },
+  {
+    "labels": [
+      "UseCase"
+    ],
+    "properties": {
+      "created": "2026-05-18T07:01:52.727000000+00:00",
+      "detail_status": "complete",
+      "priority": "MVP",
+      "actor": "AUTHOR",
+      "user_story": "As an Author, I want to view the verbatim transcript with speaker labels and download it as a text file, so I have a permanent meeting record.",
+      "system_uc": true,
+      "source_bp": "BP-003",
+      "name": "View and download transcript",
+      "id": "UC-201",
+      "updated": "2026-05-18T07:21:52.040000000+00:00",
+      "has_ui": true,
+      "acceptance_criteria": [
+        "GIVEN Meeting.status >= TRANSCRIPT_READY, WHEN I open the transcript view, THEN I see segments with speaker labels, timestamps, and counts (segments_count, speakers_count).",
+        "I can download the transcript as a text file with a one-click action.",
+        "Unresolved speakers (BRQ-021) are shown as 'Speaker N'; resolved speakers show the real name."
+      ],
+      "status": "identified"
+    }
+  },
+  {
+    "labels": [
+      "UseCase"
+    ],
+    "properties": {
+      "actor": "SYSTEM",
+      "user_story": "As the SYSTEM, when a transcript becomes ready I auto-trigger LLM-based protocol generation and persist the Markdown result with status updates.",
+      "source_bp": "BP-004",
+      "created": "2026-05-18T07:01:52.727000000+00:00",
+      "detail_status": "complete",
+      "name": "Generate protocol pipeline",
+      "id": "UC-300",
+      "priority": "MVP",
+      "updated": "2026-05-18T07:10:00.406000000+00:00",
+      "has_ui": false,
+      "acceptance_criteria": [
+        "GIVEN a Transcript is COMPLETED, THEN a ProtocolGenerationJob is auto-created per BRQ-007 with status=QUEUED.",
+        "GIVEN a worker runs the job, THEN it loads the transcript, selects the prompt template by language (BRQ-013), calls the LLM, parses the response, and validates required sections (BRQ-011).",
+        "GIVEN LLM succeeds AND all required sections are present, THEN Protocol is persisted (markdown, version=1, edit_count=0), Meeting.status -> PROTOCOL_READY, job.status -> COMPLETED.",
+        "GIVEN LLM fails OR response is invalid, THEN job.status -> FAILED with error_reason, Meeting.status -> FAILED."
+      ],
+      "status": "identified"
+    }
+  },
+  {
+    "labels": [
+      "UseCase"
+    ],
+    "properties": {
+      "created": "2026-05-18T07:01:52.727000000+00:00",
+      "detail_status": "complete",
+      "priority": "MVP",
+      "actor": "AUTHOR",
+      "user_story": "As an Author, I want to review the generated protocol and edit it in a Markdown editor, so I can correct LLM mistakes before sharing.",
+      "system_uc": true,
+      "source_bp": "BP-005",
+      "name": "Review and edit protocol",
+      "id": "UC-301",
+      "updated": "2026-05-18T07:21:52.040000000+00:00",
+      "has_ui": true,
+      "acceptance_criteria": [
+        "GIVEN Meeting.status in {PROTOCOL_READY, EDITED}, WHEN I open the protocol, THEN it loads in a Markdown editor with rendered preview.",
+        "WHEN I save changes, THEN Protocol.markdown_content is updated, version increments by 1 (BRQ-014), edit_count increments by 1 (BRQ-015), last_edited_at is set, and Meeting.status -> EDITED.",
+        "All edits operate on the canonical Markdown (BRQ-018); preview is a derivation."
+      ],
+      "status": "identified"
+    }
+  },
+  {
+    "labels": [
+      "UseCase"
+    ],
+    "properties": {
+      "created": "2026-05-18T07:01:52.727000000+00:00",
+      "detail_status": "complete",
+      "priority": "MVP",
+      "actor": "AUTHOR",
+      "user_story": "As an Author, I want to export the protocol as a PDF, so I can distribute it as a polished document. [Note: triggered as an action from UC-002 detail and UC-301 editor; no dedicated screen.]",
+      "system_uc": true,
+      "source_bp": "BP-006",
+      "name": "Export protocol to PDF",
+      "id": "UC-302",
+      "updated": "2026-05-18T07:21:52.040000000+00:00",
+      "has_ui": false,
+      "acceptance_criteria": [
+        "GIVEN Meeting.status in {PROTOCOL_READY, EDITED}, WHEN I click 'Export PDF', THEN the system renders the current Markdown to PDF and delivers it as a download.",
+        "The rendered PDF is NOT persisted (BRQ-017); each export re-renders from canonical Markdown.",
+        "The exported document includes all four required sections (BRQ-011): Participants, Discussion Topics, Decisions, Action Items."
+      ],
+      "status": "identified"
+    }
+  }
+]

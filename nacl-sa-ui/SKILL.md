@@ -495,9 +495,9 @@ space* — the reviewer cannot see "the upload button is missing on
 /catalog" from a code diff because the spec never said the button
 should exist there.
 
-#### Worked example — Transcriber UC-100 missing-upload-button
+#### Worked example — Project-Beta UC-100 missing-upload-button
 
-Transcriber UC-100 ("Upload audio") had a fully specified Form
+Project-Beta UC-100 ("Upload audio") had a fully specified Form
 (`FORM-Upload`):
 
 - Fields: audio_file, language_select, transcription_provider, submit_button.

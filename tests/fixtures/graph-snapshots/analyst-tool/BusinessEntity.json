@@ -1,0 +1,180 @@
+[
+  {
+    "labels": [
+      "BusinessEntity"
+    ],
+    "properties": {
+      "name": "Project",
+      "lifecycle_managed": false,
+      "description": "A registered NaCl project record stored in ~/.nacl/projects.json; represents the analyst active project scope.",
+      "id": "BE-PROJECT",
+      "crud_scope": [
+        "Read",
+        "Update"
+      ],
+      "stereotype": "Бизнес-объект",
+      "source_file": "server/src/services/project-registry.ts",
+      "has_states": false
+    }
+  },
+  {
+    "labels": [
+      "BusinessEntity"
+    ],
+    "properties": {
+      "name": "Board",
+      "lifecycle_managed": true,
+      "description": "An Excalidraw board file on disk (.excalidraw); the primary artefact that analysts view, edit, and sync with the graph.",
+      "id": "BE-BOARD",
+      "crud_scope": [
+        "Create",
+        "Read",
+        "Update"
+      ],
+      "stereotype": "Бизнес-объект",
+      "source_file": "server/src/services/boards.ts",
+      "has_states": true
+    }
+  },
+  {
+    "labels": [
+      "BusinessEntity"
+    ],
+    "properties": {
+      "name": "Board Scene",
+      "lifecycle_managed": false,
+      "description": "The parsed Excalidraw JSON content (type, version, elements[], appState{}, files{}) that constitutes the visual canvas state of a board.",
+      "id": "BE-BOARD-SCENE",
+      "crud_scope": [
+        "Read",
+        "Update"
+      ],
+      "stereotype": "Документ",
+      "source_file": "server/src/services/boards.ts",
+      "has_states": false
+    }
+  },
+  {
+    "labels": [
+      "BusinessEntity"
+    ],
+    "properties": {
+      "name": "Board Meta",
+      "lifecycle_managed": false,
+      "description": "Sidecar .meta.json file that tracks generation and sync provenance for a board: lastGeneratedAt, lastGeneratedBy, lastSyncedAt, lastSyncStatus, lastSyncRunId, contentHashAtLastSync.",
+      "id": "BE-BOARD-META",
+      "crud_scope": [
+        "Read",
+        "Update"
+      ],
+      "stereotype": "Документ",
+      "source_file": "server/src/services/meta.ts",
+      "has_states": false
+    }
+  },
+  {
+    "labels": [
+      "BusinessEntity"
+    ],
+    "properties": {
+      "name": "Board Snapshot",
+      "lifecycle_managed": false,
+      "description": "A versioned copy of a board scene stored in .snapshots/<board>-<timestamp>.json, used for restore and diff operations.",
+      "id": "BE-SNAPSHOT",
+      "crud_scope": [
+        "Create",
+        "Read"
+      ],
+      "stereotype": "Бизнес-объект",
+      "source_file": "server/src/services/snapshots.ts",
+      "has_states": false
+    }
+  },
+  {
+    "labels": [
+      "BusinessEntity"
+    ],
+    "properties": {
+      "name": "Skill Run",
+      "lifecycle_managed": true,
+      "description": "A single skill invocation (regenerate / sync / analyze / render-md) tracked by the run-queue with phase lifecycle.",
+      "id": "BE-RUN",
+      "crud_scope": [
+        "Create",
+        "Read"
+      ],
+      "stereotype": "Бизнес-объект",
+      "source_file": "server/src/services/run-queue.ts",
+      "has_states": true
+    }
+  },
+  {
+    "labels": [
+      "BusinessEntity"
+    ],
+    "properties": {
+      "name": "Batch Operation",
+      "lifecycle_managed": true,
+      "description": "A sequential multi-board skill operation that drives N individual Skill Runs one after another and reports aggregate progress.",
+      "id": "BE-BATCH-OPERATION",
+      "crud_scope": [
+        "Create",
+        "Read"
+      ],
+      "stereotype": "Бизнес-объект",
+      "source_file": "server/src/services/run-queue.ts",
+      "has_states": true
+    }
+  },
+  {
+    "labels": [
+      "BusinessEntity"
+    ],
+    "properties": {
+      "name": "Renderable Board",
+      "lifecycle_managed": false,
+      "description": "A board the Neo4j graph indicates can be rendered right now (graph has sufficient nodes); may or may not yet exist on disk.",
+      "id": "BE-RENDERABLE-BOARD",
+      "crud_scope": [
+        "Read"
+      ],
+      "stereotype": "Бизнес-объект",
+      "source_file": "server/src/services/renderable.ts",
+      "has_states": false
+    }
+  },
+  {
+    "labels": [
+      "BusinessEntity"
+    ],
+    "properties": {
+      "name": "Search Result",
+      "lifecycle_managed": false,
+      "description": "An ephemeral full-text search hit from board elements or graph nodes: source, boardName, elementId, nodeId, snippet, score (board) or node, matchedField, snippet, score (graph).",
+      "id": "BE-SEARCH-RESULT",
+      "crud_scope": [
+        "Read"
+      ],
+      "stereotype": "Документ",
+      "source_file": "server/src/services/search.ts",
+      "has_states": false
+    }
+  },
+  {
+    "labels": [
+      "BusinessEntity"
+    ],
+    "properties": {
+      "name": "Diff Entry",
+      "lifecycle_managed": false,
+      "description": "An element-level snapshot diff record with kind (added/removed/changed), the element before and after, and a list of changed field names (reasons).",
+      "id": "BE-DIFF-ENTRY",
+      "crud_scope": [
+        "Read"
+      ],
+      "stereotype": "Документ",
+      "source_file": "server/src/services/diff.ts",
+      "has_states": false
+    }
+  }
+]

@@ -53,8 +53,8 @@ state changes.
 The release skill refuses VERIFIED → release-tag / promote when ANY
 of the six conditions below holds. These gates are **strict-only**
 — there is no fallback branch, no flag-driven bypass, and no inline
-operator-prompt override. The Karatov stale-graph episode and the
-transcriber health-only episode are the canonical episodes these
+operator-prompt override. The Project-Alpha stale-graph episode and the
+project-beta health-only episode are the canonical episodes these
 gates exist to prevent.
 
 ### The Six Block Conditions
@@ -74,7 +74,7 @@ gates exist to prevent.
 confirms only that the deploy reached a running process and the
 process can serve one HTTP request. It does NOT confirm that any
 product flow executed end-to-end against production. **HEALTH_ONLY
-is NEVER product-readiness evidence on its own.** The transcriber
+is NEVER product-readiness evidence on its own.** The project-beta
 episode (health green; upload golden path 404 on first real call)
 is the canonical proof.
 

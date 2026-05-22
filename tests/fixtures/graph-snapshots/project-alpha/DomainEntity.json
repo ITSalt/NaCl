@@ -1,0 +1,185 @@
+[
+  {
+    "labels": [
+      "DomainEntity"
+    ],
+    "properties": {
+      "aggregate_root": true,
+      "shared": false,
+      "updated_at": "2026-05-05T10:57:22.365000000+00:00",
+      "proposed": true,
+      "name": "User",
+      "created_at": "2026-05-04T09:05:42.111000000+00:00",
+      "description": "Пользователь системы (single-tenant). Owner Session/Task. Авторизация через JWT с claim role.",
+      "stereotype": "entity",
+      "id": "SA-User",
+      "layer": "Domain",
+      "status": "draft"
+    }
+  },
+  {
+    "labels": [
+      "DomainEntity"
+    ],
+    "properties": {
+      "aggregate_root": true,
+      "shared": false,
+      "updated_at": "2026-05-05T10:57:22.365000000+00:00",
+      "proposed": true,
+      "cross_module_intentional": true,
+      "name": "Session",
+      "created_at": "2026-05-04T09:05:42.111000000+00:00",
+      "description": "Сессия пользователя — контейнер для серии связанных Task (например, последовательная генерация и edit).",
+      "stereotype": "entity",
+      "id": "SA-Session",
+      "layer": "Domain",
+      "status": "draft"
+    }
+  },
+  {
+    "labels": [
+      "DomainEntity"
+    ],
+    "properties": {
+      "aggregate_root": false,
+      "shared": false,
+      "updated_at": "2026-05-05T10:57:22.365000000+00:00",
+      "proposed": true,
+      "name": "TaskInputFile",
+      "description": "Входной файл задачи (S3): photo для retouch, текст-инструкция и т.д. Хранится в Cloud.ru S3.",
+      "created_at": "2026-05-04T09:05:42.111000000+00:00",
+      "stereotype": "entity",
+      "id": "SA-TaskInputFile",
+      "layer": "Domain",
+      "status": "draft"
+    }
+  },
+  {
+    "labels": [
+      "DomainEntity"
+    ],
+    "properties": {
+      "aggregate_root": true,
+      "shared": false,
+      "updated_at": "2026-05-05T10:57:22.365000000+00:00",
+      "proposed": true,
+      "cross_module_intentional": true,
+      "name": "Task",
+      "created_at": "2026-05-04T09:05:42.111000000+00:00",
+      "description": "Задача генерации. Owns workflow_id, текущий step_id, статус, связь с QueueItem. Owner результатов и логов.",
+      "stereotype": "entity",
+      "id": "SA-Task",
+      "layer": "Domain",
+      "status": "draft"
+    }
+  },
+  {
+    "labels": [
+      "DomainEntity"
+    ],
+    "properties": {
+      "aggregate_root": false,
+      "shared": false,
+      "updated_at": "2026-05-05T10:57:22.365000000+00:00",
+      "proposed": true,
+      "name": "GeneratedAsset",
+      "description": "Результат генерации (S3). Связан с Task и шагом workflow. Может быть финальным или промежуточным.",
+      "created_at": "2026-05-04T09:05:42.111000000+00:00",
+      "stereotype": "entity",
+      "id": "SA-GeneratedAsset",
+      "layer": "Domain",
+      "status": "draft"
+    }
+  },
+  {
+    "labels": [
+      "DomainEntity"
+    ],
+    "properties": {
+      "aggregate_root": false,
+      "shared": false,
+      "updated_at": "2026-05-05T10:57:22.365000000+00:00",
+      "proposed": true,
+      "name": "VerificationReport",
+      "description": "Отчёт автоматической проверки результата (через VLM/LLM-валидатор). Решает: pass / fail / retry.",
+      "created_at": "2026-05-04T09:05:42.111000000+00:00",
+      "stereotype": "entity",
+      "id": "SA-VerificationReport",
+      "layer": "Domain",
+      "status": "draft"
+    }
+  },
+  {
+    "labels": [
+      "DomainEntity"
+    ],
+    "properties": {
+      "aggregate_root": true,
+      "shared": false,
+      "updated_at": "2026-05-05T10:59:34.500000000+00:00",
+      "proposed": true,
+      "cross_module_intentional": true,
+      "name": "QueueItem",
+      "created_at": "2026-05-04T09:05:42.111000000+00:00",
+      "description": "Элемент durable-очереди в Postgres. Привязан к Task. Хранит provider, статус слота, heartbeat для watchdog, retry-counter. Survive рестарта (REQ-NFR-010, REQ-NFR-011).",
+      "stereotype": "entity",
+      "id": "SA-QueueItem",
+      "layer": "Domain",
+      "status": "draft"
+    }
+  },
+  {
+    "labels": [
+      "DomainEntity"
+    ],
+    "properties": {
+      "aggregate_root": true,
+      "shared": false,
+      "updated_at": "2026-05-05T10:56:08.348000000+00:00",
+      "proposed": true,
+      "name": "PromptTemplate",
+      "description": "Бизнес-промпт привязан к (Category × ModelProfile). Хранит prompt_text, variables-schema, workflow_step_id, версию и активность.",
+      "created_at": "2026-05-04T09:05:42.111000000+00:00",
+      "stereotype": "entity",
+      "id": "SA-PromptTemplate",
+      "layer": "Domain",
+      "status": "draft"
+    }
+  },
+  {
+    "labels": [
+      "DomainEntity"
+    ],
+    "properties": {
+      "aggregate_root": false,
+      "shared": false,
+      "updated_at": "2026-05-05T10:56:08.348000000+00:00",
+      "proposed": true,
+      "name": "WorkflowStepConfig",
+      "description": "Параметры конкретного шага хардкоженного workflow: workflow_id, step_id, prompt_template_id, params_override.",
+      "created_at": "2026-05-04T09:05:42.111000000+00:00",
+      "stereotype": "entity",
+      "id": "SA-WorkflowStepConfig",
+      "layer": "Domain",
+      "status": "draft"
+    }
+  },
+  {
+    "labels": [
+      "DomainEntity"
+    ],
+    "properties": {
+      "aggregate_root": true,
+      "shared": false,
+      "updated_at": "2026-05-05T10:56:08.348000000+00:00",
+      "proposed": true,
+      "name": "ProviderConfig",
+      "description": "Конфигурация провайдера: api_key (encrypted), base_url, concurrency_limit, request_timeout_ms, watchdog_ms, retry_max.",
+      "created_at": "2026-05-04T09:05:42.111000000+00:00",
+      "stereotype": "entity",
+      "id": "SA-ProviderConfig",
+      "layer": "Config",
+      "status": "draft"
+    }
+  }
+]

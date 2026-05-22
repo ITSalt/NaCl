@@ -1,0 +1,141 @@
+[
+  {
+    "labels": [
+      "ADR"
+    ],
+    "properties": {
+      "decision": "For each such provider, the adapter MUST perform a preliminary upload of file bytes to the provider's own temporary storage and pass the provider-hosted URL. Internal presigned URLs remain valid ONLY for browser-driven flows where the client is inside the same network (i.e. our own frontend). For api.kie.example.invalid: stream-upload via POST https://kieai.redpandaai.co/api/file-stream-upload (multipart). The file-upload endpoints live on a DIFFERENT host than the jobs API (api.api.kie.example.invalid returns 404 for /api/file-* paths). Same Bearer API key authenticates both hosts.",
+      "name": "External providers cannot fetch internal-network presigned URLs",
+      "context": "S3_ENDPOINT in dev (localhost:9000) and prod (Cloud.ru S3 with VPC-internal hostname) is not resolvable from external SaaS providers. Any provider API that accepts a URL and fetches it server-side (api.kie.example.invalid jobs image_input, future video providers) will fail with connection-refused or DNS errors.",
+      "consequences": "Adapter increase: extra HTTP roundtrip + memory-resident bytes. Acceptable for current 30MB cap. Alternative considered: public S3 bucket with signed URLs over public hostname — rejected because Cloud.ru S3 SLA + cost favours keeping object store private.",
+      "id": "ADR-011",
+      "status": "accepted"
+    }
+  },
+  {
+    "labels": [
+      "ADR"
+    ],
+    "properties": {
+      "decision": "Drizzle ORM поверх @fastify/postgres, forward-only migrations с expand/contract дисциплиной, pin 0.44.x.",
+      "context": "Fastify+Postgres, queue claim-loop требует FOR UPDATE SKIP LOCKED, 15 DomainEntity / 142 DomainAttribute требуют типобезопасности, JSONB колонки.",
+      "created_at": "2026-05-05T20:58:24.859000000+00:00",
+      "consequences": "Schema-inferred TS types без codegen, native skipLocked, JSONB first-class. Нет встроенного rollback — митигируем expand/contract паттерном.",
+      "id": "ADR-007",
+      "title": "Backend ORM: Drizzle ORM + @fastify/postgres",
+      "status": "accepted"
+    }
+  },
+  {
+    "labels": [
+      "ADR"
+    ],
+    "properties": {
+      "decision": "Vite + React 19 + TanStack Router + TanStack Query + TanStack Table + shadcn/ui + Tailwind v4 + RHF/Zod + Recharts + Zustand. Раздача статики через Caddy, без Node-процесса для фронта.",
+      "context": "Внутренний SPA за авторизацией, SEO не нужен, real-time updates, RBAC, 24 Component / 14 Form / 12 NavigationItem.",
+      "created_at": "2026-05-05T20:58:27.120000000+00:00",
+      "consequences": "Нет SSR (приемлемо для авторизованного tool), требуется SPA fallback в Caddy, дисциплина Zod validateSearch для TanStack Router.",
+      "id": "ADR-008",
+      "title": "Frontend stack: Vite + React 19 + TanStack Router + shadcn/ui",
+      "status": "accepted"
+    }
+  },
+  {
+    "labels": [
+      "ADR"
+    ],
+    "properties": {
+      "decision": "fastify-sse-v2 для server→client, REST для client→server, TanStack Query refetchInterval как fallback. Auth через access_token httpOnly cookie. Caddy flush_interval -1.",
+      "context": "UC-105 (task status), UC-106 (notifications), UC-202 (worker emit task_completed). Auth — cookie. REQ-NFR-011 durability при reconnect.",
+      "created_at": "2026-05-05T20:58:29.010000000+00:00",
+      "consequences": "Один coupled плагин, freeze версии. Heartbeat каждые 15-25с, Last-Event-ID для resume, re-fetch GET /tasks/:id на reconnect.",
+      "id": "ADR-009",
+      "title": "Real-time channel: SSE через fastify-sse-v2",
+      "status": "accepted"
+    }
+  },
+  {
+    "labels": [
+      "ADR"
+    ],
+    "properties": {
+      "decision": "Single-tenant: client_id убирается из всех сущностей. Разрез шаблонов = (Category × ModelProfile).",
+      "context": "AS-IS имеет client_id, но команда вводит один tenant. Multi-tenant усложняет схему и RLS без реальной нужды.",
+      "created_at": "2026-05-05T13:37:04.976000000+00:00",
+      "consequences": "+ Простая схема. − Добавление multi-tenant в будущем потребует миграции всех таблиц и RLS-политик.",
+      "id": "ADR-001",
+      "title": "Single-tenant архитектура",
+      "status": "accepted"
+    }
+  },
+  {
+    "labels": [
+      "ADR"
+    ],
+    "properties": {
+      "decision": "Workflow хардкожен в коде (YAML/JSON в backend repo). Через admin UI настраиваются только параметры шагов (WorkflowStepConfig).",
+      "context": "Было предложено сделать workflow-конструктор в админке; это бы увеличило сложность системы в N раз.",
+      "created_at": "2026-05-05T13:37:04.976000000+00:00",
+      "consequences": "+ Предсказуемость и версионность. − Новый workflow требует деплоя кода.",
+      "id": "ADR-002",
+      "title": "Hardcoded workflow",
+      "status": "accepted"
+    }
+  },
+  {
+    "labels": [
+      "ADR"
+    ],
+    "properties": {
+      "decision": "Queue — durable таблица в Postgres (QueueItem). Worker использует SELECT FOR UPDATE SKIP LOCKED + heartbeat + watchdog. Результат пишется транзакционно (Task + GeneratedAsset + GenerationLog + QueueItem) ДО эмиссии SSE-event. Клиент рефетчит статус через GET /tasks/:id при любом reconnect.",
+      "context": "Требование надёжности: рестарт сервера или клиента не должен терять работу. Альтернатива: in-memory queue + WebSocket push.",
+      "created_at": "2026-05-05T13:37:04.976000000+00:00",
+      "consequences": "+ Надёжность, idempotency, recovery без внешнего брокера. − Нагрузка на Postgres при большом количестве слотов; при необходимости может потребоваться переход на отдельный broker (RabbitMQ/Kafka).",
+      "id": "ADR-003",
+      "title": "Durable persisted queue + transactional commit",
+      "status": "accepted"
+    }
+  },
+  {
+    "labels": [
+      "ADR"
+    ],
+    "properties": {
+      "decision": "JWT через @fastify/jwt. Access TTL = 1ч, refresh TTL = 30 дней. Единый API для admin и end-user, авторизация по claim role.",
+      "context": "Session-cookie auth или JWT? Single tenant, ~1—несколько инстансов backend.",
+      "created_at": "2026-05-05T13:37:04.976000000+00:00",
+      "consequences": "+ Stateless, легко горизонтально масштабировать. − Отзыв access-токена до истечения TTL требует blacklist или short TTL.",
+      "id": "ADR-004",
+      "title": "JWT авторизация через @fastify/jwt",
+      "status": "accepted"
+    }
+  },
+  {
+    "labels": [
+      "ADR"
+    ],
+    "properties": {
+      "decision": "MVP: только ежемесячный usage-отчёт из GenerationLog. Никаких invoices, payment integration, лимитов на пользователя в MVP.",
+      "context": "Полноценный биллинг (счета, тарифы, лимиты) — большая фича.",
+      "created_at": "2026-05-05T13:37:04.976000000+00:00",
+      "consequences": "+ Быстрый ship MVP. − При необходимости биллинга потребуется отдельный модуль.",
+      "id": "ADR-005",
+      "title": "Отчёт user × task_type вместо биллинга",
+      "status": "accepted"
+    }
+  },
+  {
+    "labels": [
+      "ADR"
+    ],
+    "properties": {
+      "decision": "Cloud.ru для compute и S3-совместимого storage. Managed Postgres отдельно (возможно Cloud.ru DBaaS или свой). Backend — Fastify (TypeScript).",
+      "context": "Нужен российский cloud-provider для compute и storage.",
+      "created_at": "2026-05-05T13:37:04.976000000+00:00",
+      "consequences": "+ Российская юрисдикция, S3-совместимость упрощает локальную разработку. − Меньше готовых SDK/либв, чем в AWS.",
+      "id": "ADR-006",
+      "title": "Cloud.ru + Cloud.ru S3 + Postgres + Fastify",
+      "status": "accepted"
+    }
+  }
+]

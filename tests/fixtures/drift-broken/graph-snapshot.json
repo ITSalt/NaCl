@@ -1,0 +1,35 @@
+{
+  "$note": [
+    "Snapshot of a LIVE Neo4j read for this fixture. In production the W5",
+    "gate reads this state via mcp__neo4j__read-cypher against the running",
+    "graph container — NEVER from a .cypher export file. This JSON is a",
+    "test-time stand-in that mirrors what the live read would return.",
+    "",
+    "Shape matches tests/fixtures/graph-snapshots/project-alpha/_summary.json",
+    "from W0-baseline (1083 nodes / 76 Tasks / 26 UseCases / 12 Modules).",
+    "Critically: FeatureRequest nodes are FR-001 .. FR-006 only — FR-007",
+    "is ABSENT despite being shipped in changelog v0.18.0. This is the",
+    "P-S2 drift episode from the Codex postmortem."
+  ],
+  "counts": {
+    "modules": 12,
+    "use_cases": 26,
+    "tasks": 76,
+    "feature_requests": 6
+  },
+  "intake_tasks": [
+    { "id": "UC-100", "intake_id": "FR-007", "status": "done",        "verification_evidence": "test-GREEN (frontend/src/components/__tests__/uc100.spec.tsx)" },
+    { "id": "UC-101", "intake_id": "FR-007", "status": "done",        "verification_evidence": "test-GREEN" },
+    { "id": "UC-105", "intake_id": "FR-007", "status": "in_progress", "verification_evidence": "" },
+    { "id": "UC-106", "intake_id": "FR-007", "status": "done",        "verification_evidence": "test-GREEN" },
+    { "id": "UC-107", "intake_id": "FR-007", "status": "done",        "verification_evidence": "test-UNVERIFIED" }
+  ],
+  "feature_requests": [
+    { "id": "FR-001", "release_tag": "v0.17.0" },
+    { "id": "FR-002", "release_tag": "v0.17.0" },
+    { "id": "FR-003", "release_tag": "v0.17.0" },
+    { "id": "FR-004", "release_tag": "v0.17.0" },
+    { "id": "FR-005", "release_tag": "v0.17.0" },
+    { "id": "FR-006", "release_tag": "v0.17.0" }
+  ]
+}

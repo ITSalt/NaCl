@@ -1,0 +1,176 @@
+{
+  "project": "project-epsilon",
+  "bolt_port": 7690,
+  "status": "REACHABLE",
+  "labels": [
+    {
+      "label": "Requirement",
+      "count": 398
+    },
+    {
+      "label": "DomainAttribute",
+      "count": 348
+    },
+    {
+      "label": "ActivityStep",
+      "count": 285
+    },
+    {
+      "label": "FormField",
+      "count": 136
+    },
+    {
+      "label": "EntityAttribute",
+      "count": 79
+    },
+    {
+      "label": "EnumValue",
+      "count": 56
+    },
+    {
+      "label": "GlossaryTerm",
+      "count": 50
+    },
+    {
+      "label": "WorkflowStep",
+      "count": 49
+    },
+    {
+      "label": "DomainEntity",
+      "count": 40
+    },
+    {
+      "label": "Form",
+      "count": 29
+    },
+    {
+      "label": "BusinessRule",
+      "count": 26
+    },
+    {
+      "label": "UseCase",
+      "count": 23
+    },
+    {
+      "label": "BusinessEntity",
+      "count": 19
+    },
+    {
+      "label": "Enumeration",
+      "count": 13
+    },
+    {
+      "label": "BusinessProcess",
+      "count": 9
+    },
+    {
+      "label": "Module",
+      "count": 7
+    },
+    {
+      "label": "ProcessGroup",
+      "count": 6
+    },
+    {
+      "label": "BusinessRole",
+      "count": 4
+    },
+    {
+      "label": "SystemRole",
+      "count": 3
+    }
+  ],
+  "total_nodes": 1580,
+  "total_rels": 2064,
+  "rel_types": [
+    {
+      "type": "HAS_ATTRIBUTE",
+      "count": 427
+    },
+    {
+      "type": "HAS_REQUIREMENT",
+      "count": 398
+    },
+    {
+      "type": "HAS_STEP",
+      "count": 334
+    },
+    {
+      "type": "NEXT_STEP",
+      "count": 277
+    },
+    {
+      "type": "HAS_FIELD",
+      "count": 136
+    },
+    {
+      "type": "MAPS_TO",
+      "count": 107
+    },
+    {
+      "type": "HAS_VALUE",
+      "count": 56
+    },
+    {
+      "type": "CONTAINS_ENTITY",
+      "count": 40
+    },
+    {
+      "type": "HAS_PERMISSION",
+      "count": 33
+    },
+    {
+      "type": "CONSTRAINS",
+      "count": 32
+    },
+    {
+      "type": "APPLIES_IN",
+      "count": 29
+    },
+    {
+      "type": "IMPLEMENTED_BY",
+      "count": 29
+    },
+    {
+      "type": "APPLIES_AT_STEP",
+      "count": 28
+    },
+    {
+      "type": "CONTAINS_UC",
+      "count": 23
+    },
+    {
+      "type": "USES_FORM",
+      "count": 23
+    },
+    {
+      "type": "HAS_ENUM",
+      "count": 21
+    },
+    {
+      "type": "REALIZED_AS",
+      "count": 19
+    },
+    {
+      "type": "ACTOR",
+      "count": 19
+    },
+    {
+      "type": "PARTICIPATES_IN",
+      "count": 13
+    },
+    {
+      "type": "CONTAINS",
+      "count": 9
+    },
+    {
+      "type": "AUTOMATES_AS",
+      "count": 8
+    },
+    {
+      "type": "MAPPED_TO",
+      "count": 3
+    }
+  ],
+  "sample_label_count": 19
+}

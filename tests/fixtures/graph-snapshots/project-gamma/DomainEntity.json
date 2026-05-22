@@ -1,0 +1,122 @@
+[
+  {
+    "labels": [
+      "DomainEntity"
+    ],
+    "properties": {
+      "shared": false,
+      "name": "RefreshToken",
+      "description": "JWT refresh token stored as SHA-256 hash for token rotation",
+      "id": "ent-001",
+      "status": "active"
+    }
+  },
+  {
+    "labels": [
+      "DomainEntity"
+    ],
+    "properties": {
+      "shared": true,
+      "name": "User",
+      "description": "Platform user account with authentication credentials and role assignment",
+      "id": "ent-002",
+      "status": "active"
+    }
+  },
+  {
+    "labels": [
+      "DomainEntity"
+    ],
+    "properties": {
+      "shared": false,
+      "name": "Enrollment",
+      "description": "Student enrollment in a group with expiration tracking",
+      "id": "ent-003",
+      "status": "active"
+    }
+  },
+  {
+    "labels": [
+      "DomainEntity"
+    ],
+    "properties": {
+      "shared": false,
+      "name": "PromoCode",
+      "description": "Promotional code for group enrollment with usage limits",
+      "id": "ent-004",
+      "status": "active"
+    }
+  },
+  {
+    "labels": [
+      "DomainEntity"
+    ],
+    "properties": {
+      "shared": false,
+      "name": "AIQuotaOverride",
+      "description": "Per-enrollment per-lecture override of AI generation quota by model group",
+      "id": "ent-005",
+      "status": "active"
+    }
+  },
+  {
+    "labels": [
+      "DomainEntity"
+    ],
+    "properties": {
+      "shared": false,
+      "name": "Course",
+      "description": "Main course entity containing curriculum settings, grading configuration, and default parameters for lectures and groups",
+      "id": "ent-010",
+      "status": "active"
+    }
+  },
+  {
+    "labels": [
+      "DomainEntity"
+    ],
+    "properties": {
+      "shared": false,
+      "name": "Lecture",
+      "description": "A single lecture within a course, defining content, type, homework settings, and AI quotas",
+      "id": "ent-011",
+      "status": "active"
+    }
+  },
+  {
+    "labels": [
+      "DomainEntity"
+    ],
+    "properties": {
+      "shared": false,
+      "name": "LectureMaterial",
+      "description": "Attached material (file or URL) for a lecture, categorized as presentation or student material",
+      "id": "ent-012",
+      "status": "active"
+    }
+  },
+  {
+    "labels": [
+      "DomainEntity"
+    ],
+    "properties": {
+      "shared": false,
+      "name": "CourseTeacher",
+      "description": "Junction table linking courses to teacher users",
+      "id": "ent-013",
+      "status": "active"
+    }
+  },
+  {
+    "labels": [
+      "DomainEntity"
+    ],
+    "properties": {
+      "shared": true,
+      "name": "Group",
+      "description": "A student group for a specific course run, with scheduling, Mattermost integration, and overridable AI/grading settings",
+      "id": "ent-014",
+      "status": "active"
+    }
+  }
+]

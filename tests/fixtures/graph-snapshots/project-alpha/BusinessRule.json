@@ -1,0 +1,162 @@
+[
+  {
+    "labels": [
+      "BusinessRule"
+    ],
+    "properties": {
+      "code": "BR-1",
+      "enforcement": "Admin CRUD через BP-103. Workflow-валидация через BP-001-S08 + BP-103-S06.",
+      "name": "Реестр категорий украшения",
+      "statement": "Категории украшения (КОЛЬЦО, СЕРЬГИ, ПОДВЕСКА, ...) — настраиваемый реестр Category. Категории, не настроенные в системе, отклоняются на этапе классификации (Image-Desc + CategoryMapping → REJECTED).",
+      "source": "AS-IS §9 BR-1",
+      "id": "BRQ-001",
+      "category": "constraint",
+      "rationale": "Нельзя генерировать «чужими» промптами — портится результат. Реестр должен быть открыт для расширения админом без релиза.",
+      "status": "Active"
+    }
+  },
+  {
+    "labels": [
+      "BusinessRule"
+    ],
+    "properties": {
+      "code": "BR-2",
+      "enforcement": "Admin управляет CategoryMapping через BP-103. Lookup BP-001-S08 → BP-103-S06 возвращает UNSUPPORTED_CATEGORY при resolved=null.",
+      "name": "Отключение БРОШЬ через CategoryMapping",
+      "statement": "Категория БРОШЬ временно недоступна. Реализуется через CategoryMapping с resolved_category_name=null (REJECTED). Также служит механизмом разрешения нестандартных терминов классификатора (например «брошка» → null или → ПОДВЕСКА).",
+      "source": "AS-IS §9 BR-2",
+      "id": "BRQ-002",
+      "category": "constraint",
+      "rationale": "Классификатор иногда определяет брошь как подвеску → нужен настраиваемый механизм исключений. Жёсткой блокировки в коде нет.",
+      "status": "Active"
+    }
+  },
+  {
+    "labels": [
+      "BusinessRule"
+    ],
+    "properties": {
+      "code": "BR-3",
+      "enforcement": "Уникальный индекс по 4 полям в PromptTemplate. Валидация в BP-101-S03 (KEY_CONFLICT при дубле).",
+      "name": "Уникальность PromptTemplate",
+      "statement": "Промпт-шаблон уникален по ключу (category × prompt_type × ModelProfile?). client_id из AS-IS убран (single-tenant). 10 prompt_type-ов: image_desc / product_prompt / model_prompt / interior_prompt / video_prompt / verifier_prompt / edit_retouch / edit_model / edit_interior / edit_video.",
+      "source": "AS-IS §9 BR-3",
+      "id": "BRQ-003",
+      "category": "constraint",
+      "rationale": "Single-tenant решение убирает client_id; ModelProfile вводится для разрезов «человек на изображении».",
+      "status": "Active"
+    }
+  },
+  {
+    "labels": [
+      "BusinessRule"
+    ],
+    "properties": {
+      "code": "BR-4",
+      "enforcement": "Параметры (коэффициент 0.8, список стоп-слов, применимые категории) — admin-конфиг WorkflowStepConfig.scale_coefficient / stop_words / scale_applicable_categories per (workflow × category).",
+      "name": "Масштабирование размеров в Model Prompt",
+      "statement": "В Model Prompt для категорий ПОДВЕСКА и СЕРЬГИ числовые размеры (мм/см) умножаются на 0.8 при сборке промпта. Исключения по словам: «штука», «проба», «цена», «гр», «вес» — числа рядом с этими словами не масштабируются. Реализовано в BP-003-S02.",
+      "source": "AS-IS §9 BR-4",
+      "id": "BRQ-004",
+      "category": "calculation",
+      "rationale": "Привязка к конкретной модели нейросети — даёт более реалистичные пропорции на изображении.",
+      "status": "Active"
+    }
+  },
+  {
+    "labels": [
+      "BusinessRule"
+    ],
+    "properties": {
+      "code": "BR-5",
+      "enforcement": "Workflow-шаги S07-S09 каждого BP-002/003/004/005 проверяют флаг и читают threshold из WorkflowStepConfig (BP-102).",
+      "name": "Verifier per workflow",
+      "statement": "Verifier применяется к workflow согласно WorkflowStepConfig.verifier_enabled. Дефолт: true для retouch / model / video; false для interior и всех edit_*. PASS требует оба балла (product_stability_score AND technical_requirements_score) >= verifier_threshold (default 80, BR-9).",
+      "source": "AS-IS §9 BR-5",
+      "id": "BRQ-005",
+      "category": "constraint",
+      "rationale": "Не все workflow требуют Verifier (Interior — lifestyle без точного предмета; edit — мелкие правки). Конфигурируемость даёт гибкость.",
+      "status": "Active"
+    }
+  },
+  {
+    "labels": [
+      "BusinessRule"
+    ],
+    "properties": {
+      "code": "BR-6",
+      "enforcement": "BP-002-S09 / BP-003-S10 / BP-004-S09 / BP-005-S09 — Decision-узлы оценки.",
+      "name": "Retry с feedback при Verifier FAIL",
+      "statement": "На Verifier FAIL workflow перегенерирует промпт с замечаниями (VerificationReport.feedback) и повторяет генерацию. Максимум retry_count попыток (default 3, конфигурируется через WorkflowStepConfig). После исчерпания — Task FAILED с error_code=VERIFIER_LIMIT_EXCEEDED.",
+      "source": "AS-IS §9 BR-6",
+      "id": "BRQ-006",
+      "category": "workflow",
+      "rationale": "Большинство FAIL-ов исправимы корректировкой промпта. 3 попытки — баланс между качеством и расходом нейро-кредитов.",
+      "status": "Active"
+    }
+  },
+  {
+    "labels": [
+      "BusinessRule"
+    ],
+    "properties": {
+      "code": "BR-7",
+      "enforcement": "WorkflowStepConfig.verifier_enabled=false как default для interior + edit_*. ProviderConfig.retry_limit для технических ретраев в BP-008-S08.",
+      "name": "Verifier OFF для Interior и Video",
+      "statement": "Interior и Video выполняются без Verifier по умолчанию. Video имеет собственную retry-механику на технические 5xx ошибки провайдера (до 10 повторов с интервалом ~30 сек) — это уровень ProviderConfig.retry_limit, не Verifier.",
+      "source": "AS-IS §9 BR-7",
+      "id": "BRQ-007",
+      "category": "constraint",
+      "rationale": "Interior — lifestyle, нет точного предмета для проверки целостности. Video — Verifier для видео не настроен. Технический retry остаётся для надёжности dispatch.",
+      "status": "Active"
+    }
+  },
+  {
+    "labels": [
+      "BusinessRule"
+    ],
+    "properties": {
+      "code": "BR-8",
+      "enforcement": "BP-006 содержит Decision-узлы S02d / S03d / S04d, проверяющие SUCCEEDED перед запуском следующего шага.",
+      "name": "Full-flow последовательность и стоп-логика",
+      "statement": "Default-сессия (mode=FULL_FLOW) выполняет 4 pipeline в фиксированном порядке: Retouch → Model → Video → Interior. Цепочка зависимостей по input: Retouch ← оригинал, Model ← retouched_url (BP-002 output), Video ← model_url (BP-003 output), Interior ← retouched_url (BP-002 output). FAIL любого шага → STOP цепочки. Реализован как BP-006.",
+      "source": "AS-IS §9 BR-8 (расширено решением «FAIL=STOP»)",
+      "id": "BRQ-008",
+      "category": "workflow",
+      "rationale": "Каждый последующий шаг использует результат предыдущего → без него нет необходимого input. Параллелизация невозможна.",
+      "status": "Active"
+    }
+  },
+  {
+    "labels": [
+      "BusinessRule"
+    ],
+    "properties": {
+      "code": "BR-9",
+      "enforcement": "BP-001-S03 фиксирует Session.mode; BP-001-S09 делегирует в один из BP-002…005 (SINGLE) или в BP-006 (FULL_FLOW).",
+      "name": "Single-use vs Full-flow режимы",
+      "statement": "Сессия имеет два режима: SINGLE — пользователь выбирает один pipeline (Retouch / Model / Interior / Video) и завершает; FULL_FLOW — последовательная цепочка из BR-8.",
+      "source": "AS-IS §9 BR-9",
+      "id": "BRQ-009",
+      "category": "workflow",
+      "rationale": "Гибкость для разных задач: пользователь может хотеть только видео по уже готовому фото, либо полный пайплайн от исходника.",
+      "status": "Active"
+    }
+  },
+  {
+    "labels": [
+      "BusinessRule"
+    ],
+    "properties": {
+      "code": "BR-10",
+      "enforcement": "BP-002-S11, BP-003-S12, BP-004-S11, BP-005-S11, BP-007-S08 — каждый workflow пишет финальный статус.",
+      "name": "GenerationLog хранит ALL attempts",
+      "statement": "GenerationLog — append-only таблица, в которую workflow пишет запись на КАЖДОЙ финальной попытке генерации (status=SUCCEEDED OR FAILED). Поля: task_id, user_id, stage, status, file_link?, error_code?, model_profile_*, resolved_category, retry_count, started_at, completed_at. БД состояний таблица не нужна — нет soft-delete.",
+      "source": "AS-IS §9 BR-10",
+      "id": "BRQ-010",
+      "category": "invariant",
+      "rationale": "Полная видимость попыток для админа: ошибки провайдера, провалы Verifier, аудит. Единая точка для биллинга/отладки. Биллинг (BP-201) фильтрует по status=SUCCEEDED.",
+      "status": "Active"
+    }
+  }
+]

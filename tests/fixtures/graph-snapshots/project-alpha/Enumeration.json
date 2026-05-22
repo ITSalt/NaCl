@@ -1,0 +1,103 @@
+[
+  {
+    "labels": [
+      "Enumeration"
+    ],
+    "properties": {
+      "updated_at": "2026-05-05T10:56:18.292000000+00:00",
+      "name": "ProviderType",
+      "created_at": "2026-05-05T10:56:18.292000000+00:00",
+      "description": "Поддерживаемые провайдеры генерации",
+      "id": "enum-ProviderType"
+    }
+  },
+  {
+    "labels": [
+      "Enumeration"
+    ],
+    "properties": {
+      "name": "UserRole",
+      "description": "Роли в JWT claim",
+      "id": "enum-UserRole"
+    }
+  },
+  {
+    "labels": [
+      "Enumeration"
+    ],
+    "properties": {
+      "name": "SessionStatus",
+      "id": "enum-SessionStatus"
+    }
+  },
+  {
+    "labels": [
+      "Enumeration"
+    ],
+    "properties": {
+      "name": "TaskType",
+      "description": "Типы задач генерации (соответствуют типам workflow)",
+      "id": "enum-TaskType"
+    }
+  },
+  {
+    "labels": [
+      "Enumeration"
+    ],
+    "properties": {
+      "name": "TaskStatus",
+      "description": "ЖЦ задачи: создана → в очереди → выполняется → завершена",
+      "id": "enum-TaskStatus"
+    }
+  },
+  {
+    "labels": [
+      "Enumeration"
+    ],
+    "properties": {
+      "name": "FileType",
+      "id": "enum-FileType"
+    }
+  },
+  {
+    "labels": [
+      "Enumeration"
+    ],
+    "properties": {
+      "name": "Verdict",
+      "id": "enum-Verdict"
+    }
+  },
+  {
+    "labels": [
+      "Enumeration"
+    ],
+    "properties": {
+      "name": "QueueStatus",
+      "description": "ЖЦ слота очереди (RUNNING с истёкшим heartbeat возвращается в QUEUED при рестарте)",
+      "id": "enum-QueueStatus"
+    }
+  },
+  {
+    "labels": [
+      "Enumeration"
+    ],
+    "properties": {
+      "updated_at": "2026-05-18T07:49:00.000000000+00:00",
+      "name": "ModelKind",
+      "description": "Класс модели: определяет, какой workflow-домен она обслуживает (текст / vision / графика / видео)",
+      "id": "enum-ModelKind"
+    }
+  },
+  {
+    "labels": [
+      "Enumeration"
+    ],
+    "properties": {
+      "updated_at": "2026-05-18T07:49:00.000000000+00:00",
+      "name": "ApiShape",
+      "description": "Контракт HTTP-запроса к провайдеру. Определяет адаптер dispatcher (UC-202) для сериализации prompt+params в тело запроса и парсинга ответа.",
+      "id": "enum-ApiShape"
+    }
+  }
+]

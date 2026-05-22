@@ -1,0 +1,18 @@
+[
+  {
+    "labels": [
+      "FeatureRequest"
+    ],
+    "properties": {
+      "source_skill": "nacl-sa-feature",
+      "updated_at": "2026-05-06T20:12:23.711000000+00:00",
+      "created_at": "2026-05-06T20:12:23.711000000+00:00",
+      "description": "Add label field (UseCase.name / BusinessProcess.name from graph) to board list API; show it as subtitle in CMP-SIDEBAR; add title text element to activity diagram renderer matching existing BA-process pattern.",
+      "id": "FR-001",
+      "title": "UC/BP Name in Sidebar and Diagram Title",
+      "slug": "uc-bp-name-in-sidebar-and-diagram-title",
+      "status": "spec-complete",
+      "markdown_path": ".tl/feature-requests/FR-001-uc-bp-name-in-sidebar-and-diagram-title.md"
+    }
+  }
+]

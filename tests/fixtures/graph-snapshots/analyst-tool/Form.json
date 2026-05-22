@@ -1,0 +1,54 @@
+[
+  {
+    "labels": [
+      "Form"
+    ],
+    "properties": {
+      "kind": "input",
+      "module": "M-WEB-UI",
+      "name": "Excalidraw Editor Canvas",
+      "description": "The Excalidraw canvas treated as a form: the analyst edits the scene and the board name is the canvas binding.",
+      "id": "FRM-EDIT-BOARD",
+      "source_file": "web/src/components/CanvasHost.tsx"
+    }
+  },
+  {
+    "labels": [
+      "Form"
+    ],
+    "properties": {
+      "kind": "modal",
+      "module": "M-WEB-UI",
+      "name": "Project Picker",
+      "description": "Modal that lists registered projects and lets the analyst activate one.",
+      "id": "FRM-PROJECT-PICKER",
+      "source_file": "web/src/components/ProjectPicker.tsx"
+    }
+  },
+  {
+    "labels": [
+      "Form"
+    ],
+    "properties": {
+      "kind": "view",
+      "module": "M-WEB-UI",
+      "name": "Snapshot Browser",
+      "description": "Panel listing past board snapshots with element-level diff and a restore action.",
+      "id": "FRM-SNAPSHOT-BROWSER",
+      "source_file": "web/src/components/SnapshotBrowser.tsx"
+    }
+  },
+  {
+    "labels": [
+      "Form"
+    ],
+    "properties": {
+      "kind": "modal",
+      "module": "M-WEB-UI",
+      "name": "Render Markdown Dialog",
+      "description": "Dialog to pick a markdown render subtype and optional related entity/uc/form id.",
+      "id": "FRM-RENDER-MARKDOWN-DIALOG",
+      "source_file": "web/src/components/RunPanel.tsx"
+    }
+  }
+]

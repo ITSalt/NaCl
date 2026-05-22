@@ -670,7 +670,7 @@ that the five other artifacts the chain produces — `.tl/status.json`,
 `.tl/conductor-state.json`, `.tl/changelog.md`,
 `.tl/release-status.json` — agree with the graph, with each other, or
 with the signed-exception inventory. Codex postmortem episode 9–10
-(Karatov FR-007 in `.tl/changelog.md` but not in the live graph;
+(Project-Alpha FR-007 in `.tl/changelog.md` but not in the live graph;
 `.tl/conductor-state.json` declaring "typecheck clean" while CI
 reported the opposite) is exactly this drift class. This wave-gate
 catches it before the final report.
@@ -787,7 +787,7 @@ In addition, recording-only (informational, not blocking):
 #### Step 4: Delta report (on any FAIL)
 
 If any of P-S1 … P-S5 fails, HALT and emit a per-pair delta. Example
-(Karatov-style FR-007 changelog vs graph mismatch):
+(Project-Alpha-style FR-007 changelog vs graph mismatch):
 
 ```
 HALT — cross-artifact reconciliation failed at Phase 4.5.
@@ -826,9 +826,9 @@ Resolution options:
 Status: BLOCKED (workflow detail: artifact-drift)
 ```
 
-The Codex postmortem episode-10 "Karatov live graph 1083 nodes vs
+The Codex postmortem episode-10 "Project-Alpha live graph 1083 nodes vs
 handover artifact 970 nodes" surfaces here as `P-S1` failing (the
-handover snapshot at `tests/fixtures/graph-snapshots/karatov-
+handover snapshot at `tests/fixtures/graph-snapshots/project-alpha-
 procontent/_summary.json` shows 1083 nodes; a stale `.tl/status.json`
 reflecting the 970-node handover would disagree). The
 `conductor-state-says-clean-but-CI-says-red` episode surfaces here as
@@ -845,7 +845,7 @@ the reconciliation artifact to:
 .tl/reconciliation/<ISO-8601-utc>.json
 ```
 
-Format follows `/Users/maxnikitin/projects/NaCl/.tl/reconciliation/
+Format follows `/home/project-owner/projects/NaCl/.tl/reconciliation/
 _template.json`. Required fields:
 
 - `timestamp` — wall-clock UTC, same string as the filename basename.
@@ -870,9 +870,9 @@ to Phase 5.
 
 | Episode | Source | Pair that fires | Outcome |
 |---|---|---|---|
-| Karatov FR-007 in changelog but not in graph | `karatov-procontent-postmortem-codex.md` § 4 | P-S2 | `BLOCKED` — changelog references FR-007; graph has no `FeatureRequest {id: 'FR-007'}`. Operator can replay the SA-feature step or file a `graph-stale` exception. |
-| Karatov conductor-state says "typecheck clean" but CI red | `karatov-procontent-postmortem.md` § 3.12 | P-S4 + P-S5 | `BLOCKED` — `conductor-state.json.phase == quality_gate_passed` but `status.json` still has tasks in non-terminal; graph `Task.status` also disagrees with conductor JSON. The seven-commit remediation that landed at 17:35 on 2026-05-11 would have been blocked at 17:07 by this gate. |
-| Karatov 1083-node live graph vs 970-node stale handover | `W0-baseline.md` anomaly #7 | P-S1 | `BLOCKED` — `status.json.totals.tasks` reflects the stale 970-node snapshot; live graph reports 1083 nodes. Bringing the graph live + rerunning is the fix. |
+| Project-Alpha FR-007 in changelog but not in graph | `project-alpha-postmortem-codex.md` § 4 | P-S2 | `BLOCKED` — changelog references FR-007; graph has no `FeatureRequest {id: 'FR-007'}`. Operator can replay the SA-feature step or file a `graph-stale` exception. |
+| Project-Alpha conductor-state says "typecheck clean" but CI red | `project-alpha-postmortem.md` § 3.12 | P-S4 + P-S5 | `BLOCKED` — `conductor-state.json.phase == quality_gate_passed` but `status.json` still has tasks in non-terminal; graph `Task.status` also disagrees with conductor JSON. The seven-commit remediation that landed at 17:35 on 2026-05-11 would have been blocked at 17:07 by this gate. |
+| Project-Alpha 1083-node live graph vs 970-node stale handover | `W0-baseline.md` anomaly #7 | P-S1 | `BLOCKED` — `status.json.totals.tasks` reflects the stale 970-node snapshot; live graph reports 1083 nodes. Bringing the graph live + rerunning is the fix. |
 
 ---
 

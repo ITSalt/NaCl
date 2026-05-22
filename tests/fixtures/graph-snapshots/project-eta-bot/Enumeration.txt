@@ -1,0 +1,2 @@
+n
+(:Enumeration {migrated_at: 2026-04-13T13:41:41.538Z, created: 2026-04-13T13:41:41.538Z, ba_trace: [], name: "ChannelType", description: "", id: "EN-channel-type", updated: 2026-04-13T13:41:41.538Z, source_file: "docs/12-domain/enumerations/channel-type.md"})

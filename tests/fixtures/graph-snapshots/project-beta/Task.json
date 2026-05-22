@@ -1,0 +1,182 @@
+[
+  {
+    "labels": [
+      "Task"
+    ],
+    "properties": {
+      "agent": "nacl-tl-dev",
+      "last_reconciled": "2026-05-18",
+      "created": "2026-05-18T08:41:16.385000000+00:00",
+      "id": "TECH-001",
+      "type": "tech",
+      "title": "Monorepo & tooling (pnpm workspaces, tsconfig, eslint, prettier, vitest)",
+      "priority": "high",
+      "updated": "2026-05-18T08:41:16.385000000+00:00",
+      "wave": 0,
+      "phase_review_be": "approved",
+      "status": "done"
+    }
+  },
+  {
+    "labels": [
+      "Task"
+    ],
+    "properties": {
+      "agent": "nacl-tl-dev",
+      "last_reconciled": "2026-05-18",
+      "created": "2026-05-18T08:41:16.385000000+00:00",
+      "id": "TECH-002",
+      "type": "tech",
+      "title": "Docker Compose dev stack (Postgres, Redis, MinIO)",
+      "priority": "high",
+      "updated": "2026-05-18T08:41:16.385000000+00:00",
+      "wave": 0,
+      "phase_review_be": "approved",
+      "status": "done"
+    }
+  },
+  {
+    "labels": [
+      "Task"
+    ],
+    "properties": {
+      "agent": "nacl-tl-dev",
+      "last_reconciled": "2026-05-18",
+      "created": "2026-05-18T08:41:16.385000000+00:00",
+      "id": "TECH-003",
+      "type": "tech",
+      "title": "Prisma schema & migrations (Meeting, Recording, jobs, Transcript, Protocol + enums)",
+      "priority": "high",
+      "updated": "2026-05-18T08:41:16.385000000+00:00",
+      "wave": 0,
+      "phase_review_be": "approved",
+      "status": "done"
+    }
+  },
+  {
+    "labels": [
+      "Task"
+    ],
+    "properties": {
+      "agent": "nacl-tl-dev",
+      "last_reconciled": "2026-05-18",
+      "created": "2026-05-18T08:41:16.385000000+00:00",
+      "id": "TECH-004",
+      "type": "tech",
+      "title": "Shared Zod schemas, DTOs, enums (shared/ package)",
+      "priority": "high",
+      "updated": "2026-05-18T08:41:16.385000000+00:00",
+      "wave": 0,
+      "phase_review_be": "approved",
+      "status": "done"
+    }
+  },
+  {
+    "labels": [
+      "Task"
+    ],
+    "properties": {
+      "agent": "nacl-tl-dev",
+      "last_reconciled": "2026-05-18",
+      "created": "2026-05-18T08:41:16.385000000+00:00",
+      "id": "TECH-005",
+      "type": "tech",
+      "title": "Fastify API scaffold (zod provider, error handler, Pino, /health)",
+      "priority": "high",
+      "updated": "2026-05-18T08:41:16.385000000+00:00",
+      "wave": 0,
+      "phase_review_be": "approved",
+      "status": "done"
+    }
+  },
+  {
+    "labels": [
+      "Task"
+    ],
+    "properties": {
+      "agent": "nacl-tl-dev",
+      "last_reconciled": "2026-05-18",
+      "created": "2026-05-18T08:41:16.385000000+00:00",
+      "id": "TECH-006",
+      "title": "BullMQ + worker process scaffold",
+      "type": "tech",
+      "priority": "high",
+      "updated": "2026-05-18T08:41:16.385000000+00:00",
+      "wave": 0,
+      "phase_review_be": "approved",
+      "status": "done"
+    }
+  },
+  {
+    "labels": [
+      "Task"
+    ],
+    "properties": {
+      "agent": "nacl-tl-dev",
+      "last_reconciled": "2026-05-18",
+      "created": "2026-05-18T08:41:16.385000000+00:00",
+      "id": "TECH-007",
+      "type": "tech",
+      "title": "S3/MinIO storage adapter (s3:// URI, env-swappable)",
+      "priority": "high",
+      "updated": "2026-05-18T08:41:16.385000000+00:00",
+      "wave": 0,
+      "phase_review_be": "approved",
+      "status": "done"
+    }
+  },
+  {
+    "labels": [
+      "Task"
+    ],
+    "properties": {
+      "agent": "nacl-tl-dev",
+      "last_reconciled": "2026-05-18",
+      "created": "2026-05-18T08:41:16.385000000+00:00",
+      "id": "TECH-008",
+      "type": "tech",
+      "title": "TUS upload protocol wiring (@tus/server + tus-js-client)",
+      "priority": "high",
+      "updated": "2026-05-18T08:41:16.385000000+00:00",
+      "wave": 0,
+      "phase_review_be": "approved",
+      "status": "done"
+    }
+  },
+  {
+    "labels": [
+      "Task"
+    ],
+    "properties": {
+      "agent": "nacl-tl-dev",
+      "last_reconciled": "2026-05-18",
+      "created": "2026-05-18T08:41:16.385000000+00:00",
+      "id": "TECH-009",
+      "type": "tech",
+      "title": "ffmpeg audio extraction utility (fluent-ffmpeg in worker)",
+      "priority": "high",
+      "updated": "2026-05-18T08:41:16.385000000+00:00",
+      "wave": 0,
+      "phase_review_be": "approved",
+      "status": "done"
+    }
+  },
+  {
+    "labels": [
+      "Task"
+    ],
+    "properties": {
+      "agent": "nacl-tl-dev",
+      "last_reconciled": "2026-05-18",
+      "created": "2026-05-18T08:41:16.385000000+00:00",
+      "id": "TECH-010",
+      "type": "tech",
+      "title": "IAsrProvider abstraction + Deepgram Nova-3 adapter",
+      "priority": "high",
+      "updated": "2026-05-18T08:41:16.385000000+00:00",
+      "wave": 0,
+      "phase_review_be": "approved",
+      "status": "done"
+    }
+  }
+]

@@ -1,0 +1,52 @@
+[
+  {
+    "labels": [
+      "ExternalEntity"
+    ],
+    "properties": {
+      "name": "Meeting Participant",
+      "description": "The human user who interacts with the system UI: uploads the meeting video file and downloads the resulting verbatim transcript and meeting protocol",
+      "id": "EXT-01",
+      "type": "User"
+    }
+  },
+  {
+    "labels": [
+      "ExternalEntity"
+    ],
+    "properties": {
+      "assumption_note": "Dedicated ASR+diarization engine required for speaker-attributed timestamped transcripts. Cloud API or self-hosted. Stack TBD.",
+      "name": "ASR / Diarization Engine",
+      "description": "External ASR and speaker diarization service. Receives audio, returns speaker-attributed transcript segments with timestamps. Vendor/model TBD.",
+      "id": "EXT-02",
+      "type": "ExternalSystem",
+      "status": "assumption"
+    }
+  },
+  {
+    "labels": [
+      "ExternalEntity"
+    ],
+    "properties": {
+      "assumption_note": "LLM is the natural tool to transform raw transcript into structured protocol. Provider TBD.",
+      "name": "LLM Protocol Generator",
+      "description": "LLM service that converts the verbatim transcript into a structured meeting protocol (participants, topics, decisions, action items). Provider/model TBD.",
+      "id": "EXT-03",
+      "type": "ExternalSystem",
+      "status": "assumption"
+    }
+  },
+  {
+    "labels": [
+      "ExternalEntity"
+    ],
+    "properties": {
+      "assumption_note": "Large file sizes imply dedicated storage layer for durability across async steps. S3/local FS/similar. Stack TBD.",
+      "name": "File / Object Storage",
+      "description": "Object storage that holds uploaded video files during async processing. Required because 300-500 MB files cannot be held in memory through the pipeline.",
+      "id": "EXT-04",
+      "type": "ExternalSystem",
+      "status": "assumption"
+    }
+  }
+]

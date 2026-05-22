@@ -1,0 +1,34 @@
+{
+  "$note": [
+    "Expected reconciliation evidence produced by nacl-tl-conductor",
+    "Phase 4.5 when run against this fixture. W11 asserts the gate",
+    "emits Status: VERIFIED with all pairs PASSING."
+  ],
+  "timestamp": "2026-05-22T08:35:00Z",
+  "intake_id": "FR-100",
+  "producer": "nacl-tl-conductor",
+  "sources_checked": [
+    { "name": "status.json",           "path": "status.json",           "summary": { "totals": { "tasks": 2, "use_cases": 1, "modules": 1 } } },
+    { "name": "conductor-state.json",  "path": "conductor-state.json",  "summary": { "phase": "quality_gate_passed", "tech_tasks_count": 1, "uc_tasks_count": 1 } },
+    { "name": "changelog.md",          "path": "changelog.md",          "summary": { "latest_section_release_tag": "v0.1.0", "released_frs": ["FR-100"], "released_ucs": ["UC-100"] } },
+    { "name": "live_graph",            "path": "bolt://localhost:3587", "summary": { "modules": 1, "use_cases": 1, "tasks": 2, "feature_requests": 1 }, "fallback_used": "NEVER — live reads only per W5 binding" },
+    { "name": "release-status.json",   "path": "release-status.json",   "summary": { "release_tag": "v0.1.0", "health_status": "ok", "graph_status": "ok" } },
+    { "name": "exceptions",            "path": ".tl/exceptions/",       "summary": { "active_count": 0, "expired_count": 0 } }
+  ],
+  "deltas": [
+    { "pair_id": "P-S1", "assertion": "status.json totals match live graph counts", "outcome": "PASS",
+      "details": { "status_json": { "tasks": 2, "use_cases": 1, "modules": 1 }, "graph": { "tasks": 2, "use_cases": 1, "modules": 1 } } },
+    { "pair_id": "P-S2", "assertion": "every FR in latest changelog section exists as FeatureRequest node", "outcome": "PASS",
+      "details": { "changelog_frs": ["FR-100"], "graph_frs": ["FR-100"], "missing_from_graph": [] } },
+    { "pair_id": "P-S3", "assertion": "release-status.json release_tag present in graph release_tag property", "outcome": "PASS",
+      "details": { "json_release_tag": "v0.1.0", "graph_nodes_with_tag": 1 } },
+    { "pair_id": "P-S4", "assertion": "if conductor-state phase == quality_gate_passed then no pending/in_progress remain in status.json", "outcome": "PASS",
+      "details": { "conductor_phase": "quality_gate_passed", "non_terminal_tasks": [] } },
+    { "pair_id": "P-S5", "assertion": "every conductor-state task entry status matches live graph Task.status", "outcome": "PASS",
+      "details": { "mismatches": [] } }
+  ],
+  "active_exceptions": [],
+  "expired_exceptions": [],
+  "terminal_status": "VERIFIED",
+  "workflow_detail": ""
+}

@@ -1,0 +1,209 @@
+[
+  {
+    "labels": [
+      "WorkflowStep"
+    ],
+    "properties": {
+      "actor": "End User",
+      "note": "",
+      "artifacts_out": [
+        "Session"
+      ],
+      "bp_id": "BP-001",
+      "name": "Открытие новой сессии",
+      "description": "Пользователь инициирует создание новой сессии в UI. Система создаёт черновой объект Session со статусом DRAFT.",
+      "stereotype": "Manual",
+      "id": "BP-001-S01",
+      "artifacts_in": [
+        "UserAction"
+      ]
+    }
+  },
+  {
+    "labels": [
+      "WorkflowStep"
+    ],
+    "properties": {
+      "actor": "System",
+      "note": "BR-13: проверка по реестру пользователей. Замена AS-IS whitelist-логики на нормальную систему ролей.",
+      "artifacts_out": [
+        "AccessDecision"
+      ],
+      "bp_id": "BP-001",
+      "name": "Проверка доступа пользователя",
+      "description": "Система проверяет, зарегистрирован ли пользователь в реестре (BR-13). При отсутствии записи сессия не создаётся.",
+      "stereotype": "Decision",
+      "id": "BP-001-S02",
+      "artifacts_in": [
+        "Session",
+        "UserAccount"
+      ]
+    }
+  },
+  {
+    "labels": [
+      "WorkflowStep"
+    ],
+    "properties": {
+      "actor": "End User",
+      "note": "",
+      "artifacts_out": [
+        "SessionMode"
+      ],
+      "bp_id": "BP-001",
+      "name": "Выбор режима сессии",
+      "description": "Пользователь выбирает Full-flow или одиночный workflow.",
+      "stereotype": "Manual",
+      "id": "BP-001-S03",
+      "artifacts_in": [
+        "Session"
+      ]
+    }
+  },
+  {
+    "labels": [
+      "WorkflowStep"
+    ],
+    "properties": {
+      "actor": "End User",
+      "note": "Количество файлов зависит от режима. Валидация числа файлов здесь же.",
+      "artifacts_out": [
+        "UploadedPhoto"
+      ],
+      "bp_id": "BP-001",
+      "name": "Загрузка исходных фото",
+      "description": "Retouch принимает 1–2 фото (используются совместно); Model, Interior, Video — 1 фото.",
+      "stereotype": "Manual",
+      "id": "BP-001-S04",
+      "artifacts_in": [
+        "SessionMode"
+      ]
+    }
+  },
+  {
+    "labels": [
+      "WorkflowStep"
+    ],
+    "properties": {
+      "actor": "End User",
+      "note": "",
+      "artifacts_out": [
+        "UserRequirements"
+      ],
+      "bp_id": "BP-001",
+      "name": "Ввод текстовых требований",
+      "description": "Пользователь опционально вводит текстовые требования к генерации. Шаг пропускаемый.",
+      "stereotype": "Manual",
+      "id": "BP-001-S05",
+      "artifacts_in": [
+        "Session"
+      ]
+    }
+  },
+  {
+    "labels": [
+      "WorkflowStep"
+    ],
+    "properties": {
+      "actor": "End User",
+      "note": "BR-3: ModelProfile = пол × возрастная группа. Точная UI-точка — open Q9.",
+      "artifacts_out": [
+        "ModelProfile"
+      ],
+      "bp_id": "BP-001",
+      "name": "Выбор ModelProfile",
+      "description": "Выбор пол × возрастная группа. В Full-flow — опциональное переопределение дефолта; в одиночных режимах с моделью — обязателен.",
+      "stereotype": "Manual",
+      "id": "BP-001-S06",
+      "artifacts_in": [
+        "SessionMode"
+      ]
+    }
+  },
+  {
+    "labels": [
+      "WorkflowStep"
+    ],
+    "properties": {
+      "actor": "System",
+      "note": "",
+      "artifacts_out": [
+        "JewelryCategory"
+      ],
+      "bp_id": "BP-001",
+      "name": "Классификация категории украшения",
+      "description": "Image-classifier определяет категорию украшения на фото.",
+      "stereotype": "Automated",
+      "id": "BP-001-S07",
+      "artifacts_in": [
+        "UploadedPhoto"
+      ]
+    }
+  },
+  {
+    "labels": [
+      "WorkflowStep"
+    ],
+    "properties": {
+      "actor": "System",
+      "note": "BR-1, BR-2: список категорий управляется админом; БРОШЬ — частный случай маппинга, не жёсткий запрет.",
+      "artifacts_out": [
+        "ResolvedCategory"
+      ],
+      "bp_id": "BP-001",
+      "name": "Проверка категории по реестру",
+      "description": "Сверка с реестром разрешённых категорий (BR-1) и применение маппинга исключений (BR-2).",
+      "stereotype": "Decision",
+      "id": "BP-001-S08",
+      "artifacts_in": [
+        "JewelryCategory",
+        "CategoryRegistry"
+      ]
+    }
+  },
+  {
+    "labels": [
+      "WorkflowStep"
+    ],
+    "properties": {
+      "actor": "System",
+      "note": "Точка делегирования в BP-002 (Retouch), BP-003 (Model), BP-004 (Interior), BP-005 (Video) или BP-006 (Full-flow).",
+      "artifacts_out": [
+        "Task"
+      ],
+      "bp_id": "BP-001",
+      "name": "Создание Task-ов и делегирование в workflow",
+      "description": "Создание одного или нескольких Task и передача управления в BP-002..BP-005 (одиночный или Full-flow).",
+      "stereotype": "Automated",
+      "id": "BP-001-S09",
+      "artifacts_in": [
+        "Session",
+        "ResolvedCategory",
+        "ModelProfile",
+        "UserRequirements",
+        "UploadedPhoto"
+      ]
+    }
+  },
+  {
+    "labels": [
+      "WorkflowStep"
+    ],
+    "properties": {
+      "actor": "System",
+      "note": "BR-17: все запросы через очередь. Уведомления о готовности — inline-колокольчик в выделенной области UI + мигание заголовка вкладки браузера при поступлении нового сообщения. Применимо ко всем долгим ожиданиям системы.",
+      "artifacts_out": [
+        "CompletedTask"
+      ],
+      "bp_id": "BP-001",
+      "name": "Ожидание выполнения Task-ов",
+      "description": "Балансировка через очередь BP-008. Ожидание завершения всех делегированных Task.",
+      "stereotype": "Automated",
+      "id": "BP-001-S10",
+      "artifacts_in": [
+        "Task",
+        "QueueItem"
+      ]
+    }
+  }
+]

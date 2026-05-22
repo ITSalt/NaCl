@@ -1,0 +1,24 @@
+[
+  {
+    "labels": [
+      "Wave"
+    ],
+    "properties": {
+      "number": 1,
+      "name": "FR-001 Backend (parallel)",
+      "id": "WAVE-1",
+      "status": "pending"
+    }
+  },
+  {
+    "labels": [
+      "Wave"
+    ],
+    "properties": {
+      "number": 2,
+      "name": "FR-001 Frontend",
+      "id": "WAVE-2",
+      "status": "pending"
+    }
+  }
+]

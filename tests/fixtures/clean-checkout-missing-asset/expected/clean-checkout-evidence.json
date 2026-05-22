@@ -1,0 +1,18 @@
+{
+  "commit": "0000000000000000000000000000000000000000",
+  "started_at": "2026-05-22T08:00:00Z",
+  "completed_at": "2026-05-22T08:01:30Z",
+  "package_manager": "pnpm",
+  "entrypoint": "dist/index.js",
+  "build_status": "PASS",
+  "migrate_status": "SKIPPED",
+  "smoke_status": "FAIL",
+  "runtime_assets_verified": [
+    { "path": "bin/ffprobe", "present": false, "kind": "missing" },
+    { "path": "dist/llm/prompts/ru/protocol.md", "present": false, "kind": "missing" },
+    { "path": "dist/index.js", "present": true, "kind": "file" }
+  ],
+  "smoke_endpoints_hit": [],
+  "terminal_status": "BLOCKED",
+  "blocker_detail": "clean-checkout-runtime-assets-missing"
+}

@@ -1,0 +1,58 @@
+{
+  "branch": "feature/intake-2026-05-18",
+  "baseBranch": "main",
+  "items": [
+    { "id": "ALL", "type": "batch", "scope": "all 30 pending tasks from master-plan.md" }
+  ],
+  "started": "2026-05-18T12:00:00Z",
+  "phase": "delivered",
+  "delivered_at": "2026-05-18T16:15:00Z",
+  "remote": "git@github.com:ITSalt/project-beta.git",
+  "ci_run_url": "https://github.com/ITSalt/project-beta/actions/runs/26045597888",
+  "ci_conclusion": "success",
+  "skip_deliver": false,
+  "techTasks": [
+    { "id": "TECH-001", "status": "done", "commit": "see git log" },
+    { "id": "TECH-002", "status": "done" },
+    { "id": "TECH-003", "status": "done" },
+    { "id": "TECH-004", "status": "done" },
+    { "id": "TECH-005", "status": "done" },
+    { "id": "TECH-006", "status": "done" },
+    { "id": "TECH-007", "status": "done" },
+    { "id": "TECH-008", "status": "done" },
+    { "id": "TECH-009", "status": "done" },
+    { "id": "TECH-010", "status": "done" },
+    { "id": "TECH-011", "status": "done" },
+    { "id": "TECH-012", "status": "done" },
+    { "id": "TECH-013", "status": "done" },
+    { "id": "TECH-014", "status": "done" },
+    { "id": "TECH-015", "status": "done", "ci_run_id": 26045597888, "ci_verified": "2026-05-18", "iterations": "3 CI fix iterations: pnpm-lock.yaml gitignore + frozen-lockfile; shared build + prisma generate; prisma migrate deploy" }
+  ],
+  "ucTasks": [
+    { "id": "UC-001", "wave": 1, "status": "be+fe-done", "follow_ups": [], "follow_ups_resolved": ["shared/IStorage TS4113 (L1, pre-applied commit 77f4c73, storageCause rename)", "Zod v3/v4 split (L1, shared/ correct at zod@4.4.3; web/ unused zod@3.25.76 needs web-agent fix in web/package.json)"] },
+    { "id": "UC-100", "wave": 1, "status": "be+fe-done" },
+    { "id": "UC-002", "wave": 2, "status": "be+fe-done" },
+    { "id": "UC-200", "wave": 2, "status": "be-done" },
+    { "id": "UC-003", "wave": 3, "status": "be+fe-done" },
+    { "id": "UC-201", "wave": 3, "status": "be+fe-done" },
+    { "id": "UC-300", "wave": 3, "status": "be-done" },
+    { "id": "UC-301", "wave": 4, "status": "be+fe-done" },
+    { "id": "UC-302", "wave": 5, "status": "be-done" }
+  ],
+  "bugFixes": [
+    { "id": "P-1", "scope": "UC-001 catalog SSE 404", "level": "L1", "resolution": "non-issue; no EventSource code existed; closed" },
+    { "id": "P-2", "scope": "shared/IStorage TS4113", "level": "L1", "resolution": "pre-applied in 77f4c73 (storageCause rename); verified" },
+    { "id": "P-3", "scope": "Zod v3/v4 split", "level": "L1", "resolution": "shared already at zod@^4.4.3; web/package.json aligned in this orchestration" },
+    { "id": "P-4", "scope": "UC-301 RQ-031 unsaved-changes guard", "level": "L1", "resolution": "implemented in 70126e4 (Milkdown plugin-listener + useBlocker + shadcn Dialog + beforeunload); 6 new tests; E2E PASS" },
+    { "id": "P-5", "scope": "UC-001 result-fe.md MeetingCard→MeetingRow", "level": "L1", "resolution": "doc edit in f7a9467" },
+    { "id": "P-6", "scope": "UC-001 a11y (aria-label, aria-live)", "level": "L1", "resolution": "implemented in 70126e4 (Table aria-label, StatusBadge aria-live); E2E PASS" },
+    { "id": "P-7", "scope": "TECH-015 CI not committed; no remote", "level": "L1", "resolution": "remote added; CI workflow fixed in 3 iterations; run 26045597888 green" }
+  ],
+  "delivery": {
+    "status": "delivered",
+    "main_sha": "5258a11",
+    "ci_run_url": "https://github.com/ITSalt/project-beta/actions/runs/26045597888",
+    "phase_5_outcome": "SKIPPED — Deepgram + api.kie.example.invalid keys not provided; UC-200/UC-300 worker pipeline E2E deferred",
+    "release_notes_skip": ["UC-200 (provider E2E)", "UC-300 (provider E2E)"]
+  }
+}

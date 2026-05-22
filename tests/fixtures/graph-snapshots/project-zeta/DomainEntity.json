@@ -1,0 +1,104 @@
+[
+  {
+    "labels": [
+      "DomainEntity"
+    ],
+    "properties": {
+      "stereotypes": [],
+      "migrated_at": "2026-04-13T14:04:46.767000000+00:00",
+      "created": "2026-04-13T14:04:46.767000000+00:00",
+      "ba_trace": [],
+      "module": "",
+      "name": "FeedbackPromptAddon",
+      "description": "Текстовое дополнение к промтам генерации, автоматически сформированное AI (Feedback Learner Agent) на основе обратной связи. Привязано к шаблону и применяется при всех последующих генерациях по этому шаблону.",
+      "id": "DE-feedback-prompt-addon",
+      "updated": "2026-04-13T14:04:46.767000000+00:00",
+      "source_file": "docs/02-domain/entities/feedback-prompt-addon.md"
+    }
+  },
+  {
+    "labels": [
+      "DomainEntity"
+    ],
+    "properties": {
+      "stereotypes": [],
+      "migrated_at": "2026-04-13T14:04:46.767000000+00:00",
+      "created": "2026-04-13T14:04:46.767000000+00:00",
+      "ba_trace": [],
+      "module": "",
+      "name": "GenerationJob",
+      "description": "Задание на генерацию = одна \"сессия\" создания карточки для конкретного товара по конкретному шаблону. Содержит входные данные (фото товара, описание, переопределения слоёв) и порождает одну или несколько версий карточки.",
+      "id": "DE-generation-job",
+      "updated": "2026-04-13T14:04:46.767000000+00:00",
+      "source_file": "docs/02-domain/entities/generation-job.md"
+    }
+  },
+  {
+    "labels": [
+      "DomainEntity"
+    ],
+    "properties": {
+      "stereotypes": [],
+      "migrated_at": "2026-04-13T14:04:46.767000000+00:00",
+      "created": "2026-04-13T14:04:46.767000000+00:00",
+      "ba_trace": [],
+      "module": "",
+      "name": "GenerationVersion",
+      "description": "Один вариант сгенерированной карточки внутри задания. Каждая регенерация создаёт новую версию с новым набором AI-сгенерированных ассетов.",
+      "id": "DE-generation-version",
+      "updated": "2026-04-13T14:04:46.767000000+00:00",
+      "source_file": "docs/02-domain/entities/generation-version.md"
+    }
+  },
+  {
+    "labels": [
+      "DomainEntity"
+    ],
+    "properties": {
+      "stereotypes": [],
+      "migrated_at": "2026-04-13T14:04:46.767000000+00:00",
+      "created": "2026-04-13T14:04:46.767000000+00:00",
+      "ba_trace": [],
+      "module": "",
+      "name": "TemplateLayer",
+      "description": "Один семантический слой внутри шаблона. Определяет визуальный элемент карточки: его тип, положение, стиль и правила генерации AI-контента.",
+      "id": "DE-template-layer",
+      "updated": "2026-04-13T14:04:46.767000000+00:00",
+      "source_file": "docs/02-domain/entities/template-layer.md"
+    }
+  },
+  {
+    "labels": [
+      "DomainEntity"
+    ],
+    "properties": {
+      "stereotypes": [],
+      "migrated_at": "2026-04-13T14:04:46.767000000+00:00",
+      "created": "2026-04-13T14:04:46.767000000+00:00",
+      "ba_trace": [],
+      "module": "",
+      "name": "Template",
+      "description": "Корневая сущность системы. Представляет визуальный шаблон карточки инфографики, полученный путём AI-декомпозиции изображения-образца на семантические слои.",
+      "id": "DE-template",
+      "updated": "2026-04-13T14:04:46.767000000+00:00",
+      "source_file": "docs/02-domain/entities/template.md"
+    }
+  },
+  {
+    "labels": [
+      "DomainEntity"
+    ],
+    "properties": {
+      "stereotypes": [],
+      "migrated_at": "2026-04-13T14:04:46.767000000+00:00",
+      "created": "2026-04-13T14:04:46.767000000+00:00",
+      "ba_trace": [],
+      "module": "",
+      "name": "VersionFeedback",
+      "description": "Обратная связь пользователя к конкретной версии сгенерированной карточки. Содержит положительные и отрицательные комментарии.",
+      "id": "DE-version-feedback",
+      "updated": "2026-04-13T14:04:46.767000000+00:00",
+      "source_file": "docs/02-domain/entities/version-feedback.md"
+    }
+  }
+]

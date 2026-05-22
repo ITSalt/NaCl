@@ -1,0 +1,172 @@
+[
+  {
+    "labels": [
+      "DomainAttribute"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T14:04:47.709000000+00:00",
+      "created": "2026-04-13T14:04:47.709000000+00:00",
+      "name": "`id`",
+      "description": "PK",
+      "id": "DE-feedback-prompt-addon-A01",
+      "type": "UUID",
+      "updated": "2026-04-13T14:04:47.709000000+00:00",
+      "constraints": "",
+      "source_file": "docs/02-domain/entities/feedback-prompt-addon.md",
+      "required": true
+    }
+  },
+  {
+    "labels": [
+      "DomainAttribute"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T14:04:47.709000000+00:00",
+      "created": "2026-04-13T14:04:47.709000000+00:00",
+      "name": "`template_id`",
+      "description": "FK → Template",
+      "id": "DE-feedback-prompt-addon-A02",
+      "type": "UUID",
+      "updated": "2026-04-13T14:04:47.709000000+00:00",
+      "constraints": "",
+      "required": true,
+      "source_file": "docs/02-domain/entities/feedback-prompt-addon.md"
+    }
+  },
+  {
+    "labels": [
+      "DomainAttribute"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T14:04:47.709000000+00:00",
+      "created": "2026-04-13T14:04:47.709000000+00:00",
+      "name": "`addon_text`",
+      "description": "Текст, подмешиваемый в промт генерации",
+      "id": "DE-feedback-prompt-addon-A03",
+      "type": "TEXT",
+      "updated": "2026-04-13T14:04:47.709000000+00:00",
+      "constraints": "",
+      "required": true,
+      "source_file": "docs/02-domain/entities/feedback-prompt-addon.md"
+    }
+  },
+  {
+    "labels": [
+      "DomainAttribute"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T14:04:47.709000000+00:00",
+      "created": "2026-04-13T14:04:47.709000000+00:00",
+      "name": "`target_layers`",
+      "description": "К каким типам слоёв применяется ([\"icon\", \"background\"] или [\"*\"] для всех)",
+      "id": "DE-feedback-prompt-addon-A04",
+      "type": "JSONB",
+      "updated": "2026-04-13T14:04:47.709000000+00:00",
+      "constraints": "",
+      "required": true,
+      "source_file": "docs/02-domain/entities/feedback-prompt-addon.md"
+    }
+  },
+  {
+    "labels": [
+      "DomainAttribute"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T14:04:47.709000000+00:00",
+      "created": "2026-04-13T14:04:47.709000000+00:00",
+      "name": "`source_feedback_ids`",
+      "description": "Из каких обратных связей (VersionFeedback) сформирован",
+      "id": "DE-feedback-prompt-addon-A05",
+      "type": "UUID[]",
+      "updated": "2026-04-13T14:04:47.709000000+00:00",
+      "constraints": "",
+      "required": true,
+      "source_file": "docs/02-domain/entities/feedback-prompt-addon.md"
+    }
+  },
+  {
+    "labels": [
+      "DomainAttribute"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T14:04:47.709000000+00:00",
+      "created": "2026-04-13T14:04:47.709000000+00:00",
+      "name": "`confidence_score`",
+      "description": "Оценка уверенности AI (0.0–1.0)",
+      "id": "DE-feedback-prompt-addon-A06",
+      "type": "FLOAT",
+      "updated": "2026-04-13T14:04:47.709000000+00:00",
+      "constraints": "",
+      "required": true,
+      "source_file": "docs/02-domain/entities/feedback-prompt-addon.md"
+    }
+  },
+  {
+    "labels": [
+      "DomainAttribute"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T14:04:47.709000000+00:00",
+      "created": "2026-04-13T14:04:47.709000000+00:00",
+      "name": "`is_active`",
+      "description": "Активен ли аддон (default: true)",
+      "id": "DE-feedback-prompt-addon-A07",
+      "type": "BOOLEAN",
+      "updated": "2026-04-13T14:04:47.709000000+00:00",
+      "constraints": "",
+      "source_file": "docs/02-domain/entities/feedback-prompt-addon.md",
+      "required": true
+    }
+  },
+  {
+    "labels": [
+      "DomainAttribute"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T14:04:47.709000000+00:00",
+      "created": "2026-04-13T14:04:47.709000000+00:00",
+      "name": "`created_at`",
+      "description": "",
+      "id": "DE-feedback-prompt-addon-A08",
+      "type": "TIMESTAMPTZ",
+      "updated": "2026-04-13T14:04:47.709000000+00:00",
+      "constraints": "",
+      "required": true,
+      "source_file": "docs/02-domain/entities/feedback-prompt-addon.md"
+    }
+  },
+  {
+    "labels": [
+      "DomainAttribute"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T14:04:47.709000000+00:00",
+      "created": "2026-04-13T14:04:47.709000000+00:00",
+      "name": "`updated_at`",
+      "description": "",
+      "id": "DE-feedback-prompt-addon-A09",
+      "type": "TIMESTAMPTZ",
+      "updated": "2026-04-13T14:04:47.709000000+00:00",
+      "constraints": "",
+      "required": true,
+      "source_file": "docs/02-domain/entities/feedback-prompt-addon.md"
+    }
+  },
+  {
+    "labels": [
+      "DomainAttribute"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T14:04:47.709000000+00:00",
+      "created": "2026-04-13T14:04:47.709000000+00:00",
+      "name": "`id`",
+      "description": "PK",
+      "id": "DE-generation-job-A01",
+      "type": "UUID",
+      "updated": "2026-04-13T14:04:47.709000000+00:00",
+      "constraints": "",
+      "source_file": "docs/02-domain/entities/generation-job.md",
+      "required": true
+    }
+  }
+]

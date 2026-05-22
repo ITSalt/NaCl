@@ -1,0 +1,190 @@
+[
+  {
+    "labels": [
+      "DomainAttribute"
+    ],
+    "properties": {
+      "internal": true,
+      "migrated_at": "2026-05-06T18:39:52.896000000+00:00",
+      "created": "2026-04-19T21:04:41.854000000+00:00",
+      "name": "sessionId",
+      "data_type": "UUID",
+      "description": "Идентификатор сессии (ссылка на серверную Session)",
+      "id": "DE-client-session-A01",
+      "type": "UUID",
+      "updated": "2026-05-06T18:39:52.896000000+00:00",
+      "constraints": "Совпадает с Session.id на сервере",
+      "source_file": "docs/12-domain/entities/client-session.md",
+      "required": false
+    }
+  },
+  {
+    "labels": [
+      "DomainAttribute"
+    ],
+    "properties": {
+      "migrated_at": "2026-05-06T18:39:52.896000000+00:00",
+      "created": "2026-04-19T21:04:41.854000000+00:00",
+      "name": "title",
+      "data_type": "string",
+      "description": "Название истории, заданное пользователем, для отображения в списке",
+      "id": "DE-client-session-A02",
+      "type": "string",
+      "updated": "2026-05-06T18:39:52.896000000+00:00",
+      "constraints": "Извлекается из ответа на вопрос 5 \"Как называется твоя история?\" (answers[4]). Усечение до 50 символов",
+      "source_file": "docs/12-domain/entities/client-session.md",
+      "required": false
+    }
+  },
+  {
+    "labels": [
+      "DomainAttribute"
+    ],
+    "properties": {
+      "internal": true,
+      "migrated_at": "2026-05-06T18:39:52.896000000+00:00",
+      "created": "2026-04-19T21:04:41.854000000+00:00",
+      "name": "status",
+      "data_type": "SessionStatus",
+      "description": "Текущий статус сессии",
+      "id": "DE-client-session-A03",
+      "type": "SessionStatus",
+      "updated": "2026-05-06T18:39:52.896000000+00:00",
+      "constraints": "Enum, синхронизируется с серверной Session",
+      "source_file": "docs/12-domain/entities/client-session.md",
+      "required": false
+    }
+  },
+  {
+    "labels": [
+      "DomainAttribute"
+    ],
+    "properties": {
+      "internal": true,
+      "migrated_at": "2026-05-06T18:39:52.896000000+00:00",
+      "created": "2026-04-19T21:04:41.854000000+00:00",
+      "name": "createdAt",
+      "data_type": "timestamp",
+      "description": "Дата и время создания сессии",
+      "id": "DE-client-session-A04",
+      "type": "timestamp",
+      "updated": "2026-05-06T18:39:52.896000000+00:00",
+      "constraints": "ISO 8601 строка",
+      "source_file": "docs/12-domain/entities/client-session.md",
+      "required": false
+    }
+  },
+  {
+    "labels": [
+      "DomainAttribute"
+    ],
+    "properties": {
+      "internal": true,
+      "migrated_at": "2026-05-06T18:39:52.896000000+00:00",
+      "created": "2026-04-19T21:04:41.854000000+00:00",
+      "name": "updatedAt",
+      "data_type": "timestamp",
+      "description": "Дата и время последнего обновления. Используется для сортировки списка и отображения в карточке SCR-009",
+      "id": "DE-client-session-A05",
+      "type": "timestamp",
+      "updated": "2026-05-06T18:39:52.896000000+00:00",
+      "constraints": "Обновляется при каждом изменении сессии (открытие, смена статуса, завершение генерации)",
+      "source_file": "docs/12-domain/entities/client-session.md",
+      "required": false
+    }
+  },
+  {
+    "labels": [
+      "DomainAttribute"
+    ],
+    "properties": {
+      "migrated_at": "2026-05-06T18:39:52.896000000+00:00",
+      "created": "2026-04-19T21:04:41.854000000+00:00",
+      "name": "thumbnailUrl",
+      "data_type": "string",
+      "description": "Миниатюра обложки для списка сессий",
+      "id": "DE-client-session-A06",
+      "type": "string",
+      "updated": "2026-05-06T18:39:52.896000000+00:00",
+      "constraints": "URL или data:URI, заполняется при status=completed",
+      "source_file": "docs/12-domain/entities/client-session.md",
+      "required": false
+    }
+  },
+  {
+    "labels": [
+      "DomainAttribute"
+    ],
+    "properties": {
+      "internal": true,
+      "migrated_at": "2026-05-06T18:39:52.896000000+00:00",
+      "created": "2026-04-19T21:04:41.854000000+00:00",
+      "name": "hasLead",
+      "data_type": "boolean",
+      "description": "Флаг: был ли захвачен лид для данной сессии",
+      "id": "DE-client-session-A07",
+      "type": "boolean",
+      "updated": "2026-05-06T18:39:52.896000000+00:00",
+      "constraints": "Default: false",
+      "source_file": "docs/12-domain/entities/client-session.md",
+      "required": false
+    }
+  },
+  {
+    "labels": [
+      "DomainAttribute"
+    ],
+    "properties": {
+      "internal": true,
+      "migrated_at": "2026-05-06T18:39:52.896000000+00:00",
+      "created": "2026-04-19T21:04:41.854000000+00:00",
+      "name": "id",
+      "data_type": "UUID",
+      "description": "Уникальный идентификатор сообщения",
+      "id": "DE-dialog-message-A01",
+      "type": "UUID",
+      "updated": "2026-05-06T18:39:52.896000000+00:00",
+      "constraints": "PK, генерируется сервером",
+      "source_file": "docs/12-domain/entities/dialog-message.md",
+      "required": false
+    }
+  },
+  {
+    "labels": [
+      "DomainAttribute"
+    ],
+    "properties": {
+      "internal": true,
+      "migrated_at": "2026-05-06T18:39:52.896000000+00:00",
+      "created": "2026-04-19T21:04:41.854000000+00:00",
+      "name": "dialogId",
+      "data_type": "UUID",
+      "description": "Ссылка на диалог интервью",
+      "id": "DE-dialog-message-A02",
+      "type": "UUID",
+      "updated": "2026-05-06T18:39:52.896000000+00:00",
+      "constraints": "FK -> interview_dialogs.id",
+      "source_file": "docs/12-domain/entities/dialog-message.md",
+      "required": false
+    }
+  },
+  {
+    "labels": [
+      "DomainAttribute"
+    ],
+    "properties": {
+      "internal": true,
+      "migrated_at": "2026-05-06T18:39:52.896000000+00:00",
+      "created": "2026-04-19T21:04:41.854000000+00:00",
+      "name": "role",
+      "data_type": "string",
+      "description": "Автор сообщения",
+      "id": "DE-dialog-message-A03",
+      "type": "string",
+      "updated": "2026-05-06T18:39:52.896000000+00:00",
+      "constraints": "Enum: user, agent",
+      "source_file": "docs/12-domain/entities/dialog-message.md",
+      "required": false
+    }
+  }
+]

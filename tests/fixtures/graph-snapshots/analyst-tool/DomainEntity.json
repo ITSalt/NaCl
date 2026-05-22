@@ -1,0 +1,114 @@
+[
+  {
+    "labels": [
+      "DomainEntity"
+    ],
+    "properties": {
+      "is_aggregate_root": true,
+      "module": "M-BACKEND-API",
+      "name": "Project",
+      "description": "A NaCl-managed project root with config.yaml, boards/, and graph-infra/. The active project is the analyst-tool working scope.",
+      "id": "DE-PROJECT",
+      "bounded_context": "External-facing contract (routes + WS) for the analyst-tool",
+      "source_file": "server/src/services/project-registry.ts"
+    }
+  },
+  {
+    "labels": [
+      "DomainEntity"
+    ],
+    "properties": {
+      "is_aggregate_root": true,
+      "module": "M-BACKEND-API",
+      "name": "Board",
+      "description": "An Excalidraw board file (.excalidraw) that visualises a slice of the project graph. Identified by relative path from boards/.",
+      "id": "DE-BOARD",
+      "bounded_context": "External-facing contract (routes + WS) for the analyst-tool",
+      "source_file": "server/src/services/boards.ts"
+    }
+  },
+  {
+    "labels": [
+      "DomainEntity"
+    ],
+    "properties": {
+      "is_aggregate_root": false,
+      "module": "M-BACKEND-API",
+      "name": "BoardMeta",
+      "description": "Persistent sidecar metadata for a Board (kind, sync status, last sync time, owning use-case). Stored alongside the .excalidraw file.",
+      "id": "DE-BOARD-META",
+      "bounded_context": "External-facing contract (routes + WS) for the analyst-tool",
+      "source_file": "server/src/services/meta.ts"
+    }
+  },
+  {
+    "labels": [
+      "DomainEntity"
+    ],
+    "properties": {
+      "is_aggregate_root": false,
+      "module": "M-BACKEND-API",
+      "name": "Snapshot",
+      "description": "An immutable point-in-time capture of a Board scene JSON, used for autosave / restore / diff.",
+      "id": "DE-SNAPSHOT",
+      "bounded_context": "External-facing contract (routes + WS) for the analyst-tool",
+      "source_file": "server/src/services/snapshots.ts"
+    }
+  },
+  {
+    "labels": [
+      "DomainEntity"
+    ],
+    "properties": {
+      "is_aggregate_root": true,
+      "module": "M-SKILL-RUNNER",
+      "name": "Run",
+      "description": "A single skill execution lifecycle (regenerate / sync / analyze / render-md). Tracks phase, logs, exit code, and output board.",
+      "id": "DE-RUN",
+      "bounded_context": "Skill-invocation lifecycle",
+      "source_file": "server/src/services/run-queue.ts"
+    }
+  },
+  {
+    "labels": [
+      "DomainEntity"
+    ],
+    "properties": {
+      "is_aggregate_root": true,
+      "module": "M-SKILL-RUNNER",
+      "name": "BatchOperation",
+      "description": "A grouped multi-target skill invocation (e.g., re-render all UC boards). Aggregates child Runs and exposes overall progress.",
+      "id": "DE-BATCH-OPERATION",
+      "bounded_context": "Skill-invocation lifecycle",
+      "source_file": "server/src/services/run-queue.ts"
+    }
+  },
+  {
+    "labels": [
+      "DomainEntity"
+    ],
+    "properties": {
+      "is_aggregate_root": false,
+      "module": "M-RENDERERS",
+      "name": "RenderableBoard",
+      "description": "The deterministic intermediate representation produced by a renderer from a Cypher query — input to Excalidraw scene materialisation.",
+      "id": "DE-RENDERABLE-BOARD",
+      "bounded_context": "Graph-to-artefact transformation",
+      "source_file": "server/src/services/renderable.ts"
+    }
+  },
+  {
+    "labels": [
+      "DomainEntity"
+    ],
+    "properties": {
+      "is_aggregate_root": false,
+      "module": "M-BACKEND-API",
+      "name": "ResolvedConfig",
+      "description": "The merged, validated runtime configuration for a project (registry → cwd → env precedence). Drives port/host/boardsDir wiring.",
+      "id": "DE-RESOLVED-CONFIG",
+      "bounded_context": "External-facing contract (routes + WS) for the analyst-tool",
+      "source_file": "server/src/config.ts"
+    }
+  }
+]

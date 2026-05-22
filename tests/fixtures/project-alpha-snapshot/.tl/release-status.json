@@ -1,0 +1,18 @@
+{
+  "started": "2026-05-18T00:00:00Z",
+  "strategy": "direct",
+  "prs": [],
+  "merge": { "status": "skipped", "reason": "direct strategy" },
+  "ci": { "status": "skipped", "reason": "no CI pipeline on main" },
+  "health": { "status": "skipped", "reason": "no production URL configured" },
+  "version": { "status": "done", "bump": "minor", "value": "v0.1.0" },
+  "tag": { "status": "done", "value": "v0.1.0", "pushed": true },
+  "graph": { "status": "warn", "reason": "No IntakeItem nodes exist; Task statuses stale — reconcile with /nacl-tl-diagnose" },
+  "release": { "status": "done", "url": "https://github.com/ITSalt/project-alpha/releases/tag/v0.1.0" },
+  "yougile": { "status": "skipped", "reason": "no tasks found in any column" },
+  "operator_override": {
+    "reason": "Graph task statuses not updated during dev waves — code confirmed committed to main, graph sync pending",
+    "confirmed_by": "user",
+    "uc_gate": "bypassed"
+  }
+}

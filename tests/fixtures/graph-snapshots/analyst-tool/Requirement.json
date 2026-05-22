@@ -1,0 +1,140 @@
+[
+  {
+    "labels": [
+      "Requirement"
+    ],
+    "properties": {
+      "requirement_type": "NFR",
+      "name": "Renderers must produce byte-identical output",
+      "description": "Deterministic renderers must emit byte-identical Excalidraw and Markdown artefacts for the same Neo4j graph state across runs and machines.",
+      "id": "NFR-01-DETERMINISTIC-OUTPUT",
+      "priority": "Must",
+      "category": "Reliability",
+      "source_file": "CLAUDE.md"
+    }
+  },
+  {
+    "labels": [
+      "Requirement"
+    ],
+    "properties": {
+      "requirement_type": "NFR",
+      "name": "Tool runs on host; never containerised",
+      "description": "The analyst-tool must run directly on the analyst host machine and must not be containerised, since it shells out to the local claude CLI.",
+      "id": "NFR-02-NO-CONTAINERIZATION",
+      "priority": "Must",
+      "category": "Operability",
+      "source_file": "CLAUDE.md"
+    }
+  },
+  {
+    "labels": [
+      "Requirement"
+    ],
+    "properties": {
+      "requirement_type": "NFR",
+      "name": "Pacer enforces working-window for claude calls",
+      "description": "All programmatic claude subprocess calls must respect a Pacer-enforced working-window to control rate and avoid runaway invocations.",
+      "id": "NFR-03-WORKING-WINDOW",
+      "priority": "Should",
+      "category": "Operability",
+      "source_file": "CLAUDE.md"
+    }
+  },
+  {
+    "labels": [
+      "Requirement"
+    ],
+    "properties": {
+      "requirement_type": "NFR",
+      "name": "No private info in public repo",
+      "description": "The public NaCl repo must not contain client project names, local absolute paths, dump metadata, or operational anecdotes; a canary grep runs before every release.",
+      "id": "NFR-04-PUBLIC-REPO-HYGIENE",
+      "priority": "Must",
+      "category": "Security",
+      "source_file": "CLAUDE.md"
+    }
+  },
+  {
+    "labels": [
+      "Requirement"
+    ],
+    "properties": {
+      "requirement_type": "NFR",
+      "name": "Project registry is single source of truth",
+      "description": "~/.nacl/projects.json is the only authority for project root and active project; all resolution flows through it.",
+      "id": "NFR-05-PROJECT-REGISTRY-SOT",
+      "priority": "Must",
+      "category": "Reliability",
+      "source_file": "CLAUDE.md"
+    }
+  },
+  {
+    "labels": [
+      "Requirement"
+    ],
+    "properties": {
+      "requirement_type": "NFR",
+      "name": "Pacer wrapper mandatory for claude subprocess",
+      "description": "All programmatic claude -p invocations must go through the itsalt-pinch Pacer wrapper; direct child_process.spawn(claude) is forbidden.",
+      "id": "NFR-06-PACER-MANDATORY",
+      "priority": "Must",
+      "category": "Operability",
+      "source_file": "CLAUDE.md"
+    }
+  },
+  {
+    "labels": [
+      "Requirement"
+    ],
+    "properties": {
+      "requirement_type": "NFR",
+      "name": "Atomic tmp+rename writes for boards",
+      "description": "All board-file writes must be atomic via temp file + rename to avoid partial writes corrupting analyst state.",
+      "id": "NFR-07-ATOMIC-WRITES",
+      "priority": "Must",
+      "category": "Reliability",
+      "source_file": "CLAUDE.md"
+    }
+  },
+  {
+    "labels": [
+      "Requirement"
+    ],
+    "properties": {
+      "requirement_type": "NFR",
+      "name": "Graceful degradation when Neo4j unreachable",
+      "description": "Search, diagnostics, and non-graph features must continue to function when Neo4j is unreachable; only graph-dependent operations should fail with a clear error.",
+      "id": "NFR-08-GRACEFUL-NEO4J-DEGRADATION",
+      "priority": "Should",
+      "category": "Reliability",
+      "source_file": "CLAUDE.md"
+    }
+  },
+  {
+    "labels": [
+      "Requirement"
+    ],
+    "properties": {
+      "requirement_type": "Functional",
+      "name": "Serve board bytes when present",
+      "description": "GET /api/v1/boards/:name returns the .excalidraw scene JSON when the file exists, else 404.",
+      "id": "REQ-UC001-01",
+      "priority": "Must",
+      "source_file": "server/src/routes/boards.ts"
+    }
+  },
+  {
+    "labels": [
+      "Requirement"
+    ],
+    "properties": {
+      "requirement_type": "Functional",
+      "name": "Atomic save with hash update",
+      "description": "PUT /api/v1/boards/:name persists the new scene atomically via tmp+rename and updates the content hash.",
+      "id": "REQ-UC002-01",
+      "priority": "Must",
+      "source_file": "server/src/services/boards.ts"
+    }
+  }
+]

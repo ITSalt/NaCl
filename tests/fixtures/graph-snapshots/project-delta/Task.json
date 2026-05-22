@@ -1,0 +1,178 @@
+[
+  {
+    "labels": [
+      "Task"
+    ],
+    "properties": {
+      "agent": "nacl-tl-fix",
+      "created": "2026-04-24T17:20:41.784000000+00:00",
+      "classification": "L1",
+      "priority": "high",
+      "title": "Fix: video_scenario_system prompt type missing in enum+UI",
+      "type": "bug",
+      "delivered_in_release": "v0.10.0",
+      "layer": "shared+fe",
+      "wave": 4,
+      "module_id": "MOD-admin-module",
+      "id": "BUG-001",
+      "delivered_at": "2026-04-25",
+      "status": "delivered"
+    }
+  },
+  {
+    "labels": [
+      "Task"
+    ],
+    "properties": {
+      "agent": "nacl-tl-fix",
+      "created": "2026-04-24T17:20:41.844000000+00:00",
+      "title": "Fix: music-generator must load prompt via PromptRepository",
+      "classification": "L2",
+      "priority": "high",
+      "type": "bug",
+      "delivered_in_release": "v0.10.0",
+      "layer": "be+shared+migration",
+      "wave": 4,
+      "module_id": "MOD-memories-module",
+      "id": "BUG-002",
+      "delivered_at": "2026-04-25",
+      "status": "delivered"
+    }
+  },
+  {
+    "labels": [
+      "Task"
+    ],
+    "properties": {
+      "agent": "nacl-tl-dev-be",
+      "module_id": "MOD-memories-module",
+      "created": "2026-04-24T17:20:41.892000000+00:00",
+      "id": "TECH-033",
+      "title": "Memory pipeline: pg-boss durability + idempotency",
+      "priority": "high",
+      "type": "tech",
+      "delivered_at": "2026-04-25",
+      "delivered_in_release": "v0.10.0",
+      "layer": "be+migration",
+      "wave": 5,
+      "status": "delivered"
+    }
+  },
+  {
+    "labels": [
+      "Task"
+    ],
+    "properties": {
+      "agent": "nacl-tl-dev-be",
+      "module_id": "MOD-memories-module",
+      "created": "2026-04-24T17:20:41.917000000+00:00",
+      "id": "TECH-034",
+      "title": "Memory pipeline: declarative Step[] DAG + runSteps runner",
+      "priority": "high",
+      "type": "tech",
+      "delivered_in_release": "v0.10.0",
+      "delivered_at": "2026-04-25",
+      "layer": "be",
+      "wave": 6,
+      "status": "delivered"
+    }
+  },
+  {
+    "labels": [
+      "Task"
+    ],
+    "properties": {
+      "agent": "nacl-tl-dev-be",
+      "module_id": "MOD-admin-module",
+      "created": "2026-04-24T17:20:41.939000000+00:00",
+      "id": "UC-037-BE",
+      "priority": "medium",
+      "title": "Admin pipeline dashboard — BE (REST + SSE)",
+      "type": "uc",
+      "layer": "be",
+      "wave": 7,
+      "status": "pending"
+    }
+  },
+  {
+    "labels": [
+      "Task"
+    ],
+    "properties": {
+      "agent": "nacl-tl-dev-fe",
+      "module_id": "MOD-admin-module",
+      "created": "2026-04-24T17:20:41.954000000+00:00",
+      "id": "UC-037-FE",
+      "priority": "medium",
+      "title": "Admin pipeline dashboard — FE (list + detail + SSE client)",
+      "type": "uc",
+      "layer": "fe",
+      "wave": 7,
+      "status": "pending"
+    }
+  },
+  {
+    "labels": [
+      "Task"
+    ],
+    "properties": {
+      "agent": "nacl-tl-dev-fe",
+      "created": "2026-05-06T18:02:33.900000000+00:00",
+      "id": "TASK-FR029-W2-T1-site-header-refactor",
+      "title": "SiteHeader refactor (cabinet variant)",
+      "type": "FE",
+      "updated": "2026-05-06T18:02:33.900000000+00:00",
+      "wave": 9,
+      "status": "pending",
+      "feature_request": "FR-029"
+    }
+  },
+  {
+    "labels": [
+      "Task"
+    ],
+    "properties": {
+      "agent": "nacl-tl-dev-fe",
+      "created": "2026-05-06T18:02:33.900000000+00:00",
+      "id": "TASK-FR029-W2-T2-profile-menu-dropdown",
+      "title": "ProfileMenuDropdown component",
+      "type": "FE",
+      "updated": "2026-05-06T18:02:33.900000000+00:00",
+      "wave": 9,
+      "status": "pending",
+      "feature_request": "FR-029"
+    }
+  },
+  {
+    "labels": [
+      "Task"
+    ],
+    "properties": {
+      "agent": "nacl-tl-dev-fe",
+      "created": "2026-05-06T18:02:33.900000000+00:00",
+      "id": "TASK-FR029-W2-T3-quota-recent-works-hooks",
+      "title": "useQuota + useRecentWorks hooks",
+      "type": "FE",
+      "updated": "2026-05-06T18:02:33.900000000+00:00",
+      "wave": 9,
+      "status": "pending",
+      "feature_request": "FR-029"
+    }
+  },
+  {
+    "labels": [
+      "Task"
+    ],
+    "properties": {
+      "agent": "nacl-tl-dev-fe",
+      "created": "2026-05-06T18:02:33.900000000+00:00",
+      "id": "TASK-FR029-W2-T4-cabinet-primitives",
+      "title": "Cabinet primitives (ModeSummaryTile, QuotaBar, WorkCard, NewWorkTile, CabinetToasts)",
+      "type": "FE",
+      "updated": "2026-05-06T18:02:33.900000000+00:00",
+      "wave": 9,
+      "status": "pending",
+      "feature_request": "FR-029"
+    }
+  }
+]

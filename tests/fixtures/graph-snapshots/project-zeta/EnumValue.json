@@ -1,0 +1,142 @@
+[
+  {
+    "labels": [
+      "EnumValue"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T14:04:49.567000000+00:00",
+      "created": "2026-04-13T14:04:49.567000000+00:00",
+      "description": "AI автоматически распределяет текст из описания товара по текстовым слоям шаблона",
+      "id": "EN-distribution-mode-V01",
+      "updated": "2026-04-13T14:04:49.567000000+00:00",
+      "value": "auto",
+      "source_file": "docs/02-domain/enumerations/distribution-mode.md"
+    }
+  },
+  {
+    "labels": [
+      "EnumValue"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T14:04:49.567000000+00:00",
+      "created": "2026-04-13T14:04:49.567000000+00:00",
+      "description": "Пользователь вручную заполняет содержимое каждого текстового слоя",
+      "id": "EN-distribution-mode-V02",
+      "updated": "2026-04-13T14:04:49.567000000+00:00",
+      "value": "manual",
+      "source_file": "docs/02-domain/enumerations/distribution-mode.md"
+    }
+  },
+  {
+    "labels": [
+      "EnumValue"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T14:04:49.567000000+00:00",
+      "created": "2026-04-13T14:04:49.567000000+00:00",
+      "description": "Черновик — задание создано, данные заполнены, генерация не запускалась",
+      "id": "EN-job-status-V01",
+      "updated": "2026-04-13T14:04:49.567000000+00:00",
+      "value": "draft",
+      "source_file": "docs/02-domain/enumerations/job-status.md"
+    }
+  },
+  {
+    "labels": [
+      "EnumValue"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T14:04:49.567000000+00:00",
+      "created": "2026-04-13T14:04:49.567000000+00:00",
+      "description": "Выполняется — запущена генерация новой версии",
+      "id": "EN-job-status-V02",
+      "updated": "2026-04-13T14:04:49.567000000+00:00",
+      "value": "processing",
+      "source_file": "docs/02-domain/enumerations/job-status.md"
+    }
+  },
+  {
+    "labels": [
+      "EnumValue"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T14:04:49.567000000+00:00",
+      "created": "2026-04-13T14:04:49.567000000+00:00",
+      "description": "Завершено — последняя генерация завершена успешно",
+      "id": "EN-job-status-V03",
+      "updated": "2026-04-13T14:04:49.567000000+00:00",
+      "value": "completed",
+      "source_file": "docs/02-domain/enumerations/job-status.md"
+    }
+  },
+  {
+    "labels": [
+      "EnumValue"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T14:04:49.567000000+00:00",
+      "created": "2026-04-13T14:04:49.567000000+00:00",
+      "description": "Ошибка — последняя генерация завершилась с ошибкой",
+      "id": "EN-job-status-V04",
+      "updated": "2026-04-13T14:04:49.567000000+00:00",
+      "value": "failed",
+      "source_file": "docs/02-domain/enumerations/job-status.md"
+    }
+  },
+  {
+    "labels": [
+      "EnumValue"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T14:04:49.567000000+00:00",
+      "created": "2026-04-13T14:04:49.567000000+00:00",
+      "description": "Текстовый элемент (заголовок, подпись, характеристика)",
+      "id": "EN-layer-type-V01",
+      "updated": "2026-04-13T14:04:49.567000000+00:00",
+      "value": "text",
+      "source_file": "docs/02-domain/enumerations/layer-type.md"
+    }
+  },
+  {
+    "labels": [
+      "EnumValue"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T14:04:49.567000000+00:00",
+      "created": "2026-04-13T14:04:49.567000000+00:00",
+      "description": "Изображение (фон, hero-фото, декоративное)",
+      "id": "EN-layer-type-V02",
+      "updated": "2026-04-13T14:04:49.567000000+00:00",
+      "value": "image",
+      "source_file": "docs/02-domain/enumerations/layer-type.md"
+    }
+  },
+  {
+    "labels": [
+      "EnumValue"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T14:04:49.567000000+00:00",
+      "created": "2026-04-13T14:04:49.567000000+00:00",
+      "description": "Иконка (значок характеристики, бейдж)",
+      "id": "EN-layer-type-V03",
+      "updated": "2026-04-13T14:04:49.567000000+00:00",
+      "value": "icon",
+      "source_file": "docs/02-domain/enumerations/layer-type.md"
+    }
+  },
+  {
+    "labels": [
+      "EnumValue"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T14:04:49.567000000+00:00",
+      "created": "2026-04-13T14:04:49.567000000+00:00",
+      "description": "Геометрическая фигура (подложка, рамка)",
+      "id": "EN-layer-type-V04",
+      "updated": "2026-04-13T14:04:49.567000000+00:00",
+      "value": "shape",
+      "source_file": "docs/02-domain/enumerations/layer-type.md"
+    }
+  }
+]

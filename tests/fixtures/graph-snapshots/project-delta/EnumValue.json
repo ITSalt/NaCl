@@ -1,0 +1,142 @@
+[
+  {
+    "labels": [
+      "EnumValue"
+    ],
+    "properties": {
+      "migrated_at": "2026-05-06T18:39:55.848000000+00:00",
+      "created": "2026-04-19T21:04:44.949000000+00:00",
+      "description": "Аутентификация через Telegram Login Widget. Доступны: telegramId, telegramUsername, firstName, photoUrl",
+      "id": "EN-authprovider-V01",
+      "updated": "2026-05-06T18:39:55.848000000+00:00",
+      "value": "telegram",
+      "source_file": "docs/12-domain/enumerations/auth-provider.md"
+    }
+  },
+  {
+    "labels": [
+      "EnumValue"
+    ],
+    "properties": {
+      "migrated_at": "2026-05-06T18:39:55.848000000+00:00",
+      "created": "2026-04-19T21:04:44.949000000+00:00",
+      "description": "Аутентификация через VK ID. Доступны: vkId, vkUsername, firstName, lastName, photoUrl",
+      "id": "EN-authprovider-V02",
+      "updated": "2026-05-06T18:39:55.848000000+00:00",
+      "value": "vk",
+      "source_file": "docs/12-domain/enumerations/auth-provider.md"
+    }
+  },
+  {
+    "labels": [
+      "EnumValue"
+    ],
+    "properties": {
+      "migrated_at": "2026-05-06T18:39:55.848000000+00:00",
+      "created": "2026-04-19T21:04:44.949000000+00:00",
+      "description": "Аутентификация через email + OTP-код. Доступны: email, firstName (указывается вручную)",
+      "id": "EN-authprovider-V03",
+      "updated": "2026-05-06T18:39:55.848000000+00:00",
+      "value": "email",
+      "source_file": "docs/12-domain/enumerations/auth-provider.md"
+    }
+  },
+  {
+    "labels": [
+      "EnumValue"
+    ],
+    "properties": {
+      "migrated_at": "2026-05-06T18:39:55.848000000+00:00",
+      "created": "2026-04-19T21:04:44.949000000+00:00",
+      "description": "Превышен таймаут ожидания ответа от провайдера",
+      "id": "EN-errorclassification-V01",
+      "updated": "2026-05-06T18:39:55.848000000+00:00",
+      "value": "timeout",
+      "source_file": "docs/12-domain/enumerations/error-classification.md"
+    }
+  },
+  {
+    "labels": [
+      "EnumValue"
+    ],
+    "properties": {
+      "migrated_at": "2026-05-06T18:39:55.848000000+00:00",
+      "created": "2026-04-19T21:04:44.949000000+00:00",
+      "description": "Превышен лимит запросов к провайдеру",
+      "id": "EN-errorclassification-V02",
+      "updated": "2026-05-06T18:39:55.848000000+00:00",
+      "value": "rate_limit",
+      "source_file": "docs/12-domain/enumerations/error-classification.md"
+    }
+  },
+  {
+    "labels": [
+      "EnumValue"
+    ],
+    "properties": {
+      "migrated_at": "2026-05-06T18:39:55.848000000+00:00",
+      "created": "2026-04-19T21:04:44.949000000+00:00",
+      "description": "Внутренняя ошибка провайдера",
+      "id": "EN-errorclassification-V03",
+      "updated": "2026-05-06T18:39:55.848000000+00:00",
+      "value": "server_error",
+      "source_file": "docs/12-domain/enumerations/error-classification.md"
+    }
+  },
+  {
+    "labels": [
+      "EnumValue"
+    ],
+    "properties": {
+      "migrated_at": "2026-05-06T18:39:55.848000000+00:00",
+      "created": "2026-04-19T21:04:44.949000000+00:00",
+      "description": "Ошибка аутентификации (невалидный API-ключ)",
+      "id": "EN-errorclassification-V04",
+      "updated": "2026-05-06T18:39:55.848000000+00:00",
+      "value": "auth_error",
+      "source_file": "docs/12-domain/enumerations/error-classification.md"
+    }
+  },
+  {
+    "labels": [
+      "EnumValue"
+    ],
+    "properties": {
+      "migrated_at": "2026-05-06T18:39:55.848000000+00:00",
+      "created": "2026-04-19T21:04:44.949000000+00:00",
+      "description": "Контент отклонён фильтром безопасности провайдера",
+      "id": "EN-errorclassification-V05",
+      "updated": "2026-05-06T18:39:55.848000000+00:00",
+      "value": "content_filter",
+      "source_file": "docs/12-domain/enumerations/error-classification.md"
+    }
+  },
+  {
+    "labels": [
+      "EnumValue"
+    ],
+    "properties": {
+      "migrated_at": "2026-05-06T18:39:55.848000000+00:00",
+      "created": "2026-04-19T21:04:44.949000000+00:00",
+      "description": "Некорректный формат запроса (слишком длинный контекст и т.д.)",
+      "id": "EN-errorclassification-V06",
+      "updated": "2026-05-06T18:39:55.848000000+00:00",
+      "value": "invalid_request",
+      "source_file": "docs/12-domain/enumerations/error-classification.md"
+    }
+  },
+  {
+    "labels": [
+      "EnumValue"
+    ],
+    "properties": {
+      "migrated_at": "2026-05-06T18:39:55.848000000+00:00",
+      "created": "2026-04-19T21:04:44.949000000+00:00",
+      "description": "Сетевая ошибка (DNS, connection refused, reset)",
+      "id": "EN-errorclassification-V07",
+      "updated": "2026-05-06T18:39:55.848000000+00:00",
+      "value": "network",
+      "source_file": "docs/12-domain/enumerations/error-classification.md"
+    }
+  }
+]

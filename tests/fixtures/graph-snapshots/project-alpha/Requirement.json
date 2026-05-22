@@ -1,0 +1,122 @@
+[
+  {
+    "labels": [
+      "Requirement"
+    ],
+    "properties": {
+      "proposed": true,
+      "created_at": "2026-05-04T09:06:16.086000000+00:00",
+      "id": "REQ-FR-001",
+      "priority": "must",
+      "type": "FR"
+    }
+  },
+  {
+    "labels": [
+      "Requirement"
+    ],
+    "properties": {
+      "proposed": true,
+      "created_at": "2026-05-04T09:06:16.086000000+00:00",
+      "id": "REQ-FR-002",
+      "priority": "must",
+      "type": "FR"
+    }
+  },
+  {
+    "labels": [
+      "Requirement"
+    ],
+    "properties": {
+      "proposed": true,
+      "created_at": "2026-05-04T09:06:16.086000000+00:00",
+      "id": "REQ-FR-003",
+      "priority": "must",
+      "type": "FR"
+    }
+  },
+  {
+    "labels": [
+      "Requirement"
+    ],
+    "properties": {
+      "proposed": true,
+      "created_at": "2026-05-04T09:06:16.086000000+00:00",
+      "id": "REQ-FR-004",
+      "priority": "should",
+      "type": "FR"
+    }
+  },
+  {
+    "labels": [
+      "Requirement"
+    ],
+    "properties": {
+      "proposed": true,
+      "created_at": "2026-05-04T09:06:16.086000000+00:00",
+      "id": "REQ-FR-005",
+      "priority": "must",
+      "type": "FR"
+    }
+  },
+  {
+    "labels": [
+      "Requirement"
+    ],
+    "properties": {
+      "proposed": true,
+      "created_at": "2026-05-04T09:06:16.086000000+00:00",
+      "id": "REQ-FR-006",
+      "priority": "must",
+      "type": "FR"
+    }
+  },
+  {
+    "labels": [
+      "Requirement"
+    ],
+    "properties": {
+      "proposed": true,
+      "created_at": "2026-05-04T09:06:16.086000000+00:00",
+      "id": "REQ-FR-007",
+      "priority": "must",
+      "type": "FR"
+    }
+  },
+  {
+    "labels": [
+      "Requirement"
+    ],
+    "properties": {
+      "proposed": true,
+      "created_at": "2026-05-04T09:06:16.086000000+00:00",
+      "id": "REQ-FR-008",
+      "priority": "must",
+      "type": "FR"
+    }
+  },
+  {
+    "labels": [
+      "Requirement"
+    ],
+    "properties": {
+      "proposed": true,
+      "created_at": "2026-05-04T09:06:16.086000000+00:00",
+      "id": "REQ-FR-009",
+      "priority": "must",
+      "type": "FR"
+    }
+  },
+  {
+    "labels": [
+      "Requirement"
+    ],
+    "properties": {
+      "proposed": true,
+      "created_at": "2026-05-04T09:06:16.086000000+00:00",
+      "id": "REQ-FR-010",
+      "priority": "must",
+      "type": "FR"
+    }
+  }
+]

@@ -1,0 +1,47 @@
+[
+  {
+    "labels": [
+      "SystemRole"
+    ],
+    "properties": {
+      "system_only": false,
+      "jwt_claim": "role=admin",
+      "code": "admin",
+      "updated_at": "2026-05-05T12:39:15.844000000+00:00",
+      "name": "Admin",
+      "created_at": "2026-05-05T12:39:15.844000000+00:00",
+      "description": "Управление справочниками (PromptTemplate, ModelProfile, Category, CategoryMapping, WorkflowStepConfig, ProviderConfig, User), просмотр всех отчётов и задач (read-only)",
+      "id": "role-admin"
+    }
+  },
+  {
+    "labels": [
+      "SystemRole"
+    ],
+    "properties": {
+      "system_only": false,
+      "jwt_claim": "role=end_user",
+      "code": "end_user",
+      "updated_at": "2026-05-05T12:39:15.844000000+00:00",
+      "name": "EndUser",
+      "created_at": "2026-05-05T12:39:15.844000000+00:00",
+      "description": "Создание Session и Task; CRUD на свои задачи и файлы; чтение своих результатов, логов и справочников. Никакого write на reference-данные.",
+      "id": "role-end_user"
+    }
+  },
+  {
+    "labels": [
+      "SystemRole"
+    ],
+    "properties": {
+      "system_only": false,
+      "jwt_claim": "n/a (internal)",
+      "code": "system",
+      "updated_at": "2026-05-05T12:39:15.844000000+00:00",
+      "name": "System",
+      "created_at": "2026-05-05T12:39:15.844000000+00:00",
+      "description": "Внутренние сервисы (queue workers, watchdog, verifier). Не получают JWT — service-to-service auth или direct DB access.",
+      "id": "role-system"
+    }
+  }
+]

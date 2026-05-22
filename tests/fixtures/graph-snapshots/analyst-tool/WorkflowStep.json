@@ -1,0 +1,135 @@
+[
+  {
+    "labels": [
+      "WorkflowStep"
+    ],
+    "properties": {
+      "step_order": 1,
+      "name": "Validate board name format",
+      "description": "Assert the board name matches /^[A-Za-z0-9][A-Za-z0-9_-]*$/ and reject with 400 on mismatch.",
+      "id": "WS-03-01",
+      "stereotype": "Automated",
+      "source_file": "server/src/services/boards.ts:41-50 (assertSafePath)"
+    }
+  },
+  {
+    "labels": [
+      "WorkflowStep"
+    ],
+    "properties": {
+      "step_order": 2,
+      "external_ref": "EXT-FILESYSTEM",
+      "name": "Read board file and meta in parallel",
+      "description": "Concurrently read the .excalidraw file bytes, the file mtime stat, and the .meta.json sidecar from the filesystem.",
+      "id": "WS-03-02",
+      "stereotype": "Automated",
+      "source_file": "server/src/services/boards.ts:123-127 (Promise.all)"
+    }
+  },
+  {
+    "labels": [
+      "WorkflowStep"
+    ],
+    "properties": {
+      "step_order": 3,
+      "name": "Parse and validate scene JSON",
+      "description": "Parse the raw file buffer as JSON and reject with 422 if it is not a valid Excalidraw scene (type !== \"excalidraw\").",
+      "id": "WS-03-03",
+      "stereotype": "Automated",
+      "source_file": "server/src/services/boards.ts:131-139"
+    }
+  },
+  {
+    "labels": [
+      "WorkflowStep"
+    ],
+    "properties": {
+      "step_order": 4,
+      "name": "Repair arrow bindings in-memory",
+      "description": "Run repairArrowBindings() to add missing reverse boundElements entries so the Excalidraw canvas treats arrows as attached without touching the on-disk file.",
+      "id": "WS-03-04",
+      "stereotype": "Automated",
+      "source_file": "server/src/services/boards.ts:145-151 (repairArrowBindings)"
+    }
+  },
+  {
+    "labels": [
+      "WorkflowStep"
+    ],
+    "properties": {
+      "step_order": 1,
+      "name": "Analyst saves canvas edits",
+      "description": "Analyst triggers a PUT /boards/:name request from the Excalidraw canvas (debounced onChange); the request body carries the mutated scene JSON.",
+      "id": "WS-05-01",
+      "stereotype": "Semi-automated",
+      "source_file": "server/src/routes/boards.ts:55-100"
+    }
+  },
+  {
+    "labels": [
+      "WorkflowStep"
+    ],
+    "properties": {
+      "step_order": 2,
+      "name": "Validate board name and scene shape",
+      "description": "Assert the URL board name matches the allowed pattern and that the request body contains a scene object with an elements array; reject 400 on failure.",
+      "id": "WS-05-02",
+      "stereotype": "Automated",
+      "source_file": "server/src/routes/boards.ts:77-91"
+    }
+  },
+  {
+    "labels": [
+      "WorkflowStep"
+    ],
+    "properties": {
+      "step_order": 3,
+      "external_ref": "EXT-FILESYSTEM",
+      "name": "Write scene to disk atomically",
+      "description": "Serialize the scene to a .tmp file, then rename it over the target .excalidraw file to guarantee atomic replacement.",
+      "id": "WS-05-03",
+      "stereotype": "Automated",
+      "source_file": "server/src/services/boards.ts:161-169"
+    }
+  },
+  {
+    "labels": [
+      "WorkflowStep"
+    ],
+    "properties": {
+      "step_order": 4,
+      "name": "Register self-write suppression marker",
+      "description": "Call markSelfWrite(boardName) so the chokidar fs-watcher suppresses the echo change-event that would otherwise trigger a redundant tree.changed broadcast and PUT loop.",
+      "id": "WS-05-04",
+      "stereotype": "Automated",
+      "source_file": "server/src/services/self-writes.ts:22-24"
+    }
+  },
+  {
+    "labels": [
+      "WorkflowStep"
+    ],
+    "properties": {
+      "step_order": 5,
+      "external_ref": "EXT-FILESYSTEM",
+      "name": "Compute unsynced-edits status and update meta",
+      "description": "Hash the freshly saved scene, compare with contentHashAtLastSync from the meta sidecar, and write an updated meta.json without touching the sync hash.",
+      "id": "WS-05-05",
+      "stereotype": "Automated",
+      "source_file": "server/src/services/boards.ts:175-184"
+    }
+  },
+  {
+    "labels": [
+      "WorkflowStep"
+    ],
+    "properties": {
+      "step_order": 1,
+      "name": "Validate board name and classify kind",
+      "description": "Assert the board name format, resolve the file path, call classifyBoard(), and reject import/other kinds with 400 before any async work starts.",
+      "id": "WS-06-01",
+      "stereotype": "Automated",
+      "source_file": "server/src/services/skill-runner.ts:65-88, 304-319"
+    }
+  }
+]

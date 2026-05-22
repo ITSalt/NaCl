@@ -1,0 +1,59 @@
+{
+  "branch": "main",
+  "baseBranch": "main",
+  "gitStrategy": "direct",
+  "batch": "wave-4-2026-05-11",
+  "scopeSource": ".tl/master-plan.md + .tl/status.json (Wave 4)",
+  "items": [
+    { "id": "UC-105-BE", "type": "uc-be", "module": "MOD-CONTENT" },
+    { "id": "UC-106-BE", "type": "uc-be", "module": "MOD-CONTENT" },
+    { "id": "UC-107-BE", "type": "uc-be", "module": "MOD-CONTENT" },
+    { "id": "UC-108-BE", "type": "uc-be", "module": "MOD-CONTENT" },
+    { "id": "UC-401-BE", "type": "uc-be", "module": "MOD-REPORTING" },
+    { "id": "UC-103-FE", "type": "uc-fe", "module": "MOD-CONTENT" }
+  ],
+  "started": "2026-05-11T14:00:00Z",
+  "completed": "2026-05-11T17:10:00Z",
+  "phase": "complete",
+  "scope": {
+    "wave": 4,
+    "name": "Content BE remainder + reporting BE + session FE",
+    "source": ".tl/status.json (Wave 4)"
+  },
+  "qualityGate": {
+    "stubs_critical": 0,
+    "stubs_warning": 3,
+    "stubs_new_in_batch": 3,
+    "stubs_note": "3 cosmetic warnings only — stale UC-references in code-comments of SessionDetailPage.tsx, $sessionId.tsx, workflows.ts; underlying code is functional",
+    "tests_frontend": "234/234 passing (19 files)",
+    "tests_backend": "941/941 passing pre-UC-103-FE (Docker turned off mid-wave for FE work — re-run required after Docker restart to confirm baseline)",
+    "typecheck": "clean across packages/shared, frontend, backend (verified during UC-103-FE)",
+    "graph_terminal_check": "SKIPPED — neo4j MCP disconnected mid-wave; graph status updates are best-effort per conductor protocol"
+  },
+  "summary": {
+    "items_total": 6,
+    "items_pass": 6,
+    "items_unverified": 0,
+    "items_blocked": 0,
+    "items_regression": 0
+  },
+  "techTasks": [],
+  "ucTasks": [
+    { "id": "UC-105-BE", "wave": 4, "status": "done", "commit": "a659a2b", "review_verdict": "APPROVED_WITH_NOTES" },
+    { "id": "UC-106-BE", "wave": 4, "status": "done", "commit": "efa3be9", "review_verdict": "APPROVED" },
+    { "id": "UC-107-BE", "wave": 4, "status": "done", "commit": "7efcd3b", "review_verdict": "APPROVED_WITH_NOTES" },
+    { "id": "UC-108-BE", "wave": 4, "status": "done", "commit": "4eb53a0", "review_verdict": "APPROVED" },
+    { "id": "UC-401-BE", "wave": 4, "status": "done", "commit": "669aa4d", "review_verdict": "APPROVED_WITH_NOTES", "patched_after_review": ["M-1 spec→FORBIDDEN", "M-2 formatCost toFixed(2)"] },
+    { "id": "UC-103-FE", "wave": 4, "status": "done", "commit": "05c8f72", "review_verdict": "APPROVED_WITH_NOTES", "sync_verdict": "PASS" }
+  ],
+  "bugFixes": [],
+  "delivery": { "status": "skipped_direct_strategy" },
+  "notes": [
+    "Direct git strategy: each UC committed straight to main on PASS.",
+    "Order: UC-105-BE (read) → UC-106-BE (SSE) → UC-107-BE (cancel) → UC-108-BE (download) → UC-401-BE (report) → UC-103-FE (session view).",
+    "Pure-BE UCs use phases {be, sync, review, qa}. UC-103-FE includes sync check (PASS).",
+    "UC-401-BE was patched after review for 2 MAJOR items: (1) cost precision drift — formatCost now always toFixed(2); (2) spec divergence — api-contract/acceptance/task-be updated to use FORBIDDEN (platform-wide convention from TECH-005 requireRole) instead of ADMIN_REQUIRED.",
+    "Neo4j MCP disconnected mid-wave — graph status updates skipped per conductor 'best-effort' contract. Docker daemon also stopped before final BE test re-run; pre-FE backend was 941/941 green. Re-run npm test under Docker before release.",
+    "Wave 4 closes MVP backend feature set: read, notify, cancel, download, report — and seeds session-view FE. Wave 5 = user-facing FE for UC-104..108 + UC-401."
+  ]
+}

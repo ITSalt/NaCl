@@ -1,0 +1,139 @@
+[
+  {
+    "labels": [
+      "FeatureRequest"
+    ],
+    "properties": {
+      "source_skill": "nacl-sa-feature",
+      "updated_at": "2026-05-05T21:21:34.758000000+00:00",
+      "created_at": "2026-05-05T21:21:34.758000000+00:00",
+      "description": "Удаление анонимной механики генерации. Все генерации требуют аутентификации; 1 бесплатная генерация в сутки на user_id (UTC reset). Любая попытка без auth → редирект на /auth.",
+      "id": "FR-027",
+      "title": "Auth-Wall: только аутентифицированные могут генерировать; 1 бесплатная/день/user_id",
+      "slug": "auth-wall-required-generation",
+      "status": "spec-complete",
+      "markdown_path": ".tl/feature-requests/FR-027-auth-wall-required-generation.md"
+    }
+  },
+  {
+    "labels": [
+      "FeatureRequest"
+    ],
+    "properties": {
+      "source_skill": "nacl-sa-feature",
+      "depends_on": "FR-027",
+      "updated_at": "2026-05-05T21:25:55.035000000+00:00",
+      "created_at": "2026-05-05T21:25:55.035000000+00:00",
+      "description": "Разделение фронтенда на три поддомена и три Next.js-приложения: project-delta.ru (apps/marketing), app.project-delta.ru (apps/app — продукт), admin.project-delta.ru (apps/admin). Cookie-auth с Domain=.project-delta.ru для кросс-субдоменной авторизации. Множественные лендинги добавляются как маршруты в apps/marketing.",
+      "id": "FR-028",
+      "title": "Split frontend into 3 subdomains: marketing apex / app. / admin.",
+      "slug": "subdomain-split-marketing-app-admin",
+      "status": "spec-complete",
+      "markdown_path": ".tl/feature-requests/FR-028-subdomain-split-marketing-app-admin.md"
+    }
+  },
+  {
+    "labels": [
+      "FeatureRequest"
+    ],
+    "properties": {
+      "created_at": "2026-05-06T16:54:29.824000000+00:00",
+      "id": "FR-001",
+      "source": "mvp-pre-graph-import",
+      "title": "analytics-dashboard",
+      "status": "shipped",
+      "markdown_path": ".tl/feature-requests/FR-001-analytics-dashboard.md"
+    }
+  },
+  {
+    "labels": [
+      "FeatureRequest"
+    ],
+    "properties": {
+      "created_at": "2026-05-06T16:54:29.824000000+00:00",
+      "id": "FR-002",
+      "source": "mvp-pre-graph-import",
+      "title": "admin-hints",
+      "status": "shipped",
+      "markdown_path": ".tl/feature-requests/FR-002-admin-hints.md"
+    }
+  },
+  {
+    "labels": [
+      "FeatureRequest"
+    ],
+    "properties": {
+      "created_at": "2026-05-06T16:54:29.824000000+00:00",
+      "id": "FR-003",
+      "source": "mvp-pre-graph-import",
+      "title": "admin-auth-gate",
+      "status": "shipped",
+      "markdown_path": ".tl/feature-requests/FR-003-admin-auth-gate.md"
+    }
+  },
+  {
+    "labels": [
+      "FeatureRequest"
+    ],
+    "properties": {
+      "created_at": "2026-05-06T16:54:29.824000000+00:00",
+      "id": "FR-004",
+      "source": "mvp-pre-graph-import",
+      "title": "observability",
+      "status": "shipped",
+      "markdown_path": ".tl/feature-requests/FR-004-observability.md"
+    }
+  },
+  {
+    "labels": [
+      "FeatureRequest"
+    ],
+    "properties": {
+      "created_at": "2026-05-06T16:54:29.824000000+00:00",
+      "id": "FR-005",
+      "source": "mvp-pre-graph-import",
+      "title": "subscriptions-report-datetime-filters",
+      "status": "shipped",
+      "markdown_path": ".tl/feature-requests/FR-005-subscriptions-report-datetime-filters.md"
+    }
+  },
+  {
+    "labels": [
+      "FeatureRequest"
+    ],
+    "properties": {
+      "created_at": "2026-05-06T16:54:29.824000000+00:00",
+      "id": "FR-006",
+      "source": "mvp-pre-graph-import",
+      "title": "memories-media-collection",
+      "status": "shipped",
+      "markdown_path": ".tl/feature-requests/FR-006-memories-media-collection.md"
+    }
+  },
+  {
+    "labels": [
+      "FeatureRequest"
+    ],
+    "properties": {
+      "created_at": "2026-05-06T16:54:29.824000000+00:00",
+      "id": "FR-007",
+      "source": "mvp-pre-graph-import",
+      "title": "memories-processing-pipeline",
+      "status": "shipped",
+      "markdown_path": ".tl/feature-requests/FR-007-memories-processing-pipeline.md"
+    }
+  },
+  {
+    "labels": [
+      "FeatureRequest"
+    ],
+    "properties": {
+      "created_at": "2026-05-06T16:54:29.824000000+00:00",
+      "id": "FR-008",
+      "source": "mvp-pre-graph-import",
+      "title": "memories-paywall-delivery",
+      "status": "shipped",
+      "markdown_path": ".tl/feature-requests/FR-008-memories-paywall-delivery.md"
+    }
+  }
+]

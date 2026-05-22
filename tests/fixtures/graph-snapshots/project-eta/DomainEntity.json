@@ -1,0 +1,121 @@
+[
+  {
+    "labels": [
+      "DomainEntity"
+    ],
+    "properties": {
+      "stereotypes": [],
+      "migrated_at": "2026-04-13T14:03:25.798000000+00:00",
+      "created": "2026-04-13T14:03:25.798000000+00:00",
+      "ba_trace": [],
+      "module": "",
+      "name": "Charging — Зарядная инфраструктура",
+      "description": "Подсистема управления мобильными зарядными станциями, их коннекторами и сессиями зарядки. Станции взаимодействуют с системой по протоколу OCPP (Open Charge Point Protocol) версии 1.6J. Каждая станция может иметь несколько коннекторов, каждый коннектор обслуживает одну сессию зарядки одновременно.\n\nИерархия: ChargingStationModels → ChargingStations → stationconnectors / chargingsessions.\n\n---",
+      "id": "DE-charging",
+      "updated": "2026-04-13T14:03:25.798000000+00:00",
+      "source_file": "docs/02-domain/entities/charging.md"
+    }
+  },
+  {
+    "labels": [
+      "DomainEntity"
+    ],
+    "properties": {
+      "stereotypes": [],
+      "migrated_at": "2026-04-13T14:03:25.798000000+00:00",
+      "created": "2026-04-13T14:03:25.798000000+00:00",
+      "ba_trace": [],
+      "module": "",
+      "name": "Chat — Чат",
+      "description": "Подсистема коммуникации между клиентом и сотрудником (техником/диспетчером) в контексте заказа. Каждый заказ может иметь один чат. Поддерживаются текстовые сообщения, медиа-вложения и ответы на конкретные сообщения (reply).\n\nСтруктура: orders → conversations → conversation_messages.\n\n---",
+      "id": "DE-chat",
+      "updated": "2026-04-13T14:03:25.798000000+00:00",
+      "source_file": "docs/02-domain/entities/chat.md"
+    }
+  },
+  {
+    "labels": [
+      "DomainEntity"
+    ],
+    "properties": {
+      "stereotypes": [],
+      "migrated_at": "2026-04-13T14:03:25.798000000+00:00",
+      "created": "2026-04-13T14:03:25.798000000+00:00",
+      "ba_trace": [],
+      "module": "",
+      "name": "Client — Клиент",
+      "description": "Клиент — пользователь мобильного приложения, заказывающий выездную зарядку электромобиля. Регистрация и аутентификация выполняются по номеру телефона через Supabase OTP.",
+      "id": "DE-client",
+      "updated": "2026-04-13T14:03:25.798000000+00:00",
+      "source_file": "docs/02-domain/entities/client.md"
+    }
+  },
+  {
+    "labels": [
+      "DomainEntity"
+    ],
+    "properties": {
+      "stereotypes": [],
+      "migrated_at": "2026-04-13T14:03:25.798000000+00:00",
+      "created": "2026-04-13T14:03:25.798000000+00:00",
+      "ba_trace": [],
+      "module": "",
+      "name": "Order — Заказ",
+      "description": "Заказ — центральная сущность системы. Представляет запрос клиента на выездную зарядку электромобиля в указанном месте и в указанное время. Заказ проходит полный жизненный цикл от создания до завершения (или отмены), включая назначение техника, выезд, зарядку и фотофиксацию.",
+      "id": "DE-order",
+      "updated": "2026-04-13T14:03:25.798000000+00:00",
+      "source_file": "docs/02-domain/entities/order.md"
+    }
+  },
+  {
+    "labels": [
+      "DomainEntity"
+    ],
+    "properties": {
+      "stereotypes": [],
+      "migrated_at": "2026-04-13T14:03:25.798000000+00:00",
+      "created": "2026-04-13T14:03:25.798000000+00:00",
+      "ba_trace": [],
+      "module": "",
+      "name": "Payment — Тарификация и платежи",
+      "description": "Подсистема управления тарифами, подписками и финансовыми транзакциями. Поддерживает разовую оплату и подписочную модель. Платежи обрабатываются через ЮKassa (YooKassa).\n\nИерархия: ServiceZones → Tariffs → Subscriptions / orders → transactions ← clients_cards.\n\n---",
+      "id": "DE-payment",
+      "updated": "2026-04-13T14:03:25.798000000+00:00",
+      "source_file": "docs/02-domain/entities/payment.md"
+    }
+  },
+  {
+    "labels": [
+      "DomainEntity"
+    ],
+    "properties": {
+      "stereotypes": [],
+      "migrated_at": "2026-04-13T14:03:25.798000000+00:00",
+      "created": "2026-04-13T14:03:25.798000000+00:00",
+      "ba_trace": [],
+      "module": "",
+      "name": "Route — Маршрутизация и GPS-трекинг",
+      "description": "Подсистема планирования маршрутов техников и отслеживания их местоположения в реальном времени. Маршрут объединяет несколько точек (заказов и баз), по которым техник перемещается в течение смены. GPS-координаты техника записываются в technicianlocations.\n\nИерархия: routes → routepoints → technician_locations.\n\n---",
+      "id": "DE-route",
+      "updated": "2026-04-13T14:03:25.798000000+00:00",
+      "source_file": "docs/02-domain/entities/route.md"
+    }
+  },
+  {
+    "labels": [
+      "DomainEntity"
+    ],
+    "properties": {
+      "stereotypes": [],
+      "migrated_at": "2026-04-13T14:03:25.798000000+00:00",
+      "created": "2026-04-13T14:03:25.798000000+00:00",
+      "ba_trace": [],
+      "module": "",
+      "name": "Vehicle — Транспортные средства",
+      "description": "Подсистема управления транспортными средствами клиентов. Включает справочник производителей и моделей электромобилей, а также реестр конкретных автомобилей, привязанных к клиентам.\n\nИерархия: vehiclemanufacturers → vehiclemodels → vehiclesclients → ordervehicles.\n\n---",
+      "id": "DE-vehicle",
+      "updated": "2026-04-13T14:03:25.798000000+00:00",
+      "source_file": "docs/02-domain/entities/vehicle.md"
+    }
+  }
+]

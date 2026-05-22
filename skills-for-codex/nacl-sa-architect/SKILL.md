@@ -59,7 +59,7 @@ Caddy, Fastify `addContentTypeParser` for `application/offset+octet-stream`,
 canonical `mime_type` metadata key), the SSE frame envelope (`event:
 <type>\ndata: <json>` lines), reverse-proxy URL scheme translation, and the
 ffmpeg/ffprobe runtime URL-scheme acceptance set. See
-`docs/retrospectives/transcriber-runtime-baseline.md` §§ A1–A9 and B1–B7
+`docs/retrospectives/project-beta-runtime-baseline.md` §§ A1–A9 and B1–B7
 for the full catalog.
 
 ### Artifact
@@ -89,7 +89,7 @@ Filenames are slug-form: `kie.md`, `deepgram.md`, `anthropic.md` (providers);
    `NOT_RUN`; never silent SKIP).
 4. **Request shape.** Content-Type; required headers; body with **literal**
    field names (not "matches the TS type" — write the literal strings; the
-   transcriber TUS three-way collision `mime_type` vs `filetype` was a
+   project-beta TUS three-way collision `mime_type` vs `filetype` was a
    prose/Zod/table mismatch on a literal field name); query params.
 5. **Response shape.** Success status; body with literal field names; the
    exact accessor chain to extract the load-bearing value (e.g. for
@@ -112,7 +112,7 @@ Filenames are slug-form: `kie.md`, `deepgram.md`, `anthropic.md` (providers);
 9. **Model namespace / catalog** (required when `kind == provider`).
    Catalog source (`static-list-in-this-file` or `http-list-endpoint`);
    namespace prefix policy (`NONE` / `<vendor>/` / `<vendor>:` — be exact;
-   the Karatov nano-banana episode regressed when the adapter prefixed
+   the Project-Alpha nano-banana episode regressed when the adapter prefixed
    `google/`); list of models used verbatim.
 10. **Fixture-test path.** Repo-relative path to a runnable test that
     loads a recorded response fixture and parses it through the production

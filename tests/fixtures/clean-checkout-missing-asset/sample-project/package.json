@@ -1,0 +1,13 @@
+{
+  "name": "clean-checkout-missing-asset-fixture",
+  "version": "0.0.0-fixture",
+  "private": true,
+  "description": "Synthetic project for W9-ci-clean-checkout runtime-assets-missing fixture. Build succeeds; runtime asset checks fail.",
+  "packageManager": "pnpm@9.0.0",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "echo 'fixture: simulated tsc emit (no-op)' && exit 0",
+    "start": "node dist/index.js",
+    "test": "echo 'fixture: no tests' && exit 0"
+  }
+}

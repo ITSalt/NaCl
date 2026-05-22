@@ -1,0 +1,122 @@
+[
+  {
+    "labels": [
+      "Form"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T14:04:50.519000000+00:00",
+      "created": "2026-04-13T14:04:50.519000000+00:00",
+      "module": "",
+      "name": "SCR-F01: Форма обратной связи",
+      "id": "FORM-scr-f01-feedback-form",
+      "original_id": "SCR-F01",
+      "updated": "2026-04-13T14:04:50.519000000+00:00",
+      "source_file": "docs/05-interfaces/screens/SCR-F01-feedback-form.md"
+    }
+  },
+  {
+    "labels": [
+      "Form"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T14:04:50.519000000+00:00",
+      "created": "2026-04-13T14:04:50.519000000+00:00",
+      "module": "",
+      "name": "SCR-F02: Список аддонов шаблона",
+      "id": "FORM-scr-f02-addon-list",
+      "original_id": "SCR-F02",
+      "updated": "2026-04-13T14:04:50.519000000+00:00",
+      "source_file": "docs/05-interfaces/screens/SCR-F02-addon-list.md"
+    }
+  },
+  {
+    "labels": [
+      "Form"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T14:04:50.519000000+00:00",
+      "created": "2026-04-13T14:04:50.519000000+00:00",
+      "module": "",
+      "name": "SCR-G01: Создание задания на генерацию",
+      "id": "FORM-scr-g01-create-job",
+      "original_id": "SCR-G01",
+      "updated": "2026-04-13T14:04:50.519000000+00:00",
+      "source_file": "docs/05-interfaces/screens/SCR-G01-create-job.md"
+    }
+  },
+  {
+    "labels": [
+      "Form"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T14:04:50.519000000+00:00",
+      "created": "2026-04-13T14:04:50.519000000+00:00",
+      "module": "",
+      "name": "SCR-G02: Результаты генерации",
+      "id": "FORM-scr-g02-generation-results",
+      "original_id": "SCR-G02",
+      "updated": "2026-04-13T14:04:50.519000000+00:00",
+      "source_file": "docs/05-interfaces/screens/SCR-G02-generation-results.md"
+    }
+  },
+  {
+    "labels": [
+      "Form"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T14:04:50.519000000+00:00",
+      "created": "2026-04-13T14:04:50.519000000+00:00",
+      "module": "",
+      "name": "SCR-G03: Список заданий",
+      "id": "FORM-scr-g03-job-list",
+      "original_id": "SCR-G03",
+      "updated": "2026-04-13T14:04:50.519000000+00:00",
+      "source_file": "docs/05-interfaces/screens/SCR-G03-job-list.md"
+    }
+  },
+  {
+    "labels": [
+      "Form"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T14:04:50.519000000+00:00",
+      "created": "2026-04-13T14:04:50.519000000+00:00",
+      "module": "",
+      "name": "SCR-T00: Создание шаблона",
+      "id": "FORM-scr-t00-create-template",
+      "original_id": "SCR-T00",
+      "updated": "2026-04-13T14:04:50.519000000+00:00",
+      "source_file": "docs/05-interfaces/screens/SCR-T00-create-template.md"
+    }
+  },
+  {
+    "labels": [
+      "Form"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T14:04:50.519000000+00:00",
+      "created": "2026-04-13T14:04:50.519000000+00:00",
+      "module": "",
+      "name": "SCR-T01: Список шаблонов",
+      "id": "FORM-scr-t01-template-list",
+      "original_id": "SCR-T01",
+      "updated": "2026-04-13T14:04:50.519000000+00:00",
+      "source_file": "docs/05-interfaces/screens/SCR-T01-template-list.md"
+    }
+  },
+  {
+    "labels": [
+      "Form"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T14:04:50.519000000+00:00",
+      "created": "2026-04-13T14:04:50.519000000+00:00",
+      "module": "",
+      "name": "SCR-T02: Layer Editor",
+      "id": "FORM-scr-t02-layer-editor",
+      "original_id": "SCR-T02",
+      "updated": "2026-04-13T14:04:50.519000000+00:00",
+      "source_file": "docs/05-interfaces/screens/SCR-T02-layer-editor.md"
+    }
+  }
+]

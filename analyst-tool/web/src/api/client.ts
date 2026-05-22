@@ -16,6 +16,7 @@ export type BoardListItem = {
   kind: BoardKind;
   relatedId: string | null;
   displayName: string;
+  label: string | null;
   group: string;
   mtime: string;
   syncStatus: SyncStatus;

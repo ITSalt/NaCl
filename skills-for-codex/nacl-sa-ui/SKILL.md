@@ -94,9 +94,9 @@ Each affordance is one `HAS_INBOUND_ACTION` edge from the source
 - `label` — exact visible text on the affordance (e.g. `New upload`).
 - `updated` — write timestamp.
 
-#### Worked example — transcriber missing-upload-button
+#### Worked example — project-beta missing-upload-button
 
-Transcriber UC-100 ("Upload audio") had a complete Form
+Project-Beta UC-100 ("Upload audio") had a complete Form
 (`FORM-Upload`) with fields, domain mappings, and `USED_IN` edges to a
 rendering Component for `/upload`. Yet on production the catalog page
 at `/catalog` had no upload button: the only way to reach `/upload`

@@ -1,0 +1,35 @@
+[
+  {
+    "labels": [
+      "BusinessRole"
+    ],
+    "properties": {
+      "code": "author",
+      "responsibility": "Provides a valid source recording; reviews and corrects the generated protocol to ensure accuracy before distribution.",
+      "created": "2026-05-17",
+      "authority": "Upload video recordings; view own transcripts and protocols; edit own protocols in the Markdown editor; export own protocols to PDF; delete own recordings and derived artifacts.",
+      "name": "Author",
+      "description": "The person who uploaded a meeting recording and owns the resulting transcript and protocol. The primary - and at MVP the only - active human role.",
+      "id": "ROL-01",
+      "updated": "2026-05-17",
+      "status": "draft"
+    }
+  },
+  {
+    "labels": [
+      "BusinessRole"
+    ],
+    "properties": {
+      "assumption_note": "No authentication or sharing mechanism exists at MVP. Recorded for completeness and future multi-user scope; no distinct system behavior today.",
+      "code": "reviewer",
+      "responsibility": "Validates decisions and action items from an attendee perspective.",
+      "created": "2026-05-17",
+      "authority": "View protocols shared with them; annotate or comment on protocol content (future).",
+      "name": "Reviewer",
+      "description": "A meeting participant (typically the organizer, STK-02) who reads/annotates a protocol produced by another person. No technical distinction from Author at MVP.",
+      "id": "ROL-02",
+      "updated": "2026-05-17",
+      "status": "draft"
+    }
+  }
+]

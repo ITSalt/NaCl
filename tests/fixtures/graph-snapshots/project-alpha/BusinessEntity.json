@@ -1,0 +1,148 @@
+[
+  {
+    "labels": [
+      "BusinessEntity"
+    ],
+    "properties": {
+      "name": "User",
+      "description": "Зарегистрированный пользователь системы. Роль определяется полем role (EndUser / Admin). Single-tenant: client_id отсутствует. Доступ только зарегистрированным (BR-13).",
+      "lifecycle_states": [
+        "ENABLED",
+        "DISABLED"
+      ],
+      "id": "OBJ-001",
+      "type": "Aggregate",
+      "status": "Active"
+    }
+  },
+  {
+    "labels": [
+      "BusinessEntity"
+    ],
+    "properties": {
+      "name": "Session",
+      "description": "Рабочая сессия пользователя. Открывается явным действием в UI. Содержит режим (SINGLE / FULL_FLOW), привязанные файлы и список задач. Заменяет AS-IS KV-state с TTL 24ч → явный lifecycle. Single-tenant.",
+      "lifecycle_states": [
+        "OPEN",
+        "CLOSED",
+        "ABORTED"
+      ],
+      "id": "OBJ-002",
+      "type": "Aggregate",
+      "status": "Active"
+    }
+  },
+  {
+    "labels": [
+      "BusinessEntity"
+    ],
+    "properties": {
+      "name": "TaskInputFile",
+      "description": "Загруженный исходный файл (фото украшения), привязан к сессии. Хранится в Cloud.ru S3. Retouch — 1-2 фото, остальные — 1. Immutable после загрузки.",
+      "id": "OBJ-003",
+      "type": "Aggregate",
+      "status": "Active"
+    }
+  },
+  {
+    "labels": [
+      "BusinessEntity"
+    ],
+    "properties": {
+      "name": "Task",
+      "description": "Центральный агрегат. Запрос на генерацию одного ассета. workflow_type — фикс enum 8 значений (4 main + 4 edit), хардкод. edit_of — self-FK для edit-агента (BR-19): предыдущее изображение не подаётся, только параметры + новые требования. Single-tenant.",
+      "lifecycle_states": [
+        "PENDING",
+        "IN_PROGRESS",
+        "SUCCEEDED",
+        "FAILED"
+      ],
+      "id": "OBJ-004",
+      "type": "Aggregate",
+      "status": "Active"
+    }
+  },
+  {
+    "labels": [
+      "BusinessEntity"
+    ],
+    "properties": {
+      "name": "GeneratedAsset",
+      "description": "Сгенерированный ассет (image / video) задачи. TMP (S3 tmp/) → PRODUCTION (S3 production/) после Verifier или сразу при Verifier OFF. Cloud.ru S3.",
+      "id": "OBJ-005",
+      "type": "Aggregate",
+      "status": "Active"
+    }
+  },
+  {
+    "labels": [
+      "BusinessEntity"
+    ],
+    "properties": {
+      "name": "VerificationReport",
+      "description": "Отчёт верификатора по одной попытке. Append-only. Применяется только при verifier_enabled=true (BR-5). PASS = оба балла >= verifier_threshold (default 80, BR-9). FAIL → перегенерация с замечаниями (BR-6).",
+      "id": "OBJ-006",
+      "type": "LogEntry",
+      "status": "Active"
+    }
+  },
+  {
+    "labels": [
+      "BusinessEntity"
+    ],
+    "properties": {
+      "name": "QueueItem",
+      "description": "Элемент внутренней очереди генераций. Per-провайдер (BR-17): provider_id обязателен. watchdog_deadline = dispatched_at + 30 мин (BR-20); превышение → FAILED (TIMEOUT) + slot_released. Один пользователь — несколько одновременно.",
+      "lifecycle_states": [
+        "QUEUED",
+        "WAITING",
+        "RUNNING",
+        "SUCCEEDED",
+        "FAILED"
+      ],
+      "id": "OBJ-007",
+      "type": "Aggregate",
+      "status": "Active"
+    }
+  },
+  {
+    "labels": [
+      "BusinessEntity"
+    ],
+    "properties": {
+      "name": "PromptTemplate",
+      "description": "Шаблон промпта для генерации. Разрез: (category_name × prompt_type × model_profile_gender × model_profile_age_group). client_id убран (single-tenant). Уникальный индекс по 4 полям. Управляется через BP-101.",
+      "id": "OBJ-008",
+      "type": "Reference",
+      "status": "Active"
+    }
+  },
+  {
+    "labels": [
+      "BusinessEntity"
+    ],
+    "properties": {
+      "name": "WorkflowStepConfig",
+      "description": "Настраиваемые параметры workflow. Уникальный по workflow_type. Управляется Admin через BP-102. Структура workflow (порядок шагов, ветвления) — хардкод. Содержит verifier_enabled, threshold, retry_count, image_size, aspect_ratio, video_duration, provider_id.",
+      "id": "OBJ-009",
+      "type": "Reference",
+      "status": "Active"
+    }
+  },
+  {
+    "labels": [
+      "BusinessEntity"
+    ],
+    "properties": {
+      "name": "ProviderConfig",
+      "description": "Конфигурация нейро-провайдера (openrouter / api.kie.example.invalid / apiframe / gemini). В текущей итерации хардкод в коде, BP админ-управления отсутствует — будущее расширение. Параметры: concurrency_limit, async_polling, polling_interval_ms, retry_limit, backoff_ms, watchdog_ms (default 1800000 = 30 мин, BR-20).",
+      "lifecycle_states": [
+        "ENABLED",
+        "DISABLED"
+      ],
+      "id": "OBJ-010",
+      "type": "Reference",
+      "status": "Active"
+    }
+  }
+]

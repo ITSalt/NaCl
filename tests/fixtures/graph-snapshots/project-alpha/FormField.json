@@ -1,0 +1,158 @@
+[
+  {
+    "labels": [
+      "FormField"
+    ],
+    "properties": {
+      "updated_at": "2026-05-05T13:19:38.955000000+00:00",
+      "field_category": "input",
+      "name": "email",
+      "input_type": "email",
+      "id": "field-101-email",
+      "label": "Email",
+      "validation": "email format, unique",
+      "required": true
+    }
+  },
+  {
+    "labels": [
+      "FormField"
+    ],
+    "properties": {
+      "updated_at": "2026-05-05T13:19:38.955000000+00:00",
+      "field_category": "input",
+      "name": "password",
+      "input_type": "password",
+      "id": "field-101-password",
+      "label": "Пароль",
+      "required": true,
+      "validation": "min 8 символов, hash перед сохранением"
+    }
+  },
+  {
+    "labels": [
+      "FormField"
+    ],
+    "properties": {
+      "updated_at": "2026-05-05T13:19:38.955000000+00:00",
+      "field_category": "input",
+      "name": "display_name",
+      "input_type": "text",
+      "id": "field-101-display_name",
+      "label": "Имя",
+      "required": false,
+      "validation": "max 100"
+    }
+  },
+  {
+    "labels": [
+      "FormField"
+    ],
+    "properties": {
+      "updated_at": "2026-05-05T13:19:38.955000000+00:00",
+      "field_category": "input",
+      "input_type": "email",
+      "name": "email",
+      "id": "field-102-email",
+      "label": "Email",
+      "required": true,
+      "validation": ""
+    }
+  },
+  {
+    "labels": [
+      "FormField"
+    ],
+    "properties": {
+      "updated_at": "2026-05-05T13:19:38.955000000+00:00",
+      "field_category": "input",
+      "name": "password",
+      "input_type": "password",
+      "id": "field-102-password",
+      "label": "Пароль",
+      "required": true,
+      "validation": ""
+    }
+  },
+  {
+    "labels": [
+      "FormField"
+    ],
+    "properties": {
+      "updated_at": "2026-05-05T13:19:38.955000000+00:00",
+      "field_category": "input",
+      "name": "category_id",
+      "input_type": "select",
+      "section": "session",
+      "id": "field-103-category",
+      "label": "Категория",
+      "type": "select",
+      "validation": "FK Category, is_active=true",
+      "required": true
+    }
+  },
+  {
+    "labels": [
+      "FormField"
+    ],
+    "properties": {
+      "updated_at": "2026-05-05T13:19:38.955000000+00:00",
+      "field_category": "input",
+      "name": "name",
+      "input_type": "text",
+      "section": "session",
+      "placeholder": "Например: \"Кольца — осень 2026\" (если пусто — подставится автоматически)",
+      "label": "Название сессии",
+      "id": "field-103-name",
+      "type": "text",
+      "helper_text": "Опционально. Если оставить пустым, имя будет сгенерировано как \"{Категория} — {дата/время}\".",
+      "required": false,
+      "validation": "max 255"
+    }
+  },
+  {
+    "labels": [
+      "FormField"
+    ],
+    "properties": {
+      "updated_at": "2026-05-05T13:19:38.955000000+00:00",
+      "field_category": "input",
+      "name": "task_type",
+      "input_type": "select",
+      "id": "field-104-task_type",
+      "label": "Тип генерации",
+      "validation": "enum TaskType",
+      "required": true
+    }
+  },
+  {
+    "labels": [
+      "FormField"
+    ],
+    "properties": {
+      "updated_at": "2026-05-05T13:19:38.955000000+00:00",
+      "field_category": "input",
+      "name": "input_files",
+      "input_type": "file_multi",
+      "id": "field-104-files",
+      "label": "Входные файлы",
+      "required": true,
+      "validation": "image/* | video/*; max 50MB; хотя бы 1 файл"
+    }
+  },
+  {
+    "labels": [
+      "FormField"
+    ],
+    "properties": {
+      "updated_at": "2026-05-05T13:19:38.955000000+00:00",
+      "field_category": "input",
+      "name": "input_params",
+      "input_type": "json",
+      "id": "field-104-input_params",
+      "label": "Дополнительные параметры",
+      "required": false,
+      "validation": "JSON-schema из PromptTemplate.variables"
+    }
+  }
+]

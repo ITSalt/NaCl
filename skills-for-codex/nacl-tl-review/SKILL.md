@@ -89,7 +89,7 @@ single, unconditional mode for this gate.
 ships an actor-triggered UC without populated nav-actions still has
 VERIFIED refused. `project_kind` governs only the W4 PR/CI carve-outs.
 
-Worked example — Transcriber UC-100 "missing upload button". The
+Worked example — Project-Beta UC-100 "missing upload button". The
 catalog page at `/catalog` had no upload button; users could only
 reach `/upload` by URL paste. With this gate running,
 `nav_actions_consumer_check` for `$affected_uc_ids = ['UC-100']`

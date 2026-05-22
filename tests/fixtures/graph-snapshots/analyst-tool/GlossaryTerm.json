@@ -1,0 +1,174 @@
+[
+  {
+    "labels": [
+      "GlossaryTerm"
+    ],
+    "properties": {
+      "aliases": [
+        "Проект",
+        "NaCl project",
+        "active project"
+      ],
+      "term": "Project",
+      "definition": "A named BA/SA engagement registered in ~/.nacl/projects.json, with its own config.yaml, graph-infra, and board directory.",
+      "id": "GT-PROJECT",
+      "category": "Сущность",
+      "source_file": "server/src/services/project-registry.ts"
+    }
+  },
+  {
+    "labels": [
+      "GlossaryTerm"
+    ],
+    "properties": {
+      "aliases": [
+        "Excalidraw board",
+        "Доска",
+        ".excalidraw",
+        "board file"
+      ],
+      "term": "Board",
+      "definition": "A single Excalidraw canvas file (*.excalidraw) stored under graph-infra/boards/ and managed by the analyst-tool.",
+      "id": "GT-BOARD",
+      "category": "Сущность",
+      "source_file": "server/src/services/boards.ts"
+    }
+  },
+  {
+    "labels": [
+      "GlossaryTerm"
+    ],
+    "properties": {
+      "aliases": [
+        "Excalidraw scene",
+        "scene JSON",
+        "ExcalidrawScene"
+      ],
+      "term": "Board Scene",
+      "definition": "The full Excalidraw JSON payload ({ elements, appState, files }) that defines the visual content of a board.",
+      "id": "GT-BOARD-SCENE",
+      "category": "Артефакт",
+      "source_file": "server/src/render/index.ts"
+    }
+  },
+  {
+    "labels": [
+      "GlossaryTerm"
+    ],
+    "properties": {
+      "aliases": [
+        "meta sidecar",
+        ".meta.json",
+        "board metadata"
+      ],
+      "term": "Board Meta",
+      "definition": "JSON sidecar file (<board>.meta.json) that records lastGeneratedAt, lastGeneratedBy, contentHashAtLastSync, and sync state flags for a board.",
+      "id": "GT-BOARD-META",
+      "category": "Артефакт",
+      "source_file": "server/src/services/meta.ts"
+    }
+  },
+  {
+    "labels": [
+      "GlossaryTerm"
+    ],
+    "properties": {
+      "aliases": [
+        "Board snapshot",
+        "snapshot file",
+        "Снимок доски"
+      ],
+      "term": "Snapshot",
+      "definition": "A point-in-time copy of a board scene written to boards/.snapshots/ before a destructive operation.",
+      "id": "GT-SNAPSHOT",
+      "category": "Артефакт",
+      "source_file": "server/src/services/snapshots.ts"
+    }
+  },
+  {
+    "labels": [
+      "GlossaryTerm"
+    ],
+    "properties": {
+      "aliases": [
+        "Run",
+        "Запуск навыка",
+        "skill execution"
+      ],
+      "term": "Skill Run",
+      "definition": "A single execution of a skill kind (regenerate, sync, analyze, render-md) tracked by a UUID and streamed to the UI via WebSocket.",
+      "id": "GT-RUN",
+      "category": "Сущность",
+      "source_file": "server/src/services/skill-runner.ts"
+    }
+  },
+  {
+    "labels": [
+      "GlossaryTerm"
+    ],
+    "properties": {
+      "aliases": [
+        "Batch",
+        "Пакетная операция",
+        "multi-board run",
+        "Regen All"
+      ],
+      "term": "Batch Operation",
+      "definition": "A user-triggered action that enqueues skill runs for multiple boards simultaneously (e.g. Regen All).",
+      "id": "GT-BATCH-OPERATION",
+      "category": "Сущность",
+      "source_file": "server/src/services/run-queue.ts"
+    }
+  },
+  {
+    "labels": [
+      "GlossaryTerm"
+    ],
+    "properties": {
+      "aliases": [
+        "Discoverable board",
+        "Renderable",
+        "RenderableBoard"
+      ],
+      "term": "Renderable Board",
+      "definition": "A board whose content can be fully generated from the active project Neo4j graph by the deterministic renderer pipeline.",
+      "id": "GT-RENDERABLE-BOARD",
+      "category": "Сущность",
+      "source_file": "server/src/services/renderable.ts"
+    }
+  },
+  {
+    "labels": [
+      "GlossaryTerm"
+    ],
+    "properties": {
+      "aliases": [
+        "Pacer pause",
+        "Throttle event",
+        "run.blocked"
+      ],
+      "term": "Pacer Block",
+      "definition": "A rate-limit event emitted by itsalt-pinch when the claude CLI concurrency or time-window cap is reached, suspending queued runs.",
+      "id": "GT-PACER-BLOCK",
+      "category": "Сущность",
+      "source_file": "server/src/services/pinch.ts"
+    }
+  },
+  {
+    "labels": [
+      "GlossaryTerm"
+    ],
+    "properties": {
+      "aliases": [
+        "Config bundle",
+        "ResolvedConfig",
+        "project config"
+      ],
+      "term": "Resolved Config",
+      "definition": "The merged runtime configuration object derived from a project config.yaml plus the global project registry entry.",
+      "id": "GT-RESOLVED-CONFIG",
+      "category": "Сущность",
+      "source_file": "server/src/services/bootstrap.ts"
+    }
+  }
+]

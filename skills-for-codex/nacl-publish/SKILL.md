@@ -62,7 +62,7 @@ exception.
 
 **Reconciliation evidence:** on PASS, write
 `.tl/reconciliation/<ISO-8601>-publish.json` per the schema at
-`/Users/maxnikitin/projects/NaCl/.tl/reconciliation/_template.json`.
+`/home/project-owner/projects/NaCl/.tl/reconciliation/_template.json`.
 Required fields: `timestamp`, `intake_id` (or `null` for a
 publish-only run), `sources_checked`, `deltas`,
 `active_exceptions`, `expired_exceptions`, `terminal_status`.

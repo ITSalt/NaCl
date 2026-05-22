@@ -25,7 +25,7 @@ is closed. **A stub is closed iff a sample of runtime data flowing through
 the previously-stubbed code path matches the spec's required-field set
 AND the spec's field types.**
 
-Karatov post-mortem § "Stub/mock leak" (commit `8522d1d` "fix(admin):
+Project-Alpha post-mortem § "Stub/mock leak" (commit `8522d1d` "fix(admin):
 unstub WORKFLOW_STEPS + categories envelope + WSC dropdown paging")
 shipped because the stub satisfied "no TODO" but held fake IDs that
 downstream consumers read as load-bearing data. The scanner saw clean

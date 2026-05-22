@@ -1,0 +1,17 @@
+RuntimeContract for UC-112 is intentionally ABSENT in this fixture.
+
+The W8 (sa-uc Runtime Contract phase) decision tree fires "mandatory"
+on UC-112 (queue + long-running + recoverable). The expected closed-set
+status emitted by sa-uc Phase 4.5 read-back on this UC is:
+
+  Status: BLOCKED
+  workflow_detail: runtime_contract_missing
+
+No `.cypher` write block exists. No `RuntimeContract` node. No
+`HAS_INITIAL_STATE` / `HAS_TERMINAL_STATE` / `HAS_TRANSITION` /
+`ACQUIRES_LOCK` / `EMITS_EVENT` / `RESOLVES_RACE_WITH` /
+`USES_IDEMPOTENCY_KEY` / `HAS_RECOVERY` edges.
+
+To unblock UC-112 under the post-W8 chain, the operator MUST write
+the RuntimeContract per `nacl-sa-uc/references/runtime-contract.cypher`
+§ 8 (the worked-example block dedicated to this exact restart-bug case).

@@ -1,0 +1,20 @@
+[
+  {
+    "labels": [
+      "SystemContext"
+    ],
+    "properties": {
+      "in_scope": [],
+      "migrated_at": "2026-04-19T21:02:51.240000000+00:00",
+      "created": "2026-04-19T21:02:51.240000000+00:00",
+      "name": "Scope системы: \"Project Delta: Первый эпизод\"",
+      "out_of_scope": [],
+      "id": "SYS-001",
+      "updated": "2026-04-19T21:02:51.240000000+00:00",
+      "constraints": [],
+      "source_file": "docs/00-context/system-scope.md",
+      "assumptions": [],
+      "goals": []
+    }
+  }
+]

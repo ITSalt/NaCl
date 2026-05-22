@@ -1,0 +1,72 @@
+===============================================
+EMERGENCY-BYPASS — direct-strategy-on-standard-project
+Refusal that was bypassed:
+  RELEASE HALTED — UNVERIFIED (direct-strategy-on-standard-project)
+  config.yaml declares project_kind: standard but git.strategy: direct.
+  Direct-strategy releases require project_kind: prototype AND a signed
+  exception covering skipped-pr/skipped-ci.
+Reason supplied: prod 500s on /api/release/v0.18.0 — rolling back
+Owner: magznikitin
+This bypass is recorded in:
+  .tl/emergencies/20260522T184211Z-prod-rollback.yaml
+===============================================
+
+===============================================
+EMERGENCY-BYPASS — upstream-sync-unverified
+Refusal that was bypassed:
+  RELEASE HALTED — UNVERIFIED (upstream-sync-unverified)
+  tl-sync verdict is UNVERIFIED (wire-evidence-missing on UC-200, UC-300).
+Reason supplied: prod 500s on /api/release/v0.18.0 — rolling back
+Owner: magznikitin
+This bypass is recorded in:
+  .tl/emergencies/20260522T184211Z-prod-rollback.yaml
+===============================================
+
+===============================================
+EMERGENCY-BYPASS — upstream-qa-unverified
+Refusal that was bypassed:
+  RELEASE HALTED — UNVERIFIED (upstream-qa-unverified)
+  tl-qa aggregate is UNVERIFIED (LIVE_PROVIDER_SMOKE NOT_RUN on UC-200,
+  UC-300; mandatory per matrix).
+Reason supplied: prod 500s on /api/release/v0.18.0 — rolling back
+Owner: magznikitin
+This bypass is recorded in:
+  .tl/emergencies/20260522T184211Z-prod-rollback.yaml
+===============================================
+
+===============================================
+EMERGENCY-BYPASS — missing-prod-golden-path
+Refusal that was bypassed:
+  RELEASE HALTED — UNVERIFIED (missing-prod-golden-path)
+  PROD_GOLDEN_PATH NOT_RUN on UC-200, UC-300 (matrix marks mandatory).
+  HEALTH_ONLY is not a substitute.
+Reason supplied: prod 500s on /api/release/v0.18.0 — rolling back
+Owner: magznikitin
+This bypass is recorded in:
+  .tl/emergencies/20260522T184211Z-prod-rollback.yaml
+===============================================
+
+===============================================
+EMERGENCY-BYPASS — graph-stale
+Refusal that was bypassed:
+  RELEASE HALTED — UNVERIFIED (graph-stale)
+  Live graph 1,083 nodes vs baseline 970 nodes (+113 node delta).
+  Run nacl-publish refresh OR file signed exception with affected_gates:
+  [graph-stale].
+Reason supplied: prod 500s on /api/release/v0.18.0 — rolling back
+Owner: magznikitin
+This bypass is recorded in:
+  .tl/emergencies/20260522T184211Z-prod-rollback.yaml
+===============================================
+
+===============================================
+EMERGENCY-BYPASS — sa-validate-critical
+Refusal that was bypassed:
+  RELEASE HALTED — UNVERIFIED (sa-validate-critical)
+  /nacl-sa-validate full reports FAIL with 1 CRITICAL (form-domain-coverage
+  on UC-200) and 156 WARNINGs.
+Reason supplied: prod 500s on /api/release/v0.18.0 — rolling back
+Owner: magznikitin
+This bypass is recorded in:
+  .tl/emergencies/20260522T184211Z-prod-rollback.yaml
+===============================================

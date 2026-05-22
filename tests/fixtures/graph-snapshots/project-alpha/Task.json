@@ -1,0 +1,199 @@
+[
+  {
+    "labels": [
+      "Task"
+    ],
+    "properties": {
+      "reconciled_at": "2026-05-18T13:58:10.929000000+00:00",
+      "reconciled_source": "status.json",
+      "agent": "nacl-tl-dev",
+      "created": "2026-05-06T16:17:41.144000000+00:00",
+      "task_files_generated": true,
+      "id": "TECH-001",
+      "type": "tech",
+      "priority": "high",
+      "title": "Monorepo scaffold (Fastify BE + Vite/React FE)",
+      "updated": "2026-05-06T16:43:31.434000000+00:00",
+      "wave": 0,
+      "status": "done"
+    }
+  },
+  {
+    "labels": [
+      "Task"
+    ],
+    "properties": {
+      "reconciled_at": "2026-05-18T13:58:10.929000000+00:00",
+      "reconciled_source": "status.json",
+      "agent": "nacl-tl-dev",
+      "created": "2026-05-06T16:17:41.144000000+00:00",
+      "task_files_generated": true,
+      "id": "TECH-002",
+      "type": "tech",
+      "priority": "high",
+      "title": "Docker Compose dev (Postgres + MinIO)",
+      "updated": "2026-05-06T16:43:31.434000000+00:00",
+      "wave": 0,
+      "status": "done"
+    }
+  },
+  {
+    "labels": [
+      "Task"
+    ],
+    "properties": {
+      "reconciled_at": "2026-05-18T13:58:10.929000000+00:00",
+      "reconciled_source": "status.json",
+      "agent": "nacl-tl-dev",
+      "created": "2026-05-06T16:17:41.144000000+00:00",
+      "task_files_generated": true,
+      "id": "TECH-003",
+      "type": "tech",
+      "priority": "high",
+      "title": "Drizzle ORM + initial migrations + AES-256-GCM envelope util",
+      "updated": "2026-05-06T16:43:31.434000000+00:00",
+      "wave": 0,
+      "status": "done"
+    }
+  },
+  {
+    "labels": [
+      "Task"
+    ],
+    "properties": {
+      "reconciled_at": "2026-05-18T13:58:10.929000000+00:00",
+      "reconciled_source": "status.json",
+      "agent": "nacl-tl-dev",
+      "created": "2026-05-06T16:17:41.144000000+00:00",
+      "task_files_generated": true,
+      "id": "TECH-004",
+      "type": "tech",
+      "priority": "high",
+      "title": "Shared types package (@project-alpha/shared)",
+      "updated": "2026-05-06T16:43:31.434000000+00:00",
+      "wave": 0,
+      "status": "done"
+    }
+  },
+  {
+    "labels": [
+      "Task"
+    ],
+    "properties": {
+      "reconciled_at": "2026-05-18T13:58:10.929000000+00:00",
+      "reconciled_source": "status.json",
+      "agent": "nacl-tl-dev",
+      "created": "2026-05-06T16:17:41.144000000+00:00",
+      "task_files_generated": true,
+      "id": "TECH-005",
+      "type": "tech",
+      "priority": "high",
+      "title": "Auth (@fastify/jwt 1h/30d + httpOnly refresh cookie)",
+      "updated": "2026-05-06T16:43:31.434000000+00:00",
+      "wave": 0,
+      "status": "done"
+    }
+  },
+  {
+    "labels": [
+      "Task"
+    ],
+    "properties": {
+      "reconciled_at": "2026-05-18T13:58:10.929000000+00:00",
+      "reconciled_source": "status.json",
+      "agent": "nacl-tl-dev",
+      "created": "2026-05-06T16:17:41.144000000+00:00",
+      "task_files_generated": true,
+      "id": "TECH-006",
+      "type": "tech",
+      "priority": "high",
+      "title": "Error middleware + structured logging",
+      "updated": "2026-05-06T16:43:31.434000000+00:00",
+      "wave": 0,
+      "status": "done"
+    }
+  },
+  {
+    "labels": [
+      "Task"
+    ],
+    "properties": {
+      "reconciled_at": "2026-05-18T13:58:10.929000000+00:00",
+      "reconciled_source": "status.json",
+      "agent": "nacl-tl-dev",
+      "created": "2026-05-06T16:17:41.144000000+00:00",
+      "task_files_generated": true,
+      "id": "TECH-007",
+      "type": "tech",
+      "priority": "high",
+      "title": "SSE plumbing (fastify-sse-v2 + Caddy flush_interval -1)",
+      "updated": "2026-05-06T16:43:31.434000000+00:00",
+      "wave": 0,
+      "status": "done"
+    }
+  },
+  {
+    "labels": [
+      "Task"
+    ],
+    "properties": {
+      "reconciled_at": "2026-05-18T13:58:10.929000000+00:00",
+      "reconciled_source": "status.json",
+      "agent": "nacl-tl-dev",
+      "created": "2026-05-06T16:17:41.144000000+00:00",
+      "task_files_generated": true,
+      "id": "TECH-008",
+      "type": "tech",
+      "priority": "high",
+      "title": "S3 client wrapper (Cloud.ru S3 + presigned URLs)",
+      "updated": "2026-05-06T16:43:31.434000000+00:00",
+      "wave": 0,
+      "status": "done"
+    }
+  },
+  {
+    "labels": [
+      "Task"
+    ],
+    "properties": {
+      "reconciled_at": "2026-05-18T13:58:10.929000000+00:00",
+      "reconciled_source": "status.json",
+      "agent": "nacl-tl-dev",
+      "created": "2026-05-06T16:17:41.144000000+00:00",
+      "task_files_generated": true,
+      "id": "TECH-009",
+      "title": "CI/CD (GitHub Actions) + Caddy/PM2 deploy configs",
+      "type": "tech",
+      "priority": "medium",
+      "updated": "2026-05-06T16:43:31.434000000+00:00",
+      "wave": 0,
+      "status": "done"
+    }
+  },
+  {
+    "labels": [
+      "Task"
+    ],
+    "properties": {
+      "phase_qa": "pending",
+      "agent": "nacl-tl-dev-be",
+      "created": "2026-05-06T16:18:06.669000000+00:00",
+      "commit": "5779618",
+      "phase_sync": "pending",
+      "task_files_generated": true,
+      "title": "UC-101-BE",
+      "priority": "high",
+      "type": "be",
+      "wave": 1,
+      "reconciled_at": "2026-05-18T13:58:10.929000000+00:00",
+      "reconciled_source": "status.json",
+      "completed_at": "2026-05-10T00:00:00Z",
+      "phase_be": "pending",
+      "phase_review": "pending",
+      "phase_fe": "n/a",
+      "id": "UC-101-BE",
+      "updated": "2026-05-06T17:15:23.699000000+00:00",
+      "status": "done"
+    }
+  }
+]

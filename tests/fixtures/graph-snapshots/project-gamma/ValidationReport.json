@@ -1,0 +1,22 @@
+[
+  {
+    "labels": [
+      "ValidationReport"
+    ],
+    "properties": {
+      "critical_count": 0,
+      "findings": "{\n    \"summary\": {\n      \"modules\": 8,\n      \"use_cases\": 51,\n      \"domain_entities\": 23,\n      \"form_fields\": 77,\n      \"requirements\": 189,\n      \"system_roles\": 5,\n      \"enumerations\": 17\n    },\n    \"L1_module_completeness\": {\n      \"status\": \"PASS\",\n      \"detail\": \"All 8 modules have at least 1 UseCase and 1 DomainEntity. No issues found.\"\n    },\n    \"L2_uc_completeness\": {\n      \"status\": \"PASS\",\n      \"detail\": \"All 51 MVP UCs have detail_status=complete, at least 1 ActivityStep, and at least 1 Requirement.\"\n    },\n    \"L3_domain_binding\": {\n      \"status\": \"WARN\",\n      \"detail\": \"11 of 77 FormFields (14.3%) unmapped to DomainAttributes. All are legitimately ephemeral/transient fields.\",\n      \"findings\": [\n        {\"severity\": \"warning\", \"field\": \"current_password\", \"form\": \"Change Password Form\", \"reason\": \"Ephemeral input, not stored in domain\"},\n        {\"severity\": \"warning\", \"field\": \"variant_count\", \"form\": \"Generation Form\", \"reason\": \"Dynamic UI control field\"},\n        {\"severity\": \"warning\", \"field\": \"days_of_week\", \"form\": \"Schedule Pattern Form\", \"reason\": \"Composite schedule sub-field\"},\n        {\"severity\": \"warning\", \"field\": \"time\", \"form\": \"Schedule Pattern Form\", \"reason\": \"Composite schedule sub-field\"},\n        {\"severity\": \"warning\", \"field\": \"start_date\", \"form\": \"Schedule Pattern Form\", \"reason\": \"Composite schedule sub-field\"},\n        {\"severity\": \"warning\", \"field\": \"files\", \"form\": \"Submit Homework Form\", \"reason\": \"File upload reference, handled by FileUpload entity\"},\n        {\"severity\": \"warning\", \"field\": \"filename\", \"form\": \"Upload Initiate\", \"reason\": \"Transient upload metadata\"},\n        {\"severity\": \"warning\", \"field\": \"content_type\", \"form\": \"Upload Initiate\", \"reason\": \"Transient upload metadata\"},\n        {\"severity\": \"warning\", \"field\": \"file_size\", \"form\": \"Upload Initiate\", \"reason\": \"Transient upload metadata\"},\n        {\"severity\": \"warning\", \"field\": \"purpose\", \"form\": \"Upload Initiate\", \"reason\": \"Transient upload metadata\"},\n        {\"severity\": \"warning\", \"field\": \"context\", \"form\": \"Upload Initiate\", \"reason\": \"Transient upload metadata\"}\n      ]\n    },\n    \"L4_role_coverage\": {\n      \"status\": \"WARN\",\n      \"detail\": \"All UCs have actors. 4 entities without HAS_PERMISSION from SystemRole.\",\n      \"findings\": [\n        {\"severity\": \"warning\", \"entity\": \"RefreshToken (ent-001)\", \"reason\": \"Infrastructure entity, managed internally by auth system\"},\n        {\"severity\": \"warning\", \"entity\": \"MattermostConfig (ent-030)\", \"reason\": \"System config entity, managed by admin infrastructure\"},\n        {\"severity\": \"warning\", \"entity\": \"NotificationTemplate (ent-031)\", \"reason\": \"System template entity, managed by notification subsystem\"},\n        {\"severity\": \"warning\", \"entity\": \"FileUpload (ent-032)\", \"reason\": \"Infrastructure entity, managed internally by upload service\"}\n      ]\n    },\n    \"L5_requirement_binding\": {\n      \"status\": \"PASS\",\n      \"detail\": \"All 51 UCs have at least 1 Requirement. 189 total requirements.\"\n    },\n    \"L6_disconnected_nodes\": {\n      \"status\": \"WARN\",\n      \"detail\": \"No orphan entities. Inconsistent enum-attribute relationship naming detected: 11 enums use HAS_ENUM, 6 enums use USES_ENUM. All 17 enumerations are properly linked to DomainAttributes.\",\n      \"findings\": [\n        {\"severity\": \"info\", \"issue\": \"Relationship naming inconsistency: DomainAttribute->Enumeration uses both HAS_ENUM (11 enums) and USES_ENUM (6 enums). Should standardize to one convention.\"},\n        {\"severity\": \"info\", \"issue\": \"No truly orphaned nodes found after accounting for both relationship types.\"}\n      ]\n    }\n  }",
+      "info_count": 2,
+      "overall_status": "PASS",
+      "layer": "SA",
+      "l4_status": "WARN",
+      "l3_status": "WARN",
+      "l5_status": "PASS",
+      "warning_count": 3,
+      "l1_status": "PASS",
+      "l6_status": "WARN",
+      "l2_status": "PASS",
+      "timestamp": "2026-04-06T04:24:02.413000000+00:00"
+    }
+  }
+]

@@ -1,0 +1,79 @@
+[
+  {
+    "labels": [
+      "Enumeration"
+    ],
+    "properties": {
+      "name": "BoardKind",
+      "description": "Categorical kind of an Excalidraw board, drives renderer selection and layout.",
+      "id": "ENUM-BOARD-KIND",
+      "source_file": "server/src/services/board-classifier.ts"
+    }
+  },
+  {
+    "labels": [
+      "Enumeration"
+    ],
+    "properties": {
+      "name": "SyncStatus",
+      "description": "Board sync state vs the underlying graph.",
+      "id": "ENUM-SYNC-STATUS",
+      "source_file": "server/src/services/meta.ts"
+    }
+  },
+  {
+    "labels": [
+      "Enumeration"
+    ],
+    "properties": {
+      "name": "RunPhase",
+      "description": "Lifecycle phase of a skill Run.",
+      "id": "ENUM-RUN-PHASE",
+      "source_file": "server/src/services/run-queue.ts"
+    }
+  },
+  {
+    "labels": [
+      "Enumeration"
+    ],
+    "properties": {
+      "name": "SkillKind",
+      "description": "Which NaCl skill this Run/Batch invokes.",
+      "id": "ENUM-SKILL-KIND",
+      "source_file": "server/src/services/skill-runner.ts"
+    }
+  },
+  {
+    "labels": [
+      "Enumeration"
+    ],
+    "properties": {
+      "name": "BatchStatus",
+      "description": "Overall status of a multi-target batch operation.",
+      "id": "ENUM-BATCH-STATUS",
+      "source_file": "server/src/services/run-queue.ts"
+    }
+  },
+  {
+    "labels": [
+      "Enumeration"
+    ],
+    "properties": {
+      "name": "ConfigSource",
+      "description": "Provenance of a resolved configuration value.",
+      "id": "ENUM-CONFIG-SOURCE",
+      "source_file": "server/src/config.ts"
+    }
+  },
+  {
+    "labels": [
+      "Enumeration"
+    ],
+    "properties": {
+      "name": "RenderMdSubtype",
+      "description": "Which markdown view a render-md run materialises.",
+      "id": "ENUM-RENDER-MD-SUBTYPE",
+      "source_file": "server/src/render/markdown/index.ts"
+    }
+  }
+]

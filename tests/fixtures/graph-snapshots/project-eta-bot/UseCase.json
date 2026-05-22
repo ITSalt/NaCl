@@ -1,0 +1,212 @@
+[
+  {
+    "labels": [
+      "UseCase"
+    ],
+    "properties": {
+      "complexity": "",
+      "migrated_at": "2026-04-13T13:41:34.566000000+00:00",
+      "created": "2026-04-13T13:41:34.566000000+00:00",
+      "ba_trace": [],
+      "module": "system",
+      "description": "",
+      "priority": "",
+      "source_file": "docs/14-usecases/UC001-startup-reconciliation.md",
+      "actor": "",
+      "name": "Startup и Reconciliation",
+      "iteration": "",
+      "id": "UC-001",
+      "original_id": "UC001",
+      "updated": "2026-04-13T13:41:34.566000000+00:00"
+    }
+  },
+  {
+    "labels": [
+      "UseCase"
+    ],
+    "properties": {
+      "complexity": "",
+      "migrated_at": "2026-04-13T13:41:34.566000000+00:00",
+      "ba_trace": [],
+      "created": "2026-04-13T13:41:34.566000000+00:00",
+      "module": "system",
+      "description": "",
+      "priority": "",
+      "source_file": "docs/14-usecases/UC002-healthcheck.md",
+      "actor": "",
+      "name": "Healthcheck",
+      "iteration": "",
+      "id": "UC-002",
+      "original_id": "UC002",
+      "updated": "2026-04-13T13:41:34.566000000+00:00"
+    }
+  },
+  {
+    "labels": [
+      "UseCase"
+    ],
+    "properties": {
+      "complexity": "",
+      "migrated_at": "2026-04-13T13:41:34.566000000+00:00",
+      "created": "2026-04-13T13:41:34.566000000+00:00",
+      "ba_trace": [],
+      "module": "system",
+      "description": "",
+      "priority": "",
+      "source_file": "docs/14-usecases/UC003-graceful-shutdown.md",
+      "actor": "",
+      "name": "Graceful Shutdown",
+      "iteration": "",
+      "id": "UC-003",
+      "original_id": "UC003",
+      "updated": "2026-04-13T13:41:34.566000000+00:00"
+    }
+  },
+  {
+    "labels": [
+      "UseCase"
+    ],
+    "properties": {
+      "complexity": "",
+      "migrated_at": "2026-04-13T13:41:34.566000000+00:00",
+      "ba_trace": [],
+      "created": "2026-04-13T13:41:34.566000000+00:00",
+      "module": "channels",
+      "description": "",
+      "priority": "",
+      "source_file": "docs/14-usecases/UC101-create-route-channel.md",
+      "actor": "",
+      "name": "Создание route-канала",
+      "iteration": "",
+      "id": "UC-101",
+      "original_id": "UC101",
+      "updated": "2026-04-13T13:41:34.566000000+00:00"
+    }
+  },
+  {
+    "labels": [
+      "UseCase"
+    ],
+    "properties": {
+      "complexity": "",
+      "migrated_at": "2026-04-13T13:41:34.566000000+00:00",
+      "ba_trace": [],
+      "created": "2026-04-13T13:41:34.566000000+00:00",
+      "module": "channels",
+      "description": "",
+      "priority": "",
+      "source_file": "docs/14-usecases/UC102-archive-channel.md",
+      "actor": "",
+      "name": "Архивирование канала",
+      "iteration": "",
+      "id": "UC-102",
+      "original_id": "UC102",
+      "updated": "2026-04-13T13:41:34.566000000+00:00"
+    }
+  },
+  {
+    "labels": [
+      "UseCase"
+    ],
+    "properties": {
+      "complexity": "",
+      "migrated_at": "2026-04-13T13:41:34.566000000+00:00",
+      "created": "2026-04-13T13:41:34.566000000+00:00",
+      "ba_trace": [],
+      "module": "channels",
+      "description": "",
+      "priority": "",
+      "source_file": "docs/14-usecases/UC103-sync-employee.md",
+      "actor": "",
+      "name": "Sync employee -> MM User",
+      "iteration": "",
+      "id": "UC-103",
+      "original_id": "UC103",
+      "updated": "2026-04-13T13:41:34.566000000+00:00"
+    }
+  },
+  {
+    "labels": [
+      "UseCase"
+    ],
+    "properties": {
+      "complexity": "",
+      "migrated_at": "2026-04-13T13:41:34.566000000+00:00",
+      "ba_trace": [],
+      "created": "2026-04-13T13:41:34.566000000+00:00",
+      "module": "channels",
+      "description": "",
+      "priority": "",
+      "source_file": "docs/14-usecases/UC104-post-notification.md",
+      "actor": "",
+      "name": "Нотификация в канал",
+      "iteration": "",
+      "id": "UC-104",
+      "original_id": "UC104",
+      "updated": "2026-04-13T13:41:34.566000000+00:00"
+    }
+  },
+  {
+    "labels": [
+      "UseCase"
+    ],
+    "properties": {
+      "complexity": "",
+      "migrated_at": "2026-04-13T13:41:34.566000000+00:00",
+      "ba_trace": [],
+      "created": "2026-04-13T13:41:34.566000000+00:00",
+      "module": "channels",
+      "description": "",
+      "priority": "",
+      "source_file": "docs/14-usecases/UC105-create-system-channels.md",
+      "actor": "",
+      "name": "Создание system-каналов",
+      "iteration": "",
+      "id": "UC-105",
+      "original_id": "UC105",
+      "updated": "2026-04-13T13:41:34.566000000+00:00"
+    }
+  },
+  {
+    "labels": [
+      "UseCase"
+    ],
+    "properties": {
+      "complexity": "",
+      "migrated_at": "2026-04-13T13:41:34.566000000+00:00",
+      "created": "2026-04-13T13:41:34.566000000+00:00",
+      "ba_trace": [],
+      "module": "channels",
+      "description": "",
+      "priority": "",
+      "source_file": "docs/14-usecases/UC106-fcm-push-technician.md",
+      "actor": "",
+      "name": "FCM push технику",
+      "iteration": "",
+      "id": "UC-106",
+      "original_id": "UC106",
+      "updated": "2026-04-13T13:41:34.566000000+00:00"
+    }
+  },
+  {
+    "labels": [
+      "UseCase"
+    ],
+    "properties": {
+      "complexity": "",
+      "migrated_at": "2026-04-13T13:41:34.566000000+00:00",
+      "ba_trace": [],
+      "created": "2026-04-13T13:41:34.566000000+00:00",
+      "module": "client_proxy",
+      "description": "",
+      "priority": "",
+      "source_file": "docs/14-usecases/UC201-support-chat-send.md",
+      "actor": "",
+      "name": "Support-чат (отправка)",
+      "iteration": "",
+      "id": "UC-201",
+      "original_id": "UC201",
+      "updated": "2026-04-13T13:41:34.566000000+00:00"
+    }
+  }
+]

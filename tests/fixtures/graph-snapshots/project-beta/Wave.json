@@ -1,0 +1,80 @@
+[
+  {
+    "labels": [
+      "Wave"
+    ],
+    "properties": {
+      "number": 0,
+      "created": "2026-05-18T08:40:46.825000000+00:00",
+      "name": "Foundation & Infrastructure",
+      "id": "W0",
+      "updated": "2026-05-18T08:40:46.825000000+00:00",
+      "status": "pending"
+    }
+  },
+  {
+    "labels": [
+      "Wave"
+    ],
+    "properties": {
+      "number": 1,
+      "created": "2026-05-18T08:40:46.825000000+00:00",
+      "name": "Core BE: Catalog + Upload",
+      "id": "W1",
+      "updated": "2026-05-18T08:40:46.825000000+00:00",
+      "status": "pending"
+    }
+  },
+  {
+    "labels": [
+      "Wave"
+    ],
+    "properties": {
+      "number": 2,
+      "created": "2026-05-18T08:40:46.825000000+00:00",
+      "name": "Core FE + Detail BE + Transcription Pipeline",
+      "id": "W2",
+      "updated": "2026-05-18T08:40:46.825000000+00:00",
+      "status": "pending"
+    }
+  },
+  {
+    "labels": [
+      "Wave"
+    ],
+    "properties": {
+      "number": 3,
+      "created": "2026-05-18T08:40:46.825000000+00:00",
+      "name": "Detail/Delete BE+FE + Transcript + Protocol Pipeline",
+      "id": "W3",
+      "updated": "2026-05-18T08:40:46.825000000+00:00",
+      "status": "pending"
+    }
+  },
+  {
+    "labels": [
+      "Wave"
+    ],
+    "properties": {
+      "number": 4,
+      "created": "2026-05-18T08:40:46.825000000+00:00",
+      "name": "Delete/Transcript FE + Protocol Editor BE",
+      "id": "W4",
+      "updated": "2026-05-18T08:40:46.825000000+00:00",
+      "status": "pending"
+    }
+  },
+  {
+    "labels": [
+      "Wave"
+    ],
+    "properties": {
+      "number": 5,
+      "created": "2026-05-18T08:40:46.825000000+00:00",
+      "name": "Protocol Editor FE + PDF Export",
+      "id": "W5",
+      "updated": "2026-05-18T08:40:46.825000000+00:00",
+      "status": "pending"
+    }
+  }
+]

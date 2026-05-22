@@ -1,0 +1,28 @@
+[
+  {
+    "labels": [
+      "FinalizationReport"
+    ],
+    "properties": {
+      "overall_readiness": "READY",
+      "total_enum_values": 60,
+      "total_activity_steps": 298,
+      "total_roles": 5,
+      "total_forms": 20,
+      "incomplete_modules": 0,
+      "total_requirements": 189,
+      "total_attributes": 206,
+      "layer": "SA",
+      "detailed_ucs": 51,
+      "adr_count": 10,
+      "ready_modules": 8,
+      "total_components": 20,
+      "total_ucs": 51,
+      "total_entities": 23,
+      "total_enums": 17,
+      "total_modules": 8,
+      "total_form_fields": 77,
+      "timestamp": "2026-04-06T04:26:16.035000000+00:00"
+    }
+  }
+]

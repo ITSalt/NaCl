@@ -1,0 +1,10 @@
+# Fix chain reproducing Project-Alpha FIX-B audit wave (post-mortem § 3.12).
+# Format: <chain_index> <classification> <SHA> <subject>
+# Read by nacl-tl-fix Step 6.SF-1 detection logic.
+0 code-fix 01f2fcb fix(UC-105/UC-106/UC-107): wire post-commit task events + notifications (L2)
+1 code-fix c83e84f fix(tests): valid UUID fixtures + maxEvents headroom for FIX-B integration tests
+2 code-fix 92da5c7 fix(tests): correct schema namespace in task.cancel.sse.test.ts (FIX-B audit)
+3 code-fix 135b14b fix(UC-107/UC-150/UC-202): gate post-commit emits on finalSlotStatus (FIX-B audit P1)
+4 code-fix 6ed12ac fix(UC-107/UC-150/UC-202): cancel/fail race correctness (L2, FIX-B audit P2)
+5 code-fix 3acb2fd fix(UC-107/UC-202): lock tasks row FOR UPDATE in worker commit TX (P1 cancel race)
+6 spec-update a7eb747 docs(SA): UC-105/UC-106/UC-107 post-commit emit timing (L2)

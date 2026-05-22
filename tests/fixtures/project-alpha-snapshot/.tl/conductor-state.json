@@ -1,0 +1,130 @@
+{
+  "branch": "main",
+  "baseBranch": "main",
+  "gitStrategy": "direct",
+  "batch": "wave-11-fr-005-workflow-step-ordering",
+  "scopeSource": "Neo4j graph (FR-005) + .tl/feature-requests/FR-005-workflow-step-ordering.md + .tl/master-plan.md Wave 11 + .tl/status.json",
+  "predecessorState": ".tl/conductor-state.wave-10-fr-004-2026-05-18.json",
+  "items": [
+    {
+      "id": "TECH-WF-ORDER-DB",
+      "type": "tech",
+      "wave": 11,
+      "feature_request": "FR-005",
+      "depends_on": ["TECH-003"]
+    },
+    {
+      "id": "UC-305-BE-FR005",
+      "type": "uc",
+      "layer": "be",
+      "wave": 11,
+      "feature_request": "FR-005",
+      "depends_on": ["TECH-WF-ORDER-DB", "UC-305-BE"]
+    },
+    {
+      "id": "UC-302-BE-FR005",
+      "type": "uc",
+      "layer": "be",
+      "wave": 11,
+      "feature_request": "FR-005",
+      "depends_on": ["TECH-WF-ORDER-DB", "UC-302-BE"]
+    },
+    {
+      "id": "UC-305-FE-FR005",
+      "type": "uc",
+      "layer": "fe",
+      "wave": 11,
+      "feature_request": "FR-005",
+      "depends_on": ["UC-305-BE-FR005", "UC-305-FE"]
+    },
+    {
+      "id": "UC-302-FE-FR005",
+      "type": "uc",
+      "layer": "fe",
+      "wave": 11,
+      "feature_request": "FR-005",
+      "depends_on": ["UC-302-BE-FR005", "UC-305-BE-FR005", "UC-302-FE"]
+    }
+  ],
+  "flags": {
+    "skipDeliver": false,
+    "skipQa": false,
+    "yes": false
+  },
+  "started": "2026-05-19T00:00:00Z",
+  "phase": "development",
+  "preCommits": [
+    {
+      "id": "WAVE-11-PLAN",
+      "status": "pending",
+      "description": "FR-005 planning artifacts: feature-requests/FR-005 + 5 task dirs + status.json + master-plan + changelog"
+    }
+  ],
+  "techTasks": [
+    {
+      "id": "TECH-WF-ORDER-DB",
+      "status": "done",
+      "subSkillStatus": "PASS",
+      "review": "APPROVED_WITH_NOTES",
+      "commit": "dc5fab0",
+      "note": "BE 1209/1209 green; migration applied live on project-alpha_dev (0 NULL rows, UNIQUE + CHECK present). 22 YAML positions backfilled across 6 workflows."
+    }
+  ],
+  "followups": [
+    {
+      "kind": "tech",
+      "scope": "UC-305-BE-FR005",
+      "description": "MAX+1 create path in workflow-step-configs.service is non-atomic; tighten under UC-305-BE-FR005 by accepting client step_order + tx/advisory-lock; distinguish STEP_ORDER_CONFLICT from WSC_ALREADY_EXISTS."
+    },
+    {
+      "kind": "tech",
+      "scope": "migrations",
+      "description": "0021 ADD CONSTRAINT + CREATE UNIQUE INDEX lack IF NOT EXISTS guards — consistent with prior 0xxx files; safe under Drizzle journal. Optional cleanup later."
+    }
+  ],
+  "ucTasks": [
+    {
+      "id": "UC-305-BE-FR005",
+      "status": "done",
+      "subSkillStatus": "PASS",
+      "review": "self-authored (test_author_overlap=true)",
+      "commit": "2aa0863",
+      "note": "BE 1233/1233 green (+22 integration tests); PATCH /reorder transactional via +1000 stash; ?grouped enum transform; 6 new 4xx codes; shared types updated. FE counterpart UC-305-FE-FR005 mitigates author overlap."
+    },
+    {
+      "id": "UC-302-BE-FR005",
+      "status": "done",
+      "subSkillStatus": "PASS",
+      "review": "self-authored (test_author_overlap=true)",
+      "commit": "3171279",
+      "note": "BE 1243/1243 green (+10 tests); pure YAML catalog from app.workflows; no DB reads. z.enum guard on ?grouped (banana → 400)."
+    },
+    {
+      "id": "UC-305-FE-FR005",
+      "status": "done",
+      "subSkillStatus": "PASS",
+      "review": "self-authored (test_author_overlap=true)",
+      "commit": "db4b598",
+      "verificationCommit": "b42ec88",
+      "note": "FE 549/549 green (+12 structural tests). Playwright E2E (TS-305/308/309) added in follow-up commit b42ec88: pointer drag reorder, cross-workflow rejection, keyboard reorder all pass. Graph status = done."
+    },
+    {
+      "id": "UC-302-FE-FR005",
+      "status": "done",
+      "subSkillStatus": "PASS",
+      "review": "self-authored (test_author_overlap=true)",
+      "commit": "655e65a",
+      "note": "FE 567/567 green (+18 RTL tests covering TS-501..TS-514). Typecheck/lint/build clean. Vendored Command + Popover primitives (no cmdk/Radix dep)."
+    }
+  ],
+  "delivery": {
+    "status": "done",
+    "pushedAt": "2026-05-19T00:00:00Z",
+    "ciRun": "26106025273",
+    "ciResult": "PASS",
+    "commits": ["dc5fab0", "2aa0863", "3171279", "db4b598", "655e65a"],
+    "branch": "main",
+    "note": "git push origin main 9a24613..655e65a; gh run watch 26106025273 --exit-status returned 0"
+  },
+  "phaseFinal": "done"
+}

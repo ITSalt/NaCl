@@ -132,7 +132,7 @@ reports:
   mode: "local"         # "local" (default) or "remote"
   local_path: ".tl/reports"   # relative to project root
   # Remote settings (only used if mode: "remote"):
-  ssh_host: ""          # user@ip (e.g., deploy@108.181.215.149)
+  ssh_host: ""          # user@ip (e.g., deploy@203.0.113.20)
   remote_path: "/srv/reports"
   domain: ""            # reports.example.com
   retention_days: 30

@@ -1038,7 +1038,7 @@ to force a re-plan should clear Task/Wave nodes (or invoke
 The bulk-QA-skip flag (previously documented at this position) was
 removed from this skill in W3-blocking-qa. QA bypass at the
 full-lifecycle layer is no longer an operator flag — the
-SKIP-as-PASS failure mode it produced (transcriber UC-200/UC-300
+SKIP-as-PASS failure mode it produced (project-beta UC-200/UC-300
 provider-skip episode) is what W3 closed.
 
 Alternatives:

@@ -1,0 +1,142 @@
+[
+  {
+    "labels": [
+      "DomainAttribute"
+    ],
+    "properties": {
+      "internal": true,
+      "updated_at": "2026-04-29T08:09:53.869000000+00:00",
+      "name": "id",
+      "data_type": "UUID",
+      "id": "attr-001",
+      "type": "UUID",
+      "constraints": "PK"
+    }
+  },
+  {
+    "labels": [
+      "DomainAttribute"
+    ],
+    "properties": {
+      "internal": true,
+      "updated_at": "2026-04-29T08:09:53.869000000+00:00",
+      "name": "user_id",
+      "data_type": "UUID",
+      "id": "attr-002",
+      "type": "UUID",
+      "constraints": "FK → User"
+    }
+  },
+  {
+    "labels": [
+      "DomainAttribute"
+    ],
+    "properties": {
+      "internal": true,
+      "updated_at": "2026-04-29T08:09:53.869000000+00:00",
+      "name": "token_hash",
+      "data_type": "String",
+      "id": "attr-003",
+      "type": "string",
+      "constraints": "SHA-256 hash of jti"
+    }
+  },
+  {
+    "labels": [
+      "DomainAttribute"
+    ],
+    "properties": {
+      "internal": true,
+      "updated_at": "2026-04-29T08:09:53.869000000+00:00",
+      "data_type": "DateTime",
+      "name": "expires_at",
+      "id": "attr-004",
+      "type": "timestamptz",
+      "constraints": ""
+    }
+  },
+  {
+    "labels": [
+      "DomainAttribute"
+    ],
+    "properties": {
+      "internal": true,
+      "updated_at": "2026-04-29T08:09:53.869000000+00:00",
+      "data_type": "DateTime",
+      "name": "created_at",
+      "id": "attr-005",
+      "type": "timestamptz",
+      "constraints": ""
+    }
+  },
+  {
+    "labels": [
+      "DomainAttribute"
+    ],
+    "properties": {
+      "internal": true,
+      "updated_at": "2026-04-29T08:09:53.869000000+00:00",
+      "name": "id",
+      "data_type": "UUID",
+      "id": "attr-006",
+      "type": "UUID",
+      "constraints": "PK"
+    }
+  },
+  {
+    "labels": [
+      "DomainAttribute"
+    ],
+    "properties": {
+      "internal": false,
+      "updated_at": "2026-04-29T08:09:53.869000000+00:00",
+      "data_type": "String",
+      "name": "email",
+      "id": "attr-007",
+      "type": "string",
+      "constraints": "unique; login for portal and Mattermost"
+    }
+  },
+  {
+    "labels": [
+      "DomainAttribute"
+    ],
+    "properties": {
+      "internal": true,
+      "updated_at": "2026-04-29T08:09:53.869000000+00:00",
+      "name": "password_hash",
+      "data_type": "String",
+      "id": "attr-008",
+      "type": "string",
+      "constraints": "bcrypt, cost 12"
+    }
+  },
+  {
+    "labels": [
+      "DomainAttribute"
+    ],
+    "properties": {
+      "internal": false,
+      "updated_at": "2026-04-29T08:09:53.869000000+00:00",
+      "data_type": "String",
+      "name": "name",
+      "id": "attr-009",
+      "type": "string",
+      "constraints": "display name"
+    }
+  },
+  {
+    "labels": [
+      "DomainAttribute"
+    ],
+    "properties": {
+      "internal": true,
+      "updated_at": "2026-04-29T08:09:53.869000000+00:00",
+      "data_type": "Enum",
+      "name": "role",
+      "id": "attr-010",
+      "type": "enum",
+      "constraints": "UserRole (teacher/student)"
+    }
+  }
+]

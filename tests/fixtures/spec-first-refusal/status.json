@@ -1,0 +1,34 @@
+{
+  "$schema": "tl-status-v1",
+  "intake_id": "intake-project-alpha-wave4-audit",
+  "updated_at": "2026-05-11T17:35:00Z",
+  "phases": {
+    "plan": "done",
+    "dev_be": "in_progress",
+    "dev_fe": "in_progress",
+    "sync": "pending",
+    "review": "pending",
+    "qa": "pending",
+    "stubs": "pending",
+    "spec": "pending",
+    "docs": "pending"
+  },
+  "tasks": [
+    {
+      "id": "UC-105",
+      "status": "in_progress",
+      "started_at": "2026-05-11T17:35:00Z"
+    },
+    {
+      "id": "UC-106",
+      "status": "in_progress",
+      "started_at": "2026-05-11T17:35:00Z"
+    },
+    {
+      "id": "UC-107",
+      "status": "in_progress",
+      "started_at": "2026-05-11T17:35:00Z"
+    }
+  ],
+  "_note": "Captured at the moment the first code-fix commit (01f2fcb) is about to land. phases.spec and phases.docs are both 'pending'. No earlier 'done' entry exists for either."
+}

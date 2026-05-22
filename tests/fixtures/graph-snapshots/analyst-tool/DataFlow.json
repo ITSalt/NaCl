@@ -1,0 +1,122 @@
+[
+  {
+    "labels": [
+      "DataFlow"
+    ],
+    "properties": {
+      "data_description": "Analyst opens a board in the browser canvas, makes edits, and the frontend POSTs the updated .excalidraw JSON to PUT /api/v1/boards/:name",
+      "name": "Analyst edits Excalidraw scene",
+      "id": "DF-01-analyst-edits-board",
+      "source_file": "server/src/index.ts",
+      "direction": "IN"
+    }
+  },
+  {
+    "labels": [
+      "DataFlow"
+    ],
+    "properties": {
+      "data_description": "Analyst clicks skill button in UI; frontend POSTs to POST /api/v1/skills with {kind, board}",
+      "name": "Analyst triggers skill (regenerate / sync / analyze)",
+      "id": "DF-02-analyst-triggers-skill",
+      "source_file": "server/src/services/skill-runner.ts",
+      "direction": "IN"
+    }
+  },
+  {
+    "labels": [
+      "DataFlow"
+    ],
+    "properties": {
+      "data_description": "Deterministic renderers query Neo4j via neo4j-driver (findNodesByLabel, findNodesById, findNodesByText) over Bolt to build Excalidraw scenes and markdown documents",
+      "name": "Tool reads Neo4j graph for renderers",
+      "id": "DF-03-tool-reads-neo4j",
+      "source_file": "server/src/services/neo4j.ts",
+      "direction": "OUT"
+    }
+  },
+  {
+    "labels": [
+      "DataFlow"
+    ],
+    "properties": {
+      "data_description": "nacl-ba-sync skill (invoked via Pacer -> claude CLI) writes graph nodes and relationships back to Neo4j after analyst edits a board",
+      "name": "Tool writes Neo4j graph via sync skill",
+      "id": "DF-04-tool-writes-neo4j",
+      "source_file": "server/src/services/skill-runner.ts",
+      "direction": "OUT"
+    }
+  },
+  {
+    "labels": [
+      "DataFlow"
+    ],
+    "properties": {
+      "data_description": "skill-runner builds whitelisted prompts (/nacl-ba-sync, /nacl-ba-analyze) and passes them to Pacer.run(); Pacer spawns claude --print --output-format=stream-json subprocess",
+      "name": "Tool invokes claude CLI via Pacer",
+      "id": "DF-05-tool-invokes-claude",
+      "source_file": "server/src/services/pinch.ts",
+      "direction": "OUT"
+    }
+  },
+  {
+    "labels": [
+      "DataFlow"
+    ],
+    "properties": {
+      "data_description": "Server reads .excalidraw files, .meta.json sidecars, snapshots, config.yaml, and ~/.nacl/projects.json; writes board files and meta after skill runs and analyst saves",
+      "name": "Tool reads board files and registry from filesystem",
+      "id": "DF-06-tool-reads-filesystem",
+      "source_file": "server/src/services/boards.ts",
+      "direction": "BOTH"
+    }
+  },
+  {
+    "labels": [
+      "DataFlow"
+    ],
+    "properties": {
+      "data_description": "chokidar watches boardsDir; board add/change/unlink and snapshot.created events are broadcast to subscribed WS clients (UI updates board tree and run panel without polling)",
+      "name": "Filesystem change events broadcast over WebSocket",
+      "id": "DF-07-fs-watcher-events",
+      "source_file": "server/src/services/fs-watcher.ts",
+      "direction": "IN"
+    }
+  },
+  {
+    "labels": [
+      "DataFlow"
+    ],
+    "properties": {
+      "data_description": "registry-watcher service watches ~/.nacl/projects.json; edits made by nacl-init or other tools are detected and broadcast over WS so the UI project picker refreshes",
+      "name": "Project registry file watched for external changes",
+      "id": "DF-08-registry-watcher",
+      "source_file": "server/src/services/registry-watcher.ts",
+      "direction": "IN"
+    }
+  },
+  {
+    "labels": [
+      "DataFlow"
+    ],
+    "properties": {
+      "data_description": "itsalt-pinch hooks (onEnqueued, onStarted, onBlocked, onFinished) feed run.* events to the WS broadcast hub; frontend RunPanel renders queue/running/blocked/finished states",
+      "name": "Pacer lifecycle events broadcast over WebSocket",
+      "id": "DF-09-pacer-ws-events",
+      "source_file": "server/src/services/pinch.ts",
+      "direction": "OUT"
+    }
+  },
+  {
+    "labels": [
+      "DataFlow"
+    ],
+    "properties": {
+      "data_description": "Analyst selects a project in the UI project picker; frontend calls PATCH /api/v1/projects/active; server writes activeProjectId to projects.json and reloads Neo4j driver",
+      "name": "Analyst switches active project",
+      "id": "DF-10-analyst-switches-project",
+      "source_file": "server/src/services/project-registry.ts",
+      "direction": "IN"
+    }
+  }
+]

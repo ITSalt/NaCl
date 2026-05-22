@@ -1,0 +1,19 @@
+{
+  "_capture_meta": {
+    "endpoint": "POST https://api.api.kie.example.invalid/v1/messages",
+    "status": 200,
+    "captured_at": "2026-05-19T22:28:00Z",
+    "source": "synthetic recording of an Anthropic-flavored api.kie.example.invalid response — shape verified against the project-beta postmortem § 3.3 (api.kie.example.invalid endpoint shape was Anthropic, not OpenAI)"
+  },
+  "id": "msg_01ABC123",
+  "type": "message",
+  "role": "assistant",
+  "model": "claude-3-5-sonnet-20241022",
+  "content": [
+    {
+      "type": "text",
+      "text": "PROTOCOL OUTLINE\n1. Purpose\n2. Participants\n3. Agenda"
+    }
+  ],
+  "stop_reason": "end_turn"
+}

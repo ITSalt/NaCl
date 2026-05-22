@@ -1,0 +1,6 @@
+> **EMERGENCY-BYPASS** at 2026-05-22T18:42:11Z by magznikitin —
+> bypassed gates: direct-strategy-on-standard-project,
+> upstream-sync-unverified, upstream-qa-unverified,
+> missing-prod-golden-path, graph-stale, sa-validate-critical.
+> Reason: "prod 500s on /api/release/v0.18.0 — rolling back".
+> Event: .tl/emergencies/20260522T184211Z-prod-rollback.yaml.

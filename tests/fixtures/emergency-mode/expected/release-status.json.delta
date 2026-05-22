@@ -1,0 +1,17 @@
+{
+  "emergency": {
+    "event_id": "EMG-2026-05-22-prod-rollback",
+    "reason": "prod 500s on /api/release/v0.18.0 — rolling back",
+    "owner": "magznikitin",
+    "bypassed_gates": [
+      "direct-strategy-on-standard-project",
+      "upstream-sync-unverified",
+      "upstream-qa-unverified",
+      "missing-prod-golden-path",
+      "graph-stale",
+      "sa-validate-critical"
+    ],
+    "event_file": ".tl/emergencies/20260522T184211Z-prod-rollback.yaml",
+    "timestamp_utc": "2026-05-22T18:42:11Z"
+  }
+}

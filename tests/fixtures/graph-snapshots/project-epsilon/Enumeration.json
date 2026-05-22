@@ -1,0 +1,173 @@
+[
+  {
+    "labels": [
+      "Enumeration"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T15:03:47.155000000+00:00",
+      "created": "2026-04-13T09:15:32.444000000+00:00",
+      "ba_trace": [],
+      "name": "AbcCategory -- ABC-категория товарной позиции",
+      "description": "Результат ABC-анализа по продажам в рублях за 28 дней в рамках одного маркетплейса. Категория присваивается каждой паре (article1c + size) внутри маркетплейса при запуске расчёта потребностей (UC202).",
+      "id": "EN-abc-category",
+      "updated": "2026-04-13T15:03:47.155000000+00:00",
+      "source_file": "docs/12-domain/enumerations/abc-category.md"
+    }
+  },
+  {
+    "labels": [
+      "Enumeration"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T15:03:47.155000000+00:00",
+      "created": "2026-04-13T09:15:32.444000000+00:00",
+      "ba_trace": [
+        "OBJ-008"
+      ],
+      "name": "CalculationStatus",
+      "description": "Жизненный цикл объекта DailyOrderCalculation — от создания до утверждения.",
+      "id": "EN-calculation-status",
+      "updated": "2026-04-13T15:03:47.155000000+00:00",
+      "source_file": "docs/12-domain/enumerations/calculation-status.md"
+    }
+  },
+  {
+    "labels": [
+      "Enumeration"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T15:03:47.155000000+00:00",
+      "created": "2026-04-13T09:15:32.444000000+00:00",
+      "ba_trace": [
+        "OBJ-010",
+        "BRQ-017"
+      ],
+      "name": "DeliveryOrderStatus",
+      "description": "Жизненный цикл заявки на поставку — от формирования до утверждения после резервирования в 1С.",
+      "id": "EN-delivery-order-status",
+      "updated": "2026-04-13T15:03:47.155000000+00:00",
+      "source_file": "docs/12-domain/enumerations/delivery-order-status.md"
+    }
+  },
+  {
+    "labels": [
+      "Enumeration"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T15:03:47.155000000+00:00",
+      "created": "2026-04-13T09:15:32.444000000+00:00",
+      "ba_trace": [
+        "OBJ-001",
+        "OBJ-002",
+        "OBJ-003",
+        "OBJ-004"
+      ],
+      "name": "ImportStatus",
+      "description": "Статус загруженного в систему файла из 1С. Применяется ко всем сущностям модуля data-import: ArticleImport, WarehouseStockImport, WarehouseDeliveryImport, ProductionPlanImport.",
+      "id": "EN-import-status",
+      "updated": "2026-04-13T15:03:47.155000000+00:00",
+      "source_file": "docs/12-domain/enumerations/import-status.md"
+    }
+  },
+  {
+    "labels": [
+      "Enumeration"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T15:03:47.155000000+00:00",
+      "created": "2026-04-13T09:15:32.444000000+00:00",
+      "ba_trace": [
+        "OBJ-016",
+        "BRQ-018",
+        "BRQ-019"
+      ],
+      "name": "ShippingLabelStatus",
+      "description": "Управляет жизненным циклом получения этикетки для сущности ShippingLabel (поле transferStatus). Отражает бизнес-правила BRQ-018 и BRQ-019.",
+      "id": "EN-label-transfer-status",
+      "updated": "2026-04-13T15:03:47.155000000+00:00",
+      "source_file": "docs/12-domain/enumerations/label-transfer-status.md"
+    }
+  },
+  {
+    "labels": [
+      "Enumeration"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T15:03:47.155000000+00:00",
+      "created": "2026-04-13T09:15:32.444000000+00:00",
+      "ba_trace": [
+        "OBJ-005",
+        "BRQ-002"
+      ],
+      "name": "MarketplaceType",
+      "description": "Перечисление сегментов / каналов маркетплейсов, на которые ориентирована поставка. Используется в таблице сопоставления артикулов и в заявках.",
+      "id": "EN-marketplace-type",
+      "updated": "2026-04-13T15:03:47.155000000+00:00",
+      "source_file": "docs/12-domain/enumerations/marketplace-type.md"
+    }
+  },
+  {
+    "labels": [
+      "Enumeration"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T15:03:47.155000000+00:00",
+      "created": "2026-04-13T09:15:32.444000000+00:00",
+      "ba_trace": [
+        "OBJ-016",
+        "BRQ-018",
+        "BRQ-019"
+      ],
+      "name": "NotificationStatus",
+      "description": "Статус отправки документов сотруднику склада через email.",
+      "id": "EN-notification-status",
+      "updated": "2026-04-13T15:03:47.155000000+00:00",
+      "source_file": "docs/12-domain/enumerations/notification-status.md"
+    }
+  },
+  {
+    "labels": [
+      "Enumeration"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T15:03:47.155000000+00:00",
+      "created": "2026-04-13T09:15:32.444000000+00:00",
+      "ba_trace": [],
+      "name": "OzonPublicationStatus",
+      "description": "Отражает результат публикации заявки на поставку через API OZON. Применяется к OzonSupply (поле ozonPublicationStatus). Это отдельное поле от OzonSupply.status — оно отслеживает именно публикацию через API Ozon.",
+      "id": "EN-ozon-publication-status",
+      "updated": "2026-04-13T15:03:47.155000000+00:00",
+      "source_file": "docs/12-domain/enumerations/ozon-publication-status.md"
+    }
+  },
+  {
+    "labels": [
+      "Enumeration"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T15:03:47.155000000+00:00",
+      "created": "2026-04-13T09:15:32.444000000+00:00",
+      "ba_trace": [],
+      "name": "WbSupplyStatus / OzonSupplyStatus",
+      "description": "Жизненный цикл поставки на маркетплейс — от черновика до приёмки или отмены. В реализации используются два отдельных перечисления по маркетплейсам: WbSupplyStatus (для WbSupply) и OzonSupplyStatus (для OzonSupply). Общие статусы совпадают (DRAFT, CREATED, IN_DELIVERY, ACCEPTED, CANCELLED), но промежуточные шаги различаются.\n\n---",
+      "id": "EN-supply-status",
+      "updated": "2026-04-13T15:03:47.155000000+00:00",
+      "source_file": "docs/12-domain/enumerations/supply-status.md"
+    }
+  },
+  {
+    "labels": [
+      "Enumeration"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T15:03:47.155000000+00:00",
+      "created": "2026-04-13T09:15:32.444000000+00:00",
+      "ba_trace": [],
+      "name": "SyncStatus",
+      "description": "Отражает статус синхронизации данных ежедневного расчёта (DailyOrderCalculation) с API маркетплейса (WB или Ozon). Используется для атрибутов wbSyncStatus и ozonSyncStatus.",
+      "id": "EN-sync-status",
+      "updated": "2026-04-13T15:03:47.155000000+00:00",
+      "source_file": "docs/12-domain/enumerations/sync-status.md"
+    }
+  }
+]

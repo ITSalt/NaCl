@@ -1,0 +1,152 @@
+[
+  {
+    "labels": [
+      "ActivityStep"
+    ],
+    "properties": {
+      "actor": "",
+      "migrated_at": "2026-04-13T14:03:24.813000000+00:00",
+      "step_number": 1,
+      "created": "2026-04-13T14:03:24.813000000+00:00",
+      "description": "Ввод номера телефона (LoginPage1): Система отображает экран LoginPage1 с полем ввода телефона.",
+      "id": "UC-001-A01",
+      "updated": "2026-04-13T14:03:24.813000000+00:00",
+      "source_file": "docs/04-usecases/UC001-auth-otp.md"
+    }
+  },
+  {
+    "labels": [
+      "ActivityStep"
+    ],
+    "properties": {
+      "actor": "",
+      "migrated_at": "2026-04-13T14:03:24.813000000+00:00",
+      "step_number": 2,
+      "created": "2026-04-13T14:03:24.813000000+00:00",
+      "description": "Ввод PIN-кода (LoginPage2): Система отображает экран LoginPage2 с полем для 6-значного PIN-кода.",
+      "id": "UC-001-A02",
+      "updated": "2026-04-13T14:03:24.813000000+00:00",
+      "source_file": "docs/04-usecases/UC001-auth-otp.md"
+    }
+  },
+  {
+    "labels": [
+      "ActivityStep"
+    ],
+    "properties": {
+      "actor": "",
+      "migrated_at": "2026-04-13T14:03:24.813000000+00:00",
+      "step_number": 3,
+      "created": "2026-04-13T14:03:24.813000000+00:00",
+      "description": "Проверка/создание клиента: Система ожидает получения JWT-токена из jwtTokenStream.",
+      "id": "UC-001-A03",
+      "updated": "2026-04-13T14:03:24.813000000+00:00",
+      "source_file": "docs/04-usecases/UC001-auth-otp.md"
+    }
+  },
+  {
+    "labels": [
+      "ActivityStep"
+    ],
+    "properties": {
+      "actor": "",
+      "migrated_at": "2026-04-13T14:03:24.813000000+00:00",
+      "step_number": 4,
+      "created": "2026-04-13T14:03:24.813000000+00:00",
+      "description": "Регистрация FCM-токена: Система вызывает getFCMtoken() — получает текущий FCM-токен через FirebaseMessaging.instance.getToken().",
+      "id": "UC-001-A04",
+      "updated": "2026-04-13T14:03:24.813000000+00:00",
+      "source_file": "docs/04-usecases/UC001-auth-otp.md"
+    }
+  },
+  {
+    "labels": [
+      "ActivityStep"
+    ],
+    "properties": {
+      "actor": "",
+      "migrated_at": "2026-04-13T14:03:24.813000000+00:00",
+      "step_number": 5,
+      "created": "2026-04-13T14:03:24.813000000+00:00",
+      "description": "Навигация: Система переходит на главную страницу (домашний экран / список заказов).",
+      "id": "UC-001-A05",
+      "updated": "2026-04-13T14:03:24.813000000+00:00",
+      "source_file": "docs/04-usecases/UC001-auth-otp.md"
+    }
+  },
+  {
+    "labels": [
+      "ActivityStep"
+    ],
+    "properties": {
+      "actor": "",
+      "migrated_at": "2026-04-13T14:03:24.813000000+00:00",
+      "step_number": 1,
+      "created": "2026-04-13T14:03:24.813000000+00:00",
+      "description": "Выбор даты и времени -- CreateOrderPage1",
+      "id": "UC-010-A01",
+      "updated": "2026-04-13T14:03:24.813000000+00:00",
+      "source_file": "docs/04-usecases/UC010-create-order.md"
+    }
+  },
+  {
+    "labels": [
+      "ActivityStep"
+    ],
+    "properties": {
+      "actor": "",
+      "migrated_at": "2026-04-13T14:03:24.813000000+00:00",
+      "step_number": 2,
+      "created": "2026-04-13T14:03:24.813000000+00:00",
+      "description": "Выбор адреса -- CreateOrderPage2Address",
+      "id": "UC-010-A02",
+      "updated": "2026-04-13T14:03:24.813000000+00:00",
+      "source_file": "docs/04-usecases/UC010-create-order.md"
+    }
+  },
+  {
+    "labels": [
+      "ActivityStep"
+    ],
+    "properties": {
+      "actor": "",
+      "migrated_at": "2026-04-13T14:03:24.813000000+00:00",
+      "step_number": 3,
+      "created": "2026-04-13T14:03:24.813000000+00:00",
+      "description": "Выбор автомобиля -- CreateOrderPage3Auto",
+      "id": "UC-010-A03",
+      "updated": "2026-04-13T14:03:24.813000000+00:00",
+      "source_file": "docs/04-usecases/UC010-create-order.md"
+    }
+  },
+  {
+    "labels": [
+      "ActivityStep"
+    ],
+    "properties": {
+      "actor": "",
+      "migrated_at": "2026-04-13T14:03:24.813000000+00:00",
+      "step_number": 4,
+      "created": "2026-04-13T14:03:24.813000000+00:00",
+      "description": "Авторизация (для неавторизованных) -- CreateOrderPage4Login",
+      "id": "UC-010-A04",
+      "updated": "2026-04-13T14:03:24.813000000+00:00",
+      "source_file": "docs/04-usecases/UC010-create-order.md"
+    }
+  },
+  {
+    "labels": [
+      "ActivityStep"
+    ],
+    "properties": {
+      "actor": "",
+      "step_number": 5,
+      "migrated_at": "2026-04-13T14:03:24.813000000+00:00",
+      "created": "2026-04-13T14:03:24.813000000+00:00",
+      "description": "Завершение",
+      "id": "UC-010-A05",
+      "updated": "2026-04-13T14:03:24.813000000+00:00",
+      "source_file": "docs/04-usecases/UC010-create-order.md"
+    }
+  }
+]

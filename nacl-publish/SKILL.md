@@ -312,7 +312,7 @@ reconciliation evidence:
 ```
 
 Same schema as the conductor's reconciliation artifact
-(see `/Users/maxnikitin/projects/NaCl/.tl/reconciliation/
+(see `/home/project-owner/projects/NaCl/.tl/reconciliation/
 _template.json`) but with `sources_checked` scoped to the publish
 subset and `terminal_status` recorded against the publish gate
 specifically.

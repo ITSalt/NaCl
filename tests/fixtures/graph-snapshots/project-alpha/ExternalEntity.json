@@ -1,0 +1,81 @@
+[
+  {
+    "labels": [
+      "ExternalEntity"
+    ],
+    "properties": {
+      "purpose": "Хранение исходных файлов и сгенерированных ассетов; предоставление публичных/presigned ссылок",
+      "replaces": "Supabase Storage (AS-IS)",
+      "name": "Cloud.ru S3",
+      "id": "EXT-01",
+      "type": "ObjectStorage",
+      "status": "confirmed"
+    }
+  },
+  {
+    "labels": [
+      "ExternalEntity"
+    ],
+    "properties": {
+      "purpose": "Классификация типа украшения (Image Desc); сборка промптов; верификация (Verifier)",
+      "name": "LLM Provider (vision + reasoning)",
+      "id": "EXT-02",
+      "type": "ExternalAIService",
+      "config": "Класс. Конкретный провайдер выбирается админом per workflow step через BP-102. Текущий выбор: OpenRouter (агрегатор). AS-IS: Gemini Flash + GPT-5.x via OpenRouter.",
+      "providers": [
+        "OpenRouter"
+      ],
+      "status": "confirmed"
+    }
+  },
+  {
+    "labels": [
+      "ExternalEntity"
+    ],
+    "properties": {
+      "purpose": "Создание изображений (Retouch / Model / Interior)",
+      "name": "Image Generation Provider",
+      "id": "EXT-03",
+      "type": "ExternalAIService",
+      "config": "Класс. Конкретный провайдер выбирается админом per workflow step через BP-102. В TO-BE одновременно: api.kie.example.invalid, apiframe; в перспективе — прямой Google и др.",
+      "providers": [
+        "api.kie.example.invalid",
+        "apiframe",
+        "Google (планируется)"
+      ],
+      "status": "confirmed"
+    }
+  },
+  {
+    "labels": [
+      "ExternalEntity"
+    ],
+    "properties": {
+      "protocol": "async-polling",
+      "purpose": "Создание видео по фото и промпту; асинхронный поллинг статуса задачи",
+      "name": "Video Generation Provider",
+      "id": "EXT-04",
+      "type": "ExternalAIService",
+      "config": "Класс. Конкретный провайдер выбирается админом per workflow step через BP-102. В TO-BE одновременно: api.kie.example.invalid, apiframe; AS-IS: Kling v2.5 turbo via api.kie.example.invalid.",
+      "providers": [
+        "api.kie.example.invalid",
+        "apiframe"
+      ],
+      "status": "confirmed"
+    }
+  },
+  {
+    "labels": [
+      "ExternalEntity"
+    ],
+    "properties": {
+      "url_as_is": "project-alpha-masker.example.invalid",
+      "purpose": "Ручное выделение области украшения; возвращает original_url, mask_url, combined_mask_url",
+      "scope_note": "Known external system — не разворачивается в текущем BA-цикле; переносится позже",
+      "name": "Mask Editor",
+      "id": "EXT-05",
+      "type": "ExternalWebApp",
+      "status": "confirmed"
+    }
+  }
+]

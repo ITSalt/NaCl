@@ -1,0 +1,80 @@
+project:
+  id: "nacl-analyst-tool"
+  name: "NaCl Analyst Tool"
+  description: "Local web tool for browsing and editing Excalidraw boards with NaCl skill integration. Replaces legacy excalidraw + excalidraw-room Docker containers."
+  stack: "Node.js 20 + TypeScript + Fastify (server) + Vite + React + Excalidraw (web) + Playwright (e2e); Neo4j for graph; published as npm CLI 'nacl-analyst-tool'"
+  language: "english"
+
+git:
+  main_branch: "main"
+  branch_prefix: "feature/"
+  strategy: "direct"   # commits land directly on main (this is a framework tool, small surface)
+
+modules:
+  server:
+    code: "MOD-SERVER"
+    name: "Fastify backend"
+    description: "API + WebSocket bridge; orchestrates renderers, skill invocations, project registry"
+    path: "server"
+    build_command: "npm run build --workspace=server"
+    test_command: "npm run test --workspace=server"
+  web:
+    code: "MOD-WEB"
+    name: "Excalidraw frontend"
+    description: "React UI with Excalidraw editor; project picker, board navigator, canvas"
+    path: "web"
+    build_command: "npm run build --workspace=web"
+    test_command: ""    # web tests run via e2e workspace
+  e2e:
+    code: "MOD-E2E"
+    name: "Playwright E2E tests"
+    description: "End-to-end suite covering board CRUD, skill triggers, project switching"
+    path: "e2e"
+    build_command: ""
+    test_command: "npm run test --workspace=e2e"
+
+ci_cd:
+  platform: ""              # no GitHub Actions detected for analyst-tool itself; framework-level CI lives in parent NaCl repo
+  deploy_method: ""         # distributed via npm link / npm install -g — no server deployment
+  health_endpoint: ""
+
+vps:
+  # Not applicable — this is a local CLI tool, not a hosted service.
+  # The analyst runs `nacl-analyst-tool` on their own machine.
+
+docmost:
+  api_url: "https://docs.viziapp.dev"
+  spaces:
+    ba:
+      space_id: ""           # populate when BA docs space is created
+      root_page_id: ""
+    sa:
+      space_id: ""           # populate when SA docs space is created
+      root_page_id: ""
+
+yougile:
+  # Not configured for this tool. Tool development is tracked in the NaCl framework repo.
+  # If a dedicated analyst-tool board is needed later, run /nacl-init again or fill manually:
+  # project_id: ""
+  # project_url: ""
+  # board_id: ""
+  # board_url: ""
+  # api_url: "https://yougile.com/api-v2"
+  # columns: {}
+  # stickers: {}
+
+credentials:
+  # Sensitive values — do NOT commit. Read from env at runtime.
+  # claude_cli: relies on the user's local `claude` login (no key stored here)
+  # neo4j_password: configured in graph-infra/.env
+
+ports:
+  backend_dev:  3583       # Fastify dev (server workspace)
+  frontend_dev: 3582       # Vite dev (web workspace)
+
+graph:
+  neo4j_bolt_port: 3607
+  neo4j_http_port: 3594
+  neo4j_password: "neo4j_graph_dev"
+  container_prefix: "nacl-analyst-tool"
+  boards_dir: "graph-infra/boards"

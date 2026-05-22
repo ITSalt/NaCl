@@ -1,0 +1,101 @@
+[
+  {
+    "labels": [
+      "DataFlow"
+    ],
+    "properties": {
+      "name": "User Materials Upload",
+      "from": "STK-01",
+      "id": "DFL-001",
+      "to": "SYS-001",
+      "trigger": "Пользователь создаёт сессию и подтверждает загрузку",
+      "content": "Исходные фото украшения (1–2 в зависимости от workflow) + текстовые требования + выбор режима + ModelProfile",
+      "status": "confirmed"
+    }
+  },
+  {
+    "labels": [
+      "DataFlow"
+    ],
+    "properties": {
+      "name": "Generated Assets Delivery",
+      "from": "SYS-001",
+      "id": "DFL-002",
+      "to": "STK-01",
+      "trigger": "Завершение генерации в очереди",
+      "content": "Готовые ассеты (изображения 2K 3:4, видео 5 сек) — ссылки из Cloud.ru S3; статус задачи; VerificationReport при ошибке",
+      "status": "confirmed"
+    }
+  },
+  {
+    "labels": [
+      "DataFlow"
+    ],
+    "properties": {
+      "note": "Все запросы к провайдерам проходят через внутреннюю очередь (BP-008). Очереди — per provider_id. Watchdog 30 мин на RUNNING.",
+      "protocol": "HTTP API; провайдеры image/video в TO-BE — async (job_id + polling): api.kie.example.invalid, apiframe",
+      "name": "Generation Request to Providers via Queue",
+      "from": "SYS-001 (Generation Queue)",
+      "id": "DFL-003",
+      "to": "EXT-02 / EXT-03 / EXT-04",
+      "content": "Промпт + исходное фото → сгенерированный ассет (url) или отчёт Verifier",
+      "status": "confirmed"
+    }
+  },
+  {
+    "labels": [
+      "DataFlow"
+    ],
+    "properties": {
+      "name": "Asset Storage",
+      "from": "SYS-001",
+      "id": "DFL-004",
+      "to": "EXT-01",
+      "trigger": "После загрузки пользователем / после успешной генерации",
+      "content": "Исходные файлы пользователя; сгенерированные ассеты → публичные/presigned ссылки",
+      "status": "confirmed"
+    }
+  },
+  {
+    "labels": [
+      "DataFlow"
+    ],
+    "properties": {
+      "note": "Postgres — внутренний компонент системы; моделируется как целевая точка хранения стейта и логов",
+      "name": "State and Log Persistence",
+      "from": "SYS-001",
+      "id": "DFL-005",
+      "to": "Postgres (Internal)",
+      "content": "Session state; Task state + attempts; QueueItem; GenerationLog; PromptTemplates; WorkflowStepConfig; Categories; ModelProfiles; User accounts",
+      "status": "confirmed"
+    }
+  },
+  {
+    "labels": [
+      "DataFlow"
+    ],
+    "properties": {
+      "name": "Admin Configuration",
+      "from": "STK-02",
+      "id": "DFL-006",
+      "to": "SYS-001",
+      "trigger": "Действие Admin в AdminUI",
+      "content": "Промпт-шаблоны (category × ModelProfile × prompt_type); параметры шагов workflow; настройки Verifier; управление категориями и маппингами; параметры очереди",
+      "status": "confirmed"
+    }
+  },
+  {
+    "labels": [
+      "DataFlow"
+    ],
+    "properties": {
+      "name": "Monthly Generation Report",
+      "from": "SYS-001 (GenerationLog)",
+      "id": "DFL-007",
+      "trigger": "Запрос Admin в AdminUI",
+      "to": "STK-02",
+      "content": "Ежемесячный отчёт: пользователь × тип генерации (image/video count)",
+      "status": "confirmed"
+    }
+  }
+]

@@ -1,0 +1,37 @@
+# Synthetic project for W9-ci-clean-checkout runtime-assets-missing fixture.
+# DO NOT use as a template — this config intentionally declares assets that
+# the build does not produce, to exercise the clean-checkout BLOCKED path.
+
+project: clean-checkout-missing-asset-fixture
+project_kind: standard
+
+git:
+  strategy: feature-branch
+  main_branch: main
+
+build:
+  package_manager: pnpm
+  entrypoint: dist/index.js
+  # migrate intentionally absent — migrate stage records SKIPPED, not BLOCKED
+
+# These three paths are checked by the clean-checkout gate after build.
+# Entries 1 and 2 do NOT exist in dist/; entry 3 does. The gate must
+# capture all three in runtime_assets_verified and emit BLOCKED on the
+# first two.
+runtime_assets:
+  - "bin/ffprobe"
+  - "dist/llm/prompts/ru/protocol.md"
+  - "dist/index.js"
+
+deploy:
+  smoke:
+    endpoints:
+      - "/api/health"
+      - "/api/jobs"
+  staging:
+    url: "https://staging.example.invalid"
+    health_endpoint: "/api/health"
+    health_contract:
+      expected_keys: ["status", "version"]
+      expected_values:
+        status: "ok"

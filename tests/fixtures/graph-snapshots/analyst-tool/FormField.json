@@ -1,0 +1,109 @@
+[
+  {
+    "labels": [
+      "FormField"
+    ],
+    "properties": {
+      "mapping_note": "composite — represents full Excalidraw scene; no single DomainAttribute target",
+      "kind": "input",
+      "name": "Scene",
+      "data_type": "ExcalidrawScene",
+      "description": "The full Excalidraw scene object (elements + appState) being edited.",
+      "id": "FF-EDIT-BOARD-SCENE",
+      "required": true
+    }
+  },
+  {
+    "labels": [
+      "FormField"
+    ],
+    "properties": {
+      "kind": "display",
+      "name": "Board Name",
+      "data_type": "string",
+      "description": "Name of the board file currently loaded into the canvas.",
+      "id": "FF-EDIT-BOARD-NAME",
+      "required": true
+    }
+  },
+  {
+    "labels": [
+      "FormField"
+    ],
+    "properties": {
+      "kind": "input",
+      "name": "Selected Project Id",
+      "data_type": "string",
+      "description": "Id of the project to activate.",
+      "id": "FF-PICKER-PROJECT-ID",
+      "required": true
+    }
+  },
+  {
+    "labels": [
+      "FormField"
+    ],
+    "properties": {
+      "kind": "display",
+      "name": "Project Display Name",
+      "data_type": "string",
+      "description": "Human-readable project name shown in the picker rows.",
+      "id": "FF-PICKER-PROJECT-NAME",
+      "required": false
+    }
+  },
+  {
+    "labels": [
+      "FormField"
+    ],
+    "properties": {
+      "kind": "display",
+      "name": "Snapshot List",
+      "data_type": "array",
+      "description": "Read-only list of past snapshots for the active board.",
+      "id": "FF-SNAPSHOT-LIST",
+      "required": false
+    }
+  },
+  {
+    "labels": [
+      "FormField"
+    ],
+    "properties": {
+      "kind": "input",
+      "name": "Selected Snapshot Timestamp",
+      "data_type": "string",
+      "description": "Timestamp string of the snapshot the analyst selected for diff/restore.",
+      "id": "FF-SNAPSHOT-SELECTED",
+      "required": true
+    }
+  },
+  {
+    "labels": [
+      "FormField"
+    ],
+    "properties": {
+      "mapping_note": "enum-ref — maps to ENUM-RENDER-MD-SUBTYPE, not a scalar DomainAttribute",
+      "kind": "input",
+      "name": "Render Subtype",
+      "data_type": "enum<RenderMdSubtype>",
+      "description": "One of entity | uc | form | domain-model | uc-index | traceability.",
+      "id": "FF-RENDER-SUBTYPE",
+      "required": true
+    }
+  },
+  {
+    "labels": [
+      "FormField"
+    ],
+    "properties": {
+      "mapping_note": "contextual — target DomainAttribute is subtype-dependent",
+      "kind": "input",
+      "name": "Related Entity/UC/Form Id",
+      "data_type": "string",
+      "description": "Optional id of the related node when the subtype targets a single entity/uc/form.",
+      "id": "FF-RENDER-RELATED-ID",
+      "required": false
+    }
+  }
+]

@@ -1,0 +1,28 @@
+[
+  {
+    "labels": [
+      "ProcessGroup"
+    ],
+    "properties": {
+      "created": "2026-05-17",
+      "name": "Transcription Pipeline",
+      "description": "All processes from initial video upload through delivery of a verbatim, speaker-attributed transcript. Covers file handling, audio extraction, ASR/diarization, and transcript storage.",
+      "id": "GPR-01",
+      "updated": "2026-05-17",
+      "status": "draft"
+    }
+  },
+  {
+    "labels": [
+      "ProcessGroup"
+    ],
+    "properties": {
+      "created": "2026-05-17",
+      "name": "Protocol Lifecycle",
+      "description": "All processes that transform a completed transcript into a structured meeting protocol: LLM-based generation, in-app review and editing, and PDF export.",
+      "id": "GPR-02",
+      "updated": "2026-05-17",
+      "status": "draft"
+    }
+  }
+]

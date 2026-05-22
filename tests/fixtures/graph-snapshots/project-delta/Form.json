@@ -1,0 +1,152 @@
+[
+  {
+    "labels": [
+      "Form"
+    ],
+    "properties": {
+      "migrated_at": "2026-05-06T18:39:56.824000000+00:00",
+      "created": "2026-04-19T21:04:45.946000000+00:00",
+      "module": "landing-module",
+      "name": "Экран лендинга",
+      "id": "FORM-scr-001-landing",
+      "original_id": "SCR-001",
+      "updated": "2026-05-06T18:39:56.824000000+00:00",
+      "source_file": "docs/15-interfaces/screens/SCR-001-landing.md"
+    }
+  },
+  {
+    "labels": [
+      "Form"
+    ],
+    "properties": {
+      "migrated_at": "2026-05-06T18:39:56.824000000+00:00",
+      "created": "2026-04-19T21:04:45.946000000+00:00",
+      "module": "generation-module",
+      "name": "Экран AI-интервью (чат)",
+      "id": "FORM-scr-002-interview-chat",
+      "original_id": "SCR-002",
+      "updated": "2026-05-06T18:39:56.824000000+00:00",
+      "source_file": "docs/15-interfaces/screens/SCR-002-interview-chat.md"
+    }
+  },
+  {
+    "labels": [
+      "Form"
+    ],
+    "properties": {
+      "migrated_at": "2026-05-06T18:39:56.824000000+00:00",
+      "created": "2026-04-19T21:04:45.946000000+00:00",
+      "module": "generation-module",
+      "name": "Экран интервью",
+      "id": "FORM-scr-002-interview",
+      "original_id": "SCR-002",
+      "updated": "2026-05-06T18:39:56.824000000+00:00",
+      "source_file": "docs/15-interfaces/screens/SCR-002-interview.md"
+    }
+  },
+  {
+    "labels": [
+      "Form"
+    ],
+    "properties": {
+      "migrated_at": "2026-05-06T18:39:56.824000000+00:00",
+      "created": "2026-04-19T21:04:45.946000000+00:00",
+      "module": "generation-module",
+      "name": "Экран загрузки / генерации",
+      "id": "FORM-scr-003-loading",
+      "original_id": "SCR-003",
+      "updated": "2026-05-06T18:39:56.824000000+00:00",
+      "source_file": "docs/15-interfaces/screens/SCR-003-loading.md"
+    }
+  },
+  {
+    "labels": [
+      "Form"
+    ],
+    "properties": {
+      "migrated_at": "2026-05-06T18:39:56.824000000+00:00",
+      "created": "2026-04-19T21:04:45.946000000+00:00",
+      "module": "conversion-module",
+      "name": "Экран результата",
+      "id": "FORM-scr-004-result",
+      "original_id": "SCR-004",
+      "updated": "2026-05-06T18:39:56.824000000+00:00",
+      "source_file": "docs/15-interfaces/screens/SCR-004-result.md"
+    }
+  },
+  {
+    "labels": [
+      "Form"
+    ],
+    "properties": {
+      "migrated_at": "2026-05-06T18:39:56.824000000+00:00",
+      "created": "2026-04-19T21:04:45.946000000+00:00",
+      "module": "conversion-module",
+      "name": "Модальное окно захвата лида",
+      "id": "FORM-scr-005-lead-modal",
+      "original_id": "SCR-005",
+      "updated": "2026-05-06T18:39:56.824000000+00:00",
+      "source_file": "docs/15-interfaces/screens/SCR-005-lead-modal.md"
+    }
+  },
+  {
+    "labels": [
+      "Form"
+    ],
+    "properties": {
+      "migrated_at": "2026-05-06T18:39:56.824000000+00:00",
+      "created": "2026-04-19T21:04:45.946000000+00:00",
+      "module": "conversion-module",
+      "name": "Модальное окно шеринга",
+      "id": "FORM-scr-006-share-modal",
+      "original_id": "SCR-006",
+      "updated": "2026-05-06T18:39:56.824000000+00:00",
+      "source_file": "docs/15-interfaces/screens/SCR-006-share-modal.md"
+    }
+  },
+  {
+    "labels": [
+      "Form"
+    ],
+    "properties": {
+      "migrated_at": "2026-05-06T18:39:56.824000000+00:00",
+      "created": "2026-04-19T21:04:45.946000000+00:00",
+      "module": "admin-module",
+      "name": "Управление промптами",
+      "id": "FORM-scr-007-admin-prompts",
+      "original_id": "SCR-007",
+      "updated": "2026-05-06T18:39:56.824000000+00:00",
+      "source_file": "docs/15-interfaces/screens/SCR-007-admin-prompts.md"
+    }
+  },
+  {
+    "labels": [
+      "Form"
+    ],
+    "properties": {
+      "migrated_at": "2026-05-06T18:39:56.824000000+00:00",
+      "created": "2026-04-19T21:04:45.946000000+00:00",
+      "module": "admin-module",
+      "name": "Статистика (Дашборд)",
+      "id": "FORM-scr-008-admin-statistics",
+      "original_id": "SCR-008",
+      "updated": "2026-05-06T18:39:56.824000000+00:00",
+      "source_file": "docs/15-interfaces/screens/SCR-008-admin-statistics.md"
+    }
+  },
+  {
+    "labels": [
+      "Form"
+    ],
+    "properties": {
+      "migrated_at": "2026-05-06T18:39:56.824000000+00:00",
+      "created": "2026-04-19T21:04:45.946000000+00:00",
+      "module": "shared/core, client-storage",
+      "name": "Выбор сессии (Session Picker)",
+      "id": "FORM-scr-009-session-picker",
+      "original_id": "SCR-009",
+      "updated": "2026-05-06T18:39:56.824000000+00:00",
+      "source_file": "docs/15-interfaces/screens/SCR-009-session-picker.md"
+    }
+  }
+]

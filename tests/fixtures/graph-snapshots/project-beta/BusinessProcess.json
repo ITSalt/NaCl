@@ -1,0 +1,145 @@
+[
+  {
+    "labels": [
+      "BusinessProcess"
+    ],
+    "properties": {
+      "owner": "STK-01",
+      "outputs": [
+        "File stored in object storage (EXT-04)",
+        "Transcription job queued",
+        "Upload confirmation shown to user"
+      ],
+      "inputs": [
+        "Raw video file (300-500 MB, MP4/MKV/MOV or similar)"
+      ],
+      "created": "2026-05-17",
+      "name": "Upload Meeting Video",
+      "description": "User selects and uploads a meeting video file (300-500 MB) via the web interface. System validates the file, stores it in object storage, and enqueues an async transcription job.",
+      "trigger": "User initiates an upload action in the UI",
+      "id": "BP-001",
+      "has_decomposition": true,
+      "updated": "2026-05-17",
+      "status": "draft"
+    }
+  },
+  {
+    "labels": [
+      "BusinessProcess"
+    ],
+    "properties": {
+      "outputs": [
+        "Verbatim speaker-attributed transcript with timestamps stored in the system",
+        "Processing status updated to transcript ready"
+      ],
+      "owner": "STK-01",
+      "assumption_note": "Audio extraction step (demux from video container) is treated as an internal sub-step, not a separate business process, because it has no business decision point.",
+      "inputs": [
+        "Video/audio file from object storage (EXT-04)",
+        "Speaker diarization request to ASR engine (EXT-02)"
+      ],
+      "created": "2026-05-17",
+      "name": "Transcribe Audio (ASR + Diarization)",
+      "description": "System retrieves the uploaded video from storage, extracts audio, submits it to the ASR/diarization engine (EXT-02), receives speaker-attributed transcript segments, assembles and persists the verbatim transcript.",
+      "trigger": "Transcription job is dequeued from the async processing queue",
+      "id": "BP-002",
+      "has_decomposition": true,
+      "updated": "2026-05-17",
+      "status": "draft"
+    }
+  },
+  {
+    "labels": [
+      "BusinessProcess"
+    ],
+    "properties": {
+      "owner": "STK-01",
+      "outputs": [
+        "Transcript file delivered to user (download)"
+      ],
+      "assumption_note": "Simple retrieval/download operation. No complex branching at MVP scope.",
+      "inputs": [
+        "Persisted verbatim transcript (from BP-002)"
+      ],
+      "created": "2026-05-17",
+      "name": "Download / Retrieve Transcript",
+      "description": "User views and downloads the completed verbatim transcript from the system. The transcript is rendered in the UI and offered as a downloadable text/document file.",
+      "trigger": "User navigates to transcript view and requests download",
+      "id": "BP-003",
+      "has_decomposition": false,
+      "updated": "2026-05-17",
+      "status": "draft"
+    }
+  },
+  {
+    "labels": [
+      "BusinessProcess"
+    ],
+    "properties": {
+      "owner": "STK-01",
+      "outputs": [
+        "Meeting protocol stored as Markdown",
+        "Processing status updated to protocol ready"
+      ],
+      "assumption_note": "Protocol generation is triggered automatically after transcription completes; no manual user action is required to initiate it.",
+      "inputs": [
+        "Verbatim speaker-attributed transcript (from BP-002)",
+        "Prompt template for structured protocol extraction"
+      ],
+      "created": "2026-05-17",
+      "name": "Generate Meeting Protocol",
+      "description": "System submits the verbatim transcript to the LLM protocol generator (EXT-03) with a structured extraction prompt. The LLM returns a meeting protocol. System persists the protocol as Markdown.",
+      "trigger": "Transcription job completes successfully (transcript is ready)",
+      "id": "BP-004",
+      "has_decomposition": true,
+      "updated": "2026-05-17",
+      "status": "draft"
+    }
+  },
+  {
+    "labels": [
+      "BusinessProcess"
+    ],
+    "properties": {
+      "owner": "STK-01",
+      "outputs": [
+        "Updated meeting protocol saved as Markdown"
+      ],
+      "assumption_note": "Free-form Markdown edit; no structured field validation required at MVP scope.",
+      "inputs": [
+        "Generated meeting protocol in Markdown (from BP-004 or previous edit)"
+      ],
+      "created": "2026-05-17",
+      "name": "Review and Edit Protocol",
+      "description": "User opens the generated protocol in the in-app Markdown editor, reviews its content, makes corrections or additions, and saves the updated version.",
+      "trigger": "User opens the protocol view and chooses to edit",
+      "id": "BP-005",
+      "has_decomposition": false,
+      "updated": "2026-05-17",
+      "status": "draft"
+    }
+  },
+  {
+    "labels": [
+      "BusinessProcess"
+    ],
+    "properties": {
+      "owner": "STK-01",
+      "outputs": [
+        "PDF file delivered to user (download)"
+      ],
+      "assumption_note": "PDF rendering uses a server-side export script (e.g. Pandoc or headless browser). Specific tool TBD with tech stack.",
+      "inputs": [
+        "Current meeting protocol Markdown (from BP-004 or BP-005)"
+      ],
+      "created": "2026-05-17",
+      "name": "Export Protocol to PDF",
+      "description": "User requests a PDF export of the meeting protocol. System renders the Markdown to PDF via an export script and delivers the file as a download.",
+      "trigger": "User clicks Export to PDF in the protocol view",
+      "id": "BP-006",
+      "has_decomposition": false,
+      "updated": "2026-05-17",
+      "status": "draft"
+    }
+  }
+]

@@ -1,0 +1,152 @@
+[
+  {
+    "labels": [
+      "DomainAttribute"
+    ],
+    "properties": {
+      "internal": true,
+      "nullable": false,
+      "created": "2026-05-18T06:42:37.883000000+00:00",
+      "data_type": "UUID",
+      "name": "id",
+      "description": "Surrogate primary key for the Meeting aggregate.",
+      "id": "Meeting-A01",
+      "updated": "2026-05-18T06:42:37.883000000+00:00"
+    }
+  },
+  {
+    "labels": [
+      "DomainAttribute"
+    ],
+    "properties": {
+      "internal": false,
+      "nullable": true,
+      "created": "2026-05-18T06:42:37.883000000+00:00",
+      "data_type": "String",
+      "name": "title",
+      "description": "Optional user-readable meeting title. Defaults to the source filename if not provided.",
+      "id": "Meeting-A02",
+      "updated": "2026-05-18T06:42:37.883000000+00:00"
+    }
+  },
+  {
+    "labels": [
+      "DomainAttribute"
+    ],
+    "properties": {
+      "internal": false,
+      "nullable": true,
+      "created": "2026-05-18T06:42:37.883000000+00:00",
+      "name": "language",
+      "data_type": "Enum",
+      "description": "Transcription language for the meeting (RU or EN). Null until resolved (per BRQ-005 auto-detect fallback during ASR).",
+      "id": "Meeting-A03",
+      "updated": "2026-05-18T06:42:37.883000000+00:00"
+    }
+  },
+  {
+    "labels": [
+      "DomainAttribute"
+    ],
+    "properties": {
+      "internal": false,
+      "nullable": false,
+      "created": "2026-05-18T06:42:37.883000000+00:00",
+      "name": "status",
+      "data_type": "Enum",
+      "description": "Pipeline-mirror status of the meeting (BRQ-008). Drives UI state and disables protocol actions before TRANSCRIPT_READY.",
+      "id": "Meeting-A04",
+      "updated": "2026-05-18T06:42:37.883000000+00:00"
+    }
+  },
+  {
+    "labels": [
+      "DomainAttribute"
+    ],
+    "properties": {
+      "internal": true,
+      "nullable": false,
+      "created": "2026-05-18T06:42:37.883000000+00:00",
+      "data_type": "DateTime",
+      "name": "uploaded_at",
+      "description": "Timestamp when the upload was initiated. Immutable.",
+      "id": "Meeting-A05",
+      "updated": "2026-05-18T06:42:37.883000000+00:00"
+    }
+  },
+  {
+    "labels": [
+      "DomainAttribute"
+    ],
+    "properties": {
+      "internal": true,
+      "nullable": false,
+      "created": "2026-05-18T06:42:37.883000000+00:00",
+      "data_type": "DateTime",
+      "name": "updated_at",
+      "description": "Timestamp of the last status transition or protocol edit. Used to sort the meeting catalog by recent activity.",
+      "id": "Meeting-A06",
+      "updated": "2026-05-18T06:42:37.883000000+00:00"
+    }
+  },
+  {
+    "labels": [
+      "DomainAttribute"
+    ],
+    "properties": {
+      "internal": true,
+      "nullable": false,
+      "created": "2026-05-18T06:46:25.641000000+00:00",
+      "data_type": "UUID",
+      "name": "id",
+      "description": "Surrogate primary key for the Recording.",
+      "id": "Recording-A01",
+      "updated": "2026-05-18T06:46:25.641000000+00:00"
+    }
+  },
+  {
+    "labels": [
+      "DomainAttribute"
+    ],
+    "properties": {
+      "internal": true,
+      "nullable": false,
+      "created": "2026-05-18T06:46:25.641000000+00:00",
+      "data_type": "Reference",
+      "name": "meeting_id",
+      "description": "FK to the owning Meeting (ent-001). Also surfaced as a RELATES_TO edge in the graph.",
+      "id": "Recording-A02",
+      "updated": "2026-05-18T06:46:25.641000000+00:00"
+    }
+  },
+  {
+    "labels": [
+      "DomainAttribute"
+    ],
+    "properties": {
+      "internal": false,
+      "nullable": false,
+      "created": "2026-05-18T06:46:25.641000000+00:00",
+      "data_type": "String",
+      "name": "filename",
+      "description": "Original filename as supplied by the user at upload time.",
+      "id": "Recording-A03",
+      "updated": "2026-05-18T06:46:25.641000000+00:00"
+    }
+  },
+  {
+    "labels": [
+      "DomainAttribute"
+    ],
+    "properties": {
+      "internal": false,
+      "nullable": false,
+      "created": "2026-05-18T06:46:25.641000000+00:00",
+      "data_type": "Int",
+      "name": "size_bytes",
+      "description": "File size in bytes. MUST be <= 524,288,000 per BRQ-001 (500 MB).",
+      "id": "Recording-A04",
+      "updated": "2026-05-18T06:46:25.641000000+00:00"
+    }
+  }
+]

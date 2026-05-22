@@ -1,0 +1,50 @@
+[
+  {
+    "labels": [
+      "Enumeration"
+    ],
+    "properties": {
+      "created": "2026-05-18T06:42:50.827000000+00:00",
+      "name": "MeetingStatus",
+      "description": "Pipeline-mirror status for a Meeting aggregate (BRQ-008). Drives UI state and gating of downstream actions.",
+      "id": "ENUM-MeetingStatus",
+      "updated": "2026-05-18T06:42:50.827000000+00:00"
+    }
+  },
+  {
+    "labels": [
+      "Enumeration"
+    ],
+    "properties": {
+      "created": "2026-05-18T06:42:59.421000000+00:00",
+      "name": "MeetingLanguage",
+      "description": "Supported transcription/protocol language for a Meeting (BRQ-004). Null on the Meeting indicates pending auto-detect.",
+      "id": "ENUM-MeetingLanguage",
+      "updated": "2026-05-18T06:42:59.421000000+00:00"
+    }
+  },
+  {
+    "labels": [
+      "Enumeration"
+    ],
+    "properties": {
+      "created": "2026-05-18T06:46:35.849000000+00:00",
+      "name": "VideoMimeType",
+      "description": "Allowed container MIME types for uploaded recordings. Sourced from BRQ-002.",
+      "id": "ENUM-VideoMimeType",
+      "updated": "2026-05-18T06:46:35.849000000+00:00"
+    }
+  },
+  {
+    "labels": [
+      "Enumeration"
+    ],
+    "properties": {
+      "created": "2026-05-18T06:48:36.403000000+00:00",
+      "name": "JobStatus",
+      "description": "Async job lifecycle status. Shared between TranscriptionJob and ProtocolGenerationJob. Terminal states are immutable (BRQ-009).",
+      "id": "ENUM-JobStatus",
+      "updated": "2026-05-18T06:48:36.403000000+00:00"
+    }
+  }
+]

@@ -79,7 +79,7 @@ the spec's required-field set.
 
 ### Why this change
 
-Karatov post-mortem § "Stub/mock leak" row (commit `8522d1d`
+Project-Alpha post-mortem § "Stub/mock leak" row (commit `8522d1d`
 "fix(admin): unstub WORKFLOW_STEPS + categories envelope + WSC dropdown
 paging") shipped because the stub satisfied "no TODO" but held fake IDs
 that downstream consumers (the WSC dropdown, the category filter) read

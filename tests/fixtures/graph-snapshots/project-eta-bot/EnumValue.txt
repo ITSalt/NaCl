@@ -1,0 +1,4 @@
+n
+(:EnumValue {migrated_at: 2026-04-13T13:41:42.496Z, created: 2026-04-13T13:41:42.496Z, description: "Привязан к route, эфемерный (PLANNED→archive)", id: "EN-channel-type-V01", updated: 2026-04-13T13:41:42.496Z, value: "route", source_file: "docs/12-domain/enumerations/channel-type.md"})
+(:EnumValue {migrated_at: 2026-04-13T13:41:42.496Z, created: 2026-04-13T13:41:42.496Z, description: "Привязан к client, долгоживущий (GC через 30 дней)", id: "EN-channel-type-V02", updated: 2026-04-13T13:41:42.496Z, value: "support", source_file: "docs/12-domain/enumerations/channel-type.md"})
+(:EnumValue {migrated_at: 2026-04-13T13:41:42.496Z, created: 2026-04-13T13:41:42.496Z, description: "Постоянный, создаётся один раз", id: "EN-channel-type-V03", updated: 2026-04-13T13:41:42.496Z, value: "system", source_file: "docs/12-domain/enumerations/channel-type.md"})

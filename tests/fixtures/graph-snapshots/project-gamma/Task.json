@@ -1,0 +1,192 @@
+[
+  {
+    "labels": [
+      "Task"
+    ],
+    "properties": {
+      "completed_at": "2026-04-06T06:01:29.451000000+00:00",
+      "agent": "tl-dev",
+      "created": "2026-04-06T05:04:33.346000000+00:00",
+      "commit": "e73e004",
+      "id": "TECH-001",
+      "title": "Docker Compose Setup (services only: PostgreSQL, Redis, MinIO, Mattermost)",
+      "type": "tech",
+      "category": "infra",
+      "priority": "high",
+      "updated": "2026-04-06T20:22:10.280000000+00:00",
+      "wave": 0,
+      "status": "done"
+    }
+  },
+  {
+    "labels": [
+      "Task"
+    ],
+    "properties": {
+      "completed_at": "2026-04-06T06:03:26.932000000+00:00",
+      "agent": "tl-dev",
+      "created": "2026-04-06T05:04:33.346000000+00:00",
+      "commit": "95c7361",
+      "id": "TECH-002",
+      "title": "Database Migrations Setup (PostgreSQL + Prisma)",
+      "type": "tech",
+      "category": "database",
+      "priority": "high",
+      "updated": "2026-04-06T05:04:33.346000000+00:00",
+      "wave": 0,
+      "status": "done"
+    }
+  },
+  {
+    "labels": [
+      "Task"
+    ],
+    "properties": {
+      "completed_at": "2026-04-06T06:05:12.649000000+00:00",
+      "agent": "tl-dev",
+      "created": "2026-04-06T05:04:33.346000000+00:00",
+      "commit": "4f3991a",
+      "id": "TECH-003",
+      "title": "Shared Types Package",
+      "type": "tech",
+      "category": "types",
+      "priority": "high",
+      "updated": "2026-04-06T05:04:33.346000000+00:00",
+      "wave": 0,
+      "status": "done"
+    }
+  },
+  {
+    "labels": [
+      "Task"
+    ],
+    "properties": {
+      "completed_at": "2026-04-06T06:07:54.956000000+00:00",
+      "agent": "tl-dev",
+      "created": "2026-04-06T05:04:33.346000000+00:00",
+      "commit": "36fa0bd",
+      "id": "TECH-004",
+      "title": "Authentication Plugins (Fastify preHandler hooks, JWT)",
+      "type": "tech",
+      "category": "auth",
+      "priority": "high",
+      "updated": "2026-04-06T20:22:11.639000000+00:00",
+      "wave": 0,
+      "status": "done"
+    }
+  },
+  {
+    "labels": [
+      "Task"
+    ],
+    "properties": {
+      "completed_at": "2026-04-06T06:09:57.092000000+00:00",
+      "agent": "tl-dev",
+      "created": "2026-04-06T05:04:33.346000000+00:00",
+      "commit": "32a8db4",
+      "id": "TECH-005",
+      "title": "Error Handling (Fastify setErrorHandler + setNotFoundHandler)",
+      "type": "tech",
+      "category": "middleware",
+      "priority": "high",
+      "updated": "2026-04-06T20:22:12.632000000+00:00",
+      "wave": 0,
+      "status": "done"
+    }
+  },
+  {
+    "labels": [
+      "Task"
+    ],
+    "properties": {
+      "completed_at": "2026-04-06T06:12:30.811000000+00:00",
+      "agent": "tl-dev",
+      "created": "2026-04-06T05:04:33.346000000+00:00",
+      "commit": "a208f18",
+      "id": "TECH-006",
+      "title": "CI/CD Pipeline (GitHub Actions)",
+      "type": "tech",
+      "category": "cicd",
+      "priority": "medium",
+      "updated": "2026-04-06T05:04:33.346000000+00:00",
+      "wave": 0,
+      "status": "done"
+    }
+  },
+  {
+    "labels": [
+      "Task"
+    ],
+    "properties": {
+      "completed_at": "2026-04-06T06:15:42.294000000+00:00",
+      "agent": "tl-dev",
+      "created": "2026-04-06T05:04:33.346000000+00:00",
+      "commit": "5e15260",
+      "id": "TECH-007",
+      "title": "MinIO File Storage Setup",
+      "type": "tech",
+      "category": "infra",
+      "priority": "high",
+      "updated": "2026-04-06T05:04:33.346000000+00:00",
+      "wave": 0,
+      "status": "done"
+    }
+  },
+  {
+    "labels": [
+      "Task"
+    ],
+    "properties": {
+      "completed_at": "2026-04-06T06:18:20.043000000+00:00",
+      "agent": "tl-dev",
+      "created": "2026-04-06T05:04:33.346000000+00:00",
+      "commit": "05cc41c",
+      "id": "TECH-008",
+      "title": "BullMQ + Redis Setup (@bull-board/fastify)",
+      "type": "tech",
+      "category": "infra",
+      "priority": "high",
+      "updated": "2026-04-06T20:22:13.446000000+00:00",
+      "wave": 0,
+      "status": "done"
+    }
+  },
+  {
+    "labels": [
+      "Task"
+    ],
+    "properties": {
+      "completed_at": "2026-04-06T06:21:59.853000000+00:00",
+      "agent": "tl-dev",
+      "created": "2026-04-06T05:04:33.346000000+00:00",
+      "commit": "bd3a1f8",
+      "id": "TECH-009",
+      "title": "Frontend Scaffold (Vite + TanStack Router + TanStack Query + Zustand + Shadcn/ui)",
+      "type": "tech",
+      "category": "infra",
+      "priority": "high",
+      "updated": "2026-04-06T20:22:14.373000000+00:00",
+      "wave": 0,
+      "status": "done"
+    }
+  },
+  {
+    "labels": [
+      "Task"
+    ],
+    "properties": {
+      "completed_at": "2026-04-06T06:24:16.623000000+00:00",
+      "agent": "tl-dev",
+      "created": "2026-04-06T05:04:33.346000000+00:00",
+      "commit": "d853eae",
+      "id": "TECH-010",
+      "title": "Logging & Monitoring (Fastify built-in pino)",
+      "priority": "medium",
+      "type": "tech",
+      "category": "monitoring",
+      "updated": "2026-04-06T20:22:15.052000000+00:00",
+      "wave": 0,
+      "status": "done"
+    }
+  }
+]

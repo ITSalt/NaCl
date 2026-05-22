@@ -1,0 +1,207 @@
+[
+  {
+    "labels": [
+      "UseCase"
+    ],
+    "properties": {
+      "user_story": "As a user, I want to log in with email/password so I can access the portal",
+      "updated_at": "2026-05-13T07:59:16.121000000+00:00",
+      "detail_status": "complete",
+      "modified_by": "FR-013",
+      "name": "Login",
+      "id": "UC-001",
+      "priority": "MVP",
+      "has_ui": true,
+      "acceptance_criteria": [
+        "Valid credentials → JWT cookies set (access_token 1h, refresh_token 7d)",
+        "Invalid credentials → error message",
+        "must_change_password=true → redirect to change-password page (overrides ?from)",
+        "MM password synced on successful login",
+        "If login page URL has ?from=<sanitized same-origin path> → redirect there after login; else /dashboard"
+      ],
+      "status": "complete"
+    }
+  },
+  {
+    "labels": [
+      "UseCase"
+    ],
+    "properties": {
+      "user_story": "As a student, I want to register with a promo code so I can join a course group",
+      "updated_at": "2026-05-13T07:59:16.121000000+00:00",
+      "detail_status": "complete",
+      "name": "Register via promo code",
+      "id": "UC-002",
+      "priority": "MVP",
+      "has_ui": true,
+      "acceptance_criteria": [
+        "Valid promo code → User + Enrollment created",
+        "MM user created + added to team/channels on registration",
+        "Already registered email + correct password → new Enrollment only",
+        "Invalid promo → specific error messages"
+      ],
+      "status": "complete"
+    }
+  },
+  {
+    "labels": [
+      "UseCase"
+    ],
+    "properties": {
+      "user_story": "As a user, I want my session to refresh automatically so I stay logged in",
+      "updated_at": "2026-05-13T07:59:16.121000000+00:00",
+      "detail_status": "complete",
+      "name": "Refresh token",
+      "id": "UC-003",
+      "priority": "MVP",
+      "has_ui": false,
+      "acceptance_criteria": [
+        "Expired access token → auto-refresh via refresh endpoint",
+        "Old refresh token deleted + new one issued",
+        "Invalid refresh token → redirect to login"
+      ],
+      "status": "complete"
+    }
+  },
+  {
+    "labels": [
+      "UseCase"
+    ],
+    "properties": {
+      "user_story": "As a user, I want to log out so my session is terminated",
+      "updated_at": "2026-05-13T07:59:16.121000000+00:00",
+      "detail_status": "complete",
+      "name": "Logout",
+      "id": "UC-004",
+      "priority": "MVP",
+      "has_ui": false,
+      "acceptance_criteria": [
+        "Refresh token deleted from DB",
+        "Cookies cleared",
+        "Redirect to login page"
+      ],
+      "status": "complete"
+    }
+  },
+  {
+    "labels": [
+      "UseCase"
+    ],
+    "properties": {
+      "user_story": "As a user, I want to change my password (or must change on first login)",
+      "updated_at": "2026-05-13T07:59:16.121000000+00:00",
+      "detail_status": "complete",
+      "name": "Change password",
+      "id": "UC-005",
+      "priority": "MVP",
+      "has_ui": true,
+      "acceptance_criteria": [
+        "Current password verified before change",
+        "New password hash saved to DB",
+        "All refresh tokens invalidated",
+        "New JWT pair issued after change",
+        "MM password synced"
+      ],
+      "status": "complete"
+    }
+  },
+  {
+    "labels": [
+      "UseCase"
+    ],
+    "properties": {
+      "user_story": "As a new user with must_change_password=true, I want to be redirected to change my password before accessing the portal",
+      "updated_at": "2026-05-13T07:59:16.121000000+00:00",
+      "detail_status": "complete",
+      "name": "Forced password change",
+      "id": "UC-006",
+      "priority": "MVP",
+      "has_ui": true,
+      "acceptance_criteria": [
+        "Login returns must_change_password flag",
+        "UI redirects to change-password page",
+        "After successful change → normal portal access"
+      ],
+      "status": "complete"
+    }
+  },
+  {
+    "labels": [
+      "UseCase"
+    ],
+    "properties": {
+      "user_story": "As a teacher, I want to see all students in a group with their enrollment status",
+      "updated_at": "2026-05-13T07:58:35.498000000+00:00",
+      "detail_status": "complete",
+      "name": "View student list",
+      "id": "UC-101",
+      "priority": "MVP",
+      "has_ui": true,
+      "acceptance_criteria": [
+        "Table displays name, email, status, promo code, registration date",
+        "Filter and sort available on all columns"
+      ],
+      "status": "complete"
+    }
+  },
+  {
+    "labels": [
+      "UseCase"
+    ],
+    "properties": {
+      "user_story": "As a teacher, I want to block a student so they cannot access portal or MM",
+      "updated_at": "2026-05-13T07:59:16.121000000+00:00",
+      "detail_status": "complete",
+      "name": "Block/unblock user",
+      "id": "UC-102",
+      "priority": "MVP",
+      "has_ui": false,
+      "acceptance_criteria": [
+        "Block sets is_active=false",
+        "All refresh tokens deleted on block",
+        "MM user deactivated on block",
+        "Unblock reverses all block actions"
+      ],
+      "status": "complete"
+    }
+  },
+  {
+    "labels": [
+      "UseCase"
+    ],
+    "properties": {
+      "user_story": "As a teacher, I want to extend a student enrollment expiration date",
+      "updated_at": "2026-05-13T07:59:16.121000000+00:00",
+      "detail_status": "complete",
+      "name": "Extend enrollment",
+      "id": "UC-103",
+      "priority": "MVP",
+      "has_ui": true,
+      "acceptance_criteria": [
+        "expires_at updated to new date",
+        "BullMQ delayed job rescheduled to new expiration"
+      ],
+      "status": "complete"
+    }
+  },
+  {
+    "labels": [
+      "UseCase"
+    ],
+    "properties": {
+      "user_story": "As a teacher, I want to manually close a student enrollment",
+      "updated_at": "2026-05-13T07:59:16.121000000+00:00",
+      "detail_status": "complete",
+      "name": "Close enrollment",
+      "id": "UC-104",
+      "priority": "MVP",
+      "has_ui": false,
+      "acceptance_criteria": [
+        "Enrollment status → closed",
+        "Student removed from MM team",
+        "No portal access to group content"
+      ],
+      "status": "complete"
+    }
+  }
+]

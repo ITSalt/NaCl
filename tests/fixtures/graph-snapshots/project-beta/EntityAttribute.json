@@ -1,0 +1,122 @@
+[
+  {
+    "labels": [
+      "EntityAttribute"
+    ],
+    "properties": {
+      "name": "id",
+      "description": "Unique meeting identifier",
+      "id": "OBJ-001-A01",
+      "type": "UUID",
+      "required": true
+    }
+  },
+  {
+    "labels": [
+      "EntityAttribute"
+    ],
+    "properties": {
+      "name": "title",
+      "description": "Optional human-readable meeting title (user-supplied or auto-derived from filename)",
+      "id": "OBJ-001-A02",
+      "type": "String",
+      "required": false
+    }
+  },
+  {
+    "labels": [
+      "EntityAttribute"
+    ],
+    "properties": {
+      "name": "language",
+      "description": "Transcription language hint: RU | EN | auto",
+      "id": "OBJ-001-A03",
+      "type": "Enum",
+      "required": true
+    }
+  },
+  {
+    "labels": [
+      "EntityAttribute"
+    ],
+    "properties": {
+      "name": "uploaded_at",
+      "description": "Timestamp when the upload was initiated",
+      "id": "OBJ-001-A04",
+      "type": "DateTime",
+      "required": true
+    }
+  },
+  {
+    "labels": [
+      "EntityAttribute"
+    ],
+    "properties": {
+      "name": "status",
+      "description": "Current lifecycle status (see states OBJ-001-ST01..ST07)",
+      "id": "OBJ-001-A05",
+      "type": "Enum",
+      "required": true
+    }
+  },
+  {
+    "labels": [
+      "EntityAttribute"
+    ],
+    "properties": {
+      "name": "id",
+      "description": "Unique recording identifier",
+      "id": "OBJ-002-A01",
+      "type": "UUID",
+      "required": true
+    }
+  },
+  {
+    "labels": [
+      "EntityAttribute"
+    ],
+    "properties": {
+      "name": "meeting_id",
+      "description": "Foreign key to owning Meeting (OBJ-001)",
+      "id": "OBJ-002-A02",
+      "type": "UUID",
+      "required": true
+    }
+  },
+  {
+    "labels": [
+      "EntityAttribute"
+    ],
+    "properties": {
+      "name": "filename",
+      "description": "Original filename as uploaded by the user",
+      "id": "OBJ-002-A03",
+      "type": "String",
+      "required": true
+    }
+  },
+  {
+    "labels": [
+      "EntityAttribute"
+    ],
+    "properties": {
+      "name": "size_bytes",
+      "description": "File size in bytes",
+      "id": "OBJ-002-A04",
+      "type": "Long",
+      "required": true
+    }
+  },
+  {
+    "labels": [
+      "EntityAttribute"
+    ],
+    "properties": {
+      "name": "mime_type",
+      "description": "MIME type of the uploaded file (e.g., video/mp4)",
+      "id": "OBJ-002-A05",
+      "type": "String",
+      "required": true
+    }
+  }
+]

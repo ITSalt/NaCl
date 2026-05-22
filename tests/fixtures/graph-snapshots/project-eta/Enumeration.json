@@ -1,0 +1,17 @@
+[
+  {
+    "labels": [
+      "Enumeration"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T14:03:28.672000000+00:00",
+      "created": "2026-04-13T14:03:28.672000000+00:00",
+      "ba_trace": [],
+      "name": "OrderStatus — Статусы заказа",
+      "description": "",
+      "id": "EN-orderstatus-statusy-zakaza",
+      "updated": "2026-04-13T14:03:28.672000000+00:00",
+      "source_file": "docs/02-domain/enumerations/order-status.md"
+    }
+  }
+]

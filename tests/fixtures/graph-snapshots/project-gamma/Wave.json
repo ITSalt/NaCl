@@ -1,0 +1,112 @@
+[
+  {
+    "labels": [
+      "Wave"
+    ],
+    "properties": {
+      "number": 0,
+      "name": "Infrastructure",
+      "id": "wave-0",
+      "status": "pending"
+    }
+  },
+  {
+    "labels": [
+      "Wave"
+    ],
+    "properties": {
+      "number": 1,
+      "name": "Auth + Files (BE)",
+      "id": "wave-1-be",
+      "status": "pending"
+    }
+  },
+  {
+    "labels": [
+      "Wave"
+    ],
+    "properties": {
+      "number": 2,
+      "name": "Auth + Files (FE)",
+      "id": "wave-1-fe",
+      "status": "pending"
+    }
+  },
+  {
+    "labels": [
+      "Wave"
+    ],
+    "properties": {
+      "number": 3,
+      "name": "Users + Courses (BE)",
+      "id": "wave-2-be",
+      "status": "pending"
+    }
+  },
+  {
+    "labels": [
+      "Wave"
+    ],
+    "properties": {
+      "number": 4,
+      "name": "Users + Courses (FE)",
+      "id": "wave-2-fe",
+      "status": "pending"
+    }
+  },
+  {
+    "labels": [
+      "Wave"
+    ],
+    "properties": {
+      "number": 5,
+      "name": "Groups (BE)",
+      "id": "wave-3-be",
+      "status": "pending"
+    }
+  },
+  {
+    "labels": [
+      "Wave"
+    ],
+    "properties": {
+      "number": 6,
+      "name": "Groups (FE)",
+      "id": "wave-3-fe",
+      "status": "pending"
+    }
+  },
+  {
+    "labels": [
+      "Wave"
+    ],
+    "properties": {
+      "number": 7,
+      "name": "Submissions (BE)",
+      "id": "wave-4-be",
+      "status": "pending"
+    }
+  },
+  {
+    "labels": [
+      "Wave"
+    ],
+    "properties": {
+      "number": 8,
+      "name": "Submissions (FE)",
+      "id": "wave-4-fe",
+      "status": "pending"
+    }
+  },
+  {
+    "labels": [
+      "Wave"
+    ],
+    "properties": {
+      "number": 9,
+      "name": "AI Studio (BE)",
+      "id": "wave-5-be",
+      "status": "pending"
+    }
+  }
+]

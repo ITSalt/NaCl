@@ -1,0 +1,96 @@
+[
+  {
+    "labels": [
+      "Form"
+    ],
+    "properties": {
+      "name": "Login Form",
+      "description": "Email/password login form",
+      "id": "form-001"
+    }
+  },
+  {
+    "labels": [
+      "Form"
+    ],
+    "properties": {
+      "name": "Registration Form",
+      "description": "Registration form with promo code",
+      "id": "form-002"
+    }
+  },
+  {
+    "labels": [
+      "Form"
+    ],
+    "properties": {
+      "name": "Create Course Form",
+      "id": "form-020"
+    }
+  },
+  {
+    "labels": [
+      "Form"
+    ],
+    "properties": {
+      "name": "Create Lecture Form",
+      "id": "form-021"
+    }
+  },
+  {
+    "labels": [
+      "Form"
+    ],
+    "properties": {
+      "name": "Upload Material Form",
+      "id": "form-022"
+    }
+  },
+  {
+    "labels": [
+      "Form"
+    ],
+    "properties": {
+      "name": "Change Password Form",
+      "description": "Form for changing current password",
+      "id": "form-003"
+    }
+  },
+  {
+    "labels": [
+      "Form"
+    ],
+    "properties": {
+      "name": "Submit Homework Form",
+      "id": "form-040"
+    }
+  },
+  {
+    "labels": [
+      "Form"
+    ],
+    "properties": {
+      "name": "Extend Enrollment Form",
+      "description": "Form to set new enrollment expiration date",
+      "id": "form-004"
+    }
+  },
+  {
+    "labels": [
+      "Form"
+    ],
+    "properties": {
+      "name": "Grade Form",
+      "id": "form-041"
+    }
+  },
+  {
+    "labels": [
+      "Form"
+    ],
+    "properties": {
+      "name": "Create Group Form",
+      "id": "form-023"
+    }
+  }
+]

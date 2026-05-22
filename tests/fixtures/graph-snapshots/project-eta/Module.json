@@ -1,0 +1,122 @@
+[
+  {
+    "labels": [
+      "Module"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T14:03:22.870000000+00:00",
+      "created": "2026-04-13T14:03:22.870000000+00:00",
+      "name": "ORDERS",
+      "description": "AUTH, VEHICLES, GEO, PAYMENTS, ROUTING",
+      "iteration": "",
+      "id": "MOD-orders",
+      "updated": "2026-04-13T14:03:22.870000000+00:00",
+      "source_file": "docs/00-architecture/module-tree.md"
+    }
+  },
+  {
+    "labels": [
+      "Module"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T14:03:22.870000000+00:00",
+      "created": "2026-04-13T14:03:22.870000000+00:00",
+      "name": "ROUTING",
+      "description": "ORDERS, GEO, CHARGING",
+      "iteration": "",
+      "id": "MOD-routing",
+      "updated": "2026-04-13T14:03:22.870000000+00:00",
+      "source_file": "docs/00-architecture/module-tree.md"
+    }
+  },
+  {
+    "labels": [
+      "Module"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T14:03:22.870000000+00:00",
+      "created": "2026-04-13T14:03:22.870000000+00:00",
+      "name": "PAYMENTS",
+      "description": "ORDERS, AUTH",
+      "iteration": "",
+      "id": "MOD-payments",
+      "updated": "2026-04-13T14:03:22.870000000+00:00",
+      "source_file": "docs/00-architecture/module-tree.md"
+    }
+  },
+  {
+    "labels": [
+      "Module"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T14:03:22.870000000+00:00",
+      "created": "2026-04-13T14:03:22.870000000+00:00",
+      "name": "CHAT",
+      "description": "ORDERS, AUTH",
+      "iteration": "",
+      "id": "MOD-chat",
+      "updated": "2026-04-13T14:03:22.870000000+00:00",
+      "source_file": "docs/00-architecture/module-tree.md"
+    }
+  },
+  {
+    "labels": [
+      "Module"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T14:03:22.870000000+00:00",
+      "created": "2026-04-13T14:03:22.870000000+00:00",
+      "name": "NOTIFICATIONS",
+      "description": "AUTH, ORDERS",
+      "iteration": "",
+      "id": "MOD-notifications",
+      "updated": "2026-04-13T14:03:22.870000000+00:00",
+      "source_file": "docs/00-architecture/module-tree.md"
+    }
+  },
+  {
+    "labels": [
+      "Module"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T14:03:22.870000000+00:00",
+      "created": "2026-04-13T14:03:22.870000000+00:00",
+      "name": "CHARGING",
+      "description": "ROUTING",
+      "iteration": "",
+      "id": "MOD-charging",
+      "updated": "2026-04-13T14:03:22.870000000+00:00",
+      "source_file": "docs/00-architecture/module-tree.md"
+    }
+  },
+  {
+    "labels": [
+      "Module"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T14:03:22.870000000+00:00",
+      "created": "2026-04-13T14:03:22.870000000+00:00",
+      "name": "VEHICLES",
+      "description": "AUTH",
+      "iteration": "",
+      "id": "MOD-vehicles",
+      "updated": "2026-04-13T14:03:22.870000000+00:00",
+      "source_file": "docs/00-architecture/module-tree.md"
+    }
+  },
+  {
+    "labels": [
+      "Module"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T14:03:22.870000000+00:00",
+      "created": "2026-04-13T14:03:22.870000000+00:00",
+      "name": "PROFILE",
+      "description": "AUTH, VEHICLES",
+      "iteration": "",
+      "id": "MOD-profile",
+      "updated": "2026-04-13T14:03:22.870000000+00:00",
+      "source_file": "docs/00-architecture/module-tree.md"
+    }
+  }
+]

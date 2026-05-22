@@ -1,0 +1,784 @@
+{
+  "project": "Transcrib",
+  "created": "2026-05-18",
+  "updated": "2026-05-18T17:00:00Z",
+  "source": "nacl-tl-plan",
+  "summary": {
+    "total_uc": 9,
+    "total_tech": 24,
+    "total_tasks": 39,
+    "pending": 1,
+    "in_progress": 0,
+    "ready_for_review": 0,
+    "verified_pending": 0,
+    "approved": 32,
+    "qa_pass": 7,
+    "qa_skip": 2,
+    "done": 0,
+    "blocked": 0
+  },
+  "waves": {
+    "total": 10,
+    "current": 10
+  },
+  "partial_inputs": [],
+  "tasks": [
+    {
+      "id": "TECH-001",
+      "title": "Monorepo & tooling",
+      "type": "tech",
+      "status": "approved",
+      "wave": 0,
+      "priority": "high",
+      "blockers": [],
+      "blocks": [
+        "TECH-002",
+        "TECH-003",
+        "TECH-004",
+        "TECH-005",
+        "TECH-013",
+        "TECH-015"
+      ]
+    },
+    {
+      "id": "TECH-002",
+      "title": "Docker Compose dev stack",
+      "type": "tech",
+      "status": "approved",
+      "wave": 0,
+      "priority": "high",
+      "blockers": [
+        "TECH-001"
+      ],
+      "blocks": [
+        "TECH-003",
+        "TECH-006"
+      ],
+      "reviewed": "2026-05-18T16:25:00Z",
+      "review_result": "approved"
+    },
+    {
+      "id": "TECH-003",
+      "title": "Prisma schema & migrations",
+      "type": "tech",
+      "status": "approved",
+      "wave": 0,
+      "priority": "high",
+      "blockers": [
+        "TECH-001",
+        "TECH-002"
+      ],
+      "blocks": [
+        "UC-001-BE",
+        "UC-100-BE"
+      ],
+      "reviewed": "2026-05-18T22:00:00Z",
+      "review_result": "approved",
+      "review_headline": "REVIEW APPLIED â€” UNVERIFIED (no live DB for smoke tests)"
+    },
+    {
+      "id": "TECH-004",
+      "title": "Shared Zod schemas + DTOs",
+      "type": "tech",
+      "status": "approved",
+      "wave": 0,
+      "priority": "high",
+      "blockers": [
+        "TECH-001"
+      ],
+      "blocks": [
+        "TECH-005",
+        "TECH-013"
+      ],
+      "reviewed": "2026-05-18T22:00:00Z",
+      "review_result": "approved",
+      "review_headline": "REVIEW APPLIED -- UNVERIFIED (100% author overlap, operator override applied)"
+    },
+    {
+      "id": "TECH-005",
+      "title": "Fastify API scaffold",
+      "type": "tech",
+      "status": "approved",
+      "wave": 0,
+      "priority": "high",
+      "blockers": [
+        "TECH-001",
+        "TECH-004"
+      ],
+      "blocks": [
+        "TECH-006",
+        "TECH-007",
+        "TECH-008",
+        "TECH-012",
+        "TECH-014",
+        "UC-001-BE",
+        "UC-100-BE"
+      ]
+    },
+    {
+      "id": "TECH-006",
+      "title": "BullMQ + worker scaffold",
+      "type": "tech",
+      "status": "approved",
+      "wave": 0,
+      "priority": "high",
+      "blockers": [
+        "TECH-002",
+        "TECH-005"
+      ],
+      "blocks": [
+        "TECH-009",
+        "TECH-010",
+        "TECH-011",
+        "UC-200-BE"
+      ]
+    },
+    {
+      "id": "TECH-007",
+      "title": "S3/MinIO storage adapter",
+      "type": "tech",
+      "status": "approved",
+      "wave": 0,
+      "priority": "high",
+      "blockers": [
+        "TECH-005"
+      ],
+      "blocks": [
+        "TECH-008",
+        "UC-100-BE"
+      ]
+    },
+    {
+      "id": "TECH-008",
+      "title": "TUS upload wiring",
+      "type": "tech",
+      "status": "approved",
+      "wave": 0,
+      "priority": "high",
+      "blockers": [
+        "TECH-005",
+        "TECH-007"
+      ],
+      "blocks": [
+        "UC-100-BE"
+      ]
+    },
+    {
+      "id": "TECH-009",
+      "title": "ffmpeg audio extraction",
+      "type": "tech",
+      "status": "approved",
+      "wave": 0,
+      "priority": "high",
+      "blockers": [
+        "TECH-006"
+      ],
+      "blocks": [
+        "UC-200-BE"
+      ],
+      "reviewed": "2026-05-18T18:00:00Z",
+      "review_result": "approved"
+    },
+    {
+      "id": "TECH-010",
+      "title": "IAsrProvider + Deepgram adapter",
+      "type": "tech",
+      "status": "approved",
+      "wave": 0,
+      "priority": "high",
+      "blockers": [
+        "TECH-006"
+      ],
+      "blocks": [
+        "UC-200-BE"
+      ],
+      "reviewed": "2026-05-18T18:00:00Z",
+      "review_result": "approved"
+    },
+    {
+      "id": "TECH-011",
+      "title": "ILlmProvider + api.kie.example.invalid adapter",
+      "type": "tech",
+      "status": "approved",
+      "wave": 0,
+      "priority": "high",
+      "blockers": [
+        "TECH-006"
+      ],
+      "blocks": [
+        "UC-300-BE"
+      ],
+      "reviewed": "2026-05-18T18:00:00Z",
+      "review_result": "approved"
+    },
+    {
+      "id": "TECH-012",
+      "title": "SSE event stream",
+      "type": "tech",
+      "status": "approved",
+      "wave": 0,
+      "priority": "high",
+      "blockers": [
+        "TECH-005"
+      ],
+      "blocks": [
+        "UC-200-BE"
+      ],
+      "reviewed": "2026-05-18T18:00:00Z",
+      "review_result": "approved"
+    },
+    {
+      "id": "TECH-013",
+      "title": "Web scaffold",
+      "type": "tech",
+      "status": "approved",
+      "wave": 0,
+      "priority": "high",
+      "blockers": [
+        "TECH-001",
+        "TECH-004"
+      ],
+      "blocks": [
+        "UC-001-FE",
+        "UC-002-FE",
+        "UC-003-FE",
+        "UC-100-FE",
+        "UC-201-FE",
+        "UC-301-FE"
+      ],
+      "reviewed": "2026-05-18T16:00:00Z",
+      "review_result": "approved"
+    },
+    {
+      "id": "TECH-014",
+      "title": "Puppeteer PDF renderer",
+      "type": "tech",
+      "status": "approved",
+      "wave": 0,
+      "priority": "medium",
+      "blockers": [
+        "TECH-005"
+      ],
+      "blocks": [
+        "UC-302-BE"
+      ],
+      "reviewed": "2026-05-18T16:00:00Z",
+      "review_result": "approved"
+    },
+    {
+      "id": "TECH-015",
+      "title": "GitHub Actions CI",
+      "type": "tech",
+      "status": "approved",
+      "wave": 0,
+      "priority": "medium",
+      "blockers": [
+        "TECH-001"
+      ],
+      "blocks": [],
+      "reviewed": "2026-05-18T22:00:00Z",
+      "review_result": "approved",
+      "review_headline": "REVIEW APPLIED â€” UNVERIFIED (actionlint not available)",
+      "commit": "3286bb9"
+    },
+    {
+      "id": "UC-001",
+      "title": "View meeting catalog",
+      "type": "uc",
+      "wave": 1,
+      "priority": "high",
+      "phases": {
+        "be": {
+          "status": "approved"
+        },
+        "fe": {
+          "status": "approved"
+        },
+        "sync": {
+          "status": "pass",
+          "verified": "2026-05-18",
+          "verdict": "PASS"
+        },
+        "review-be": {
+          "status": "approved"
+        },
+        "review-fe": {
+          "status": "approved"
+        },
+        "qa": {
+          "status": "pass",
+          "verified": "2026-05-18",
+          "verdict": "PASS"
+        }
+      },
+      "blockers": [
+        "TECH-003",
+        "TECH-005"
+      ],
+      "blocks": [
+        "UC-002"
+      ],
+      "reviewed_be": "2026-05-18T16:30:00Z",
+      "review_be_result": "approved",
+      "reviewed_fe": "2026-05-18T16:30:00Z",
+      "review_fe_result": "approved"
+    },
+    {
+      "id": "UC-002",
+      "title": "View meeting detail",
+      "type": "uc",
+      "wave": 2,
+      "priority": "high",
+      "phases": {
+        "be": {
+          "status": "approved"
+        },
+        "fe": {
+          "status": "approved"
+        },
+        "sync": {
+          "status": "pass",
+          "verified": "2026-05-18",
+          "verdict": "PASS"
+        },
+        "review-be": {
+          "status": "approved"
+        },
+        "review-fe": {
+          "status": "approved"
+        },
+        "qa": {
+          "status": "pass",
+          "verified": "2026-05-18",
+          "verdict": "PASS"
+        }
+      },
+      "reviewed_be": "2026-05-18T20:30:00Z",
+      "review_be_result": "approved",
+      "reviewed_fe": "2026-05-18T20:30:00Z",
+      "review_fe_result": "approved",
+      "blockers": [
+        "UC-001"
+      ],
+      "blocks": [
+        "UC-003"
+      ]
+    },
+    {
+      "id": "UC-003",
+      "title": "Delete meeting",
+      "type": "uc",
+      "wave": 3,
+      "priority": "high",
+      "phases": {
+        "be": {
+          "status": "approved"
+        },
+        "fe": {
+          "status": "approved"
+        },
+        "sync": {
+          "status": "pass",
+          "verified": "2026-05-18",
+          "verdict": "PASS"
+        },
+        "review-be": {
+          "status": "approved"
+        },
+        "review-fe": {
+          "status": "approved"
+        },
+        "qa": {
+          "status": "pass",
+          "verified": "2026-05-18",
+          "verdict": "PASS"
+        }
+      },
+      "blockers": [
+        "UC-002"
+      ],
+      "blocks": [],
+      "reviewed_be": "2026-05-18T22:30:00Z",
+      "review_be_result": "approved",
+      "reviewed_fe": "2026-05-18T23:00:00Z",
+      "review_fe_result": "approved"
+    },
+    {
+      "id": "UC-100",
+      "title": "Upload meeting video",
+      "type": "uc",
+      "wave": 1,
+      "priority": "high",
+      "phases": {
+        "be": {
+          "status": "approved"
+        },
+        "fe": {
+          "status": "approved"
+        },
+        "sync": {
+          "status": "pass",
+          "verified": "2026-05-18",
+          "verdict": "PASS"
+        },
+        "review-be": {
+          "status": "approved"
+        },
+        "review-fe": {
+          "status": "approved"
+        },
+        "qa": {
+          "status": "pass",
+          "verified": "2026-05-18",
+          "verdict": "PASS"
+        }
+      },
+      "reviewed_fe": "2026-05-18T20:00:00Z",
+      "review_fe_result": "approved",
+      "blockers": [
+        "TECH-003",
+        "TECH-005",
+        "TECH-007",
+        "TECH-008"
+      ],
+      "blocks": [
+        "UC-200"
+      ]
+    },
+    {
+      "id": "UC-200",
+      "title": "Transcription pipeline (worker)",
+      "type": "uc-worker",
+      "wave": 2,
+      "priority": "high",
+      "phases": {
+        "be": {
+          "status": "approved"
+        },
+        "review-be": {
+          "status": "approved"
+        },
+        "qa": {
+          "status": "skip",
+          "verified": "2026-05-18",
+          "reason": "Requires real DEEPGRAM_API_KEY not available in test environment"
+        }
+      },
+      "reviewed_be": "2026-05-18T22:30:00Z",
+      "review_be_result": "approved",
+      "blockers": [
+        "UC-100",
+        "TECH-006",
+        "TECH-009",
+        "TECH-010",
+        "TECH-012"
+      ],
+      "blocks": [
+        "UC-201",
+        "UC-300"
+      ],
+      "review_be_headline": "REVIEW APPLIED â€” UNVERIFIED (test author overlap 100%)"
+    },
+    {
+      "id": "UC-201",
+      "title": "View and download transcript",
+      "type": "uc",
+      "wave": 3,
+      "priority": "high",
+      "phases": {
+        "be": {
+          "status": "approved"
+        },
+        "fe": {
+          "status": "approved"
+        },
+        "sync": {
+          "status": "pass",
+          "verified": "2026-05-18",
+          "verdict": "PASS",
+          "note": "Format mismatch resolved: removed JSON/MD download buttons from FE; BE contract (TXT only) satisfied"
+        },
+        "review-be": {
+          "status": "approved"
+        },
+        "review-fe": {
+          "status": "approved"
+        },
+        "qa": {
+          "status": "pass",
+          "verified": "2026-05-18",
+          "verdict": "PASS"
+        }
+      },
+      "blockers": [
+        "UC-200"
+      ],
+      "blocks": [],
+      "reviewed_be": "2026-05-18T23:30:00Z",
+      "review_be_result": "approved",
+      "review_be_headline": "REVIEW APPLIED -- UNVERIFIED (100% test author overlap, operator override applied)",
+      "reviewed_fe": "2026-05-18T23:30:00Z",
+      "review_fe_result": "approved",
+      "review_fe_headline": "REVIEW APPLIED -- UNVERIFIED (100% test author overlap, operator override applied)"
+    },
+    {
+      "id": "UC-300",
+      "title": "Protocol generation (worker)",
+      "type": "uc-worker",
+      "wave": 3,
+      "priority": "high",
+      "phases": {
+        "be": {
+          "status": "approved"
+        },
+        "review-be": {
+          "status": "approved"
+        },
+        "qa": {
+          "status": "skip",
+          "verified": "2026-05-18",
+          "reason": "Requires real KIE_API_KEY not available in test environment"
+        }
+      },
+      "blockers": [
+        "UC-200",
+        "TECH-011"
+      ],
+      "blocks": [
+        "UC-301"
+      ],
+      "reviewed_be": "2026-05-18T23:45:00Z",
+      "review_be_result": "approved",
+      "review_be_headline": "REVIEW APPLIED -- UNVERIFIED (100% test author overlap, operator override applied)"
+    },
+    {
+      "id": "UC-301",
+      "title": "Review and edit protocol",
+      "type": "uc",
+      "wave": 4,
+      "priority": "high",
+      "phases": {
+        "be": {
+          "status": "approved"
+        },
+        "fe": {
+          "status": "approved"
+        },
+        "sync": {
+          "status": "pass",
+          "verdict": "PASS",
+          "verified": "2026-05-18"
+        },
+        "review-be": {
+          "status": "approved"
+        },
+        "review-fe": {
+          "status": "approved"
+        },
+        "qa": {
+          "status": "pass",
+          "verified": "2026-05-18",
+          "verdict": "PASS"
+        }
+      },
+      "blockers": [
+        "UC-300"
+      ],
+      "blocks": [
+        "UC-302"
+      ],
+      "reviewed_be": "2026-05-18T17:00:00Z",
+      "review_be_result": "approved",
+      "review_be_headline": "REVIEW APPLIED -- UNVERIFIED (100% test author overlap, operator override applied)",
+      "reviewed_fe": "2026-05-18T17:00:00Z",
+      "review_fe_result": "approved",
+      "review_fe_headline": "REVIEW APPLIED -- UNVERIFIED (100% test author overlap, operator override applied)"
+    },
+    {
+      "id": "UC-302",
+      "title": "Export protocol to PDF",
+      "type": "uc-be-only",
+      "wave": 5,
+      "priority": "medium",
+      "phases": {
+        "be": {
+          "status": "approved"
+        },
+        "review-be": {
+          "status": "approved"
+        },
+        "qa": {
+          "status": "pass",
+          "verified": "2026-05-18",
+          "verdict": "PASS"
+        }
+      },
+      "blockers": [
+        "UC-301",
+        "TECH-014"
+      ],
+      "blocks": [],
+      "reviewed_be": "2026-05-18T16:35:00Z",
+      "review_be_result": "approved",
+      "review_be_headline": "REVIEW APPLIED -- UNVERIFIED (100% test author overlap, operator override applied)"
+    },
+    {
+      "id": "TECH-016",
+      "title": "Cloud.ru S3 bucket + service account",
+      "type": "tech",
+      "status": "approved",
+      "wave": 7,
+      "priority": "high",
+      "owner": "user",
+      "blockers": [],
+      "blocks": [
+        "TECH-018"
+      ],
+      "reviewed": "2026-05-18T19:28:00Z",
+      "review_result": "approved"
+    },
+    {
+      "id": "TECH-017",
+      "title": "Server bootstrap (swap, Node 20, pnpm, ffmpeg, chromium)",
+      "type": "tech",
+      "status": "approved",
+      "wave": 7,
+      "priority": "high",
+      "owner": "ops",
+      "blockers": [],
+      "blocks": [
+        "TECH-018",
+        "TECH-019"
+      ],
+      "reviewed": "2026-05-18T19:28:00Z",
+      "review_result": "approved"
+    },
+    {
+      "id": "TECH-018",
+      "title": "Postgres role + Redis DB index + filesystem layout + .env",
+      "type": "tech",
+      "status": "approved",
+      "wave": 8,
+      "priority": "high",
+      "owner": "ops",
+      "blockers": [
+        "TECH-016",
+        "TECH-017"
+      ],
+      "blocks": [
+        "TECH-020",
+        "TECH-023"
+      ],
+      "reviewed": "2026-05-18T19:28:00Z",
+      "review_result": "approved"
+    },
+    {
+      "id": "TECH-019",
+      "title": "pm2 ecosystem.config.cjs (api + worker)",
+      "type": "tech",
+      "status": "approved",
+      "wave": 7,
+      "priority": "high",
+      "owner": "dev",
+      "blockers": [
+        "TECH-001"
+      ],
+      "blocks": [
+        "TECH-023"
+      ],
+      "reviewed": "2026-05-18T19:28:00Z",
+      "review_result": "approved"
+    },
+    {
+      "id": "TECH-020",
+      "title": "Caddy server-block for project-beta.example.invalid",
+      "type": "tech",
+      "status": "approved",
+      "wave": 8,
+      "priority": "high",
+      "owner": "ops",
+      "blockers": [
+        "TECH-018"
+      ],
+      "blocks": [
+        "TECH-024"
+      ],
+      "reviewed": "2026-05-18T19:28:00Z",
+      "review_result": "approved"
+    },
+    {
+      "id": "TECH-021",
+      "title": "S3 Cloud.ru profile + puppeteer-core wiring",
+      "type": "tech",
+      "status": "approved",
+      "wave": 7,
+      "priority": "high",
+      "owner": "dev",
+      "blockers": [
+        "TECH-007",
+        "TECH-014"
+      ],
+      "blocks": [
+        "TECH-024"
+      ],
+      "reviewed": "2026-05-18T19:28:00Z",
+      "review_result": "approved"
+    },
+    {
+      "id": "TECH-022",
+      "title": "/api/health + graceful shutdown (SIGTERM)",
+      "type": "tech",
+      "status": "approved",
+      "wave": 7,
+      "priority": "high",
+      "owner": "dev",
+      "blockers": [
+        "TECH-005"
+      ],
+      "blocks": [
+        "TECH-023"
+      ],
+      "reviewed": "2026-05-18T19:28:00Z",
+      "review_result": "approved"
+    },
+    {
+      "id": "TECH-023",
+      "title": "GitHub Actions deploy-production.yml + repo secrets",
+      "type": "tech",
+      "status": "approved",
+      "wave": 9,
+      "priority": "high",
+      "owner": "dev",
+      "blockers": [
+        "TECH-018",
+        "TECH-019",
+        "TECH-022"
+      ],
+      "blocks": [
+        "TECH-024"
+      ],
+      "reviewed": "2026-05-18T19:28:00Z",
+      "review_result": "approved"
+    },
+    {
+      "id": "TECH-024",
+      "title": "DNS + first cutover + smoke test runbook",
+      "type": "tech",
+      "status": "pending",
+      "wave": 10,
+      "priority": "high",
+      "owner": "user+ops",
+      "blockers": [
+        "TECH-016",
+        "TECH-017",
+        "TECH-018",
+        "TECH-019",
+        "TECH-020",
+        "TECH-021",
+        "TECH-022",
+        "TECH-023"
+      ],
+      "blocks": []
+    }
+  ]
+}

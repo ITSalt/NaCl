@@ -1,0 +1,128 @@
+[
+  {
+    "labels": [
+      "EntityState"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-19T21:02:57.846000000+00:00",
+      "created": "2026-04-19T21:02:57.846000000+00:00",
+      "name": "created",
+      "description": "Создана | UUID сессии создан, лендинг отображён",
+      "id": "OBJ-001-ST01",
+      "updated": "2026-04-19T21:02:57.846000000+00:00",
+      "source_file": "docs/02-business-entities/states/OBJ-001-states.md"
+    }
+  },
+  {
+    "labels": [
+      "EntityState"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-19T21:02:57.846000000+00:00",
+      "created": "2026-04-19T21:02:57.846000000+00:00",
+      "name": "interview",
+      "description": "Интервью | Пользователь отвечает на вопросы Q1-Q5",
+      "id": "OBJ-001-ST02",
+      "updated": "2026-04-19T21:02:57.846000000+00:00",
+      "source_file": "docs/02-business-entities/states/OBJ-001-states.md"
+    }
+  },
+  {
+    "labels": [
+      "EntityState"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-19T21:02:57.846000000+00:00",
+      "created": "2026-04-19T21:02:57.846000000+00:00",
+      "name": "generating",
+      "description": "Генерация | AI генерирует сценарий и/или медиа-контент",
+      "id": "OBJ-001-ST03",
+      "updated": "2026-04-19T21:02:57.846000000+00:00",
+      "source_file": "docs/02-business-entities/states/OBJ-001-states.md"
+    }
+  },
+  {
+    "labels": [
+      "EntityState"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-19T21:02:57.846000000+00:00",
+      "created": "2026-04-19T21:02:57.846000000+00:00",
+      "name": "completed",
+      "description": "Завершена | Весь контент готов, результат отображён",
+      "id": "OBJ-001-ST04",
+      "updated": "2026-04-19T21:02:57.846000000+00:00",
+      "source_file": "docs/02-business-entities/states/OBJ-001-states.md"
+    }
+  },
+  {
+    "labels": [
+      "EntityState"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-19T21:02:57.846000000+00:00",
+      "created": "2026-04-19T21:02:57.846000000+00:00",
+      "name": "idle",
+      "description": "Ожидание | Генерация ещё не запущена",
+      "id": "OBJ-005-ST01",
+      "updated": "2026-04-19T21:02:57.846000000+00:00",
+      "source_file": "docs/02-business-entities/states/OBJ-005-states.md"
+    }
+  },
+  {
+    "labels": [
+      "EntityState"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-19T21:02:57.846000000+00:00",
+      "created": "2026-04-19T21:02:57.846000000+00:00",
+      "name": "generating",
+      "description": "Генерация | Запрос отправлен в KIE",
+      "id": "OBJ-005-ST02",
+      "updated": "2026-04-19T21:02:57.846000000+00:00",
+      "source_file": "docs/02-business-entities/states/OBJ-005-states.md"
+    }
+  },
+  {
+    "labels": [
+      "EntityState"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-19T21:02:57.846000000+00:00",
+      "created": "2026-04-19T21:02:57.846000000+00:00",
+      "name": "pending",
+      "description": "Обработка | KIE обрабатывает, polling статуса",
+      "id": "OBJ-005-ST03",
+      "updated": "2026-04-19T21:02:57.846000000+00:00",
+      "source_file": "docs/02-business-entities/states/OBJ-005-states.md"
+    }
+  },
+  {
+    "labels": [
+      "EntityState"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-19T21:02:57.846000000+00:00",
+      "created": "2026-04-19T21:02:57.846000000+00:00",
+      "name": "ready",
+      "description": "Готово | URL медиа доступен",
+      "id": "OBJ-005-ST04",
+      "updated": "2026-04-19T21:02:57.846000000+00:00",
+      "source_file": "docs/02-business-entities/states/OBJ-005-states.md"
+    }
+  },
+  {
+    "labels": [
+      "EntityState"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-19T21:02:57.846000000+00:00",
+      "created": "2026-04-19T21:02:57.846000000+00:00",
+      "name": "error",
+      "description": "Ошибка | Генерация не удалась, используется фолбэк",
+      "id": "OBJ-005-ST05",
+      "updated": "2026-04-19T21:02:57.846000000+00:00",
+      "source_file": "docs/02-business-entities/states/OBJ-005-states.md"
+    }
+  }
+]

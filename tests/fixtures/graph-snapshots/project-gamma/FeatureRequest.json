@@ -1,0 +1,288 @@
+[
+  {
+    "labels": [
+      "FeatureRequest"
+    ],
+    "properties": {
+      "note": "Renamed from FR-001 to free ID space (original ID was reused for newer features). Legacy edges (GENERATES, REFINED_AS, DERIVED_FROM, EXTENDS, DEPENDS_ON) preserved unchanged. Original feature has been shipped to main; this node is a historical record.",
+      "shipped_at": "2026-04-28T21:43:31.598000000+00:00",
+      "batch": "feature/intake-2026-04-08",
+      "created_at": "2026-04-07T23:23:59.702000000+00:00",
+      "description": "Student with multiple enrollments switches active group via header dropdown; all screens re-render under selected currentGroupId. Adds UC-107 + 2 TECH tasks.",
+      "spec_section": "§3.1",
+      "legacy_generated_uc_ids": [
+        "UC-107"
+      ],
+      "updated_at": "2026-04-28T21:43:31.598000000+00:00",
+      "legacy_extended_uc_ids": [],
+      "legacy_origin": "FR-001",
+      "name": "Group switcher in header (multi-enrollment)",
+      "legacy_generated_task_ids": [
+        "TECH-FR-001-BE",
+        "TECH-FR-001-FE"
+      ],
+      "legacy_derived_req_ids": [],
+      "id": "FR-LEG-001",
+      "yougile_id": "1fa1f6d5-f6cf-4e2e-b5a0-b3e9a8118d0d",
+      "status": "shipped"
+    }
+  },
+  {
+    "labels": [
+      "FeatureRequest"
+    ],
+    "properties": {
+      "note": "Renamed from FR-002 to free ID space (original ID was reused for newer features). Legacy edges (GENERATES, REFINED_AS, DERIVED_FROM, EXTENDS, DEPENDS_ON) preserved unchanged. Original feature has been shipped to main; this node is a historical record.",
+      "shipped_at": "2026-04-28T21:43:31.598000000+00:00",
+      "source_commit": "af0e140",
+      "module": "mod-courses",
+      "batch": "feature/intake-2026-04-08",
+      "description": "Single-scroll student lecture page with 5 sections: description, course materials, group materials, homework (form+history+comments), AI Studio compact. Read-only mode for expired enrollments hides HW form and AI Studio sections.",
+      "created_at": "2026-04-07T23:26:20.974000000+00:00",
+      "spec_section": "§4.2",
+      "source": "/graph_sa_feature FR-002",
+      "legacy_generated_uc_ids": [
+        "UC-208"
+      ],
+      "wave": 14,
+      "source_doc": "materials/frontend-block-decisions.md",
+      "updated_at": "2026-04-28T21:43:31.598000000+00:00",
+      "legacy_extended_uc_ids": [],
+      "legacy_origin": "FR-002",
+      "name": "Student lecture page /lectures/$groupLectureId",
+      "legacy_generated_task_ids": [
+        "TECH-FR-002-BE",
+        "TECH-FR-002-FE"
+      ],
+      "legacy_derived_req_ids": [],
+      "id": "FR-LEG-002",
+      "status": "shipped"
+    }
+  },
+  {
+    "labels": [
+      "FeatureRequest"
+    ],
+    "properties": {
+      "note": "Renamed from FR-003 to free ID space (original ID was reused for newer features). Legacy edges (GENERATES, REFINED_AS, DERIVED_FROM, EXTENDS, DEPENDS_ON) preserved unchanged. Original feature has been shipped to main; this node is a historical record.",
+      "shipped_at": "2026-04-28T21:43:31.598000000+00:00",
+      "batch": "feature/intake-2026-04-08",
+      "created_at": "2026-04-07T23:27:14.933Z",
+      "description": "A teacher opens a specific lecture in a specific group via /groups/$groupId/lectures/$groupLectureId. Single page with sections (not tabs): info (date/status/HW deadline), group materials CRUD, student submissions table with filters, and AI Studio context switcher entry point. Adds UC-309 + 2 TECH tasks. Foundation for FR-004.",
+      "spec_section": "§6.4",
+      "legacy_generated_uc_ids": [
+        "UC-309"
+      ],
+      "updated_at": "2026-04-28T21:43:31.598000000+00:00",
+      "legacy_extended_uc_ids": [],
+      "legacy_origin": "FR-003",
+      "name": "Teacher lecture-in-group page",
+      "legacy_generated_task_ids": [
+        "TECH-FR-003-FE",
+        "TECH-FR-003-BE"
+      ],
+      "legacy_derived_req_ids": [],
+      "id": "FR-LEG-003",
+      "yougile_id": "1de0941c-2112-4057-8f56-22b3cc70a008",
+      "status": "shipped"
+    }
+  },
+  {
+    "labels": [
+      "FeatureRequest"
+    ],
+    "properties": {
+      "note": "Renamed from FR-004 to free ID space (original ID was reused for newer features). Legacy edges (GENERATES, REFINED_AS, DERIVED_FROM, EXTENDS, DEPENDS_ON) preserved unchanged. Original feature has been shipped to main; this node is a historical record.",
+      "shipped_at": "2026-04-28T21:43:31.598000000+00:00",
+      "batch": "feature/intake-2026-04-08",
+      "created_at": "2026-04-08T00:00:00.00Z",
+      "description": "Teacher opens AI Studio in the context of a specific group lecture via 4 nested routes (main, conversation, generation, compare). A context switcher selects \"My generations\" (full create) vs \"Student: <name>\" (read-only review of student work). Search-param ?student=<userId> determines mode.",
+      "spec_section": "§6.5",
+      "legacy_generated_uc_ids": [
+        "UC-511"
+      ],
+      "updated_at": "2026-04-28T21:43:31.598000000+00:00",
+      "legacy_extended_uc_ids": [],
+      "legacy_origin": "FR-004",
+      "name": "Teacher AI Studio in lecture context (4 nested routes, My/Student switcher)",
+      "legacy_generated_task_ids": [
+        "TECH-FR-004-FE",
+        "TECH-FR-004-BE"
+      ],
+      "legacy_derived_req_ids": [],
+      "id": "FR-LEG-004",
+      "yougile_id": "28120077-32db-402e-93d3-ce20fafb43e0",
+      "status": "shipped"
+    }
+  },
+  {
+    "labels": [
+      "FeatureRequest"
+    ],
+    "properties": {
+      "note": "Renamed from FR-005 to free ID space (original ID was reused for newer features). Legacy edges (GENERATES, REFINED_AS, DERIVED_FROM, EXTENDS, DEPENDS_ON) preserved unchanged. Original feature has been shipped to main; this node is a historical record.",
+      "shipped_at": "2026-04-28T21:43:31.598000000+00:00",
+      "impact_method": "graph_sa_feature manual allocation (parallel batch)",
+      "module": "mod-ai-studio",
+      "batch": "feature/intake-2026-04-08",
+      "description": "Student visits /ai-studio without ?lectureId and sees a lobby of cards — one per open lecture in the currently active group. Each card shows lecture number+title, quota bars per generation type (text/image_standard/image_premium/video_fast/video_quality/music) with used vs available, and total generation count for this lecture. Click navigates to /ai-studio?lectureId=<groupLectureId> opening the existing main AI Studio screen. Lobby is hidden entirely for expired enrollments (sidebar omits AI Studio entry per FR-001 readonly mode).",
+      "created_at": "2026-04-07T23:28:34.420000000+00:00",
+      "source": "materials/frontend-block-decisions.md §4.4",
+      "wave": 14,
+      "legacy_generated_uc_ids": [
+        "UC-512"
+      ],
+      "yougile_card_id": "7c810446-501c-4582-a7ba-24772cb1503a",
+      "updated_at": "2026-04-28T21:43:31.598000000+00:00",
+      "legacy_extended_uc_ids": [],
+      "legacy_origin": "FR-005",
+      "name": "AI Studio lobby with cards of open lectures",
+      "legacy_generated_task_ids": [
+        "TECH-FR-005-FE",
+        "TECH-FR-005-BE"
+      ],
+      "legacy_derived_req_ids": [],
+      "id": "FR-LEG-005",
+      "status": "shipped"
+    }
+  },
+  {
+    "labels": [
+      "FeatureRequest"
+    ],
+    "properties": {
+      "note": "Renamed from FR-006 to free ID space (original ID was reused for newer features). Legacy edges (GENERATES, REFINED_AS, DERIVED_FROM, EXTENDS, DEPENDS_ON) preserved unchanged. Original feature has been shipped to main; this node is a historical record.",
+      "shipped_at": "2026-04-28T21:43:31.598000000+00:00",
+      "batch": "feature/intake-2026-04-08",
+      "created_at": "2026-04-07T23:28:40.786000000+00:00",
+      "description": "Student opens a single generation by URL (deep link). Page renders inputs (prompt, model, params, status), result preview (image/video/audio with download), and three actions: Copy (prefill creation form), Use as input (set as reference image), Retry (re-run with identical inputs, only for failed/timed_out).",
+      "source": "materials/frontend-block-decisions.md §4.4",
+      "legacy_generated_uc_ids": [
+        "UC-513"
+      ],
+      "wave": 14,
+      "updated_at": "2026-04-28T21:43:31.598000000+00:00",
+      "legacy_extended_uc_ids": [],
+      "legacy_origin": "FR-006",
+      "name": "Single-generation viewer at /ai-studio/generations/$generationId",
+      "legacy_generated_task_ids": [
+        "TECH-FR-006-FE"
+      ],
+      "legacy_derived_req_ids": [],
+      "id": "FR-LEG-006",
+      "status": "shipped"
+    }
+  },
+  {
+    "labels": [
+      "FeatureRequest"
+    ],
+    "properties": {
+      "note": "Renamed from FR-007 to free ID space (original ID was reused for newer features). Legacy edges (GENERATES, REFINED_AS, DERIVED_FROM, EXTENDS, DEPENDS_ON) preserved unchanged. Original feature has been shipped to main; this node is a historical record.",
+      "shipped_at": "2026-04-28T21:43:31.598000000+00:00",
+      "decision": "extend UC-005 (UI gap only); no new UC, no BE task",
+      "batch": "feature/intake-2026-04-08",
+      "created_at": "2026-04-08T00:00:00Z",
+      "description": "A user (any role) can voluntarily change their password from /profile, separately from the forced /change-password flow that triggers when must_change_password=true after first login or admin reset. UI gap only — backend already covered by UC-005.",
+      "source": "materials/frontend-block-decisions.md §4.5 (commit af0e140)",
+      "legacy_generated_uc_ids": [],
+      "updated_at": "2026-04-28T21:43:31.598000000+00:00",
+      "legacy_extended_uc_ids": [
+        "UC-005"
+      ],
+      "legacy_origin": "FR-007",
+      "name": "Voluntary password change form on /profile",
+      "legacy_generated_task_ids": [
+        "TECH-FR-007-FE"
+      ],
+      "legacy_derived_req_ids": [
+        "REQ-FR-007-1",
+        "REQ-FR-007-2",
+        "REQ-FR-007-5",
+        "REQ-FR-007-3",
+        "REQ-FR-007-6",
+        "REQ-FR-007-4"
+      ],
+      "id": "FR-LEG-007",
+      "status": "shipped"
+    }
+  },
+  {
+    "labels": [
+      "FeatureRequest"
+    ],
+    "properties": {
+      "note": "Renamed from FR-008 to free ID space (original ID was reused for newer features). Legacy edges (GENERATES, REFINED_AS, DERIVED_FROM, EXTENDS, DEPENDS_ON) preserved unchanged. Original feature has been shipped to main; this node is a historical record.",
+      "shipped_at": "2026-04-28T21:43:31.598000000+00:00",
+      "batch": "feature/intake-2026-04-08",
+      "created_at": "2026-04-08",
+      "description": "Role-aware DashboardPage extension: 4 analytics cards (ungraded HW per group, upcoming lectures, active groups, AI generation stats) for teachers, backed by 4 aggregate BE endpoints. Built on Recharts within the condensed design system.",
+      "source": "materials/frontend-block-decisions.md §6.1",
+      "legacy_generated_uc_ids": [
+        "UC-108"
+      ],
+      "wave": 15,
+      "updated_at": "2026-04-28T21:43:31.598000000+00:00",
+      "legacy_extended_uc_ids": [],
+      "legacy_origin": "FR-008",
+      "name": "Teacher dashboard with Recharts analytics",
+      "legacy_generated_task_ids": [
+        "TECH-FR-008-FE",
+        "TECH-FR-008-BE"
+      ],
+      "legacy_derived_req_ids": [],
+      "id": "FR-LEG-008",
+      "status": "shipped"
+    }
+  },
+  {
+    "labels": [
+      "FeatureRequest"
+    ],
+    "properties": {
+      "note": "Renamed from FR-009 to free ID space (original ID was reused for newer features). Legacy edges (GENERATES, REFINED_AS, DERIVED_FROM, EXTENDS, DEPENDS_ON) preserved unchanged. Original feature has been shipped to main; this node is a historical record.",
+      "shipped_at": "2026-04-28T21:43:31.598000000+00:00",
+      "batch": "feature/intake-2026-04-08",
+      "created_at": "2026-04-08T00:00:00Z",
+      "description": "Role-aware student branch of DashboardPage replaces mock data with real queries scoped to currentGroupId. Aggregates upcoming HW, revision-requested submissions, recent grades, and active generations into one BE endpoint.",
+      "spec_section": "§4.1",
+      "legacy_generated_uc_ids": [
+        "UC-109"
+      ],
+      "updated_at": "2026-04-28T21:43:31.598000000+00:00",
+      "legacy_extended_uc_ids": [],
+      "legacy_origin": "FR-009",
+      "name": "Student dashboard with real data",
+      "legacy_generated_task_ids": [
+        "TECH-FR-009-FE",
+        "TECH-FR-009-BE"
+      ],
+      "legacy_derived_req_ids": [],
+      "id": "FR-LEG-009",
+      "yougile_id": "48bfcef4-bdc4-4b1a-a855-dc7442308098",
+      "status": "shipped"
+    }
+  },
+  {
+    "labels": [
+      "FeatureRequest"
+    ],
+    "properties": {
+      "source_skill": "nacl-sa-feature (backfill from markdown)",
+      "shipped_at": "2026-04-29T07:43:06.865000000+00:00",
+      "batch": "ai-grader-2026-04-19",
+      "created_at": "2026-04-19T19:22:59.107000000+00:00",
+      "legacy_description_pre_backfill": "Manually-triggered AI draft generator on teacher submission page. Produces an editable draft response via OpenRouter + BullMQ; teacher publishes as a regular Comment (UC-406 path). Config lives on Lecture with per-GroupLecture override. Thread/message model stored for audit + future teacher↔assistant dialogue.",
+      "description": "Manually-triggered AI draft response generator on teacher's submission page. Backend enqueues BullMQ job that converts attachments to Markdown, calls OpenRouter, writes SubmissionAiMessage. Teacher edits draft and publishes as Comment via UC-406 path. Config on Lecture with per-GroupLecture override. Thread + append-only messages stored for audit.",
+      "legacy_name_pre_backfill": "AI Homework Grading Assistant",
+      "spec_section": "materials/currently-students-can-submit-whimsical-chipmunk.md",
+      "title": "AI Homework Grading Assistant",
+      "updated_at": "2026-04-29T07:43:06.865000000+00:00",
+      "name": "AI Homework Grading Assistant",
+      "id": "FR-010",
+      "slug": "ai-homework-grading-assistant",
+      "markdown_path": ".tl/feature-requests/FR-010-ai-homework-grading-assistant.md",
+      "status": "shipped"
+    }
+  }
+]

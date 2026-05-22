@@ -1,0 +1,152 @@
+[
+  {
+    "labels": [
+      "FormField"
+    ],
+    "properties": {
+      "field_category": "input",
+      "name": "title",
+      "label": "Title",
+      "id": "FORM-MeetingCatalog-F01",
+      "updated": "2026-05-18T07:04:51.208000000+00:00",
+      "field_type": "text",
+      "required": false,
+      "order": 1
+    }
+  },
+  {
+    "labels": [
+      "FormField"
+    ],
+    "properties": {
+      "field_category": "input",
+      "name": "status",
+      "label": "Status",
+      "id": "FORM-MeetingCatalog-F02",
+      "field_type": "select",
+      "updated": "2026-05-18T07:04:51.208000000+00:00",
+      "required": true,
+      "order": 2
+    }
+  },
+  {
+    "labels": [
+      "FormField"
+    ],
+    "properties": {
+      "field_category": "input",
+      "name": "language",
+      "label": "Language",
+      "id": "FORM-MeetingCatalog-F03",
+      "field_type": "select",
+      "updated": "2026-05-18T07:04:51.208000000+00:00",
+      "required": false,
+      "order": 3
+    }
+  },
+  {
+    "labels": [
+      "FormField"
+    ],
+    "properties": {
+      "field_category": "input",
+      "name": "uploaded_at",
+      "label": "Uploaded",
+      "id": "FORM-MeetingCatalog-F04",
+      "field_type": "datetime",
+      "updated": "2026-05-18T07:04:51.208000000+00:00",
+      "required": true,
+      "order": 4
+    }
+  },
+  {
+    "labels": [
+      "FormField"
+    ],
+    "properties": {
+      "field_category": "input",
+      "name": "duration_sec",
+      "label": "Duration",
+      "id": "FORM-MeetingCatalog-F05",
+      "field_type": "number",
+      "updated": "2026-05-18T07:04:51.208000000+00:00",
+      "required": false,
+      "order": 5
+    }
+  },
+  {
+    "labels": [
+      "FormField"
+    ],
+    "properties": {
+      "field_category": "action",
+      "name": "open_button",
+      "label": "Open",
+      "id": "FORM-MeetingCatalog-F06",
+      "field_type": "button",
+      "updated": "2026-05-18T07:04:51.208000000+00:00",
+      "required": false,
+      "order": 6
+    }
+  },
+  {
+    "labels": [
+      "FormField"
+    ],
+    "properties": {
+      "field_category": "input",
+      "name": "title",
+      "label": "Title",
+      "id": "FORM-MeetingDetail-F01",
+      "updated": "2026-05-18T07:04:51.208000000+00:00",
+      "field_type": "text",
+      "required": false,
+      "order": 1
+    }
+  },
+  {
+    "labels": [
+      "FormField"
+    ],
+    "properties": {
+      "field_category": "input",
+      "name": "language",
+      "label": "Language",
+      "id": "FORM-MeetingDetail-F02",
+      "field_type": "select",
+      "updated": "2026-05-18T07:04:51.208000000+00:00",
+      "required": false,
+      "order": 2
+    }
+  },
+  {
+    "labels": [
+      "FormField"
+    ],
+    "properties": {
+      "field_category": "input",
+      "name": "status",
+      "label": "Status",
+      "id": "FORM-MeetingDetail-F03",
+      "field_type": "select",
+      "updated": "2026-05-18T07:04:51.208000000+00:00",
+      "required": true,
+      "order": 3
+    }
+  },
+  {
+    "labels": [
+      "FormField"
+    ],
+    "properties": {
+      "field_category": "input",
+      "name": "uploaded_at",
+      "label": "Uploaded at",
+      "id": "FORM-MeetingDetail-F04",
+      "field_type": "datetime",
+      "updated": "2026-05-18T07:04:51.208000000+00:00",
+      "required": true,
+      "order": 4
+    }
+  }
+]

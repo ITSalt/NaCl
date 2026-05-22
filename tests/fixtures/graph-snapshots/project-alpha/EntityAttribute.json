@@ -1,0 +1,143 @@
+[
+  {
+    "labels": [
+      "EntityAttribute"
+    ],
+    "properties": {
+      "name": "id",
+      "description": "PK",
+      "id": "OBJ-001-A01",
+      "entity_id": "OBJ-001",
+      "type": "uuid",
+      "required": true
+    }
+  },
+  {
+    "labels": [
+      "EntityAttribute"
+    ],
+    "properties": {
+      "name": "display_name",
+      "description": "Отображаемое имя (BP-201-S04)",
+      "id": "OBJ-001-A02",
+      "type": "string",
+      "entity_id": "OBJ-001",
+      "required": true
+    }
+  },
+  {
+    "labels": [
+      "EntityAttribute"
+    ],
+    "properties": {
+      "name": "email",
+      "description": "Email (опц.)",
+      "id": "OBJ-001-A03",
+      "type": "string",
+      "entity_id": "OBJ-001",
+      "required": false
+    }
+  },
+  {
+    "labels": [
+      "EntityAttribute"
+    ],
+    "properties": {
+      "enum_values": [
+        "EndUser",
+        "Admin"
+      ],
+      "name": "role",
+      "description": "Роль (BR-12)",
+      "id": "OBJ-001-A04",
+      "entity_id": "OBJ-001",
+      "type": "enum",
+      "required": true
+    }
+  },
+  {
+    "labels": [
+      "EntityAttribute"
+    ],
+    "properties": {
+      "default": "true",
+      "name": "enabled",
+      "description": "Активность (BR-13)",
+      "id": "OBJ-001-A05",
+      "type": "boolean",
+      "entity_id": "OBJ-001",
+      "required": true
+    }
+  },
+  {
+    "labels": [
+      "EntityAttribute"
+    ],
+    "properties": {
+      "name": "created_at",
+      "description": "Дата регистрации",
+      "id": "OBJ-001-A06",
+      "type": "timestamp",
+      "entity_id": "OBJ-001",
+      "required": true
+    }
+  },
+  {
+    "labels": [
+      "EntityAttribute"
+    ],
+    "properties": {
+      "name": "id",
+      "description": "PK",
+      "id": "OBJ-002-A01",
+      "entity_id": "OBJ-002",
+      "type": "uuid",
+      "required": true
+    }
+  },
+  {
+    "labels": [
+      "EntityAttribute"
+    ],
+    "properties": {
+      "references": "OBJ-001",
+      "name": "user_id",
+      "description": "Владелец",
+      "id": "OBJ-002-A02",
+      "entity_id": "OBJ-002",
+      "type": "FK",
+      "required": true
+    }
+  },
+  {
+    "labels": [
+      "EntityAttribute"
+    ],
+    "properties": {
+      "enum_values": [
+        "OPEN",
+        "CLOSED",
+        "ABORTED"
+      ],
+      "name": "status",
+      "description": "Состояние",
+      "id": "OBJ-002-A04",
+      "entity_id": "OBJ-002",
+      "type": "enum",
+      "required": true
+    }
+  },
+  {
+    "labels": [
+      "EntityAttribute"
+    ],
+    "properties": {
+      "name": "opened_at",
+      "description": "Время открытия",
+      "id": "OBJ-002-A07",
+      "type": "timestamp",
+      "entity_id": "OBJ-002",
+      "required": true
+    }
+  }
+]

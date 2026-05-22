@@ -1,0 +1,147 @@
+[
+  {
+    "labels": [
+      "Component"
+    ],
+    "properties": {
+      "component_type": "layout",
+      "name": "FormLayout",
+      "description": "Standard form/page shell: header slot, body slot, action-bar slot. Applies the global spacing and accessibility patterns to every screen.",
+      "id": "CMP-FormLayout",
+      "updated": "2026-05-18T07:13:40.556000000+00:00",
+      "props": "header, body, actionBar, isLoading, errorBanner"
+    }
+  },
+  {
+    "labels": [
+      "Component"
+    ],
+    "properties": {
+      "component_type": "display",
+      "name": "StatusBadge",
+      "description": "Compact badge that renders a MeetingStatus enum value with status-specific color/icon. Used in both catalog rows and detail headers.",
+      "id": "CMP-StatusBadge",
+      "updated": "2026-05-18T07:13:40.556000000+00:00",
+      "props": "status, size, withIcon"
+    }
+  },
+  {
+    "labels": [
+      "Component"
+    ],
+    "properties": {
+      "component_type": "input",
+      "name": "LanguageSelect",
+      "description": "Bilingual (RU/EN) selector with a 'blank = auto-detect' option. Renders as a select on input forms and as a read-only badge on display forms (controlled by isReadOnly prop).",
+      "id": "CMP-LanguageSelect",
+      "updated": "2026-05-18T07:13:40.556000000+00:00",
+      "props": "value, isReadOnly, allowBlank, onChange"
+    }
+  },
+  {
+    "labels": [
+      "Component"
+    ],
+    "properties": {
+      "component_type": "display",
+      "name": "DurationFormat",
+      "description": "Formats a duration in seconds as a human-readable string (e.g., 4523 -> '1h 15m 23s'). Returns a placeholder when value is null (duration not yet extracted).",
+      "id": "CMP-DurationFormat",
+      "updated": "2026-05-18T07:13:40.556000000+00:00",
+      "props": "seconds, placeholder, abbreviated"
+    }
+  },
+  {
+    "labels": [
+      "Component"
+    ],
+    "properties": {
+      "component_type": "feedback",
+      "name": "ConfirmDialog",
+      "description": "Modal confirmation dialog with title, body, destructive/primary action variants. Used for meeting deletion (UC-003) and unsaved-changes warning in the protocol editor (UC-301 AS08).",
+      "id": "CMP-ConfirmDialog",
+      "updated": "2026-05-18T07:13:40.556000000+00:00",
+      "props": "open, title, body, confirmLabel, cancelLabel, variant, onConfirm, onCancel"
+    }
+  },
+  {
+    "labels": [
+      "Component"
+    ],
+    "properties": {
+      "component_type": "navigation",
+      "route": "/",
+      "menu_order": 1,
+      "roles": "AUTHOR",
+      "name": "NavMeetingCatalog",
+      "in_menu": true,
+      "description": "Top-level route 'Meetings' (catalog). Default landing page for AUTHOR.",
+      "id": "CMP-NavMeetingCatalog",
+      "updated": "2026-05-18T07:13:54.780000000+00:00"
+    }
+  },
+  {
+    "labels": [
+      "Component"
+    ],
+    "properties": {
+      "component_type": "navigation",
+      "menu_order": 2,
+      "route": "/upload",
+      "roles": "AUTHOR",
+      "name": "NavMeetingUpload",
+      "in_menu": true,
+      "description": "Top-level route 'Upload'. AUTHOR uploads a new meeting video.",
+      "id": "CMP-NavMeetingUpload",
+      "updated": "2026-05-18T07:13:54.780000000+00:00"
+    }
+  },
+  {
+    "labels": [
+      "Component"
+    ],
+    "properties": {
+      "component_type": "navigation",
+      "route": "/meetings/:id",
+      "roles": "AUTHOR",
+      "name": "NavMeetingDetail",
+      "in_menu": false,
+      "description": "Meeting detail route. Reached by clicking a row in the catalog. Not a top-level menu item.",
+      "id": "CMP-NavMeetingDetail",
+      "parent_menu": "CMP-NavMeetingCatalog",
+      "updated": "2026-05-18T07:13:54.780000000+00:00"
+    }
+  },
+  {
+    "labels": [
+      "Component"
+    ],
+    "properties": {
+      "component_type": "navigation",
+      "route": "/meetings/:id/delete",
+      "roles": "AUTHOR",
+      "name": "NavMeetingDeleteConfirm",
+      "in_menu": false,
+      "description": "Delete-confirmation route (also rendered as modal overlay over the detail page). Not a menu item.",
+      "id": "CMP-NavMeetingDeleteConfirm",
+      "parent_menu": "CMP-NavMeetingDetail",
+      "updated": "2026-05-18T07:13:54.780000000+00:00"
+    }
+  },
+  {
+    "labels": [
+      "Component"
+    ],
+    "properties": {
+      "component_type": "navigation",
+      "route": "/meetings/:id/transcript",
+      "roles": "AUTHOR",
+      "name": "NavTranscriptView",
+      "in_menu": false,
+      "description": "Transcript view route. Reached via 'View transcript' link from meeting detail (gated by Meeting.status >= TRANSCRIPT_READY).",
+      "id": "CMP-NavTranscriptView",
+      "parent_menu": "CMP-NavMeetingDetail",
+      "updated": "2026-05-18T07:13:54.780000000+00:00"
+    }
+  }
+]

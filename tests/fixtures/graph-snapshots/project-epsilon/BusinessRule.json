@@ -1,0 +1,162 @@
+[
+  {
+    "labels": [
+      "BusinessRule"
+    ],
+    "properties": {
+      "severity": "",
+      "migrated_at": "2026-04-13T09:13:36.552000000+00:00",
+      "rule_type": "constraint",
+      "created": "2026-04-13T09:13:36.552000000+00:00",
+      "name": "BRQ-001",
+      "formulation": "Список артикулов содержит только товары с идентификатором id == mp",
+      "id": "BRQ-001",
+      "updated": "2026-04-13T09:13:36.552000000+00:00",
+      "source_file": "docs/04-business-rules/_rules-catalog.md"
+    }
+  },
+  {
+    "labels": [
+      "BusinessRule"
+    ],
+    "properties": {
+      "severity": "",
+      "migrated_at": "2026-04-13T09:13:36.552000000+00:00",
+      "rule_type": "constraint",
+      "created": "2026-04-13T09:13:36.552000000+00:00",
+      "name": "BRQ-002",
+      "formulation": "Маркетплейс принимает только значения: WB, Дискаунтер, Ozon, Ozon Select",
+      "id": "BRQ-002",
+      "updated": "2026-04-13T09:13:36.552000000+00:00",
+      "source_file": "docs/04-business-rules/_rules-catalog.md"
+    }
+  },
+  {
+    "labels": [
+      "BusinessRule"
+    ],
+    "properties": {
+      "severity": "",
+      "migrated_at": "2026-04-13T09:13:36.552000000+00:00",
+      "rule_type": "constraint",
+      "created": "2026-04-13T09:13:36.552000000+00:00",
+      "name": "BRQ-003",
+      "formulation": "Площадка Ozon принимает только значения: Ozon или Ozon Select",
+      "id": "BRQ-003",
+      "updated": "2026-04-13T09:13:36.552000000+00:00",
+      "source_file": "docs/04-business-rules/_rules-catalog.md"
+    }
+  },
+  {
+    "labels": [
+      "BusinessRule"
+    ],
+    "properties": {
+      "severity": "",
+      "migrated_at": "2026-04-13T09:13:36.552000000+00:00",
+      "rule_type": "constraint",
+      "created": "2026-04-13T09:13:36.552000000+00:00",
+      "name": "BRQ-004",
+      "formulation": "Маркетплейс в файле Дискаунтер принимает только значения: WB Дискаунтер или Ozon Дискаунтер",
+      "id": "BRQ-004",
+      "updated": "2026-04-13T09:13:36.552000000+00:00",
+      "source_file": "docs/04-business-rules/_rules-catalog.md"
+    }
+  },
+  {
+    "labels": [
+      "BusinessRule"
+    ],
+    "properties": {
+      "severity": "",
+      "migrated_at": "2026-04-13T09:13:36.552000000+00:00",
+      "rule_type": "constraint",
+      "created": "2026-04-13T09:13:36.552000000+00:00",
+      "name": "BRQ-005",
+      "formulation": "Строка включается в расчёт заказа только если все три параметра запаса заполнены (≠ пусто) для данного артикула",
+      "id": "BRQ-005",
+      "updated": "2026-04-13T09:13:36.552000000+00:00",
+      "source_file": "docs/04-business-rules/_rules-catalog.md"
+    }
+  },
+  {
+    "labels": [
+      "BusinessRule"
+    ],
+    "properties": {
+      "severity": "",
+      "migrated_at": "2026-04-13T09:13:36.552000000+00:00",
+      "rule_type": "calculation",
+      "created": "2026-04-13T09:13:36.552000000+00:00",
+      "name": "BRQ-006",
+      "formulation": "Сопоставление выполняется по паре «Артикул 1С + Размер» через Таблицу сопоставления",
+      "id": "BRQ-006",
+      "updated": "2026-04-13T09:13:36.552000000+00:00",
+      "source_file": "docs/04-business-rules/_rules-catalog.md"
+    }
+  },
+  {
+    "labels": [
+      "BusinessRule"
+    ],
+    "properties": {
+      "severity": "",
+      "migrated_at": "2026-04-13T09:13:36.552000000+00:00",
+      "rule_type": "constraint",
+      "created": "2026-04-13T09:13:36.552000000+00:00",
+      "name": "BRQ-007",
+      "formulation": "Ошибки сопоставления «Артикул + Размер» отображаются в отчёте, но не включаются в расчёт потребностей",
+      "id": "BRQ-007",
+      "updated": "2026-04-13T09:13:36.552000000+00:00",
+      "source_file": "docs/04-business-rules/_rules-catalog.md"
+    }
+  },
+  {
+    "labels": [
+      "BusinessRule"
+    ],
+    "properties": {
+      "severity": "",
+      "migrated_at": "2026-04-13T09:13:36.552000000+00:00",
+      "rule_type": "calculation",
+      "created": "2026-04-13T09:13:36.552000000+00:00",
+      "name": "BRQ-008",
+      "formulation": "Количество в Заявке на поставку вычисляется системой автоматически по итогам расчёта",
+      "id": "BRQ-008",
+      "updated": "2026-04-13T09:13:36.552000000+00:00",
+      "source_file": "docs/04-business-rules/_rules-catalog.md"
+    }
+  },
+  {
+    "labels": [
+      "BusinessRule"
+    ],
+    "properties": {
+      "severity": "",
+      "migrated_at": "2026-04-13T09:13:36.552000000+00:00",
+      "rule_type": "calculation",
+      "created": "2026-04-13T09:13:36.552000000+00:00",
+      "name": "BRQ-009",
+      "formulation": "Количество в Заявке на производство вычисляется системой автоматически по итогам расчёта",
+      "id": "BRQ-009",
+      "updated": "2026-04-13T09:13:36.552000000+00:00",
+      "source_file": "docs/04-business-rules/_rules-catalog.md"
+    }
+  },
+  {
+    "labels": [
+      "BusinessRule"
+    ],
+    "properties": {
+      "severity": "",
+      "migrated_at": "2026-04-13T09:13:36.552000000+00:00",
+      "rule_type": "calculation",
+      "created": "2026-04-13T09:13:36.552000000+00:00",
+      "name": "BRQ-010",
+      "formulation": "Система разделяет общий план поставки на файлы по принципу «склад — группа товаров»",
+      "id": "BRQ-010",
+      "updated": "2026-04-13T09:13:36.552000000+00:00",
+      "source_file": "docs/04-business-rules/_rules-catalog.md"
+    }
+  }
+]

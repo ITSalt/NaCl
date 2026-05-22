@@ -1,0 +1,132 @@
+[
+  {
+    "labels": [
+      "ActivityStep"
+    ],
+    "properties": {
+      "step_order": 1,
+      "step_type": "user-action",
+      "name": "Select board",
+      "description": "Analyst clicks a board name in the sidebar list.",
+      "id": "AS-UC001-01",
+      "source_file": "web/src/components/Sidebar.tsx"
+    }
+  },
+  {
+    "labels": [
+      "ActivityStep"
+    ],
+    "properties": {
+      "step_order": 2,
+      "step_type": "system-action",
+      "name": "Fetch board bytes",
+      "description": "Frontend issues GET /api/v1/boards/:name to read the .excalidraw file from disk.",
+      "id": "AS-UC001-02",
+      "source_file": "server/src/routes/boards.ts"
+    }
+  },
+  {
+    "labels": [
+      "ActivityStep"
+    ],
+    "properties": {
+      "step_order": 3,
+      "step_type": "system-action",
+      "name": "Validate scene shape",
+      "description": "Server parses JSON and confirms the scene contains an elements array.",
+      "id": "AS-UC001-03",
+      "source_file": "server/src/services/boards.ts"
+    }
+  },
+  {
+    "labels": [
+      "ActivityStep"
+    ],
+    "properties": {
+      "step_order": 4,
+      "step_type": "system-action",
+      "name": "Mount Excalidraw canvas",
+      "description": "Web app instantiates the Excalidraw editor with the returned scene.",
+      "id": "AS-UC001-04",
+      "source_file": "web/src/components/CanvasHost.tsx"
+    }
+  },
+  {
+    "labels": [
+      "ActivityStep"
+    ],
+    "properties": {
+      "step_order": 5,
+      "step_type": "system-action",
+      "name": "Subscribe to board WS channel",
+      "description": "Client opens WS subscription to board:<name> for live change events.",
+      "id": "AS-UC001-05",
+      "source_file": "web/src/api/ws.ts"
+    }
+  },
+  {
+    "labels": [
+      "ActivityStep"
+    ],
+    "properties": {
+      "step_order": 1,
+      "step_type": "user-action",
+      "name": "Edit elements on canvas",
+      "description": "Analyst draws, moves, edits, or deletes elements in the Excalidraw editor.",
+      "id": "AS-UC002-01",
+      "source_file": "web/src/components/CanvasHost.tsx"
+    }
+  },
+  {
+    "labels": [
+      "ActivityStep"
+    ],
+    "properties": {
+      "step_order": 2,
+      "step_type": "user-action",
+      "name": "Trigger save",
+      "description": "Save is invoked via Cmd/Ctrl-S or autosave debounce.",
+      "id": "AS-UC002-02",
+      "source_file": "web/src/components/CanvasHost.tsx"
+    }
+  },
+  {
+    "labels": [
+      "ActivityStep"
+    ],
+    "properties": {
+      "step_order": 3,
+      "step_type": "system-action",
+      "name": "PUT board scene",
+      "description": "Frontend sends PUT /api/v1/boards/:name with the new scene JSON.",
+      "id": "AS-UC002-03",
+      "source_file": "server/src/routes/boards.ts"
+    }
+  },
+  {
+    "labels": [
+      "ActivityStep"
+    ],
+    "properties": {
+      "step_order": 4,
+      "step_type": "system-action",
+      "name": "Atomic write to disk",
+      "description": "Server writes <name>.tmp then renames to <name>.excalidraw and recomputes content hash.",
+      "id": "AS-UC002-04",
+      "source_file": "server/src/services/boards.ts"
+    }
+  },
+  {
+    "labels": [
+      "ActivityStep"
+    ],
+    "properties": {
+      "step_order": 5,
+      "step_type": "system-action",
+      "name": "Broadcast board.changed",
+      "description": "Server emits WS board.changed so other tabs reload.",
+      "id": "AS-UC002-05",
+      "source_file": "server/src/services/fs-watcher.ts"
+    }
+  }
+]

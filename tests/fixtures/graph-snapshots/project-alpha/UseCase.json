@@ -1,0 +1,175 @@
+[
+  {
+    "labels": [
+      "UseCase"
+    ],
+    "properties": {
+      "user_story": "Как новый пользователь, я хочу зарегистрироваться (логин/пароль) и получить роль end_user, чтобы начать пользоваться системой.",
+      "system_uc": true,
+      "updated_at": "2026-05-05T13:19:48.387000000+00:00",
+      "detail_status": "complete",
+      "name": "Регистрация и онбординг пользователя",
+      "created_at": "2026-05-05T12:42:18.948000000+00:00",
+      "id": "UC-101",
+      "priority": "MVP",
+      "has_ui": true,
+      "acceptance_criteria": "1) Email уникален; 2) Пароль hashed (bcrypt); 3) После создания возвращается JWT (access + refresh); 4) Роль по умолчанию = end_user."
+    }
+  },
+  {
+    "labels": [
+      "UseCase"
+    ],
+    "properties": {
+      "user_story": "Как пользователь, я хочу залогиниться и автоматически обновлять access-токен через refresh-токен, чтобы не терять сессию.",
+      "system_uc": true,
+      "updated_at": "2026-05-05T13:19:48.387000000+00:00",
+      "detail_status": "complete",
+      "name": "Логин и обновление токенов",
+      "created_at": "2026-05-05T12:42:18.948000000+00:00",
+      "id": "UC-102",
+      "priority": "MVP",
+      "has_ui": true,
+      "acceptance_criteria": "1) /auth/login возвращает access (1ч) + refresh (30д); 2) /auth/refresh обновляет access по валидному refresh; 3) Невалидные креды дают 401; 4) Заблокированный пользователь дает 403."
+    }
+  },
+  {
+    "labels": [
+      "UseCase"
+    ],
+    "properties": {
+      "detail_status": "complete",
+      "created_at": "2026-05-05T12:42:18.948000000+00:00",
+      "description": "Атомарное создание Session + первой Task в едином UI. Имя сессии необязательно (auto-generated при отсутствии). Категория обязательна. После Submit Task попадает в очередь и пользователь редиректится на её страницу с SSE-стримом.",
+      "priority": "MVP",
+      "postconditions": "Создана Session(status=active, name=auto или введённое); создана Task(status=queued); QueueItem поставлен в очередь; redirect на /tasks/:id; SSE-канал готов.",
+      "user_story": "Как пользователь, я хочу на одном экране создать сессию выбранной категории и сразу запустить первую задачу, чтобы не делать лишних переходов; имя сессии могу не задавать — система подставит \"Категория — дата/время\".",
+      "system_uc": true,
+      "updated_at": "2026-05-05T13:19:48.387000000+00:00",
+      "preconditions": "Пользователь аутентифицирован; JWT валиден; список Category загружен.",
+      "name": "Создание сессии генерации",
+      "id": "UC-103",
+      "has_ui": true,
+      "acceptance_criteria": "1) Пользователь выбирает Category; 2) Создаётся Session со status=active; 3) Сессия привязана к user_id из JWT."
+    }
+  },
+  {
+    "labels": [
+      "UseCase"
+    ],
+    "properties": {
+      "user_story": "Как пользователь, я хочу из открытой сессии добавить новую задачу того же или другого task_type, не пересоздавая сессию.",
+      "updated_at": "2026-05-05T13:19:48.387000000+00:00",
+      "preconditions": "Пользователь аутентифицирован; Session существует и status=active; workflow_id для категории сессии резолвится.",
+      "detail_status": "complete",
+      "name": "Создание задачи и запуск workflow",
+      "created_at": "2026-05-05T12:42:18.948000000+00:00",
+      "description": "Создание ДОПОЛНИТЕЛЬНОЙ задачи в уже существующей Session (вход — экран сессии). Первая задача сессии создаётся в рамках UC-103 (объединённая форма).",
+      "id": "UC-104",
+      "priority": "MVP",
+      "has_ui": true,
+      "acceptance_criteria": "1) Выбор task_type из enum (retouch/model/interior/video/full_flow); 2) Загрузка TaskInputFile в S3; 3) Создаётся Task со status=pending; 4) После сабмита Task переходит в queued; 5) Резолв workflow_id из CategoryMapping; 6) Возвращается task_id для polling."
+    }
+  },
+  {
+    "labels": [
+      "UseCase"
+    ],
+    "properties": {
+      "user_story": "Как пользователь, я хочу видеть текущий статус задачи и результат генерации, не теряя данные при refresh страницы или reconnect (REQ-NFR-011).",
+      "system_uc": true,
+      "updated_at": "2026-05-05T13:19:48.387000000+00:00",
+      "detail_status": "complete",
+      "name": "Просмотр статуса и результатов задачи",
+      "created_at": "2026-05-05T12:42:18.948000000+00:00",
+      "id": "UC-105",
+      "priority": "MVP",
+      "has_ui": true,
+      "acceptance_criteria": "1) GET /tasks/:id возвращает Task с связанными GeneratedAsset/VerificationReport; 2) Real-time обновления через SSE или polling; 3) После reconnect клиент перезапрашивает статус и видит актуальное состояние; 4) Результат остаётся доступен после рестарта сервера. Real-time через SSE GET /api/tasks/:id/events с auto-reconnect (Last-Event-ID); auth по access_token cookie; на reconnect клиент дополнительно делает GET /api/tasks/:id для синхронизации состояния (REQ-NFR-011). Polling fallback через TanStack Query refetchInterval."
+    }
+  },
+  {
+    "labels": [
+      "UseCase"
+    ],
+    "properties": {
+      "user_story": "Как пользователь, я хочу получать визуальное уведомление (колокольчик + tab blink) о завершении задачи, чтобы вернуться к ней.",
+      "system_uc": true,
+      "updated_at": "2026-05-05T13:19:48.387000000+00:00",
+      "detail_status": "complete",
+      "name": "Уведомление о завершении задачи",
+      "created_at": "2026-05-05T12:42:18.948000000+00:00",
+      "id": "UC-106",
+      "priority": "MVP",
+      "has_ui": true,
+      "acceptance_criteria": "1) Server эмитит SSE-event task_completed; 2) Frontend рендерит badge на колокольчике; 3) Title в табе мигает; 4) История уведомлений доступна. Real-time уведомления через SSE GET /api/notifications/events с auto-reconnect; auth по access_token cookie. Heartbeat каждые 15-25с."
+    }
+  },
+  {
+    "labels": [
+      "UseCase"
+    ],
+    "properties": {
+      "user_story": "Как пользователь, я хочу отменить задачу до её завершения, чтобы не тратить лимиты впустую.",
+      "system_uc": true,
+      "updated_at": "2026-05-05T13:19:48.387000000+00:00",
+      "detail_status": "complete",
+      "name": "Отмена задачи",
+      "created_at": "2026-05-05T12:42:18.948000000+00:00",
+      "id": "UC-107",
+      "priority": "MVP",
+      "has_ui": true,
+      "acceptance_criteria": "1) DELETE /tasks/:id или PATCH со status=cancelled; 2) Если pending или queued — Task и QueueItem становятся cancelled; 3) Если running — попытка cancel; если worker уже закончил — поздно; 4) Cancelled задачи не учитываются как успешные."
+    }
+  },
+  {
+    "labels": [
+      "UseCase"
+    ],
+    "properties": {
+      "user_story": "Как пользователь, я хочу скачать готовый GeneratedAsset из S3, чтобы использовать его.",
+      "system_uc": true,
+      "updated_at": "2026-05-05T13:19:48.387000000+00:00",
+      "detail_status": "complete",
+      "name": "Скачивание результата",
+      "created_at": "2026-05-05T12:42:18.948000000+00:00",
+      "id": "UC-108",
+      "priority": "MVP",
+      "has_ui": true,
+      "acceptance_criteria": "1) GET /assets/:id/download возвращает presigned S3 URL; 2) Только владелец задачи имеет доступ; 3) Download не пишется в GenerationLog (это не generation)."
+    }
+  },
+  {
+    "labels": [
+      "UseCase"
+    ],
+    "properties": {
+      "user_story": "Как пользователь, я хочу запустить edit-агента на готовом GeneratedAsset с текстовой инструкцией, чтобы получить модифицированную версию.",
+      "updated_at": "2026-05-05T12:42:18.948000000+00:00",
+      "detail_status": "draft",
+      "name": "Edit-агент: правка готового ассета",
+      "created_at": "2026-05-05T12:42:18.948000000+00:00",
+      "id": "UC-109",
+      "priority": "POST_MVP",
+      "has_ui": true,
+      "acceptance_criteria": "1) POST /tasks с task_type=edit и parent_asset_id и instruction; 2) Создаётся новая Task со ссылкой на родительский ассет; 3) BP-007 workflow исполняется; 4) Результат — новый GeneratedAsset."
+    }
+  },
+  {
+    "labels": [
+      "UseCase"
+    ],
+    "properties": {
+      "user_story": "Как пользователь, я хочу видеть детальную историю всех задач в сессии и переходить между ними, чтобы анализировать процесс.",
+      "system_uc": true,
+      "updated_at": "2026-05-05T12:42:18.948000000+00:00",
+      "detail_status": "draft",
+      "name": "Просмотр истории сессии",
+      "created_at": "2026-05-05T12:42:18.948000000+00:00",
+      "id": "UC-110",
+      "priority": "POST_MVP",
+      "has_ui": true,
+      "acceptance_criteria": "1) GET /sessions/:id/tasks; 2) Включает завершённые, отменённые, упавшие; 3) Фильтрация по дате, статусу, типу."
+    }
+  }
+]

@@ -1,0 +1,163 @@
+[
+  {
+    "labels": [
+      "BusinessRule"
+    ],
+    "properties": {
+      "severity": "hard",
+      "created": "2026-05-17",
+      "name": "File size limit",
+      "statement": "Recording.size_bytes MUST be <= 524288000 bytes (500 MB). Uploads exceeding the threshold are rejected before storage.",
+      "id": "BRQ-001",
+      "classification": "constraint",
+      "updated": "2026-05-17",
+      "rationale": "Prevents runaway storage costs and ASR queue saturation from very large files at MVP scale.",
+      "status": "draft"
+    }
+  },
+  {
+    "labels": [
+      "BusinessRule"
+    ],
+    "properties": {
+      "severity": "hard",
+      "created": "2026-05-17",
+      "name": "Allowed file formats",
+      "statement": "Recording.mime_type MUST be one of {video/mp4, video/x-matroska, video/quicktime} (MP4, MKV, MOV). Other types are rejected.",
+      "id": "BRQ-002",
+      "classification": "constraint",
+      "updated": "2026-05-17",
+      "rationale": "ASR pipeline supports audio extraction only from these container formats; accepting others causes silent failures.",
+      "status": "draft"
+    }
+  },
+  {
+    "labels": [
+      "BusinessRule"
+    ],
+    "properties": {
+      "severity": "hard",
+      "assumption_note": "Validation method TBD (FFprobe header check or short-duration probe). Full frame-level integrity not guaranteed at MVP.",
+      "created": "2026-05-17",
+      "name": "File integrity",
+      "statement": "The uploaded file MUST be a valid, non-corrupt video container from which audio can be extracted. Corrupt or unplayable files are rejected during upload acceptance.",
+      "id": "BRQ-003",
+      "classification": "constraint",
+      "updated": "2026-05-17",
+      "rationale": "Corrupt files cause opaque failures deep in the ASR pipeline; early validation gives a clearer user-facing error.",
+      "status": "draft"
+    }
+  },
+  {
+    "labels": [
+      "BusinessRule"
+    ],
+    "properties": {
+      "severity": "hard",
+      "created": "2026-05-17",
+      "name": "Supported languages",
+      "statement": "Meeting.language MUST be one of {ru, en, auto}. Other values are rejected at upload.",
+      "id": "BRQ-004",
+      "classification": "constraint",
+      "updated": "2026-05-17",
+      "rationale": "MVP supports RU and EN only; auto-detect delegated to ASR. Broader languages out of scope.",
+      "status": "draft"
+    }
+  },
+  {
+    "labels": [
+      "BusinessRule"
+    ],
+    "properties": {
+      "severity": "hard",
+      "created": "2026-05-17",
+      "name": "Auto-detect language fallback",
+      "statement": "If Meeting.language = auto, the ASR engine MUST detect the language and the detected value is recorded as Transcript.language. The Meeting.language record stays as auto.",
+      "id": "BRQ-005",
+      "classification": "derivation",
+      "updated": "2026-05-17",
+      "rationale": "Auto-detection should not silently overwrite user input; Transcript.language records ground truth.",
+      "status": "draft"
+    }
+  },
+  {
+    "labels": [
+      "BusinessRule"
+    ],
+    "properties": {
+      "severity": "hard",
+      "created": "2026-05-17",
+      "name": "One TranscriptionJob per Recording",
+      "statement": "For each Recording there MUST be exactly one TranscriptionJob (1:1 relationship). Re-transcription is treated as a new Recording or explicit reprocess (out of MVP scope).",
+      "id": "BRQ-006",
+      "classification": "invariant",
+      "updated": "2026-05-17",
+      "rationale": "Simplifies status tracking and avoids divergent transcripts.",
+      "status": "draft"
+    }
+  },
+  {
+    "labels": [
+      "BusinessRule"
+    ],
+    "properties": {
+      "severity": "hard",
+      "created": "2026-05-17",
+      "name": "Auto-trigger protocol generation",
+      "statement": "When TranscriptionJob.status transitions to completed, a ProtocolGenerationJob MUST be created automatically for the resulting Transcript.",
+      "id": "BRQ-007",
+      "classification": "workflow",
+      "updated": "2026-05-17",
+      "rationale": "User does not need to manually initiate protocol generation; this is part of the end-to-end pipeline.",
+      "status": "draft"
+    }
+  },
+  {
+    "labels": [
+      "BusinessRule"
+    ],
+    "properties": {
+      "severity": "hard",
+      "created": "2026-05-17",
+      "name": "Meeting status mirrors pipeline",
+      "statement": "Meeting.status MUST reflect the current pipeline stage and follow the allowed lifecycle (uploading -> transcribing -> transcript_ready -> protocol_generating -> protocol_ready -> edited | failed).",
+      "id": "BRQ-008",
+      "classification": "invariant",
+      "updated": "2026-05-17",
+      "rationale": "The Meeting is the single authoritative status surface for the user; jobs carry internal status separately.",
+      "status": "draft"
+    }
+  },
+  {
+    "labels": [
+      "BusinessRule"
+    ],
+    "properties": {
+      "severity": "hard",
+      "created": "2026-05-17",
+      "name": "Job terminal states are immutable",
+      "statement": "Once TranscriptionJob.status or ProtocolGenerationJob.status reaches {completed, failed}, it MUST NOT change.",
+      "id": "BRQ-009",
+      "classification": "invariant",
+      "updated": "2026-05-17",
+      "rationale": "Terminal states are an audit anchor; mutating them would invalidate downstream artifacts and event records.",
+      "status": "draft"
+    }
+  },
+  {
+    "labels": [
+      "BusinessRule"
+    ],
+    "properties": {
+      "severity": "hard",
+      "created": "2026-05-17",
+      "name": "Failure recorded with reason",
+      "statement": "If a job status is failed, error_reason MUST be non-null and human-readable so the UI can surface it to the user.",
+      "id": "BRQ-010",
+      "classification": "invariant",
+      "updated": "2026-05-17",
+      "rationale": "Silent failures degrade trust and make support diagnostics impossible.",
+      "status": "draft"
+    }
+  }
+]

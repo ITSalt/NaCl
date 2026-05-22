@@ -1,0 +1,57 @@
+[
+  {
+    "labels": [
+      "SystemContext"
+    ],
+    "properties": {
+      "in_scope": [
+        "Fastify HTTP + WebSocket API (server workspace)",
+        "React + Excalidraw editor UI (web workspace)",
+        "Board CRUD — read/write .excalidraw files and .meta.json sidecars",
+        "Board snapshots (per-board versioned copies)",
+        "Deterministic Excalidraw renderers (graph -> board)",
+        "Markdown renderers (graph -> .md files)",
+        "Skill runner: regenerate (local), sync and analyze (via Pacer -> claude CLI)",
+        "Project registry read/write (~/.nacl/projects.json)",
+        "Neo4j graph read (search, label, text queries) and write (via skills)",
+        "Filesystem watcher (chokidar) broadcasting board/snapshot change events over WS",
+        "Per-project Neo4j Bolt connection resolution from config.yaml",
+        "Playwright E2E test suite (e2e workspace)"
+      ],
+      "name": "NaCl Analyst Tool",
+      "description": "Local web application (Fastify + React/Excalidraw) that lets BA/SA practitioners browse, edit, and round-trip .excalidraw board files with the underlying Neo4j graph via deterministic renderers and whitelisted NaCl skill invocations. Replaces legacy excalidraw + excalidraw-room Docker containers.",
+      "id": "SC-ANALYST-TOOL",
+      "out_of_scope": [
+        "Public Excalidraw cloud (excalidraw.com) — no dependency or integration",
+        "Containerised / hosted deployment — tool runs only on analyst machine",
+        "Multi-user authentication or session management",
+        "GitHub Actions CI/CD for this tool itself",
+        "Direct hand-written Excalidraw JSON in production paths",
+        "Auto-registration of new projects (nacl-init responsibility)",
+        "Any claude -p subprocess spawned outside itsalt-pinch Pacer",
+        "Telemetry or remote logging"
+      ],
+      "constraints": [
+        "Must not be containerised — shells out to local claude binary",
+        "All graph mutations route through deterministic renderers",
+        "Project registry is single source of truth for project root + active project",
+        "Graph infrastructure is per-project (each project has its own graph-infra/ and Neo4j container)"
+      ],
+      "version": "0.9.0",
+      "source_file": "CLAUDE.md",
+      "assumptions": [
+        "Node.js 20+ available on analyst machine",
+        "claude CLI installed and logged in on PATH",
+        "Neo4j running via per-project docker-compose (graph-infra/docker-compose.yml)",
+        "One active project at a time; project switch reloads Neo4j driver"
+      ],
+      "goals": [
+        "Provide a single deterministic interface for inspecting and editing Excalidraw boards",
+        "Round-trip board state with Neo4j graph via renderers (regenerate) and skill sync",
+        "Invoke NaCl skills (sync, analyze) via itsalt-pinch Pacer against local claude CLI",
+        "Maintain project registry and per-project graph connections",
+        "Ship as an npm CLI (nacl-analyst-tool) installable on the analyst machine"
+      ]
+    }
+  }
+]

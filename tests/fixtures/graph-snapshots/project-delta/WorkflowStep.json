@@ -1,0 +1,162 @@
+[
+  {
+    "labels": [
+      "WorkflowStep"
+    ],
+    "properties": {
+      "step_number": 1,
+      "migrated_at": "2026-04-19T21:02:54.621000000+00:00",
+      "created": "2026-04-19T21:02:54.621000000+00:00",
+      "function_name": "Пользователь переходит по URL сайта",
+      "description": "",
+      "id": "BP-001-S01",
+      "stereotype": "Бизнес-функция",
+      "updated": "2026-04-19T21:02:54.621000000+00:00",
+      "source_file": "docs/01-business-processes/workflows/BP-001-workflow.md"
+    }
+  },
+  {
+    "labels": [
+      "WorkflowStep"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-19T21:02:54.621000000+00:00",
+      "step_number": 2,
+      "created": "2026-04-19T21:02:54.621000000+00:00",
+      "function_name": "Загрузка страницы (шрифты, grain, vignette-эффекты)",
+      "description": "",
+      "stereotype": "Автоматизируется",
+      "id": "BP-001-S02",
+      "updated": "2026-04-19T21:02:54.621000000+00:00",
+      "source_file": "docs/01-business-processes/workflows/BP-001-workflow.md"
+    }
+  },
+  {
+    "labels": [
+      "WorkflowStep"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-19T21:02:54.621000000+00:00",
+      "step_number": 3,
+      "created": "2026-04-19T21:02:54.621000000+00:00",
+      "function_name": "Отображение hero-блока (заголовок + подзаголовок + CTA)",
+      "description": "",
+      "stereotype": "Автоматизируется",
+      "id": "BP-001-S03",
+      "updated": "2026-04-19T21:02:54.621000000+00:00",
+      "source_file": "docs/01-business-processes/workflows/BP-001-workflow.md"
+    }
+  },
+  {
+    "labels": [
+      "WorkflowStep"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-19T21:02:54.621000000+00:00",
+      "step_number": 4,
+      "created": "2026-04-19T21:02:54.621000000+00:00",
+      "function_name": "Фиксация визита в Яндекс.Метрике",
+      "description": "",
+      "stereotype": "Автоматизируется",
+      "id": "BP-001-S04",
+      "updated": "2026-04-19T21:02:54.621000000+00:00",
+      "source_file": "docs/01-business-processes/workflows/BP-001-workflow.md"
+    }
+  },
+  {
+    "labels": [
+      "WorkflowStep"
+    ],
+    "properties": {
+      "step_number": 5,
+      "migrated_at": "2026-04-19T21:02:54.621000000+00:00",
+      "created": "2026-04-19T21:02:54.621000000+00:00",
+      "function_name": "Пользователь принимает решение: нажать CTA или уйти",
+      "description": "",
+      "id": "BP-001-S05",
+      "stereotype": "Бизнес-функция",
+      "updated": "2026-04-19T21:02:54.621000000+00:00",
+      "source_file": "docs/01-business-processes/workflows/BP-001-workflow.md"
+    }
+  },
+  {
+    "labels": [
+      "WorkflowStep"
+    ],
+    "properties": {
+      "step_number": 1,
+      "migrated_at": "2026-04-19T21:02:54.621000000+00:00",
+      "created": "2026-04-19T21:02:54.621000000+00:00",
+      "function_name": "Пользователь нажимает CTA-кнопку",
+      "description": "",
+      "id": "BP-002-S01",
+      "stereotype": "Бизнес-функция",
+      "updated": "2026-04-19T21:02:54.621000000+00:00",
+      "source_file": "docs/01-business-processes/workflows/BP-002-workflow.md"
+    }
+  },
+  {
+    "labels": [
+      "WorkflowStep"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-19T21:02:54.621000000+00:00",
+      "step_number": 2,
+      "created": "2026-04-19T21:02:54.621000000+00:00",
+      "function_name": "Фиксация конверсии в Яндекс.Метрике",
+      "description": "",
+      "stereotype": "Автоматизируется",
+      "id": "BP-002-S02",
+      "updated": "2026-04-19T21:02:54.621000000+00:00",
+      "source_file": "docs/01-business-processes/workflows/BP-002-workflow.md"
+    }
+  },
+  {
+    "labels": [
+      "WorkflowStep"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-19T21:02:54.621000000+00:00",
+      "step_number": 3,
+      "created": "2026-04-19T21:02:54.621000000+00:00",
+      "function_name": "Открытие Telegram deeplink в новой вкладке",
+      "description": "",
+      "stereotype": "Автоматизируется",
+      "id": "BP-002-S03",
+      "updated": "2026-04-19T21:02:54.621000000+00:00",
+      "source_file": "docs/01-business-processes/workflows/BP-002-workflow.md"
+    }
+  },
+  {
+    "labels": [
+      "WorkflowStep"
+    ],
+    "properties": {
+      "step_number": 4,
+      "migrated_at": "2026-04-19T21:02:54.621000000+00:00",
+      "created": "2026-04-19T21:02:54.621000000+00:00",
+      "function_name": "Пользователь попадает в Telegram-канал",
+      "description": "",
+      "id": "BP-002-S04",
+      "stereotype": "Бизнес-функция",
+      "updated": "2026-04-19T21:02:54.621000000+00:00",
+      "source_file": "docs/01-business-processes/workflows/BP-002-workflow.md"
+    }
+  },
+  {
+    "labels": [
+      "WorkflowStep"
+    ],
+    "properties": {
+      "step_number": 5,
+      "migrated_at": "2026-04-19T21:02:54.621000000+00:00",
+      "created": "2026-04-19T21:02:54.621000000+00:00",
+      "function_name": "Менеджер видит нового участника",
+      "description": "",
+      "id": "BP-002-S05",
+      "stereotype": "Бизнес-функция",
+      "updated": "2026-04-19T21:02:54.621000000+00:00",
+      "source_file": "docs/01-business-processes/workflows/BP-002-workflow.md"
+    }
+  }
+]

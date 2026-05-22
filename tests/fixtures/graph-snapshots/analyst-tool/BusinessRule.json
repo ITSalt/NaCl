@@ -1,0 +1,142 @@
+[
+  {
+    "labels": [
+      "BusinessRule"
+    ],
+    "properties": {
+      "severity": "Critical",
+      "name": "All board content must come from deterministic renderers",
+      "description": "Graph-derived board content must be produced exclusively by TypeScript renderer functions; hand-written Excalidraw JSON in production paths is forbidden to guarantee idempotent round-trips between the graph and canvas.",
+      "enforced_in_code": true,
+      "id": "BR-01-DETERMINISTIC-RENDERERS",
+      "classification": "Constraint",
+      "source_file": "server/src/services/skill-runner.ts"
+    }
+  },
+  {
+    "labels": [
+      "BusinessRule"
+    ],
+    "properties": {
+      "severity": "Critical",
+      "name": "Tool must not be containerised",
+      "description": "The analyst tool shells out to the local claude CLI via itsalt-pinch; containerising it would sever that subprocess path, so the tool must always run directly on the analyst machine.",
+      "enforced_in_code": false,
+      "id": "BR-02-NO-CONTAINERIZATION",
+      "classification": "Constraint",
+      "source_file": "CLAUDE.md"
+    }
+  },
+  {
+    "labels": [
+      "BusinessRule"
+    ],
+    "properties": {
+      "severity": "Critical",
+      "name": "Project registry is the single source of truth for active project",
+      "description": "~/.nacl/projects.json is the sole authority for active project root and ID; the config manager reads it as a fallback after env overrides, ensuring no project identity is derived from ad-hoc sources.",
+      "enforced_in_code": true,
+      "id": "BR-03-PROJECT-REGISTRY-SOT",
+      "classification": "Constraint",
+      "source_file": "server/src/config.ts"
+    }
+  },
+  {
+    "labels": [
+      "BusinessRule"
+    ],
+    "properties": {
+      "severity": "Critical",
+      "name": "All claude -p subprocess calls must go through itsalt-pinch Pacer",
+      "description": "Direct child_process.spawn of claude is forbidden; all headless claude -p invocations must use the singleton Pacer so that global/per-project concurrency caps, working-window scheduling, and event hooks are consistently applied.",
+      "enforced_in_code": true,
+      "id": "BR-05-PACER-MANDATORY",
+      "classification": "Constraint",
+      "source_file": "server/src/services/pinch.ts"
+    }
+  },
+  {
+    "labels": [
+      "BusinessRule"
+    ],
+    "properties": {
+      "severity": "High",
+      "name": "Board name must match /^[A-Za-z0-9][A-Za-z0-9_-]*$/",
+      "description": "User-supplied board names are validated against a strict alphanumeric-plus-dash-underscore pattern to prevent path traversal and shell injection in all routes that accept a board name.",
+      "enforced_in_code": true,
+      "id": "BR-06-BOARD-NAME-PATTERN",
+      "classification": "Validation",
+      "source_file": "server/src/services/skill-runner.ts"
+    }
+  },
+  {
+    "labels": [
+      "BusinessRule"
+    ],
+    "properties": {
+      "severity": "High",
+      "name": "Project ID must match /^[a-z0-9_-]{1,64}$/",
+      "description": "Project IDs are sanitised to Pinch invariant (lowercase, 1-64 chars, only alphanumeric/dash/underscore) when read from any source, ensuring claude -p projectId parameters are always safe.",
+      "enforced_in_code": true,
+      "id": "BR-07-PROJECT-ID-PATTERN",
+      "classification": "Validation",
+      "source_file": "server/src/config.ts"
+    }
+  },
+  {
+    "labels": [
+      "BusinessRule"
+    ],
+    "properties": {
+      "severity": "Medium",
+      "name": "Loaded scene must have type === \"excalidraw\"",
+      "description": "When a board file is read via GET /api/v1/boards/:name, the parsed JSON must carry type=excalidraw; any other value triggers a 422 to prevent the editor from silently loading corrupt or misidentified files.",
+      "enforced_in_code": true,
+      "id": "BR-08-SCENE-TYPE-CHECK",
+      "classification": "Validation",
+      "source_file": "server/src/services/boards.ts"
+    }
+  },
+  {
+    "labels": [
+      "BusinessRule"
+    ],
+    "properties": {
+      "severity": "Critical",
+      "name": "Skill kind must be one of regenerate / sync / analyze / render-md",
+      "description": "Only the four whitelisted skill kinds are accepted; the TypeScript union type and runtime switch prevent raw user input from ever reaching a claude -p prompt, eliminating prompt injection via the skill API.",
+      "enforced_in_code": true,
+      "id": "BR-09-SKILL-KIND-WHITELIST",
+      "classification": "Validation",
+      "source_file": "server/src/services/skill-runner.ts"
+    }
+  },
+  {
+    "labels": [
+      "BusinessRule"
+    ],
+    "properties": {
+      "severity": "Medium",
+      "name": "render-md subtype must be one of six whitelisted values",
+      "description": "The markdown renderer dispatcher accepts only entity / uc / form / domain-model / uc-index / traceability; any other subtype throws an error, ensuring only known renderers execute.",
+      "enforced_in_code": true,
+      "id": "BR-10-RENDER-MD-SUBTYPE-WHITELIST",
+      "classification": "Validation",
+      "source_file": "server/src/render/markdown/index.ts"
+    }
+  },
+  {
+    "labels": [
+      "BusinessRule"
+    ],
+    "properties": {
+      "severity": "Medium",
+      "name": "Boards of kind import or other cannot be regenerated",
+      "description": "The board classifier guards the regenerate path: import boards use sync instead and other-kind boards have no renderer, so regenerating either would silently produce nothing or overwrite hand-authored content.",
+      "enforced_in_code": true,
+      "id": "BR-11-IMPORT-OTHER-NOT-RENDERABLE",
+      "classification": "Validation",
+      "source_file": "server/src/services/skill-runner.ts"
+    }
+  }
+]

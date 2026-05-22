@@ -1,0 +1,62 @@
+[
+  {
+    "labels": [
+      "Module"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T13:41:33.366000000+00:00",
+      "created": "2026-04-13T13:41:33.366000000+00:00",
+      "name": "system",
+      "description": "system",
+      "iteration": "",
+      "id": "MOD-system",
+      "updated": "2026-04-13T13:41:33.366000000+00:00",
+      "source_file": "docs/10-architecture/module-tree.md"
+    }
+  },
+  {
+    "labels": [
+      "Module"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T13:41:33.366000000+00:00",
+      "created": "2026-04-13T13:41:33.366000000+00:00",
+      "name": "channels",
+      "description": "channels",
+      "iteration": "",
+      "id": "MOD-channels",
+      "updated": "2026-04-13T13:41:33.366000000+00:00",
+      "source_file": "docs/10-architecture/module-tree.md"
+    }
+  },
+  {
+    "labels": [
+      "Module"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T13:41:33.366000000+00:00",
+      "created": "2026-04-13T13:41:33.366000000+00:00",
+      "name": "client_proxy",
+      "description": "client_proxy",
+      "iteration": "",
+      "id": "MOD-client-proxy",
+      "updated": "2026-04-13T13:41:33.366000000+00:00",
+      "source_file": "docs/10-architecture/module-tree.md"
+    }
+  },
+  {
+    "labels": [
+      "Module"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T13:41:33.366000000+00:00",
+      "created": "2026-04-13T13:41:33.366000000+00:00",
+      "name": "maintenance",
+      "description": "maintenance",
+      "iteration": "",
+      "id": "MOD-maintenance",
+      "updated": "2026-04-13T13:41:33.366000000+00:00",
+      "source_file": "docs/10-architecture/module-tree.md"
+    }
+  }
+]

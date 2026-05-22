@@ -1,0 +1,176 @@
+[
+  {
+    "labels": [
+      "WorkflowStep"
+    ],
+    "properties": {
+      "actor": "STK-01",
+      "step_order": 1,
+      "created": "2026-05-17",
+      "name": "Open Upload Page",
+      "description": "User navigates to the upload section. System renders the file upload form with format hints and size constraints visible.",
+      "stereotype": "manual",
+      "id": "BP-001-S01",
+      "updated": "2026-05-17",
+      "status": "draft"
+    }
+  },
+  {
+    "labels": [
+      "WorkflowStep"
+    ],
+    "properties": {
+      "actor": "STK-01",
+      "assumption_note": "Language selection optional at upload; auto-detect by ASR engine if omitted.",
+      "step_order": 2,
+      "created": "2026-05-17",
+      "name": "Select File and Language Hint",
+      "description": "User picks a video file and optionally selects a language hint (RU or EN). If omitted, auto-detection is applied in BP-002.",
+      "artifact_name": "VideoFile",
+      "stereotype": "manual",
+      "id": "BP-001-S02",
+      "updated": "2026-05-17",
+      "artifact_kind": "file",
+      "status": "draft"
+    }
+  },
+  {
+    "labels": [
+      "WorkflowStep"
+    ],
+    "properties": {
+      "actor": "System",
+      "step_order": 3,
+      "created": "2026-05-17",
+      "name": "Validate File",
+      "description": "System checks file format (MP4/MKV/MOV) and size (max 500 MB). On failure, user gets inline error and may retry.",
+      "artifact_name": "VideoFile",
+      "stereotype": "decision",
+      "id": "BP-001-S03",
+      "updated": "2026-05-17",
+      "artifact_kind": "file",
+      "status": "draft"
+    }
+  },
+  {
+    "labels": [
+      "WorkflowStep"
+    ],
+    "properties": {
+      "actor": "System",
+      "created": "2026-05-17",
+      "name": "Show Validation Error",
+      "description": "System displays inline error (unsupported format or size). User remains on upload page and may retry with a different file.",
+      "stereotype": "automated",
+      "id": "BP-001-S03-REJ",
+      "updated": "2026-05-17",
+      "status": "draft"
+    }
+  },
+  {
+    "labels": [
+      "WorkflowStep"
+    ],
+    "properties": {
+      "actor": "System",
+      "step_order": 4,
+      "created": "2026-05-17",
+      "name": "Upload File in Chunks to Object Storage",
+      "description": "System transfers the validated video file to object storage (EXT-04) via chunked/multipart upload. Progress shown to user.",
+      "artifact_name": "VideoFile",
+      "stereotype": "automated",
+      "id": "BP-001-S04",
+      "updated": "2026-05-17",
+      "artifact_kind": "file",
+      "status": "draft"
+    }
+  },
+  {
+    "labels": [
+      "WorkflowStep"
+    ],
+    "properties": {
+      "actor": "System",
+      "step_order": 5,
+      "created": "2026-05-17",
+      "name": "Create Recording and UploadJob Records",
+      "description": "System persists a Recording entity (file metadata, storage path, language hint) and an UploadJob record, linking them.",
+      "artifact_name": "Recording",
+      "stereotype": "automated",
+      "id": "BP-001-S05",
+      "updated": "2026-05-17",
+      "artifact_kind": "entity",
+      "status": "draft"
+    }
+  },
+  {
+    "labels": [
+      "WorkflowStep"
+    ],
+    "properties": {
+      "actor": "System",
+      "step_order": 6,
+      "created": "2026-05-17",
+      "name": "Enqueue Transcription Job",
+      "description": "System pushes a TranscriptionJob message to the async queue, referencing the Recording. Triggers BP-002.",
+      "artifact_name": "TranscriptionJob",
+      "stereotype": "automated",
+      "id": "BP-001-S06",
+      "updated": "2026-05-17",
+      "artifact_kind": "message",
+      "status": "draft"
+    }
+  },
+  {
+    "labels": [
+      "WorkflowStep"
+    ],
+    "properties": {
+      "actor": "System",
+      "step_order": 7,
+      "created": "2026-05-17",
+      "name": "Show Upload Confirmation",
+      "description": "System shows \"Upload complete, transcription is processing\" with a link to the recording detail page.",
+      "stereotype": "automated",
+      "id": "BP-001-S07",
+      "updated": "2026-05-17",
+      "status": "draft"
+    }
+  },
+  {
+    "labels": [
+      "WorkflowStep"
+    ],
+    "properties": {
+      "actor": "System (transcription worker)",
+      "step_order": 1,
+      "created": "2026-05-17",
+      "name": "Dequeue transcription job",
+      "artifact_name": "TranscriptionJob",
+      "description": "Transcription worker polls the async job queue and dequeues the next pending job, extracting job ID, file reference, and language hint.",
+      "stereotype": "automated",
+      "id": "BP-002-S01",
+      "updated": "2026-05-17",
+      "artifact_kind": "entity",
+      "status": "draft"
+    }
+  },
+  {
+    "labels": [
+      "WorkflowStep"
+    ],
+    "properties": {
+      "actor": "EXT-04 (Object Storage)",
+      "step_order": 2,
+      "created": "2026-05-17",
+      "name": "Fetch video file from object storage",
+      "description": "Worker retrieves the raw video file from object storage (EXT-04) using the stored file reference. Streamed or downloaded to a working location.",
+      "artifact_name": "VideoFile",
+      "stereotype": "automated",
+      "id": "BP-002-S02",
+      "updated": "2026-05-17",
+      "artifact_kind": "file",
+      "status": "draft"
+    }
+  }
+]

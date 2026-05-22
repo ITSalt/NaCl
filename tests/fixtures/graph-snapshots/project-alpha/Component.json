@@ -1,0 +1,132 @@
+[
+  {
+    "labels": [
+      "Component"
+    ],
+    "properties": {
+      "framework_hint": "react-vite-shadcn",
+      "kind": "atom",
+      "name": "Input",
+      "created_at": "2026-05-05T13:31:56.442000000+00:00",
+      "description": "Базовый input (text/email/password/url)",
+      "id": "comp-input"
+    }
+  },
+  {
+    "labels": [
+      "Component"
+    ],
+    "properties": {
+      "framework_hint": "react-vite-shadcn",
+      "kind": "atom",
+      "name": "Textarea",
+      "created_at": "2026-05-05T13:31:56.442000000+00:00",
+      "description": "Multi-line text input",
+      "id": "comp-textarea"
+    }
+  },
+  {
+    "labels": [
+      "Component"
+    ],
+    "properties": {
+      "framework_hint": "react-vite-shadcn",
+      "kind": "atom",
+      "name": "Select",
+      "created_at": "2026-05-05T13:31:56.442000000+00:00",
+      "description": "Dropdown select с статичными или асинхронными options",
+      "id": "comp-select"
+    }
+  },
+  {
+    "labels": [
+      "Component"
+    ],
+    "properties": {
+      "framework_hint": "react-vite-shadcn",
+      "kind": "atom",
+      "name": "Toggle",
+      "created_at": "2026-05-05T13:31:56.442000000+00:00",
+      "description": "Boolean switch",
+      "id": "comp-toggle"
+    }
+  },
+  {
+    "labels": [
+      "Component"
+    ],
+    "properties": {
+      "framework_hint": "react-vite-shadcn",
+      "kind": "atom",
+      "name": "Button",
+      "created_at": "2026-05-05T13:31:56.442000000+00:00",
+      "description": "Primary / Secondary / Danger",
+      "id": "comp-button"
+    }
+  },
+  {
+    "labels": [
+      "Component"
+    ],
+    "properties": {
+      "framework_hint": "react-vite-shadcn",
+      "kind": "atom",
+      "name": "Badge",
+      "created_at": "2026-05-05T13:31:56.442000000+00:00",
+      "description": "Статусный badge (цветной enum)",
+      "id": "comp-badge"
+    }
+  },
+  {
+    "labels": [
+      "Component"
+    ],
+    "properties": {
+      "framework_hint": "react-vite-shadcn",
+      "kind": "atom",
+      "name": "FilePicker",
+      "created_at": "2026-05-05T13:31:56.442000000+00:00",
+      "description": "Multi-file upload в S3 (через presigned URL)",
+      "id": "comp-file_picker"
+    }
+  },
+  {
+    "labels": [
+      "Component"
+    ],
+    "properties": {
+      "framework_hint": "react-vite-shadcn",
+      "kind": "atom",
+      "name": "JsonEditor",
+      "created_at": "2026-05-05T13:31:56.442000000+00:00",
+      "description": "Редактор JSON с валидацией по schema",
+      "id": "comp-json_editor"
+    }
+  },
+  {
+    "labels": [
+      "Component"
+    ],
+    "properties": {
+      "framework_hint": "react-vite-shadcn",
+      "kind": "atom",
+      "name": "TreeSelect",
+      "created_at": "2026-05-05T13:31:56.442000000+00:00",
+      "description": "Иерархический select (для Category)",
+      "id": "comp-tree_select"
+    }
+  },
+  {
+    "labels": [
+      "Component"
+    ],
+    "properties": {
+      "framework_hint": "react-vite-shadcn",
+      "kind": "atom",
+      "name": "MonthPicker",
+      "created_at": "2026-05-05T13:31:56.442000000+00:00",
+      "description": "Выбор месяца (YYYY-MM)",
+      "id": "comp-month_picker"
+    }
+  }
+]

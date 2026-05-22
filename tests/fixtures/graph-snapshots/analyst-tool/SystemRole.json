@@ -1,0 +1,15 @@
+[
+  {
+    "labels": [
+      "SystemRole"
+    ],
+    "properties": {
+      "is_admin": true,
+      "kind": "human",
+      "name": "Analyst",
+      "description": "The single human operator of the analyst-tool. Has full read/write access to boards, skill triggers, project switching, and snapshots within the active project.",
+      "id": "SR-ANALYST",
+      "source_file": "CLAUDE.md"
+    }
+  }
+]

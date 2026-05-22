@@ -1,0 +1,26 @@
+[
+  {
+    "labels": [
+      "Stakeholder"
+    ],
+    "properties": {
+      "role": "Primary User",
+      "interest": "Uploads meeting video recordings and receives verbatim transcripts and structured meeting protocols for archiving, reporting, or task tracking",
+      "name": "Meeting Participant",
+      "id": "STK-01"
+    }
+  },
+  {
+    "labels": [
+      "Stakeholder"
+    ],
+    "properties": {
+      "assumption_note": "Inferred as natural consumer of protocol artifact. In MVP scope may be same person as STK-01.",
+      "role": "Secondary Stakeholder (assumption)",
+      "interest": "Interested in the meeting protocol artifact for distributing decisions and action items",
+      "name": "Meeting Organizer",
+      "id": "STK-02",
+      "status": "assumption"
+    }
+  }
+]

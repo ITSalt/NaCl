@@ -1,0 +1,102 @@
+[
+  {
+    "labels": [
+      "EntityState"
+    ],
+    "properties": {
+      "name": "uploading",
+      "description": "File upload is in progress",
+      "id": "OBJ-001-ST01"
+    }
+  },
+  {
+    "labels": [
+      "EntityState"
+    ],
+    "properties": {
+      "name": "transcribing",
+      "description": "Transcription job is queued or running",
+      "id": "OBJ-001-ST02"
+    }
+  },
+  {
+    "labels": [
+      "EntityState"
+    ],
+    "properties": {
+      "name": "transcript_ready",
+      "description": "Transcript has been produced and persisted",
+      "id": "OBJ-001-ST03"
+    }
+  },
+  {
+    "labels": [
+      "EntityState"
+    ],
+    "properties": {
+      "name": "protocol_generating",
+      "description": "Protocol generation job is queued or running",
+      "id": "OBJ-001-ST04"
+    }
+  },
+  {
+    "labels": [
+      "EntityState"
+    ],
+    "properties": {
+      "name": "protocol_ready",
+      "description": "Protocol has been generated and persisted",
+      "id": "OBJ-001-ST05"
+    }
+  },
+  {
+    "labels": [
+      "EntityState"
+    ],
+    "properties": {
+      "name": "edited",
+      "description": "Protocol has been manually edited at least once; repeating state on each save",
+      "id": "OBJ-001-ST06"
+    }
+  },
+  {
+    "labels": [
+      "EntityState"
+    ],
+    "properties": {
+      "name": "failed",
+      "description": "Non-recoverable error in the transcription or generation pipeline",
+      "id": "OBJ-001-ST07"
+    }
+  },
+  {
+    "labels": [
+      "EntityState"
+    ],
+    "properties": {
+      "name": "queued",
+      "description": "Job created, waiting for a worker",
+      "id": "OBJ-003-ST01"
+    }
+  },
+  {
+    "labels": [
+      "EntityState"
+    ],
+    "properties": {
+      "name": "in_progress",
+      "description": "Worker is running ASR/diarization",
+      "id": "OBJ-003-ST02"
+    }
+  },
+  {
+    "labels": [
+      "EntityState"
+    ],
+    "properties": {
+      "name": "completed",
+      "description": "Transcript produced and persisted successfully",
+      "id": "OBJ-003-ST03"
+    }
+  }
+]

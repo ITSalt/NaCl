@@ -1,0 +1,152 @@
+[
+  {
+    "labels": [
+      "Enumeration"
+    ],
+    "properties": {
+      "migrated_at": "2026-05-06T18:39:54.864000000+00:00",
+      "created": "2026-04-19T21:04:43.901000000+00:00",
+      "ba_trace": [],
+      "name": "AuthProvider",
+      "description": "Перечисление провайдеров аутентификации. Определяет, каким способом пользователь зарегистрировался и авторизуется в системе. Используется для выбора стратегии аутентификации и определения доступных данных профиля.",
+      "id": "EN-authprovider",
+      "updated": "2026-05-06T18:39:54.864000000+00:00",
+      "source_file": "docs/12-domain/enumerations/auth-provider.md"
+    }
+  },
+  {
+    "labels": [
+      "Enumeration"
+    ],
+    "properties": {
+      "migrated_at": "2026-05-06T18:39:54.864000000+00:00",
+      "created": "2026-04-19T21:04:43.901000000+00:00",
+      "ba_trace": [],
+      "name": "ErrorClassification",
+      "description": "Перечисление типов ошибок при взаимодействии с внешними AI-провайдерами (OpenRouter, KIE). Используется для структурированного логирования и классификации сбоев, что позволяет различать транзиентные ошибки (retry-able) от постоянных и строить статистику надёжности по провайдерам.",
+      "id": "EN-errorclassification",
+      "updated": "2026-05-06T18:39:54.864000000+00:00",
+      "source_file": "docs/12-domain/enumerations/error-classification.md"
+    }
+  },
+  {
+    "labels": [
+      "Enumeration"
+    ],
+    "properties": {
+      "migrated_at": "2026-05-06T18:39:54.864000000+00:00",
+      "created": "2026-04-19T21:04:43.901000000+00:00",
+      "ba_trace": [],
+      "name": "FunnelEventType",
+      "description": "",
+      "id": "EN-funneleventtype",
+      "updated": "2026-05-06T18:39:54.864000000+00:00",
+      "source_file": "docs/12-domain/enumerations/funnel-event-type.md"
+    }
+  },
+  {
+    "labels": [
+      "Enumeration"
+    ],
+    "properties": {
+      "migrated_at": "2026-05-06T18:39:54.864000000+00:00",
+      "created": "2026-04-19T21:04:43.901000000+00:00",
+      "ba_trace": [],
+      "name": "GenerationType",
+      "description": "Перечисление типов AI-генерации. Используется в логах генерации для классификации каждого вызова AI-модели по его назначению.",
+      "id": "EN-generationtype",
+      "updated": "2026-05-06T18:39:54.864000000+00:00",
+      "source_file": "docs/12-domain/enumerations/generation-type.md"
+    }
+  },
+  {
+    "labels": [
+      "Enumeration"
+    ],
+    "properties": {
+      "migrated_at": "2026-05-06T18:39:54.864000000+00:00",
+      "created": "2026-04-19T21:04:43.901000000+00:00",
+      "ba_trace": [],
+      "name": "InputMode",
+      "description": "Перечисление режимов ввода информации для создания истории. Определяет, каким способом пользователь предоставляет данные для генерации сценария.",
+      "id": "EN-inputmode",
+      "updated": "2026-05-06T18:39:54.864000000+00:00",
+      "source_file": "docs/12-domain/enumerations/input-mode.md"
+    }
+  },
+  {
+    "labels": [
+      "Enumeration"
+    ],
+    "properties": {
+      "migrated_at": "2026-05-06T18:39:54.864000000+00:00",
+      "created": "2026-04-19T21:04:43.901000000+00:00",
+      "ba_trace": [],
+      "name": "InterviewPhase",
+      "description": "Перечисление фаз AI-интервью по методологии эпизодического нарративного интервью v6. Фазы определяют текущий этап сбора нарративных элементов. Фазы не являются жёсткой последовательностью — рассказчик может затронуть элементы нескольких фаз в одном ответе.",
+      "id": "EN-interviewphase",
+      "updated": "2026-05-06T18:39:54.864000000+00:00",
+      "source_file": "docs/12-domain/enumerations/interview-phase.md"
+    }
+  },
+  {
+    "labels": [
+      "Enumeration"
+    ],
+    "properties": {
+      "migrated_at": "2026-05-06T18:39:54.864000000+00:00",
+      "created": "2026-04-19T21:04:43.901000000+00:00",
+      "ba_trace": [],
+      "name": "LeadContactType",
+      "description": "Перечисление типов контактных данных лида. Определяется автоматически на сервере по формату введённого пользователем контакта. Используется для маршрутизации коммуникации: Telegram-ссылка, email-письмо или SMS/звонок.",
+      "id": "EN-leadcontacttype",
+      "updated": "2026-05-06T18:39:54.864000000+00:00",
+      "source_file": "docs/12-domain/enumerations/lead-contact-type.md"
+    }
+  },
+  {
+    "labels": [
+      "Enumeration"
+    ],
+    "properties": {
+      "migrated_at": "2026-05-06T18:39:54.864000000+00:00",
+      "created": "2026-04-19T21:04:43.901000000+00:00",
+      "ba_trace": [],
+      "name": "MediaStatus",
+      "description": "Перечисление статусов генерации медиа-контента. Отслеживает прогресс генерации изображения через KIE API -- от момента постановки задачи до получения готового результата или подстановки фолбэка.",
+      "id": "EN-mediastatus",
+      "updated": "2026-05-06T18:39:54.864000000+00:00",
+      "source_file": "docs/12-domain/enumerations/media-status.md"
+    }
+  },
+  {
+    "labels": [
+      "Enumeration"
+    ],
+    "properties": {
+      "migrated_at": "2026-05-06T18:39:54.864000000+00:00",
+      "created": "2026-04-19T21:04:43.901000000+00:00",
+      "ba_trace": [],
+      "name": "MemoryVideoStatus",
+      "description": "Перечисление статусов обработки видеоролика воспоминания. Отражает высокоуровневое состояние pipeline: от ожидания до готового видео.",
+      "id": "EN-memoryvideostatus",
+      "updated": "2026-05-06T18:39:54.864000000+00:00",
+      "source_file": "docs/12-domain/enumerations/memory-video-status.md"
+    }
+  },
+  {
+    "labels": [
+      "Enumeration"
+    ],
+    "properties": {
+      "migrated_at": "2026-05-06T18:39:54.864000000+00:00",
+      "created": "2026-04-19T21:04:43.901000000+00:00",
+      "ba_trace": [],
+      "name": "NarrativeProfile",
+      "description": "Перечисление нарративных профилей рассказчика. Агент-Интервьюер определяет профиль адаптивно по первым 3–5 ответам и корректирует стратегию цикла слушания. Профиль — не ярлык, а текущая стратегия; может меняться по ходу интервью. Переоценка рекомендуется каждые 5–7 реплик.",
+      "id": "EN-narrativeprofile",
+      "updated": "2026-05-06T18:39:54.864000000+00:00",
+      "source_file": "docs/12-domain/enumerations/narrative-profile.md"
+    }
+  }
+]

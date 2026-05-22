@@ -1,0 +1,14 @@
+# Fixture: MALFORMED signed exception (blanket override).
+# Demonstrates: release skill rejects affected_gates=["*"] at load
+# time with workflow detail exception-affects-blanket-gates.
+# All gates fire as if the file did not exist.
+exception_id: "EXC-2026-05-22-blanket-rejected"
+owner: "magznikitin"
+reason: "Operator tried to file a single exception that covers every gate at once; W4 binding rule #4 rejects blanket overrides."
+created_at: "2026-05-22T09:00:00Z"
+expiry: "2026-05-23T09:00:00Z"
+affected_gates:
+  - "*"
+affected_projects:
+  - "project-alpha"
+followup_task: "TECH-099-do-not-do-this"

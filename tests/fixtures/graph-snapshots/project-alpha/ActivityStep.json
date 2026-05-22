@@ -1,0 +1,137 @@
+[
+  {
+    "labels": [
+      "ActivityStep"
+    ],
+    "properties": {
+      "actor": "System",
+      "kind": "external_call",
+      "name": "Pre-upload input files to provider storage (async-image only)",
+      "description": "For providers whose async-image API fetches image_input URLs server-side (api.kie.example.invalid jobs API), the dispatcher MUST upload TaskInputFile bytes to provider-managed temporary storage BEFORE createTask. Steps: (1) read bytes from S3 via storage.getObject; (2) base64-encode; (3) POST {baseUrl}/api/file-base64-upload with {base64Data, uploadPath}; (4) use returned downloadUrl as image_input. Rationale: internal MinIO/S3 endpoints are not reachable from external providers (presigned URL contains internal host). Constraint: ADR-011. The /api/file-stream-upload endpoint at docs.api.kie.example.invalid is documented but returns 404 in practice (2026-05-21).",
+      "id": "step-202-4a",
+      "order": 4.5
+    }
+  },
+  {
+    "labels": [
+      "ActivityStep"
+    ],
+    "properties": {
+      "actor": "User",
+      "updated_at": "2026-05-05T13:18:56.946000000+00:00",
+      "kind": "user_action",
+      "name": "Ввод email и пароля",
+      "description": "Пользователь заполняет форму регистрации",
+      "id": "step-101-1",
+      "order": 1
+    }
+  },
+  {
+    "labels": [
+      "ActivityStep"
+    ],
+    "properties": {
+      "actor": "System",
+      "updated_at": "2026-05-05T13:18:56.946000000+00:00",
+      "kind": "system_check",
+      "name": "Валидация уникальности email",
+      "description": "SELECT по User.email — если занят, возврат 409",
+      "id": "step-101-2",
+      "order": 2
+    }
+  },
+  {
+    "labels": [
+      "ActivityStep"
+    ],
+    "properties": {
+      "actor": "System",
+      "updated_at": "2026-05-05T13:18:56.946000000+00:00",
+      "kind": "system_action",
+      "name": "Hash password (bcrypt)",
+      "description": "bcrypt с cost factor 12",
+      "id": "step-101-3",
+      "order": 3
+    }
+  },
+  {
+    "labels": [
+      "ActivityStep"
+    ],
+    "properties": {
+      "actor": "System",
+      "updated_at": "2026-05-05T13:18:56.946000000+00:00",
+      "kind": "system_action",
+      "name": "Create User + issue JWT",
+      "description": "INSERT User со role=end_user, return access+refresh",
+      "id": "step-101-4",
+      "order": 4
+    }
+  },
+  {
+    "labels": [
+      "ActivityStep"
+    ],
+    "properties": {
+      "actor": "User",
+      "updated_at": "2026-05-05T13:18:56.946000000+00:00",
+      "kind": "user_action",
+      "name": "POST /auth/login",
+      "description": "Email + password",
+      "id": "step-102-1",
+      "order": 1
+    }
+  },
+  {
+    "labels": [
+      "ActivityStep"
+    ],
+    "properties": {
+      "actor": "System",
+      "updated_at": "2026-05-05T13:18:56.946000000+00:00",
+      "kind": "system_action",
+      "name": "Verify password + issue tokens",
+      "description": "bcrypt.compare; sign access (1ч) + refresh (30д)",
+      "id": "step-102-2",
+      "order": 2
+    }
+  },
+  {
+    "labels": [
+      "ActivityStep"
+    ],
+    "properties": {
+      "actor": "User",
+      "updated_at": "2026-05-05T13:18:56.946000000+00:00",
+      "kind": "user_action",
+      "name": "POST /auth/refresh",
+      "description": "Обновление access по refresh-токену",
+      "id": "step-102-3",
+      "order": 3
+    }
+  },
+  {
+    "labels": [
+      "ActivityStep"
+    ],
+    "properties": {
+      "actor": "User",
+      "name": "Выбор категории сессии",
+      "id": "step-103-1",
+      "lane": "user",
+      "order": 1
+    }
+  },
+  {
+    "labels": [
+      "ActivityStep"
+    ],
+    "properties": {
+      "actor": "User",
+      "name": "(опц.) ввод имени сессии — иначе будет авто",
+      "id": "step-103-2",
+      "lane": "user",
+      "order": 2
+    }
+  }
+]

@@ -1,0 +1,17 @@
+[
+  {
+    "labels": [
+      "Enumeration"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T13:41:41.538000000+00:00",
+      "created": "2026-04-13T13:41:41.538000000+00:00",
+      "ba_trace": [],
+      "name": "ChannelType",
+      "description": "",
+      "id": "EN-channel-type",
+      "updated": "2026-04-13T13:41:41.538000000+00:00",
+      "source_file": "docs/12-domain/enumerations/channel-type.md"
+    }
+  }
+]

@@ -1,0 +1,28 @@
+{
+  "$schema": "graph-snapshot-v1",
+  "captured_at": "2026-05-11T17:34:50Z",
+  "_note": "Live graph state captured 10 seconds before commit 01f2fcb lands. No UseCase node for UC-105/UC-106/UC-107 has been mutated since the previous snapshot at 2026-05-07T11:20:00Z. The spec-update detector (step 3 of the W10 detection logic) returns no graph mutation for the fix chain.",
+  "nodes": {
+    "Module": 12,
+    "UseCase": 26,
+    "Task": 76,
+    "FeatureRequest": 6,
+    "DomainEntity": 18,
+    "FormField": 142
+  },
+  "uc_last_modified": {
+    "UC-104": "2026-05-07T11:20:00Z",
+    "UC-105": "2026-05-07T11:20:00Z",
+    "UC-106": "2026-05-07T11:20:00Z",
+    "UC-107": "2026-05-07T11:20:00Z",
+    "UC-108": "2026-05-07T11:20:00Z",
+    "UC-150": "2026-04-30T09:00:00Z",
+    "UC-202": "2026-04-30T09:00:00Z"
+  },
+  "delta_since_prior_snapshot": {
+    "prior_captured_at": "2026-05-07T11:20:00Z",
+    "added_nodes": [],
+    "modified_nodes": [],
+    "graph_mutation_detected": false
+  }
+}

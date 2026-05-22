@@ -1,0 +1,163 @@
+# Project GAP-Closure Wave Plan — Template
+# ===================================================================
+# Schema introduced in: post-W11 NaCl strict-mode reference layer.
+# Schema reference: nacl-tl-core/references/project-gap-closure.md
+# § "Wave-plan schema".
+#
+# This file is a TEMPLATE. Per-project GAP planners copy it to
+#   <project>/.tl/plans/<YYYY-MM-DD>-gap-closure-wave-plan.yaml
+# and fill every wave. The runbook in project-gap-closure.md is the
+# binding source for what each field means.
+#
+# The plan closes the gap_ids enumerated in the paired register at
+#   <project>/.tl/gap-closure/<YYYY-MM-DD>-gap-register.yaml
+#
+# Wave structure mirrors the 18-field schema from the original NaCl
+# reform plan; gap_ids is the project-side addition for traceability.
+#
+# ===================================================================
+
+plan_id: ""
+# REQUIRED. <YYYY-MM-DD>-gap-closure. Example: "2026-05-22-gap-closure".
+
+project: ""
+# REQUIRED. Must match the project field in the paired GAP register.
+
+generated_at: ""
+# REQUIRED. ISO-8601 UTC at plan generation. Example:
+# "2026-05-22T19:00:00Z".
+
+register_ref: ""
+# REQUIRED. Path to the paired GAP register, project-root-relative.
+# Example: ".tl/gap-closure/2026-05-22-gap-register.yaml".
+
+mode: "planning-only"
+# REQUIRED. Always "planning-only". A separate remediation orchestrator
+# launches subagents per wave; this plan is not self-executing.
+
+waves:
+# REQUIRED. List of waves, ordered by dependency. Each wave closes a
+# named slice of the GAP register.
+
+  - wave_id: ""
+    # REQUIRED. Format: W<N>-<short-slug>. Example: "W1-reconciliation",
+    # "W3-external-contracts". Numbering is per-plan, not global.
+
+    title: ""
+    # REQUIRED. One-line declarative title. Example: "Reconcile FR-007
+    # changelog entry against live graph; restore wave-4 status".
+
+    priority: ""
+    # REQUIRED. P0 | P1 | P2 | P3. Matches the highest-severity gap
+    # this wave closes.
+
+    size: ""
+    # REQUIRED. XS | S | M | L | XL. Estimated based on number of
+    # owning-skill invocations + artifacts touched.
+
+    why_this_wave_exists: ""
+    # REQUIRED. 2–4 sentences naming the gap class being closed and
+    # the strict-mode invariant the gap violates. NOT a postmortem —
+    # forward-looking only.
+
+    target_skills:
+      # REQUIRED. NaCl skills the wave reads OR invokes (read-only +
+      # write skills both listed). Example: [nacl-sa-uc, nacl-sa-ui].
+      - ""
+
+    owner_skills:
+      # REQUIRED. NaCl skills that own remediation actions inside this
+      # wave. One owner skill per wave keeps subagent scope bounded
+      # (per the runbook). Example: [nacl-sa-uc].
+      - ""
+
+    scope_in:
+      # REQUIRED. Files / graph areas / .tl/ paths this wave is
+      # permitted to touch. Be specific: list paths, not directories,
+      # where practical.
+      - ""
+
+    scope_out:
+      # REQUIRED. Files / graph areas / .tl/ paths this wave MUST NOT
+      # touch. Always includes any nacl-* SKILL.md files — gap-closure
+      # waves are project-side, never chain-side.
+      - "nacl-*/SKILL.md"
+      - "skills-for-codex/nacl-*/SKILL.md"
+
+    inputs:
+      # REQUIRED. Files / graph queries / artifacts the wave reads.
+      # Example: ".tl/changelog.md", ".tl/exceptions/", "live graph:
+      # MATCH (fr:FeatureRequest) RETURN fr.id".
+      - ""
+
+    expected_changes:
+      # REQUIRED. Named artifacts/edges/files this wave produces or
+      # modifies. Anything not enumerated here is out of scope by
+      # construction.
+      - ""
+
+    orchestrator_prechecks:
+      # REQUIRED. Invariants the orchestrator verifies before launching
+      # this wave's subagent. Example: "live graph reachable",
+      # "previous wave reached terminal status VERIFIED".
+      - ""
+
+    subagent_instructions: ""
+    # REQUIRED. The prompt block delivered to the subagent that
+    # executes this wave. Single source of truth for what the subagent
+    # is allowed to do. Multi-line.
+
+    acceptance_checks:
+      # REQUIRED. Named, RUNNABLE checks; pass/fail per item. No
+      # "verify manually" placeholders. Example: "pnpm -r typecheck
+      # exits 0 on wave-tip", "Cypher: MATCH (fr:FeatureRequest
+      # {id: 'FR-007'}) RETURN count(fr) > 0".
+      - ""
+
+    blocking_rules_added: []
+    # OPTIONAL. List of new gates this wave introduces. Almost always
+    # empty for gap-closure waves — remediation does not add chain-level
+    # gates. A non-empty list signals scope creep; the orchestrator
+    # should reject the wave.
+
+    artifacts_to_produce:
+      # REQUIRED. Files / graph writes / .tl/ entries this wave
+      # produces. Anything not here is not produced.
+      - ""
+
+    dependencies:
+      # OPTIONAL. List of wave_ids this wave depends on. The plan must
+      # form a DAG over these references (no cycle; plan-quality check).
+      - ""
+
+    risks_and_rollback: ""
+    # REQUIRED. Single rollback marker for the wave — what to revert if
+    # the wave fails mid-run. Typically a git ref, a Cypher delete
+    # query, or a .tl/ snapshot.
+
+    definition_of_done: ""
+    # REQUIRED. Terminal status + acceptance summary. Example:
+    # "VERIFIED — every gap_id closed; orchestrator runs the chain
+    # smoke against the wave-tip and confirms no Strict-Only gate fires
+    # on the targets."
+
+    gap_ids:
+      # REQUIRED. GAP-IDs from the register this wave closes. Every
+      # GAP in the register must appear in exactly one wave's
+      # gap_ids[]; plan-quality check enforces this.
+      - ""
+
+plan_quality_checks:
+# REQUIRED. The agent runs these on its own output before terminating.
+# Each entry is one acceptance check the plan must satisfy.
+  - "every gap in the register is closed by exactly one wave"
+  - "no wave references a gap that does not exist in the register"
+  - "wave dependencies form a DAG (no cycle)"
+  - "every wave's owner_skills[] is non-empty and refers only to recognised NaCl skill names"
+  - "every wave's acceptance_checks[] is runnable (named files, named commands, named graph queries — no 'verify manually')"
+  - "no wave touches a path in scope_out"
+
+confidence: ""
+# REQUIRED. high | medium | low. low when plan-quality checks failed
+# OR when the paired GAP register carries confidence: low entries that
+# this plan inherits.

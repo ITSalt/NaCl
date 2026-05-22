@@ -1,0 +1,86 @@
+[
+  {
+    "labels": [
+      "ExternalEntity"
+    ],
+    "properties": {
+      "name": "Neo4j Graph Database",
+      "description": "Per-project Neo4j instance accessed via Bolt (neo4j-driver). Used by renderers to read graph nodes and by NaCl skills (sync/analyze) to write graph mutations. Connection details (bolt port, credentials) resolved from project config.yaml. Runs in Docker via graph-infra/docker-compose.yml.",
+      "id": "EXT-NEO4J",
+      "type": "ExternalSystem",
+      "source_file": "server/src/services/neo4j.ts"
+    }
+  },
+  {
+    "labels": [
+      "ExternalEntity"
+    ],
+    "properties": {
+      "name": "Local Claude CLI",
+      "description": "The `claude` binary installed on the analyst machine. Invoked exclusively via the itsalt-pinch Pacer singleton for skill prompts (/nacl-ba-sync, /nacl-ba-analyze). Never spawned directly. Runs with --print --output-format=stream-json --permission-mode=bypassPermissions.",
+      "id": "EXT-LOCAL-CLAUDE-CLI",
+      "type": "ExternalSystem",
+      "source_file": "server/src/services/pinch.ts"
+    }
+  },
+  {
+    "labels": [
+      "ExternalEntity"
+    ],
+    "properties": {
+      "name": "Local Filesystem",
+      "description": "Board files (.excalidraw), meta sidecars (.meta.json), snapshots, and rendered markdown files stored under each project boards_dir (graph-infra/boards/). Watched by chokidar (fs-watcher service) for real-time change events broadcast over WebSocket.",
+      "id": "EXT-FILESYSTEM",
+      "type": "ExternalSystem",
+      "source_file": "server/src/services/fs-watcher.ts"
+    }
+  },
+  {
+    "labels": [
+      "ExternalEntity"
+    ],
+    "properties": {
+      "name": "Project Registry",
+      "description": "JSON file at ~/.nacl/projects.json (or $NACL_HOME/projects.json). Single source of truth for registered projects (id, name, root path, activeProjectId). Read on startup, written on project switch. Also watched by registry-watcher service to surface external edits (e.g. from nacl-init) over WebSocket.",
+      "id": "EXT-PROJECT-REGISTRY",
+      "type": "ExternalSystem",
+      "source_file": "server/src/services/project-registry.ts"
+    }
+  },
+  {
+    "labels": [
+      "ExternalEntity"
+    ],
+    "properties": {
+      "name": "Excalidraw npm Library",
+      "description": "The @excalidraw/excalidraw React component embedded in the web workspace. Provides the full canvas editor in-browser. Board JSON produced by the editor is saved back to the filesystem via the Fastify /api/v1/boards API. This is the npm package — NOT the public excalidraw.com cloud.",
+      "id": "EXT-EXCALIDRAW-LIB",
+      "type": "ExternalSystem",
+      "source_file": "CLAUDE.md"
+    }
+  },
+  {
+    "labels": [
+      "ExternalEntity"
+    ],
+    "properties": {
+      "name": "Docker (graph-infra)",
+      "description": "Docker Compose stack under graph-infra/ that runs the per-project Neo4j container. The analyst-tool itself does not manage Docker; the analyst starts it separately with `docker compose up -d`. The tool reads graph.neo4j_bolt_port from config.yaml to connect.",
+      "id": "EXT-DOCKER-GRAPH-INFRA",
+      "type": "ExternalSystem",
+      "source_file": "config.yaml"
+    }
+  },
+  {
+    "labels": [
+      "ExternalEntity"
+    ],
+    "properties": {
+      "name": "itsalt-pinch (Pacer)",
+      "description": "npm package itsalt-pinch providing the Pacer concurrency wrapper. Enforces working-window scheduling and global concurrency invariants for claude -p subprocess calls. One singleton Pacer per server process. Emits lifecycle hooks (onEnqueued, onStarted, onBlocked, onFinished) that are broadcast over WebSocket.",
+      "id": "EXT-ITSALT-PINCH",
+      "type": "ExternalSystem",
+      "source_file": "server/src/services/pinch.ts"
+    }
+  }
+]

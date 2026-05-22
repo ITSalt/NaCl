@@ -1,0 +1,308 @@
+{
+  "project": "analyst-tool",
+  "bolt_port": 3607,
+  "status": "REACHABLE",
+  "labels": [
+    {
+      "label": "DomainAttribute",
+      "count": 48
+    },
+    {
+      "label": "EntityAttribute",
+      "count": 47
+    },
+    {
+      "label": "WorkflowStep",
+      "count": 42
+    },
+    {
+      "label": "ActivityStep",
+      "count": 35
+    },
+    {
+      "label": "GlossaryTerm",
+      "count": 34
+    },
+    {
+      "label": "EnumValue",
+      "count": 30
+    },
+    {
+      "label": "BusinessProcess",
+      "count": 20
+    },
+    {
+      "label": "Requirement",
+      "count": 19
+    },
+    {
+      "label": "UseCase",
+      "count": 19
+    },
+    {
+      "label": "BusinessRule",
+      "count": 18
+    },
+    {
+      "label": "BusinessEntity",
+      "count": 13
+    },
+    {
+      "label": "EntityState",
+      "count": 11
+    },
+    {
+      "label": "DataFlow",
+      "count": 10
+    },
+    {
+      "label": "Component",
+      "count": 10
+    },
+    {
+      "label": "DomainEntity",
+      "count": 8
+    },
+    {
+      "label": "FormField",
+      "count": 8
+    },
+    {
+      "label": "ExternalEntity",
+      "count": 7
+    },
+    {
+      "label": "Document",
+      "count": 7
+    },
+    {
+      "label": "Enumeration",
+      "count": 7
+    },
+    {
+      "label": "ProcessGroup",
+      "count": 5
+    },
+    {
+      "label": "Module",
+      "count": 5
+    },
+    {
+      "label": "Form",
+      "count": 4
+    },
+    {
+      "label": "Task",
+      "count": 4
+    },
+    {
+      "label": "Stakeholder",
+      "count": 2
+    },
+    {
+      "label": "Wave",
+      "count": 2
+    },
+    {
+      "label": "SystemContext",
+      "count": 1
+    },
+    {
+      "label": "BusinessRole",
+      "count": 1
+    },
+    {
+      "label": "SystemRole",
+      "count": 1
+    },
+    {
+      "label": "FeatureRequest",
+      "count": 1
+    }
+  ],
+  "total_nodes": 419,
+  "total_rels": 689,
+  "rel_types": [
+    {
+      "type": "HAS_ATTRIBUTE",
+      "count": 95
+    },
+    {
+      "type": "HAS_STEP",
+      "count": 77
+    },
+    {
+      "type": "AUTOMATES_AS",
+      "count": 42
+    },
+    {
+      "type": "NEXT_STEP",
+      "count": 33
+    },
+    {
+      "type": "HAS_VALUE",
+      "count": 30
+    },
+    {
+      "type": "CONTAINS",
+      "count": 29
+    },
+    {
+      "type": "APPLIES_AT_STEP",
+      "count": 23
+    },
+    {
+      "type": "IMPLEMENTED_BY",
+      "count": 22
+    },
+    {
+      "type": "OWNS",
+      "count": 20
+    },
+    {
+      "type": "HAS_REQUIREMENT",
+      "count": 20
+    },
+    {
+      "type": "CONTAINS_UC",
+      "count": 19
+    },
+    {
+      "type": "ACTOR",
+      "count": 19
+    },
+    {
+      "type": "DEPENDS_ON",
+      "count": 18
+    },
+    {
+      "type": "RELATES_TO",
+      "count": 18
+    },
+    {
+      "type": "HAS_ENUM",
+      "count": 18
+    },
+    {
+      "type": "READS",
+      "count": 17
+    },
+    {
+      "type": "DEFINES",
+      "count": 16
+    },
+    {
+      "type": "PRODUCES",
+      "count": 15
+    },
+    {
+      "type": "HAS_STATE",
+      "count": 11
+    },
+    {
+      "type": "FROM",
+      "count": 10
+    },
+    {
+      "type": "TO",
+      "count": 10
+    },
+    {
+      "type": "TRIGGERS",
+      "count": 10
+    },
+    {
+      "type": "TRANSITIONS_TO",
+      "count": 10
+    },
+    {
+      "type": "AFFECTS",
+      "count": 10
+    },
+    {
+      "type": "MODIFIES",
+      "count": 9
+    },
+    {
+      "type": "CONTAINS_ENTITY",
+      "count": 8
+    },
+    {
+      "type": "REALIZED_AS",
+      "count": 8
+    },
+    {
+      "type": "HAS_PERMISSION",
+      "count": 8
+    },
+    {
+      "type": "HAS_FIELD",
+      "count": 8
+    },
+    {
+      "type": "HAS_EXTERNAL_ENTITY",
+      "count": 7
+    },
+    {
+      "type": "HAS_FLOW",
+      "count": 6
+    },
+    {
+      "type": "CONSTRAINS",
+      "count": 5
+    },
+    {
+      "type": "APPLIES_IN",
+      "count": 4
+    },
+    {
+      "type": "USES_FORM",
+      "count": 4
+    },
+    {
+      "type": "USED_IN",
+      "count": 4
+    },
+    {
+      "type": "JUSTIFIES",
+      "count": 4
+    },
+    {
+      "type": "IN_WAVE",
+      "count": 4
+    },
+    {
+      "type": "GENERATES",
+      "count": 4
+    },
+    {
+      "type": "MAPS_TO",
+      "count": 3
+    },
+    {
+      "type": "AFFECTS_MODULE",
+      "count": 3
+    },
+    {
+      "type": "HAS_STAKEHOLDER",
+      "count": 2
+    },
+    {
+      "type": "PERFORMED_BY",
+      "count": 2
+    },
+    {
+      "type": "INCLUDES_UC",
+      "count": 2
+    },
+    {
+      "type": "MAPPED_TO",
+      "count": 1
+    },
+    {
+      "type": "AFFECTS_ENTITY",
+      "count": 1
+    }
+  ],
+  "sample_label_count": 29
+}

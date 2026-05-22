@@ -1,0 +1,89 @@
+# NaCl Emergency-Mode Event — Template
+# ===================================================================
+# Schema introduced in: W4-blocking-release.
+# Schema reference: nacl-tl-core/references/emergency-mode.md.
+#
+# This file is a TEMPLATE. Emergency mode AUTOMATICALLY writes a
+# concrete event to .tl/emergencies/<timestamp>-<slug>.yaml when
+# invoked. Operators do NOT hand-author this file in normal flow;
+# they author the invocation (env vars), and the skill writes the
+# event. This template documents the schema so reviewers and post-
+# mortem readers know what to expect.
+#
+# Filename convention:
+#   .tl/emergencies/<UTC-timestamp>-<short-slug>.yaml
+#   where UTC-timestamp is "YYYYMMDDTHHMMSSZ" and short-slug is a
+#   lowercased ASCII slug derived from NACL_EMERGENCY_REASON.
+#
+# ===================================================================
+
+event_id: "EMG-YYYY-MM-DD-<slug>"
+# REQUIRED. Format-enforced: ^EMG-\d{4}-\d{2}-\d{2}-[a-z0-9][a-z0-9-]*$
+# Example: "EMG-2026-05-22-prod-rollback".
+
+invocation:
+  timestamp_utc: "<ISO-8601>"
+  # REQUIRED. Wall-clock UTC when the operator launched the skill
+  # with NACL_EMERGENCY=1. Example: "2026-05-22T18:42:11Z".
+
+  skill: "<skill_name>"
+  # REQUIRED. The skill whose gate refusals are being bypassed in
+  # this one invocation. Example: "nacl-tl-release".
+
+  env:
+    NACL_EMERGENCY: "1"
+    NACL_EMERGENCY_REASON: "<text>"
+    # REQUIRED. Free-text reason from the invoking operator.
+    # No length limit but no semantic constraints either — auditing
+    # is the operator's responsibility, not the skill's.
+    NACL_EMERGENCY_OWNER: "<github_handle_or_team>"
+    # REQUIRED. Identity that accepts responsibility for the bypass.
+
+  cwd: "<absolute_path>"
+  # REQUIRED. Absolute path of the invoking directory (so the
+  # postmortem can locate the project the bypass touched).
+
+  project: "<project_id_from_config.yaml>"
+  # OPTIONAL. Populated from config.yaml `project` field if present.
+
+bypassed_gates:
+# REQUIRED. List of gate names the skill would have refused VERIFIED
+# on but advanced past under emergency mode. Each entry corresponds
+# to one banner the skill printed during the run.
+  - gate: "<gate_name>"
+    refusal_message: "<the exact RELEASE HALTED / REVIEW APPLIED — BLOCKED message that would have been emitted>"
+    # Preserves the gate's authoritative refusal text so the
+    # postmortem can compare emergency-mode bypass to a non-
+    # emergency invocation of the same skill.
+
+skill_outcome:
+# REQUIRED. The terminal headline and Status: the skill emitted
+# under emergency mode. Emergency mode does NOT promote the closed-
+# set Status: of the run to VERIFIED — it lets the run advance
+# past the refusal AND records that advance, but the Status: line
+# carries the suffix `(emergency-bypass)`.
+  headline: "<terminal headline>"
+  # Example: "RELEASE COMPLETE — emergency-bypass".
+  status: "<closed-set status>"
+  # Example: "PARTIALLY_VERIFIED" (Codex closed vocabulary). Never
+  # "VERIFIED" — emergency mode advances despite refusal, it does
+  # not retroactively bless the refusal.
+
+postmortem_feed:
+# REQUIRED. The emergency-event is tagged for the next-postmortem
+# feed (`docs/retrospectives/<next_release>-postmortem.md`). The
+# tagging is structural — the postmortem author sees every
+# emergency-event in chronological order.
+  tagged: true
+  next_postmortem: "docs/retrospectives/<next_release>-postmortem.md"
+  # The literal `<next_release>` placeholder is resolved by the
+  # postmortem author at write time. The release skill does NOT
+  # know the slug for the next release.
+
+side_effects:
+# REQUIRED. Every emergency-mode invocation MUST produce these
+# side effects in addition to this file. Skill verifies that all
+# of them happened before exiting.
+  release_status_json_appended: true
+  changelog_md_appended: true
+  bypass_banner_printed_per_gate: true

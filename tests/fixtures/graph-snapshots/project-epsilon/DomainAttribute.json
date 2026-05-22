@@ -1,0 +1,172 @@
+[
+  {
+    "labels": [
+      "DomainAttribute"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T15:03:42.914000000+00:00",
+      "created": "2026-04-13T09:15:27.956000000+00:00",
+      "name": "id",
+      "description": "—",
+      "id": "DE-article-coefficient-import-A01",
+      "type": "UUID",
+      "updated": "2026-04-13T15:03:42.914000000+00:00",
+      "constraints": "PK, auto",
+      "source_file": "docs/12-domain/entities/article-coefficient-import.md",
+      "required": true
+    }
+  },
+  {
+    "labels": [
+      "DomainAttribute"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T15:03:42.914000000+00:00",
+      "created": "2026-04-13T09:15:27.956000000+00:00",
+      "name": "fileName",
+      "description": "Исходное имя файла",
+      "id": "DE-article-coefficient-import-A02",
+      "type": "String",
+      "updated": "2026-04-13T15:03:42.914000000+00:00",
+      "constraints": "max 255",
+      "source_file": "docs/12-domain/entities/article-coefficient-import.md",
+      "required": true
+    }
+  },
+  {
+    "labels": [
+      "DomainAttribute"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T15:03:42.914000000+00:00",
+      "created": "2026-04-13T09:15:27.956000000+00:00",
+      "name": "uploadedBy",
+      "description": "Кто загрузил",
+      "id": "DE-article-coefficient-import-A03",
+      "type": "Reference → User",
+      "updated": "2026-04-13T15:03:42.914000000+00:00",
+      "constraints": "FK",
+      "source_file": "docs/12-domain/entities/article-coefficient-import.md",
+      "required": true
+    }
+  },
+  {
+    "labels": [
+      "DomainAttribute"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T15:03:42.914000000+00:00",
+      "created": "2026-04-13T09:15:27.956000000+00:00",
+      "name": "uploadedAt",
+      "description": "Дата и время загрузки",
+      "id": "DE-article-coefficient-import-A04",
+      "type": "DateTime",
+      "updated": "2026-04-13T15:03:42.914000000+00:00",
+      "constraints": "auto",
+      "source_file": "docs/12-domain/entities/article-coefficient-import.md",
+      "required": true
+    }
+  },
+  {
+    "labels": [
+      "DomainAttribute"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T15:03:42.914000000+00:00",
+      "created": "2026-04-13T09:15:27.956000000+00:00",
+      "name": "rowCount",
+      "description": "Количество строк с коэффициентами",
+      "id": "DE-article-coefficient-import-A05",
+      "type": "Number",
+      "updated": "2026-04-13T15:03:42.914000000+00:00",
+      "constraints": "≥ 0",
+      "source_file": "docs/12-domain/entities/article-coefficient-import.md",
+      "required": true
+    }
+  },
+  {
+    "labels": [
+      "DomainAttribute"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T15:03:42.914000000+00:00",
+      "created": "2026-04-13T09:15:27.956000000+00:00",
+      "name": "status",
+      "description": "Статус обработки (PENDING / VALID / INVALID)",
+      "id": "DE-article-coefficient-import-A06",
+      "type": "Enum → ImportStatus",
+      "updated": "2026-04-13T15:03:42.914000000+00:00",
+      "constraints": "",
+      "source_file": "docs/12-domain/entities/article-coefficient-import.md",
+      "required": true
+    }
+  },
+  {
+    "labels": [
+      "DomainAttribute"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T15:03:42.914000000+00:00",
+      "created": "2026-04-13T09:15:27.956000000+00:00",
+      "name": "id",
+      "description": "—",
+      "id": "DE-article-coefficient-row-A01",
+      "type": "UUID",
+      "updated": "2026-04-13T15:03:42.914000000+00:00",
+      "constraints": "PK, auto",
+      "source_file": "docs/12-domain/entities/article-coefficient-row.md",
+      "required": true
+    }
+  },
+  {
+    "labels": [
+      "DomainAttribute"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T15:03:42.914000000+00:00",
+      "created": "2026-04-13T09:15:27.956000000+00:00",
+      "name": "importId",
+      "description": "Сессия загрузки",
+      "id": "DE-article-coefficient-row-A02",
+      "type": "Reference → ArticleCoefficientImport",
+      "updated": "2026-04-13T15:03:42.914000000+00:00",
+      "constraints": "FK",
+      "source_file": "docs/12-domain/entities/article-coefficient-row.md",
+      "required": true
+    }
+  },
+  {
+    "labels": [
+      "DomainAttribute"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T15:03:42.914000000+00:00",
+      "created": "2026-04-13T09:15:27.956000000+00:00",
+      "name": "parentGroup",
+      "description": "Группа товаров (Родитель) — обязательный уровень применения",
+      "id": "DE-article-coefficient-row-A03",
+      "type": "String",
+      "updated": "2026-04-13T15:03:42.914000000+00:00",
+      "constraints": "max 200",
+      "source_file": "docs/12-domain/entities/article-coefficient-row.md",
+      "required": true
+    }
+  },
+  {
+    "labels": [
+      "DomainAttribute"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T15:03:42.914000000+00:00",
+      "created": "2026-04-13T09:15:27.956000000+00:00",
+      "name": "articleCode",
+      "description": "Артикул 1С — если заполнен, правило применяется к конкретному артикулу; если пуст, правило применяется ко всей группе parentGroup",
+      "id": "DE-article-coefficient-row-A04",
+      "type": "String",
+      "updated": "2026-04-13T15:03:42.914000000+00:00",
+      "constraints": "max 100",
+      "source_file": "docs/12-domain/entities/article-coefficient-row.md",
+      "required": false
+    }
+  }
+]

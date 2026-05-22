@@ -1,0 +1,102 @@
+[
+  {
+    "labels": [
+      "Enumeration"
+    ],
+    "properties": {
+      "name": "GradingType",
+      "description": "Type of grading used in a course",
+      "id": "enum-010"
+    }
+  },
+  {
+    "labels": [
+      "Enumeration"
+    ],
+    "properties": {
+      "name": "LectureType",
+      "description": "Format of lecture delivery",
+      "id": "enum-011"
+    }
+  },
+  {
+    "labels": [
+      "Enumeration"
+    ],
+    "properties": {
+      "name": "MaterialCategory",
+      "description": "Category of lecture material",
+      "id": "enum-012"
+    }
+  },
+  {
+    "labels": [
+      "Enumeration"
+    ],
+    "properties": {
+      "name": "SourceType",
+      "description": "Source type for materials — file upload or external URL",
+      "id": "enum-013"
+    }
+  },
+  {
+    "labels": [
+      "Enumeration"
+    ],
+    "properties": {
+      "name": "GroupLectureStatus",
+      "description": "Status of a group lecture instance",
+      "id": "enum-014"
+    }
+  },
+  {
+    "labels": [
+      "Enumeration"
+    ],
+    "properties": {
+      "name": "GroupMaterialType",
+      "description": "Type of additional material attached to a group lecture",
+      "id": "enum-015"
+    }
+  },
+  {
+    "labels": [
+      "Enumeration"
+    ],
+    "properties": {
+      "name": "UserRole",
+      "id": "enum-001",
+      "status": "active"
+    }
+  },
+  {
+    "labels": [
+      "Enumeration"
+    ],
+    "properties": {
+      "name": "EnrollmentStatus",
+      "id": "enum-002",
+      "status": "active"
+    }
+  },
+  {
+    "labels": [
+      "Enumeration"
+    ],
+    "properties": {
+      "name": "PromoCodeStatus",
+      "id": "enum-003",
+      "status": "active"
+    }
+  },
+  {
+    "labels": [
+      "Enumeration"
+    ],
+    "properties": {
+      "name": "ModelGroup",
+      "id": "enum-004",
+      "status": "active"
+    }
+  }
+]

@@ -1,0 +1,25 @@
+{
+  "$schema": "stub-registry-v1",
+  "updatedAt": "2026-05-19T10:00:00Z",
+  "_note": "Prior scan registry. STUB-042 is the candidate-for-closure in the current scan because its marker was removed (TODO no longer at line 12 of workflow-steps.service.ts).",
+  "files_scanned": { "production": 47, "tests": 12 },
+  "stats": {
+    "total": 1, "critical": 0, "warning": 1, "info": 0,
+    "resolved": 0, "unresolved": 1, "orphaned": 0,
+    "emptyTestFiles": 0, "emptyDescribeBlocks": 0
+  },
+  "stubs": [
+    {
+      "id": "STUB-042",
+      "file": "src/admin/workflow-steps.service.ts",
+      "line": 12,
+      "type": "STUB",
+      "severity": "WARNING",
+      "text": "// TODO: implement workflow steps catalog (UC-302)",
+      "uc": "UC-302",
+      "createdAt": "2026-05-14T09:30:00Z",
+      "resolvedAt": null,
+      "shape_validated": false
+    }
+  ]
+}

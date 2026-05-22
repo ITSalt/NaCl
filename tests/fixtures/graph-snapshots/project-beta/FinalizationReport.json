@@ -1,0 +1,42 @@
+[
+  {
+    "labels": [
+      "FinalizationReport"
+    ],
+    "properties": {
+      "ba_role_coverage_pct": 100.0,
+      "stat_requirements_nfr": 9,
+      "notes": "All 9 UCs fully detailed (100% detail). All 6 BA entities realized. All 21 BA rules implemented via 28 AUTOMATES_AS edges. 9 NFRs linked to modules and UCs. SA specification approved for development handoff.",
+      "stat_components": 11,
+      "stat_automates_as_edges": 28,
+      "stat_domain_entities": 6,
+      "next_phase": "nacl-tl-plan",
+      "layer": "SA",
+      "stat_requirements_functional": 33,
+      "stat_use_cases": 9,
+      "tl_handoff_ready": true,
+      "project_id": "project-beta",
+      "stat_forms": 6,
+      "overall_readiness_pct": 100.0,
+      "id": "FR-SA-001",
+      "uc_readiness_pct": 100.0,
+      "stat_use_cases_detailed": 9,
+      "ba_step_coverage_pct": 100.0,
+      "stat_modules": 4,
+      "stat_form_fields": 45,
+      "created": "2026-05-18T00:00:00.000000000+00:00",
+      "ba_entity_coverage_pct": 100.0,
+      "module_readiness_json": "[{\"id\":\"mod-common\",\"name\":\"Common / Shell\",\"ucs\":3,\"detailed\":3,\"entities\":1,\"readiness\":100},{\"id\":\"mod-ingest\",\"name\":\"Video Ingest\",\"ucs\":1,\"detailed\":1,\"entities\":1,\"readiness\":100},{\"id\":\"mod-transcription\",\"name\":\"Transcription\",\"ucs\":2,\"detailed\":2,\"entities\":2,\"readiness\":100},{\"id\":\"mod-protocol\",\"name\":\"Protocol Lifecycle\",\"ucs\":3,\"detailed\":3,\"entities\":2,\"readiness\":100}]",
+      "validation_summary": "0 critical, 0 warning, 4 info ��� PASSED",
+      "entity_readiness_pct": 100.0,
+      "ba_rule_coverage_pct": 100.0,
+      "adrs_created": "ADR-001..ADR-011 (tech stack: Fastify+TS, Postgres+Prisma, BullMQ+Redis, MinIO, TUS, Deepgram, api.kie.example.invalid, Vite+React, Milkdown+Puppeteer, SSE, pnpm monorepo+Compose)",
+      "open_questions_remaining": "none",
+      "validation_report_ref": "VR-SA-003",
+      "stat_system_roles": 2,
+      "updated": "2026-05-18T00:00:00.000000000+00:00",
+      "stat_domain_attributes": 44,
+      "status": "approved"
+    }
+  }
+]

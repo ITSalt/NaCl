@@ -1,0 +1,100 @@
+[
+  {
+    "labels": [
+      "SystemRole"
+    ],
+    "properties": {
+      "system_only": false,
+      "migrated_at": "2026-05-06T18:39:58.839000000+00:00",
+      "auth": "Нет",
+      "created": "2026-04-19T21:04:48.051000000+00:00",
+      "ba_trace": [
+        "ROL-01"
+      ],
+      "name": "anonymous",
+      "description": "",
+      "iteration": "1+",
+      "id": "SYSROL-ANONYMOUS",
+      "updated": "2026-05-06T18:39:58.839000000+00:00",
+      "source_file": "docs/13-roles/role-matrix.md"
+    }
+  },
+  {
+    "labels": [
+      "SystemRole"
+    ],
+    "properties": {
+      "system_only": true,
+      "migrated_at": "2026-05-06T18:39:58.839000000+00:00",
+      "auth": "Telegram Login Widget → JWT",
+      "created": "2026-04-19T21:04:48.051000000+00:00",
+      "ba_trace": [
+        "ROL-01"
+      ],
+      "name": "authenticated",
+      "iteration": "3+",
+      "description": "",
+      "id": "SYSROL-AUTHENTICATED",
+      "updated": "2026-05-06T18:39:58.839000000+00:00",
+      "source_file": "docs/13-roles/role-matrix.md"
+    }
+  },
+  {
+    "labels": [
+      "SystemRole"
+    ],
+    "properties": {
+      "system_only": true,
+      "migrated_at": "2026-05-06T18:39:58.839000000+00:00",
+      "auth": "Нет",
+      "created": "2026-04-19T21:04:48.051000000+00:00",
+      "ba_trace": [
+        "ROL-02"
+      ],
+      "name": "external",
+      "description": "",
+      "iteration": "1+",
+      "id": "SYSROL-EXTERNAL",
+      "updated": "2026-05-06T18:39:58.839000000+00:00",
+      "source_file": "docs/13-roles/role-matrix.md"
+    }
+  },
+  {
+    "labels": [
+      "SystemRole"
+    ],
+    "properties": {
+      "system_only": false,
+      "migrated_at": "2026-05-06T18:39:58.839000000+00:00",
+      "auth": "JWT-аутентификация",
+      "created": "2026-04-19T21:04:48.051000000+00:00",
+      "ba_trace": [
+        "ROL-03"
+      ],
+      "name": "admin",
+      "iteration": "2+",
+      "description": "",
+      "id": "SYSROL-ADMIN",
+      "updated": "2026-05-06T18:39:58.839000000+00:00",
+      "source_file": "docs/13-roles/role-matrix.md"
+    }
+  },
+  {
+    "labels": [
+      "SystemRole"
+    ],
+    "properties": {
+      "system_only": true,
+      "migrated_at": "2026-05-06T18:39:58.839000000+00:00",
+      "auth": "DB credentials",
+      "created": "2026-04-19T21:04:48.051000000+00:00",
+      "ba_trace": [],
+      "name": "system",
+      "description": "",
+      "iteration": "2+",
+      "id": "SYSROL-SYSTEM",
+      "updated": "2026-05-06T18:39:58.839000000+00:00",
+      "source_file": "docs/13-roles/role-matrix.md"
+    }
+  }
+]

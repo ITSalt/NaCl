@@ -1,0 +1,142 @@
+[
+  {
+    "labels": [
+      "EnumValue"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T14:03:29.638000000+00:00",
+      "created": "2026-04-13T14:03:29.638000000+00:00",
+      "description": "Ожидание оплаты. Заказ создан, но оплата еще не прошла.",
+      "id": "EN-orderstatus-statusy-zakaza-V01",
+      "updated": "2026-04-13T14:03:29.638000000+00:00",
+      "value": "AWAITING_PAYMENT",
+      "source_file": "docs/02-domain/enumerations/order-status.md"
+    }
+  },
+  {
+    "labels": [
+      "EnumValue"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T14:03:29.638000000+00:00",
+      "created": "2026-04-13T14:03:29.638000000+00:00",
+      "description": "Новый заказ. Оплата прошла (или не требуется), заказ ожидает подтверждения диспетчером.",
+      "id": "EN-orderstatus-statusy-zakaza-V02",
+      "updated": "2026-04-13T14:03:29.638000000+00:00",
+      "value": "NEW",
+      "source_file": "docs/02-domain/enumerations/order-status.md"
+    }
+  },
+  {
+    "labels": [
+      "EnumValue"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T14:03:29.638000000+00:00",
+      "created": "2026-04-13T14:03:29.638000000+00:00",
+      "description": "Подтвержден. Диспетчер принял заказ в работу.",
+      "id": "EN-orderstatus-statusy-zakaza-V03",
+      "updated": "2026-04-13T14:03:29.638000000+00:00",
+      "value": "CONFIRMED",
+      "source_file": "docs/02-domain/enumerations/order-status.md"
+    }
+  },
+  {
+    "labels": [
+      "EnumValue"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T14:03:29.638000000+00:00",
+      "created": "2026-04-13T14:03:29.638000000+00:00",
+      "description": "Назначен. Заказ привязан к маршруту и технику.",
+      "id": "EN-orderstatus-statusy-zakaza-V04",
+      "updated": "2026-04-13T14:03:29.638000000+00:00",
+      "value": "ASSIGNED",
+      "source_file": "docs/02-domain/enumerations/order-status.md"
+    }
+  },
+  {
+    "labels": [
+      "EnumValue"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T14:03:29.638000000+00:00",
+      "created": "2026-04-13T14:03:29.638000000+00:00",
+      "description": "В пути. Техник выехал к клиенту.",
+      "id": "EN-orderstatus-statusy-zakaza-V05",
+      "updated": "2026-04-13T14:03:29.638000000+00:00",
+      "value": "EN_ROUTE",
+      "source_file": "docs/02-domain/enumerations/order-status.md"
+    }
+  },
+  {
+    "labels": [
+      "EnumValue"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T14:03:29.638000000+00:00",
+      "created": "2026-04-13T14:03:29.638000000+00:00",
+      "description": "Прибыл. Техник на месте у клиента.",
+      "id": "EN-orderstatus-statusy-zakaza-V06",
+      "updated": "2026-04-13T14:03:29.638000000+00:00",
+      "value": "ARRIVED",
+      "source_file": "docs/02-domain/enumerations/order-status.md"
+    }
+  },
+  {
+    "labels": [
+      "EnumValue"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T14:03:29.638000000+00:00",
+      "created": "2026-04-13T14:03:29.638000000+00:00",
+      "description": "В процессе. Подготовительные работы (подключение, фотофиксация до зарядки).",
+      "id": "EN-orderstatus-statusy-zakaza-V07",
+      "updated": "2026-04-13T14:03:29.638000000+00:00",
+      "value": "IN_PROGRESS",
+      "source_file": "docs/02-domain/enumerations/order-status.md"
+    }
+  },
+  {
+    "labels": [
+      "EnumValue"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T14:03:29.638000000+00:00",
+      "created": "2026-04-13T14:03:29.638000000+00:00",
+      "description": "Зарядка. Активная сессия зарядки электромобиля.",
+      "id": "EN-orderstatus-statusy-zakaza-V08",
+      "updated": "2026-04-13T14:03:29.638000000+00:00",
+      "value": "CHARGING",
+      "source_file": "docs/02-domain/enumerations/order-status.md"
+    }
+  },
+  {
+    "labels": [
+      "EnumValue"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T14:03:29.638000000+00:00",
+      "created": "2026-04-13T14:03:29.638000000+00:00",
+      "description": "Завершен. Зарядка окончена, заказ закрыт.",
+      "id": "EN-orderstatus-statusy-zakaza-V09",
+      "updated": "2026-04-13T14:03:29.638000000+00:00",
+      "value": "COMPLETED",
+      "source_file": "docs/02-domain/enumerations/order-status.md"
+    }
+  },
+  {
+    "labels": [
+      "EnumValue"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T14:03:29.638000000+00:00",
+      "created": "2026-04-13T14:03:29.638000000+00:00",
+      "description": "Отменен клиентом.",
+      "id": "EN-orderstatus-statusy-zakaza-V10",
+      "updated": "2026-04-13T14:03:29.638000000+00:00",
+      "value": "CANCELLED",
+      "source_file": "docs/02-domain/enumerations/order-status.md"
+    }
+  }
+]

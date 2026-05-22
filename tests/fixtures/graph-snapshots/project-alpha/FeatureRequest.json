@@ -1,0 +1,98 @@
+[
+  {
+    "labels": [
+      "FeatureRequest"
+    ],
+    "properties": {
+      "source_skill": "nacl-sa-feature",
+      "updated_at": "2026-05-13T04:31:56.249000000+00:00",
+      "created_at": "2026-05-13T04:31:56.249000000+00:00",
+      "description": "Объединяет UI создания Session и первой Task в один экран; имя сессии становится необязательным и по умолчанию формируется как \"{Категория} — {дата/время}\".",
+      "id": "FR-001",
+      "title": "Inline-создание первой задачи + опциональное имя сессии с авто-генерацией",
+      "slug": "inline-first-task-and-auto-session-name",
+      "status": "spec-complete",
+      "markdown_path": ".tl/feature-requests/FR-001-inline-first-task-and-auto-session-name.md"
+    }
+  },
+  {
+    "labels": [
+      "FeatureRequest"
+    ],
+    "properties": {
+      "source_skill": "nacl-sa-feature",
+      "updated_at": "2026-05-13T09:11:02.429000000+00:00",
+      "created_at": "2026-05-13T09:11:02.429000000+00:00",
+      "description": "На странице задачи показать читаемый контекст сессии (Session.name) над заголовком \"Задача\" в виде кликабельной хлебной крошки. Заменяет сырой UUID сессии. API: GET /tasks/:id обогащается блоком session: {id, name}.",
+      "id": "FR-002",
+      "title": "Session context on task detail page",
+      "slug": "session-context-on-task-page",
+      "markdown_path": ".tl/feature-requests/FR-002-session-context-on-task-page.md",
+      "status": "spec-complete"
+    }
+  },
+  {
+    "labels": [
+      "FeatureRequest"
+    ],
+    "properties": {
+      "source_skill": "nacl-sa-feature",
+      "updated_at": "2026-05-18T07:48:54.900000000+00:00",
+      "created_at": "2026-05-18T07:48:54.900000000+00:00",
+      "description": "Extend ModelProfile with routing metadata (model_kind, api_shape, endpoint_path, capabilities) and create ChatCompletionLog for text-LLM telemetry. Enables admin to register new api.kie.example.invalid text models (gpt-5-2, gpt-5-4, gemini-2.5-flash, gemini-3-flash-v1beta) and dispatcher (UC-202) to select correct HTTP adapter per call.",
+      "id": "FR-003",
+      "title": "api.kie.example.invalid text-LLM models support",
+      "slug": "kie-ai-text-llm-models",
+      "markdown_path": ".tl/feature-requests/FR-003-kie-ai-text-llm-models.md",
+      "status": "spec-complete"
+    }
+  },
+  {
+    "labels": [
+      "FeatureRequest"
+    ],
+    "properties": {
+      "source_skill": "nacl-sa-feature",
+      "updated_at": "2026-05-18T16:15:32.076000000+00:00",
+      "created_at": "2026-05-18T16:15:32.076000000+00:00",
+      "description": "Replace free-text model_name in ModelProfile form with provider-filtered ComboBox sourced from new ProviderModelCatalogEntry (hybrid seed + manual Refresh). On model change, autofill api_shape/endpoint_path/model_kind/capabilities from catalog with diff banner and allow override (overrides_catalog flag). New UC-306 manages catalog browsing + per-provider Refresh.",
+      "id": "FR-004",
+      "title": "ModelProfile model picker + provider model catalog",
+      "slug": "model-picker-and-catalog",
+      "status": "spec-complete",
+      "markdown_path": ".tl/feature-requests/FR-004-model-picker-and-catalog.md"
+    }
+  },
+  {
+    "labels": [
+      "FeatureRequest"
+    ],
+    "properties": {
+      "source_skill": "nacl-sa-feature",
+      "updated_at": "2026-05-19T12:55:43.871000000+00:00",
+      "created_at": "2026-05-19T12:55:43.871000000+00:00",
+      "description": "Make workflow step order visible and editable: add step_order to WorkflowStepConfig, Flow-view with drag-and-drop on UC-305 page, grouped+numbered dropdown on UC-302 page.",
+      "id": "FR-005",
+      "title": "Workflow Step Ordering (Flow-view + Grouped Dropdown)",
+      "slug": "workflow-step-ordering",
+      "status": "spec-complete",
+      "markdown_path": ".tl/feature-requests/FR-005-workflow-step-ordering.md"
+    }
+  },
+  {
+    "labels": [
+      "FeatureRequest"
+    ],
+    "properties": {
+      "source_skill": "nacl-sa-feature",
+      "updated_at": "2026-05-21T10:59:24.937000000+00:00",
+      "created_at": "2026-05-21T10:59:24.937000000+00:00",
+      "description": "End user restarts a failed/timeout task via POST /api/content/tasks/:taskId/restart. Backend atomically resets status to queued and re-enqueues the first step; frontend shows RestartTaskButton on the task detail page.",
+      "id": "FR-006",
+      "title": "Restart Failed Task",
+      "slug": "restart-failed-task",
+      "markdown_path": ".tl/feature-requests/FR-006-restart-failed-task.md",
+      "status": "spec-complete"
+    }
+  }
+]

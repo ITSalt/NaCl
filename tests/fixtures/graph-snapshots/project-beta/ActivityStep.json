@@ -1,0 +1,129 @@
+[
+  {
+    "labels": [
+      "ActivityStep"
+    ],
+    "properties": {
+      "actor": "User",
+      "form_ref": "FORM-MeetingCatalog",
+      "description": "AUTHOR opens the meeting catalog page.",
+      "id": "UC-001-AS01",
+      "updated": "2026-05-18T07:04:19.567000000+00:00",
+      "order": 1
+    }
+  },
+  {
+    "labels": [
+      "ActivityStep"
+    ],
+    "properties": {
+      "actor": "System",
+      "description": "System loads Meetings owned by the current AUTHOR, sorted by updated_at descending.",
+      "id": "UC-001-AS02",
+      "updated": "2026-05-18T07:04:19.567000000+00:00",
+      "order": 2
+    }
+  },
+  {
+    "labels": [
+      "ActivityStep"
+    ],
+    "properties": {
+      "actor": "System",
+      "form_ref": "FORM-MeetingCatalog",
+      "description": "System renders one row per Meeting with title (or filename fallback), status badge, language, uploaded_at, and duration_sec from Recording.",
+      "id": "UC-001-AS03",
+      "updated": "2026-05-18T07:04:19.567000000+00:00",
+      "order": 3
+    }
+  },
+  {
+    "labels": [
+      "ActivityStep"
+    ],
+    "properties": {
+      "actor": "System",
+      "form_ref": "FORM-MeetingCatalog",
+      "description": "For rows in transient states (UPLOADING, TRANSCRIBING, PROTOCOL_GENERATING), System auto-refreshes the row status periodically.",
+      "id": "UC-001-AS04",
+      "updated": "2026-05-18T07:04:19.567000000+00:00",
+      "order": 4
+    }
+  },
+  {
+    "labels": [
+      "ActivityStep"
+    ],
+    "properties": {
+      "actor": "User",
+      "form_ref": "FORM-MeetingDetail",
+      "description": "AUTHOR navigates to a specific meeting (from catalog or direct link).",
+      "id": "UC-002-AS01",
+      "updated": "2026-05-18T07:04:19.567000000+00:00",
+      "order": 1
+    }
+  },
+  {
+    "labels": [
+      "ActivityStep"
+    ],
+    "properties": {
+      "actor": "System",
+      "description": "System loads Meeting + Recording + most recent TranscriptionJob + most recent ProtocolGenerationJob + existence flags for Transcript and Protocol.",
+      "id": "UC-002-AS02",
+      "updated": "2026-05-18T07:04:19.567000000+00:00",
+      "order": 2
+    }
+  },
+  {
+    "labels": [
+      "ActivityStep"
+    ],
+    "properties": {
+      "actor": "System",
+      "form_ref": "FORM-MeetingDetail",
+      "description": "System renders the detail panel: title, language, status badge, recording metadata, and current job error_reason when Meeting.status=FAILED.",
+      "id": "UC-002-AS03",
+      "updated": "2026-05-18T07:04:19.567000000+00:00",
+      "order": 3
+    }
+  },
+  {
+    "labels": [
+      "ActivityStep"
+    ],
+    "properties": {
+      "actor": "System",
+      "form_ref": "FORM-MeetingDetail",
+      "description": "System renders conditional action links: View transcript (status >= TRANSCRIPT_READY), Review/Edit protocol (status >= PROTOCOL_READY), Export PDF (status in {PROTOCOL_READY, EDITED}), Delete meeting (always).",
+      "id": "UC-002-AS04",
+      "updated": "2026-05-18T07:04:19.567000000+00:00",
+      "order": 4
+    }
+  },
+  {
+    "labels": [
+      "ActivityStep"
+    ],
+    "properties": {
+      "actor": "User",
+      "description": "AUTHOR clicks Delete on the meeting detail page (UC-002).",
+      "id": "UC-003-AS01",
+      "updated": "2026-05-18T07:04:19.567000000+00:00",
+      "order": 1
+    }
+  },
+  {
+    "labels": [
+      "ActivityStep"
+    ],
+    "properties": {
+      "actor": "System",
+      "form_ref": "FORM-MeetingDeleteConfirm",
+      "description": "System shows confirmation dialog showing the meeting title. If any job is IN_PROGRESS, the dialog warns that the in-flight job will be marked FAILED.",
+      "id": "UC-003-AS02",
+      "updated": "2026-05-18T07:04:19.567000000+00:00",
+      "order": 2
+    }
+  }
+]

@@ -1,0 +1,68 @@
+[
+  {
+    "labels": [
+      "Form"
+    ],
+    "properties": {
+      "name": "Meeting catalog",
+      "description": "List view of all meetings owned by the current author. Each row is a Meeting with key metadata and status. Auto-refreshes for transient statuses.",
+      "id": "FORM-MeetingCatalog",
+      "updated": "2026-05-18T07:04:29.613000000+00:00"
+    }
+  },
+  {
+    "labels": [
+      "Form"
+    ],
+    "properties": {
+      "name": "Meeting detail",
+      "description": "Detail panel for a single meeting: shows Meeting + Recording metadata, current job error_reason on FAILED, and conditional action links (view transcript / review protocol / export PDF / delete).",
+      "id": "FORM-MeetingDetail",
+      "updated": "2026-05-18T07:04:29.613000000+00:00"
+    }
+  },
+  {
+    "labels": [
+      "Form"
+    ],
+    "properties": {
+      "name": "Confirm meeting deletion",
+      "description": "Confirmation dialog before destructive cascade-delete. Warns if a job is IN_PROGRESS.",
+      "id": "FORM-MeetingDeleteConfirm",
+      "updated": "2026-05-18T07:04:29.613000000+00:00"
+    }
+  },
+  {
+    "labels": [
+      "Form"
+    ],
+    "properties": {
+      "name": "Upload meeting video",
+      "description": "File picker + language hint + optional title. Submits to server, which streams in chunks to EXT-04 with progress reporting; inline validation errors per BRQ-001/002/003.",
+      "id": "FORM-MeetingUpload",
+      "updated": "2026-05-18T07:06:40.999000000+00:00"
+    }
+  },
+  {
+    "labels": [
+      "Form"
+    ],
+    "properties": {
+      "name": "Transcript view",
+      "description": "Read-only view of the verbatim transcript with speaker labels and timestamps. Header shows transcript metadata. Provides a one-click Download action.",
+      "id": "FORM-TranscriptView",
+      "updated": "2026-05-18T07:07:50.001000000+00:00"
+    }
+  },
+  {
+    "labels": [
+      "Form"
+    ],
+    "properties": {
+      "name": "Protocol editor",
+      "description": "Markdown editor for the meeting protocol with side-by-side rendered preview. Header shows version + edit_count + last_edited_at. Save action increments version and edit_count per BRQ-014/015.",
+      "id": "FORM-ProtocolEditor",
+      "updated": "2026-05-18T07:09:31.140000000+00:00"
+    }
+  }
+]

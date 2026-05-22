@@ -1,0 +1,37 @@
+# Fixture project — project-alpha-blocked
+# ===================================================================
+# This config is DELIBERATELY MALFORMED for the W4 fixture: it
+# declares project_kind: standard AND git.strategy: direct, which is
+# a configuration error (direct-strategy-on-standard-project).
+#
+# The fixture exercises condition #6 of the six Strict-Only block
+# conditions (PR/CI skipped without prototype + signed exception).
+#
+# A real project-alpha config.yaml that wanted to keep
+# direct-strategy releases would need to declare project_kind:
+# prototype AND ship a signed exception with affected_gates:
+# [skipped-pr, skipped-ci].
+# ===================================================================
+
+project: project-alpha
+
+project_kind: standard
+
+git:
+  strategy: direct                # ← deliberately misaligned with project_kind
+  main_branch: main
+  merge_method: squash
+
+deploy:
+  production:
+    # NB: no URL configured — this also exercises the post-W4
+    # "no production URL without exception" refusal (downstream of
+    # condition #5 / missing-prod-golden-path).
+    health_endpoint: /api/health
+    ci_timeout: 600
+  ci_platform: github_actions
+
+yougile:
+  columns:
+    to_release: "ToRelease"
+    done: "Done"

@@ -1,0 +1,132 @@
+[
+  {
+    "labels": [
+      "Component"
+    ],
+    "properties": {
+      "kind": "page",
+      "module": "M-WEB-UI",
+      "name": "App",
+      "description": "Top-level layout host: boots the project registry, manages WebSocket subscriptions, and composes all child components into the app chrome.",
+      "id": "CMP-APP",
+      "source_file": "web/src/App.tsx"
+    }
+  },
+  {
+    "labels": [
+      "Component"
+    ],
+    "properties": {
+      "kind": "panel",
+      "module": "M-WEB-UI",
+      "name": "Sidebar",
+      "description": "Left-rail panel displaying the board tree grouped by kind, with per-board sync-status dots and skill action buttons. Each board item shows displayName (the relatedId, e.g. \"UC-004\") as the primary label and, when available, the graph-resolved label (UseCase.name or BusinessProcess.name) as a secondary subtitle below it.",
+      "id": "CMP-SIDEBAR",
+      "source_file": "web/src/components/Sidebar.tsx"
+    }
+  },
+  {
+    "labels": [
+      "Component"
+    ],
+    "properties": {
+      "kind": "host",
+      "module": "M-WEB-UI",
+      "name": "Canvas Host",
+      "description": "Wraps the Excalidraw editor, loads board scene from the store, debounces edits back to the server, and renders diff-overlay highlights on regeneration.",
+      "id": "CMP-CANVAS-HOST",
+      "source_file": "web/src/components/CanvasHost.tsx"
+    }
+  },
+  {
+    "labels": [
+      "Component"
+    ],
+    "properties": {
+      "kind": "widget",
+      "module": "M-WEB-UI",
+      "name": "Status Bar",
+      "description": "Footer widget showing the selected board sync state, last-generated timestamp, and quick-action buttons for regenerate / sync-to-graph.",
+      "id": "CMP-STATUS-BAR",
+      "source_file": "web/src/components/StatusBar.tsx"
+    }
+  },
+  {
+    "labels": [
+      "Component"
+    ],
+    "properties": {
+      "kind": "panel",
+      "module": "M-WEB-UI",
+      "name": "Run Panel",
+      "description": "Floating overlay listing active and recent skill runs with phase icons, elapsed time, and batch progress.",
+      "id": "CMP-RUN-PANEL",
+      "source_file": "web/src/components/RunPanel.tsx"
+    }
+  },
+  {
+    "labels": [
+      "Component"
+    ],
+    "properties": {
+      "kind": "panel",
+      "module": "M-WEB-UI",
+      "name": "Snapshot Browser",
+      "description": "Right-rail panel listing board snapshots with relative timestamps and a diff-view toggle for comparing snapshot state against live canvas.",
+      "id": "CMP-SNAPSHOT-BROWSER",
+      "source_file": "web/src/components/SnapshotBrowser.tsx"
+    }
+  },
+  {
+    "labels": [
+      "Component"
+    ],
+    "properties": {
+      "kind": "modal",
+      "module": "M-WEB-UI",
+      "name": "Project Picker",
+      "description": "Inline header dropdown/modal for switching the active project, showing project name, path, and last-active timestamp.",
+      "id": "CMP-PROJECT-PICKER",
+      "source_file": "web/src/components/ProjectPicker.tsx"
+    }
+  },
+  {
+    "labels": [
+      "Component"
+    ],
+    "properties": {
+      "kind": "widget",
+      "module": "M-WEB-UI",
+      "name": "Unregistered Banner",
+      "description": "Dismissible banner shown when the server cwd project is not registered in the project registry, prompting the user to run /nacl-init.",
+      "id": "CMP-UNREGISTERED-BANNER",
+      "source_file": "web/src/components/UnregisteredBanner.tsx"
+    }
+  },
+  {
+    "labels": [
+      "Component"
+    ],
+    "properties": {
+      "kind": "widget",
+      "module": "M-WEB-UI",
+      "name": "Empty Projects Placeholder",
+      "description": "Canvas-area placeholder rendered when the project registry is empty.",
+      "id": "CMP-EMPTY-PROJECTS-PLACEHOLDER",
+      "source_file": "web/src/components/EmptyProjectsPlaceholder.tsx"
+    }
+  },
+  {
+    "labels": [
+      "Component"
+    ],
+    "properties": {
+      "kind": "modal",
+      "module": "M-WEB-UI",
+      "name": "Regen Confirm Dialog",
+      "description": "Modal dialog triggered when the analyst initiates regeneration on a dirty board.",
+      "id": "CMP-REGEN-CONFIRM-DIALOG",
+      "source_file": "web/src/components/RegenConfirmDialog.tsx"
+    }
+  }
+]

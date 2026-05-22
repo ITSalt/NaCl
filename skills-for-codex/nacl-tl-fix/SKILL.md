@@ -106,7 +106,7 @@ commit**, regardless of its message subject.
 
 ### Why this gate exists
 
-Karatov DIAGNOSTIC-REPORT.md (2026-05-18) measured 39% of fixes never
+Project-Alpha DIAGNOSTIC-REPORT.md (2026-05-18) measured 39% of fixes never
 updated docs. The canonical episode: `a7eb747` "docs(SA): UC-105/UC-106/
 UC-107 post-commit emit timing (L2)" landed AFTER the FIX-B code wave
 (`01f2fcb`, `135b14b`, `6ed12ac`, `3acb2fd`) — docs caught up to code
@@ -176,7 +176,7 @@ First code-fix commit: <SHA>
 
 The W10 Spec-First prerequisite requires that every L1+ fix be
 preceded by a graph mutation or a .tl/* schema artifact change in
-the same fix chain. Karatov 2026-05-18 DIAGNOSTIC-REPORT measured
+the same fix chain. Project-Alpha 2026-05-18 DIAGNOSTIC-REPORT measured
 39% of fixes never updated docs; this gate refuses to ship into
 that pattern.
 
@@ -194,7 +194,7 @@ Status: BLOCKED
 Workflow detail: spec-first-prerequisite-missing
 ```
 
-### Worked example — the Karatov 39% pattern
+### Worked example — the Project-Alpha 39% pattern
 
 Fix chain on `main` between Wave 4 close and the FIX-B audit:
 

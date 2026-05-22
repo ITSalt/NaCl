@@ -1,0 +1,96 @@
+[
+  {
+    "labels": [
+      "ValidationReport"
+    ],
+    "properties": {
+      "summary": "L1-L8 internal consistency check passed. All ProcessGroups contain BPs (L1). All has_decomposition BPs have workflows (L2). All workflow steps have actors (L3). 2 UI-feedback steps (BP-001-S03-REJ, BP-001-S07) lack artifact_name ��� accepted as pure UI messages (L4). All entities have PRODUCES/CONSUMES (L5). All roles have PERFORMS; all BPs with manual steps have a role (L6). EXT-01 (User) glossary gap resolved via GLO-027 (L7). BRQ-019 APPLIES_TO gap resolved by linking to OBJ-003/OBJ-005 (L8).",
+      "phase": "BA",
+      "checks_l4_artifact_binding": "pass-with-warnings",
+      "created": "2026-05-17",
+      "checks_l5_entity_matrix": "pass",
+      "warnings_accepted": 2,
+      "critical_errors": 0,
+      "checks_l2_decomposition": "pass",
+      "checks_l1_process_completeness": "pass",
+      "checks_l6_role_matrix": "pass",
+      "checks_l3_actor_binding": "pass",
+      "checks_l7_glossary": "pass-after-fix",
+      "id": "VAL-BA-001",
+      "updated": "2026-05-17",
+      "warnings_resolved": 2,
+      "checks_l8_rules": "pass-after-fix",
+      "run_date": "2026-05-17",
+      "status": "passed"
+    }
+  },
+  {
+    "labels": [
+      "ValidationReport"
+    ],
+    "properties": {
+      "coverage_role": "100% (2/2 BA roles MAPPED_TO)",
+      "coverage_entity": "100% (6/6 BA entities REALIZED_AS; 43/43 attributes TYPED_AS)",
+      "created": "2026-05-18T07:18:59.462000000+00:00",
+      "critical_count": 34,
+      "fixes_pending": "Fix A: 13 Module->Requirement HAS_REQUIREMENT edges for NFRs. Fix B: 28 WorkflowStep->UseCase AUTOMATES_AS edges (BP-001 8 steps -> UC-100; BP-002 10 -> UC-200; BP-004 10 -> UC-300). Fix C: system_uc=true on UC-001/002/003/201/301/302 (SA-only or BPs with no decomposed BA steps). Fix D: 4 IMPLEMENTED_BY edges - BRQ-004 -> NFR-004 + RQ-012; BRQ-019 -> NFR-003; BRQ-020 -> NFR-005.",
+      "findings": "CRITICAL: L2.1 (9 disconnected NFRs); XL6.1 (22 automated steps without AUTOMATES_AS); XL9.1 (3 unimplemented BRQs: BRQ-004, BRQ-019, BRQ-020). WARNING: L3.2 (9 NFRs not linked to any UC, same as L2.1); XL6.2 (9 UCs untraced from BA, none flagged system_uc). INFO: L4.2 (3 unreferenced attrs: TranscriptionJob.status, ProtocolGenerationJob.status, ProtocolGenerationJob.error_reason - by design); L6.3 (7 cross-module RELATES_TO edges - by design toward Meeting and Transcript). PASS: L1 (data consistency), L2.2-L2.5 (connectivity), L3.1/3.3-3.6 (UC completeness), L4.1/4.3/4.4 (MAPS_TO integrity), L5 (UC-Form), L6.1/6.2/6.4 (cross-module), XL7 (entity coverage), XL8 (role coverage).",
+      "overall_status": "FAIL",
+      "info_count": 10,
+      "user_decision": "pause_for_review",
+      "layer": "SA",
+      "coverage_uc": "0% (0/22 automated WorkflowSteps have AUTOMATES_AS)",
+      "warning_count": 9,
+      "id": "VR-SA-001",
+      "updated": "2026-05-18T07:18:59.462000000+00:00",
+      "coverage_rule": "85.7% (18/21 BRQ IMPLEMENTED_BY; BRQ-004/019/020 unmapped)"
+    }
+  },
+  {
+    "labels": [
+      "ValidationReport"
+    ],
+    "properties": {
+      "coverage_role": "100% (2/2 BA roles MAPPED_TO)",
+      "coverage_entity": "100% (6/6 BA entities REALIZED_AS)",
+      "notes": "Fixes A,B,C,D successfully reduced criticals from 34 to 3 and warnings from 9 to 9. XL6 went 0% to 100%. XL9 went 85.7% to 100% by edge presence, but XL9.3 integrity check requires those Requirements to also be linked to UseCases. Phase 8 finalize blocked by XL9.3 critical.",
+      "created": "2026-05-18T07:26:28.550000000+00:00",
+      "findings": "CRITICAL: XL9.3 x3 - BRQ-004 IMPLEMENTED_BY NFR-004, BRQ-019 IMPLEMENTED_BY NFR-003, BRQ-020 IMPLEMENTED_BY NFR-005, where each NFR target is not linked to any UseCase (orphan Requirement). Root cause: NFR-001..NFR-009 are linked to Modules via HAS_REQUIREMENT (Fix A) but not to any UseCase. WARNING: L3.2 x9 - NFR-001..NFR-009 are orphan Requirements w.r.t. UseCases. L4.1 x15 reported but ALL are display/action fields (buttons, headers) - false positives due to FormField.field_category being NULL on 45/45 FormFields (see Step 0d). After backfilling field_category=display|action, those 15 become exempt. INFO: L4.2 x3 attributes not referenced by any FormField (TranscriptionJob.status, ProtocolGenerationJob.status, ProtocolGenerationJob.error_reason). PASS: L1, L2, L3.1/3.3-3.6, L4.3-4.4, L5, L6, L7, XL6 100%, XL7 100%, XL8 100%, XL9.1/9.4 100%.",
+      "critical_count": 18,
+      "fixes_pending": "Link NFR-001..NFR-009 to relevant UseCases via UseCase-[:HAS_REQUIREMENT]->NFR (currently only Module-[:HAS_REQUIREMENT]->NFR exists from Fix A). Suggested mapping: NFR-001 (500MB upload) -> UC-100; NFR-002 (async jobs) -> UC-100/UC-200/UC-300; NFR-003 (no SLA) -> UC-200/UC-300; NFR-004 (RU/EN) -> UC-100/UC-200/UC-300; NFR-005 (storage retention) -> UC-100; NFR-006 (markdown canonical) -> UC-300; NFR-007 (no auth MVP) -> UC-001/002/003 (system UCs); NFR-008 (failure surfacing) -> UC-200/UC-300; NFR-009 (single-user) -> UC-001. Also backfill FormField.field_category for 45 fields via /nacl-sa-flags to eliminate L4.1 false-positives.",
+      "overall_status": "FAIL",
+      "info_count": 6,
+      "user_decision": "review_required",
+      "findings_after_flags_backfill": "After backfill expected: CRITICAL 3 (XL9.3 only), WARNING 9, INFO 6. Phase 8 blocked by 3 XL9.3 critical.",
+      "layer": "SA",
+      "coverage_uc": "100% (28/28 automated WorkflowSteps AUTOMATES_AS)",
+      "findings_strict": "CRITICAL strict total 18: XL9.3 x3 (BRQ-004->NFR-004; BRQ-019->NFR-003; BRQ-020->NFR-005). L4.1 x15 (buttons/headers without MAPS_TO) all false positives due to FormField.field_category NULL on 45/45 fields. Remediation: /nacl-sa-flags backfill-all. WARNING: L3.2 x9 (NFR-001..NFR-009 orphan from UCs). INFO: L4.2 x3.",
+      "warning_count": 9,
+      "id": "VR-SA-002",
+      "updated": "2026-05-18T07:26:57.118000000+00:00",
+      "coverage_rule": "100% (21/21 BRQ IMPLEMENTED_BY)"
+    }
+  },
+  {
+    "labels": [
+      "ValidationReport"
+    ],
+    "properties": {
+      "coverage_role": "100% (2/2 BA roles MAPPED_TO)",
+      "coverage_entity": "100% (6/6 BA entities REALIZED_AS)",
+      "notes": "Fix E (17 UseCase-[:HAS_REQUIREMENT]->NFR edges) resolved 3 real XL9.3 CRITICAL. Fix F (FormField.field_category backfill: 45 fields -> input/action/display) resolved 15 L4.1 false-positive CRITICAL. Fix G (DomainEntity.shared=false on 6 entities) silenced L6.1 noise. Fix H (TranscriptionJob/ProtocolGenerationJob.status/error_reason marked internal=true) silenced 4 L4.2 INFO. All previous warnings cleared - the 9 L3.2 WARNINGs (orphaned NFR requirements) were eliminated when NFRs were attached to UseCases via Fix E. Graph is clean. Ready for Phase 8 finalize.",
+      "created": "2026-05-18T00:00:00.000000000+00:00",
+      "critical_count": 0,
+      "fixes_pending": "None - all critical and warning findings resolved.",
+      "findings": "L1-L7 internal PASS (0 issues). XL6-XL9 cross-validation PASS (0 issues). Coverage metrics: UC 100%, Entity 100%, Role 100%, Rule 100%. INFO observations: 7 cross-module RELATES_TO edges (L6.3 informational), 2 BusinessRoles both map to single AUTHOR SystemRole (XL8.3, intentional N:1 collapse), 16 EnumValues use both .value and .label properties (L1.5 dual convention, acceptable since .value is populated for all). Pre-flight: 0 schema drift, all exemption properties 100% populated.",
+      "overall_status": "PASS",
+      "info_count": 4,
+      "user_decision": "pending - awaiting confirmation to proceed to /nacl-sa-finalize",
+      "layer": "SA",
+      "coverage_uc": "100% (28/28 automated WorkflowSteps AUTOMATES_AS)",
+      "warning_count": 0,
+      "id": "VR-SA-003",
+      "coverage_rule": "100% (21/21 BRQ IMPLEMENTED_BY)"
+    }
+  }
+]

@@ -1,0 +1,42 @@
+Underlying refusals (sourced from project-alpha-blocked)
+==========================================================
+
+These are the six Strict-Only gate refusals that emergency mode
+bypasses in this fixture. Each refusal is computed by the
+corresponding gate's normal evaluation; emergency mode does NOT
+prevent the evaluation — only the halt.
+
+# 1. direct-strategy-on-standard-project
+   Source: config.yaml declares project_kind: standard AND git.strategy: direct.
+   Step: 0 (prelude).
+
+# 2. upstream-sync-unverified
+   Source: .tl/tl-sync-verdict.json → verdict: "UNVERIFIED",
+   workflow_detail: "wire-evidence-missing".
+   Step: 2 (UC status gate prelude).
+
+# 3. upstream-qa-unverified
+   Source: .tl/tl-qa-aggregate.json → aggregate: "UNVERIFIED",
+   missing_mandatory_evidence on UC-200, UC-300.
+   Step: 2 (UC status gate prelude).
+
+# 4. missing-prod-golden-path
+   Source: .tl/tl-qa-aggregate.json → qa-stage:prod-golden-path: NOT_RUN
+   on UC-200 (matrix marks mandatory).
+   Step: 3b (deploy health check; W4 strict — HEALTH_ONLY is not a substitute).
+
+# 5. graph-stale
+   Source: .tl/graph-baseline-stale.json → baseline 970 nodes;
+   live capture (simulated) returns 1083 nodes; +113 delta.
+   Step: 7 (graph stamping pre-flight).
+
+# 6. sa-validate-critical
+   Source: .tl/sa-validate-report.json → status: "FAIL",
+   critical_count: 1.
+   Step: 7 (alongside graph evaluation).
+
+Without emergency mode (and without any signed exception), the
+release skill emits the FIRST refusal it encounters in step order
+and halts. With emergency mode, every refusal is printed as a
+bypass banner and the run advances to a (emergency-bypass)
+terminal headline.

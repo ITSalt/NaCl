@@ -1,0 +1,132 @@
+[
+  {
+    "labels": [
+      "DomainAttribute"
+    ],
+    "properties": {
+      "name": "id",
+      "data_type": "string",
+      "description": "Project identifier (slug from registry).",
+      "id": "DA-PROJECT-ID",
+      "source_file": "server/src/services/project-registry.ts",
+      "required": true
+    }
+  },
+  {
+    "labels": [
+      "DomainAttribute"
+    ],
+    "properties": {
+      "data_type": "string",
+      "name": "name",
+      "description": "Human-readable project name.",
+      "id": "DA-PROJECT-NAME",
+      "required": true,
+      "source_file": "server/src/services/project-registry.ts"
+    }
+  },
+  {
+    "labels": [
+      "DomainAttribute"
+    ],
+    "properties": {
+      "name": "root",
+      "data_type": "string",
+      "description": "Absolute filesystem path to project root.",
+      "id": "DA-PROJECT-ROOT",
+      "source_file": "server/src/services/project-registry.ts",
+      "required": true
+    }
+  },
+  {
+    "labels": [
+      "DomainAttribute"
+    ],
+    "properties": {
+      "data_type": "Date",
+      "name": "createdAt",
+      "description": "When the project was registered.",
+      "id": "DA-PROJECT-CREATED-AT",
+      "required": true,
+      "source_file": "server/src/services/project-registry.ts"
+    }
+  },
+  {
+    "labels": [
+      "DomainAttribute"
+    ],
+    "properties": {
+      "data_type": "Date",
+      "name": "lastUsed",
+      "description": "Last time the project was activated.",
+      "id": "DA-PROJECT-LAST-USED",
+      "required": true,
+      "source_file": "server/src/services/project-registry.ts"
+    }
+  },
+  {
+    "labels": [
+      "DomainAttribute"
+    ],
+    "properties": {
+      "data_type": "string",
+      "name": "name",
+      "description": "Board filename stem (without .excalidraw).",
+      "id": "DA-BOARD-NAME",
+      "required": true,
+      "source_file": "server/src/services/boards.ts"
+    }
+  },
+  {
+    "labels": [
+      "DomainAttribute"
+    ],
+    "properties": {
+      "name": "kind",
+      "data_type": "enum<BoardKind>",
+      "description": "Categorical kind of board (domain-model, context-map, activity, process, import, other).",
+      "id": "DA-BOARD-KIND",
+      "required": true,
+      "source_file": "server/src/services/boards.ts"
+    }
+  },
+  {
+    "labels": [
+      "DomainAttribute"
+    ],
+    "properties": {
+      "data_type": "string",
+      "name": "group",
+      "description": "UI grouping label derived from board kind.",
+      "id": "DA-BOARD-GROUP",
+      "required": true,
+      "source_file": "server/src/services/boards.ts"
+    }
+  },
+  {
+    "labels": [
+      "DomainAttribute"
+    ],
+    "properties": {
+      "name": "displayName",
+      "data_type": "string",
+      "description": "Human-readable board title shown in the navigator.",
+      "id": "DA-BOARD-DISPLAY-NAME",
+      "required": true,
+      "source_file": "server/src/services/boards.ts"
+    }
+  },
+  {
+    "labels": [
+      "DomainAttribute"
+    ],
+    "properties": {
+      "name": "mtime",
+      "data_type": "Date",
+      "description": "Last filesystem modification timestamp.",
+      "id": "DA-BOARD-MTIME",
+      "required": true,
+      "source_file": "server/src/services/boards.ts"
+    }
+  }
+]

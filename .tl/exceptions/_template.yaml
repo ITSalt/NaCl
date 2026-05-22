@@ -1,0 +1,136 @@
+# NaCl Signed Exception — Template
+# ===================================================================
+# Schema introduced in: W4-blocking-release.
+# Schema reference: nacl-tl-release/SKILL.md § "Signed Exception
+# Schema (Binding)" — both Claude and Codex flavors.
+#
+# This file is a TEMPLATE. Copy it to .tl/exceptions/<exception_id>.yaml
+# and fill every required field. The release skill validates the file
+# against this schema; invalid files do NOT override anything.
+#
+# ------------------------------------------------------------------
+# Binding rules (all four are non-negotiable)
+# ------------------------------------------------------------------
+#
+# 1. Expired exceptions automatically become blockers. The release
+#    skill compares `expiry` against the wall clock at the moment it
+#    evaluates the gate. An exception whose `expiry` is in the past
+#    is treated as ABSENT — the gate it referenced refuses VERIFIED
+#    again. There is no grace period.
+#
+# 2. No silent extension. To extend the validity window of an
+#    existing exception, file a NEW exception with a new
+#    `exception_id`. Editing the `expiry` of an existing file does
+#    NOT count as a renewal and is detected as schema tampering
+#    (workflow detail `exception-id-reused-without-renewal`).
+#
+# 3. Renewal requires a new `exception_id`. The `exception_id`
+#    format `EXC-YYYY-MM-DD-<slug>` includes the creation date and
+#    a short slug; a renewal carries the renewal date in its id,
+#    and the prior exception id is recorded in the renewal's
+#    `reason` field.
+#
+# 4. No blanket overrides. `affected_gates` MUST enumerate the
+#    specific gate names. A list of `["*"]`, `["all"]`, or any
+#    catch-all token is rejected (workflow detail
+#    `exception-affects-blanket-gates`). The set of recognised
+#    gate names is defined per skill in its "Strict-Only Gates"
+#    section; the release skill currently recognises:
+#
+#      - skipped-pr, skipped-ci                  (W4 PR/CI carve-out)
+#      - upstream-sync-unverified                (W2 / W4)
+#      - upstream-qa-unverified                  (W3 / W4)
+#      - graph-stale                             (W4)
+#      - sa-validate-critical                    (W4)
+#      - missing-prod-golden-path                (W4)
+#      - LIVE_PROVIDER_SMOKE,
+#        PROD_GOLDEN_PATH                        (W3 stage names; W4 reader)
+#      - repo-checks-RED, repo-checks-UNRUN,
+#        repo-checks-UNRUNNABLE                  (W1)
+#      - nav-actions-missing,
+#        nav-actions-no-natural-entrypoint-evidence
+#                                                (W7 / W1)
+#      - wire-evidence-missing                   (W2)
+#      - project_kind-downgrade-unsigned         (W1 / W4)
+#      - clean-checkout-artifact-missing,
+#        clean-checkout-commit-mismatch,
+#        clean-checkout-install-failed,
+#        clean-checkout-build-failed,
+#        clean-checkout-prisma-generate-missing,
+#        clean-checkout-pm-ambiguous,
+#        clean-checkout-test-database-url-undefined,
+#        clean-checkout-migrate-failed,
+#        clean-checkout-smoke-failed,
+#        clean-checkout-entrypoint-no-port,
+#        clean-checkout-runtime-assets-missing   (W9 / nacl-tl-deliver
+#                                                 Step 4b; nacl-tl-deploy
+#                                                 Step 1.0)
+#
+#    Exceptions referencing a gate name outside this set are
+#    rejected as malformed.
+#
+# ------------------------------------------------------------------
+# Removed-flag rule (W4 binding)
+# ------------------------------------------------------------------
+#
+# The following flags were REMOVED from the chain in W4 and are
+# NOT re-enabled by a signed exception:
+#
+#   --skip-merge, --skip-verify, --skip-deploy, --no-test, --force
+#
+# (W3 also removed --skip-qa; W5 removes --skip-deliver; W9 removes
+# --skip-plan. None of these are re-enabled by exception.)
+#
+# Bulk-bypass needs route through emergency mode — see
+# `nacl-tl-core/references/emergency-mode.md`.
+#
+# ===================================================================
+
+exception_id: "EXC-YYYY-MM-DD-<slug>"
+# REQUIRED. Format-enforced: ^EXC-\d{4}-\d{2}-\d{2}-[a-z0-9][a-z0-9-]*$
+# Example: "EXC-2026-05-22-stale-graph-procontent"
+
+owner: "<github_handle_or_team>"
+# REQUIRED. GitHub handle (no @) or team name. Routed to in the
+# follow-up tag. Example: "magznikitin" or "team/nacl-release".
+
+reason: "<concrete justification, not 'urgent'>"
+# REQUIRED. The release skill rejects "urgent", "blocked", "needed
+# for demo", or any single-word justification. Must name the
+# specific risk being accepted and the compensating evidence.
+# Example: "Stale graph snapshot (970 vs 1083 nodes live) — FR-007
+# verified via direct Cypher query at 2026-05-22T08:30Z; graph
+# refresh PR #1234 in flight; release proceeds with snapshot
+# diff banner and 24h expiry."
+
+created_at: "<ISO-8601>"
+# REQUIRED. Wall-clock UTC at file creation. Example:
+# "2026-05-22T08:35:00Z".
+
+expiry: "<ISO-8601>"
+# REQUIRED. Wall-clock UTC at which this exception STOPS overriding.
+# After this timestamp the named gates refuse VERIFIED again, with
+# no grace period. Common windows: 24h for stale-graph carve-outs,
+# 7d for missing-evidence carve-outs, 30d MAX for any single
+# exception. Example: "2026-05-23T08:35:00Z".
+
+affected_gates:
+# REQUIRED. List. Must enumerate specific gate names (see header).
+# Blanket entries ([*], [all]) are rejected.
+  - "<gate_name>"
+  # Example:
+  #   - "graph-stale"
+  #   - "missing-prod-golden-path"
+
+affected_projects:
+# REQUIRED. List of project ids (typically the config.yaml `project`
+# field, or a workspace slug). Exception applies ONLY to listed
+# projects.
+  - "<project_id>"
+
+followup_task: "<task_id_or_path>"
+# REQUIRED. The follow-up that closes the underlying issue. Either a
+# YouGile/Linear/etc. task id or an in-repo path (e.g. UC-### or
+# TECH-### or .tl/tasks/<id>/task.md). The release skill surfaces
+# this in the release notes and in `.tl/conductor-state.json` so
+# the carve-out cannot be "forgotten".

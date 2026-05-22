@@ -1,0 +1,264 @@
+{
+  "project": "project-delta",
+  "bolt_port": 7689,
+  "status": "REACHABLE",
+  "labels": [
+    {
+      "label": "ActivityStep",
+      "count": 421
+    },
+    {
+      "label": "Requirement",
+      "count": 407
+    },
+    {
+      "label": "DomainAttribute",
+      "count": 218
+    },
+    {
+      "label": "FormField",
+      "count": 197
+    },
+    {
+      "label": "EnumValue",
+      "count": 92
+    },
+    {
+      "label": "WorkflowStep",
+      "count": 74
+    },
+    {
+      "label": "EntityAttribute",
+      "count": 58
+    },
+    {
+      "label": "Form",
+      "count": 44
+    },
+    {
+      "label": "Component",
+      "count": 42
+    },
+    {
+      "label": "GlossaryTerm",
+      "count": 40
+    },
+    {
+      "label": "UseCase",
+      "count": 37
+    },
+    {
+      "label": "FeatureRequest",
+      "count": 27
+    },
+    {
+      "label": "Task",
+      "count": 26
+    },
+    {
+      "label": "DomainEntity",
+      "count": 24
+    },
+    {
+      "label": "Enumeration",
+      "count": 19
+    },
+    {
+      "label": "BusinessRule",
+      "count": 17
+    },
+    {
+      "label": "BusinessProcess",
+      "count": 10
+    },
+    {
+      "label": "BusinessEntity",
+      "count": 10
+    },
+    {
+      "label": "Module",
+      "count": 10
+    },
+    {
+      "label": "EntityState",
+      "count": 9
+    },
+    {
+      "label": "Wave",
+      "count": 8
+    },
+    {
+      "label": "SystemRole",
+      "count": 5
+    },
+    {
+      "label": "IntakeItem",
+      "count": 5
+    },
+    {
+      "label": "ProcessGroup",
+      "count": 4
+    },
+    {
+      "label": "BusinessRole",
+      "count": 3
+    },
+    {
+      "label": "SystemContext",
+      "count": 1
+    }
+  ],
+  "total_nodes": 1808,
+  "total_rels": 2398,
+  "rel_types": [
+    {
+      "type": "HAS_STEP",
+      "count": 495
+    },
+    {
+      "type": "HAS_REQUIREMENT",
+      "count": 437
+    },
+    {
+      "type": "HAS_ATTRIBUTE",
+      "count": 276
+    },
+    {
+      "type": "HAS_FIELD",
+      "count": 197
+    },
+    {
+      "type": "INCLUDES_UC",
+      "count": 110
+    },
+    {
+      "type": "HAS_VALUE",
+      "count": 92
+    },
+    {
+      "type": "DEPENDS_ON",
+      "count": 80
+    },
+    {
+      "type": "USED_IN",
+      "count": 79
+    },
+    {
+      "type": "AUTOMATES_AS",
+      "count": 68
+    },
+    {
+      "type": "TYPED_AS",
+      "count": 61
+    },
+    {
+      "type": "GENERATES",
+      "count": 44
+    },
+    {
+      "type": "MAPS_TO",
+      "count": 43
+    },
+    {
+      "type": "CONTAINS_UC",
+      "count": 38
+    },
+    {
+      "type": "IMPLEMENTED_BY",
+      "count": 38
+    },
+    {
+      "type": "ACTOR",
+      "count": 35
+    },
+    {
+      "type": "USES_FORM",
+      "count": 34
+    },
+    {
+      "type": "IMPLEMENTS",
+      "count": 29
+    },
+    {
+      "type": "IN_WAVE",
+      "count": 26
+    },
+    {
+      "type": "CONTAINS_ENTITY",
+      "count": 25
+    },
+    {
+      "type": "NEXT_STEP",
+      "count": 19
+    },
+    {
+      "type": "HAS_ENUM",
+      "count": 19
+    },
+    {
+      "type": "AFFECTS_MODULE",
+      "count": 19
+    },
+    {
+      "type": "APPLIES_IN",
+      "count": 18
+    },
+    {
+      "type": "PERFORMED_BY",
+      "count": 15
+    },
+    {
+      "type": "CONSTRAINS",
+      "count": 13
+    },
+    {
+      "type": "NAVIGATES_TO",
+      "count": 13
+    },
+    {
+      "type": "SPECIFIED_AS",
+      "count": 11
+    },
+    {
+      "type": "CONTAINS",
+      "count": 10
+    },
+    {
+      "type": "PARTICIPATES_IN",
+      "count": 10
+    },
+    {
+      "type": "TRANSITIONS_TO",
+      "count": 10
+    },
+    {
+      "type": "REALIZED_AS",
+      "count": 10
+    },
+    {
+      "type": "HAS_STATE",
+      "count": 9
+    },
+    {
+      "type": "RELATES_TO",
+      "count": 5
+    },
+    {
+      "type": "AFFECTS_UC",
+      "count": 5
+    },
+    {
+      "type": "MAPPED_TO",
+      "count": 3
+    },
+    {
+      "type": "VIOLATES_RULE",
+      "count": 1
+    },
+    {
+      "type": "PAIRED_WITH",
+      "count": 1
+    }
+  ],
+  "sample_label_count": 26
+}

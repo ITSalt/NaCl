@@ -1,0 +1,162 @@
+[
+  {
+    "labels": [
+      "EntityAttribute"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T09:13:34.156000000+00:00",
+      "created": "2026-04-13T09:13:34.156000000+00:00",
+      "name": "Артикул 1С",
+      "description": "Уникальный идентификатор товара в 1С",
+      "id": "OBJ-001-A01",
+      "type": "Текст",
+      "updated": "2026-04-13T09:13:34.156000000+00:00",
+      "source_file": "docs/02-business-entities/entities/OBJ-001-spisok-artikulov.md",
+      "required": true
+    }
+  },
+  {
+    "labels": [
+      "EntityAttribute"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T09:13:34.156000000+00:00",
+      "created": "2026-04-13T09:13:34.156000000+00:00",
+      "name": "АГ (Артикульная группа)",
+      "description": "Группа артикулов",
+      "id": "OBJ-001-A02",
+      "type": "Текст",
+      "updated": "2026-04-13T09:13:34.156000000+00:00",
+      "source_file": "docs/02-business-entities/entities/OBJ-001-spisok-artikulov.md",
+      "required": true
+    }
+  },
+  {
+    "labels": [
+      "EntityAttribute"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T09:13:34.156000000+00:00",
+      "created": "2026-04-13T09:13:34.156000000+00:00",
+      "name": "Родитель",
+      "description": "Родительский артикул",
+      "id": "OBJ-001-A03",
+      "type": "Текст",
+      "updated": "2026-04-13T09:13:34.156000000+00:00",
+      "source_file": "docs/02-business-entities/entities/OBJ-001-spisok-artikulov.md",
+      "required": false
+    }
+  },
+  {
+    "labels": [
+      "EntityAttribute"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T09:13:34.156000000+00:00",
+      "created": "2026-04-13T09:13:34.156000000+00:00",
+      "name": "Размер",
+      "description": "",
+      "id": "OBJ-001-A04",
+      "type": "Текст",
+      "updated": "2026-04-13T09:13:34.156000000+00:00",
+      "source_file": "docs/02-business-entities/entities/OBJ-001-spisok-artikulov.md",
+      "required": true
+    }
+  },
+  {
+    "labels": [
+      "EntityAttribute"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T09:13:34.156000000+00:00",
+      "created": "2026-04-13T09:13:34.156000000+00:00",
+      "name": "КатегорияКамней",
+      "description": "",
+      "id": "OBJ-001-A05",
+      "type": "Текст",
+      "updated": "2026-04-13T09:13:34.156000000+00:00",
+      "source_file": "docs/02-business-entities/entities/OBJ-001-spisok-artikulov.md",
+      "required": false
+    }
+  },
+  {
+    "labels": [
+      "EntityAttribute"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T09:13:34.156000000+00:00",
+      "created": "2026-04-13T09:13:34.156000000+00:00",
+      "name": "Вес",
+      "description": "",
+      "id": "OBJ-001-A06",
+      "type": "Число",
+      "updated": "2026-04-13T09:13:34.156000000+00:00",
+      "source_file": "docs/02-business-entities/entities/OBJ-001-spisok-artikulov.md",
+      "required": false
+    }
+  },
+  {
+    "labels": [
+      "EntityAttribute"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T09:13:34.156000000+00:00",
+      "created": "2026-04-13T09:13:34.156000000+00:00",
+      "name": "Артикул 1С",
+      "description": "",
+      "id": "OBJ-002-A01",
+      "type": "Текст",
+      "updated": "2026-04-13T09:13:34.156000000+00:00",
+      "source_file": "docs/02-business-entities/entities/OBJ-002-postavki-razrez-sklada.md",
+      "required": true
+    }
+  },
+  {
+    "labels": [
+      "EntityAttribute"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T09:13:34.156000000+00:00",
+      "created": "2026-04-13T09:13:34.156000000+00:00",
+      "name": "Размер",
+      "description": "",
+      "id": "OBJ-002-A02",
+      "type": "Текст",
+      "updated": "2026-04-13T09:13:34.156000000+00:00",
+      "source_file": "docs/02-business-entities/entities/OBJ-002-postavki-razrez-sklada.md",
+      "required": true
+    }
+  },
+  {
+    "labels": [
+      "EntityAttribute"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T09:13:34.156000000+00:00",
+      "created": "2026-04-13T09:13:34.156000000+00:00",
+      "name": "Вставка",
+      "description": "",
+      "id": "OBJ-002-A03",
+      "type": "Текст",
+      "updated": "2026-04-13T09:13:34.156000000+00:00",
+      "source_file": "docs/02-business-entities/entities/OBJ-002-postavki-razrez-sklada.md",
+      "required": false
+    }
+  },
+  {
+    "labels": [
+      "EntityAttribute"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T09:13:34.156000000+00:00",
+      "created": "2026-04-13T09:13:34.156000000+00:00",
+      "name": "Количество",
+      "description": "",
+      "id": "OBJ-002-A04",
+      "type": "Число",
+      "updated": "2026-04-13T09:13:34.156000000+00:00",
+      "source_file": "docs/02-business-entities/entities/OBJ-002-postavki-razrez-sklada.md",
+      "required": true
+    }
+  }
+]

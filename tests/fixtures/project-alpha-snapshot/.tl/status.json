@@ -1,0 +1,2036 @@
+{
+  "project": "Project Alpha",
+  "created": "2026-05-06",
+  "updated": "2026-05-19T18:00:00Z",
+  "source": "nacl-tl-plan (Neo4j SA \u2192 TL layer)",
+  "summary": {
+    "total_uc": 25,
+    "total_uc_tasks": 60,
+    "total_tech": 16,
+    "done": 61,
+    "ready_for_dev": 9,
+    "deferred": 1,
+    "pending": 4,
+    "in_progress": 0,
+    "ready_for_review": 1,
+    "approved": 0,
+    "verified_pending": 0,
+    "blocked": 0,
+    "current_wave": 10
+  },
+  "waves": {
+    "total": 12,
+    "current": 11,
+    "planned_through": 11,
+    "list": [
+      {
+        "number": 0,
+        "id": "WAVE-0",
+        "name": "Infrastructure",
+        "status": "complete",
+        "task_files_generated": true,
+        "task_count": 9,
+        "completed_at": "2026-05-07T00:00:00Z"
+      },
+      {
+        "number": 1,
+        "id": "WAVE-1",
+        "name": "Auth & Admin BE foundation",
+        "status": "complete",
+        "task_files_generated": true,
+        "task_count": 5,
+        "completed_at": "2026-05-10T00:00:00Z"
+      },
+      {
+        "number": 2,
+        "id": "WAVE-2",
+        "name": "Auth/Admin FE + Queue infra BE",
+        "status": "complete",
+        "task_files_generated": true,
+        "task_count": 10,
+        "completed_at": "2026-05-10T00:00:00Z"
+      },
+      {
+        "number": 3,
+        "id": "WAVE-3",
+        "name": "Workflow engine + session/task BE",
+        "status": "complete",
+        "task_files_generated": true,
+        "task_count": 6,
+        "completed_at": "2026-05-11T00:00:00Z"
+      },
+      {
+        "number": 4,
+        "id": "WAVE-4",
+        "name": "Content BE remainder + Reporting BE",
+        "status": "complete",
+        "task_files_generated": true,
+        "task_count": 6,
+        "completed_at": "2026-05-11T18:05:00Z",
+        "audit_remediation": {
+          "audit_date": "2026-05-11",
+          "audit_plan": ".tl/fix-plan-wave-4-audit-2026-05-11.md",
+          "findings": "Wave 4 was prematurely closed: pnpm -r lint and -r typecheck were red on main; publishTaskEvent / publishNotification / pushSseEvent were defined but uncalled from worker/engine/cancel route; status.json wave-4 still 'planned'; conductor-state.json claimed typecheck clean (false).",
+          "remediation_commits": [
+            "07c11fe \u2014 fix(build): lint + typecheck hygiene (FIX-A)",
+            "a7eb747 \u2014 docs(SA): UC-105/106/107 post-commit emit timing (FIX-B0, L2)",
+            "01f2fcb \u2014 fix(UC-105/106/107): wire post-commit events + notifications (FIX-B1+B2, L2)",
+            "14f3000 \u2014 fix(build): clear pre-existing lint errors not enumerated by audit (FIX-A')",
+            "c83e84f \u2014 fix(tests): valid UUID fixtures + maxEvents headroom for FIX-B integration tests"
+          ],
+          "verification": {
+            "lint": "pnpm -r lint exit 0 (0 errors across packages/shared, frontend, backend)",
+            "typecheck": "pnpm -r typecheck clean across all three packages",
+            "tests_frontend": "234/234 passing",
+            "tests_backend": "949/949 passing under Docker (Postgres+MinIO+Redis healthy), 75/75 files",
+            "sse_smokes": "FIX-D D5/D6 subsumed by automated integration coverage (engine.lifecycle-sse.test.ts + engine.notification-wiring.test.ts hit a real listening port via fetch and observe both the task-channel and user-channel SSE streams end-to-end)"
+          }
+        }
+      },
+      {
+        "number": 5,
+        "id": "WAVE-5",
+        "name": "User-facing FE",
+        "status": "complete",
+        "task_files_generated": true,
+        "task_count": 6,
+        "planned_at": "2026-05-06T19:57:51Z",
+        "completed_at": "2026-05-12T08:00:00Z"
+      },
+      {
+        "number": 6,
+        "id": "WAVE-6",
+        "name": "POST_MVP",
+        "status": "planned",
+        "task_files_generated": true,
+        "task_count": 9,
+        "planned_at": "2026-05-06T20:52:48Z"
+      },
+      {
+        "number": 7,
+        "id": "WAVE-7",
+        "name": "FR-001 \u2014 Inline first task + auto session name",
+        "status": "complete",
+        "task_files_generated": true,
+        "task_count": 4,
+        "feature_request": "FR-001",
+        "planned_at": "2026-05-13T04:48:22Z",
+        "completed_at": "2026-05-13T00:00:00Z"
+      },
+      {
+        "number": 8,
+        "id": "WAVE-8",
+        "name": "FR-002 \u2014 Session context on task detail page",
+        "status": "complete",
+        "task_files_generated": true,
+        "task_count": 2,
+        "feature_request": "FR-002",
+        "planned_at": "2026-05-13T12:00:00Z",
+        "completed_at": "2026-05-13T15:00:00Z",
+        "commits": [
+          "eb4a87b",
+          "84ef9ad"
+        ],
+        "delivery": {
+          "push": "origin/main",
+          "ci": "failed \u2014 pre-existing minio service-container init failure, not caused by FR-002",
+          "staging_verify": "skipped (CI gate red)"
+        }
+      },
+      {
+        "number": 9,
+        "id": "WAVE-9",
+        "name": "FR-003 \u2014 api.kie.example.invalid text-LLM models support",
+        "status": "complete",
+        "task_files_generated": true,
+        "task_count": 7,
+        "feature_request": "FR-003",
+        "planned_at": "2026-05-18T00:00:00Z",
+        "completed_at": "2026-05-18T13:00:00Z",
+        "commits": [
+          "2cf6ce8",
+          "9bce7e9",
+          "1f41e49",
+          "111ceea",
+          "f5a9fa7",
+          "9c67b6c"
+        ]
+      },
+      {
+        "number": 10,
+        "id": "WAVE-10",
+        "name": "FR-004 \u2014 ModelProfile model picker + provider model catalog",
+        "status": "complete",
+        "task_files_generated": true,
+        "task_count": 7,
+        "feature_request": "FR-004",
+        "planned_at": "2026-05-18T00:00:00Z",
+        "completed_at": "2026-05-18T21:30:00Z",
+        "commits": [
+          "71d6d06",
+          "d17dd31",
+          "db33d2b",
+          "72e537a",
+          "91ad206",
+          "30fcd22",
+          "57ea576"
+        ]
+      },
+      {
+        "number": 11,
+        "id": "WAVE-11",
+        "name": "FR-005 \u2014 Workflow Step Ordering (Flow-view + grouped dropdown)",
+        "status": "pending",
+        "task_files_generated": true,
+        "task_count": 5,
+        "feature_request": "FR-005",
+        "planned_at": "2026-05-19T00:00:00Z"
+      }
+    ]
+  },
+  "tasks": [
+    {
+      "id": "TECH-001",
+      "title": "Monorepo scaffold (Fastify BE + Vite/React FE)",
+      "type": "tech",
+      "wave": 0,
+      "priority": "high",
+      "status": "done",
+      "task_files_generated": true,
+      "blockers": [],
+      "blocks": []
+    },
+    {
+      "id": "TECH-002",
+      "title": "Docker Compose dev (Postgres + MinIO)",
+      "type": "tech",
+      "wave": 0,
+      "priority": "high",
+      "status": "done",
+      "task_files_generated": true,
+      "blockers": [],
+      "blocks": []
+    },
+    {
+      "id": "TECH-003",
+      "title": "Drizzle ORM + initial migrations + AES-256-GCM envelope util",
+      "type": "tech",
+      "wave": 0,
+      "priority": "high",
+      "status": "done",
+      "task_files_generated": true,
+      "blockers": [],
+      "blocks": [
+        "UC-302-BE",
+        "UC-303-BE",
+        "UC-304-BE"
+      ]
+    },
+    {
+      "id": "TECH-004",
+      "title": "Shared types package (@project-alpha/shared)",
+      "type": "tech",
+      "wave": 0,
+      "priority": "high",
+      "status": "done",
+      "task_files_generated": true,
+      "blockers": [],
+      "blocks": []
+    },
+    {
+      "id": "TECH-005",
+      "title": "Auth (@fastify/jwt 1h/30d + httpOnly refresh cookie)",
+      "type": "tech",
+      "wave": 0,
+      "priority": "high",
+      "status": "done",
+      "task_files_generated": true,
+      "blockers": [],
+      "blocks": [
+        "UC-101-BE",
+        "UC-102-BE"
+      ]
+    },
+    {
+      "id": "TECH-006",
+      "title": "Error middleware + structured logging",
+      "type": "tech",
+      "wave": 0,
+      "priority": "high",
+      "status": "done",
+      "task_files_generated": true,
+      "blockers": [],
+      "blocks": []
+    },
+    {
+      "id": "TECH-007",
+      "title": "SSE plumbing (fastify-sse-v2 + Caddy flush_interval -1)",
+      "type": "tech",
+      "wave": 0,
+      "priority": "high",
+      "status": "done",
+      "task_files_generated": true,
+      "blockers": [],
+      "blocks": [
+        "UC-106-BE"
+      ]
+    },
+    {
+      "id": "TECH-008",
+      "title": "S3 client wrapper (Cloud.ru S3 + presigned URLs)",
+      "type": "tech",
+      "wave": 0,
+      "priority": "high",
+      "status": "done",
+      "task_files_generated": true,
+      "blockers": [],
+      "blocks": [
+        "UC-104-BE",
+        "UC-150-BE",
+        "UC-108-BE"
+      ]
+    },
+    {
+      "id": "TECH-009",
+      "title": "CI/CD (GitHub Actions) + Caddy/PM2 deploy configs",
+      "type": "tech",
+      "wave": 0,
+      "priority": "medium",
+      "status": "done",
+      "task_files_generated": true,
+      "blockers": [],
+      "blocks": []
+    },
+    {
+      "id": "UC-101-BE",
+      "uc_id": "UC-101",
+      "uc_name": "\u0420\u0435\u0433\u0438\u0441\u0442\u0440\u0430\u0446\u0438\u044f \u0438 \u043e\u043d\u0431\u043e\u0440\u0434\u0438\u043d\u0433 \u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044f",
+      "module": "MOD-CONTENT",
+      "type": "be",
+      "wave": 1,
+      "priority": "high",
+      "phases": {
+        "be": "done",
+        "sync": "done",
+        "review": "done",
+        "qa": "done"
+      },
+      "status": "done",
+      "commit": "5779618",
+      "completed_at": "2026-05-10T00:00:00Z",
+      "task_files_generated": true,
+      "blockers": [
+        "TECH-005"
+      ],
+      "blocks": [
+        "UC-101-FE",
+        "UC-103-BE",
+        "UC-301-BE"
+      ]
+    },
+    {
+      "id": "UC-102-BE",
+      "uc_id": "UC-102",
+      "uc_name": "\u041b\u043e\u0433\u0438\u043d \u0438 \u043e\u0431\u043d\u043e\u0432\u043b\u0435\u043d\u0438\u0435 \u0442\u043e\u043a\u0435\u043d\u043e\u0432",
+      "module": "MOD-CONTENT",
+      "type": "be",
+      "wave": 1,
+      "priority": "high",
+      "phases": {
+        "be": "done",
+        "sync": "done",
+        "review": "done",
+        "qa": "done"
+      },
+      "status": "done",
+      "commit": "f62c145",
+      "completed_at": "2026-05-10T00:00:00Z",
+      "task_files_generated": true,
+      "blockers": [
+        "TECH-005"
+      ],
+      "blocks": [
+        "UC-102-FE"
+      ]
+    },
+    {
+      "id": "UC-302-BE",
+      "uc_id": "UC-302",
+      "uc_name": "CRUD PromptTemplate",
+      "module": "MOD-ADMIN",
+      "type": "be",
+      "wave": 1,
+      "priority": "high",
+      "phases": {
+        "be": "done",
+        "sync": "done",
+        "review": "done",
+        "qa": "done"
+      },
+      "status": "done",
+      "commit": "b456105",
+      "completed_at": "2026-05-10T00:00:00Z",
+      "task_files_generated": true,
+      "blockers": [
+        "TECH-003"
+      ],
+      "blocks": [
+        "UC-302-FE",
+        "UC-150-BE",
+        "UC-305-BE"
+      ]
+    },
+    {
+      "id": "UC-303-BE",
+      "uc_id": "UC-303",
+      "uc_name": "CRUD ModelProfile",
+      "module": "MOD-ADMIN",
+      "type": "be",
+      "wave": 1,
+      "priority": "high",
+      "phases": {
+        "be": "done",
+        "sync": "done",
+        "review": "done",
+        "qa": "done"
+      },
+      "status": "done",
+      "commit": "be10562",
+      "completed_at": "2026-05-10T00:00:00Z",
+      "task_files_generated": true,
+      "blockers": [
+        "TECH-003"
+      ],
+      "blocks": [
+        "UC-303-FE",
+        "UC-150-BE",
+        "UC-305-BE"
+      ]
+    },
+    {
+      "id": "UC-304-BE",
+      "uc_id": "UC-304",
+      "uc_name": "CRUD Category \u0438 CategoryMapping",
+      "module": "MOD-ADMIN",
+      "type": "be",
+      "wave": 1,
+      "priority": "high",
+      "phases": {
+        "be": "done",
+        "sync": "done",
+        "review": "done",
+        "qa": "done"
+      },
+      "status": "done",
+      "commit": "d041f07",
+      "completed_at": "2026-05-10T00:00:00Z",
+      "task_files_generated": true,
+      "blockers": [
+        "TECH-003"
+      ],
+      "blocks": [
+        "UC-304-FE",
+        "UC-305-BE"
+      ]
+    },
+    {
+      "id": "UC-101-FE",
+      "uc_id": "UC-101",
+      "uc_name": "\u0420\u0435\u0433\u0438\u0441\u0442\u0440\u0430\u0446\u0438\u044f \u0438 \u043e\u043d\u0431\u043e\u0440\u0434\u0438\u043d\u0433 \u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044f",
+      "module": "MOD-CONTENT",
+      "type": "fe",
+      "wave": 2,
+      "priority": "high",
+      "phases": {
+        "fe": "complete",
+        "sync": "complete",
+        "review": "complete",
+        "qa": "complete"
+      },
+      "status": "done",
+      "task_files_generated": true,
+      "blockers": [
+        "UC-101-BE"
+      ],
+      "blocks": [],
+      "commit": "1cafdb4"
+    },
+    {
+      "id": "UC-102-FE",
+      "uc_id": "UC-102",
+      "uc_name": "\u041b\u043e\u0433\u0438\u043d \u0438 \u043e\u0431\u043d\u043e\u0432\u043b\u0435\u043d\u0438\u0435 \u0442\u043e\u043a\u0435\u043d\u043e\u0432",
+      "module": "MOD-CONTENT",
+      "type": "fe",
+      "wave": 2,
+      "priority": "high",
+      "phases": {
+        "fe": "complete",
+        "sync": "complete",
+        "review": "complete",
+        "qa": "complete"
+      },
+      "status": "done",
+      "task_files_generated": true,
+      "blockers": [
+        "UC-102-BE"
+      ],
+      "blocks": [],
+      "commit": "ffb4446"
+    },
+    {
+      "id": "UC-201-BE",
+      "uc_id": "UC-201",
+      "uc_name": "\u041f\u043e\u0441\u0442\u0430\u043d\u043e\u0432\u043a\u0430 \u0437\u0430\u0434\u0430\u0447\u0438 \u0432 \u043e\u0447\u0435\u0440\u0435\u0434\u044c (enqueue)",
+      "module": "MOD-QUEUE",
+      "type": "be",
+      "wave": 2,
+      "priority": "high",
+      "pure_be": true,
+      "phases": {
+        "be": "complete",
+        "review": "complete",
+        "qa": "complete"
+      },
+      "status": "done",
+      "task_files_generated": true,
+      "blockers": [],
+      "blocks": [
+        "UC-202-BE",
+        "UC-203-BE",
+        "UC-150-BE",
+        "UC-104-BE",
+        "UC-204-BE"
+      ],
+      "commit": "78d2f6c"
+    },
+    {
+      "id": "UC-202-BE",
+      "uc_id": "UC-202",
+      "uc_name": "Dispatch \u0438 \u043e\u0431\u0440\u0430\u0431\u043e\u0442\u043a\u0430 \u0441\u043b\u043e\u0442\u0430 \u043e\u0447\u0435\u0440\u0435\u0434\u0438",
+      "module": "MOD-QUEUE",
+      "type": "be",
+      "wave": 2,
+      "priority": "high",
+      "pure_be": true,
+      "phases": {
+        "be": "complete",
+        "review": "complete",
+        "qa": "complete"
+      },
+      "status": "done",
+      "task_files_generated": true,
+      "blockers": [
+        "UC-201-BE"
+      ],
+      "blocks": [
+        "UC-203-BE",
+        "UC-107-BE",
+        "UC-204-BE"
+      ],
+      "commit": "924ecbb"
+    },
+    {
+      "id": "UC-203-BE",
+      "uc_id": "UC-203",
+      "uc_name": "Watchdog \u0438 recovery \u043f\u043e\u0441\u043b\u0435 \u0440\u0435\u0441\u0442\u0430\u0440\u0442\u0430",
+      "module": "MOD-QUEUE",
+      "type": "be",
+      "wave": 2,
+      "priority": "high",
+      "pure_be": true,
+      "phases": {
+        "be": "complete",
+        "review": "complete",
+        "qa": "complete"
+      },
+      "status": "done",
+      "task_files_generated": true,
+      "blockers": [
+        "UC-201-BE",
+        "UC-202-BE"
+      ],
+      "blocks": [],
+      "commit": "f6641f0"
+    },
+    {
+      "id": "UC-301-BE",
+      "uc_id": "UC-301",
+      "uc_name": "\u0423\u043f\u0440\u0430\u0432\u043b\u0435\u043d\u0438\u0435 \u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044f\u043c\u0438",
+      "module": "MOD-ADMIN",
+      "type": "be",
+      "wave": 2,
+      "priority": "medium",
+      "phases": {
+        "be": "complete",
+        "sync": "complete",
+        "review": "complete",
+        "qa": "complete"
+      },
+      "status": "done",
+      "task_files_generated": true,
+      "blockers": [
+        "UC-101-BE"
+      ],
+      "blocks": [
+        "UC-301-FE"
+      ],
+      "commit": "eb6ef65"
+    },
+    {
+      "id": "UC-302-FE",
+      "uc_id": "UC-302",
+      "uc_name": "CRUD PromptTemplate",
+      "module": "MOD-ADMIN",
+      "type": "fe",
+      "wave": 2,
+      "priority": "high",
+      "phases": {
+        "fe": "complete",
+        "sync": "complete",
+        "review": "complete",
+        "qa": "complete"
+      },
+      "status": "done",
+      "task_files_generated": true,
+      "blockers": [
+        "UC-302-BE"
+      ],
+      "blocks": [],
+      "commit": "662ed92"
+    },
+    {
+      "id": "UC-303-FE",
+      "uc_id": "UC-303",
+      "uc_name": "CRUD ModelProfile",
+      "module": "MOD-ADMIN",
+      "type": "fe",
+      "wave": 2,
+      "priority": "high",
+      "phases": {
+        "fe": "complete",
+        "sync": "complete",
+        "review": "complete",
+        "qa": "complete"
+      },
+      "status": "done",
+      "task_files_generated": true,
+      "blockers": [
+        "UC-303-BE"
+      ],
+      "blocks": [],
+      "commit": "6d71c48"
+    },
+    {
+      "id": "UC-304-FE",
+      "uc_id": "UC-304",
+      "uc_name": "CRUD Category \u0438 CategoryMapping",
+      "module": "MOD-ADMIN",
+      "type": "fe",
+      "wave": 2,
+      "priority": "high",
+      "phases": {
+        "fe": "complete",
+        "sync": "complete",
+        "review": "complete",
+        "qa": "complete"
+      },
+      "status": "done",
+      "task_files_generated": true,
+      "blockers": [
+        "UC-304-BE"
+      ],
+      "blocks": [],
+      "commit": "b1c3474"
+    },
+    {
+      "id": "UC-305-BE",
+      "uc_id": "UC-305",
+      "uc_name": "\u0423\u043f\u0440\u0430\u0432\u043b\u0435\u043d\u0438\u0435 WorkflowStepConfig \u0438 ProviderConfig",
+      "module": "MOD-ADMIN",
+      "type": "be",
+      "wave": 2,
+      "priority": "high",
+      "phases": {
+        "be": "complete",
+        "sync": "complete",
+        "review": "complete",
+        "qa": "complete"
+      },
+      "status": "done",
+      "task_files_generated": true,
+      "blockers": [
+        "UC-302-BE",
+        "UC-303-BE",
+        "UC-304-BE"
+      ],
+      "blocks": [
+        "UC-305-FE",
+        "UC-150-BE"
+      ],
+      "commit": "b02fd90"
+    },
+    {
+      "id": "UC-103-BE",
+      "uc_id": "UC-103",
+      "uc_name": "\u0421\u043e\u0437\u0434\u0430\u043d\u0438\u0435 \u0441\u0435\u0441\u0441\u0438\u0438 \u0433\u0435\u043d\u0435\u0440\u0430\u0446\u0438\u0438",
+      "module": "MOD-CONTENT",
+      "type": "be",
+      "wave": 3,
+      "priority": "high",
+      "phases": {
+        "be": "ready_for_review",
+        "sync": "be_ready",
+        "review": "approved",
+        "qa": "pending_fe"
+      },
+      "status": "done",
+      "task_files_generated": true,
+      "blockers": [
+        "UC-101-BE"
+      ],
+      "blocks": [
+        "UC-104-BE",
+        "UC-110-BE",
+        "UC-103-FE"
+      ],
+      "review_be_completed": "2026-05-11T03:39:14.957553+00:00",
+      "review_be_result": "approved",
+      "be_completed": "2026-05-11T03:39:40.578127+00:00",
+      "verification_skip_reason": "QA deferred until UC-103-FE exists (no E2E target)"
+    },
+    {
+      "id": "UC-150-BE",
+      "uc_id": "UC-150",
+      "uc_name": "Workflow execution engine (\u0438\u0441\u043f\u043e\u043b\u043d\u0438\u0442\u0435\u043b\u044c \u0445\u0430\u0440\u0434\u043a\u043e\u0436\u0435\u043d\u043d\u043e\u0433\u043e workflow)",
+      "module": "MOD-CONTENT",
+      "type": "be",
+      "wave": 3,
+      "priority": "high",
+      "pure_be": true,
+      "phases": {
+        "be": "approved",
+        "review": "approved",
+        "qa": "skipped",
+        "verify": "done"
+      },
+      "status": "done",
+      "review_be_result": "approved",
+      "review_be_headline": "REVIEW APPLIED \u2014 UNVERIFIED (test author overlap 100%)",
+      "verified_at": "2026-05-18T16:00:00Z",
+      "verified_by": "nacl-tl-verify (Wave 4)",
+      "verified_note": "11 integration tests in engine.fsm.test.ts cover all meaningful FSM transitions: UNKNOWN_TASK_TYPE terminal failure, first-step enqueue with rendered prompt + SSE task.progress, completed event advancement, failed-event terminal + task.failed SSE, no-duplicate queue row on re-enqueue, already-completed task is noop, verifier verdict=pass with generated_asset_ids, verdict=fail VERIFIER_FAILED terminal, SSE task.completed only after DB commit, input_files threading via both paths. Coverage adequate for component scope.",
+      "task_files_generated": true,
+      "blockers": [
+        "UC-201-BE",
+        "UC-302-BE",
+        "UC-303-BE",
+        "UC-305-BE",
+        "TECH-008"
+      ],
+      "blocks": [
+        "UC-151-BE",
+        "UC-104-BE",
+        "UC-401-BE"
+      ]
+    },
+    {
+      "id": "UC-151-BE",
+      "uc_id": "UC-151",
+      "uc_name": "Verifier-\u043f\u0435\u0442\u043b\u044f \u043f\u0440\u043e\u0432\u0435\u0440\u043a\u0438 \u0440\u0435\u0437\u0443\u043b\u044c\u0442\u0430\u0442\u0430",
+      "module": "MOD-CONTENT",
+      "type": "be",
+      "wave": 3,
+      "priority": "high",
+      "pure_be": true,
+      "phases": {
+        "be": "approved",
+        "review": "approved",
+        "qa": "skipped",
+        "verify": "done"
+      },
+      "status": "done",
+      "task_files_generated": true,
+      "blockers": [
+        "UC-150-BE"
+      ],
+      "blocks": [],
+      "review_be_result": "approved",
+      "review_be_headline": "REVIEW APPLIED \u2014 UNVERIFIED (test author overlap 100%)",
+      "verified_at": "2026-05-18T16:00:00Z",
+      "verified_by": "nacl-tl-verify (Wave 4)",
+      "verified_note": "39 tests across verdict-mapper.test.ts (25 effective: all pass/retry/fail token variants, unknown\u2192fail fallback, non-object throws VerdictParseError, score clamping, reasoning truncation, parseVerdictResponse JSON/Buffer/malformed handling, numeric precision) + verifier.service.test.ts (14 integration: pass/retry/fail verdict persists report + bus event, provider non-2xx synthetic fail path, malformed VLM JSON, unknown\u2192fail mapping, score clamp, reasoning truncate, GenerationLog all paths, bus emit after commit, idempotent replay, cancelled-slot race, attempt_no coexistence). Coverage adequate for component scope."
+    },
+    {
+      "id": "UC-104-BE",
+      "uc_id": "UC-104",
+      "uc_name": "\u0421\u043e\u0437\u0434\u0430\u043d\u0438\u0435 \u0437\u0430\u0434\u0430\u0447\u0438 \u0438 \u0437\u0430\u043f\u0443\u0441\u043a workflow",
+      "module": "MOD-CONTENT",
+      "type": "be",
+      "wave": 3,
+      "priority": "high",
+      "phases": {
+        "be": "approved",
+        "sync": "be_ready",
+        "review": "approved",
+        "qa": "pending_fe"
+      },
+      "status": "done",
+      "started": "2026-05-11T07:30:00Z",
+      "be_completed": "2026-05-11T07:40:00Z",
+      "review_be_completed": "2026-05-11T07:44:30Z",
+      "review_be_result": "approved",
+      "review_be_headline": "REVIEW COMPLETE (after migration fix)",
+      "sync_completed": "2026-05-11T07:45:00Z",
+      "sync_verdict": "be_ready",
+      "verification_skip_reason": "QA deferred until UC-104-FE exists (no E2E target). Same pattern as UC-103-BE / UC-150-BE / UC-151-BE.",
+      "task_files_generated": true,
+      "blockers": [
+        "UC-103-BE",
+        "UC-201-BE",
+        "UC-150-BE",
+        "TECH-008"
+      ],
+      "blocks": [
+        "UC-104-FE",
+        "UC-105-BE",
+        "UC-106-BE",
+        "UC-107-BE",
+        "UC-108-BE",
+        "UC-109-BE"
+      ]
+    },
+    {
+      "id": "UC-301-FE",
+      "uc_id": "UC-301",
+      "uc_name": "\u0423\u043f\u0440\u0430\u0432\u043b\u0435\u043d\u0438\u0435 \u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044f\u043c\u0438",
+      "module": "MOD-ADMIN",
+      "type": "fe",
+      "wave": 3,
+      "priority": "medium",
+      "phases": {
+        "fe": "complete",
+        "sync": "complete",
+        "review": "approved",
+        "qa": "skipped"
+      },
+      "status": "done",
+      "commit": "4f9406f",
+      "fe_completed": "2026-05-11T00:00:00Z",
+      "review_fe_result": "approved",
+      "sync_verdict": "fe_ready",
+      "verification_skip_reason": "NO_INFRA (Playwright not configured for Wave 3); +21 FE tests via component coverage (169/14)",
+      "task_files_generated": true,
+      "blockers": [
+        "UC-301-BE"
+      ],
+      "blocks": []
+    },
+    {
+      "id": "UC-305-FE",
+      "uc_id": "UC-305",
+      "uc_name": "\u0423\u043f\u0440\u0430\u0432\u043b\u0435\u043d\u0438\u0435 WorkflowStepConfig \u0438 ProviderConfig",
+      "module": "MOD-ADMIN",
+      "type": "fe",
+      "wave": 3,
+      "priority": "high",
+      "phases": {
+        "fe": "complete",
+        "sync": "complete",
+        "review": "approved",
+        "qa": "skipped"
+      },
+      "status": "done",
+      "commit": "b4ee46d",
+      "fe_completed": "2026-05-11T00:00:00Z",
+      "review_fe_result": "approved",
+      "sync_verdict": "fe_ready",
+      "verification_skip_reason": "NO_INFRA (Playwright not configured for Wave 3); +34 FE tests via component coverage (203/16)",
+      "task_files_generated": true,
+      "blockers": [
+        "UC-305-BE"
+      ],
+      "blocks": []
+    },
+    {
+      "id": "UC-103-FE",
+      "uc_id": "UC-103",
+      "uc_name": "\u0421\u043e\u0437\u0434\u0430\u043d\u0438\u0435 \u0441\u0435\u0441\u0441\u0438\u0438 \u0433\u0435\u043d\u0435\u0440\u0430\u0446\u0438\u0438",
+      "module": "MOD-CONTENT",
+      "type": "fe",
+      "wave": 4,
+      "priority": "high",
+      "phases": {
+        "fe": "complete",
+        "sync": "complete",
+        "review": "approved",
+        "qa": "skipped"
+      },
+      "status": "done",
+      "fe_completed": "2026-05-11T17:00:00Z",
+      "sync_verdict": "fe_ready",
+      "verification_skip_reason": "NO_INFRA (Playwright not configured for Wave 4); 31 FE tests green via Vitest+RTL+MSW (234 total).",
+      "task_files_generated": true,
+      "blockers": [
+        "UC-103-BE"
+      ],
+      "blocks": []
+    },
+    {
+      "id": "UC-105-BE",
+      "uc_id": "UC-105",
+      "uc_name": "\u041f\u0440\u043e\u0441\u043c\u043e\u0442\u0440 \u0441\u0442\u0430\u0442\u0443\u0441\u0430 \u0438 \u0440\u0435\u0437\u0443\u043b\u044c\u0442\u0430\u0442\u043e\u0432 \u0437\u0430\u0434\u0430\u0447\u0438",
+      "module": "MOD-CONTENT",
+      "type": "be",
+      "wave": 4,
+      "priority": "high",
+      "phases": {
+        "be": "approved",
+        "sync": "be_ready",
+        "review": "approved",
+        "qa": "pending"
+      },
+      "status": "done",
+      "started": "2026-05-11T15:00:00Z",
+      "be_completed": "2026-05-11T15:10:00Z",
+      "task_files_generated": true,
+      "blockers": [
+        "UC-104-BE"
+      ],
+      "blocks": [
+        "UC-105-FE"
+      ]
+    },
+    {
+      "id": "UC-106-BE",
+      "uc_id": "UC-106",
+      "uc_name": "\u0423\u0432\u0435\u0434\u043e\u043c\u043b\u0435\u043d\u0438\u0435 \u043e \u0437\u0430\u0432\u0435\u0440\u0448\u0435\u043d\u0438\u0438 \u0437\u0430\u0434\u0430\u0447\u0438",
+      "module": "MOD-CONTENT",
+      "type": "be",
+      "wave": 4,
+      "priority": "high",
+      "phases": {
+        "be": "approved",
+        "sync": "be_ready",
+        "review": "approved",
+        "qa": "pending"
+      },
+      "status": "done",
+      "started": "2026-05-11T15:10:00Z",
+      "be_completed": "2026-05-11T15:30:00Z",
+      "verification_skip_reason": "QA deferred until UC-106-FE exists (no E2E target). 49 unit+integration tests green.",
+      "task_files_generated": true,
+      "blockers": [
+        "UC-104-BE",
+        "TECH-007"
+      ],
+      "blocks": [
+        "UC-106-FE"
+      ]
+    },
+    {
+      "id": "UC-107-BE",
+      "uc_id": "UC-107",
+      "uc_name": "\u041e\u0442\u043c\u0435\u043d\u0430 \u0437\u0430\u0434\u0430\u0447\u0438",
+      "module": "MOD-CONTENT",
+      "type": "be",
+      "wave": 4,
+      "priority": "high",
+      "phases": {
+        "be": "approved",
+        "sync": "be_ready",
+        "review": "approved",
+        "qa": "pending"
+      },
+      "status": "done",
+      "started": "2026-05-11T15:30:00Z",
+      "be_completed": "2026-05-11T15:35:00Z",
+      "verification_skip_reason": "QA deferred until UC-107-FE exists (no E2E target). 26 unit+integration tests green.",
+      "task_files_generated": true,
+      "blockers": [
+        "UC-104-BE",
+        "UC-202-BE"
+      ],
+      "blocks": [
+        "UC-107-FE"
+      ]
+    },
+    {
+      "id": "UC-108-BE",
+      "uc_id": "UC-108",
+      "uc_name": "\u0421\u043a\u0430\u0447\u0438\u0432\u0430\u043d\u0438\u0435 \u0440\u0435\u0437\u0443\u043b\u044c\u0442\u0430\u0442\u0430",
+      "module": "MOD-CONTENT",
+      "type": "be",
+      "wave": 4,
+      "priority": "high",
+      "phases": {
+        "be": "approved",
+        "sync": "be_ready",
+        "review": "approved",
+        "qa": "pending"
+      },
+      "status": "done",
+      "started": "2026-05-11T15:40:00Z",
+      "be_completed": "2026-05-11T15:45:00Z",
+      "verification_skip_reason": "QA deferred until UC-108-FE exists (no E2E target). 45 unit+integration tests green.",
+      "task_files_generated": true,
+      "blockers": [
+        "UC-104-BE",
+        "TECH-008"
+      ],
+      "blocks": [
+        "UC-108-FE"
+      ]
+    },
+    {
+      "id": "UC-401-BE",
+      "uc_id": "UC-401",
+      "uc_name": "\u041f\u0440\u043e\u0441\u043c\u043e\u0442\u0440 \u0435\u0436\u0435\u043c\u0435\u0441\u044f\u0447\u043d\u043e\u0433\u043e \u043e\u0442\u0447\u0451\u0442\u0430 \u043f\u043e \u0433\u0435\u043d\u0435\u0440\u0430\u0446\u0438\u044f\u043c",
+      "module": "MOD-REPORTING",
+      "type": "be",
+      "wave": 4,
+      "priority": "high",
+      "phases": {
+        "be": "approved",
+        "sync": "be_ready",
+        "review": "approved",
+        "qa": "pending"
+      },
+      "status": "done",
+      "started": "2026-05-11T16:00:00Z",
+      "be_completed": "2026-05-11T16:20:00Z",
+      "verification_skip_reason": "QA deferred until UC-401-FE exists (no E2E target). 39 unit+integration tests green (934 total).",
+      "task_files_generated": true,
+      "blockers": [
+        "UC-150-BE"
+      ],
+      "blocks": [
+        "UC-401-FE",
+        "UC-402-BE",
+        "UC-410-BE"
+      ]
+    },
+    {
+      "id": "UC-104-FE",
+      "uc_id": "UC-104",
+      "uc_name": "\u0421\u043e\u0437\u0434\u0430\u043d\u0438\u0435 \u0437\u0430\u0434\u0430\u0447\u0438 \u0438 \u0437\u0430\u043f\u0443\u0441\u043a workflow",
+      "module": "MOD-CONTENT",
+      "type": "fe",
+      "wave": 5,
+      "priority": "high",
+      "phases": {
+        "fe": "approved",
+        "sync": "done",
+        "review_fe": "approved",
+        "qa": "pass"
+      },
+      "status": "done",
+      "qa_started": "2026-05-12T00:44:00Z",
+      "qa_verdict": "QA COMPLETE \u2014 PASS",
+      "sync_started": "2026-05-12T13:37:00Z",
+      "sync_completed": "2026-05-12T13:42:00Z",
+      "sync_verdict": "UNVERIFIED",
+      "sync_headline": "SYNC APPLIED \u2014 UNVERIFIED",
+      "sync_note": "FE coverage_gap=true (project-wide MSW pattern); contract alignment PASS; authentic integration delegated to /nacl-tl-qa",
+      "started": "2026-05-12T00:00:00Z",
+      "fe_completed": "2026-05-12T00:34:00Z",
+      "review_fe_completed": "2026-05-12T00:40:00Z",
+      "review_fe_result": "approved",
+      "review_fe_headline": "REVIEW COMPLETE",
+      "review_fe_test_author_flag": "MAJOR \u2014 100% overlap (single-agent conductor turn); mitigated by sync+qa stages",
+      "task_files_generated": true,
+      "blockers": [
+        "UC-104-BE"
+      ],
+      "blocks": [],
+      "qa_completed": "2026-05-12T05:45:00Z",
+      "qa_note": "Form E2E 15/15 PASS. BE API 23/23 PASS. FE unit 259/259. Verified: login form, task form render, task_type select, JPEG upload (presign+S3 PUT\u2192200), POST /tasks\u2192201, navigation to task detail, success toast, MIME validation error, submit-gate (no files), submit-gate (no task_type). 1 minor spec-drift: AUTH_REQUIRED vs UNAUTHENTICATED in auth plugin."
+    },
+    {
+      "id": "UC-105-FE",
+      "uc_id": "UC-105",
+      "uc_name": "\u041f\u0440\u043e\u0441\u043c\u043e\u0442\u0440 \u0441\u0442\u0430\u0442\u0443\u0441\u0430 \u0438 \u0440\u0435\u0437\u0443\u043b\u044c\u0442\u0430\u0442\u043e\u0432 \u0437\u0430\u0434\u0430\u0447\u0438",
+      "module": "MOD-CONTENT",
+      "type": "fe",
+      "wave": 5,
+      "priority": "high",
+      "phases": {
+        "fe": "approved",
+        "sync": "done",
+        "review_fe": "approved",
+        "qa": "pass"
+      },
+      "status": "done",
+      "started": "2026-05-12T05:35:00Z",
+      "fe_completed": "2026-05-12T05:54:00Z",
+      "review_fe_completed": "2026-05-12T05:55:00Z",
+      "review_fe_result": "approved",
+      "review_fe_headline": "REVIEW COMPLETE",
+      "review_fe_test_author_flag": "MAJOR \u2014 overlap (single-agent conductor turn); mitigated by sync+live QA",
+      "sync_started": "2026-05-12T13:37:00Z",
+      "sync_completed": "2026-05-12T13:42:00Z",
+      "sync_verdict": "UNVERIFIED",
+      "qa_started": "2026-05-12T05:48:00Z",
+      "qa_completed": "2026-05-12T05:53:30Z",
+      "qa_verdict": "QA COMPLETE \u2014 PASS",
+      "qa_note": "Live E2E PASS for running/failed/completed states + 403/404 redirect + auth guard. SSE headers verified via curl. FE tests 297/297 (\u0394+38). Typecheck + lint clean. Build success.",
+      "task_files_generated": true,
+      "blockers": [
+        "UC-105-BE"
+      ],
+      "blocks": [],
+      "sync_headline": "SYNC APPLIED \u2014 UNVERIFIED"
+    },
+    {
+      "id": "UC-106-FE",
+      "uc_id": "UC-106",
+      "uc_name": "\u0423\u0432\u0435\u0434\u043e\u043c\u043b\u0435\u043d\u0438\u0435 \u043e \u0437\u0430\u0432\u0435\u0440\u0448\u0435\u043d\u0438\u0438 \u0437\u0430\u0434\u0430\u0447\u0438",
+      "module": "MOD-CONTENT",
+      "type": "fe",
+      "wave": 5,
+      "priority": "high",
+      "phases": {
+        "fe": "complete",
+        "sync": "done",
+        "review": "approved",
+        "qa": "pass"
+      },
+      "status": "done",
+      "task_files_generated": true,
+      "review_fe_result": "approved",
+      "sync_verdict": "UNVERIFIED",
+      "qa_verdict": "PASS",
+      "blockers": [
+        "UC-106-BE"
+      ],
+      "blocks": [],
+      "updated": "2026-05-12T08:00:00Z",
+      "note": " | Wave-5 followup conductor: reconciled to done after BUG-W5 fixes (commits 2cdb42e a94601d 818dec1) + Playwright e2e (0e73ac1).",
+      "sync_started": "2026-05-12T13:37:00Z",
+      "sync_completed": "2026-05-12T13:42:00Z",
+      "sync_headline": "SYNC APPLIED \u2014 UNVERIFIED"
+    },
+    {
+      "id": "UC-107-FE",
+      "uc_id": "UC-107",
+      "uc_name": "\u041e\u0442\u043c\u0435\u043d\u0430 \u0437\u0430\u0434\u0430\u0447\u0438",
+      "module": "MOD-CONTENT",
+      "type": "fe",
+      "wave": 5,
+      "priority": "high",
+      "phases": {
+        "fe": "approved",
+        "sync": "done",
+        "review": "approved",
+        "qa": "done",
+        "stubs": "done"
+      },
+      "status": "done",
+      "started": "2026-05-12T09:17:00Z",
+      "fe_completed": "2026-05-12T09:21:00Z",
+      "review_fe_completed": "2026-05-12T09:23:00Z",
+      "review_fe_result": "approved",
+      "sync_completed": "2026-05-12T13:42:00Z",
+      "sync_verdict": "UNVERIFIED",
+      "qa_completed": "2026-05-12T09:37:00Z",
+      "qa_verdict": "QA COMPLETE",
+      "task_files_generated": true,
+      "blockers": [
+        "UC-107-BE"
+      ],
+      "blocks": [],
+      "updated": "2026-05-12T08:00:00Z",
+      "note": " | Wave-5 followup conductor: reconciled to done after BUG-W5 fixes (commits 2cdb42e a94601d 818dec1) + Playwright e2e (0e73ac1).",
+      "sync_started": "2026-05-12T13:37:00Z",
+      "sync_headline": "SYNC APPLIED \u2014 UNVERIFIED"
+    },
+    {
+      "id": "UC-108-FE",
+      "uc_id": "UC-108",
+      "uc_name": "\u0421\u043a\u0430\u0447\u0438\u0432\u0430\u043d\u0438\u0435 \u0440\u0435\u0437\u0443\u043b\u044c\u0442\u0430\u0442\u0430",
+      "module": "MOD-CONTENT",
+      "type": "fe",
+      "wave": 5,
+      "priority": "high",
+      "phases": {
+        "fe": "approved",
+        "sync": "done",
+        "review": "approved",
+        "qa": "done",
+        "stubs": "done"
+      },
+      "status": "done",
+      "task_files_generated": true,
+      "blockers": [],
+      "blocks": [],
+      "fe_started": "2026-05-12T09:41:44Z",
+      "fe_completed": "2026-05-12T09:47:19Z",
+      "review_fe_completed": "2026-05-12T09:50:13Z",
+      "review_fe_result": "approved",
+      "sync_completed": "2026-05-12T13:42:00Z",
+      "sync_verdict": "UNVERIFIED",
+      "qa_completed": "2026-05-12T07:08:44Z",
+      "qa_verdict": "QA COMPLETE",
+      "stubs_scanned": "2026-05-12T07:11:05Z",
+      "stubs_verdict": "STUBS COMPLETE",
+      "updated": "2026-05-12T08:00:00Z",
+      "note": " | Wave-5 followup conductor: reconciled to done after BUG-W5 fixes (commits 2cdb42e a94601d 818dec1) + Playwright e2e (0e73ac1).",
+      "sync_started": "2026-05-12T13:37:00Z",
+      "sync_headline": "SYNC APPLIED \u2014 UNVERIFIED"
+    },
+    {
+      "id": "UC-401-FE",
+      "uc_id": "UC-401",
+      "uc_name": "\u041f\u0440\u043e\u0441\u043c\u043e\u0442\u0440 \u0435\u0436\u0435\u043c\u0435\u0441\u044f\u0447\u043d\u043e\u0433\u043e \u043e\u0442\u0447\u0451\u0442\u0430 \u043f\u043e \u0433\u0435\u043d\u0435\u0440\u0430\u0446\u0438\u044f\u043c",
+      "module": "MOD-REPORTING",
+      "type": "fe",
+      "wave": 5,
+      "priority": "high",
+      "phases": {
+        "fe": "approved",
+        "sync": "done",
+        "review": "approved",
+        "qa": "done",
+        "stubs": "done"
+      },
+      "status": "done",
+      "started": "2026-05-12T10:15:00Z",
+      "fe_completed": "2026-05-12T10:21:00Z",
+      "review_fe_completed": "2026-05-12T10:23:00Z",
+      "review_fe_result": "approved",
+      "review_fe_headline": "REVIEW APPLIED \u2014 UNVERIFIED (test author overlap 100%)",
+      "review_fe_test_author_flag": "MAJOR \u2014 100% overlap (single-agent conductor turn); mitigated by sync+live QA",
+      "sync_started": "2026-05-12T13:37:00Z",
+      "sync_completed": "2026-05-12T13:42:00Z",
+      "sync_verdict": "UNVERIFIED",
+      "sync_headline": "SYNC APPLIED \u2014 UNVERIFIED",
+      "sync_note": "FE coverage_gap=true (project-wide MSW pattern); contract alignment PASS; authentic integration delegated to /nacl-tl-qa",
+      "qa_started": "2026-05-12T10:30:00Z",
+      "qa_completed": "2026-05-12T10:38:00Z",
+      "qa_verdict": "QA COMPLETE",
+      "qa_note": "14/14 UI-testable criteria PASS. Admin login, table render 6 cols, totals row sum verified, period change, empty state, cost formatting ($0.04/$0.13/\u2014), auth guard (admin/end_user/unauthenticated), BE 403/401. 11 screenshots. 0 bugs.",
+      "stubs_scanned": "2026-05-12T10:38:30Z",
+      "stubs_verdict": "STUBS COMPLETE",
+      "task_files_generated": true,
+      "blockers": [],
+      "blocks": []
+    },
+    {
+      "id": "UC-109-BE",
+      "uc_id": "UC-109",
+      "uc_name": "Edit-\u0430\u0433\u0435\u043d\u0442: \u043f\u0440\u0430\u0432\u043a\u0430 \u0433\u043e\u0442\u043e\u0432\u043e\u0433\u043e \u0430\u0441\u0441\u0435\u0442\u0430",
+      "module": "MOD-CONTENT",
+      "type": "be",
+      "wave": 6,
+      "priority": "low",
+      "phases": {
+        "be": "pending",
+        "sync": "pending",
+        "review": "pending",
+        "qa": "pending"
+      },
+      "status": "ready_for_dev",
+      "task_files_generated": true,
+      "blockers": [
+        "UC-104-BE"
+      ],
+      "blocks": [
+        "UC-109-FE"
+      ]
+    },
+    {
+      "id": "UC-109-FE",
+      "uc_id": "UC-109",
+      "uc_name": "Edit-\u0430\u0433\u0435\u043d\u0442: \u043f\u0440\u0430\u0432\u043a\u0430 \u0433\u043e\u0442\u043e\u0432\u043e\u0433\u043e \u0430\u0441\u0441\u0435\u0442\u0430",
+      "module": "MOD-CONTENT",
+      "type": "fe",
+      "wave": 6,
+      "priority": "low",
+      "phases": {
+        "fe": "pending",
+        "sync": "pending",
+        "review": "pending",
+        "qa": "pending"
+      },
+      "status": "ready_for_dev",
+      "task_files_generated": true,
+      "blockers": [
+        "UC-109-BE"
+      ],
+      "blocks": []
+    },
+    {
+      "id": "UC-110-BE",
+      "uc_id": "UC-110",
+      "uc_name": "\u041f\u0440\u043e\u0441\u043c\u043e\u0442\u0440 \u0438\u0441\u0442\u043e\u0440\u0438\u0438 \u0441\u0435\u0441\u0441\u0438\u0438",
+      "module": "MOD-CONTENT",
+      "type": "be",
+      "wave": 6,
+      "priority": "low",
+      "phases": {
+        "be": "pending",
+        "sync": "pending",
+        "review": "pending",
+        "qa": "pending"
+      },
+      "status": "ready_for_dev",
+      "task_files_generated": true,
+      "blockers": [
+        "UC-103-BE"
+      ],
+      "blocks": [
+        "UC-110-FE"
+      ]
+    },
+    {
+      "id": "UC-110-FE",
+      "uc_id": "UC-110",
+      "uc_name": "\u041f\u0440\u043e\u0441\u043c\u043e\u0442\u0440 \u0438\u0441\u0442\u043e\u0440\u0438\u0438 \u0441\u0435\u0441\u0441\u0438\u0438",
+      "module": "MOD-CONTENT",
+      "type": "fe",
+      "wave": 6,
+      "priority": "low",
+      "phases": {
+        "fe": "pending",
+        "sync": "pending",
+        "review": "pending",
+        "qa": "pending"
+      },
+      "status": "ready_for_dev",
+      "task_files_generated": true,
+      "blockers": [
+        "UC-110-BE"
+      ],
+      "blocks": []
+    },
+    {
+      "id": "UC-204-BE",
+      "uc_id": "UC-204",
+      "uc_name": "Admin: \u043c\u043e\u043d\u0438\u0442\u043e\u0440\u0438\u043d\u0433 \u043e\u0447\u0435\u0440\u0435\u0434\u0438 \u0438 \u0440\u0443\u0447\u043d\u043e\u0439 cancel/retry",
+      "module": "MOD-QUEUE",
+      "type": "be",
+      "wave": 6,
+      "priority": "low",
+      "phases": {
+        "be": "pending",
+        "sync": "pending",
+        "review": "pending",
+        "qa": "pending"
+      },
+      "status": "ready_for_dev",
+      "task_files_generated": true,
+      "blockers": [
+        "UC-201-BE",
+        "UC-202-BE"
+      ],
+      "blocks": [
+        "UC-204-FE"
+      ]
+    },
+    {
+      "id": "UC-204-FE",
+      "uc_id": "UC-204",
+      "uc_name": "Admin: \u043c\u043e\u043d\u0438\u0442\u043e\u0440\u0438\u043d\u0433 \u043e\u0447\u0435\u0440\u0435\u0434\u0438 \u0438 \u0440\u0443\u0447\u043d\u043e\u0439 cancel/retry",
+      "module": "MOD-QUEUE",
+      "type": "fe",
+      "wave": 6,
+      "priority": "low",
+      "phases": {
+        "fe": "pending",
+        "sync": "pending",
+        "review": "pending",
+        "qa": "pending"
+      },
+      "status": "ready_for_dev",
+      "task_files_generated": true,
+      "blockers": [
+        "UC-204-BE"
+      ],
+      "blocks": []
+    },
+    {
+      "id": "UC-402-BE",
+      "uc_id": "UC-402",
+      "uc_name": "\u042d\u043a\u0441\u043f\u043e\u0440\u0442 \u043e\u0442\u0447\u0451\u0442\u0430 \u0432 CSV/XLSX",
+      "module": "MOD-REPORTING",
+      "type": "be",
+      "wave": 6,
+      "priority": "low",
+      "phases": {
+        "be": "pending",
+        "sync": "pending",
+        "review": "pending",
+        "qa": "pending"
+      },
+      "status": "ready_for_dev",
+      "task_files_generated": true,
+      "blockers": [
+        "UC-401-BE"
+      ],
+      "blocks": [
+        "UC-402-FE"
+      ]
+    },
+    {
+      "id": "UC-402-FE",
+      "uc_id": "UC-402",
+      "uc_name": "\u042d\u043a\u0441\u043f\u043e\u0440\u0442 \u043e\u0442\u0447\u0451\u0442\u0430 \u0432 CSV/XLSX",
+      "module": "MOD-REPORTING",
+      "type": "fe",
+      "wave": 6,
+      "priority": "low",
+      "phases": {
+        "fe": "pending",
+        "sync": "pending",
+        "review": "pending",
+        "qa": "pending"
+      },
+      "status": "ready_for_dev",
+      "task_files_generated": true,
+      "blockers": [
+        "UC-402-BE"
+      ],
+      "blocks": []
+    },
+    {
+      "id": "UC-410-BE",
+      "uc_id": "UC-410",
+      "uc_name": "\u041c\u0430\u0442\u0435\u0440\u0438\u0430\u043b\u0438\u0437\u0430\u0446\u0438\u044f \u0441\u043d\u0430\u043f\u0448\u043e\u0442\u0430 \u043e\u0442\u0447\u0451\u0442\u0430 (cron)",
+      "module": "MOD-REPORTING",
+      "type": "be",
+      "wave": 6,
+      "priority": "low",
+      "pure_be": true,
+      "phases": {
+        "be": "pending",
+        "review": "pending",
+        "qa": "pending"
+      },
+      "status": "ready_for_dev",
+      "task_files_generated": true,
+      "blockers": [
+        "UC-401-BE"
+      ],
+      "blocks": []
+    },
+    {
+      "id": "UC-103-BE-FR001",
+      "uc_id": "UC-103",
+      "uc_name": "\u0421\u043e\u0437\u0434\u0430\u043d\u0438\u0435 \u0441\u0435\u0441\u0441\u0438\u0438 \u0433\u0435\u043d\u0435\u0440\u0430\u0446\u0438\u0438",
+      "module": "MOD-CONTENT",
+      "type": "be",
+      "wave": 7,
+      "priority": "high",
+      "feature_request": "FR-001",
+      "phases": {
+        "be": "pending",
+        "sync": "pending",
+        "review": "pending",
+        "qa": "pending"
+      },
+      "status": "done",
+      "task_files_generated": true,
+      "blockers": [
+        "UC-103-BE",
+        "UC-104-BE",
+        "UC-201-BE",
+        "TECH-008"
+      ],
+      "blocks": [
+        "UC-103-FE-FR001"
+      ]
+    },
+    {
+      "id": "UC-103-FE-FR001",
+      "uc_id": "UC-103",
+      "uc_name": "\u0421\u043e\u0437\u0434\u0430\u043d\u0438\u0435 \u0441\u0435\u0441\u0441\u0438\u0438 \u0433\u0435\u043d\u0435\u0440\u0430\u0446\u0438\u0438",
+      "module": "MOD-CONTENT",
+      "type": "fe",
+      "wave": 7,
+      "priority": "high",
+      "feature_request": "FR-001",
+      "phases": {
+        "fe": "pending",
+        "sync": "pending",
+        "review_fe": "pending",
+        "qa": "pending"
+      },
+      "status": "done",
+      "task_files_generated": true,
+      "blockers": [
+        "UC-103-BE-FR001",
+        "UC-103-FE",
+        "UC-104-FE"
+      ],
+      "blocks": []
+    },
+    {
+      "id": "UC-104-BE-FR001",
+      "uc_id": "UC-104",
+      "uc_name": "\u0421\u043e\u0437\u0434\u0430\u043d\u0438\u0435 \u0437\u0430\u0434\u0430\u0447\u0438 \u0438 \u0437\u0430\u043f\u0443\u0441\u043a workflow",
+      "module": "MOD-CONTENT",
+      "type": "be",
+      "wave": 7,
+      "priority": "low",
+      "feature_request": "FR-001",
+      "phases": {
+        "be": "deferred",
+        "sync": "n/a",
+        "review": "n/a",
+        "qa": "n/a"
+      },
+      "status": "deferred",
+      "deferred_reason": "Audit-only; activates only if UC-104 BE has a Session-create code path.",
+      "task_files_generated": true,
+      "blockers": [
+        "UC-104-BE"
+      ],
+      "blocks": []
+    },
+    {
+      "id": "UC-104-FE-FR001",
+      "uc_id": "UC-104",
+      "uc_name": "\u0421\u043e\u0437\u0434\u0430\u043d\u0438\u0435 \u0437\u0430\u0434\u0430\u0447\u0438 \u0438 \u0437\u0430\u043f\u0443\u0441\u043a workflow",
+      "module": "MOD-CONTENT",
+      "type": "fe",
+      "wave": 7,
+      "priority": "medium",
+      "feature_request": "FR-001",
+      "phases": {
+        "fe": "pending",
+        "sync": "pending",
+        "review_fe": "pending",
+        "qa": "pending"
+      },
+      "status": "done",
+      "task_files_generated": true,
+      "blockers": [
+        "UC-104-FE"
+      ],
+      "blocks": []
+    },
+    {
+      "id": "UC-105-BE-FR002",
+      "uc_id": "UC-105",
+      "uc_name": "\u041f\u0440\u043e\u0441\u043c\u043e\u0442\u0440 \u0441\u0442\u0430\u0442\u0443\u0441\u0430 \u0438 \u0440\u0435\u0437\u0443\u043b\u044c\u0442\u0430\u0442\u043e\u0432 \u0437\u0430\u0434\u0430\u0447\u0438",
+      "module": "MOD-CONTENT",
+      "type": "be",
+      "wave": 8,
+      "priority": "medium",
+      "feature_request": "FR-002",
+      "phases": {
+        "be": "approved",
+        "sync": "n/a",
+        "review": "approved",
+        "qa": "n/a"
+      },
+      "status": "done",
+      "completed_at": "2026-05-13T13:00:00Z",
+      "task_files_generated": true,
+      "blockers": [
+        "UC-105-BE"
+      ],
+      "blocks": [
+        "UC-105-FE-FR002"
+      ]
+    },
+    {
+      "id": "UC-105-FE-FR002",
+      "uc_id": "UC-105",
+      "uc_name": "\u041f\u0440\u043e\u0441\u043c\u043e\u0442\u0440 \u0441\u0442\u0430\u0442\u0443\u0441\u0430 \u0438 \u0440\u0435\u0437\u0443\u043b\u044c\u0442\u0430\u0442\u043e\u0432 \u0437\u0430\u0434\u0430\u0447\u0438",
+      "module": "MOD-CONTENT",
+      "type": "fe",
+      "wave": 8,
+      "priority": "medium",
+      "feature_request": "FR-002",
+      "phases": {
+        "fe": "approved",
+        "sync": "n/a",
+        "review_fe": "approved",
+        "qa": "n/a"
+      },
+      "status": "done",
+      "completed_at": "2026-05-13T13:30:00Z",
+      "task_files_generated": true,
+      "blockers": [
+        "UC-105-FE",
+        "UC-105-BE-FR002"
+      ],
+      "blocks": []
+    },
+    {
+      "id": "TECH-010",
+      "title": "DB migration: model_profile new cols + chat_completion_log table",
+      "type": "tech",
+      "wave": 9,
+      "priority": "high",
+      "feature_request": "FR-003",
+      "status": "done",
+      "task_files_generated": true,
+      "phases": {
+        "migration": "applied",
+        "schema": "updated",
+        "tests": "pass"
+      },
+      "completed_at": "2026-05-18T12:30:00Z",
+      "blockers": [
+        "TECH-003"
+      ],
+      "blocks": [
+        "TECH-011",
+        "UC-303-BE-FR003"
+      ],
+      "commit": "9bce7e9"
+    },
+    {
+      "id": "TECH-011",
+      "title": "Shared types ModelKind/ApiShape/ChatCompletionLog + Drizzle regen",
+      "type": "tech",
+      "wave": 9,
+      "priority": "high",
+      "feature_request": "FR-003",
+      "status": "done",
+      "phases": {
+        "dev": "done"
+      },
+      "completed_at": "2026-05-18T12:30:00Z",
+      "task_files_generated": true,
+      "blockers": [
+        "TECH-010"
+      ],
+      "blocks": [
+        "TECH-012",
+        "UC-303-BE-FR003",
+        "UC-202-BE-FR003",
+        "UC-150-BE-FR003"
+      ],
+      "commit": "9bce7e9"
+    },
+    {
+      "id": "TECH-012",
+      "title": "Provider adapter abstraction (3 adapters + factory by ApiShape)",
+      "type": "tech",
+      "wave": 9,
+      "priority": "high",
+      "feature_request": "FR-003",
+      "status": "done",
+      "phase": "dev_complete",
+      "task_files_generated": true,
+      "blockers": [
+        "TECH-011"
+      ],
+      "blocks": [
+        "UC-202-BE-FR003"
+      ],
+      "commit": "1f41e49",
+      "completed_at": "2026-05-18T13:00:00Z"
+    },
+    {
+      "id": "UC-303-BE-FR003",
+      "uc_id": "UC-303",
+      "uc_name": "CRUD ModelProfile",
+      "module": "MOD-ADMIN",
+      "type": "be",
+      "wave": 9,
+      "priority": "high",
+      "feature_request": "FR-003",
+      "phases": {
+        "be": "done",
+        "sync": "done",
+        "review_be": "approved",
+        "qa": "pass"
+      },
+      "status": "done",
+      "task_files_generated": true,
+      "blockers": [
+        "TECH-010",
+        "TECH-011",
+        "UC-303-BE"
+      ],
+      "blocks": [
+        "UC-303-FE-FR003",
+        "UC-202-BE-FR003",
+        "UC-150-BE-FR003"
+      ],
+      "commit": "111ceea",
+      "completed_at": "2026-05-18T13:00:00Z"
+    },
+    {
+      "id": "UC-303-FE-FR003",
+      "uc_id": "UC-303",
+      "uc_name": "CRUD ModelProfile",
+      "module": "MOD-ADMIN",
+      "type": "fe",
+      "wave": 9,
+      "priority": "high",
+      "feature_request": "FR-003",
+      "phases": {
+        "fe": "done",
+        "sync": "done",
+        "review_fe": "approved",
+        "qa": "pass"
+      },
+      "status": "done",
+      "completed_at": "2026-05-18T13:00:00Z",
+      "task_files_generated": true,
+      "blockers": [
+        "UC-303-BE-FR003",
+        "UC-303-FE"
+      ],
+      "blocks": [],
+      "dev_notes": "typecheck PASS, 490/490 FE tests green. Added CapabilitiesEditor + 4 new form fields + 2 new table columns. Updated ModelProfilesTable to use ModelProfilePublic.",
+      "commit": "9c67b6c"
+    },
+    {
+      "id": "UC-202-BE-FR003",
+      "uc_id": "UC-202",
+      "uc_name": "Dispatch \u0438 \u043e\u0431\u0440\u0430\u0431\u043e\u0442\u043a\u0430 \u0441\u043b\u043e\u0442\u0430 \u043e\u0447\u0435\u0440\u0435\u0434\u0438",
+      "module": "MOD-QUEUE",
+      "type": "be",
+      "wave": 9,
+      "priority": "high",
+      "pure_be": true,
+      "feature_request": "FR-003",
+      "phases": {
+        "be": "done",
+        "review_be": "approved",
+        "qa": "pass"
+      },
+      "status": "done",
+      "task_files_generated": true,
+      "blockers": [
+        "TECH-011",
+        "TECH-012",
+        "UC-303-BE-FR003",
+        "UC-202-BE"
+      ],
+      "blocks": [],
+      "commit": "f5a9fa7",
+      "completed_at": "2026-05-18T13:00:00Z"
+    },
+    {
+      "id": "UC-150-BE-FR003",
+      "uc_id": "UC-150",
+      "uc_name": "Workflow execution engine (\u0438\u0441\u043f\u043e\u043b\u043d\u0438\u0442\u0435\u043b\u044c \u0445\u0430\u0440\u0434\u043a\u043e\u0436\u0435\u043d\u043d\u043e\u0433\u043e workflow)",
+      "module": "MOD-CONTENT",
+      "type": "be",
+      "wave": 9,
+      "priority": "high",
+      "pure_be": true,
+      "feature_request": "FR-003",
+      "phases": {
+        "be": "done",
+        "review_be": "approved",
+        "qa": "pass"
+      },
+      "status": "done",
+      "task_files_generated": true,
+      "blockers": [],
+      "blocks": [],
+      "commit": "f5a9fa7",
+      "completed_at": "2026-05-18T13:00:00Z"
+    },
+    {
+      "id": "TECH-013",
+      "title": "DB migration: provider_model_catalog_entry table + model_profile.overrides_catalog column",
+      "type": "tech",
+      "wave": 10,
+      "priority": "high",
+      "feature_request": "FR-004",
+      "status": "done",
+      "task_files_generated": true,
+      "blockers": [
+        "TECH-003"
+      ],
+      "blocks": [
+        "TECH-014",
+        "TECH-015",
+        "UC-303-BE-FR004",
+        "UC-306-BE-FR004"
+      ],
+      "commit": "71d6d06",
+      "completed_at": "2026-05-18T21:30:00Z"
+    },
+    {
+      "id": "TECH-014",
+      "title": "Seed initial provider model catalog + shared types (ModelCatalogSource, ProviderModelCatalogEntryPublic)",
+      "type": "tech",
+      "wave": 10,
+      "priority": "high",
+      "feature_request": "FR-004",
+      "status": "done",
+      "task_files_generated": true,
+      "blockers": [
+        "TECH-013"
+      ],
+      "blocks": [
+        "UC-306-BE-FR004",
+        "UC-306-FE-FR004",
+        "UC-303-BE-FR004",
+        "UC-303-FE-FR004"
+      ],
+      "commit": "d17dd31",
+      "completed_at": "2026-05-18T21:30:00Z"
+    },
+    {
+      "id": "TECH-015",
+      "title": "Provider list-models adapters (openrouter, api.kie.example.invalid, apiframe, gemini)",
+      "type": "tech",
+      "wave": 10,
+      "priority": "high",
+      "feature_request": "FR-004",
+      "status": "done",
+      "task_files_generated": true,
+      "blockers": [
+        "TECH-013",
+        "TECH-012"
+      ],
+      "blocks": [
+        "UC-306-BE-FR004"
+      ],
+      "commit": "db33d2b",
+      "completed_at": "2026-05-18T21:30:00Z"
+    },
+    {
+      "id": "UC-306-BE-FR004",
+      "uc_id": "UC-306",
+      "uc_name": "\u041a\u0430\u0442\u0430\u043b\u043e\u0433 \u043c\u043e\u0434\u0435\u043b\u0435\u0439 \u043f\u0440\u043e\u0432\u0430\u0439\u0434\u0435\u0440\u0430 (\u043f\u0440\u043e\u0441\u043c\u043e\u0442\u0440 \u0438 Refresh)",
+      "module": "MOD-ADMIN",
+      "type": "be",
+      "wave": 10,
+      "priority": "high",
+      "feature_request": "FR-004",
+      "phases": {
+        "be": "done",
+        "sync": "done",
+        "review_be": "approved",
+        "qa": "pass"
+      },
+      "status": "done",
+      "task_files_generated": true,
+      "blockers": [
+        "TECH-013",
+        "TECH-014",
+        "TECH-015"
+      ],
+      "blocks": [
+        "UC-306-FE-FR004",
+        "UC-303-BE-FR004"
+      ],
+      "commit": "72e537a",
+      "completed_at": "2026-05-18T21:30:00Z"
+    },
+    {
+      "id": "UC-306-FE-FR004",
+      "uc_id": "UC-306",
+      "uc_name": "\u041a\u0430\u0442\u0430\u043b\u043e\u0433 \u043c\u043e\u0434\u0435\u043b\u0435\u0439 \u043f\u0440\u043e\u0432\u0430\u0439\u0434\u0435\u0440\u0430 (\u043f\u0440\u043e\u0441\u043c\u043e\u0442\u0440 \u0438 Refresh)",
+      "module": "MOD-ADMIN",
+      "type": "fe",
+      "wave": 10,
+      "priority": "high",
+      "feature_request": "FR-004",
+      "phases": {
+        "fe": "done",
+        "sync": "done",
+        "review_fe": "approved",
+        "qa": "pass"
+      },
+      "status": "done",
+      "task_files_generated": true,
+      "blockers": [
+        "UC-306-BE-FR004"
+      ],
+      "blocks": [],
+      "commit": "91ad206",
+      "completed_at": "2026-05-18T21:30:00Z"
+    },
+    {
+      "id": "UC-303-BE-FR004",
+      "uc_id": "UC-303",
+      "uc_name": "CRUD ModelProfile",
+      "module": "MOD-ADMIN",
+      "type": "be",
+      "wave": 10,
+      "priority": "high",
+      "feature_request": "FR-004",
+      "phases": {
+        "be": "done",
+        "sync": "done",
+        "review_be": "approved",
+        "qa": "pass"
+      },
+      "status": "done",
+      "task_files_generated": true,
+      "blockers": [
+        "TECH-013",
+        "UC-306-BE-FR004",
+        "UC-303-BE-FR003"
+      ],
+      "blocks": [
+        "UC-303-FE-FR004"
+      ],
+      "commit": "30fcd22",
+      "completed_at": "2026-05-18T21:30:00Z"
+    },
+    {
+      "id": "UC-303-FE-FR004",
+      "uc_id": "UC-303",
+      "uc_name": "CRUD ModelProfile",
+      "module": "MOD-ADMIN",
+      "type": "fe",
+      "wave": 10,
+      "priority": "high",
+      "feature_request": "FR-004",
+      "phases": {
+        "fe": "done",
+        "sync": "done",
+        "review_fe": "approved",
+        "qa": "pass"
+      },
+      "status": "done",
+      "task_files_generated": true,
+      "blockers": [
+        "UC-303-BE-FR004",
+        "UC-303-FE-FR003"
+      ],
+      "blocks": [],
+      "commit": "57ea576",
+      "completed_at": "2026-05-18T21:30:00Z"
+    },
+    {
+      "id": "TECH-WF-ORDER-DB",
+      "title": "DB migration: workflow_step_configs.step_order column + unique index + CHECK + backfill",
+      "type": "tech",
+      "wave": 11,
+      "priority": "high",
+      "feature_request": "FR-005",
+      "status": "pending",
+      "task_files_generated": true,
+      "phases": {
+        "schema": "updated",
+        "migration": "applied",
+        "seed": "updated",
+        "tests": "pass"
+      },
+      "dev_notes": "step_order INT NOT NULL added to workflow_step_configs; migration 0021_fr005_workflow_step_order.sql applied clean (22 rows backfilled matching YAML order); UNIQUE INDEX + CHECK constraints in place; service createWorkflowStepConfig auto-assigns MAX+1; 1209/1209 BE tests green; typecheck + lint (warnings only) + build all pass.",
+      "blockers": ["TECH-003"],
+      "blocks": ["UC-305-BE-FR005", "UC-302-BE-FR005"]
+    },
+    {
+      "id": "UC-305-BE-FR005",
+      "uc_id": "UC-305",
+      "uc_name": "Управление WorkflowStepConfig и ProviderConfig",
+      "module": "MOD-ADMIN",
+      "type": "be",
+      "wave": 11,
+      "priority": "high",
+      "feature_request": "FR-005",
+      "phases": {
+        "be": "done",
+        "sync": "n/a",
+        "review_be": "pending",
+        "qa": "pending"
+      },
+      "status": "ready_for_review",
+      "task_files_generated": true,
+      "blockers": ["TECH-WF-ORDER-DB", "UC-305-BE"],
+      "blocks": ["UC-305-FE-FR005", "UC-302-FE-FR005"]
+    },
+    {
+      "id": "UC-302-BE-FR005",
+      "uc_id": "UC-302",
+      "uc_name": "CRUD PromptTemplate",
+      "module": "MOD-ADMIN",
+      "type": "be",
+      "wave": 11,
+      "priority": "medium",
+      "feature_request": "FR-005",
+      "phases": {
+        "be": "done",
+        "sync": "done",
+        "review_be": "done",
+        "qa": "done"
+      },
+      "status": "done",
+      "task_files_generated": true,
+      "blockers": ["TECH-WF-ORDER-DB", "UC-302-BE"],
+      "blocks": ["UC-302-FE-FR005"]
+    },
+    {
+      "id": "UC-305-FE-FR005",
+      "uc_id": "UC-305",
+      "uc_name": "Управление WorkflowStepConfig и ProviderConfig",
+      "module": "MOD-ADMIN",
+      "type": "fe",
+      "wave": 11,
+      "priority": "high",
+      "feature_request": "FR-005",
+      "phases": {
+        "fe": "done",
+        "sync": "done",
+        "review_fe": "pending",
+        "qa": "pending"
+      },
+      "status": "ready_for_review",
+      "task_files_generated": true,
+      "blockers": [],
+      "blocks": []
+    },
+    {
+      "id": "UC-302-FE-FR005",
+      "uc_id": "UC-302",
+      "uc_name": "CRUD PromptTemplate",
+      "module": "MOD-ADMIN",
+      "type": "fe",
+      "wave": 11,
+      "priority": "medium",
+      "feature_request": "FR-005",
+      "phases": {
+        "fe": "done",
+        "sync": "pending",
+        "review_fe": "pending",
+        "qa": "pending"
+      },
+      "status": "ready_for_review",
+      "task_files_generated": true,
+      "blockers": ["UC-302-BE-FR005", "UC-305-BE-FR005", "UC-302-FE"],
+      "blocks": [],
+      "dev_notes": "WorkflowStepCombobox (shadcn Command+Popover pattern, custom vendored) replaces flat Select in PromptTemplateForm. 18 new tests (TS-501..TS-514). FE tests: 549→567 (Δ+18). typecheck PASS, lint 0 errors, build PASS. No new npm deps (custom Command+Popover without Radix/cmdk)."
+    }
+  ],
+  "fixes": {
+    "fix-2026-05-13-upload-url-inlinetask": {
+      "date": "2026-05-13",
+      "level": "L1",
+      "status": "PASS",
+      "qa_verdict": "QA COMPLETE",
+      "qa_method": "automated (vitest \u2014 BE + FE suites)",
+      "affected_uc": [
+        "UC-103-BE",
+        "UC-103-FE"
+      ],
+      "summary": "Bug A: added POST /api/content/tasks/upload-url (session-independent presign, pending/ prefix). Bug B: moved entries\u2192parent sync from inside setEntries updater to useEffect in InlineTaskBlock.",
+      "test_results": {
+        "backend": {
+          "files": 84,
+          "tests": 993,
+          "passed": 993,
+          "failed": 0
+        },
+        "frontend": {
+          "files": 49,
+          "tests": 464,
+          "passed": 464,
+          "failed": 0
+        }
+      },
+      "code_verified": {
+        "be_route_exists": true,
+        "service_export_exists": true,
+        "fe_useeffect_fix": true,
+        "test_coverage_new_route": true,
+        "note": "handleRemove still calls syncToParent inside setEntries \u2014 pre-existing, out of scope; useEffect at line 209 redundantly covers it"
+      },
+      "qa_completed": "2026-05-13T11:35:00Z"
+    }
+  }
+}

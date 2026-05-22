@@ -1,0 +1,152 @@
+[
+  {
+    "labels": [
+      "ActivityStep"
+    ],
+    "properties": {
+      "actor": "User",
+      "migrated_at": "2026-05-06T18:39:47.843000000+00:00",
+      "step_number": 1,
+      "created": "2026-04-19T21:04:36.710000000+00:00",
+      "description": "Переходит по URL сайта (из рекламы, шеринга, прямого ввода)",
+      "id": "UC-001-A01",
+      "updated": "2026-05-06T18:39:47.843000000+00:00",
+      "source_file": "docs/14-usecases/UC001-view-landing.md"
+    }
+  },
+  {
+    "labels": [
+      "ActivityStep"
+    ],
+    "properties": {
+      "actor": "System",
+      "migrated_at": "2026-05-06T18:39:47.843000000+00:00",
+      "step_number": 2,
+      "created": "2026-04-19T21:04:36.710000000+00:00",
+      "description": "Загружает HTML-документ, CSS, JavaScript-бандл",
+      "id": "UC-001-A02",
+      "updated": "2026-05-06T18:39:47.843000000+00:00",
+      "source_file": "docs/14-usecases/UC001-view-landing.md"
+    }
+  },
+  {
+    "labels": [
+      "ActivityStep"
+    ],
+    "properties": {
+      "actor": "System",
+      "migrated_at": "2026-05-06T18:39:47.843000000+00:00",
+      "step_number": 3,
+      "created": "2026-04-19T21:04:36.710000000+00:00",
+      "description": "Подключает внешние шрифты (Google Fonts: Playfair Display 400/700/900, italic; Courier Prime 400/700, italic)",
+      "id": "UC-001-A03",
+      "updated": "2026-05-06T18:39:47.843000000+00:00",
+      "source_file": "docs/14-usecases/UC001-view-landing.md"
+    }
+  },
+  {
+    "labels": [
+      "ActivityStep"
+    ],
+    "properties": {
+      "actor": "System",
+      "migrated_at": "2026-05-06T18:39:47.843000000+00:00",
+      "step_number": 4,
+      "created": "2026-04-19T21:04:36.710000000+00:00",
+      "description": "Внедряет глобальные стили: reset, анимации (fadeIn, grain, pulse, rotate, blink), стили кнопок (btn-primary, btn-secondary), scrollbar",
+      "id": "UC-001-A04",
+      "updated": "2026-05-06T18:39:47.843000000+00:00",
+      "source_file": "docs/14-usecases/UC001-view-landing.md"
+    }
+  },
+  {
+    "labels": [
+      "ActivityStep"
+    ],
+    "properties": {
+      "actor": "System",
+      "migrated_at": "2026-05-06T18:39:47.843000000+00:00",
+      "step_number": 5,
+      "created": "2026-04-19T21:04:36.710000000+00:00",
+      "description": "Проверяет наличие сохранённой сессии в localStorage (ключ family-stories.session.v1)",
+      "id": "UC-001-A05",
+      "updated": "2026-05-06T18:39:47.843000000+00:00",
+      "source_file": "docs/14-usecases/UC001-view-landing.md"
+    }
+  },
+  {
+    "labels": [
+      "ActivityStep"
+    ],
+    "properties": {
+      "actor": "System",
+      "migrated_at": "2026-05-06T18:39:47.843000000+00:00",
+      "step_number": 6,
+      "created": "2026-04-19T21:04:36.710000000+00:00",
+      "description": "Проверяет наличие сохранённого состояния в localStorage (ключ family-stories.state.v1)",
+      "id": "UC-001-A06",
+      "updated": "2026-05-06T18:39:47.843000000+00:00",
+      "source_file": "docs/14-usecases/UC001-view-landing.md"
+    }
+  },
+  {
+    "labels": [
+      "ActivityStep"
+    ],
+    "properties": {
+      "actor": "System",
+      "migrated_at": "2026-05-06T18:39:47.843000000+00:00",
+      "step_number": 7,
+      "created": "2026-04-19T21:04:36.710000000+00:00",
+      "description": "Рендерит grain-overlay (SVG feTurbulence noise, opacity 0.4, mix-blend-mode: multiply)",
+      "id": "UC-001-A07",
+      "updated": "2026-05-06T18:39:47.843000000+00:00",
+      "source_file": "docs/14-usecases/UC001-view-landing.md"
+    }
+  },
+  {
+    "labels": [
+      "ActivityStep"
+    ],
+    "properties": {
+      "actor": "System",
+      "migrated_at": "2026-05-06T18:39:47.843000000+00:00",
+      "step_number": 8,
+      "created": "2026-04-19T21:04:36.710000000+00:00",
+      "description": "Рендерит vignette-overlay (radial-gradient, transparent 60% -> rgba(26,26,26,0.25) 100%)",
+      "id": "UC-001-A08",
+      "updated": "2026-05-06T18:39:47.843000000+00:00",
+      "source_file": "docs/14-usecases/UC001-view-landing.md"
+    }
+  },
+  {
+    "labels": [
+      "ActivityStep"
+    ],
+    "properties": {
+      "actor": "System",
+      "migrated_at": "2026-05-06T18:39:47.843000000+00:00",
+      "step_number": 9,
+      "created": "2026-04-19T21:04:36.710000000+00:00",
+      "description": "Рендерит hero-блок с анимацией fade-in (0.6s ease): иконка камеры (SVG), заголовок, декоративная линия, подзаголовок, мета-текст, CTA-кнопка",
+      "id": "UC-001-A09",
+      "updated": "2026-05-06T18:39:47.843000000+00:00",
+      "source_file": "docs/14-usecases/UC001-view-landing.md"
+    }
+  },
+  {
+    "labels": [
+      "ActivityStep"
+    ],
+    "properties": {
+      "actor": "System",
+      "migrated_at": "2026-05-06T18:39:47.843000000+00:00",
+      "step_number": 10,
+      "created": "2026-04-19T21:04:36.710000000+00:00",
+      "description": "Инициализирует счётчик Яндекс.Метрики и фиксирует событие визита (pageview)",
+      "id": "UC-001-A10",
+      "updated": "2026-05-06T18:39:47.843000000+00:00",
+      "source_file": "docs/14-usecases/UC001-view-landing.md"
+    }
+  }
+]

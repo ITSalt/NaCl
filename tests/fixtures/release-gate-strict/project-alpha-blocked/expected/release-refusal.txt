@@ -1,0 +1,127 @@
+================================================================
+W4-blocking-release — expected refusal trace for project-alpha-blocked
+================================================================
+
+This is the expected refusal trace when /nacl-tl-release is run
+against project-alpha-blocked with NO signed exceptions present
+and NO emergency-mode env vars set.
+
+Gates fire in workflow order. The skill emits exactly ONE terminal
+headline (the first refusal it encounters). The fixture's expected
+terminal headline is documented at the bottom; the per-gate
+verdict table documents what each individual gate would have
+produced had the prior gates not fired first.
+
+----------------------------------------------------------------
+Per-gate evaluation (independent; observed by masking prior gates)
+----------------------------------------------------------------
+
+| # | Condition                              | Verdict | Workflow detail                                  |
+|---|----------------------------------------|---------|--------------------------------------------------|
+| 1 | upstream-sync-unverified               | REFUSE  | upstream-sync-unverified                         |
+| 2 | upstream-qa-unverified                 | REFUSE  | upstream-qa-unverified                           |
+| 3 | graph-stale (live vs baseline)         | REFUSE  | graph-stale                                      |
+| 4 | sa-validate-critical                   | REFUSE  | sa-validate-critical                             |
+| 5 | missing-prod-golden-path               | REFUSE  | missing-prod-golden-path                         |
+| 6 | skipped-pr / skipped-ci without prototype + exception | REFUSE  | direct-strategy-on-standard-project              |
+
+All six conditions fire. The W4 acceptance check requires AT LEAST
+FOUR of six; this fixture demonstrates SIX of six.
+
+----------------------------------------------------------------
+Terminal headline (no exceptions, no emergency mode)
+----------------------------------------------------------------
+
+The release skill encounters condition #6 first (Step 0 prelude
+validates project_kind + git.strategy combination BEFORE entering
+Step 1 candidate collection). Expected terminal headline:
+
+  RELEASE HALTED — UNVERIFIED (direct-strategy-on-standard-project)
+
+If condition #6 is masked (e.g. config.yaml swapped to
+project_kind: prototype + signed exception for skipped-pr/ci), the
+skill enters Step 1, collects no PRs, advances to Step 2 status
+gate over commits-since-last-tag, and proceeds to Step 3 verify
+production deployment. Condition #1 (upstream-sync-unverified)
+then fires at the prelude of Step 2's status branching, yielding:
+
+  RELEASE HALTED — UNVERIFIED (upstream-sync-unverified)
+
+Continuing to mask #1 surfaces #2:
+
+  RELEASE HALTED — UNVERIFIED (upstream-qa-unverified)
+
+Continuing to mask #2 surfaces #5 (PROD_GOLDEN_PATH precedes
+graph-staleness in Step 3b):
+
+  RELEASE HALTED — UNVERIFIED (missing-prod-golden-path)
+
+Continuing to mask #5 surfaces #3 (graph-staleness check in
+Step 7 pre-flight):
+
+  RELEASE HALTED — UNVERIFIED (graph-stale)
+
+Continuing to mask #3 surfaces #4 (the SA-validate gate is
+evaluated alongside the graph evaluation):
+
+  RELEASE HALTED — UNVERIFIED (sa-validate-critical)
+
+----------------------------------------------------------------
+Closed-set Status (Codex contract)
+----------------------------------------------------------------
+
+In every scenario above, the closed-set Status: line is BLOCKED
+(NOT FAILED — the gates are pre-conditions, not failures of the
+release action itself).
+
+----------------------------------------------------------------
+With a valid signed exception for graph-stale (scenario B)
+----------------------------------------------------------------
+
+If .tl/exceptions/EXC-2026-05-22-valid-graph-stale.yaml is
+present (and well-formed and unexpired), condition #3 is
+suppressed. The skill still refuses with the FIRST remaining
+condition (in the masking order above, that's #6 →
+direct-strategy-on-standard-project). The graph-stale exception
+DOES NOT bypass the other five conditions.
+
+The release-status.json gains:
+
+  "exceptions": [
+    {
+      "exception_id": "EXC-2026-05-22-valid-graph-stale",
+      "affected_gates": ["graph-stale"],
+      "expiry": "2026-05-23T08:35:00Z",
+      "followup_task": "TECH-042-graph-refresh"
+    }
+  ]
+
+----------------------------------------------------------------
+With the expired signed exception (scenario C)
+----------------------------------------------------------------
+
+If .tl/exceptions/EXC-2025-12-01-expired-graph-stale.yaml is the
+only exception present, the skill MUST treat it as ABSENT:
+
+- Banner printed on stderr:
+    Exception EXC-2025-12-01-expired-graph-stale is EXPIRED
+    (expiry: 2025-12-31T23:59:59Z, now: 2026-05-22T10:05:00Z).
+    Treating as absent.
+- Workflow detail recorded: exception-expired
+- Condition #3 (graph-stale) fires again as if no exception
+  existed.
+
+This is the W4 binding rule "Expired = blocker".
+
+----------------------------------------------------------------
+With NACL_EMERGENCY=1 + companion env vars (scenario D)
+----------------------------------------------------------------
+
+The skill prints one bypass banner per refusal (six total), writes
+.tl/emergencies/<timestamp>-<slug>.yaml, appends to
+release-status.json under "emergency", appends to
+.tl/changelog.md, and advances. Terminal headline:
+
+  RELEASE COMPLETE — emergency-bypass
+
+Closed-set Status: PARTIALLY_VERIFIED (NEVER VERIFIED).

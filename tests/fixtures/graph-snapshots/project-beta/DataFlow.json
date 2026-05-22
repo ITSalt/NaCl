@@ -1,0 +1,101 @@
+[
+  {
+    "labels": [
+      "DataFlow"
+    ],
+    "properties": {
+      "data_description": "Raw video file (300-500 MB) containing the meeting recording, uploaded by the user",
+      "name": "Meeting video file upload",
+      "id": "DFL-001",
+      "direction": "IN"
+    }
+  },
+  {
+    "labels": [
+      "DataFlow"
+    ],
+    "properties": {
+      "data_description": "Complete timestamped transcript with speaker labels (who said what at which minute/second), delivered to the user for download",
+      "name": "Verbatim speaker-attributed transcript",
+      "id": "DFL-002",
+      "direction": "OUT"
+    }
+  },
+  {
+    "labels": [
+      "DataFlow"
+    ],
+    "properties": {
+      "data_description": "Structured meeting protocol: participants list, discussion topics, decisions made, action items with assignees and deadlines, delivered to the user for download",
+      "name": "Meeting protocol",
+      "id": "DFL-003",
+      "direction": "OUT"
+    }
+  },
+  {
+    "labels": [
+      "DataFlow"
+    ],
+    "properties": {
+      "data_description": "Extracted audio stream (or reference to stored file) sent to the ASR/diarization engine for processing",
+      "name": "Audio data for transcription",
+      "id": "DFL-004",
+      "direction": "OUT"
+    }
+  },
+  {
+    "labels": [
+      "DataFlow"
+    ],
+    "properties": {
+      "data_description": "Transcript segments returned by ASR/diarization: each contains speaker ID, start/end timestamps, and spoken text",
+      "name": "Speaker-attributed transcript segments",
+      "id": "DFL-005",
+      "direction": "IN"
+    }
+  },
+  {
+    "labels": [
+      "DataFlow"
+    ],
+    "properties": {
+      "data_description": "Full verbatim transcript with speaker labels sent to the LLM for extraction of topics, decisions, action items",
+      "name": "Transcript text for protocol generation",
+      "id": "DFL-006",
+      "direction": "OUT"
+    }
+  },
+  {
+    "labels": [
+      "DataFlow"
+    ],
+    "properties": {
+      "data_description": "Structured meeting protocol returned by the LLM: participants, topics, decisions, action items with assignees and deadlines",
+      "name": "Generated meeting protocol",
+      "id": "DFL-007",
+      "direction": "IN"
+    }
+  },
+  {
+    "labels": [
+      "DataFlow"
+    ],
+    "properties": {
+      "data_description": "Raw video/audio binary written to object storage for durable retention during asynchronous processing",
+      "name": "Video file write to storage",
+      "id": "DFL-008",
+      "direction": "OUT"
+    }
+  },
+  {
+    "labels": [
+      "DataFlow"
+    ],
+    "properties": {
+      "data_description": "Video or extracted audio file retrieved from object storage to be passed to the ASR/diarization engine",
+      "name": "Video file retrieval from storage",
+      "id": "DFL-009",
+      "direction": "IN"
+    }
+  }
+]

@@ -1,0 +1,152 @@
+[
+  {
+    "labels": [
+      "BusinessProcess"
+    ],
+    "properties": {
+      "result": "Sidebar populated with grouped board tiles (Imports / BA / SA / Other)",
+      "owner_role": "Analyst",
+      "name": "List Boards",
+      "automation_status": "Automated",
+      "id": "BP-01-LIST-BOARDS",
+      "trigger": "App startup or boards.cleared WS event received by the UI",
+      "has_decomposition": false,
+      "source_file": "server/src/routes/boards.ts:GET /boards"
+    }
+  },
+  {
+    "labels": [
+      "BusinessProcess"
+    ],
+    "properties": {
+      "result": "UI shows placeholder tiles for boards that exist in the graph but not yet on disk",
+      "owner_role": "Analyst",
+      "name": "Discover Renderable Boards",
+      "automation_status": "Automated",
+      "id": "BP-02-DISCOVER-RENDERABLE",
+      "trigger": "App startup or analyst opens project with active Neo4j graph",
+      "has_decomposition": false,
+      "source_file": "server/src/routes/boards.ts:GET /renderable"
+    }
+  },
+  {
+    "labels": [
+      "BusinessProcess"
+    ],
+    "properties": {
+      "result": "Excalidraw canvas loaded with board scene; sync status bar updated",
+      "owner_role": "Analyst",
+      "name": "Open Board",
+      "automation_status": "Semi-automated",
+      "id": "BP-03-OPEN-BOARD",
+      "trigger": "Analyst clicks a board tile in the sidebar",
+      "has_decomposition": true,
+      "source_file": "server/src/routes/boards.ts:GET /boards/:name"
+    }
+  },
+  {
+    "labels": [
+      "BusinessProcess"
+    ],
+    "properties": {
+      "result": "Sync status resolved to one of: never-synced / dirty / synced; status bar indicator updated",
+      "owner_role": "Analyst",
+      "name": "Get Board Sync Status",
+      "automation_status": "Automated",
+      "id": "BP-04-GET-BOARD-STATUS",
+      "trigger": "Board opened or board.changed WS event received",
+      "has_decomposition": false,
+      "source_file": "server/src/routes/boards.ts:GET /boards/:name/status"
+    }
+  },
+  {
+    "labels": [
+      "BusinessProcess"
+    ],
+    "properties": {
+      "result": "Board file written to disk; content hash updated in meta; WS board.changed broadcast; snapshot captured automatically",
+      "owner_role": "Analyst",
+      "name": "Edit and Save Board",
+      "automation_status": "Semi-automated",
+      "id": "BP-05-EDIT-SAVE-BOARD",
+      "trigger": "Analyst makes changes in the Excalidraw canvas; auto-save fires or analyst presses save",
+      "has_decomposition": true,
+      "source_file": "server/src/routes/boards.ts:PUT /boards/:name"
+    }
+  },
+  {
+    "labels": [
+      "BusinessProcess"
+    ],
+    "properties": {
+      "result": "Skill run enqueued; runId returned; board overwritten by renderer; WS run progress events streamed",
+      "owner_role": "Analyst",
+      "name": "Regenerate Board from Graph",
+      "automation_status": "Semi-automated",
+      "id": "BP-06-REGENERATE-BOARD",
+      "trigger": "Analyst clicks Regenerate for a single board",
+      "has_decomposition": true,
+      "source_file": "server/src/routes/skills.ts:POST /skills/regenerate"
+    }
+  },
+  {
+    "labels": [
+      "BusinessProcess"
+    ],
+    "properties": {
+      "result": "Markdown file written to disk; path and byte count returned",
+      "owner_role": "Analyst",
+      "name": "Render Markdown from Graph",
+      "automation_status": "Semi-automated",
+      "id": "BP-07-RENDER-MARKDOWN",
+      "trigger": "Analyst triggers a markdown render for a given subtype (entity, uc, form, domain-model, uc-index, traceability)",
+      "has_decomposition": true,
+      "source_file": "server/src/routes/render.ts:POST /render/markdown"
+    }
+  },
+  {
+    "labels": [
+      "BusinessProcess"
+    ],
+    "properties": {
+      "result": "All registered projects returned with activeProjectId, config source, and optional unregistered-cwd banner",
+      "owner_role": "Analyst",
+      "name": "List Projects",
+      "automation_status": "Automated",
+      "id": "BP-08-LIST-PROJECTS",
+      "trigger": "Analyst opens project picker or projects.changed WS event received",
+      "has_decomposition": false,
+      "source_file": "server/src/routes/projects.ts:GET /projects"
+    }
+  },
+  {
+    "labels": [
+      "BusinessProcess"
+    ],
+    "properties": {
+      "result": "Active project record plus full resolvedConfig returned; UI banner shown for unregistered-cwd projects",
+      "owner_role": "Analyst",
+      "name": "Get Active Project",
+      "automation_status": "Automated",
+      "id": "BP-09-GET-ACTIVE-PROJECT",
+      "trigger": "App startup or after project switch; UI needs resolved config",
+      "has_decomposition": false,
+      "source_file": "server/src/routes/projects.ts:GET /projects/active"
+    }
+  },
+  {
+    "labels": [
+      "BusinessProcess"
+    ],
+    "properties": {
+      "result": "Registry updated; configManager reloaded; Neo4j driver reset; WS active.changed + boards.cleared broadcast; sidebar refreshes",
+      "owner_role": "Analyst",
+      "name": "Switch Active Project",
+      "automation_status": "Semi-automated",
+      "id": "BP-10-SWITCH-ACTIVE-PROJECT",
+      "trigger": "Analyst selects a different project in the project picker",
+      "has_decomposition": true,
+      "source_file": "server/src/routes/projects.ts:POST /projects/:id/activate"
+    }
+  }
+]

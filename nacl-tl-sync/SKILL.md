@@ -293,8 +293,8 @@ every UC with an external actor moves through it the same way.
 
 #### Worked examples (from the W0 baseline)
 
-**Example 1 — Karatov FE-sync UNVERIFIED-normalization episode.**
-Karatov Wave 5 closed with all six FE sync verdicts normalized to
+**Example 1 — Project-Alpha FE-sync UNVERIFIED-normalization episode.**
+Project-Alpha Wave 5 closed with all six FE sync verdicts normalized to
 UNVERIFIED because the FE tests relied on MSW (`setupServer(`) rather
 than wire-level parity with the BE — see `fe_coverage_gap = true`
 mechanics at Step 7.3b. Under the new gate, MSW interception is not
@@ -305,8 +305,8 @@ loads a recorded BE response and asserts the FE parses it, OR a
 `wire-evidence:contract-test:<path>` against a real BE process started
 in the test suite — not in-process MSW.
 
-**Example 2 — Transcriber kie.ai `404 model not found` episode.**
-UC-300 in transcriber: TECH-011 named the abstraction `ILlmProvider`,
+**Example 2 — Project-Beta kie.ai `404 model not found` episode.**
+UC-300 in project-beta: TECH-011 named the abstraction `ILlmProvider`,
 the BE and FE TS types matched, the `vi.mock(...)` unit tests passed,
 sync emitted `SYNC COMPLETE`. The live request to `kie.ai` returned
 `HTTP 404 model not found` on first prod call because the endpoint

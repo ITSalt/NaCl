@@ -1,0 +1,80 @@
+{
+  "project": "project-eta-bot",
+  "container": "ev-migrate-neo4j",
+  "status": "REACHABLE (docker exec)",
+  "total_nodes": 447,
+  "total_rels": 830,
+  "labels": [
+    {
+      "label": "ActivityStep",
+      "count": 379
+    },
+    {
+      "label": "DomainAttribute",
+      "count": 27
+    },
+    {
+      "label": "UseCase",
+      "count": 24
+    },
+    {
+      "label": "SystemRole",
+      "count": 5
+    },
+    {
+      "label": "Module",
+      "count": 4
+    },
+    {
+      "label": "DomainEntity",
+      "count": 4
+    },
+    {
+      "label": "EnumValue",
+      "count": 3
+    },
+    {
+      "label": "Enumeration",
+      "count": 1
+    }
+  ],
+  "rel_types": [
+    {
+      "type": "HAS_STEP",
+      "count": 379
+    },
+    {
+      "type": "NEXT_STEP",
+      "count": 355
+    },
+    {
+      "type": "HAS_ATTRIBUTE",
+      "count": 27
+    },
+    {
+      "type": "ACTOR",
+      "count": 27
+    },
+    {
+      "type": "CONTAINS_UC",
+      "count": 24
+    },
+    {
+      "type": "HAS_PERMISSION",
+      "count": 10
+    },
+    {
+      "type": "CONTAINS_ENTITY",
+      "count": 4
+    },
+    {
+      "type": "HAS_VALUE",
+      "count": 3
+    },
+    {
+      "type": "HAS_ENUM",
+      "count": 1
+    }
+  ],
+  "sample_label_count": 8
+}

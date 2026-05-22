@@ -1,0 +1,152 @@
+[
+  {
+    "labels": [
+      "ActivityStep"
+    ],
+    "properties": {
+      "actor": "",
+      "migrated_at": "2026-04-13T14:04:44.859000000+00:00",
+      "step_number": 1,
+      "created": "2026-04-13T14:04:44.859000000+00:00",
+      "description": "Пользователь: Открывает версию карточки (link: SCR-G02)",
+      "id": "UC-F01-A01",
+      "updated": "2026-04-13T14:04:44.859000000+00:00",
+      "source_file": "docs/04-usecases/UC-F01-leave-feedback.md"
+    }
+  },
+  {
+    "labels": [
+      "ActivityStep"
+    ],
+    "properties": {
+      "actor": "",
+      "migrated_at": "2026-04-13T14:04:44.859000000+00:00",
+      "step_number": 2,
+      "created": "2026-04-13T14:04:44.859000000+00:00",
+      "description": "Пользователь: Нажимает 'Оставить обратную связь'",
+      "id": "UC-F01-A02",
+      "updated": "2026-04-13T14:04:44.859000000+00:00",
+      "source_file": "docs/04-usecases/UC-F01-leave-feedback.md"
+    }
+  },
+  {
+    "labels": [
+      "ActivityStep"
+    ],
+    "properties": {
+      "actor": "",
+      "migrated_at": "2026-04-13T14:04:44.859000000+00:00",
+      "step_number": 3,
+      "created": "2026-04-13T14:04:44.859000000+00:00",
+      "description": "Система: Открывает форму обратной связи (link: SCR-F01)",
+      "id": "UC-F01-A03",
+      "updated": "2026-04-13T14:04:44.859000000+00:00",
+      "source_file": "docs/04-usecases/UC-F01-leave-feedback.md"
+    }
+  },
+  {
+    "labels": [
+      "ActivityStep"
+    ],
+    "properties": {
+      "actor": "",
+      "migrated_at": "2026-04-13T14:04:44.859000000+00:00",
+      "step_number": 4,
+      "created": "2026-04-13T14:04:44.859000000+00:00",
+      "description": "Пользователь: Заполняет 'Что хорошо' и/или 'Что плохо'",
+      "id": "UC-F01-A04",
+      "updated": "2026-04-13T14:04:44.859000000+00:00",
+      "source_file": "docs/04-usecases/UC-F01-leave-feedback.md"
+    }
+  },
+  {
+    "labels": [
+      "ActivityStep"
+    ],
+    "properties": {
+      "actor": "",
+      "migrated_at": "2026-04-13T14:04:44.859000000+00:00",
+      "step_number": 5,
+      "created": "2026-04-13T14:04:44.859000000+00:00",
+      "description": "Хотя бы одно поле заполнено?",
+      "id": "UC-F01-A05",
+      "updated": "2026-04-13T14:04:44.859000000+00:00",
+      "source_file": "docs/04-usecases/UC-F01-leave-feedback.md"
+    }
+  },
+  {
+    "labels": [
+      "ActivityStep"
+    ],
+    "properties": {
+      "actor": "",
+      "migrated_at": "2026-04-13T14:04:44.859000000+00:00",
+      "step_number": 6,
+      "created": "2026-04-13T14:04:44.859000000+00:00",
+      "description": "Система: Показывает ошибку валидации",
+      "id": "UC-F01-A06",
+      "updated": "2026-04-13T14:04:44.859000000+00:00",
+      "source_file": "docs/04-usecases/UC-F01-leave-feedback.md"
+    }
+  },
+  {
+    "labels": [
+      "ActivityStep"
+    ],
+    "properties": {
+      "actor": "",
+      "migrated_at": "2026-04-13T14:04:44.859000000+00:00",
+      "step_number": 7,
+      "created": "2026-04-13T14:04:44.859000000+00:00",
+      "description": "Пользователь: Нажимает 'Сохранить'",
+      "id": "UC-F01-A07",
+      "updated": "2026-04-13T14:04:44.859000000+00:00",
+      "source_file": "docs/04-usecases/UC-F01-leave-feedback.md"
+    }
+  },
+  {
+    "labels": [
+      "ActivityStep"
+    ],
+    "properties": {
+      "actor": "",
+      "migrated_at": "2026-04-13T14:04:44.859000000+00:00",
+      "step_number": 8,
+      "created": "2026-04-13T14:04:44.859000000+00:00",
+      "description": "Система: Создаёт VersionFeedback, applied = false",
+      "id": "UC-F01-A08",
+      "updated": "2026-04-13T14:04:44.859000000+00:00",
+      "source_file": "docs/04-usecases/UC-F01-leave-feedback.md"
+    }
+  },
+  {
+    "labels": [
+      "ActivityStep"
+    ],
+    "properties": {
+      "actor": "",
+      "migrated_at": "2026-04-13T14:04:44.859000000+00:00",
+      "step_number": 9,
+      "created": "2026-04-13T14:04:44.859000000+00:00",
+      "description": "Пользователь: Учесть при генерации?",
+      "id": "UC-F01-A09",
+      "updated": "2026-04-13T14:04:44.859000000+00:00",
+      "source_file": "docs/04-usecases/UC-F01-leave-feedback.md"
+    }
+  },
+  {
+    "labels": [
+      "ActivityStep"
+    ],
+    "properties": {
+      "actor": "",
+      "migrated_at": "2026-04-13T14:04:44.859000000+00:00",
+      "step_number": 10,
+      "created": "2026-04-13T14:04:44.859000000+00:00",
+      "description": "Система: Запускает UC-F02",
+      "id": "UC-F01-A10",
+      "updated": "2026-04-13T14:04:44.859000000+00:00",
+      "source_file": "docs/04-usecases/UC-F01-leave-feedback.md"
+    }
+  }
+]

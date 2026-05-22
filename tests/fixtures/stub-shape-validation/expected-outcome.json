@@ -1,0 +1,46 @@
+{
+  "$schema": "stub-shape-validation-outcome-v1",
+  "_purpose": "Materialized expected outcome of nacl-tl-stubs Step 5/7 when run against this fixture. W11 retrospective replay asserts against this artifact.",
+  "skill": "nacl-tl-stubs",
+  "scope": "UC-302",
+  "candidate_for_closure": {
+    "stub_id": "STUB-042",
+    "uc": "UC-302",
+    "file": "src/admin/workflow-steps.service.ts",
+    "prior_line": 12,
+    "marker_present_now": false,
+    "reason_candidate": "TODO marker removed since prior scan"
+  },
+  "shape_validation_trace": {
+    "spec_loaded": {
+      "source": "UC-302-spec.md",
+      "required_fields": [
+        { "name": "id", "type": "uuid" },
+        { "name": "name", "type": "string" },
+        { "name": "step_order", "type": "int" },
+        { "name": "kind", "type": "enum" }
+      ]
+    },
+    "runtime_sample_sources": {
+      "wire_evidence_fixture": "ABSENT",
+      "contract_test_with_required_assertions": "ABSENT — existing test asserts only toBeDefined()",
+      "live_smoke": "ABSENT",
+      "qa_stage_fixture": "ABSENT"
+    },
+    "outcome": "shape-unvalidated"
+  },
+  "registry_after": {
+    "STUB-042": {
+      "resolvedAt": null,
+      "shape_validated": false,
+      "shape_validation_blocked": true,
+      "shape_validation_reason": "no wire-evidence fixture, no contract test, no live-smoke, no qa-stage fixture for UC-302"
+    }
+  },
+  "terminal_status": "UNVERIFIED",
+  "workflow_detail": "shape-unvalidated:STUB-042",
+  "headline": "STUBS APPLIED — UNVERIFIED (shape-unvalidated: STUB-042)",
+  "stub_shape_validated_entry_written": false,
+  "uc_task_verification_evidence_delta": "(no change — no stub-shape-validated:* entry added)",
+  "phases_stubs_value": "unverified"
+}

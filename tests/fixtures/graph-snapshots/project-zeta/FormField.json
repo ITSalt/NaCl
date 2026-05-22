@@ -1,0 +1,102 @@
+[
+  {
+    "labels": [
+      "FormField"
+    ],
+    "properties": {
+      "name": "Template.source_image_url",
+      "form_id": "FORM-scr-t00-create-template",
+      "id": "FORM-scr-t00-create-template-F01"
+    }
+  },
+  {
+    "labels": [
+      "FormField"
+    ],
+    "properties": {
+      "name": "Template.name",
+      "form_id": "FORM-scr-t00-create-template",
+      "id": "FORM-scr-t00-create-template-F02"
+    }
+  },
+  {
+    "labels": [
+      "FormField"
+    ],
+    "properties": {
+      "name": "Template.marketplace_target",
+      "form_id": "FORM-scr-t00-create-template",
+      "id": "FORM-scr-t00-create-template-F03"
+    }
+  },
+  {
+    "labels": [
+      "FormField"
+    ],
+    "properties": {
+      "name": "Template.name",
+      "form_id": "FORM-scr-t01-template-list",
+      "id": "FORM-scr-t01-template-list-F01"
+    }
+  },
+  {
+    "labels": [
+      "FormField"
+    ],
+    "properties": {
+      "name": "Template.source_image_url",
+      "form_id": "FORM-scr-t01-template-list",
+      "id": "FORM-scr-t01-template-list-F02"
+    }
+  },
+  {
+    "labels": [
+      "FormField"
+    ],
+    "properties": {
+      "name": "Template.marketplace_target",
+      "form_id": "FORM-scr-t01-template-list",
+      "id": "FORM-scr-t01-template-list-F03"
+    }
+  },
+  {
+    "labels": [
+      "FormField"
+    ],
+    "properties": {
+      "name": "Template.status",
+      "form_id": "FORM-scr-t01-template-list",
+      "id": "FORM-scr-t01-template-list-F04"
+    }
+  },
+  {
+    "labels": [
+      "FormField"
+    ],
+    "properties": {
+      "name": "Template.created_at",
+      "form_id": "FORM-scr-t01-template-list",
+      "id": "FORM-scr-t01-template-list-F05"
+    }
+  },
+  {
+    "labels": [
+      "FormField"
+    ],
+    "properties": {
+      "name": "Template.name",
+      "form_id": "FORM-scr-t02-layer-editor",
+      "id": "FORM-scr-t02-layer-editor-F01"
+    }
+  },
+  {
+    "labels": [
+      "FormField"
+    ],
+    "properties": {
+      "name": "Template.description",
+      "form_id": "FORM-scr-t02-layer-editor",
+      "id": "FORM-scr-t02-layer-editor-F02"
+    }
+  }
+]

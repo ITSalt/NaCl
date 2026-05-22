@@ -1,0 +1,123 @@
+[
+  {
+    "labels": [
+      "Form"
+    ],
+    "properties": {
+      "updated_at": "2026-05-05T13:19:13.868000000+00:00",
+      "kind": "create",
+      "name": "RegisterForm",
+      "description": "Регистрация нового пользователя",
+      "id": "form-101-register"
+    }
+  },
+  {
+    "labels": [
+      "Form"
+    ],
+    "properties": {
+      "updated_at": "2026-05-05T13:19:13.868000000+00:00",
+      "kind": "auth",
+      "name": "LoginForm",
+      "description": "Вход в систему",
+      "id": "form-102-login"
+    }
+  },
+  {
+    "labels": [
+      "Form"
+    ],
+    "properties": {
+      "layout": "two-sections: SessionSection (category, optional name) + InlineTaskBlock (task_type, files, params)",
+      "updated_at": "2026-05-05T13:19:13.868000000+00:00",
+      "kind": "create",
+      "name": "CreateSessionForm",
+      "description": "Объединённая форма создания сессии и первой задачи. Поля name и category относятся к Session; task_type, input_files, input_params — к первой Task.",
+      "id": "form-103-create_session"
+    }
+  },
+  {
+    "labels": [
+      "Form"
+    ],
+    "properties": {
+      "updated_at": "2026-05-05T13:19:13.868000000+00:00",
+      "kind": "create",
+      "name": "CreateTaskForm",
+      "description": "Выбор task_type, загрузка файлов, параметры",
+      "id": "form-104-create_task"
+    }
+  },
+  {
+    "labels": [
+      "Form"
+    ],
+    "properties": {
+      "updated_at": "2026-05-05T13:19:13.868000000+00:00",
+      "kind": "detail",
+      "name": "TaskDetailsView",
+      "description": "Просмотр статуса, входных файлов и результатов",
+      "id": "form-105-task_view"
+    }
+  },
+  {
+    "labels": [
+      "Form"
+    ],
+    "properties": {
+      "updated_at": "2026-05-05T13:19:13.868000000+00:00",
+      "kind": "list",
+      "name": "NotificationsTray",
+      "description": "Колокольчик + список уведомлений",
+      "id": "form-106-notifications"
+    }
+  },
+  {
+    "labels": [
+      "Form"
+    ],
+    "properties": {
+      "updated_at": "2026-05-05T13:19:13.868000000+00:00",
+      "kind": "confirm",
+      "name": "CancelTaskConfirm",
+      "description": "Подтверждение отмены задачи",
+      "id": "form-107-cancel"
+    }
+  },
+  {
+    "labels": [
+      "Form"
+    ],
+    "properties": {
+      "kind": "list_crud",
+      "name": "AdminUserManagement",
+      "description": "Список + модальные create/edit",
+      "id": "form-301-users"
+    }
+  },
+  {
+    "labels": [
+      "Form"
+    ],
+    "properties": {
+      "kind": "list_crud",
+      "name": "AdminPromptTemplates",
+      "description": "CRUD бизнес-промптов (category × model_profile)",
+      "id": "form-302-prompts"
+    }
+  },
+  {
+    "labels": [
+      "Form"
+    ],
+    "properties": {
+      "updated_at": "2026-05-18T00:00:00.000Z",
+      "kind": "list_crud",
+      "validation_inline_errors": "FE maps each issue.path[0] to RHF setError(field, {message}); errors displayed inline under the corresponding input",
+      "name": "AdminModelProfiles",
+      "description": "CRUD профилей моделей",
+      "id": "form-303-models",
+      "validation_error_shape": "VALIDATION_FAILED: { code: \"VALIDATION_FAILED\", details: { issues: [ { path: (string|number)[], message: string } ] } }"
+    }
+  }
+]

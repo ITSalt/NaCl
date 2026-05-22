@@ -1,0 +1,146 @@
+# Project GAP Register — Template
+# ===================================================================
+# Schema introduced in: post-W11 NaCl strict-mode reference layer.
+# Schema reference: nacl-tl-core/references/project-gap-closure.md
+# § "GAP register schema".
+#
+# This file is a TEMPLATE. Per-project GAP-detection agents copy it to
+#   <project>/.tl/gap-closure/<YYYY-MM-DD>-gap-register.yaml
+# and fill every field. The runbook in project-gap-closure.md is the
+# binding source for what each field means.
+#
+# Cross-references inside the register:
+#   - workflow_detail strings live in nacl-tl-core/references/
+#     gate-fire-catalog.md (G1..G11).
+#   - gap_category names live in nacl-tl-core/references/
+#     project-gap-closure.md § "Ten GAP categories".
+#   - owning_skill names are NaCl skill directory names verbatim
+#     (e.g. nacl-tl-review, nacl-sa-architect, nacl-publish).
+#
+# ===================================================================
+
+project: ""
+# REQUIRED. The project_id from config.yaml (or the registry slug if the
+# project has no config.yaml). Example: "project-alpha".
+
+generated_at: ""
+# REQUIRED. ISO-8601 UTC at inspection start. Example:
+# "2026-05-22T18:42:11Z".
+
+mode: "planning-only"
+# REQUIRED. Always the literal "planning-only". This register is never
+# the output of a remediation run; remediation runs produce wave-evidence
+# files instead.
+
+strict_mode: true
+# REQUIRED. Always true post-W11. The field is preserved as a future-
+# proofing slot — if a later reform introduces a non-strict mode, the
+# field will distinguish the two.
+
+baseline:
+  # Required. Top-level health snapshot of the project at inspection time.
+  graph_status: ""
+  # REQUIRED. One of: LIVE | BLOCKED | STALE | NOT_CONFIGURED.
+  #   LIVE           — Neo4j container reachable; reads succeed.
+  #   BLOCKED        — container unreachable; gate falls back to
+  #                    graph_unavailable. This is a P0 gap.
+  #   STALE          — container reachable but snapshot vs live mismatch.
+  #   NOT_CONFIGURED — no graph defined in config.yaml.
+  tl_status: ""
+  # REQUIRED. One of: PRESENT | PARTIAL | MISSING.
+  #   PRESENT — every required .tl/ subdirectory exists with templates.
+  #   PARTIAL — some subdirectories exist; the rest are missing.
+  #   MISSING — no .tl/ directory at all. Triggers external-report path.
+  repo_checks_status: ""
+  # REQUIRED. One of: GREEN | RED | NOT_RUN | UNRUNNABLE.
+  # Output of running pnpm -r lint && pnpm -r typecheck && pnpm -r test
+  # on the wave-tip commit. Substitution with npm is NOT acceptable per
+  # nacl-tl-review/SKILL.md:113-116.
+  release_status: ""
+  # REQUIRED. One of: VERIFIED | UNVERIFIED | BLOCKED | HEALTH_ONLY | NONE.
+  # The last release outcome per .tl/release-status.json. HEALTH_ONLY is
+  # the "ship under health.status: skipped or HEALTH_ONLY smoke" pattern
+  # — record it as its own state, not as VERIFIED.
+  project_kind: ""
+  # REQUIRED. One of: standard | prototype | missing.
+  # "missing" when config.yaml does not declare the field (defaults to
+  # standard per nacl-tl-core/references/config-schema.md:20-21, but
+  # absence is recorded as a P1 gap when release gates depend on it).
+  notes: ""
+  # OPTIONAL. Free-text caveats: unreachable services, missing
+  # credentials, partial inspection scope. The agent fills this when
+  # stop conditions in the runbook fire.
+
+gaps:
+# REQUIRED. List of GAP entries. Empty list means "no gaps found"
+# (rare — most projects have at least P2/P3 entries).
+
+  - gap_id: ""
+    # REQUIRED. Sequential per inspection: GAP-001, GAP-002, ...
+    title: ""
+    # REQUIRED. One-line declarative title. Example: "Wave-tip pnpm -r
+    # typecheck red on packages/shared/src/asset.ts:19".
+    severity: ""
+    # REQUIRED. P0 | P1 | P2 | P3 per runbook § "Severity rules".
+    status: ""
+    # REQUIRED. Closed Codex Status if the gate fired today:
+    # BLOCKED | UNVERIFIED | PARTIALLY_VERIFIED.
+    gate_that_would_fire: ""
+    # REQUIRED. NaCl skill name that owns the refusal. One of:
+    #   nacl-tl-review, nacl-tl-sync, nacl-tl-qa, nacl-tl-release,
+    #   nacl-tl-conductor, nacl-tl-deliver, nacl-tl-deploy,
+    #   nacl-sa-architect, nacl-sa-ui, nacl-sa-uc, nacl-tl-fix,
+    #   nacl-tl-stubs, nacl-publish.
+    workflow_detail: ""
+    # REQUIRED. The workflow-detail string the gate emits. Examples:
+    #   repo-checks-RED, wire-evidence-missing, missing-prod-golden-path,
+    #   graph-stale, artifact-drift, nav-actions-missing,
+    #   runtime_contract_missing, clean-checkout-runtime-assets-missing,
+    #   spec-first-prerequisite-missing, shape-unvalidated:STUB-042.
+    # The catalog at gate-fire-catalog.md lists every recognised value.
+    gap_category: ""
+    # REQUIRED. One of the ten categories in runbook § "Ten GAP
+    # categories":
+    #   review_repo_checks, sync_wire_evidence, qa_stage_missing,
+    #   release_readiness, artifact_drift, external_contract_missing,
+    #   ui_reachability_missing, runtime_contract_missing,
+    #   clean_checkout_failure, spec_first_violation / stub_shape_unvalidated.
+    owning_skill:
+      # REQUIRED. One or more skills involved. Multi-skill gaps (e.g.
+      # UI reachability — owned by nacl-sa-ui, refused at nacl-tl-review)
+      # list every skill that hosts or consumes the rule.
+      - ""
+    bounded_context: ""
+    # OPTIONAL. Subsystem name in multi-context projects (api, web,
+    # worker, admin). Empty in single-context projects.
+    evidence_expected:
+      # REQUIRED. List. The artifacts/edges/clauses strict mode requires
+      # for this gap to close. Reference SKILL.md file:line or catalog
+      # entries where applicable.
+      - ""
+    evidence_found:
+      # REQUIRED. List. What was actually observed in the project at
+      # inspection time. May be the empty list when the requirement is
+      # entirely unmet.
+      - ""
+    source_artifacts:
+      # REQUIRED. List. File paths, graph queries, .tl/ artifacts the
+      # agent inspected to produce this entry. Allows reviewers to
+      # reproduce the finding.
+      - ""
+    impact:
+      # REQUIRED. List. Downstream gates this gap blocks today. Empty
+      # only for pure-P3 documentation gaps.
+      - ""
+    proposed_wave: ""
+    # REQUIRED. The wave_id from the paired wave plan that closes this
+    # gap. Example: "W1-reconciliation". May reference a wave not yet
+    # written — the wave plan is generated in Phase 5 after the register
+    # is complete.
+    dependencies: []
+    # OPTIONAL. List of gap_ids this gap depends on (a P0 that blocks
+    # this gap's remediation).
+    confidence: ""
+    # REQUIRED. high | medium | low. "low" when Phase 3 of the runbook
+    # could not directly verify the on-disk state (missing tools, missing
+    # credentials, partial inspection).

@@ -1,0 +1,172 @@
+[
+  {
+    "labels": [
+      "DomainAttribute"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T13:41:40.572000000+00:00",
+      "created": "2026-04-13T13:41:40.572000000+00:00",
+      "name": "key",
+      "description": "Ключ (напр. \"lastprocessedat\")",
+      "id": "DE-bot-state-A01",
+      "type": "String(64)",
+      "updated": "2026-04-13T13:41:40.572000000+00:00",
+      "constraints": "PK",
+      "source_file": "docs/12-domain/entities/bot-state.md",
+      "required": true
+    }
+  },
+  {
+    "labels": [
+      "DomainAttribute"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T13:41:40.572000000+00:00",
+      "created": "2026-04-13T13:41:40.572000000+00:00",
+      "name": "value",
+      "description": "Значение (JSONB)",
+      "id": "DE-bot-state-A02",
+      "type": "JSON",
+      "updated": "2026-04-13T13:41:40.572000000+00:00",
+      "constraints": "—",
+      "source_file": "docs/12-domain/entities/bot-state.md",
+      "required": true
+    }
+  },
+  {
+    "labels": [
+      "DomainAttribute"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T13:41:40.572000000+00:00",
+      "created": "2026-04-13T13:41:40.572000000+00:00",
+      "name": "updated_at",
+      "description": "Дата последнего обновления",
+      "id": "DE-bot-state-A03",
+      "type": "DateTime",
+      "updated": "2026-04-13T13:41:40.572000000+00:00",
+      "constraints": "Default: now()",
+      "source_file": "docs/12-domain/entities/bot-state.md",
+      "required": true
+    }
+  },
+  {
+    "labels": [
+      "DomainAttribute"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T13:41:40.572000000+00:00",
+      "created": "2026-04-13T13:41:40.572000000+00:00",
+      "name": "id",
+      "description": "Внутренний идентификатор",
+      "id": "DE-channel-mapping-A01",
+      "type": "UUID",
+      "updated": "2026-04-13T13:41:40.572000000+00:00",
+      "constraints": "PK, auto-generated",
+      "source_file": "docs/12-domain/entities/channel-mapping.md",
+      "required": true
+    }
+  },
+  {
+    "labels": [
+      "DomainAttribute"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T13:41:40.572000000+00:00",
+      "created": "2026-04-13T13:41:40.572000000+00:00",
+      "name": "mm_channel_id",
+      "description": "ID канала в Mattermost",
+      "id": "DE-channel-mapping-A02",
+      "type": "String(26)",
+      "updated": "2026-04-13T13:41:40.572000000+00:00",
+      "constraints": "Unique",
+      "source_file": "docs/12-domain/entities/channel-mapping.md",
+      "required": true
+    }
+  },
+  {
+    "labels": [
+      "DomainAttribute"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T13:41:40.572000000+00:00",
+      "created": "2026-04-13T13:41:40.572000000+00:00",
+      "name": "mm_channel_name",
+      "description": "Имя канала (route-20260316-ivanov-ea3f)",
+      "id": "DE-channel-mapping-A03",
+      "type": "String(64)",
+      "updated": "2026-04-13T13:41:40.572000000+00:00",
+      "constraints": "—",
+      "source_file": "docs/12-domain/entities/channel-mapping.md",
+      "required": true
+    }
+  },
+  {
+    "labels": [
+      "DomainAttribute"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T13:41:40.572000000+00:00",
+      "created": "2026-04-13T13:41:40.572000000+00:00",
+      "name": "channel_type",
+      "description": "Тип канала: route, support, system",
+      "id": "DE-channel-mapping-A04",
+      "type": "Enum(ChannelType)",
+      "updated": "2026-04-13T13:41:40.572000000+00:00",
+      "constraints": "—",
+      "source_file": "docs/12-domain/entities/channel-mapping.md",
+      "required": true
+    }
+  },
+  {
+    "labels": [
+      "DomainAttribute"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T13:41:40.572000000+00:00",
+      "created": "2026-04-13T13:41:40.572000000+00:00",
+      "name": "route_id",
+      "description": "Для route-каналов",
+      "id": "DE-channel-mapping-A05",
+      "type": "UUID",
+      "updated": "2026-04-13T13:41:40.572000000+00:00",
+      "constraints": "FK → routes.id, ON DELETE SET NULL",
+      "source_file": "docs/12-domain/entities/channel-mapping.md",
+      "required": false
+    }
+  },
+  {
+    "labels": [
+      "DomainAttribute"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T13:41:40.572000000+00:00",
+      "created": "2026-04-13T13:41:40.572000000+00:00",
+      "name": "client_id",
+      "description": "Для support-каналов",
+      "id": "DE-channel-mapping-A06",
+      "type": "UUID",
+      "updated": "2026-04-13T13:41:40.572000000+00:00",
+      "constraints": "FK → clients.id, ON DELETE SET NULL",
+      "source_file": "docs/12-domain/entities/channel-mapping.md",
+      "required": false
+    }
+  },
+  {
+    "labels": [
+      "DomainAttribute"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T13:41:40.572000000+00:00",
+      "created": "2026-04-13T13:41:40.572000000+00:00",
+      "name": "assigned_dispatcher_id",
+      "description": "Назначенный диспетчер (support)",
+      "id": "DE-channel-mapping-A07",
+      "type": "UUID",
+      "updated": "2026-04-13T13:41:40.572000000+00:00",
+      "constraints": "FK → employees.id, ON DELETE SET NULL",
+      "required": false,
+      "source_file": "docs/12-domain/entities/channel-mapping.md"
+    }
+  }
+]

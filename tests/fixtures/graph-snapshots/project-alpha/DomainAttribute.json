@@ -1,0 +1,152 @@
+[
+  {
+    "labels": [
+      "DomainAttribute"
+    ],
+    "properties": {
+      "internal": true,
+      "updated_at": "2026-05-05T10:56:29.638000000+00:00",
+      "name": "id",
+      "data_type": "uuid",
+      "description": "Primary key",
+      "id": "attr-PromptTemplate-id",
+      "is_pk": true,
+      "required": true
+    }
+  },
+  {
+    "labels": [
+      "DomainAttribute"
+    ],
+    "properties": {
+      "internal": false,
+      "updated_at": "2026-05-05T10:56:29.638000000+00:00",
+      "name": "name",
+      "data_type": "string",
+      "description": "Человеко-читаемое название",
+      "id": "attr-PromptTemplate-name",
+      "is_pk": false,
+      "required": true
+    }
+  },
+  {
+    "labels": [
+      "DomainAttribute"
+    ],
+    "properties": {
+      "internal": true,
+      "updated_at": "2026-05-05T10:56:29.638000000+00:00",
+      "name": "category_id",
+      "data_type": "uuid",
+      "description": "FK на Category",
+      "id": "attr-PromptTemplate-category_id",
+      "is_pk": false,
+      "required": true
+    }
+  },
+  {
+    "labels": [
+      "DomainAttribute"
+    ],
+    "properties": {
+      "internal": true,
+      "updated_at": "2026-05-05T10:56:29.638000000+00:00",
+      "name": "model_profile_id",
+      "data_type": "uuid",
+      "description": "FK на ModelProfile",
+      "id": "attr-PromptTemplate-model_profile_id",
+      "is_pk": false,
+      "required": true
+    }
+  },
+  {
+    "labels": [
+      "DomainAttribute"
+    ],
+    "properties": {
+      "internal": false,
+      "updated_at": "2026-05-05T10:56:29.638000000+00:00",
+      "name": "prompt_text",
+      "data_type": "text",
+      "description": "Текст промпта с placeholder-переменными",
+      "id": "attr-PromptTemplate-prompt_text",
+      "is_pk": false,
+      "required": true
+    }
+  },
+  {
+    "labels": [
+      "DomainAttribute"
+    ],
+    "properties": {
+      "internal": false,
+      "updated_at": "2026-05-05T10:56:29.638000000+00:00",
+      "name": "variables",
+      "data_type": "jsonb",
+      "description": "JSON-schema переменных (validation для подстановки)",
+      "id": "attr-PromptTemplate-variables",
+      "is_pk": false,
+      "required": false
+    }
+  },
+  {
+    "labels": [
+      "DomainAttribute"
+    ],
+    "properties": {
+      "internal": true,
+      "updated_at": "2026-05-05T10:56:29.638000000+00:00",
+      "name": "workflow_step_id",
+      "data_type": "string",
+      "description": "Какой шаг хардкоженного workflow использует шаблон (optional, если общий)",
+      "id": "attr-PromptTemplate-workflow_step_id",
+      "is_pk": false,
+      "required": false
+    }
+  },
+  {
+    "labels": [
+      "DomainAttribute"
+    ],
+    "properties": {
+      "internal": true,
+      "updated_at": "2026-05-05T10:56:29.638000000+00:00",
+      "name": "version",
+      "data_type": "integer",
+      "description": "Версия (инкремент при изменении)",
+      "id": "attr-PromptTemplate-version",
+      "is_pk": false,
+      "required": true
+    }
+  },
+  {
+    "labels": [
+      "DomainAttribute"
+    ],
+    "properties": {
+      "internal": true,
+      "updated_at": "2026-05-05T10:56:29.638000000+00:00",
+      "name": "is_active",
+      "data_type": "boolean",
+      "description": "Активность шаблона",
+      "id": "attr-PromptTemplate-is_active",
+      "is_pk": false,
+      "required": true
+    }
+  },
+  {
+    "labels": [
+      "DomainAttribute"
+    ],
+    "properties": {
+      "internal": true,
+      "updated_at": "2026-05-05T10:56:29.638000000+00:00",
+      "name": "created_at",
+      "data_type": "timestamp",
+      "description": "Время создания",
+      "id": "attr-PromptTemplate-created_at",
+      "is_pk": false,
+      "required": true
+    }
+  }
+]

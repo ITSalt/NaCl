@@ -1,0 +1,109 @@
+[
+  {
+    "labels": [
+      "EnumerationValue"
+    ],
+    "properties": {
+      "description": "Видео-вложение (mp4/mpeg/mov/webm) либо ссылка на YouTube. Доступно только для моделей с supports_video_input=true; источник определяется video_url_mode (any → загрузка в MinIO; youtube_only → внешний URL).",
+      "id": "ev-330",
+      "label": "Видео",
+      "value": "video"
+    }
+  },
+  {
+    "labels": [
+      "EnumerationValue"
+    ],
+    "properties": {
+      "description": "apiframe.ai aggregator (image/video/music) introduced in FR-020",
+      "label": "Apiframe",
+      "value": "apiframe"
+    }
+  },
+  {
+    "labels": [
+      "EnumerationValue"
+    ],
+    "properties": {
+      "description": "HeyGen video generation provider (image-to-video Avatar IV + lipsync) introduced in FR-021",
+      "id": "ev-207",
+      "label": "HeyGen",
+      "value": "heygen",
+      "sort_order": 4
+    }
+  },
+  {
+    "labels": [
+      "EnumerationValue"
+    ],
+    "properties": {
+      "description": "HeyGen direct API (https://api.heygen.com/v3); introduced in FR-021",
+      "id": "ev-260",
+      "label": "HeyGen",
+      "value": "heygen_direct",
+      "sort_order": 11
+    }
+  },
+  {
+    "labels": [
+      "EnumerationValue"
+    ],
+    "properties": {
+      "description": "Lipsync generation: video + audio in, re-lipped video out. Introduced in FR-021 with HeyGen Lipsync Precision/Speed.",
+      "id": "ev-014",
+      "label": "Video Lipsync",
+      "value": "video_lipsync",
+      "sort_order": 7
+    }
+  },
+  {
+    "labels": [
+      "EnumerationValue"
+    ],
+    "properties": {
+      "description": "api.kie.example.invalid text-completion provider (synchronous OpenAI-compatible chat / Anthropic Messages / OpenAI Responses). Introduced in FR-025. Distinct from existing kie_ai which is async task-based for video/image/music.",
+      "id": "ev-337",
+      "value": "kie_ai_text"
+    }
+  },
+  {
+    "labels": [
+      "EnumerationValue"
+    ],
+    "properties": {
+      "description": "api.kie.example.invalid (UI grouping label). Used when a text model is configured to route via kie_ai_text. Introduced in FR-025.",
+      "id": "ev-338",
+      "value": "kie_ai"
+    }
+  },
+  {
+    "labels": [
+      "EnumerationValue"
+    ],
+    "properties": {
+      "description": "Anthropic native Messages API proxied via https://api.api.kie.example.invalid/claude/v1/messages. Used for Claude Opus/Sonnet 4.x on api.kie.example.invalid.",
+      "id": "ev-339",
+      "value": "anthropic_messages"
+    }
+  },
+  {
+    "labels": [
+      "EnumerationValue"
+    ],
+    "properties": {
+      "description": "OpenAI Responses API at https://api.api.kie.example.invalid/codex/v1/responses. Used for gpt-5-5 on api.kie.example.invalid (input field, not messages; reasoning.effort low/medium/high/xhigh; streaming events response.output_text.delta).",
+      "id": "ev-340",
+      "value": "openai_responses"
+    }
+  },
+  {
+    "labels": [
+      "EnumerationValue"
+    ],
+    "properties": {
+      "description": "OpenAI-compatible Chat Completions at https://api.api.kie.example.invalid/<model>/v1/chat/completions. Used for Gemini 3.x families on api.kie.example.invalid (tools.googleSearch for grounding; include_thoughts; reasoning_effort low/high).",
+      "id": "ev-341",
+      "value": "openai_chat"
+    }
+  }
+]

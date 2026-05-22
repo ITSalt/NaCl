@@ -1,0 +1,182 @@
+[
+  {
+    "labels": [
+      "DomainEntity"
+    ],
+    "properties": {
+      "shared": true,
+      "stereotypes": [],
+      "migrated_at": "2026-05-06T18:39:51.797000000+00:00",
+      "created": "2026-04-19T21:04:40.828000000+00:00",
+      "ba_trace": [],
+      "module": "shared/core",
+      "name": "ClientSession",
+      "description": "Метаданные сессии, хранимые на клиенте в localStorage для управления списком сессий пользователя. Является клиентским зеркалом серверной сущности Session с минимальным набором атрибутов, необходимых для UI: отображение списка ранее созданных историй, быстрый доступ к результатам, навигация между сессиями. Не имеет аналога в BA-модели -- это новая сущность, введённая на этапе системного анализа для поддержки мульти-сессионной модели.",
+      "id": "DE-client-session",
+      "updated": "2026-05-06T18:39:51.797000000+00:00",
+      "source_file": "docs/12-domain/entities/client-session.md"
+    }
+  },
+  {
+    "labels": [
+      "DomainEntity"
+    ],
+    "properties": {
+      "shared": false,
+      "stereotypes": [],
+      "migrated_at": "2026-05-06T18:39:51.797000000+00:00",
+      "created": "2026-04-19T21:04:40.828000000+00:00",
+      "ba_trace": [],
+      "module": "generation-module",
+      "name": "DialogMessage",
+      "description": "Отдельное сообщение в рамках AI-интервью. Может принадлежать пользователю (role=user) или Агенту-Интервьюеру (role=agent). Для голосовых сообщений пользователя содержит ссылку на аудиозапись в MinIO. Для сообщений агента содержит метаданные решения (agentMetadata). Сообщения нумеруются последовательно (sequenceNumber) для точной хронологии.",
+      "id": "DE-dialog-message",
+      "updated": "2026-05-06T18:39:51.797000000+00:00",
+      "source_file": "docs/12-domain/entities/dialog-message.md"
+    }
+  },
+  {
+    "labels": [
+      "DomainEntity"
+    ],
+    "properties": {
+      "shared": true,
+      "stereotypes": [],
+      "migrated_at": "2026-05-06T18:39:51.797000000+00:00",
+      "created": "2026-04-19T21:04:40.828000000+00:00",
+      "ba_trace": [],
+      "module": "shared/core",
+      "name": "EmailVerification",
+      "description": "Короткоживущая сущность для подтверждения email-адреса через OTP-код (6 цифр). Создаётся при запросе верификации, живёт 10 минут. Используется для привязки email к аккаунту пользователя или регистрации через email.",
+      "id": "DE-email-verification",
+      "updated": "2026-05-06T18:39:51.797000000+00:00",
+      "source_file": "docs/12-domain/entities/email-verification.md"
+    }
+  },
+  {
+    "labels": [
+      "DomainEntity"
+    ],
+    "properties": {
+      "shared": true,
+      "stereotypes": [],
+      "migrated_at": "2026-05-06T18:39:51.797000000+00:00",
+      "created": "2026-04-19T21:04:40.828000000+00:00",
+      "ba_trace": [],
+      "module": "shared/core",
+      "name": "FunnelEvent",
+      "description": "",
+      "id": "DE-funnel-event",
+      "updated": "2026-05-06T18:39:51.797000000+00:00",
+      "source_file": "docs/12-domain/entities/funnel-event.md"
+    }
+  },
+  {
+    "labels": [
+      "DomainEntity"
+    ],
+    "properties": {
+      "shared": false,
+      "stereotypes": [],
+      "migrated_at": "2026-05-06T18:39:51.797000000+00:00",
+      "created": "2026-04-19T21:04:40.828000000+00:00",
+      "ba_trace": [],
+      "module": "generation-module",
+      "name": "GenerationLog",
+      "description": "Запись каждого вызова AI-модели для генерации контента. Используется для учёта стоимости API-вызовов, мониторинга качества генерации, диагностики сбоев и сбора статистики. Создаётся сервером при каждом запросе к AI-модели (OpenRouter, KIE). Неизменяема после создания (immutable). Хранится исключительно на сервере.\n\n> v1.1 (FR-004 Observability): Добавлены поля step, errorType, contextSize для pipeline-трассировки и классификации ошибок.",
+      "id": "DE-generation-log",
+      "updated": "2026-05-06T18:39:51.797000000+00:00",
+      "source_file": "docs/12-domain/entities/generation-log.md"
+    }
+  },
+  {
+    "labels": [
+      "DomainEntity"
+    ],
+    "properties": {
+      "shared": false,
+      "stereotypes": [],
+      "migrated_at": "2026-05-06T18:39:51.797000000+00:00",
+      "created": "2026-04-19T21:04:40.828000000+00:00",
+      "ba_trace": [],
+      "module": "generation-module",
+      "name": "InterviewAnswers",
+      "description": "Набор из 5 текстовых ответов пользователя на предопределённые вопросы интервью. Ответы являются основой для AI-генерации сценария и визуального промпта. Неизменяемы после завершения интервью (immutable). Хранятся как на сервере, так и на клиенте для обеспечения оффлайн-доступа и мульти-сессионности.",
+      "id": "DE-interview-answers",
+      "updated": "2026-05-06T18:39:51.797000000+00:00",
+      "source_file": "docs/12-domain/entities/interview-answers.md"
+    }
+  },
+  {
+    "labels": [
+      "DomainEntity"
+    ],
+    "properties": {
+      "shared": false,
+      "stereotypes": [],
+      "migrated_at": "2026-05-06T18:39:51.797000000+00:00",
+      "created": "2026-04-19T21:04:40.828000000+00:00",
+      "ba_trace": [],
+      "module": "generation-module",
+      "name": "InterviewDialog",
+      "description": "Сессия AI-интервью по методологии эпизодического нарративного интервью v6. Содержит метаданные диалога: текущую фазу, нарративный профиль рассказчика и JSON-состояние Агента-Интервьюера (чеклисты фаз, обнаруженные зацепки, текущее решение). Связана 1:1 с Session. Создаётся при выборе режима interview (UC-014).",
+      "id": "DE-interview-dialog",
+      "updated": "2026-05-06T18:39:51.797000000+00:00",
+      "source_file": "docs/12-domain/entities/interview-dialog.md"
+    }
+  },
+  {
+    "labels": [
+      "DomainEntity"
+    ],
+    "properties": {
+      "shared": false,
+      "stereotypes": [],
+      "migrated_at": "2026-05-06T18:39:51.797000000+00:00",
+      "created": "2026-04-19T21:04:40.828000000+00:00",
+      "ba_trace": [],
+      "module": "conversion-module",
+      "name": "Lead",
+      "description": "Контактные данные пользователя, захваченные перед скачиванием результата. Является основной бизнес-ценностью системы -- конвертирует анонимного посетителя в контакт для дальнейшей коммуникации через Telegram-бот. Лид неизменяем после создания (immutable). Хранится исключительно на сервере.",
+      "id": "DE-lead",
+      "updated": "2026-05-06T18:39:51.797000000+00:00",
+      "source_file": "docs/12-domain/entities/lead.md"
+    }
+  },
+  {
+    "labels": [
+      "DomainEntity"
+    ],
+    "properties": {
+      "shared": false,
+      "stereotypes": [],
+      "migrated_at": "2026-05-06T18:39:51.797000000+00:00",
+      "created": "2026-04-19T21:04:40.828000000+00:00",
+      "ba_trace": [],
+      "module": "admin-module",
+      "name": "MasterPrompt",
+      "description": "Конфигурируемый шаблон промпта для AI-моделей. Управляется администратором через админ-панель без необходимости деплоя (BRQ-015). Система использует 11 типов промптов, каждый из которых отвечает за свой этап AI-генерации контента. Поддерживает версионирование для отслеживания изменений.",
+      "id": "DE-master-prompt",
+      "updated": "2026-05-06T18:39:51.797000000+00:00",
+      "source_file": "docs/12-domain/entities/master-prompt.md"
+    }
+  },
+  {
+    "labels": [
+      "DomainEntity"
+    ],
+    "properties": {
+      "shared": true,
+      "stereotypes": [],
+      "migrated_at": "2026-05-06T18:39:51.797000000+00:00",
+      "created": "2026-04-19T21:04:40.828000000+00:00",
+      "ba_trace": [],
+      "module": "shared/core",
+      "name": "MediaCache",
+      "description": "Клиентское хранилище бинарных данных медиа-контента (изображений) в IndexedDB. Обеспечивает оффлайн-доступ к ранее сгенерированным результатам, быстрое отображение при повторных визитах и поддержку мульти-сессионности. Каждая запись содержит blob изображения с метаданными. Не имеет аналога в BA-модели -- это новая сущность, введённая на этапе системного анализа.",
+      "id": "DE-media-cache",
+      "updated": "2026-05-06T18:39:51.797000000+00:00",
+      "source_file": "docs/12-domain/entities/media-cache.md"
+    }
+  }
+]

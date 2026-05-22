@@ -1,0 +1,14 @@
+# Fixture: VALID signed exception (in-window).
+# Demonstrates: release skill suppresses condition #3 (graph-stale)
+# for project project-alpha while this file exists and expiry
+# is in the future.
+exception_id: "EXC-2026-05-22-valid-graph-stale"
+owner: "magznikitin"
+reason: "FR-007 changed the graph (970 → 1083 nodes); the snapshot baseline is stale by construction. FR-007 verified via direct Cypher query at 2026-05-22T08:30Z; graph-refresh PR #1234 in flight. Release proceeds with snapshot-diff banner; carve-out closes when TECH-042 lands."
+created_at: "2026-05-22T08:35:00Z"
+expiry: "2026-05-23T08:35:00Z"
+affected_gates:
+  - "graph-stale"
+affected_projects:
+  - "project-alpha"
+followup_task: "TECH-042-graph-refresh"

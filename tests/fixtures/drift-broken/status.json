@@ -1,0 +1,15 @@
+{
+  "intake_id": "FR-007",
+  "totals": {
+    "tasks": 76,
+    "use_cases": 26,
+    "modules": 12
+  },
+  "tasks": [
+    { "id": "UC-100", "status": "done",        "verification_evidence": "test-GREEN (frontend/src/components/__tests__/uc100.spec.tsx)" },
+    { "id": "UC-101", "status": "done",        "verification_evidence": "test-GREEN" },
+    { "id": "UC-105", "status": "in_progress", "verification_evidence": "" },
+    { "id": "UC-106", "status": "done",        "verification_evidence": "test-GREEN" },
+    { "id": "UC-107", "status": "done",        "verification_evidence": "test-UNVERIFIED" }
+  ]
+}

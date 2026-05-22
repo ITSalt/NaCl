@@ -1,0 +1,88 @@
+{
+  "project": "NaCl Analyst Tool",
+  "created": "2026-05-07T00:00:00Z",
+  "updated": "2026-05-07T00:00:00Z",
+  "source": "nacl-tl-plan",
+  "feature_request": "FR-001",
+  "summary": {
+    "total_uc": 2,
+    "total_tech": 0,
+    "pending": 4,
+    "in_progress": 0,
+    "ready_for_review": 0,
+    "approved": 0,
+    "done": 0,
+    "blocked": 0
+  },
+  "waves": {
+    "total": 2,
+    "current": 1
+  },
+  "tasks": [
+    {
+      "id": "UC-003-BE",
+      "title": "Activity renderer — add diagram title element",
+      "type": "uc-be",
+      "uc": "UC-003",
+      "feature_request": "FR-001",
+      "status": "pending",
+      "wave": 1,
+      "priority": "high",
+      "phases": {
+        "be": { "status": "pending" },
+        "review-be": { "status": "pending" }
+      },
+      "blockers": [],
+      "blocks": ["UC-003-FE"]
+    },
+    {
+      "id": "UC-008-BE",
+      "title": "/boards — include UC/BP `label` in list response",
+      "type": "uc-be",
+      "uc": "UC-008",
+      "feature_request": "FR-001",
+      "status": "pending",
+      "wave": 1,
+      "priority": "high",
+      "phases": {
+        "be": { "status": "pending" },
+        "review-be": { "status": "pending" }
+      },
+      "blockers": [],
+      "blocks": ["UC-008-FE"]
+    },
+    {
+      "id": "UC-003-FE",
+      "title": "Activity board UI (no-op for FR-001)",
+      "type": "uc-fe",
+      "uc": "UC-003",
+      "feature_request": "FR-001",
+      "status": "no-op",
+      "wave": 2,
+      "priority": "low",
+      "phases": {
+        "fe": { "status": "no-op" }
+      },
+      "blockers": ["UC-003-BE"],
+      "blocks": []
+    },
+    {
+      "id": "UC-008-FE",
+      "title": "Sidebar — render `label` as subtitle",
+      "type": "uc-fe",
+      "uc": "UC-008",
+      "feature_request": "FR-001",
+      "status": "pending",
+      "wave": 2,
+      "priority": "high",
+      "phases": {
+        "fe": { "status": "pending" },
+        "sync": { "status": "pending" },
+        "review-fe": { "status": "pending" },
+        "qa": { "status": "pending" }
+      },
+      "blockers": ["UC-008-BE"],
+      "blocks": []
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+[
+  {
+    "labels": [
+      "DomainEnum"
+    ],
+    "properties": {
+      "name": "ModelCatalogSource",
+      "description": "Источник записи каталога моделей: seed (из репо/миграции) или discovery (получено вызовом /v1/models или аналогичного эндпоинта провайдера).",
+      "id": "SA-Enum-ModelCatalogSource"
+    }
+  }
+]

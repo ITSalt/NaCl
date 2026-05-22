@@ -4,6 +4,41 @@ All notable changes to NaCl (Natural Agent Control Language) will be documented 
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [2.8.0] — 2026-05-22
+
+Strict-mode transition. The chain moves from evidence-descriptive to
+evidence-blocking gates: missing evidence halts the chain instead of being
+downgraded to "explained." Eight skip flags removed; `--skip-e2e` retained
+with explicit scope. Forbidden terminal success states (`UNVERIFIED`,
+`BLOCKED`, `FAILED`, `NOT_RUN`) now refuse closure across `nacl-tl-release`,
+`nacl-tl-conductor`, and `nacl-tl-deliver`. `.cypher` graph exports are no
+longer accepted as graph source of truth — the chain queries live Neo4j.
+
+New artifact contracts: `.tl/exceptions/` (signed, scoped, expiring
+overrides), `.tl/emergencies/` (one-shot loud records), `.tl/reconciliation/`
+(cross-artifact alignment snapshots from conductor Phase 4.5),
+`.tl/clean-checkout/` (release-required tree assets), `.tl/external-contracts/`
+(per-provider and per-protocol contracts feeding `nacl-tl-plan`'s W6 gate).
+
+New long-form references under `nacl-tl-core/references/`:
+`strict-mode-changes.md`, `gate-fire-catalog.md`, `project-gap-closure.md`,
+`config-schema.md`, `emergency-mode.md`. SKILL.md bodies remain operational;
+the references are where the rules are.
+
+Migration path: start at `nacl-tl-core/references/project-gap-closure.md`.
+Expect immediate gate fires on pre-2.8 projects — that is correct behavior.
+File signed exceptions for gaps that cannot be closed in the current wave.
+`gate_mode: lenient` remains expressible in `config.yaml` for the migration
+window, but is itself audited.
+
+This release also ships the public repo with all client project references,
+personal local paths, and operational deployment hostnames redacted. The
+`ITSalt` org name, the documented Neo4j ports (`3587` Bolt / `3574` HTTP),
+and the real public URLs (`github.com/ITSalt/NaCl`, `github.com/ITSalt/pinch`)
+are preserved as the project's actual public identity.
+
+Full release notes: `docs/releases/2.8.0-strict-mode-transition/release-notes.md`.
+
 ## [0.18.0] — 2026-05-21
 
 Methodological-gap release. 0.13.0 introduced a reader for

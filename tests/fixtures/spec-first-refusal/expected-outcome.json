@@ -1,0 +1,40 @@
+{
+  "$schema": "spec-first-refusal-outcome-v1",
+  "_purpose": "Materialized expected outcome of nacl-tl-fix Step 6.SF when run against this fixture. W11 retrospective replay asserts against this artifact.",
+  "skill": "nacl-tl-fix",
+  "step": "6.SF (Spec-First Prerequisite Check)",
+  "classification": "L1",
+  "fix_chain_length": 7,
+  "detection_trace": {
+    "spec_update_commits": [
+      { "index": 6, "sha": "a7eb747", "reason": "touches docs/14-usecases/UC-10*.md" }
+    ],
+    "code_fix_commits": [
+      { "index": 0, "sha": "01f2fcb" },
+      { "index": 1, "sha": "c83e84f" },
+      { "index": 2, "sha": "92da5c7" },
+      { "index": 3, "sha": "135b14b" },
+      { "index": 4, "sha": "6ed12ac" },
+      { "index": 5, "sha": "3acb2fd" }
+    ],
+    "first_code_fix_idx": 0,
+    "last_spec_idx_before_code": null,
+    "secondary_signals": {
+      "spec_update_by_status_json": false,
+      "spec_update_by_changelog": false,
+      "graph_mutation_detected": false
+    }
+  },
+  "signed_exception_against_spec_first_prerequisite": null,
+  "verdict": "FAIL",
+  "rule_fired": "Step 6.SF rule 5 (FAIL + no signed exception)",
+  "terminal_status": "BLOCKED",
+  "workflow_detail": "spec-first-prerequisite-missing",
+  "header": "FIX HALTED — SPEC-FIRST PREREQUISITE MISSING",
+  "production_code_modified": false,
+  "operator_paths": [
+    "reorder chain — commit spec update first, then code",
+    "re-classify in Step 3 if L2/L3 was incorrectly downgraded",
+    "file signed exception against gate spec-first-prerequisite per W4 schema"
+  ]
+}

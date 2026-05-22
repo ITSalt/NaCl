@@ -1,0 +1,13 @@
+{
+  "name": "app",
+  "private": true,
+  "version": "0.0.0",
+  "scripts": {
+    "lint": "echo 'lint clean'",
+    "typecheck": "tsc --noEmit",
+    "test": "echo 'no tests'"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  }
+}

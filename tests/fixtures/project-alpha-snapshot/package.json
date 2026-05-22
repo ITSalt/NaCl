@@ -1,0 +1,17 @@
+{
+  "_comment": "Synthetic wave-tip package.json — declares the strict-only scripts the W1 repo-wide check gate requires. With the unfixed lint+typecheck offenders in this fixture, `pnpm -r lint`, `pnpm -r typecheck`, and (transitively) `pnpm -r test` all fail.",
+  "name": "project-alpha-fixture",
+  "private": true,
+  "packageManager": "pnpm@9.15.0",
+  "scripts": {
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit -p tsconfig.typecheck.json",
+    "test": "vitest run"
+  },
+  "expected_wave_tip_state": {
+    "lint": "RED (packages/shared/src/asset.ts:12 — @typescript-eslint/consistent-type-imports violation)",
+    "typecheck": "RED (3 errors: usage-report.routes.ts:35, usage-report.service.ts:146, usage-report.authz.test.ts:50)",
+    "test": "NOT_RUN (typecheck failure short-circuits the suite; postmortem § 3.12 + fix-plan claim 7)",
+    "live_publishers": "task.events.ts / notification.events.ts / sse.events.ts exports defined; zero call sites in worker.ts / engine.ts"
+  }
+}

@@ -1,0 +1,50 @@
+[
+  {
+    "labels": [
+      "BusinessRole"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-19T21:02:58.852000000+00:00",
+      "responsibilities": [],
+      "full_name": "Пользователь",
+      "created": "2026-04-19T21:02:58.852000000+00:00",
+      "id": "ROL-01",
+      "original_id": "ACT-01",
+      "department": "Внешний",
+      "updated": "2026-04-19T21:02:58.852000000+00:00",
+      "source_file": "docs/03-business-roles/roles/ACT-01-user.md"
+    }
+  },
+  {
+    "labels": [
+      "BusinessRole"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-19T21:02:58.852000000+00:00",
+      "full_name": "Менеджер",
+      "responsibilities": [],
+      "created": "2026-04-19T21:02:58.852000000+00:00",
+      "id": "ROL-02",
+      "original_id": "ACT-02",
+      "department": "Внутренний",
+      "updated": "2026-04-19T21:02:58.852000000+00:00",
+      "source_file": "docs/03-business-roles/roles/ACT-02-manager.md"
+    }
+  },
+  {
+    "labels": [
+      "BusinessRole"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-19T21:02:58.852000000+00:00",
+      "responsibilities": [],
+      "full_name": "Администратор",
+      "created": "2026-04-19T21:02:58.852000000+00:00",
+      "id": "ROL-03",
+      "department": "Внутренний",
+      "original_id": "ACT-03",
+      "updated": "2026-04-19T21:02:58.852000000+00:00",
+      "source_file": "docs/03-business-roles/roles/ACT-03-admin.md"
+    }
+  }
+]

@@ -1,0 +1,380 @@
+{
+  "project": "project-alpha",
+  "bolt_port": 3587,
+  "status": "REACHABLE",
+  "labels": [
+    {
+      "label": "DomainAttribute",
+      "count": 179
+    },
+    {
+      "label": "WorkflowStep",
+      "count": 132
+    },
+    {
+      "label": "ActivityStep",
+      "count": 128
+    },
+    {
+      "label": "FormField",
+      "count": 89
+    },
+    {
+      "label": "EntityAttribute",
+      "count": 84
+    },
+    {
+      "label": "Task",
+      "count": 76
+    },
+    {
+      "label": "GlossaryTerm",
+      "count": 56
+    },
+    {
+      "label": "Requirement",
+      "count": 50
+    },
+    {
+      "label": "EnumValue",
+      "count": 44
+    },
+    {
+      "label": "Component",
+      "count": 33
+    },
+    {
+      "label": "UseCase",
+      "count": 26
+    },
+    {
+      "label": "BusinessRule",
+      "count": 20
+    },
+    {
+      "label": "Form",
+      "count": 19
+    },
+    {
+      "label": "EntityState",
+      "count": 18
+    },
+    {
+      "label": "DomainEntity",
+      "count": 17
+    },
+    {
+      "label": "BusinessEntity",
+      "count": 14
+    },
+    {
+      "label": "BusinessProcess",
+      "count": 12
+    },
+    {
+      "label": "NavigationItem",
+      "count": 12
+    },
+    {
+      "label": "Wave",
+      "count": 12
+    },
+    {
+      "label": "ADR",
+      "count": 11
+    },
+    {
+      "label": "Enumeration",
+      "count": 10
+    },
+    {
+      "label": "DataFlow",
+      "count": 7
+    },
+    {
+      "label": "FeatureRequest",
+      "count": 6
+    },
+    {
+      "label": "ExternalEntity",
+      "count": 5
+    },
+    {
+      "label": "Module",
+      "count": 4
+    },
+    {
+      "label": "ProcessGroup",
+      "count": 3
+    },
+    {
+      "label": "BusinessRole",
+      "count": 3
+    },
+    {
+      "label": "SystemRole",
+      "count": 3
+    },
+    {
+      "label": "Stakeholder",
+      "count": 2
+    },
+    {
+      "label": "ValidationReport",
+      "count": 2
+    },
+    {
+      "label": "SystemContext",
+      "count": 1
+    },
+    {
+      "label": "HandoffPackage",
+      "count": 1
+    },
+    {
+      "label": "FinalizationReport",
+      "count": 1
+    },
+    {
+      "label": "Constraint",
+      "count": 1
+    },
+    {
+      "label": "FormPrecondition",
+      "count": 1
+    },
+    {
+      "label": "DomainEnum",
+      "count": 1
+    }
+  ],
+  "total_nodes": 1083,
+  "total_rels": 2093,
+  "rel_types": [
+    {
+      "type": "HAS_ATTRIBUTE",
+      "count": 263
+    },
+    {
+      "type": "NEXT_STEP",
+      "count": 156
+    },
+    {
+      "type": "HAS_REQUIREMENT",
+      "count": 139
+    },
+    {
+      "type": "DEPENDS_ON",
+      "count": 136
+    },
+    {
+      "type": "HAS_WORKFLOW_STEP",
+      "count": 132
+    },
+    {
+      "type": "HAS_STEP",
+      "count": 128
+    },
+    {
+      "type": "AUTOMATES_AS",
+      "count": 89
+    },
+    {
+      "type": "HAS_FIELD",
+      "count": 89
+    },
+    {
+      "type": "TYPED_AS",
+      "count": 84
+    },
+    {
+      "type": "IN_WAVE",
+      "count": 76
+    },
+    {
+      "type": "MAPS_TO",
+      "count": 70
+    },
+    {
+      "type": "APPLIES_TO",
+      "count": 65
+    },
+    {
+      "type": "USED_IN",
+      "count": 65
+    },
+    {
+      "type": "GENERATES",
+      "count": 60
+    },
+    {
+      "type": "HAS_VALUE",
+      "count": 44
+    },
+    {
+      "type": "HAS_PERMISSION",
+      "count": 39
+    },
+    {
+      "type": "CONSUMES",
+      "count": 29
+    },
+    {
+      "type": "DEFINES_TERM",
+      "count": 28
+    },
+    {
+      "type": "PRODUCES",
+      "count": 27
+    },
+    {
+      "type": "CONTAINS_UC",
+      "count": 26
+    },
+    {
+      "type": "ACTOR",
+      "count": 26
+    },
+    {
+      "type": "TRIGGERS",
+      "count": 22
+    },
+    {
+      "type": "RELATES_TO",
+      "count": 21
+    },
+    {
+      "type": "USES_FORM",
+      "count": 21
+    },
+    {
+      "type": "CALLS_PROCESS",
+      "count": 20
+    },
+    {
+      "type": "PERFORMS",
+      "count": 19
+    },
+    {
+      "type": "IMPLEMENTED_BY",
+      "count": 19
+    },
+    {
+      "type": "HAS_STATE",
+      "count": 18
+    },
+    {
+      "type": "REFERENCES",
+      "count": 18
+    },
+    {
+      "type": "CONTAINS_ENTITY",
+      "count": 17
+    },
+    {
+      "type": "USES_ENUM",
+      "count": 14
+    },
+    {
+      "type": "REALIZED_AS",
+      "count": 14
+    },
+    {
+      "type": "CONTAINS",
+      "count": 12
+    },
+    {
+      "type": "OWNS",
+      "count": 12
+    },
+    {
+      "type": "LINKS_TO",
+      "count": 12
+    },
+    {
+      "type": "INCLUDES_UC",
+      "count": 11
+    },
+    {
+      "type": "AFFECTS_ENTITY",
+      "count": 9
+    },
+    {
+      "type": "INITIATES",
+      "count": 8
+    },
+    {
+      "type": "AFFECTS_MODULE",
+      "count": 8
+    },
+    {
+      "type": "HAS_DATA_FLOW",
+      "count": 7
+    },
+    {
+      "type": "HAS_NFR",
+      "count": 6
+    },
+    {
+      "type": "HAS_EXTERNAL_ENTITY",
+      "count": 5
+    },
+    {
+      "type": "TARGETS",
+      "count": 4
+    },
+    {
+      "type": "GENERATES_TASK",
+      "count": 4
+    },
+    {
+      "type": "HAS_PROCESS_GROUP",
+      "count": 3
+    },
+    {
+      "type": "MAPPED_TO",
+      "count": 3
+    },
+    {
+      "type": "OF_ENUM",
+      "count": 3
+    },
+    {
+      "type": "HAS_STAKEHOLDER",
+      "count": 2
+    },
+    {
+      "type": "DELIVERED_TO",
+      "count": 2
+    },
+    {
+      "type": "DESCRIBED_BY",
+      "count": 2
+    },
+    {
+      "type": "RETURNS_TO",
+      "count": 1
+    },
+    {
+      "type": "CONSTRAINED_BY",
+      "count": 1
+    },
+    {
+      "type": "COMPOSED_OF",
+      "count": 1
+    },
+    {
+      "type": "HAS_CONSTRAINT",
+      "count": 1
+    },
+    {
+      "type": "HAS_PRECONDITION",
+      "count": 1
+    },
+    {
+      "type": "OWNS_ENUM",
+      "count": 1
+    }
+  ],
+  "sample_label_count": 36
+}

@@ -1,0 +1,252 @@
+{
+  "project": "learn",
+  "bolt_port": 3597,
+  "status": "REACHABLE",
+  "labels": [
+    {
+      "label": "ActivityStep",
+      "count": 620
+    },
+    {
+      "label": "Requirement",
+      "count": 533
+    },
+    {
+      "label": "DomainAttribute",
+      "count": 299
+    },
+    {
+      "label": "Task",
+      "count": 234
+    },
+    {
+      "label": "FormField",
+      "count": 204
+    },
+    {
+      "label": "UseCase",
+      "count": 102
+    },
+    {
+      "label": "EnumValue",
+      "count": 90
+    },
+    {
+      "label": "Form",
+      "count": 58
+    },
+    {
+      "label": "Wave",
+      "count": 56
+    },
+    {
+      "label": "Component",
+      "count": 50
+    },
+    {
+      "label": "FeatureRequest",
+      "count": 35
+    },
+    {
+      "label": "DomainEntity",
+      "count": 29
+    },
+    {
+      "label": "Enumeration",
+      "count": 24
+    },
+    {
+      "label": "ADR",
+      "count": 11
+    },
+    {
+      "label": "EnumerationValue",
+      "count": 10
+    },
+    {
+      "label": "Module",
+      "count": 9
+    },
+    {
+      "label": "SystemRole",
+      "count": 6
+    },
+    {
+      "label": "DesignToken",
+      "count": 6
+    },
+    {
+      "label": "ValidationReport",
+      "count": 1
+    },
+    {
+      "label": "FinalizationReport",
+      "count": 1
+    }
+  ],
+  "total_nodes": 2378,
+  "total_rels": 3463,
+  "rel_types": [
+    {
+      "type": "HAS_STEP",
+      "count": 620
+    },
+    {
+      "type": "HAS_REQUIREMENT",
+      "count": 574
+    },
+    {
+      "type": "HAS_ATTRIBUTE",
+      "count": 299
+    },
+    {
+      "type": "DEPENDS_ON",
+      "count": 216
+    },
+    {
+      "type": "IN_WAVE",
+      "count": 214
+    },
+    {
+      "type": "GENERATES",
+      "count": 205
+    },
+    {
+      "type": "HAS_FIELD",
+      "count": 204
+    },
+    {
+      "type": "MAPS_TO",
+      "count": 202
+    },
+    {
+      "type": "ACTOR",
+      "count": 151
+    },
+    {
+      "type": "CONTAINS_UC",
+      "count": 102
+    },
+    {
+      "type": "HAS_VALUE",
+      "count": 101
+    },
+    {
+      "type": "INCLUDES_UC",
+      "count": 99
+    },
+    {
+      "type": "USES_FORM",
+      "count": 83
+    },
+    {
+      "type": "USED_IN",
+      "count": 65
+    },
+    {
+      "type": "HAS_PERMISSION",
+      "count": 46
+    },
+    {
+      "type": "USES_ENTITY",
+      "count": 40
+    },
+    {
+      "type": "AFFECTS_MODULE",
+      "count": 33
+    },
+    {
+      "type": "CONTAINS_ENTITY",
+      "count": 29
+    },
+    {
+      "type": "AFFECTS_ENTITY",
+      "count": 28
+    },
+    {
+      "type": "HAS_ENUM",
+      "count": 22
+    },
+    {
+      "type": "RELATES_TO",
+      "count": 22
+    },
+    {
+      "type": "HAS_COMPONENT",
+      "count": 20
+    },
+    {
+      "type": "IMPLEMENTED_BY",
+      "count": 16
+    },
+    {
+      "type": "HAS_TASK",
+      "count": 12
+    },
+    {
+      "type": "USES_ENUM",
+      "count": 10
+    },
+    {
+      "type": "REFINED_AS",
+      "count": 9
+    },
+    {
+      "type": "DERIVED_FROM",
+      "count": 6
+    },
+    {
+      "type": "USES_TOKEN",
+      "count": 6
+    },
+    {
+      "type": "RELATED_TO",
+      "count": 5
+    },
+    {
+      "type": "HAS_ADR",
+      "count": 5
+    },
+    {
+      "type": "EXTENDS",
+      "count": 3
+    },
+    {
+      "type": "WRITES_ENTITY",
+      "count": 3
+    },
+    {
+      "type": "READS_ENTITY",
+      "count": 3
+    },
+    {
+      "type": "PART_OF",
+      "count": 3
+    },
+    {
+      "type": "CONTAINS_ENUM",
+      "count": 2
+    },
+    {
+      "type": "OF_ENUM",
+      "count": 1
+    },
+    {
+      "type": "REFERENCES_ENUM",
+      "count": 1
+    },
+    {
+      "type": "EXTENDS_UC",
+      "count": 1
+    },
+    {
+      "type": "MODIFIES",
+      "count": 1
+    },
+    {
+      "type": "INTRODUCES",
+      "count": 1
+    }
+  ],
+  "sample_label_count": 20
+}

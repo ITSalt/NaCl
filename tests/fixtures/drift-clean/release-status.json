@@ -1,0 +1,14 @@
+{
+  "release_tag": "v0.1.0",
+  "released_at": "2026-05-22T08:30:00Z",
+  "feature_requests_included": ["FR-100"],
+  "health": {
+    "status": "ok",
+    "checked_at": "2026-05-22T08:32:00Z",
+    "endpoint": "https://staging.example.com/api/health"
+  },
+  "graph": {
+    "status": "ok",
+    "node_count": 5
+  }
+}

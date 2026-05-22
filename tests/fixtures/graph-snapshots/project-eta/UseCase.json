@@ -1,0 +1,128 @@
+[
+  {
+    "labels": [
+      "UseCase"
+    ],
+    "properties": {
+      "complexity": "",
+      "migrated_at": "2026-04-13T14:03:23.832000000+00:00",
+      "created": "2026-04-13T14:03:23.832000000+00:00",
+      "ba_trace": [],
+      "module": "",
+      "description": "",
+      "priority": "",
+      "source_file": "docs/04-usecases/UC001-auth-otp.md",
+      "actor": "",
+      "name": "Аутентификация по телефону (OTP)",
+      "iteration": "",
+      "id": "UC-001",
+      "original_id": "UC001",
+      "updated": "2026-04-13T14:03:23.832000000+00:00"
+    }
+  },
+  {
+    "labels": [
+      "UseCase"
+    ],
+    "properties": {
+      "complexity": "",
+      "migrated_at": "2026-04-13T14:03:23.832000000+00:00",
+      "created": "2026-04-13T14:03:23.832000000+00:00",
+      "ba_trace": [],
+      "module": "",
+      "description": "",
+      "priority": "",
+      "source_file": "docs/04-usecases/UC010-create-order.md",
+      "actor": "",
+      "name": "- Создание заказа на зарядку",
+      "iteration": "",
+      "id": "UC-010",
+      "original_id": "UC010",
+      "updated": "2026-04-13T14:03:23.832000000+00:00"
+    }
+  },
+  {
+    "labels": [
+      "UseCase"
+    ],
+    "properties": {
+      "complexity": "",
+      "migrated_at": "2026-04-13T14:03:23.832000000+00:00",
+      "created": "2026-04-13T14:03:23.832000000+00:00",
+      "ba_trace": [],
+      "module": "",
+      "description": "",
+      "priority": "",
+      "source_file": "docs/04-usecases/UC011-orders-list.md",
+      "actor": "",
+      "name": "Список заказов клиента",
+      "iteration": "",
+      "id": "UC-011",
+      "original_id": "UC011",
+      "updated": "2026-04-13T14:03:23.832000000+00:00"
+    }
+  },
+  {
+    "labels": [
+      "UseCase"
+    ],
+    "properties": {
+      "complexity": "",
+      "migrated_at": "2026-04-13T14:03:23.832000000+00:00",
+      "created": "2026-04-13T14:03:23.832000000+00:00",
+      "ba_trace": [],
+      "module": "",
+      "description": "",
+      "priority": "",
+      "source_file": "docs/04-usecases/UC012-order-details.md",
+      "actor": "",
+      "name": "Детали заказа",
+      "iteration": "",
+      "id": "UC-012",
+      "original_id": "UC012",
+      "updated": "2026-04-13T14:03:23.832000000+00:00"
+    }
+  },
+  {
+    "labels": [
+      "UseCase"
+    ],
+    "properties": {
+      "complexity": "",
+      "migrated_at": "2026-04-13T14:03:23.832000000+00:00",
+      "created": "2026-04-13T14:03:23.832000000+00:00",
+      "ba_trace": [],
+      "module": "",
+      "description": "",
+      "priority": "",
+      "source_file": "docs/04-usecases/UC015-payment.md",
+      "actor": "",
+      "name": "Оплата заказа",
+      "iteration": "",
+      "id": "UC-015",
+      "original_id": "UC015",
+      "updated": "2026-04-13T14:03:23.832000000+00:00"
+    }
+  },
+  {
+    "labels": [
+      "UseCase"
+    ],
+    "properties": {
+      "complexity": "",
+      "migrated_at": "2026-04-13T14:03:23.832000000+00:00",
+      "created": "2026-04-13T14:03:23.832000000+00:00",
+      "ba_trace": [],
+      "module": "",
+      "description": "",
+      "priority": "",
+      "source_file": "docs/04-usecases/UC050-chat.md",
+      "actor": "",
+      "name": "Чат с сотрудником",
+      "iteration": "",
+      "id": "UC-050",
+      "original_id": "UC050",
+      "updated": "2026-04-13T14:03:23.832000000+00:00"
+    }
+  }
+]

@@ -1,0 +1,175 @@
+{
+  "$schema_comment": [
+    "Reconciliation evidence artifact schema. Introduced in W5-reconciliation.",
+    "",
+    "This file is a TEMPLATE. Real reconciliation runs write to:",
+    "  .tl/reconciliation/<ISO-8601-utc>.json           (conductor Phase 4.5)",
+    "  .tl/reconciliation/<ISO-8601-utc>-publish.json   (nacl-publish gate)",
+    "",
+    "Producers:",
+    "  - nacl-tl-conductor / Phase 4.5 (Cross-artifact reconciliation)",
+    "  - nacl-publish (Pre-publish reconciliation gate)",
+    "",
+    "Sources of truth checked by the conductor (six):",
+    "  1. .tl/status.json",
+    "  2. .tl/conductor-state.json",
+    "  3. .tl/changelog.md",
+    "  4. Live Neo4j graph (LIVE READS ONLY — no .cypher export fallback)",
+    "  5. .tl/release-status.json",
+    "  6. .tl/exceptions/ (active vs expired signed exceptions, W4 schema)",
+    "",
+    "Pairwise checks (conductor):",
+    "  P-S1  status.json totals vs live graph counts",
+    "  P-S2  changelog.md FR entries vs graph FeatureRequest nodes",
+    "  P-S3  release-status.json release_tag vs graph release_tag property",
+    "  P-S4  conductor-state.json phase markers vs status.json terminal statuses",
+    "  P-S5  conductor-state.json per-task entries vs graph Task.status",
+    "",
+    "Pairwise checks (publish subset):",
+    "  P-P1  changelog.md released FR list vs graph FeatureRequest",
+    "  P-P2  changelog.md released UC list vs graph UseCase",
+    "  P-P3  release-status.json.release_tag vs graph release_tag properties",
+    "",
+    "Live-graph-only binding: if the project's graph container is",
+    "unreachable, do NOT fall back to a stale .cypher export. Emit",
+    "terminal_status = 'BLOCKED' with workflow_detail = 'graph_unavailable'",
+    "and refuse to advance."
+  ],
+
+  "timestamp": "<ISO-8601-utc>",
+
+  "intake_id": "<conductor intake id or null for publish-only runs>",
+
+  "producer": "<nacl-tl-conductor | nacl-publish>",
+
+  "sources_checked": [
+    {
+      "name": "status.json",
+      "path": ".tl/status.json",
+      "read_at": "<ISO-8601-utc>",
+      "summary": {
+        "totals": { "tasks": 0, "use_cases": 0, "modules": 0 }
+      }
+    },
+    {
+      "name": "conductor-state.json",
+      "path": ".tl/conductor-state.json",
+      "read_at": "<ISO-8601-utc>",
+      "summary": {
+        "phase": "<conductor phase name>",
+        "tech_tasks_count": 0,
+        "uc_tasks_count": 0
+      }
+    },
+    {
+      "name": "changelog.md",
+      "path": ".tl/changelog.md",
+      "read_at": "<ISO-8601-utc>",
+      "summary": {
+        "latest_section_release_tag": "<vX.Y.Z>",
+        "released_frs": [],
+        "released_ucs": []
+      }
+    },
+    {
+      "name": "live_graph",
+      "path": "bolt://localhost:<port>",
+      "read_at": "<ISO-8601-utc>",
+      "summary": {
+        "modules": 0,
+        "use_cases": 0,
+        "tasks": 0,
+        "feature_requests": 0
+      },
+      "fallback_used": "NEVER — live reads only per W5 binding"
+    },
+    {
+      "name": "release-status.json",
+      "path": ".tl/release-status.json",
+      "read_at": "<ISO-8601-utc>",
+      "summary": {
+        "release_tag": "<vX.Y.Z or null>",
+        "health_status": "<ok | failed | skipped>",
+        "graph_status": "<ok | warn | unavailable>"
+      }
+    },
+    {
+      "name": "exceptions",
+      "path": ".tl/exceptions/",
+      "read_at": "<ISO-8601-utc>",
+      "summary": {
+        "active_count": 0,
+        "expired_count": 0
+      }
+    }
+  ],
+
+  "deltas": [
+    {
+      "pair_id": "P-S1",
+      "assertion": "status.json totals match live graph counts",
+      "outcome": "<PASS | FAIL | PASS_UNDER_EXCEPTION>",
+      "details": {
+        "status_json": { "tasks": 0, "use_cases": 0, "modules": 0 },
+        "graph":       { "tasks": 0, "use_cases": 0, "modules": 0 }
+      }
+    },
+    {
+      "pair_id": "P-S2",
+      "assertion": "every FR in latest changelog section exists as FeatureRequest node",
+      "outcome": "<PASS | FAIL | PASS_UNDER_EXCEPTION>",
+      "details": {
+        "changelog_frs": [],
+        "graph_frs": [],
+        "missing_from_graph": []
+      }
+    },
+    {
+      "pair_id": "P-S3",
+      "assertion": "release-status.json release_tag present in graph release_tag property",
+      "outcome": "<PASS | FAIL | PASS_UNDER_EXCEPTION>",
+      "details": {
+        "json_release_tag": "<vX.Y.Z or null>",
+        "graph_nodes_with_tag": 0
+      }
+    },
+    {
+      "pair_id": "P-S4",
+      "assertion": "if conductor-state phase == quality_gate_passed then no pending/in_progress remain in status.json",
+      "outcome": "<PASS | FAIL | PASS_UNDER_EXCEPTION>",
+      "details": {
+        "conductor_phase": "<phase name>",
+        "non_terminal_tasks": []
+      }
+    },
+    {
+      "pair_id": "P-S5",
+      "assertion": "every conductor-state task entry status matches live graph Task.status",
+      "outcome": "<PASS | FAIL | PASS_UNDER_EXCEPTION>",
+      "details": {
+        "mismatches": []
+      }
+    }
+  ],
+
+  "active_exceptions": [
+    {
+      "exception_id": "EXC-YYYY-MM-DD-<slug>",
+      "owner": "<owner>",
+      "affected_gates": ["<gate_name>"],
+      "expiry": "<ISO-8601-utc>",
+      "satisfied_pairs": []
+    }
+  ],
+
+  "expired_exceptions": [
+    {
+      "exception_id": "EXC-YYYY-MM-DD-<slug>",
+      "expiry": "<ISO-8601-utc past>",
+      "would_have_satisfied": []
+    }
+  ],
+
+  "terminal_status": "<VERIFIED | BLOCKED>",
+  "workflow_detail": "<empty | graph_unavailable | artifact-drift | publish-drift>"
+}

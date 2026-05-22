@@ -1,0 +1,98 @@
+[
+  {
+    "labels": [
+      "Wave"
+    ],
+    "properties": {
+      "number": 4,
+      "created": "2026-04-24T17:20:24.243000000+00:00",
+      "name": "Prompt fixes",
+      "id": "WAVE-4",
+      "status": "completed"
+    }
+  },
+  {
+    "labels": [
+      "Wave"
+    ],
+    "properties": {
+      "number": 5,
+      "created": "2026-04-24T17:20:24.294000000+00:00",
+      "name": "Memory pipeline durability",
+      "id": "WAVE-5",
+      "status": "completed"
+    }
+  },
+  {
+    "labels": [
+      "Wave"
+    ],
+    "properties": {
+      "number": 6,
+      "created": "2026-04-24T17:20:24.320000000+00:00",
+      "name": "Declarative step DAG",
+      "id": "WAVE-6",
+      "status": "completed"
+    }
+  },
+  {
+    "labels": [
+      "Wave"
+    ],
+    "properties": {
+      "number": 7,
+      "created": "2026-04-24T17:20:24.339000000+00:00",
+      "name": "Admin pipeline dashboard",
+      "id": "WAVE-7",
+      "status": "completed"
+    }
+  },
+  {
+    "labels": [
+      "Wave"
+    ],
+    "properties": {
+      "number": 9,
+      "name": "FR-029 Cabinet shell + primitives",
+      "id": "WAVE-9",
+      "status": "pending",
+      "feature_request": "FR-029"
+    }
+  },
+  {
+    "labels": [
+      "Wave"
+    ],
+    "properties": {
+      "number": 10,
+      "name": "FR-029 Hub + mode pages + pricing",
+      "id": "WAVE-10",
+      "status": "pending",
+      "feature_request": "FR-029"
+    }
+  },
+  {
+    "labels": [
+      "Wave"
+    ],
+    "properties": {
+      "number": 11,
+      "name": "FR-029 Adapted journey screens",
+      "id": "WAVE-11",
+      "status": "pending",
+      "feature_request": "FR-029"
+    }
+  },
+  {
+    "labels": [
+      "Wave"
+    ],
+    "properties": {
+      "number": 12,
+      "name": "FR-029 Polish + ship",
+      "id": "WAVE-12",
+      "status": "pending",
+      "feature_request": "FR-029"
+    }
+  }
+]

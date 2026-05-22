@@ -1,0 +1,185 @@
+[
+  {
+    "labels": [
+      "GlossaryTerm"
+    ],
+    "properties": {
+      "aliases": [
+        "��������������",
+        "Session"
+      ],
+      "created": "2026-05-17",
+      "name": "Meeting",
+      "context": "Used throughout all processes (BP-001..BP-006); top-level aggregate (OBJ-001).",
+      "definition": "A single business meeting whose recording is uploaded into the system for processing. The root object that owns the recording, transcript, and protocol throughout its lifecycle.",
+      "id": "GLO-001",
+      "updated": "2026-05-17",
+      "status": "draft"
+    }
+  },
+  {
+    "labels": [
+      "GlossaryTerm"
+    ],
+    "properties": {
+      "aliases": [
+        "����������������������",
+        "������������",
+        "Video File"
+      ],
+      "created": "2026-05-17",
+      "name": "Recording",
+      "context": "Created in BP-001 (Upload); consumed in BP-002 (Transcription). OBJ-002.",
+      "definition": "The video file uploaded by the Author that captures the meeting. Physical file in object storage; metadata tracked as the Recording entity.",
+      "id": "GLO-002",
+      "updated": "2026-05-17",
+      "status": "draft"
+    }
+  },
+  {
+    "labels": [
+      "GlossaryTerm"
+    ],
+    "properties": {
+      "aliases": [
+        "��������������������",
+        "������������������ ��������������������������",
+        "Verbatim Transcript"
+      ],
+      "created": "2026-05-17",
+      "name": "Transcript",
+      "context": "Produced by BP-002; consumed by BP-003 and BP-004. OBJ-004.",
+      "definition": "The verbatim, speaker-attributed text output of the transcription pipeline. Full spoken content with speaker labels and per-segment timestamps. Sometimes called \"verbatim transcript\" to distinguish from a summarized protocol.",
+      "id": "GLO-003",
+      "updated": "2026-05-17",
+      "status": "draft"
+    }
+  },
+  {
+    "labels": [
+      "GlossaryTerm"
+    ],
+    "properties": {
+      "aliases": [
+        "�������������������� ����������������",
+        "Diarization"
+      ],
+      "created": "2026-05-17",
+      "context": "Performed inside BP-002 by the ASR/Diarization Engine (EXT-02). Output feeds into speaker-attributed transcript segments.",
+      "name": "Speaker Diarization",
+      "definition": "The automated process of partitioning an audio stream into segments and labeling each with a speaker identity (Speaker 1, Speaker 2). Answers \"who spoke when\" and is a required step of the transcription pipeline.",
+      "id": "GLO-004",
+      "updated": "2026-05-17",
+      "status": "draft"
+    }
+  },
+  {
+    "labels": [
+      "GlossaryTerm"
+    ],
+    "properties": {
+      "aliases": [
+        "�������������� ����������������������",
+        "Transcript Segment"
+      ],
+      "created": "2026-05-17",
+      "context": "Produced by diarization inside BP-002; stored as structured content within OBJ-004 (Transcript) at MVP.",
+      "name": "Speaker Segment",
+      "definition": "A contiguous block of speech attributed to one speaker, with start/end timestamps, speaker label, and verbatim text. Multiple segments together form the Transcript.",
+      "id": "GLO-005",
+      "updated": "2026-05-17",
+      "status": "draft"
+    }
+  },
+  {
+    "labels": [
+      "GlossaryTerm"
+    ],
+    "properties": {
+      "aliases": [
+        "���������������� ��������������",
+        "Protocol",
+        "Minutes"
+      ],
+      "created": "2026-05-17",
+      "context": "Produced by BP-004; edited in BP-005; exported in BP-006. OBJ-006.",
+      "name": "Meeting Protocol",
+      "definition": "A structured summary document produced from the transcript by the LLM pipeline. Contains sections for participants, discussion topics, decisions made, and action items with assignees and deadlines. Stored as Markdown, exportable to PDF.",
+      "id": "GLO-006",
+      "updated": "2026-05-17",
+      "status": "draft"
+    }
+  },
+  {
+    "labels": [
+      "GlossaryTerm"
+    ],
+    "properties": {
+      "aliases": [
+        "����������������"
+      ],
+      "created": "2026-05-17",
+      "name": "Protocol",
+      "context": "Appears in entity names (OBJ-006), process names (BP-004/005/006), and UI labels.",
+      "definition": "Short-form alias for Meeting Protocol (GLO-006). Used interchangeably in code and UI labels.",
+      "id": "GLO-007",
+      "updated": "2026-05-17",
+      "status": "draft"
+    }
+  },
+  {
+    "labels": [
+      "GlossaryTerm"
+    ],
+    "properties": {
+      "aliases": [
+        "������������������",
+        "������������",
+        "Task"
+      ],
+      "created": "2026-05-17",
+      "name": "Action Item",
+      "context": "Captured as a section within OBJ-006; extracted during BP-004.",
+      "definition": "A task agreed during the meeting, assigned to a named person with a deadline. Extracted by the LLM from the transcript; appears as a dedicated section of the protocol.",
+      "id": "GLO-008",
+      "updated": "2026-05-17",
+      "status": "draft"
+    }
+  },
+  {
+    "labels": [
+      "GlossaryTerm"
+    ],
+    "properties": {
+      "aliases": [
+        "��������������"
+      ],
+      "created": "2026-05-17",
+      "name": "Decision",
+      "context": "Captured as a section within OBJ-006; extracted during BP-004.",
+      "definition": "A conclusion or resolution reached during the meeting, explicitly recorded in the protocol. Distinct from action items in that decisions represent outcomes rather than future tasks.",
+      "id": "GLO-009",
+      "updated": "2026-05-17",
+      "status": "draft"
+    }
+  },
+  {
+    "labels": [
+      "GlossaryTerm"
+    ],
+    "properties": {
+      "aliases": [
+        "�������� ��������������������",
+        "������������",
+        "Agenda Item"
+      ],
+      "created": "2026-05-17",
+      "context": "Captured as a section within OBJ-006; extracted during BP-004.",
+      "name": "Discussion Topic",
+      "definition": "A distinct agenda point or subject discussed during the meeting. The LLM groups related transcript content under topics, which become named sections of the protocol.",
+      "id": "GLO-010",
+      "updated": "2026-05-17",
+      "status": "draft"
+    }
+  }
+]

@@ -1,0 +1,162 @@
+[
+  {
+    "labels": [
+      "WorkflowStep"
+    ],
+    "properties": {
+      "step_number": 1,
+      "migrated_at": "2026-04-13T09:13:31.920000000+00:00",
+      "created": "2026-04-13T09:13:31.920000000+00:00",
+      "function_name": "Обновление номенклатуры в 1С (новые артикулы или изменение характеристик)",
+      "description": "",
+      "id": "BP-001-S01",
+      "stereotype": "Бизнес-функция",
+      "updated": "2026-04-13T09:13:31.920000000+00:00",
+      "source_file": "docs/01-business-processes/workflows/BP-001-workflow.md"
+    }
+  },
+  {
+    "labels": [
+      "WorkflowStep"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T09:13:31.920000000+00:00",
+      "step_number": 2,
+      "created": "2026-04-13T09:13:31.920000000+00:00",
+      "function_name": "Открывает 1С",
+      "description": "",
+      "id": "BP-001-S02",
+      "stereotype": "Бизнес-функция",
+      "updated": "2026-04-13T09:13:31.920000000+00:00",
+      "source_file": "docs/01-business-processes/workflows/BP-001-workflow.md"
+    }
+  },
+  {
+    "labels": [
+      "WorkflowStep"
+    ],
+    "properties": {
+      "step_number": 3,
+      "migrated_at": "2026-04-13T09:13:31.920000000+00:00",
+      "created": "2026-04-13T09:13:31.920000000+00:00",
+      "function_name": "Выгружает Список артикулов (товары с id == mp)",
+      "description": "",
+      "id": "BP-001-S03",
+      "stereotype": "Бизнес-функция",
+      "updated": "2026-04-13T09:13:31.920000000+00:00",
+      "source_file": "docs/01-business-processes/workflows/BP-001-workflow.md"
+    }
+  },
+  {
+    "labels": [
+      "WorkflowStep"
+    ],
+    "properties": {
+      "step_number": 4,
+      "migrated_at": "2026-04-13T09:13:31.920000000+00:00",
+      "created": "2026-04-13T09:13:31.920000000+00:00",
+      "function_name": "Загружает файл в систему PROJECT-ALPHA",
+      "description": "",
+      "id": "BP-001-S04",
+      "stereotype": "Бизнес-функция",
+      "updated": "2026-04-13T09:13:31.920000000+00:00",
+      "source_file": "docs/01-business-processes/workflows/BP-001-workflow.md"
+    }
+  },
+  {
+    "labels": [
+      "WorkflowStep"
+    ],
+    "properties": {
+      "step_number": 5,
+      "migrated_at": "2026-04-13T09:13:31.920000000+00:00",
+      "created": "2026-04-13T09:13:31.920000000+00:00",
+      "function_name": "Справочник артикулов актуализирован, система готова к расчётам",
+      "description": "",
+      "id": "BP-001-S05",
+      "stereotype": "Бизнес-функция",
+      "updated": "2026-04-13T09:13:31.920000000+00:00",
+      "source_file": "docs/01-business-processes/workflows/BP-001-workflow.md"
+    }
+  },
+  {
+    "labels": [
+      "WorkflowStep"
+    ],
+    "properties": {
+      "step_number": 1,
+      "migrated_at": "2026-04-13T09:13:31.920000000+00:00",
+      "created": "2026-04-13T09:13:31.920000000+00:00",
+      "function_name": "Ежедневный запуск расчёта",
+      "description": "",
+      "id": "BP-002-S01",
+      "stereotype": "Бизнес-функция",
+      "updated": "2026-04-13T09:13:31.920000000+00:00",
+      "source_file": "docs/01-business-processes/workflows/BP-002-workflow.md"
+    }
+  },
+  {
+    "labels": [
+      "WorkflowStep"
+    ],
+    "properties": {
+      "step_number": 2,
+      "migrated_at": "2026-04-13T09:13:31.920000000+00:00",
+      "created": "2026-04-13T09:13:31.920000000+00:00",
+      "function_name": "Создаёт документ «Ежедневный расчёт заказа» в системе",
+      "description": "",
+      "id": "BP-002-S02",
+      "stereotype": "Бизнес-функция",
+      "updated": "2026-04-13T09:13:31.920000000+00:00",
+      "source_file": "docs/01-business-processes/workflows/BP-002-workflow.md"
+    }
+  },
+  {
+    "labels": [
+      "WorkflowStep"
+    ],
+    "properties": {
+      "step_number": 3,
+      "migrated_at": "2026-04-13T09:13:31.920000000+00:00",
+      "created": "2026-04-13T09:13:31.920000000+00:00",
+      "function_name": "Выбирает горизонты планирования из справочника: под поставку, на склад, под производство",
+      "description": "",
+      "id": "BP-002-S03",
+      "stereotype": "Бизнес-функция",
+      "updated": "2026-04-13T09:13:31.920000000+00:00",
+      "source_file": "docs/01-business-processes/workflows/BP-002-workflow.md"
+    }
+  },
+  {
+    "labels": [
+      "WorkflowStep"
+    ],
+    "properties": {
+      "step_number": 4,
+      "migrated_at": "2026-04-13T09:13:31.920000000+00:00",
+      "created": "2026-04-13T09:13:31.920000000+00:00",
+      "function_name": "Опционально прикрепляет до 4 файлов: поставки в разрезе склада, остатки склада, товары в производстве (из 1С), коэффициенты для артикулов (вручную) — если файл отсутствует, используются стандартные коэффициенты",
+      "description": "",
+      "id": "BP-002-S04",
+      "stereotype": "Бизнес-функция",
+      "updated": "2026-04-13T09:13:31.920000000+00:00",
+      "source_file": "docs/01-business-processes/workflows/BP-002-workflow.md"
+    }
+  },
+  {
+    "labels": [
+      "WorkflowStep"
+    ],
+    "properties": {
+      "step_number": 5,
+      "migrated_at": "2026-04-13T09:13:31.920000000+00:00",
+      "created": "2026-04-13T09:13:31.920000000+00:00",
+      "function_name": "Нажимает кнопку «Сформировать отчёт»",
+      "description": "",
+      "id": "BP-002-S05",
+      "stereotype": "Бизнес-функция",
+      "updated": "2026-04-13T09:13:31.920000000+00:00",
+      "source_file": "docs/01-business-processes/workflows/BP-002-workflow.md"
+    }
+  }
+]

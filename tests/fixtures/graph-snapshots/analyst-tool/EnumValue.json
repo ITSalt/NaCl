@@ -1,0 +1,122 @@
+[
+  {
+    "labels": [
+      "EnumValue"
+    ],
+    "properties": {
+      "description": "DDD-style entity/relationship board.",
+      "id": "EV-BOARD-KIND-DOMAIN-MODEL",
+      "label": "Domain model",
+      "is_default": false,
+      "value": "domain-model"
+    }
+  },
+  {
+    "labels": [
+      "EnumValue"
+    ],
+    "properties": {
+      "description": "Bounded contexts and their relationships.",
+      "id": "EV-BOARD-KIND-CONTEXT-MAP",
+      "label": "Context map",
+      "is_default": false,
+      "value": "context-map"
+    }
+  },
+  {
+    "labels": [
+      "EnumValue"
+    ],
+    "properties": {
+      "description": "Activity / swimlane diagram for a use case.",
+      "id": "EV-BOARD-KIND-ACTIVITY",
+      "label": "Activity diagram",
+      "is_default": false,
+      "value": "activity"
+    }
+  },
+  {
+    "labels": [
+      "EnumValue"
+    ],
+    "properties": {
+      "description": "BA-level business process map.",
+      "id": "EV-BOARD-KIND-PROCESS",
+      "label": "Process map",
+      "is_default": false,
+      "value": "process"
+    }
+  },
+  {
+    "labels": [
+      "EnumValue"
+    ],
+    "properties": {
+      "description": "Hand-drawn board imported from outside the renderer pipeline.",
+      "id": "EV-BOARD-KIND-IMPORT",
+      "label": "Import board",
+      "is_default": false,
+      "value": "import"
+    }
+  },
+  {
+    "labels": [
+      "EnumValue"
+    ],
+    "properties": {
+      "description": "Unclassified; default fallback.",
+      "id": "EV-BOARD-KIND-OTHER",
+      "label": "Other",
+      "is_default": true,
+      "value": "other"
+    }
+  },
+  {
+    "labels": [
+      "EnumValue"
+    ],
+    "properties": {
+      "description": "Board has never been pushed to or pulled from graph.",
+      "id": "EV-SYNC-STATUS-NEVER-SYNCED",
+      "label": "Never synced",
+      "is_default": true,
+      "value": "never-synced"
+    }
+  },
+  {
+    "labels": [
+      "EnumValue"
+    ],
+    "properties": {
+      "description": "Local board edits diverge from graph.",
+      "id": "EV-SYNC-STATUS-DIRTY",
+      "label": "Dirty",
+      "is_default": false,
+      "value": "dirty"
+    }
+  },
+  {
+    "labels": [
+      "EnumValue"
+    ],
+    "properties": {
+      "description": "Board state matches graph as of lastSyncedAt.",
+      "id": "EV-SYNC-STATUS-SYNCED",
+      "label": "Synced",
+      "is_default": false,
+      "value": "synced"
+    }
+  },
+  {
+    "labels": [
+      "EnumValue"
+    ],
+    "properties": {
+      "description": "Awaiting an executor slot.",
+      "id": "EV-RUN-PHASE-QUEUED",
+      "label": "Queued",
+      "is_default": true,
+      "value": "queued"
+    }
+  }
+]

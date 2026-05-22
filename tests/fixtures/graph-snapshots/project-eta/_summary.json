@@ -1,0 +1,76 @@
+{
+  "project": "Project-Eta",
+  "bolt_port": 7692,
+  "status": "REACHABLE",
+  "labels": [
+    {
+      "label": "DomainAttribute",
+      "count": 112
+    },
+    {
+      "label": "ActivityStep",
+      "count": 32
+    },
+    {
+      "label": "Requirement",
+      "count": 28
+    },
+    {
+      "label": "EnumValue",
+      "count": 13
+    },
+    {
+      "label": "Module",
+      "count": 8
+    },
+    {
+      "label": "DomainEntity",
+      "count": 7
+    },
+    {
+      "label": "UseCase",
+      "count": 6
+    },
+    {
+      "label": "SystemRole",
+      "count": 4
+    },
+    {
+      "label": "Enumeration",
+      "count": 1
+    }
+  ],
+  "total_nodes": 211,
+  "total_rels": 216,
+  "rel_types": [
+    {
+      "type": "HAS_ATTRIBUTE",
+      "count": 112
+    },
+    {
+      "type": "HAS_STEP",
+      "count": 32
+    },
+    {
+      "type": "NEXT_STEP",
+      "count": 26
+    },
+    {
+      "type": "HAS_PERMISSION",
+      "count": 26
+    },
+    {
+      "type": "HAS_VALUE",
+      "count": 13
+    },
+    {
+      "type": "ACTOR",
+      "count": 6
+    },
+    {
+      "type": "HAS_ENUM",
+      "count": 1
+    }
+  ],
+  "sample_label_count": 9
+}

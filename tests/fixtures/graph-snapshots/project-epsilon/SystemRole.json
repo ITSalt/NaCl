@@ -1,0 +1,59 @@
+[
+  {
+    "labels": [
+      "SystemRole"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T15:03:54.008000000+00:00",
+      "auth": "",
+      "created": "2026-04-13T09:15:41.136000000+00:00",
+      "ba_trace": [
+        "ROL-01"
+      ],
+      "name": "Товарник",
+      "description": "Загрузка файлов из 1С, создание расчётов, формирование заявок, интеграция с маркетплейсами",
+      "iteration": "",
+      "id": "SYSROL-DATA_MANAGER",
+      "updated": "2026-04-13T15:03:54.008000000+00:00",
+      "source_file": "docs/12-domain/enumerations/system-role.md"
+    }
+  },
+  {
+    "labels": [
+      "SystemRole"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T15:03:54.008000000+00:00",
+      "auth": "",
+      "created": "2026-04-13T09:15:41.136000000+00:00",
+      "ba_trace": [
+        "ROL-02"
+      ],
+      "name": "Аналитик / Руководитель ТН",
+      "description": "Просмотр и утверждение отчёта о потребностях; охватывает обе роли: Аналитик и Рук-ль товарного направления",
+      "iteration": "",
+      "id": "SYSROL-ANALYST",
+      "updated": "2026-04-13T15:03:54.008000000+00:00",
+      "source_file": "docs/12-domain/enumerations/system-role.md"
+    }
+  },
+  {
+    "labels": [
+      "SystemRole"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T15:03:54.008000000+00:00",
+      "auth": "",
+      "created": "2026-04-13T09:15:41.136000000+00:00",
+      "ba_trace": [
+        "ROL-03"
+      ],
+      "name": "Менеджер МП",
+      "description": "Те же полномочия что у Товарника — загрузка данных, создание расчётов, формирование заявок, интеграция с маркетплейсами",
+      "iteration": "",
+      "id": "SYSROL-MARKETPLACE_MANAGER",
+      "updated": "2026-04-13T15:03:54.008000000+00:00",
+      "source_file": "docs/12-domain/enumerations/system-role.md"
+    }
+  }
+]

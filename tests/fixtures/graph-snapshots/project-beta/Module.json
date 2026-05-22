@@ -1,0 +1,66 @@
+[
+  {
+    "labels": [
+      "Module"
+    ],
+    "properties": {
+      "finalized_at": "2026-05-18",
+      "uc_range_start": 1,
+      "uc_range_end": 99,
+      "created": "2026-05-18T06:34:50.996000000+00:00",
+      "name": "Common / Shell",
+      "description": "Cross-cutting module owning the Meeting root aggregate. Provides the meeting catalog/dashboard, navigation shell, global status display, and system-level error surfacing. Referenced by all other modules.",
+      "id": "mod-common",
+      "updated": "2026-05-18T06:34:50.996000000+00:00",
+      "status": "finalized"
+    }
+  },
+  {
+    "labels": [
+      "Module"
+    ],
+    "properties": {
+      "finalized_at": "2026-05-18",
+      "uc_range_start": 100,
+      "uc_range_end": 199,
+      "created": "2026-05-18T06:34:50.996000000+00:00",
+      "name": "Video Ingest",
+      "description": "Handles synchronous, user-driven upload of meeting video files: validation (size, format, integrity), chunked upload to object storage, and Recording entity creation. Realizes BP-001 (Upload Meeting Video). Integrates with EXT-04 Object Storage.",
+      "id": "mod-ingest",
+      "updated": "2026-05-18T06:34:50.996000000+00:00",
+      "status": "finalized"
+    }
+  },
+  {
+    "labels": [
+      "Module"
+    ],
+    "properties": {
+      "finalized_at": "2026-05-18",
+      "uc_range_start": 200,
+      "uc_range_end": 299,
+      "created": "2026-05-18T06:34:50.996000000+00:00",
+      "name": "Transcription",
+      "description": "Async transcription pipeline: enqueues and processes TranscriptionJob, calls ASR/diarization engine, assembles and persists verbatim speaker-attributed Transcript, and serves transcript download/view. Realizes BP-002 (Transcribe) and BP-003 (Download Transcript). Integrates with EXT-02 ASR/Diarization and EXT-04 Storage.",
+      "id": "mod-transcription",
+      "updated": "2026-05-18T06:34:50.996000000+00:00",
+      "status": "finalized"
+    }
+  },
+  {
+    "labels": [
+      "Module"
+    ],
+    "properties": {
+      "finalized_at": "2026-05-18",
+      "uc_range_start": 300,
+      "uc_range_end": 399,
+      "created": "2026-05-18T06:34:50.996000000+00:00",
+      "name": "Protocol Lifecycle",
+      "description": "End-to-end Protocol lifecycle: auto-triggered LLM-based generation, in-app Markdown review/edit, and PDF export. Realizes BP-004 (Generate Protocol), BP-005 (Review and Edit Protocol), BP-006 (Export Protocol to PDF). Integrates with EXT-03 LLM Protocol Generator.",
+      "id": "mod-protocol",
+      "updated": "2026-05-18T06:34:50.996000000+00:00",
+      "status": "finalized"
+    }
+  }
+]

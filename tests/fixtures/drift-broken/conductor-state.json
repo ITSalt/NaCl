@@ -1,0 +1,30 @@
+{
+  "branch": "feature/FR-007-verification-evidence-writer",
+  "baseBranch": "main",
+  "intake_id": "FR-007",
+  "items": [
+    { "id": "FR-007", "type": "feature", "ucs": ["UC-105", "UC-106", "UC-107"] }
+  ],
+  "started": "2026-05-11T12:00:00Z",
+  "phase": "quality_gate_passed",
+  "techTasks": [],
+  "ucTasks": [
+    { "id": "UC-105", "wave": 4, "status": "done",        "commit": "01f2fcb" },
+    { "id": "UC-106", "wave": 4, "status": "done",        "commit": "14f3000" },
+    { "id": "UC-107", "wave": 4, "status": "done",        "commit": "c83e84f" }
+  ],
+  "bugFixes": [],
+  "delivery": {
+    "status": "pending"
+  },
+  "$drift_note": [
+    "This is the 2026-05-11 17:07 Project-Alpha state: phase was advanced",
+    "to quality_gate_passed despite UC-105 still being in_progress",
+    "in status.json AND in the live graph. typecheck red across",
+    "packages/shared, frontend, backend (3 errors); publishTaskEvent",
+    "/ publishNotification / pushSseEvent defined but never called.",
+    "The 17:35 audit reproduced it; the seven-commit remediation",
+    "(07c11fe ... 6ed12ac) would have been refused by W5 if the",
+    "gate had existed then."
+  ]
+}

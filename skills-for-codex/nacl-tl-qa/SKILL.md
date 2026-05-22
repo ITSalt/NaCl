@@ -91,9 +91,9 @@ qa_mandatory_stages:
       - PROD_GOLDEN_PATH
 ```
 
-### Worked example — transcriber provider-skip episode
+### Worked example — project-beta provider-skip episode
 
-Before (transcriber-postmortem § 3.3, § 3.8): `KIE_API_KEY` absent →
+Before (project-beta-postmortem § 3.3, § 3.8): `KIE_API_KEY` absent →
 entire QA dimension marked skipped → shipped under non-blocking
 `UNVERIFIED` → 404 on first real call in prod.
 

@@ -149,9 +149,9 @@ Semantics:
   intentionally NOT_RUN), file a signed exception per W4 with
   `affected_gates: [LIVE_PROVIDER_SMOKE]`.
 
-### Worked example — transcriber provider-skip episode
+### Worked example — project-beta provider-skip episode
 
-**Before (current behavior, transcriber-postmortem § 3.3, § 3.8):**
+**Before (current behavior, project-beta-postmortem § 3.3, § 3.8):**
 UC-300 needed kie.ai. `KIE_API_KEY` was absent in the QA environment.
 Today's tl-qa marks the entire QA dimension as skipped → ships to prod
 under `QA APPLIED — UNVERIFIED` (non-blocking) → first real call 404s.

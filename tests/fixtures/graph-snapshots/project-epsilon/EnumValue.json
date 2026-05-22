@@ -1,0 +1,142 @@
+[
+  {
+    "labels": [
+      "EnumValue"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T15:03:48.117000000+00:00",
+      "created": "2026-04-13T09:15:33.558000000+00:00",
+      "description": "Накопительная доля в продажах <= 50% — топ-позиции, обеспечивающие основной объём выручки",
+      "id": "EN-abc-category-V01",
+      "updated": "2026-04-13T15:03:48.117000000+00:00",
+      "value": "A",
+      "source_file": "docs/12-domain/enumerations/abc-category.md"
+    }
+  },
+  {
+    "labels": [
+      "EnumValue"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T15:03:48.117000000+00:00",
+      "created": "2026-04-13T09:15:33.558000000+00:00",
+      "description": "Накопительная доля > 50% и <= 80% — средние позиции",
+      "id": "EN-abc-category-V02",
+      "updated": "2026-04-13T15:03:48.117000000+00:00",
+      "value": "B",
+      "source_file": "docs/12-domain/enumerations/abc-category.md"
+    }
+  },
+  {
+    "labels": [
+      "EnumValue"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T15:03:48.117000000+00:00",
+      "created": "2026-04-13T09:15:33.558000000+00:00",
+      "description": "Накопительная доля > 80% — длинный хвост с минимальным вкладом в выручку",
+      "id": "EN-abc-category-V03",
+      "updated": "2026-04-13T15:03:48.117000000+00:00",
+      "value": "C",
+      "source_file": "docs/12-domain/enumerations/abc-category.md"
+    }
+  },
+  {
+    "labels": [
+      "EnumValue"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T15:03:48.117000000+00:00",
+      "created": "2026-04-13T09:15:33.558000000+00:00",
+      "description": "Доля = 0 (продажи <= 0 за период — нулевые или отрицательные, например из-за возвратов)",
+      "id": "EN-abc-category-V04",
+      "updated": "2026-04-13T15:03:48.117000000+00:00",
+      "value": "D",
+      "source_file": "docs/12-domain/enumerations/abc-category.md"
+    }
+  },
+  {
+    "labels": [
+      "EnumValue"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T15:03:48.117000000+00:00",
+      "created": "2026-04-13T09:15:33.558000000+00:00",
+      "description": "Начальное состояние — параметры расчёта ещё не зафиксированы",
+      "id": "EN-calculation-status-V01",
+      "updated": "2026-04-13T15:03:48.117000000+00:00",
+      "value": "DRAFT",
+      "source_file": "docs/12-domain/enumerations/calculation-status.md"
+    }
+  },
+  {
+    "labels": [
+      "EnumValue"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T15:03:48.117000000+00:00",
+      "created": "2026-04-13T09:15:33.558000000+00:00",
+      "description": "Параметры введены, расчёт ещё не запущен",
+      "id": "EN-calculation-status-V02",
+      "updated": "2026-04-13T15:03:48.117000000+00:00",
+      "value": "CREATED",
+      "source_file": "docs/12-domain/enumerations/calculation-status.md"
+    }
+  },
+  {
+    "labels": [
+      "EnumValue"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T15:03:48.117000000+00:00",
+      "created": "2026-04-13T09:15:33.558000000+00:00",
+      "description": "Система собирает данные и проводит расчёт",
+      "id": "EN-calculation-status-V03",
+      "updated": "2026-04-13T15:03:48.117000000+00:00",
+      "value": "RUNNING",
+      "source_file": "docs/12-domain/enumerations/calculation-status.md"
+    }
+  },
+  {
+    "labels": [
+      "EnumValue"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T15:03:48.117000000+00:00",
+      "created": "2026-04-13T09:15:33.558000000+00:00",
+      "description": "Расчёт выполнен, отчёт сформирован",
+      "id": "EN-calculation-status-V04",
+      "updated": "2026-04-13T15:03:48.117000000+00:00",
+      "value": "COMPLETED",
+      "source_file": "docs/12-domain/enumerations/calculation-status.md"
+    }
+  },
+  {
+    "labels": [
+      "EnumValue"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T15:03:48.117000000+00:00",
+      "created": "2026-04-13T09:15:33.558000000+00:00",
+      "description": "Аналитик/РТН утвердил отчёт, заявки можно формировать",
+      "id": "EN-calculation-status-V05",
+      "updated": "2026-04-13T15:03:48.117000000+00:00",
+      "value": "APPROVED",
+      "source_file": "docs/12-domain/enumerations/calculation-status.md"
+    }
+  },
+  {
+    "labels": [
+      "EnumValue"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T15:03:48.117000000+00:00",
+      "created": "2026-04-13T09:15:33.558000000+00:00",
+      "description": "Расчёт завершился с критической ошибкой",
+      "id": "EN-calculation-status-V06",
+      "updated": "2026-04-13T15:03:48.117000000+00:00",
+      "value": "FAILED",
+      "source_file": "docs/12-domain/enumerations/calculation-status.md"
+    }
+  }
+]

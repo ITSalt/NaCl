@@ -1,0 +1,152 @@
+[
+  {
+    "labels": [
+      "ActivityStep"
+    ],
+    "properties": {
+      "actor": "",
+      "migrated_at": "2026-04-13T13:41:35.592000000+00:00",
+      "step_number": 1,
+      "created": "2026-04-13T13:41:35.592000000+00:00",
+      "description": "1. Валидация env через zod",
+      "id": "UC-001-A01",
+      "updated": "2026-04-13T13:41:35.592000000+00:00",
+      "source_file": "docs/14-usecases/UC001-startup-reconciliation.md"
+    }
+  },
+  {
+    "labels": [
+      "ActivityStep"
+    ],
+    "properties": {
+      "actor": "",
+      "step_number": 2,
+      "migrated_at": "2026-04-13T13:41:35.592000000+00:00",
+      "created": "2026-04-13T13:41:35.592000000+00:00",
+      "description": "/EXIT 1: Invalid config/",
+      "id": "UC-001-A02",
+      "updated": "2026-04-13T13:41:35.592000000+00:00",
+      "source_file": "docs/14-usecases/UC001-startup-reconciliation.md"
+    }
+  },
+  {
+    "labels": [
+      "ActivityStep"
+    ],
+    "properties": {
+      "actor": "",
+      "migrated_at": "2026-04-13T13:41:35.592000000+00:00",
+      "step_number": 3,
+      "created": "2026-04-13T13:41:35.592000000+00:00",
+      "description": "2. Подключение к Supabase",
+      "id": "UC-001-A03",
+      "updated": "2026-04-13T13:41:35.592000000+00:00",
+      "source_file": "docs/14-usecases/UC001-startup-reconciliation.md"
+    }
+  },
+  {
+    "labels": [
+      "ActivityStep"
+    ],
+    "properties": {
+      "actor": "",
+      "migrated_at": "2026-04-13T13:41:35.592000000+00:00",
+      "step_number": 4,
+      "created": "2026-04-13T13:41:35.592000000+00:00",
+      "description": "Retry <= 3?",
+      "id": "UC-001-A04",
+      "updated": "2026-04-13T13:41:35.592000000+00:00",
+      "source_file": "docs/14-usecases/UC001-startup-reconciliation.md"
+    }
+  },
+  {
+    "labels": [
+      "ActivityStep"
+    ],
+    "properties": {
+      "actor": "",
+      "migrated_at": "2026-04-13T13:41:35.592000000+00:00",
+      "step_number": 5,
+      "created": "2026-04-13T13:41:35.592000000+00:00",
+      "description": "/EXIT 1: Supabase unreachable/",
+      "id": "UC-001-A05",
+      "updated": "2026-04-13T13:41:35.592000000+00:00",
+      "source_file": "docs/14-usecases/UC001-startup-reconciliation.md"
+    }
+  },
+  {
+    "labels": [
+      "ActivityStep"
+    ],
+    "properties": {
+      "actor": "",
+      "migrated_at": "2026-04-13T13:41:35.592000000+00:00",
+      "step_number": 6,
+      "created": "2026-04-13T13:41:35.592000000+00:00",
+      "description": "3. Проверка связи Supabase",
+      "id": "UC-001-A06",
+      "updated": "2026-04-13T13:41:35.592000000+00:00",
+      "source_file": "docs/14-usecases/UC001-startup-reconciliation.md"
+    }
+  },
+  {
+    "labels": [
+      "ActivityStep"
+    ],
+    "properties": {
+      "actor": "",
+      "migrated_at": "2026-04-13T13:41:35.592000000+00:00",
+      "step_number": 7,
+      "created": "2026-04-13T13:41:35.592000000+00:00",
+      "description": "4. Подключение к Mattermost",
+      "id": "UC-001-A07",
+      "updated": "2026-04-13T13:41:35.592000000+00:00",
+      "source_file": "docs/14-usecases/UC001-startup-reconciliation.md"
+    }
+  },
+  {
+    "labels": [
+      "ActivityStep"
+    ],
+    "properties": {
+      "actor": "",
+      "migrated_at": "2026-04-13T13:41:35.592000000+00:00",
+      "step_number": 8,
+      "created": "2026-04-13T13:41:35.592000000+00:00",
+      "description": "Retry <= 3?",
+      "id": "UC-001-A08",
+      "updated": "2026-04-13T13:41:35.592000000+00:00",
+      "source_file": "docs/14-usecases/UC001-startup-reconciliation.md"
+    }
+  },
+  {
+    "labels": [
+      "ActivityStep"
+    ],
+    "properties": {
+      "actor": "",
+      "migrated_at": "2026-04-13T13:41:35.592000000+00:00",
+      "step_number": 9,
+      "created": "2026-04-13T13:41:35.592000000+00:00",
+      "description": "/EXIT 1: Mattermost unreachable/",
+      "id": "UC-001-A09",
+      "updated": "2026-04-13T13:41:35.592000000+00:00",
+      "source_file": "docs/14-usecases/UC001-startup-reconciliation.md"
+    }
+  },
+  {
+    "labels": [
+      "ActivityStep"
+    ],
+    "properties": {
+      "actor": "",
+      "migrated_at": "2026-04-13T13:41:35.592000000+00:00",
+      "step_number": 10,
+      "created": "2026-04-13T13:41:35.592000000+00:00",
+      "description": "5. Получение Team ID",
+      "id": "UC-001-A10",
+      "updated": "2026-04-13T13:41:35.592000000+00:00",
+      "source_file": "docs/14-usecases/UC001-startup-reconciliation.md"
+    }
+  }
+]

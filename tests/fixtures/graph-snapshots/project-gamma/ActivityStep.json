@@ -1,0 +1,124 @@
+[
+  {
+    "labels": [
+      "ActivityStep"
+    ],
+    "properties": {
+      "actor": "User",
+      "step_order": 1,
+      "name": "Open login page",
+      "description": "User navigates to /login",
+      "id": "step-001"
+    }
+  },
+  {
+    "labels": [
+      "ActivityStep"
+    ],
+    "properties": {
+      "actor": "User",
+      "step_order": 2,
+      "name": "Enter credentials",
+      "description": "User enters email and password into login form",
+      "id": "step-002"
+    }
+  },
+  {
+    "labels": [
+      "ActivityStep"
+    ],
+    "properties": {
+      "actor": "User",
+      "step_order": 3,
+      "name": "Submit form",
+      "description": "User clicks Login button, form sends POST /api/auth/login",
+      "id": "step-003"
+    }
+  },
+  {
+    "labels": [
+      "ActivityStep"
+    ],
+    "properties": {
+      "actor": "System",
+      "step_order": 4,
+      "name": "Validate credentials",
+      "description": "Server verifies email exists and password matches bcrypt hash (cost 12)",
+      "id": "step-004"
+    }
+  },
+  {
+    "labels": [
+      "ActivityStep"
+    ],
+    "properties": {
+      "actor": "System",
+      "step_order": 5,
+      "name": "Check must_change_password",
+      "description": "Server checks user.must_change_password flag",
+      "id": "step-005"
+    }
+  },
+  {
+    "labels": [
+      "ActivityStep"
+    ],
+    "properties": {
+      "actor": "System",
+      "step_order": 6,
+      "modified_by": "FR-013",
+      "name": "Generate JWT pair",
+      "description": "Server generates access_token (1h) and refresh_token (7d)",
+      "id": "step-006"
+    }
+  },
+  {
+    "labels": [
+      "ActivityStep"
+    ],
+    "properties": {
+      "actor": "System",
+      "step_order": 7,
+      "name": "Save refresh token",
+      "description": "Server stores refresh_token hash in RefreshToken table",
+      "id": "step-007"
+    }
+  },
+  {
+    "labels": [
+      "ActivityStep"
+    ],
+    "properties": {
+      "actor": "System",
+      "step_order": 8,
+      "name": "Sync MM password",
+      "description": "Server updates Mattermost user password via MM API",
+      "id": "step-008"
+    }
+  },
+  {
+    "labels": [
+      "ActivityStep"
+    ],
+    "properties": {
+      "actor": "System",
+      "step_order": 9,
+      "name": "Set cookies",
+      "description": "Server sets access_token and refresh_token as httpOnly secure cookies",
+      "id": "step-009"
+    }
+  },
+  {
+    "labels": [
+      "ActivityStep"
+    ],
+    "properties": {
+      "actor": "System",
+      "step_order": 10,
+      "name": "Redirect",
+      "modified_by": "FR-013",
+      "description": "Priority: must_change_password=true → redirect to /change-password; else if URL has sanitized ?from=<same-origin path> → redirect there; else redirect to /dashboard",
+      "id": "step-010"
+    }
+  }
+]

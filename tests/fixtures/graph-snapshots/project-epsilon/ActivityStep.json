@@ -1,0 +1,152 @@
+[
+  {
+    "labels": [
+      "ActivityStep"
+    ],
+    "properties": {
+      "actor": "User",
+      "step_number": 1,
+      "migrated_at": "2026-04-13T15:03:38.801000000+00:00",
+      "created": "2026-04-13T09:15:23.429000000+00:00",
+      "description": "открывает страницу входа",
+      "id": "UC-001-A01",
+      "updated": "2026-04-13T15:03:38.801000000+00:00",
+      "source_file": "docs/14-usecases/UC001-vkhod-v-sistemu.md"
+    }
+  },
+  {
+    "labels": [
+      "ActivityStep"
+    ],
+    "properties": {
+      "actor": "User",
+      "step_number": 2,
+      "migrated_at": "2026-04-13T15:03:38.801000000+00:00",
+      "created": "2026-04-13T09:15:23.429000000+00:00",
+      "description": "вводит email и пароль",
+      "id": "UC-001-A02",
+      "updated": "2026-04-13T15:03:38.801000000+00:00",
+      "source_file": "docs/14-usecases/UC001-vkhod-v-sistemu.md"
+    }
+  },
+  {
+    "labels": [
+      "ActivityStep"
+    ],
+    "properties": {
+      "actor": "User",
+      "step_number": 3,
+      "migrated_at": "2026-04-13T15:03:38.801000000+00:00",
+      "created": "2026-04-13T09:15:23.429000000+00:00",
+      "description": "нажимает Войти",
+      "id": "UC-001-A03",
+      "updated": "2026-04-13T15:03:38.801000000+00:00",
+      "source_file": "docs/14-usecases/UC001-vkhod-v-sistemu.md"
+    }
+  },
+  {
+    "labels": [
+      "ActivityStep"
+    ],
+    "properties": {
+      "actor": "System",
+      "step_number": 4,
+      "migrated_at": "2026-04-13T15:03:38.801000000+00:00",
+      "created": "2026-04-13T09:15:23.429000000+00:00",
+      "description": "проверяет учётные данные",
+      "id": "UC-001-A04",
+      "updated": "2026-04-13T15:03:38.801000000+00:00",
+      "source_file": "docs/14-usecases/UC001-vkhod-v-sistemu.md"
+    }
+  },
+  {
+    "labels": [
+      "ActivityStep"
+    ],
+    "properties": {
+      "actor": "System",
+      "step_number": 5,
+      "migrated_at": "2026-04-13T15:03:38.801000000+00:00",
+      "created": "2026-04-13T09:15:23.429000000+00:00",
+      "description": "показывает ошибку\\n«Неверный логин или пароль»",
+      "id": "UC-001-A05",
+      "updated": "2026-04-13T15:03:38.801000000+00:00",
+      "source_file": "docs/14-usecases/UC001-vkhod-v-sistemu.md"
+    }
+  },
+  {
+    "labels": [
+      "ActivityStep"
+    ],
+    "properties": {
+      "actor": "System",
+      "step_number": 6,
+      "migrated_at": "2026-04-13T15:03:38.801000000+00:00",
+      "created": "2026-04-13T09:15:23.429000000+00:00",
+      "description": "показывает ошибку\\n«Учётная запись деактивирована»",
+      "id": "UC-001-A06",
+      "updated": "2026-04-13T15:03:38.801000000+00:00",
+      "source_file": "docs/14-usecases/UC001-vkhod-v-sistemu.md"
+    }
+  },
+  {
+    "labels": [
+      "ActivityStep"
+    ],
+    "properties": {
+      "actor": "System",
+      "step_number": 7,
+      "migrated_at": "2026-04-13T15:03:38.801000000+00:00",
+      "created": "2026-04-13T09:15:23.429000000+00:00",
+      "description": "создаёт Session\\ntoken, expiresAt = now+8h, ip, userAgent",
+      "id": "UC-001-A07",
+      "updated": "2026-04-13T15:03:38.801000000+00:00",
+      "source_file": "docs/14-usecases/UC001-vkhod-v-sistemu.md"
+    }
+  },
+  {
+    "labels": [
+      "ActivityStep"
+    ],
+    "properties": {
+      "actor": "System",
+      "step_number": 8,
+      "migrated_at": "2026-04-13T15:03:38.801000000+00:00",
+      "created": "2026-04-13T09:15:23.429000000+00:00",
+      "description": "обновляет User.lastLoginAt",
+      "id": "UC-001-A08",
+      "updated": "2026-04-13T15:03:38.801000000+00:00",
+      "source_file": "docs/14-usecases/UC001-vkhod-v-sistemu.md"
+    }
+  },
+  {
+    "labels": [
+      "ActivityStep"
+    ],
+    "properties": {
+      "actor": "User",
+      "step_number": 1,
+      "migrated_at": "2026-04-13T15:03:38.801000000+00:00",
+      "created": "2026-04-13T09:15:23.429000000+00:00",
+      "description": "открывает форму загрузки справочника артикулов",
+      "id": "UC-101-A01",
+      "updated": "2026-04-13T15:03:38.801000000+00:00",
+      "source_file": "docs/14-usecases/UC101-zagruzka-spravochnika-artikulov.md"
+    }
+  },
+  {
+    "labels": [
+      "ActivityStep"
+    ],
+    "properties": {
+      "actor": "User",
+      "step_number": 2,
+      "migrated_at": "2026-04-13T15:03:38.801000000+00:00",
+      "created": "2026-04-13T09:15:23.429000000+00:00",
+      "description": "выбирает файл из 1С",
+      "id": "UC-101-A02",
+      "updated": "2026-04-13T15:03:38.801000000+00:00",
+      "source_file": "docs/14-usecases/UC101-zagruzka-spravochnika-artikulov.md"
+    }
+  }
+]

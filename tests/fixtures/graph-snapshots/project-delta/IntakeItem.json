@@ -1,0 +1,116 @@
+[
+  {
+    "labels": [
+      "IntakeItem"
+    ],
+    "properties": {
+      "classification_level": "L1",
+      "description": "Prompt type video_scenario_system (P12) present in master_prompts table but missing from shared/types/prompt.types.ts PromptType enum and /admin/prompts tabs (PromptTabs.tsx). Result: scenario video prompt cannot be edited via admin UI — requires direct SQL. Violates BRQ-015 (all prompts editable without deploy).",
+      "wave_planned": 4,
+      "source": "voruy-kak-khudozhnik orchestration plan, Stage 0",
+      "title": "P12 video_scenario_system not exposed in /admin/prompts UI",
+      "type": "BUG",
+      "delivered_in_release": "v0.10.0",
+      "intake_date": "2026-04-24",
+      "module_id": "MOD-admin-module",
+      "route": "/nacl-tl-fix",
+      "classification_reason": "Spec (UC-009 Управление промптами) assumes all prompt types are in enum and exposed in UI. Code drift: P12 seeded in DB but not added to shared enum. Docs current, code-only fix needed.",
+      "intake_wave": 1,
+      "id": "BUG-001",
+      "delivered_at": "2026-04-25",
+      "status": "delivered"
+    }
+  },
+  {
+    "labels": [
+      "IntakeItem"
+    ],
+    "properties": {
+      "classification_level": "L2",
+      "description": "backend/src/services/music-generator.service.ts:56 uses hardcoded template `${musicMood}, 20 seconds` instead of loading via PromptRepository. Required: add prompt type music_generator_user to shared enum + /admin/prompts UI, seed default content via migration into master_prompts, refactor MusicGeneratorService to PromptRepository.getActiveByTypes with {{mood}} variable substitution. Violates BRQ-015.",
+      "wave_planned": 4,
+      "source": "voruy-kak-khudozhnik orchestration plan, Stage 0",
+      "title": "music-generator uses hardcoded prompt instead of PromptRepository",
+      "type": "BUG",
+      "delivered_in_release": "v0.10.0",
+      "intake_date": "2026-04-24",
+      "module_id": "MOD-memories-module",
+      "route": "/nacl-tl-fix",
+      "classification_reason": "Fix adds a NEW prompt type to the enumeration (music_generator_user) — this is a domain/enum catalog change, not code-only. Docs (PromptType enumeration) must be updated first. Touches UC-033 (Обработка и монтаж видеоролика) and UC-009 (Управление промптами).",
+      "intake_wave": 1,
+      "id": "BUG-002",
+      "delivered_at": "2026-04-25",
+      "status": "delivered"
+    }
+  },
+  {
+    "labels": [
+      "IntakeItem"
+    ],
+    "properties": {
+      "sa_spec_date": "2026-04-24",
+      "description": "Memory video pipeline currently launched via setImmediate callback (backend/src/routes/memories/process.ts + pipeline-orchestrator.service.ts). If backend process crashes mid-pipeline, job is lost, memory_videos.status stuck in processing, user must manually retry. Required: migrate to pg-boss queue memory-pipeline (analogous to existing script-generation queue), add idempotency guard at start of each step handler (if pipeline_progress[step].status === completed, early return with persisted output). Adds NFR: durability, idempotency.",
+      "wave_planned": 5,
+      "source": "voruy-kak-khudozhnik orchestration plan, Stage 1 (durability)",
+      "title": "Memory pipeline durability: setImmediate -> pg-boss + idempotency",
+      "type": "TECH",
+      "delivered_in_release": "v0.10.0",
+      "sa_status": "specified",
+      "intake_date": "2026-04-24",
+      "module_id": "MOD-memories-module",
+      "route": "/nacl-sa-feature",
+      "classification_reason": "TECH refactor (no UC spec changes). Non-functional requirements added at module level (NFR-durability, NFR-idempotency). Spec via /nacl-sa-feature Wave 2.",
+      "intake_wave": 1,
+      "id": "TECH-033",
+      "delivered_at": "2026-04-25",
+      "status": "delivered",
+      "orchestration_alias": "TECH-A"
+    }
+  },
+  {
+    "labels": [
+      "IntakeItem"
+    ],
+    "properties": {
+      "sa_spec_date": "2026-04-24",
+      "description": "PipelineOrchestrator.execute() hardcodes step sequence (scenarioGen -> audioTrim -> [videoClips, music] parallel -> assembler -> watermark). Adding a new step requires changes in 3-5 places (PipelineStepHandlers interface, PipelineStepName enum, execute() method, routes/memories/process.ts handlers registration). Required: introduce type Step<TInput, TOutput> with fields {name, handler, dependsOn?, parallel?, optional?, retries?, timeoutMs?}, move step declaration to backend/src/pipelines/memory.pipeline.ts as memoryPipelineSteps: Step[] array, refactor execute() into shared runSteps(steps, context) step-runner. Depends on TECH-033 (durability).",
+      "wave_planned": 6,
+      "source": "voruy-kak-khudozhnik orchestration plan, Stage 2 (declarative steps)",
+      "title": "Declarative step DAG: Step[] + step-runner instead of hardcoded execute()",
+      "type": "TECH",
+      "delivered_in_release": "v0.10.0",
+      "sa_status": "specified",
+      "intake_date": "2026-04-24",
+      "module_id": "MOD-memories-module",
+      "route": "/nacl-sa-feature",
+      "classification_reason": "TECH refactor. Introduces new module-internal type Step<TInput, TOutput> and step-runner abstraction. No UC or domain entity changes. Spec via /nacl-sa-feature Wave 2.",
+      "intake_wave": 1,
+      "id": "TECH-034",
+      "delivered_at": "2026-04-25",
+      "status": "delivered",
+      "orchestration_alias": "TECH-B"
+    }
+  },
+  {
+    "labels": [
+      "IntakeItem"
+    ],
+    "properties": {
+      "sa_spec_date": "2026-04-24",
+      "description": "New admin feature. Screens: /admin/pipelines (list of active and recent memory_videos with status filter + search by sessionId), /admin/pipelines/:id (timeline of steps with live SSE updates, drill-down into input/output of each step from generation_traces, cost breakdown from generation_logs per step, links from step to /admin/prompts/:type for the prompt used). Admin-only auth (same as /admin/prompts). No forms — read-only dashboard. Requires new UC + api-contract for SSE endpoint. Depends on TECH-033 (pg-boss events to emit SSE) and TECH-034 (declarative step metadata for timeline).",
+      "wave_planned": 7,
+      "source": "voruy-kak-khudozhnik orchestration plan, Stage 3 (admin dashboard)",
+      "title": "Admin Pipeline Execution Dashboard",
+      "type": "FR",
+      "sa_status": "specified",
+      "intake_date": "2026-04-24",
+      "module_id": "MOD-admin-module",
+      "route": "/nacl-sa-feature",
+      "classification_reason": "New feature. Graph evidence: no matching UC found for pipeline dashboard. Closest existing admin UCs (UC-009 prompts, UC-010 stats, UC-029 funnel, UC-036 promo-admin) do not cover pipeline execution observability. New UC required (likely UC-037 in MOD-admin-module) with SSE contract.",
+      "intake_wave": 1,
+      "id": "FR-026",
+      "expected_new_uc": "UC-037",
+      "status": "draft"
+    }
+  }
+]

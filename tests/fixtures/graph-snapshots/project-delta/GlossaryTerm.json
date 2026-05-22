@@ -1,0 +1,172 @@
+[
+  {
+    "labels": [
+      "GlossaryTerm"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-19T21:03:00.987000000+00:00",
+      "created": "2026-04-19T21:03:00.987000000+00:00",
+      "synonyms": [
+        "Project Delta"
+      ],
+      "definition": "Название продукта — лид-магнит SPA для продажи документальных семейных фильмов",
+      "term": "Project Delta",
+      "id": "GLO-001",
+      "updated": "2026-04-19T21:03:00.987000000+00:00",
+      "source_file": "docs/99-meta/glossary.md"
+    }
+  },
+  {
+    "labels": [
+      "GlossaryTerm"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-19T21:03:00.987000000+00:00",
+      "created": "2026-04-19T21:03:00.987000000+00:00",
+      "synonyms": [
+        "First Episode"
+      ],
+      "term": "Первый Эпизод",
+      "definition": "Единица контента, генерируемая для пользователя: AI-сценарий + медиа-контент",
+      "id": "GLO-002",
+      "updated": "2026-04-19T21:03:00.987000000+00:00",
+      "source_file": "docs/99-meta/glossary.md"
+    }
+  },
+  {
+    "labels": [
+      "GlossaryTerm"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-19T21:03:00.987000000+00:00",
+      "created": "2026-04-19T21:03:00.987000000+00:00",
+      "synonyms": [
+        "Lead Magnet"
+      ],
+      "term": "Лид-магнит",
+      "definition": "Маркетинговый инструмент для привлечения контактных данных потенциальных клиентов через бесплатную ценность",
+      "id": "GLO-003",
+      "updated": "2026-04-19T21:03:00.987000000+00:00",
+      "source_file": "docs/99-meta/glossary.md"
+    }
+  },
+  {
+    "labels": [
+      "GlossaryTerm"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-19T21:03:00.987000000+00:00",
+      "created": "2026-04-19T21:03:00.987000000+00:00",
+      "synonyms": [
+        "Lead"
+      ],
+      "term": "Лид",
+      "definition": "Контактные данные потенциального клиента, полученные через лид-магнит",
+      "id": "GLO-004",
+      "updated": "2026-04-19T21:03:00.987000000+00:00",
+      "source_file": "docs/99-meta/glossary.md"
+    }
+  },
+  {
+    "labels": [
+      "GlossaryTerm"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-19T21:03:00.987000000+00:00",
+      "created": "2026-04-19T21:03:00.987000000+00:00",
+      "synonyms": [
+        "Documentary Film"
+      ],
+      "definition": "Основная платная услуга, продаваемая через Telegram после конверсии лида",
+      "term": "Документальный фильм",
+      "id": "GLO-005",
+      "updated": "2026-04-19T21:03:00.987000000+00:00",
+      "source_file": "docs/99-meta/glossary.md"
+    }
+  },
+  {
+    "labels": [
+      "GlossaryTerm"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-19T21:03:00.987000000+00:00",
+      "created": "2026-04-19T21:03:00.987000000+00:00",
+      "synonyms": [
+        "Landing"
+      ],
+      "term": "Лендинг",
+      "definition": "Промо-страница с описанием продукта и кнопкой призыва к действию (CTA)",
+      "id": "GLO-006",
+      "updated": "2026-04-19T21:03:00.987000000+00:00",
+      "source_file": "docs/99-meta/glossary.md"
+    }
+  },
+  {
+    "labels": [
+      "GlossaryTerm"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-19T21:03:00.987000000+00:00",
+      "created": "2026-04-19T21:03:00.987000000+00:00",
+      "synonyms": [
+        "Interview"
+      ],
+      "term": "Интервью",
+      "definition": "Пошаговый опрос из 5 вопросов, ответы на которые используются для генерации сценария",
+      "id": "GLO-007",
+      "updated": "2026-04-19T21:03:00.987000000+00:00",
+      "source_file": "docs/99-meta/glossary.md"
+    }
+  },
+  {
+    "labels": [
+      "GlossaryTerm"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-19T21:03:00.987000000+00:00",
+      "created": "2026-04-19T21:03:00.987000000+00:00",
+      "synonyms": [
+        "Typewriter Effect"
+      ],
+      "term": "Typewriter-эффект",
+      "definition": "Посимвольная анимация отображения текста сценария на экране результата",
+      "id": "GLO-008",
+      "updated": "2026-04-19T21:03:00.987000000+00:00",
+      "source_file": "docs/99-meta/glossary.md"
+    }
+  },
+  {
+    "labels": [
+      "GlossaryTerm"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-19T21:03:00.987000000+00:00",
+      "created": "2026-04-19T21:03:00.987000000+00:00",
+      "synonyms": [
+        "Call to Action"
+      ],
+      "definition": "Кнопка или элемент интерфейса с призывом к целевому действию (например, «Получить сценарий», «Написать в Telegram»)",
+      "term": "CTA",
+      "id": "GLO-009",
+      "updated": "2026-04-19T21:03:00.987000000+00:00",
+      "source_file": "docs/99-meta/glossary.md"
+    }
+  },
+  {
+    "labels": [
+      "GlossaryTerm"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-19T21:03:00.987000000+00:00",
+      "created": "2026-04-19T21:03:00.987000000+00:00",
+      "synonyms": [
+        "Sharing"
+      ],
+      "term": "Шеринг",
+      "definition": "Публикация результата (сценария/медиа) пользователем в социальных сетях",
+      "id": "GLO-010",
+      "updated": "2026-04-19T21:03:00.987000000+00:00",
+      "source_file": "docs/99-meta/glossary.md"
+    }
+  }
+]

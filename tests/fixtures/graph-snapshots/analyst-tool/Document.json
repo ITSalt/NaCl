@@ -1,0 +1,166 @@
+[
+  {
+    "labels": [
+      "Document"
+    ],
+    "properties": {
+      "finalized_at": "2026-05-06T00:00:00Z",
+      "proposed_uc_mapping": "[{\"bp\":\"BP-03-OPEN-BOARD\",\"uc\":\"UC-001\",\"name\":\"Open Board in Editor\",\"priority\":\"primary\"},{\"bp\":\"BP-05-EDIT-SAVE-BOARD\",\"uc\":\"UC-002\",\"name\":\"Edit and Save Board\",\"priority\":\"primary\"},{\"bp\":\"BP-06-REGENERATE-BOARD\",\"uc\":\"UC-003\",\"name\":\"Regenerate Board from Graph\",\"priority\":\"primary\"},{\"bp\":\"BP-11-TRIGGER-SKILL\",\"uc\":\"UC-004\",\"name\":\"Sync Board to Graph\",\"priority\":\"primary\",\"flavour\":\"sync\"},{\"bp\":\"BP-10-SWITCH-ACTIVE-PROJECT\",\"uc\":\"UC-005\",\"name\":\"Switch Active Project\",\"priority\":\"primary\"},{\"bp\":\"BP-17-DIFF-SNAPSHOT\",\"uc\":\"UC-006\",\"name\":\"View and Restore Snapshot\",\"priority\":\"primary\",\"also_covers\":\"BP-18-RESTORE-SNAPSHOT\"},{\"bp\":\"BP-07-RENDER-MARKDOWN\",\"uc\":\"UC-007\",\"name\":\"Render Markdown from Graph\",\"priority\":\"primary\"},{\"bp\":\"BP-01-LIST-BOARDS\",\"uc\":\"UC-008\",\"name\":\"List Boards\",\"priority\":\"secondary\"},{\"bp\":\"BP-02-DISCOVER-RENDERABLE\",\"uc\":\"UC-009\",\"name\":\"Discover Renderable Boards\",\"priority\":\"secondary\"},{\"bp\":\"BP-04-GET-BOARD-STATUS\",\"uc\":\"UC-010\",\"name\":\"Get Board Status\",\"priority\":\"secondary\"},{\"bp\":\"BP-08-LIST-PROJECTS\",\"uc\":\"UC-011\",\"name\":\"List Projects\",\"priority\":\"secondary\"},{\"bp\":\"BP-09-GET-ACTIVE-PROJECT\",\"uc\":\"UC-012\",\"name\":\"Get Active Project\",\"priority\":\"secondary\"},{\"bp\":\"BP-12-RUN-BATCH-OPERATION\",\"uc\":\"UC-013\",\"name\":\"Run Batch Operation\",\"priority\":\"secondary\"},{\"bp\":\"BP-13-MONITOR-PACER-DIAGNOSTICS\",\"uc\":\"UC-014\",\"name\":\"Monitor Diagnostics\",\"priority\":\"secondary\"},{\"bp\":\"BP-14-VIEW-RUNS-BUFFER\",\"uc\":\"UC-015\",\"name\":\"View Run History\",\"priority\":\"secondary\"},{\"bp\":\"BP-15-CAPTURE-SNAPSHOT\",\"uc\":\"UC-016\",\"name\":\"Auto-capture Snapshot\",\"priority\":\"secondary\"},{\"bp\":\"BP-16-LIST-SNAPSHOTS\",\"uc\":\"UC-017\",\"name\":\"List Snapshots\",\"priority\":\"secondary\"},{\"bp\":\"BP-19-FULL-TEXT-SEARCH\",\"uc\":\"UC-018\",\"name\":\"Full-text Search\",\"priority\":\"secondary\"},{\"bp\":\"BP-20-GET-VERSION\",\"uc\":\"UC-019\",\"name\":\"Get Build Version\",\"priority\":\"secondary\"}]",
+      "summary": "Phases 1-8 produced a complete BA graph: 1 SystemContext, 2 Stakeholders, 7 ExternalEntities, 10 DataFlows, 5 ProcessGroups, 20 BusinessProcesses, 42 WorkflowSteps, 13 BusinessEntities, 47 EntityAttributes, 11 EntityStates, 1 BusinessRole, 34 GlossaryTerms, 18 BusinessRules. 7 primary UCs and 12 secondary UCs proposed. 5 SA modules aligned to codebase workspaces. Cross-layer edges deferred to Phase 16+.",
+      "adrs": [
+        "ADR-01-DETERMINISTIC-RENDERERS-ONLY",
+        "ADR-02-NO-CONTAINERIZATION",
+        "ADR-03-PACER-WRAPPER-MANDATORY",
+        "ADR-04-PROJECT-REGISTRY-AS-SOT",
+        "ADR-05-FILESYSTEM-AS-BOARDS-STORE",
+        "ADR-06-MEDIUM-MODULE-DECOMPOSITION"
+      ],
+      "title": "BA→SA Handoff: NaCl Analyst Tool",
+      "source_file": "CLAUDE.md",
+      "source_pack": [
+        "CLAUDE.md",
+        "HANDOFF-orchestrator-wave-1-onward.md",
+        "HANDOFF-nacl-render-replacement.md",
+        "config.yaml",
+        "server/src",
+        "web/src",
+        "e2e/specs",
+        "graph-infra/schema"
+      ],
+      "automated_steps_count": 40,
+      "prepared_by": "Analyst (orchestrated reverse-engineering)",
+      "business_objects_count": 6,
+      "total_edges": 670,
+      "semi_automated_count": 2,
+      "final_status": "Complete",
+      "business_rules_count": 18,
+      "automation_scope_count": 42,
+      "generated_at": "2026-05-06T00:00:00Z",
+      "total_nodes": 409,
+      "proposed_modules": "[{\"id\":\"M-BACKEND-API\",\"name\":\"Backend API\",\"desc\":\"Fastify routes + WS hub\",\"path\":\"server/src\"},{\"id\":\"M-RENDERERS\",\"name\":\"Renderers\",\"desc\":\"Deterministic Excalidraw + Markdown pipelines\",\"path\":\"server/src/render\"},{\"id\":\"M-SKILL-RUNNER\",\"name\":\"Skill Runner\",\"desc\":\"Pacer + run-queue + skill invocation\",\"path\":\"server/src/services\"},{\"id\":\"M-WEB-UI\",\"name\":\"Web UI\",\"desc\":\"Vite/React frontend with Excalidraw editor\",\"path\":\"web/src\"},{\"id\":\"M-E2E\",\"name\":\"E2E Suite\",\"desc\":\"Playwright suite\",\"path\":\"e2e\"}]",
+      "id": "HANDOFF-BA-SA-ANALYST-TOOL"
+    }
+  },
+  {
+    "labels": [
+      "Document"
+    ],
+    "properties": {
+      "decision": "Excalidraw scenes are produced exclusively by deterministic TypeScript renderers in server/src/render/ that read Neo4j directly. No LLM is in the production rendering path for board generation.",
+      "kind": "ADR",
+      "context": "The original /nacl-render excalidraw commands used an LLM (claude -p via itsalt-pinch) to produce Excalidraw scene JSON. Every run emitted different seed and versionNonce values, creating noisy git diffs even when the graph had not changed. Bulk regeneration of 44 boards took hours due to Pacer rate limits.",
+      "created_at": "2026-05-06T00:00:00Z",
+      "consequences": "Boards are idempotent across runs (same graph = same scene). Renderer TypeScript becomes the source of truth for layout logic. Human creative freedom in board layout is not available in the automated path — users who want custom layouts must edit boards manually after generation.",
+      "alternatives_considered": [
+        "Keep LLM renderer with a seeded system prompt and fixed temperature",
+        "Switch to Mermaid diagrams instead of Excalidraw",
+        "Use a dedicated graph-layout library (e.g. dagre) without a renderer abstraction"
+      ],
+      "id": "ADR-01-DETERMINISTIC-RENDERERS-ONLY",
+      "title": "Use Deterministic TypeScript Renderers for All Board Generation",
+      "source_file": "CLAUDE.md",
+      "status": "Accepted"
+    }
+  },
+  {
+    "labels": [
+      "Document"
+    ],
+    "properties": {
+      "decision": "The analyst tool is distributed as the nacl-analyst-tool npm CLI, installed directly on the analyst machine. Docker is not used for the tool itself (only for per-project Neo4j via graph-infra/).",
+      "kind": "ADR",
+      "context": "The predecessor setup used two Docker containers (excalidraw + excalidraw-room) managed via Docker Compose. Those containers could not spawn a local claude CLI subprocess, blocking the itsalt-pinch Pacer integration and requiring complex volume mounts for board access.",
+      "created_at": "2026-05-06T00:00:00Z",
+      "consequences": "The analyst machine must have Node.js 20+ installed. The tool can shell out to the local claude CLI through itsalt-pinch. No horizontal scaling is possible, but none is needed for a single-analyst local tool.",
+      "alternatives_considered": [
+        "Docker Compose stack with a Node sidecar that shells out to claude on the host",
+        "Tauri desktop application wrapping a Node.js backend"
+      ],
+      "id": "ADR-02-NO-CONTAINERIZATION",
+      "title": "Ship Analyst Tool as Host-Installed npm CLI, Not a Container",
+      "source_file": "CLAUDE.md",
+      "status": "Accepted"
+    }
+  },
+  {
+    "labels": [
+      "Document"
+    ],
+    "properties": {
+      "decision": "Every claude -p subprocess invocation goes through the itsalt-pinch Pacer wrapper (server/src/services/pinch.ts). Events (run.started, run.blocked, run.finished) are broadcast over WebSocket so the UI can reflect Pacer state.",
+      "kind": "ADR",
+      "context": "Direct child_process.spawn(claude) calls bypassed the working-window scheduler and had no concurrency cap. Unthrottled spawns hit Anthropic rate limits and left the tool in an invisible blocked state.",
+      "created_at": "2026-05-06T00:00:00Z",
+      "consequences": "Concurrency is predictable and rate-limit-safe. The tool gains a dependency on itsalt-pinch. LLM-tail skills keep going through Pacer even after deterministic renderer waves ship.",
+      "alternatives_considered": [
+        "In-process promise fan-out with a manual semaphore",
+        "Manual token-bucket rate limiter without using itsalt-pinch as a package"
+      ],
+      "id": "ADR-03-PACER-WRAPPER-MANDATORY",
+      "title": "All claude Subprocess Calls Must Go Through itsalt-pinch Pacer",
+      "source_file": "CLAUDE.md",
+      "status": "Accepted"
+    }
+  },
+  {
+    "labels": [
+      "Document"
+    ],
+    "properties": {
+      "decision": "The project registry at ~/.nacl/projects.json is the single source of truth. The active project entry overrides cwd resolution. Fallback to cwd is allowed only when the registry has no active entry.",
+      "kind": "ADR",
+      "context": "When the analyst ran the tool from a sibling directory, cwd-based resolution silently resolved the wrong config.yaml, pointing at the wrong Neo4j port and boards directory. This caused silent cross-project graph contamination.",
+      "created_at": "2026-05-06T00:00:00Z",
+      "consequences": "Project resolution is deterministic regardless of working directory. The tool requires nacl-init to register a project before first use. The UI must expose a project-picker control.",
+      "alternatives_considered": [
+        "NACL_PROJECT env var as override, cwd as default",
+        "Upward cwd-walk searching for config.yaml",
+        "Symlink at a canonical path pointing to the active project root"
+      ],
+      "id": "ADR-04-PROJECT-REGISTRY-AS-SOT",
+      "title": "Use ~/.nacl/projects.json as Single Source of Truth for Active Project",
+      "source_file": "CLAUDE.md",
+      "status": "Accepted"
+    }
+  },
+  {
+    "labels": [
+      "Document"
+    ],
+    "properties": {
+      "decision": "Excalidraw scene files live as .excalidraw files on the local filesystem under <project-root>/graph-infra/boards/. Neo4j holds only graph nodes (entities, use cases, etc.). Bidirectional sync between FS and Neo4j is handled by the dedicated sync writer (Wave 4).",
+      "kind": "ADR",
+      "context": "Excalidraw scenes for ~44 boards average several hundred KB of JSON each. Neo4j is optimized for graph traversal, not large blob storage. Embedding scenes as node properties would bloat the graph and break the Excalidraw editor direct file-open workflow.",
+      "created_at": "2026-05-06T00:00:00Z",
+      "consequences": "A filesystem watcher is required to detect manual board edits. Sync state is tracked via content hashes in .meta.json sidecar files. Round-trip consistency requires the deterministic renderer to produce byte-identical output given the same graph state.",
+      "alternatives_considered": [
+        "Store scenes as JSON string properties on a :Board node in Neo4j",
+        "SQLite cache file alongside the Neo4j container for scene blobs"
+      ],
+      "id": "ADR-05-FILESYSTEM-AS-BOARDS-STORE",
+      "title": "Keep Excalidraw Boards on Disk Under graph-infra/boards/, Not in Neo4j",
+      "source_file": "HANDOFF-nacl-render-replacement.md",
+      "status": "Accepted"
+    }
+  },
+  {
+    "labels": [
+      "Document"
+    ],
+    "properties": {
+      "decision": "The server is organized into 5 named modules: Backend API (routes + services), Renderers (render/excalidraw + render/markdown — leaf in the dependency DAG), Skill Runner (pinch.ts + skill-runner.ts), Web UI (web/ workspace), and E2E (e2e/ workspace).",
+      "kind": "ADR",
+      "context": "The analyst-tool server grew to 67+ TypeScript files across render/, services/, routes/. Without an explicit module boundary model the codebase risked circular imports and unclear ownership across the six implementation waves.",
+      "created_at": "2026-05-06T00:00:00Z",
+      "alternatives_considered": [
+        "Coarse 3-module split (server / web / e2e) — loses intra-server clarity",
+        "Fine 9-module split (one module per route family) — over-engineering for current scale"
+      ],
+      "consequences": "The dependency DAG is acyclic and explicit. Renderers can be extracted as a standalone npm package in the future. Wave developers are briefed not to touch integration zones — the orchestrator handles integration commits.",
+      "id": "ADR-06-MEDIUM-MODULE-DECOMPOSITION",
+      "title": "Decompose Server Into 5 Modules Along Workspace Boundaries",
+      "source_file": "HANDOFF-orchestrator-wave-1-onward.md",
+      "status": "Accepted"
+    }
+  }
+]

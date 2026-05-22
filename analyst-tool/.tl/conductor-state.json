@@ -1,0 +1,20 @@
+{
+  "branch": "main",
+  "baseBranch": "main",
+  "gitStrategy": "direct",
+  "items": [
+    { "id": "FR-001", "type": "feature", "ucs": ["UC-003", "UC-008"] }
+  ],
+  "started": "2026-05-07T00:00:00Z",
+  "phase": "complete",
+  "scopeSource": "neo4j",
+  "techTasks": [],
+  "ucTasks": [
+    { "id": "UC-003-BE", "wave": 1, "status": "done", "commit": "134772a" },
+    { "id": "UC-008-BE", "wave": 1, "status": "done", "commit": "480f3dc" },
+    { "id": "UC-003-FE", "wave": 2, "status": "done", "note": "no-op (renderer change is plain Excalidraw text)" },
+    { "id": "UC-008-FE", "wave": 2, "status": "done", "commit": "1deb758" }
+  ],
+  "bugFixes": [],
+  "delivery": { "status": "skipped", "reason": "no ci_cd/deploy configured; direct strategy" }
+}

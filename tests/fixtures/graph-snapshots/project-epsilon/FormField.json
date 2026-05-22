@@ -1,0 +1,102 @@
+[
+  {
+    "labels": [
+      "FormField"
+    ],
+    "properties": {
+      "name": "User.email",
+      "form_id": "FORM-login-form",
+      "id": "FORM-login-form-F01"
+    }
+  },
+  {
+    "labels": [
+      "FormField"
+    ],
+    "properties": {
+      "name": "ArticleImport.importedAt",
+      "form_id": "FORM-article-import-form",
+      "id": "FORM-article-import-form-F01"
+    }
+  },
+  {
+    "labels": [
+      "FormField"
+    ],
+    "properties": {
+      "name": "ArticleImport.status",
+      "form_id": "FORM-article-import-form",
+      "id": "FORM-article-import-form-F02"
+    }
+  },
+  {
+    "labels": [
+      "FormField"
+    ],
+    "properties": {
+      "name": "ArticleRow.article1c",
+      "form_id": "FORM-article-import-form",
+      "id": "FORM-article-import-form-F03"
+    }
+  },
+  {
+    "labels": [
+      "FormField"
+    ],
+    "properties": {
+      "name": "ArticleRow.marketplace",
+      "form_id": "FORM-article-import-form",
+      "id": "FORM-article-import-form-F04"
+    }
+  },
+  {
+    "labels": [
+      "FormField"
+    ],
+    "properties": {
+      "name": "WarehouseStockImport.importedAt",
+      "form_id": "FORM-warehouse-stock-import-form",
+      "id": "FORM-warehouse-stock-import-form-F01"
+    }
+  },
+  {
+    "labels": [
+      "FormField"
+    ],
+    "properties": {
+      "name": "WarehouseStockImport.status",
+      "form_id": "FORM-warehouse-stock-import-form",
+      "id": "FORM-warehouse-stock-import-form-F02"
+    }
+  },
+  {
+    "labels": [
+      "FormField"
+    ],
+    "properties": {
+      "name": "WarehouseStockRow.article1c",
+      "form_id": "FORM-warehouse-stock-import-form",
+      "id": "FORM-warehouse-stock-import-form-F03"
+    }
+  },
+  {
+    "labels": [
+      "FormField"
+    ],
+    "properties": {
+      "name": "WarehouseStockRow.warehouseName",
+      "form_id": "FORM-warehouse-stock-import-form",
+      "id": "FORM-warehouse-stock-import-form-F04"
+    }
+  },
+  {
+    "labels": [
+      "FormField"
+    ],
+    "properties": {
+      "name": "WarehouseStockRow.quantity",
+      "form_id": "FORM-warehouse-stock-import-form",
+      "id": "FORM-warehouse-stock-import-form-F05"
+    }
+  }
+]

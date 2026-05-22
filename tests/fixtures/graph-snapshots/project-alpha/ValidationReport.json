@@ -1,0 +1,67 @@
+[
+  {
+    "labels": [
+      "ValidationReport"
+    ],
+    "properties": {
+      "notes": "L5 ModelProfile принят как design-intent (accepted_by_design). L7 закрыт: добавлены 4 новых GlossaryTerm + 8 DEFINES_TERM рёбер (BP-103 имеет двойное определение).",
+      "l2_decomposition_pass": true,
+      "l1_process_completeness_pass": true,
+      "critical_count": 0,
+      "l7_glossary_coverage_pass": true,
+      "l7_findings": "Все BusinessEntity и BusinessProcess имеют DEFINES_TERM. Создано 4 новых термина: GLO-050 Пользователь, GLO-051 Исходное фото, GLO-054 Параметры workflow, GLO-056 Ежемесячный отчёт. 3 повторно использовали существующие: BP-001→GLO-015, BP-101→GLO-024, BP-103→GLO-002+GLO-031.",
+      "run_at": "2026-05-04T11:30:00.000000000+00:00",
+      "overall_verdict": "PASSED",
+      "l6_role_matrix_pass": true,
+      "l4_artifact_binding_pass": true,
+      "l3_findings": "Все 131 WorkflowStep имеют actor",
+      "glossary_total_terms": 53,
+      "id": "VR-001",
+      "phase": "Phase 8 — nacl-ba-validate (internal)",
+      "l8_findings": "Все 20 BusinessRule имеют APPLIES_TO связи (всего 65 рёбер)",
+      "l5_findings": "13/14 BusinessEntity связаны с BP. 1 accepted_by_design warning: ModelProfile (OBJ-014) — ValueObject, встроен полями (gender, age_group) в Task/GenerationLog/PromptTemplate. Не имеет независимого жизненного цикла → PRODUCES/CONSUMES не применимы. Решение пользователя: принять как design-intent (L5=A).",
+      "l3_actor_binding_pass": true,
+      "l2_findings": "Все 12 BP с has_decomposition=true имеют WorkflowStep",
+      "glossary_total_defines_edges": 27,
+      "l6_findings": "Все 12 BP имеют OWNS-владельца и хотя бы одного PERFORMS",
+      "l5_entity_matrix_pass": true,
+      "l4_findings": "Все 131 WorkflowStep имеют artifacts_in или artifacts_out",
+      "l8_rule_binding_pass": true,
+      "l1_findings": "Все 4 ProcessGroup имеют BPs",
+      "warning_count": 1
+    }
+  },
+  {
+    "labels": [
+      "ValidationReport"
+    ],
+    "properties": {
+      "l6_disconnected_nodes": "PASS",
+      "l4_details": "All 24 UCs have ACTOR; all 15 SAEntity have at least one HAS_PERMISSION",
+      "xl6_details": "100% (88/88 automated WorkflowSteps have AUTOMATES_AS to UseCase)",
+      "l5_details": "8/11 NFR bound to modules; 3 (REQ-NFR-004/005/007) intentionally system-wide",
+      "l3_domain_binding": "PASS",
+      "overall_status": "PASS",
+      "created_at": "2026-05-05T13:35:44.797000000+00:00",
+      "l2_uc_completeness": "PASS",
+      "critical_errors": 0,
+      "l2_details": "19/19 MVP UCs with detail_status=complete and ActivitySteps",
+      "l3_details": "44/46 FormFields have MAPS_TO; 2 intentional (password compared via bcrypt; assets is derived list — marked field.derived=true)",
+      "xl7_details": "100% (14/14 BusinessEntity REALIZED_AS via TRACES_TO to SAEntity)",
+      "layer": "SA",
+      "xl8_details": "100% (3/3 BusinessRole MAPPED_TO SystemRole)",
+      "l1_module_completeness": "PASS",
+      "id": "VR-SA-001",
+      "xl9_details": "100% (20/20 BusinessRule TRACES_TO SARequirement)",
+      "l6_details": "2 orphan components linked: asset_card→asset_grid via COMPOSED_OF, task_list→form-105 via USED_IN",
+      "l5_requirement_binding": "PASS",
+      "warnings": 0,
+      "xl6_uc_coverage": "PASS",
+      "xl9_rule_coverage": "PASS",
+      "xl7_entity_coverage": "PASS",
+      "xl8_role_coverage": "PASS",
+      "l4_role_coverage": "PASS",
+      "l1_details": "4 modules, all have UC and entities (CONTENT:7e/12u, ADMIN:6e/5u, QUEUE:1e/4u, REPORTING:1e/3u)"
+    }
+  }
+]

@@ -1,0 +1,212 @@
+[
+  {
+    "labels": [
+      "UseCase"
+    ],
+    "properties": {
+      "complexity": "",
+      "migrated_at": "2026-04-13T14:04:43.843000000+00:00",
+      "created": "2026-04-13T14:04:43.843000000+00:00",
+      "ba_trace": [],
+      "module": "",
+      "description": "Оставить обратную связь (положительную / отрицательную) к конкретной версии сгенерированной карточки.",
+      "priority": "medium",
+      "source_file": "docs/04-usecases/UC-F01-leave-feedback.md",
+      "actor": "Пользователь",
+      "name": "Оставить обратную связь",
+      "iteration": "",
+      "id": "UC-F01",
+      "original_id": "UC-F01",
+      "updated": "2026-04-13T14:04:43.843000000+00:00"
+    }
+  },
+  {
+    "labels": [
+      "UseCase"
+    ],
+    "properties": {
+      "complexity": "",
+      "migrated_at": "2026-04-13T14:04:43.843000000+00:00",
+      "created": "2026-04-13T14:04:43.843000000+00:00",
+      "ba_trace": [],
+      "module": "",
+      "description": "Проанализировать обратную связь и сформировать промт-аддон для улучшения будущих генераций по шаблону.",
+      "priority": "medium",
+      "source_file": "docs/04-usecases/UC-F02-apply-feedback.md",
+      "actor": "Пользователь (инициатор), Feedback Learner Agent (Система)",
+      "name": "Учесть обратную связь",
+      "iteration": "",
+      "id": "UC-F02",
+      "original_id": "UC-F02",
+      "updated": "2026-04-13T14:04:43.843000000+00:00"
+    }
+  },
+  {
+    "labels": [
+      "UseCase"
+    ],
+    "properties": {
+      "complexity": "",
+      "migrated_at": "2026-04-13T14:04:43.843000000+00:00",
+      "created": "2026-04-13T14:04:43.843000000+00:00",
+      "ba_trace": [],
+      "module": "",
+      "description": "Просмотреть, отредактировать или деактивировать промт-аддоны шаблона.",
+      "priority": "low",
+      "source_file": "docs/04-usecases/UC-F03-manage-addons.md",
+      "actor": "Пользователь",
+      "name": "Управление аддонами",
+      "iteration": "",
+      "id": "UC-F03",
+      "original_id": "UC-F03",
+      "updated": "2026-04-13T14:04:43.843000000+00:00"
+    }
+  },
+  {
+    "labels": [
+      "UseCase"
+    ],
+    "properties": {
+      "complexity": "",
+      "migrated_at": "2026-04-13T14:04:43.843000000+00:00",
+      "created": "2026-04-13T14:04:43.843000000+00:00",
+      "ba_trace": [],
+      "module": "",
+      "description": "Создать задание на генерацию карточки инфографики для конкретного товара по выбранному шаблону.",
+      "priority": "high",
+      "source_file": "docs/04-usecases/UC-G01-create-job.md",
+      "actor": "Пользователь",
+      "name": "Создание задания на генерацию",
+      "iteration": "",
+      "id": "UC-G01",
+      "original_id": "UC-G01",
+      "updated": "2026-04-13T14:04:43.843000000+00:00"
+    }
+  },
+  {
+    "labels": [
+      "UseCase"
+    ],
+    "properties": {
+      "complexity": "",
+      "migrated_at": "2026-04-13T14:04:43.843000000+00:00",
+      "created": "2026-04-13T14:04:43.843000000+00:00",
+      "ba_trace": [],
+      "module": "",
+      "description": "Автоматически сгенерировать карточку инфографики: AI создаёт ассеты, система собирает HTML и рендерит PNG.",
+      "priority": "high",
+      "source_file": "docs/04-usecases/UC-G02-execute-generation.md",
+      "actor": "Generation Pipeline Agent (Система)",
+      "name": "Выполнение генерации",
+      "iteration": "",
+      "id": "UC-G02",
+      "original_id": "UC-G02",
+      "updated": "2026-04-13T14:04:43.843000000+00:00"
+    }
+  },
+  {
+    "labels": [
+      "UseCase"
+    ],
+    "properties": {
+      "complexity": "",
+      "migrated_at": "2026-04-13T14:04:43.843000000+00:00",
+      "created": "2026-04-13T14:04:43.843000000+00:00",
+      "ba_trace": [],
+      "module": "",
+      "description": "Просмотреть сгенерированную карточку, скачать PNG или запустить регенерацию.",
+      "priority": "high",
+      "source_file": "docs/04-usecases/UC-G03-view-results.md",
+      "actor": "Пользователь",
+      "name": "Просмотр результатов и регенерация",
+      "iteration": "",
+      "id": "UC-G03",
+      "original_id": "UC-G03",
+      "updated": "2026-04-13T14:04:43.843000000+00:00"
+    }
+  },
+  {
+    "labels": [
+      "UseCase"
+    ],
+    "properties": {
+      "complexity": "",
+      "migrated_at": "2026-04-13T14:04:43.843000000+00:00",
+      "created": "2026-04-13T14:04:43.843000000+00:00",
+      "ba_trace": [],
+      "module": "",
+      "description": "Просмотр списка заданий, фильтрация, удаление.",
+      "priority": "medium",
+      "source_file": "docs/04-usecases/UC-G04-manage-jobs.md",
+      "actor": "Пользователь",
+      "name": "Управление заданиями",
+      "iteration": "",
+      "id": "UC-G04",
+      "original_id": "UC-G04",
+      "updated": "2026-04-13T14:04:43.843000000+00:00"
+    }
+  },
+  {
+    "labels": [
+      "UseCase"
+    ],
+    "properties": {
+      "complexity": "",
+      "migrated_at": "2026-04-13T14:04:43.843000000+00:00",
+      "created": "2026-04-13T14:04:43.843000000+00:00",
+      "ba_trace": [],
+      "module": "",
+      "description": "Загрузить изображение-образец карточки инфографики, выполнить AI-декомпозицию на слои и настроить шаблон для последующей генерации карточек.",
+      "priority": "high",
+      "source_file": "docs/04-usecases/UC-T01-add-template.md",
+      "actor": "Пользователь, Template Analyzer Agent (Система)",
+      "name": "Добавление шаблона",
+      "iteration": "",
+      "id": "UC-T01",
+      "original_id": "UC-T01",
+      "updated": "2026-04-13T14:04:43.843000000+00:00"
+    }
+  },
+  {
+    "labels": [
+      "UseCase"
+    ],
+    "properties": {
+      "complexity": "",
+      "migrated_at": "2026-04-13T14:04:43.843000000+00:00",
+      "created": "2026-04-13T14:04:43.843000000+00:00",
+      "ba_trace": [],
+      "module": "",
+      "description": "Изменить настройки существующего шаблона: метаданные (название, описание, маркетплейс) и конфигурацию слоёв (позиция, типографика, AI-промты, статические ассеты, dynamic mapping).",
+      "priority": "medium",
+      "source_file": "docs/04-usecases/UC-T02-edit-template.md",
+      "actor": "Пользователь",
+      "name": "Редактирование шаблона",
+      "iteration": "",
+      "id": "UC-T02",
+      "original_id": "UC-T02",
+      "updated": "2026-04-13T14:04:43.843000000+00:00"
+    }
+  },
+  {
+    "labels": [
+      "UseCase"
+    ],
+    "properties": {
+      "complexity": "",
+      "migrated_at": "2026-04-13T14:04:43.843000000+00:00",
+      "created": "2026-04-13T14:04:43.843000000+00:00",
+      "ba_trace": [],
+      "module": "",
+      "description": "Архивировать шаблон (soft delete), запретив создание новых заданий по нему.",
+      "priority": "low",
+      "source_file": "docs/04-usecases/UC-T03-delete-template.md",
+      "actor": "Пользователь",
+      "name": "Удаление шаблона",
+      "iteration": "",
+      "id": "UC-T03",
+      "original_id": "UC-T03",
+      "updated": "2026-04-13T14:04:43.843000000+00:00"
+    }
+  }
+]

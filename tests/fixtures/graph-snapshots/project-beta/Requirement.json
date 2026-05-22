@@ -1,0 +1,161 @@
+[
+  {
+    "labels": [
+      "Requirement"
+    ],
+    "properties": {
+      "created": "2026-05-18T06:39:52.733000000+00:00",
+      "description": "Upload pipeline MUST accept files up to 500 MB via chunked transfer without timeout.",
+      "id": "NFR-001",
+      "category": "performance",
+      "type": "nfr",
+      "priority": "high",
+      "updated": "2026-05-18T06:39:52.733000000+00:00",
+      "rationale": "Derived from BRQ-001 (file size limit) and SystemContext constraint on handling 300-500 MB files.",
+      "status": "draft"
+    }
+  },
+  {
+    "labels": [
+      "Requirement"
+    ],
+    "properties": {
+      "created": "2026-05-18T06:39:52.733000000+00:00",
+      "description": "Transcription and protocol generation MUST run asynchronously (job-based); UI MUST surface job progress without blocking.",
+      "id": "NFR-002",
+      "category": "performance",
+      "type": "nfr",
+      "priority": "high",
+      "updated": "2026-05-18T06:39:52.733000000+00:00",
+      "rationale": "Large file processing and external ASR/LLM latency make synchronous execution infeasible (SystemContext).",
+      "status": "draft"
+    }
+  },
+  {
+    "labels": [
+      "Requirement"
+    ],
+    "properties": {
+      "created": "2026-05-18T06:39:52.733000000+00:00",
+      "description": "No processing-time SLA at MVP - best-effort delivery; long-running jobs are acceptable.",
+      "id": "NFR-003",
+      "type": "nfr",
+      "category": "performance",
+      "priority": "medium",
+      "updated": "2026-05-18T06:39:52.733000000+00:00",
+      "rationale": "Explicit non-SLA per BRQ-019; recorded so future readers do not infer a performance budget.",
+      "status": "draft"
+    }
+  },
+  {
+    "labels": [
+      "Requirement"
+    ],
+    "properties": {
+      "created": "2026-05-18T06:39:52.733000000+00:00",
+      "description": "System MUST support Russian and English throughout (UI, ASR language hint, LLM prompts, error messages).",
+      "id": "NFR-004",
+      "category": "integration",
+      "type": "nfr",
+      "priority": "high",
+      "updated": "2026-05-18T06:39:52.733000000+00:00",
+      "rationale": "Derived from BRQ-004 and SystemContext language constraint.",
+      "status": "draft"
+    }
+  },
+  {
+    "labels": [
+      "Requirement"
+    ],
+    "properties": {
+      "created": "2026-05-18T06:39:52.733000000+00:00",
+      "description": "Recordings MUST persist in durable object storage (EXT-04) until both Transcript and Protocol artifacts are produced.",
+      "id": "NFR-005",
+      "category": "infrastructure",
+      "type": "nfr",
+      "priority": "high",
+      "updated": "2026-05-18T06:39:52.733000000+00:00",
+      "rationale": "Derived from BRQ-020 retention rule; necessary for async pipeline durability.",
+      "status": "draft"
+    }
+  },
+  {
+    "labels": [
+      "Requirement"
+    ],
+    "properties": {
+      "created": "2026-05-18T06:39:52.733000000+00:00",
+      "description": "Protocol canonical format is Markdown; PDF export is transient (re-rendered on demand, not persisted).",
+      "id": "NFR-006",
+      "category": "integration",
+      "type": "nfr",
+      "priority": "high",
+      "updated": "2026-05-18T06:39:52.733000000+00:00",
+      "rationale": "Derived from BRQ-017 (PDF transient) and BRQ-018 (Markdown canonical).",
+      "status": "draft"
+    }
+  },
+  {
+    "labels": [
+      "Requirement"
+    ],
+    "properties": {
+      "created": "2026-05-18T06:39:52.733000000+00:00",
+      "description": "MVP runs without authentication or multi-tenancy; all artifacts treated as owned by the uploader within a single trust boundary.",
+      "id": "NFR-007",
+      "type": "nfr",
+      "category": "security",
+      "priority": "medium",
+      "updated": "2026-05-18T06:39:52.733000000+00:00",
+      "rationale": "Per SystemContext out-of-scope and single active role (ROL-01 Author).",
+      "status": "draft"
+    }
+  },
+  {
+    "labels": [
+      "Requirement"
+    ],
+    "properties": {
+      "created": "2026-05-18T06:39:52.733000000+00:00",
+      "description": "Job failures MUST be surfaced to the user with a human-readable error_reason; jobs in terminal states (succeeded/failed) are immutable.",
+      "id": "NFR-008",
+      "category": "infrastructure",
+      "type": "nfr",
+      "priority": "high",
+      "updated": "2026-05-18T06:39:52.733000000+00:00",
+      "rationale": "Derived from BRQ-009 (immutable terminal states) and BRQ-010 (failure recorded with reason).",
+      "status": "draft"
+    }
+  },
+  {
+    "labels": [
+      "Requirement"
+    ],
+    "properties": {
+      "created": "2026-05-18T06:39:52.733000000+00:00",
+      "description": "ASSUMPTION: One concurrent user session at MVP - one video processed at a time per user; multi-user/parallel-job scaling design deferred.",
+      "id": "NFR-009",
+      "priority": "medium",
+      "type": "assumption",
+      "category": "performance",
+      "updated": "2026-05-18T06:39:52.733000000+00:00",
+      "rationale": "Per SystemContext assumption 'One video at a time per user session; queue/parallelism design TBD'. Revisit when multi-user scope is added.",
+      "status": "needs_review"
+    }
+  },
+  {
+    "labels": [
+      "Requirement"
+    ],
+    "properties": {
+      "rq_type": "behavioral",
+      "description": "Meeting catalog MUST sort meetings by updated_at descending.",
+      "source": "behavior",
+      "id": "RQ-001",
+      "type": "functional",
+      "priority": "high",
+      "updated": "2026-05-18T07:05:09.220000000+00:00",
+      "status": "draft"
+    }
+  }
+]

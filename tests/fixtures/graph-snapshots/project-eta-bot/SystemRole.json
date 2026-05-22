@@ -1,0 +1,87 @@
+[
+  {
+    "labels": [
+      "SystemRole"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T13:41:43.588000000+00:00",
+      "auth": "",
+      "created": "2026-04-13T13:41:43.588000000+00:00",
+      "ba_trace": [],
+      "name": "System",
+      "iteration": "",
+      "description": "Bot Service как автоматический актор (Realtime listener, cron, startup)",
+      "id": "SYSROL-SYSTEM",
+      "updated": "2026-04-13T13:41:43.588000000+00:00",
+      "source_file": "docs/13-roles/role-matrix.md"
+    }
+  },
+  {
+    "labels": [
+      "SystemRole"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T13:41:43.588000000+00:00",
+      "auth": "",
+      "created": "2026-04-13T13:41:43.588000000+00:00",
+      "ba_trace": [],
+      "name": "Dispatcher",
+      "iteration": "",
+      "description": "Диспетчер, работает через Dispatcher UI (React). Получает MM-токен, отвечает клиентам",
+      "id": "SYSROL-DISPATCHER",
+      "updated": "2026-04-13T13:41:43.588000000+00:00",
+      "source_file": "docs/13-roles/role-matrix.md"
+    }
+  },
+  {
+    "labels": [
+      "SystemRole"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T13:41:43.588000000+00:00",
+      "auth": "",
+      "created": "2026-04-13T13:41:43.588000000+00:00",
+      "ba_trace": [],
+      "name": "Technician",
+      "iteration": "",
+      "description": "Техник, работает через Mattermost Mobile. Получает нотификации, общается в каналах",
+      "id": "SYSROL-TECHNICIAN",
+      "updated": "2026-04-13T13:41:43.588000000+00:00",
+      "source_file": "docs/13-roles/role-matrix.md"
+    }
+  },
+  {
+    "labels": [
+      "SystemRole"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T13:41:43.588000000+00:00",
+      "auth": "",
+      "created": "2026-04-13T13:41:43.588000000+00:00",
+      "ba_trace": [],
+      "name": "Client",
+      "iteration": "",
+      "description": "Клиент, работает через FlutterFlow ChatWidget. НЕ имеет MM-аккаунта, общается через бот-прокси",
+      "id": "SYSROL-CLIENT",
+      "updated": "2026-04-13T13:41:43.588000000+00:00",
+      "source_file": "docs/13-roles/role-matrix.md"
+    }
+  },
+  {
+    "labels": [
+      "SystemRole"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T13:41:43.588000000+00:00",
+      "auth": "",
+      "created": "2026-04-13T13:41:43.588000000+00:00",
+      "ba_trace": [],
+      "name": "Administrator",
+      "description": "Администратор, видит все каналы через Mattermost Desktop/Mobile. Полный oversight",
+      "iteration": "",
+      "id": "SYSROL-ADMINISTRATOR",
+      "updated": "2026-04-13T13:41:43.588000000+00:00",
+      "source_file": "docs/13-roles/role-matrix.md"
+    }
+  }
+]

@@ -481,7 +481,7 @@ VERIFIED is refused unless this gate completes with PASS.
      the failing path.
    - Entrypoint that fails to bind a port within 60s → BLOCKED with
      `clean-checkout-entrypoint-no-port`. This is the
-     transcriber `dist/index.js` vs `dist/server.js` pattern.
+     project-beta `dist/index.js` vs `dist/server.js` pattern.
 
 8. **Capture evidence to `.tl/clean-checkout/<commit>.json`** (artifact
    schema: see `.tl/clean-checkout/_template.json`). Fields:
@@ -518,7 +518,7 @@ flag exists.
 
 #### Worked examples (from baseline retrospectives)
 
-**Karatov pnpm/Prisma/TEST_DATABASE_URL cluster.** Local dev had
+**Project-Alpha pnpm/Prisma/TEST_DATABASE_URL cluster.** Local dev had
 pnpm-lock.yaml, a warm `node_modules/`, and a populated dev
 database. The first clean CI runner failed at three layers:
 (a) pnpm version mismatch (the lockfile demanded a newer pnpm
@@ -532,7 +532,7 @@ step 4 (build → `clean-checkout-prisma-generate-missing`), and
 step 6 (`clean-checkout-test-database-url-undefined`)
 respectively, on the first delivery attempt.
 
-**Transcriber ffmpeg / pm2 entry / prompt-markdown cluster.**
+**Project-Beta ffmpeg / pm2 entry / prompt-markdown cluster.**
 The build emitted `dist/*.js` cleanly but omitted non-TS assets:
 the `worker/src/llm/prompts/{ru,en}/protocol.md` templates
 disappeared (tsc copies only `.ts`), the `ffprobe` binary was

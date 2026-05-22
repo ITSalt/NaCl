@@ -1,0 +1,132 @@
+[
+  {
+    "labels": [
+      "Component"
+    ],
+    "properties": {
+      "component_type": "display",
+      "name": "ProgressBar",
+      "description": "Progress indicator reused in interview (1..5), generation loading, and profile usage/limit",
+      "id": "CMP-ProgressBar",
+      "updated": "2026-04-20T19:48:19.012000000+00:00",
+      "props": "value, max, label, variant"
+    }
+  },
+  {
+    "labels": [
+      "Component"
+    ],
+    "properties": {
+      "component_type": "feedback",
+      "name": "ErrorMessage",
+      "description": "Unified error/validation message display",
+      "id": "CMP-ErrorMessage",
+      "updated": "2026-04-20T19:48:19.012000000+00:00",
+      "props": "message, variant"
+    }
+  },
+  {
+    "labels": [
+      "Component"
+    ],
+    "properties": {
+      "component_type": "input",
+      "name": "CloseButton",
+      "description": "Modal close button",
+      "id": "CMP-CloseButton",
+      "updated": "2026-04-20T19:48:19.012000000+00:00",
+      "props": "onClick, label"
+    }
+  },
+  {
+    "labels": [
+      "Component"
+    ],
+    "properties": {
+      "component_type": "navigation",
+      "name": "BackButton",
+      "description": "Back navigation button reused across screens",
+      "id": "CMP-BackButton",
+      "updated": "2026-04-20T19:48:19.012000000+00:00",
+      "props": "label, onClick"
+    }
+  },
+  {
+    "labels": [
+      "Component"
+    ],
+    "properties": {
+      "component_type": "display",
+      "name": "PageTitle",
+      "description": "Screen/page title heading",
+      "id": "CMP-PageTitle",
+      "updated": "2026-04-20T19:48:19.012000000+00:00",
+      "props": "title, subtitle"
+    }
+  },
+  {
+    "labels": [
+      "Component"
+    ],
+    "properties": {
+      "component_type": "display",
+      "name": "DataTable",
+      "description": "Sortable paginated data table for leads and payment history",
+      "id": "CMP-DataTable",
+      "updated": "2026-04-20T19:48:19.012000000+00:00",
+      "props": "columns, data, pagination, onRowClick"
+    }
+  },
+  {
+    "labels": [
+      "Component"
+    ],
+    "properties": {
+      "component_type": "input",
+      "name": "PromoCodeInput",
+      "description": "Promo code input — 6-cell variant (SCR-010) and single-line variant (SCR-013)",
+      "id": "CMP-PromoCodeInput",
+      "updated": "2026-04-20T19:48:19.012000000+00:00",
+      "props": "variant, onSubmit, error"
+    }
+  },
+  {
+    "labels": [
+      "Component"
+    ],
+    "properties": {
+      "component_type": "input",
+      "name": "PhotoUploadZone",
+      "description": "Drag-and-drop photo upload zone with preview, validation errors, and status badge",
+      "id": "CMP-PhotoUploadZone",
+      "updated": "2026-04-20T19:48:19.012000000+00:00",
+      "props": "maxFiles, onUpload, onDelete, onReorder"
+    }
+  },
+  {
+    "labels": [
+      "Component"
+    ],
+    "properties": {
+      "component_type": "display",
+      "name": "BeforeAfterSlider",
+      "description": "Before/after comparison slider: original vs enhanced photo",
+      "id": "CMP-BeforeAfterSlider",
+      "updated": "2026-04-20T19:48:19.012000000+00:00",
+      "props": "originalSrc, enhancedSrc"
+    }
+  },
+  {
+    "labels": [
+      "Component"
+    ],
+    "properties": {
+      "component_type": "media",
+      "name": "AudioPlayer",
+      "description": "Audio player with waveform visualizer for voice comment playback",
+      "id": "CMP-AudioPlayer",
+      "updated": "2026-04-20T19:48:19.012000000+00:00",
+      "props": "audioUrl, onReRecord"
+    }
+  }
+]

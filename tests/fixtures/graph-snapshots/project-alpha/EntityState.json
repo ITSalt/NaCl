@@ -1,0 +1,112 @@
+[
+  {
+    "labels": [
+      "EntityState"
+    ],
+    "properties": {
+      "name": "OPEN",
+      "id": "OBJ-002-ST01",
+      "terminal": false,
+      "entity_id": "OBJ-002"
+    }
+  },
+  {
+    "labels": [
+      "EntityState"
+    ],
+    "properties": {
+      "name": "CLOSED",
+      "id": "OBJ-002-ST02",
+      "terminal": true,
+      "entity_id": "OBJ-002"
+    }
+  },
+  {
+    "labels": [
+      "EntityState"
+    ],
+    "properties": {
+      "name": "ABORTED",
+      "id": "OBJ-002-ST03",
+      "terminal": true,
+      "entity_id": "OBJ-002"
+    }
+  },
+  {
+    "labels": [
+      "EntityState"
+    ],
+    "properties": {
+      "name": "PENDING",
+      "id": "OBJ-004-ST01",
+      "terminal": false,
+      "entity_id": "OBJ-004"
+    }
+  },
+  {
+    "labels": [
+      "EntityState"
+    ],
+    "properties": {
+      "name": "IN_PROGRESS",
+      "id": "OBJ-004-ST02",
+      "terminal": false,
+      "entity_id": "OBJ-004"
+    }
+  },
+  {
+    "labels": [
+      "EntityState"
+    ],
+    "properties": {
+      "name": "SUCCEEDED",
+      "id": "OBJ-004-ST03",
+      "terminal": true,
+      "entity_id": "OBJ-004"
+    }
+  },
+  {
+    "labels": [
+      "EntityState"
+    ],
+    "properties": {
+      "name": "FAILED",
+      "id": "OBJ-004-ST04",
+      "terminal": true,
+      "entity_id": "OBJ-004"
+    }
+  },
+  {
+    "labels": [
+      "EntityState"
+    ],
+    "properties": {
+      "name": "QUEUED",
+      "id": "OBJ-007-ST01",
+      "terminal": false,
+      "entity_id": "OBJ-007"
+    }
+  },
+  {
+    "labels": [
+      "EntityState"
+    ],
+    "properties": {
+      "name": "WAITING",
+      "id": "OBJ-007-ST02",
+      "terminal": false,
+      "entity_id": "OBJ-007"
+    }
+  },
+  {
+    "labels": [
+      "EntityState"
+    ],
+    "properties": {
+      "name": "RUNNING",
+      "id": "OBJ-007-ST03",
+      "terminal": false,
+      "entity_id": "OBJ-007"
+    }
+  }
+]

@@ -1,0 +1,122 @@
+[
+  {
+    "labels": [
+      "EnumValue"
+    ],
+    "properties": {
+      "description": "File upload to object storage is in progress.",
+      "label": "Uploading",
+      "id": "ENUM-MeetingStatus-V01",
+      "value": "UPLOADING",
+      "order": 1
+    }
+  },
+  {
+    "labels": [
+      "EnumValue"
+    ],
+    "properties": {
+      "description": "Transcription job is queued or running (ASR + diarization).",
+      "label": "Transcribing",
+      "id": "ENUM-MeetingStatus-V02",
+      "value": "TRANSCRIBING",
+      "order": 2
+    }
+  },
+  {
+    "labels": [
+      "EnumValue"
+    ],
+    "properties": {
+      "description": "Transcript persisted; protocol generation has not started yet (or is in progress).",
+      "label": "Transcript ready",
+      "id": "ENUM-MeetingStatus-V03",
+      "value": "TRANSCRIPT_READY",
+      "order": 3
+    }
+  },
+  {
+    "labels": [
+      "EnumValue"
+    ],
+    "properties": {
+      "description": "LLM-based protocol generation job is queued or running.",
+      "label": "Generating protocol",
+      "id": "ENUM-MeetingStatus-V04",
+      "value": "PROTOCOL_GENERATING",
+      "order": 4
+    }
+  },
+  {
+    "labels": [
+      "EnumValue"
+    ],
+    "properties": {
+      "description": "Protocol has been generated and persisted; no manual edits yet.",
+      "label": "Protocol ready",
+      "id": "ENUM-MeetingStatus-V05",
+      "value": "PROTOCOL_READY",
+      "order": 5
+    }
+  },
+  {
+    "labels": [
+      "EnumValue"
+    ],
+    "properties": {
+      "description": "Protocol has been manually edited at least once. Repeats on every save (version increments).",
+      "label": "Edited",
+      "id": "ENUM-MeetingStatus-V06",
+      "value": "EDITED",
+      "order": 6
+    }
+  },
+  {
+    "labels": [
+      "EnumValue"
+    ],
+    "properties": {
+      "description": "Non-recoverable error in the transcription or protocol-generation pipeline. Terminal state per BRQ-009.",
+      "label": "Failed",
+      "id": "ENUM-MeetingStatus-V07",
+      "value": "FAILED",
+      "order": 7
+    }
+  },
+  {
+    "labels": [
+      "EnumValue"
+    ],
+    "properties": {
+      "description": "Russian language. Used for ASR language hint and LLM prompt selection.",
+      "label": "Russian",
+      "id": "ENUM-MeetingLanguage-V01",
+      "value": "RU",
+      "order": 1
+    }
+  },
+  {
+    "labels": [
+      "EnumValue"
+    ],
+    "properties": {
+      "description": "English language. Used for ASR language hint and LLM prompt selection.",
+      "label": "English",
+      "id": "ENUM-MeetingLanguage-V02",
+      "value": "EN",
+      "order": 2
+    }
+  },
+  {
+    "labels": [
+      "EnumValue"
+    ],
+    "properties": {
+      "description": "MPEG-4 container.",
+      "id": "ENUM-VideoMimeType-V01",
+      "label": "MP4",
+      "value": "video/mp4",
+      "order": 1
+    }
+  }
+]

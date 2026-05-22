@@ -1,0 +1,86 @@
+[
+  {
+    "labels": [
+      "BusinessEntity"
+    ],
+    "properties": {
+      "created": "2026-05-17",
+      "name": "Meeting",
+      "description": "Root aggregate representing a single meeting being processed. Owns Recording, Transcript, Protocol. Top-level object referenced by all downstream entities.",
+      "stereotype": "aggregate",
+      "id": "OBJ-001",
+      "updated": "2026-05-17",
+      "status": "draft"
+    }
+  },
+  {
+    "labels": [
+      "BusinessEntity"
+    ],
+    "properties": {
+      "created": "2026-05-17",
+      "name": "Recording",
+      "description": "Metadata for the uploaded video file. Tracks filename, size, MIME, object storage path, and optional duration. Physical file in EXT-04.",
+      "stereotype": "entity",
+      "id": "OBJ-002",
+      "updated": "2026-05-17",
+      "status": "draft"
+    }
+  },
+  {
+    "labels": [
+      "BusinessEntity"
+    ],
+    "properties": {
+      "created": "2026-05-17",
+      "name": "TranscriptionJob",
+      "description": "Async job tracking the ASR+diarization pipeline for a recording. Used to detect failure and surface error details.",
+      "id": "OBJ-003",
+      "stereotype": "job",
+      "updated": "2026-05-17",
+      "status": "draft"
+    }
+  },
+  {
+    "labels": [
+      "BusinessEntity"
+    ],
+    "properties": {
+      "created": "2026-05-17",
+      "name": "Transcript",
+      "description": "Persisted verbatim speaker-attributed transcript from ASR+diarization. Segments stored inline as structured content rather than separate entities at MVP scope.",
+      "stereotype": "document",
+      "id": "OBJ-004",
+      "updated": "2026-05-17",
+      "status": "draft"
+    }
+  },
+  {
+    "labels": [
+      "BusinessEntity"
+    ],
+    "properties": {
+      "created": "2026-05-17",
+      "name": "ProtocolGenerationJob",
+      "description": "Async job tracking LLM-based protocol generation for a transcript. Created automatically when transcription job completes.",
+      "id": "OBJ-005",
+      "stereotype": "job",
+      "updated": "2026-05-17",
+      "status": "draft"
+    }
+  },
+  {
+    "labels": [
+      "BusinessEntity"
+    ],
+    "properties": {
+      "created": "2026-05-17",
+      "name": "Protocol",
+      "description": "Persisted meeting protocol Markdown produced by LLM and optionally refined by user. Sections: participants, topics, decisions, action items with assignees/deadlines. Version-incremented on each save.",
+      "stereotype": "document",
+      "id": "OBJ-006",
+      "updated": "2026-05-17",
+      "status": "draft"
+    }
+  }
+]

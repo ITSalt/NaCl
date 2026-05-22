@@ -1,0 +1,70 @@
+[
+  {
+    "labels": [
+      "SystemRole"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T14:03:31.504000000+00:00",
+      "auth": "Phone OTP (Supabase `signInWithOtp`)",
+      "created": "2026-04-13T14:03:31.504000000+00:00",
+      "ba_trace": [],
+      "name": "Клиент",
+      "description": "",
+      "iteration": "",
+      "id": "SYSROL-KLIENT",
+      "updated": "2026-04-13T14:03:31.504000000+00:00",
+      "source_file": "docs/03-roles/role-matrix.md"
+    }
+  },
+  {
+    "labels": [
+      "SystemRole"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T14:03:31.504000000+00:00",
+      "auth": "Auth UUID (`employees.authUUID`)",
+      "created": "2026-04-13T14:03:31.504000000+00:00",
+      "ba_trace": [],
+      "name": "Техник",
+      "description": "",
+      "iteration": "",
+      "id": "SYSROL-TEKHNIK",
+      "updated": "2026-04-13T14:03:31.504000000+00:00",
+      "source_file": "docs/03-roles/role-matrix.md"
+    }
+  },
+  {
+    "labels": [
+      "SystemRole"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T14:03:31.504000000+00:00",
+      "auth": "Auth UUID (`employees.authUUID`)",
+      "created": "2026-04-13T14:03:31.504000000+00:00",
+      "ba_trace": [],
+      "name": "Диспетчер",
+      "description": "",
+      "iteration": "",
+      "id": "SYSROL-DISPETCHER",
+      "updated": "2026-04-13T14:03:31.504000000+00:00",
+      "source_file": "docs/03-roles/role-matrix.md"
+    }
+  },
+  {
+    "labels": [
+      "SystemRole"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T14:03:31.504000000+00:00",
+      "auth": "Auth UUID (`employees.authUUID`)",
+      "created": "2026-04-13T14:03:31.504000000+00:00",
+      "ba_trace": [],
+      "name": "Администратор",
+      "iteration": "",
+      "description": "",
+      "id": "SYSROL-ADMINISTRATOR",
+      "updated": "2026-04-13T14:03:31.504000000+00:00",
+      "source_file": "docs/03-roles/role-matrix.md"
+    }
+  }
+]

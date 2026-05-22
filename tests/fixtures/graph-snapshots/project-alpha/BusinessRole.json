@@ -1,0 +1,47 @@
+[
+  {
+    "labels": [
+      "BusinessRole"
+    ],
+    "properties": {
+      "note": "Single-tenant: один клиент, в рамках которого пользователи могут различаться (display_name, email). client_id из AS-IS убран. Доступ только зарегистрированным (BR-13).",
+      "responsibilities": "Качественные исходные фото; внятные требования к генерации; решение о правке/принятии ассета",
+      "name": "End User",
+      "description": "Конечный пользователь системы — фотограф / SMM-менеджер / владелец карточки украшения. Запускает генерации контента (Retouch, Model, Interior, Video, Full-flow) и инициирует правки готовых ассетов. Видит свою историю задач и получает уведомления (колокольчик + tab blink) о завершении.",
+      "id": "ROL-01",
+      "authority_area": "Создание собственных Task; запрос правок; просмотр результатов и истории своих задач",
+      "interacts_with": "Frontend UI (Cloud.ru hosted); не имеет прямого доступа к Admin-разделам",
+      "status": "Active"
+    }
+  },
+  {
+    "labels": [
+      "BusinessRole"
+    ],
+    "properties": {
+      "note": "Универсальная роль: одна и та же физическая личность может одновременно быть End User и Admin (разрезы по role в User-агрегате). Внутренний заказчик/Product Owner отдельной BA-ролью не выделен — функционально слит с Admin.",
+      "responsibilities": "Поддержка реестров в актуальном состоянии; настройка параметров шагов; реакция на инциденты с PROMPT_NOT_FOUND / WORKFLOW_CONFIG_NOT_FOUND / CATEGORY_REFERENCED_BY_MAPPING.",
+      "name": "Admin",
+      "description": "Универсальный администратор системы (BR-12). Один и тот же человек может управлять промпт-шаблонами, параметрами workflow, реестром категорий/маппингов и просматривать ежемесячный отчёт. Никаких более узких ролей (ContentManager, PromptManager и т.п.) не выделяется — единственная роль с правом write на reference-данные.",
+      "id": "ROL-02",
+      "authority_area": "CRUD по PromptTemplate (BP-101), WorkflowStepConfig (BP-102), Category и CategoryMapping (BP-103); просмотр отчёта (BP-201). НЕ управляет ProviderConfig (хардкод в коде в текущей итерации).",
+      "interacts_with": "Admin UI (отдельный раздел Frontend); полный доступ к admin-функциям",
+      "status": "Active"
+    }
+  },
+  {
+    "labels": [
+      "BusinessRole"
+    ],
+    "properties": {
+      "note": "System НЕ владеет ни одним BP полностью (OWNS не от System). Process Owner — End User для генерационных или Admin для административных. System только PERFORMS.",
+      "responsibilities": "Корректное выполнение хардкодных workflow; соблюдение concurrency_limit per provider; watchdog 30 мин; запись ALL attempts в GenerationLog (BR-10).",
+      "name": "System",
+      "description": "Технический «актор», представляющий автоматизированное выполнение шагов: backend-сервисы Fastify, очередь генераций (BP-008), watchdog (BR-20), интеграции с провайдерами (Gemini, OpenRouter, Kie.ai, ApiFrame), Verifier-петля. Не является человеческой ролью — это абстракция для разграничения Manual/Automated шагов в WorkflowStep.",
+      "id": "ROL-03",
+      "authority_area": "Автоматизированное выполнение шагов с stereotype=Automated/SemiAutomated/Decision: классификация изображения, сборка промптов, постановка в очередь, dispatch, polling, watchdog, verifier, запись логов.",
+      "interacts_with": "Внешние сервисы (Cloud.ru S3, Postgres, провайдеры через HTTPS); внутренние компоненты (очередь, S3-storage)",
+      "status": "Active"
+    }
+  }
+]

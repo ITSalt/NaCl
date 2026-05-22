@@ -515,7 +515,7 @@ ORDER BY m.name
 
 **Цель:** Зафиксировать каждый внешний провайдер и каждый wire-протокол как отдельный артефакт-контракт, который читает граф SA, и который консумируют downstream-скилы (`nacl-tl-plan`, `nacl-tl-sync` wire-evidence gate, `nacl-tl-dev-be`, `nacl-tl-dev-fe`, `nacl-tl-qa`).
 
-**Why this phase exists.** 13 из ~60 сигналов в постмортемах двух проектов — это сбои внешних API / wire-протоколов: kie.ai (оба проекта), TUS upload, обратный прокси https-схема, ffmpeg/ffprobe runtime, SSE frame envelope. Локально всё компилировалось, типы совпадали, но реальный wire не работал. См. `docs/retrospectives/transcriber-runtime-baseline.md` §§ A1–A9, B1–B7 и сводку §I "Provider/external-API contracts" и "Wire-envelope protocols". Цель этой фазы — превратить эту негативную плоскость в позитивный артефакт.
+**Why this phase exists.** 13 из ~60 сигналов в постмортемах двух проектов — это сбои внешних API / wire-протоколов: kie.ai (оба проекта), TUS upload, обратный прокси https-схема, ffmpeg/ffprobe runtime, SSE frame envelope. Локально всё компилировалось, типы совпадали, но реальный wire не работал. См. `docs/retrospectives/project-beta-runtime-baseline.md` §§ A1–A9, B1–B7 и сводку §I "Provider/external-API contracts" и "Wire-envelope protocols". Цель этой фазы — превратить эту негативную плоскость в позитивный артефакт.
 
 ### Артефакт
 
@@ -660,7 +660,7 @@ Request:
     Upload-Length          (POST)
     Upload-Metadata        (POST)  — canonical key: mime_type
                                      (NOT filetype — three-way naming
-                                      collision was the transcriber
+                                      collision was the project-beta
                                       TUS-415 episode, § B1)
     Upload-Offset          (PATCH)
     Tus-Resumable: 1.0.0   (all)
@@ -681,7 +681,7 @@ File URL reachability:
                                    { trustProxy: true } AND TUS server
                                    MUST consume Forwarded headers when
                                    composing the Location header
-                                   (transcriber episode § B4 fix `15c6a20`).
+                                   (project-beta episode § B4 fix `15c6a20`).
   Public origin vs origin server:  Location returned to browser MUST be
                                    public origin. Returning origin-server
                                    http://api-internal:3000/... breaks the
@@ -767,7 +767,7 @@ MERGE (uc)-[:REQUIRES_EXTERNAL]->(ec)
 
 ### Связь с W3 QA Stage Decomposition Gate
 
-Поля 3 (Auth: Missing-secret behavior) и 11 (Smoke-test path: Stage decomposition) задают `nacl-tl-qa` структуру стадий, которые SKIP-on-missing-keys (как в transcriber UC-200/UC-300) НЕ должен полностью обнулять. Только провайдер-стадия маркируется `NOT_RUN`; предшествующие стадии (storage fetch, ffmpeg extract, queue transition) — VERIFIED.
+Поля 3 (Auth: Missing-secret behavior) и 11 (Smoke-test path: Stage decomposition) задают `nacl-tl-qa` структуру стадий, которые SKIP-on-missing-keys (как в project-beta UC-200/UC-300) НЕ должен полностью обнулять. Только провайдер-стадия маркируется `NOT_RUN`; предшествующие стадии (storage fetch, ffmpeg extract, queue transition) — VERIFIED.
 
 ### Override
 

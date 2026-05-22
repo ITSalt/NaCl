@@ -44,7 +44,7 @@ exception). Strict-only — no inline `--skip-external-contract` flag, no
 13 of ~60 postmortem signals across two NaCl projects were external-API or
 wire-protocol gaps (kie.ai in both projects, TUS upload, base_url
 divergence, reverse-proxy URL scheme, ffmpeg/ffprobe runtime — see
-`docs/retrospectives/transcriber-runtime-baseline.md`). Local tests passed;
+`docs/retrospectives/project-beta-runtime-baseline.md`). Local tests passed;
 the product did not work. `nacl-tl-sync`'s Wire-Evidence Gate (W2) already
 downgrades sync to `UNVERIFIED` when wire-evidence is absent. W6 makes the
 artifact concrete upstream so the gate has something to point at.

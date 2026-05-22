@@ -1,0 +1,212 @@
+[
+  {
+    "labels": [
+      "Requirement"
+    ],
+    "properties": {
+      "uc_ids": [
+        "UC-001"
+      ],
+      "migrated_at": "2026-05-06T18:39:57.830000000+00:00",
+      "created": "2026-04-19T21:04:46.988000000+00:00",
+      "ba_trace": [
+        "BP-001"
+      ],
+      "kind": "FR",
+      "description": "Система должна отображать hero-блок с иконкой камеры, заголовком, декоративной линией, подзаголовком, мета-текстом и CTA-кнопкой",
+      "id": "REQ-UC001-FR001",
+      "priority": "MUST",
+      "updated": "2026-05-06T18:39:57.830000000+00:00",
+      "source_file": "docs/16-requirements/UC001-requirements.md"
+    }
+  },
+  {
+    "labels": [
+      "Requirement"
+    ],
+    "properties": {
+      "uc_ids": [
+        "UC-001"
+      ],
+      "migrated_at": "2026-05-06T18:39:57.830000000+00:00",
+      "created": "2026-04-19T21:04:46.988000000+00:00",
+      "ba_trace": [
+        "BP-001"
+      ],
+      "kind": "FR",
+      "description": "Система должна применять grain-overlay и vignette-overlay для создания кинематографической атмосферы",
+      "id": "REQ-UC001-FR002",
+      "priority": "MUST",
+      "updated": "2026-05-06T18:39:57.830000000+00:00",
+      "source_file": "docs/16-requirements/UC001-requirements.md"
+    }
+  },
+  {
+    "labels": [
+      "Requirement"
+    ],
+    "properties": {
+      "uc_ids": [
+        "UC-001"
+      ],
+      "migrated_at": "2026-05-06T18:39:57.830000000+00:00",
+      "created": "2026-04-19T21:04:46.988000000+00:00",
+      "kind": "FR",
+      "ba_trace": [
+        "BP-001"
+      ],
+      "description": "Hero-блок должен появляться с анимацией fade-in при загрузке страницы",
+      "id": "REQ-UC001-FR003",
+      "priority": "SHOULD",
+      "updated": "2026-05-06T18:39:57.830000000+00:00",
+      "source_file": "docs/16-requirements/UC001-requirements.md"
+    }
+  },
+  {
+    "labels": [
+      "Requirement"
+    ],
+    "properties": {
+      "uc_ids": [
+        "UC-001"
+      ],
+      "migrated_at": "2026-05-06T18:39:57.830000000+00:00",
+      "created": "2026-04-19T21:04:46.988000000+00:00",
+      "ba_trace": [
+        "BP-001"
+      ],
+      "kind": "FR",
+      "description": "Система должна загружать шрифты Playfair Display и Courier Prime из Google Fonts CDN",
+      "id": "REQ-UC001-FR004",
+      "priority": "MUST",
+      "updated": "2026-05-06T18:39:57.830000000+00:00",
+      "source_file": "docs/16-requirements/UC001-requirements.md"
+    }
+  },
+  {
+    "labels": [
+      "Requirement"
+    ],
+    "properties": {
+      "uc_ids": [
+        "UC-001"
+      ],
+      "migrated_at": "2026-05-06T18:39:57.830000000+00:00",
+      "created": "2026-04-19T21:04:46.988000000+00:00",
+      "ba_trace": [
+        "BP-001"
+      ],
+      "kind": "FR",
+      "description": "Система должна инициализировать сессию пользователя при первом визите",
+      "id": "REQ-UC001-FR005",
+      "priority": "MUST",
+      "updated": "2026-05-06T18:39:57.830000000+00:00",
+      "source_file": "docs/16-requirements/UC001-requirements.md"
+    }
+  },
+  {
+    "labels": [
+      "Requirement"
+    ],
+    "properties": {
+      "uc_ids": [
+        "UC-001"
+      ],
+      "migrated_at": "2026-05-06T18:39:57.830000000+00:00",
+      "created": "2026-04-19T21:04:46.988000000+00:00",
+      "kind": "FR",
+      "ba_trace": [
+        "BP-001"
+      ],
+      "description": "Система должна восстанавливать состояние из localStorage при повторном визите",
+      "id": "REQ-UC001-FR006",
+      "priority": "SHOULD",
+      "updated": "2026-05-06T18:39:57.830000000+00:00",
+      "source_file": "docs/16-requirements/UC001-requirements.md"
+    }
+  },
+  {
+    "labels": [
+      "Requirement"
+    ],
+    "properties": {
+      "uc_ids": [
+        "UC-001"
+      ],
+      "migrated_at": "2026-05-06T18:39:57.830000000+00:00",
+      "created": "2026-04-19T21:04:46.988000000+00:00",
+      "ba_trace": [
+        "BP-001"
+      ],
+      "kind": "FR",
+      "description": "Система должна фиксировать визит в Яндекс.Метрике при загрузке лендинга",
+      "id": "REQ-UC001-FR007",
+      "priority": "MUST",
+      "updated": "2026-05-06T18:39:57.830000000+00:00",
+      "source_file": "docs/16-requirements/UC001-requirements.md"
+    }
+  },
+  {
+    "labels": [
+      "Requirement"
+    ],
+    "properties": {
+      "uc_ids": [
+        "UC-001"
+      ],
+      "migrated_at": "2026-05-06T18:39:57.830000000+00:00",
+      "created": "2026-04-19T21:04:46.988000000+00:00",
+      "ba_trace": [
+        "BP-001"
+      ],
+      "kind": "NFR",
+      "description": "Производительность загрузки",
+      "id": "REQ-UC001-NFR001",
+      "priority": "MUST",
+      "updated": "2026-05-06T18:39:57.830000000+00:00",
+      "source_file": "docs/16-requirements/UC001-requirements.md"
+    }
+  },
+  {
+    "labels": [
+      "Requirement"
+    ],
+    "properties": {
+      "uc_ids": [
+        "UC-001"
+      ],
+      "migrated_at": "2026-05-06T18:39:57.830000000+00:00",
+      "created": "2026-04-19T21:04:46.988000000+00:00",
+      "kind": "NFR",
+      "ba_trace": [
+        "BP-001"
+      ],
+      "description": "SEO",
+      "id": "REQ-UC001-NFR002",
+      "priority": "SHOULD",
+      "updated": "2026-05-06T18:39:57.830000000+00:00",
+      "source_file": "docs/16-requirements/UC001-requirements.md"
+    }
+  },
+  {
+    "labels": [
+      "Requirement"
+    ],
+    "properties": {
+      "uc_ids": [
+        "UC-001"
+      ],
+      "migrated_at": "2026-05-06T18:39:57.830000000+00:00",
+      "created": "2026-04-19T21:04:46.988000000+00:00",
+      "ba_trace": [
+        "BP-001"
+      ],
+      "kind": "NFR",
+      "description": "PWA",
+      "id": "REQ-UC001-NFR003",
+      "priority": "COULD",
+      "updated": "2026-05-06T18:39:57.830000000+00:00",
+      "source_file": "docs/16-requirements/UC001-requirements.md"
+    }
+  }
+]

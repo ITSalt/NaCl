@@ -1,0 +1,126 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nacl.dev/schemas/clean-checkout-evidence/1.0.0",
+  "title": "NaCl Clean-Checkout Evidence Artifact",
+  "description": "Evidence captured by nacl-tl-deliver Step 4b (clean-checkout gate) on a shallow clone of the wave-tip commit. Consumed by nacl-tl-deploy as the gate-quality proof that the deployed commit was built and smoked from a fresh tree, not a warm local cache. One file per delivered commit at .tl/clean-checkout/<commit>.json. Schema introduced in W9-ci-clean-checkout.",
+  "type": "object",
+  "required": [
+    "commit",
+    "started_at",
+    "completed_at",
+    "build_status",
+    "migrate_status",
+    "smoke_status",
+    "runtime_assets_verified",
+    "terminal_status"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "commit": {
+      "type": "string",
+      "description": "Full git SHA (40 hex chars) of the wave-tip commit that was clean-checkout-verified. nacl-tl-deploy compares this against the deployed SHA; mismatch -> DEPLOY HALTED — BLOCKED (clean-checkout-commit-mismatch).",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "started_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO-8601 UTC timestamp when the clean-checkout gate began (shallow clone start)."
+    },
+    "completed_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO-8601 UTC timestamp when the clean-checkout gate terminated (PASS or BLOCKED)."
+    },
+    "build_status": {
+      "type": "string",
+      "enum": ["PASS", "FAIL"],
+      "description": "Result of clean-checkout install + build (pnpm install --frozen-lockfile then pnpm -r build, or package-manager equivalent). FAIL implies terminal_status: BLOCKED with blocker_detail one of clean-checkout-install-failed, clean-checkout-build-failed, clean-checkout-prisma-generate-missing, or clean-checkout-pm-ambiguous."
+    },
+    "migrate_status": {
+      "type": "string",
+      "enum": ["PASS", "FAIL", "SKIPPED"],
+      "description": "Result of running config.yaml -> build.migrate_cmd against config.yaml -> build.test_database_url. SKIPPED when no migrate_cmd is configured (project has no DB tooling). FAIL implies terminal_status: BLOCKED with blocker_detail clean-checkout-test-database-url-undefined or clean-checkout-migrate-failed."
+    },
+    "smoke_status": {
+      "type": "string",
+      "enum": ["PASS", "PASS_HEALTH_ONLY", "FAIL"],
+      "description": "Result of booting the entrypoint and curling deploy.smoke.endpoints. PASS_HEALTH_ONLY indicates the project did not declare product endpoints (only /api/health was hit) — this is not product-readiness evidence, mirroring the W4 stance on HEALTH_ONLY at the release-time gate. FAIL implies terminal_status: BLOCKED with blocker_detail clean-checkout-smoke-failed or clean-checkout-entrypoint-no-port."
+    },
+    "runtime_assets_verified": {
+      "type": "array",
+      "description": "Per-entry assertion of config.yaml -> runtime_assets after the clean build. Every declared path is checked for presence. Any false entry implies terminal_status: BLOCKED with blocker_detail clean-checkout-runtime-assets-missing.",
+      "items": {
+        "type": "object",
+        "required": ["path", "present"],
+        "additionalProperties": false,
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "Path relative to project root after build, as declared in config.yaml -> runtime_assets."
+          },
+          "present": {
+            "type": "boolean",
+            "description": "true if the file or directory exists in the built artifact tree, false otherwise."
+          },
+          "kind": {
+            "type": "string",
+            "enum": ["file", "dir", "missing"],
+            "description": "Optional: stat-kind. Omitted on present:false (kind: missing implied)."
+          }
+        }
+      }
+    },
+    "terminal_status": {
+      "type": "string",
+      "enum": ["PASS", "BLOCKED"],
+      "description": "Overall gate verdict. PASS only when build_status:PASS AND migrate_status in (PASS,SKIPPED) AND smoke_status in (PASS,PASS_HEALTH_ONLY) AND every runtime_assets_verified[].present is true. Anything else is BLOCKED."
+    },
+    "blocker_detail": {
+      "type": "string",
+      "description": "Workflow detail string identifying the specific blocker. Required when terminal_status: BLOCKED; absent when PASS. Recognized values: clean-checkout-install-failed, clean-checkout-build-failed, clean-checkout-prisma-generate-missing, clean-checkout-pm-ambiguous, clean-checkout-test-database-url-undefined, clean-checkout-migrate-failed, clean-checkout-smoke-failed, clean-checkout-entrypoint-no-port, clean-checkout-runtime-assets-missing.",
+      "enum": [
+        "clean-checkout-install-failed",
+        "clean-checkout-build-failed",
+        "clean-checkout-prisma-generate-missing",
+        "clean-checkout-pm-ambiguous",
+        "clean-checkout-test-database-url-undefined",
+        "clean-checkout-migrate-failed",
+        "clean-checkout-smoke-failed",
+        "clean-checkout-entrypoint-no-port",
+        "clean-checkout-runtime-assets-missing"
+      ]
+    },
+    "package_manager": {
+      "type": "string",
+      "enum": ["pnpm", "npm", "yarn"],
+      "description": "Resolved package manager used for the clean-checkout install. Recorded for traceability."
+    },
+    "entrypoint": {
+      "type": "string",
+      "description": "Resolved entrypoint that was booted for the smoke step. Recorded for traceability (catches the dist/index.js vs dist/server.js confusion)."
+    },
+    "smoke_endpoints_hit": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["path", "status"],
+        "additionalProperties": false,
+        "properties": {
+          "path": { "type": "string" },
+          "status": { "type": "integer" },
+          "duration_ms": { "type": "integer" }
+        }
+      },
+      "description": "Per-endpoint smoke result. Used by nacl-tl-deploy to surface which endpoint failed when smoke_status: FAIL."
+    },
+    "exception_id": {
+      "type": "string",
+      "pattern": "^EXC-\\d{4}-\\d{2}-\\d{2}-[a-z0-9][a-z0-9-]*$",
+      "description": "If terminal_status: BLOCKED was bypassed via a signed exception covering the named blocker_detail, the exception_id is recorded here so downstream nacl-tl-deploy can verify the bypass without re-loading the exception file. Format: EXC-YYYY-MM-DD-<slug>."
+    },
+    "emergency_bypass": {
+      "type": "boolean",
+      "description": "If terminal_status: BLOCKED was bypassed via NACL_EMERGENCY=1, this flag is true and the closed delivery Status: carries (emergency-bypass)."
+    }
+  }
+}

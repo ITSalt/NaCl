@@ -80,13 +80,13 @@ spec-update commit, regardless of the message.
 
 ### Why this gate exists
 
-Karatov-procontent shipped Wave 4 with `a7eb747 docs(SA): UC-105/UC-106/UC-107
+Project-Alpha-procontent shipped Wave 4 with `a7eb747 docs(SA): UC-105/UC-106/UC-107
 post-commit emit timing (L2)` landing **AFTER** the FIX-B code wave
 (`01f2fcb`, `135b14b`, `6ed12ac`, `3acb2fd`) — the spec caught up to code,
 not the other way around. The DIAGNOSTIC-REPORT.md dated 2026-05-18 measured
 **39% of fixes never updated documentation at all**. Every undocumented
 fix made the next post-mortem harder because the spec snapshot used to
-diagnose drift was itself unreliable (Karatov post-mortem § 1 patterns
+diagnose drift was itself unreliable (Project-Alpha post-mortem § 1 patterns
 2 & 3, § 3.12, § "Process/docs catch-up" row of the bucket table).
 
 The Step 6 entry gate below makes that pattern impossible to repeat without
@@ -215,7 +215,7 @@ Apply the rules in order — first match wins:
 │ the same chain.                                          │
 │                                                          │
 │ Without that ordering, the post-mortem record shows      │
-│ that 39% of fixes never update docs (Karatov, 2026-05-  │
+│ that 39% of fixes never update docs (Project-Alpha, 2026-05-  │
 │ 18). The fix skill refuses to ship into that pattern.    │
 │                                                          │
 │ Three legitimate paths forward (no flag bypass):         │
@@ -242,9 +242,9 @@ Apply the rules in order — first match wins:
 └──────────────────────────────────────────────────────────┘
 ```
 
-#### Worked example — the Karatov 39% pattern
+#### Worked example — the Project-Alpha 39% pattern
 
-The historical episode that motivates this gate (Karatov post-mortem
+The historical episode that motivates this gate (Project-Alpha post-mortem
 § 3.12 and § "Process/docs catch-up"):
 
 - **Chain on `main` between Wave 4 close and the FIX-B audit:**

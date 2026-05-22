@@ -1,0 +1,19 @@
+# Fixture: MALFORMED signed exception (prototype-only gate filed
+# against a project_kind: standard project).
+# Demonstrates: release skill rejects this exception at load time
+# with workflow detail exception-prototype-only-gate-on-standard-project.
+# The skipped-pr / skipped-ci gates are reserved for project_kind:
+# prototype projects only; a standard project cannot acquire a
+# PR/CI carve-out via signed exception (the carve-out is
+# CONJUNCTIVE — see W4 binding).
+exception_id: "EXC-2026-05-22-prototype-on-standard"
+owner: "magznikitin"
+reason: "Operator tried to acquire a PR/CI carve-out on a project_kind: standard project via signed exception alone; W4 carve-out is conjunctive — both project_kind: prototype AND signed exception are required."
+created_at: "2026-05-22T09:30:00Z"
+expiry: "2026-05-23T09:30:00Z"
+affected_gates:
+  - "skipped-pr"
+  - "skipped-ci"
+affected_projects:
+  - "project-alpha"
+followup_task: "TECH-100-tighten-project-kind"

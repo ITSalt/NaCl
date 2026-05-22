@@ -470,6 +470,23 @@ body,
   white-space: nowrap;
 }
 
+.sidebar-item-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 0; /* enables ellipsis on children */
+  flex: 1 1 auto;
+}
+
+.sidebar-item-label {
+  font-size: 0.75rem;
+  color: var(--text-muted, #6b7280);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
 /* Canvas */
 
 .app-canvas {

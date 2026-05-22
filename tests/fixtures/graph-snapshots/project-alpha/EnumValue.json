@@ -1,0 +1,117 @@
+[
+  {
+    "labels": [
+      "EnumValue"
+    ],
+    "properties": {
+      "code": "openrouter",
+      "updated_at": "2026-05-05T10:56:18.292000000+00:00",
+      "id": "ev-PT-openrouter",
+      "label": "OpenRouter (LLM aggregator)",
+      "value": "openrouter"
+    }
+  },
+  {
+    "labels": [
+      "EnumValue"
+    ],
+    "properties": {
+      "code": "kie_ai",
+      "updated_at": "2026-05-05T10:56:18.292000000+00:00",
+      "description": "Унифицированный шлюз api.kie.example.invalid: графика (текущее), видео (текущее), text-LLM через три API-shape — chat_completions (gpt-5-2, gemini-2.5-flash), responses (gpt-5-4), gemini_native (gemini-3-flash-v1beta). Конкретный path и shape хранятся на ModelProfile.",
+      "id": "ev-PT-kie_ai",
+      "label": "api.kie.example.invalid (image / video / text-LLM gateway)",
+      "value": "kie_ai"
+    }
+  },
+  {
+    "labels": [
+      "EnumValue"
+    ],
+    "properties": {
+      "code": "apiframe",
+      "updated_at": "2026-05-05T10:56:18.292000000+00:00",
+      "label": "apiframe (Midjourney via API)",
+      "id": "ev-PT-apiframe",
+      "value": "apiframe"
+    }
+  },
+  {
+    "labels": [
+      "EnumValue"
+    ],
+    "properties": {
+      "code": "gemini",
+      "updated_at": "2026-05-05T10:56:18.292000000+00:00",
+      "label": "Google Gemini",
+      "id": "ev-PT-gemini",
+      "value": "gemini"
+    }
+  },
+  {
+    "labels": [
+      "EnumValue"
+    ],
+    "properties": {
+      "code": "admin",
+      "label": "Admin (CRUD справочников + аналитика)",
+      "id": "ev-UR-admin",
+      "value": "admin"
+    }
+  },
+  {
+    "labels": [
+      "EnumValue"
+    ],
+    "properties": {
+      "code": "end_user",
+      "label": "EndUser (создание контента)",
+      "id": "ev-UR-end_user",
+      "value": "end_user"
+    }
+  },
+  {
+    "labels": [
+      "EnumValue"
+    ],
+    "properties": {
+      "code": "active",
+      "label": "Active",
+      "id": "ev-SS-active",
+      "value": "active"
+    }
+  },
+  {
+    "labels": [
+      "EnumValue"
+    ],
+    "properties": {
+      "code": "completed",
+      "id": "ev-SS-completed",
+      "label": "Completed",
+      "value": "completed"
+    }
+  },
+  {
+    "labels": [
+      "EnumValue"
+    ],
+    "properties": {
+      "code": "archived",
+      "label": "Archived",
+      "id": "ev-SS-archived",
+      "value": "archived"
+    }
+  },
+  {
+    "labels": [
+      "EnumValue"
+    ],
+    "properties": {
+      "code": "retouch",
+      "id": "ev-TT-retouch",
+      "label": "Ретушь",
+      "value": "retouch"
+    }
+  }
+]

@@ -1,0 +1,40 @@
+[
+  {
+    "labels": [
+      "FinalizationReport"
+    ],
+    "properties": {
+      "components": 24,
+      "open_questions": "RESOLVED Q1-Q4 → ADR-007..010, REQ-TECH-ORM-001, REQ-TECH-FE-001, REQ-NFR-012, REQ-SEC-001. Q5-Q7 (testing/logging/S3 layout) deferred to pre-TL cycle.",
+      "created_at": "2026-05-05T13:37:28.531000000+00:00",
+      "adrs": 10,
+      "ucs_post_mvp": 5,
+      "enumerations": 8,
+      "handoff_status": "ISSUED",
+      "layer": "SA",
+      "form_fields": 46,
+      "updated_at": "2026-05-05T20:59:04.169000000+00:00",
+      "readiness_assessment": "READY_FOR_TL_HANDOFF",
+      "maps_to_count": 44,
+      "activity_steps": 61,
+      "id": "FR-SA-001",
+      "handoff_issued_at": "2026-05-05T13:41:56.137000000+00:00",
+      "handoff_doc_path": "docs/SA/handoff/OPEN-QUESTIONS-HANDOFF.md",
+      "fr_count": 18,
+      "requirements": 33,
+      "nfr_count": 11,
+      "ucs": 24,
+      "handoff_open_questions": 4,
+      "modules": 4,
+      "readiness_per_module": "MOD-CONTENT: ready (12 UC, 7 entities); MOD-QUEUE: ready (4 UC, 1 entity, 5 NFR); MOD-ADMIN: ready (5 UC, 6 entities); MOD-REPORTING: ready (3 UC, 1 aggregate-view entity)",
+      "entities": 15,
+      "system_roles": 3,
+      "navigation_items": 12,
+      "handoff_pending_adrs": "ADR-007 (ORM), ADR-008 (Frontend stack), ADR-009 (Real-time channel), ADR-010 (API key encryption)",
+      "attributes": 142,
+      "validation_status": "PASS (0 critical, 0 warnings)",
+      "ucs_mvp_detailed": 19,
+      "forms": 14
+    }
+  }
+]

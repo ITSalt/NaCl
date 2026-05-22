@@ -1,0 +1,122 @@
+[
+  {
+    "labels": [
+      "EntityAttribute"
+    ],
+    "properties": {
+      "name": "id",
+      "data_type": "string",
+      "description": "Unique project identifier; must match /^[a-z0-9_-]{1,64}$/.",
+      "id": "EA-PROJECT-ID",
+      "required": true
+    }
+  },
+  {
+    "labels": [
+      "EntityAttribute"
+    ],
+    "properties": {
+      "name": "name",
+      "data_type": "string",
+      "description": "Human-readable display name of the project.",
+      "id": "EA-PROJECT-NAME",
+      "required": true
+    }
+  },
+  {
+    "labels": [
+      "EntityAttribute"
+    ],
+    "properties": {
+      "name": "root",
+      "data_type": "string",
+      "description": "Absolute filesystem path to the project root directory.",
+      "id": "EA-PROJECT-ROOT",
+      "required": true
+    }
+  },
+  {
+    "labels": [
+      "EntityAttribute"
+    ],
+    "properties": {
+      "name": "createdAt",
+      "data_type": "Date",
+      "description": "ISO 8601 timestamp when the project was registered.",
+      "id": "EA-PROJECT-CREATEDAT",
+      "required": true
+    }
+  },
+  {
+    "labels": [
+      "EntityAttribute"
+    ],
+    "properties": {
+      "name": "lastUsed",
+      "data_type": "Date",
+      "description": "ISO 8601 timestamp of the last time the project was set active or its root was synced.",
+      "id": "EA-PROJECT-LASTUSED",
+      "required": true
+    }
+  },
+  {
+    "labels": [
+      "EntityAttribute"
+    ],
+    "properties": {
+      "name": "name",
+      "data_type": "string",
+      "description": "Board filename stem (without .excalidraw); must match /^[A-Za-z0-9][A-Za-z0-9_-]*$/.",
+      "id": "EA-BOARD-NAME",
+      "required": true
+    }
+  },
+  {
+    "labels": [
+      "EntityAttribute"
+    ],
+    "properties": {
+      "name": "kind",
+      "data_type": "enum<BoardKind>",
+      "description": "Board classification; values: domain-model | context-map | activity | process | import | other.",
+      "id": "EA-BOARD-KIND",
+      "required": true
+    }
+  },
+  {
+    "labels": [
+      "EntityAttribute"
+    ],
+    "properties": {
+      "name": "group",
+      "data_type": "string",
+      "description": "UI grouping label derived from board kind (e.g. \"Activities (UC)\", \"Processes (BP)\").",
+      "id": "EA-BOARD-GROUP",
+      "required": true
+    }
+  },
+  {
+    "labels": [
+      "EntityAttribute"
+    ],
+    "properties": {
+      "name": "displayName",
+      "data_type": "string",
+      "description": "Human-readable board title shown in the navigator; derived from board name by classifier.",
+      "id": "EA-BOARD-DISPLAYNAME",
+      "required": true
+    }
+  },
+  {
+    "labels": [
+      "EntityAttribute"
+    ],
+    "properties": {
+      "data_type": "Date",
+      "name": "mtime",
+      "description": "Last-modified timestamp of the .excalidraw file on disk (ISO 8601).",
+      "id": "EA-BOARD-MTIME",
+      "required": true
+    }
+  }
+]

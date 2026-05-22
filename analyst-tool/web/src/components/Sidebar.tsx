@@ -148,7 +148,11 @@ export default function Sidebar() {
   const [regenConfirmBoard, setRegenConfirmBoard] = useState<string | null>(null);
 
   const filtered = filter
-    ? boards.filter((b) => b.displayName.toLowerCase().includes(filter.toLowerCase()))
+    ? boards.filter(
+        (b) =>
+          b.displayName.toLowerCase().includes(filter.toLowerCase()) ||
+          (b.label?.toLowerCase().includes(filter.toLowerCase()) ?? false),
+      )
     : boards;
 
   const groups = groupBoards(filtered);
@@ -305,7 +309,14 @@ export default function Sidebar() {
                       onClick={() => void selectBoard(board.name)}
                     >
                       <span className="sidebar-item-dot">{statusDot(board.syncStatus)}</span>
-                      <span className="sidebar-item-name">{board.displayName}</span>
+                      <span className="sidebar-item-text">
+                        <span className="sidebar-item-name">{board.displayName}</span>
+                        {board.label && (
+                          <span className="sidebar-item-label" data-testid="sidebar-item-label">
+                            {board.label}
+                          </span>
+                        )}
+                      </span>
                     </button>
                     {canRegen && (
                       <button

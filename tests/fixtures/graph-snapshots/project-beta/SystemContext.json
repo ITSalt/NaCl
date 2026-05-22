@@ -1,0 +1,61 @@
+[
+  {
+    "labels": [
+      "SystemContext"
+    ],
+    "properties": {
+      "in_scope": [
+        "Video file upload (300-500 MB)",
+        "Audio extraction from video",
+        "Automatic Speech Recognition (ASR) with speaker diarization",
+        "Verbatim transcript generation with per-speaker timestamps",
+        "Meeting protocol generation: participants list, discussion topics, decisions, action items with assignees and deadlines",
+        "Download / export of both artifacts by the user",
+        "Markdown protocol format with in-app rendered view component",
+        "In-app editing of the protocol (markdown editor)",
+        "PDF export of the protocol (via export script)",
+        "Bilingual support: Russian and English (per-upload)"
+      ],
+      "success_criteria": [
+        "User can upload a 300-500 MB video and receive a verbatim speaker-attributed transcript",
+        "User can receive a structured meeting protocol with participants, topics, decisions, and action items",
+        "Both artifacts are produced without manual intervention after upload",
+        "Timestamps in transcript are accurate to the second"
+      ],
+      "created": "2026-05-17",
+      "name": "Transcrib",
+      "id": "SYS-001",
+      "out_of_scope": [
+        "Real-time / live meeting transcription (batch processing only)",
+        "Video playback or video editing",
+        "User authentication and access management (no multi-tenancy assumed)",
+        "Payment, billing, or subscription management",
+        "Mobile native applications",
+        "Integration with calendar or meeting platforms (e.g. Zoom, Teams)",
+        "Sending or distributing the protocol to participants automatically"
+      ],
+      "updated": "2026-05-17",
+      "constraints": [
+        "Input files up to 300-500 MB must be handled without timeout",
+        "Tech stack is TBD - no stack-specific constraints defined yet",
+        "Processing may be asynchronous due to large file sizes and ASR latency",
+        "Languages supported: Russian + English",
+        "No processing-time SLA: async, best effort",
+        "Protocol stored and edited as Markdown; PDF is export-only"
+      ],
+      "assumptions": [
+        "[assumption] A single user role (Meeting Participant) covers the primary stakeholder",
+        "[assumption] An external ASR/diarization engine is required; vendor/model TBD",
+        "[assumption] An LLM-based service is required for protocol generation; provider TBD",
+        "[assumption] A file/object storage service is required to hold large video files; service TBD",
+        "[assumption] One video at a time per user session; queue/parallelism design TBD"
+      ],
+      "status": "draft",
+      "goals": [
+        "Transcribe audio from large meeting video files (300-500 MB) with speaker diarization",
+        "Produce a verbatim, speaker-attributed transcript with minute/second timestamps",
+        "Generate a structured meeting protocol: participants, topics discussed, decisions made, action items with assignees and deadlines"
+      ]
+    }
+  }
+]

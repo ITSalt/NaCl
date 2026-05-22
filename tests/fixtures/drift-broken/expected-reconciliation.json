@@ -1,0 +1,35 @@
+{
+  "$note": [
+    "Expected reconciliation evidence produced by nacl-tl-conductor",
+    "Phase 4.5 when run against this fixture. W11 asserts the gate",
+    "emits Status: BLOCKED with workflow_detail = artifact-drift and",
+    "the listed per-pair deltas."
+  ],
+  "timestamp": "2026-05-22T08:35:00Z",
+  "intake_id": "FR-007",
+  "producer": "nacl-tl-conductor",
+  "sources_checked": [
+    { "name": "status.json",           "path": "status.json",           "summary": { "totals": { "tasks": 76, "use_cases": 26, "modules": 12 } } },
+    { "name": "conductor-state.json",  "path": "conductor-state.json",  "summary": { "phase": "quality_gate_passed", "tech_tasks_count": 0, "uc_tasks_count": 3 } },
+    { "name": "changelog.md",          "path": "changelog.md",          "summary": { "latest_section_release_tag": "v0.18.0", "released_frs": ["FR-007"], "released_ucs": ["UC-105", "UC-106", "UC-107"] } },
+    { "name": "live_graph",            "path": "bolt://localhost:3587", "summary": { "modules": 12, "use_cases": 26, "tasks": 76, "feature_requests": 6 }, "fallback_used": "NEVER — live reads only per W5 binding" },
+    { "name": "release-status.json",   "path": "release-status.json",   "summary": { "release_tag": "v0.18.0", "health_status": "skipped", "graph_status": "warn" } },
+    { "name": "exceptions",            "path": ".tl/exceptions/",       "summary": { "active_count": 0, "expired_count": 0 } }
+  ],
+  "deltas": [
+    { "pair_id": "P-S1", "assertion": "status.json totals match live graph counts", "outcome": "PASS",
+      "details": { "status_json": { "tasks": 76, "use_cases": 26, "modules": 12 }, "graph": { "tasks": 76, "use_cases": 26, "modules": 12 } } },
+    { "pair_id": "P-S2", "assertion": "every FR in latest changelog section exists as FeatureRequest node", "outcome": "FAIL",
+      "details": { "changelog_frs": ["FR-007"], "graph_frs": ["FR-001", "FR-002", "FR-003", "FR-004", "FR-005", "FR-006"], "missing_from_graph": ["FR-007"] } },
+    { "pair_id": "P-S3", "assertion": "release-status.json release_tag present in graph release_tag property", "outcome": "FAIL",
+      "details": { "json_release_tag": "v0.18.0", "graph_nodes_with_tag": 0 } },
+    { "pair_id": "P-S4", "assertion": "if conductor-state phase == quality_gate_passed then no pending/in_progress remain in status.json", "outcome": "FAIL",
+      "details": { "conductor_phase": "quality_gate_passed", "non_terminal_tasks": ["UC-105"] } },
+    { "pair_id": "P-S5", "assertion": "every conductor-state task entry status matches live graph Task.status", "outcome": "FAIL",
+      "details": { "mismatches": [ { "task_id": "UC-105", "conductor_state": "done", "graph": "in_progress" } ] } }
+  ],
+  "active_exceptions": [],
+  "expired_exceptions": [],
+  "terminal_status": "BLOCKED",
+  "workflow_detail": "artifact-drift"
+}

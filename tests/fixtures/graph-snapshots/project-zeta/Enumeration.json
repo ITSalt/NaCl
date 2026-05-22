@@ -1,0 +1,107 @@
+[
+  {
+    "labels": [
+      "Enumeration"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T14:04:48.639000000+00:00",
+      "created": "2026-04-13T14:04:48.639000000+00:00",
+      "ba_trace": [],
+      "name": "DistributionMode",
+      "description": "",
+      "id": "EN-distribution-mode",
+      "updated": "2026-04-13T14:04:48.639000000+00:00",
+      "source_file": "docs/02-domain/enumerations/distribution-mode.md"
+    }
+  },
+  {
+    "labels": [
+      "Enumeration"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T14:04:48.639000000+00:00",
+      "created": "2026-04-13T14:04:48.639000000+00:00",
+      "ba_trace": [],
+      "name": "JobStatus",
+      "description": "",
+      "id": "EN-job-status",
+      "updated": "2026-04-13T14:04:48.639000000+00:00",
+      "source_file": "docs/02-domain/enumerations/job-status.md"
+    }
+  },
+  {
+    "labels": [
+      "Enumeration"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T14:04:48.639000000+00:00",
+      "created": "2026-04-13T14:04:48.639000000+00:00",
+      "ba_trace": [],
+      "name": "LayerType",
+      "description": "",
+      "id": "EN-layer-type",
+      "updated": "2026-04-13T14:04:48.639000000+00:00",
+      "source_file": "docs/02-domain/enumerations/layer-type.md"
+    }
+  },
+  {
+    "labels": [
+      "Enumeration"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T14:04:48.639000000+00:00",
+      "created": "2026-04-13T14:04:48.639000000+00:00",
+      "ba_trace": [],
+      "name": "MarketplaceTarget",
+      "description": "",
+      "id": "EN-marketplace-target",
+      "updated": "2026-04-13T14:04:48.639000000+00:00",
+      "source_file": "docs/02-domain/enumerations/marketplace-target.md"
+    }
+  },
+  {
+    "labels": [
+      "Enumeration"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T14:04:48.639000000+00:00",
+      "created": "2026-04-13T14:04:48.639000000+00:00",
+      "ba_trace": [],
+      "name": "SemanticRole",
+      "description": "",
+      "id": "EN-semantic-role",
+      "updated": "2026-04-13T14:04:48.639000000+00:00",
+      "source_file": "docs/02-domain/enumerations/semantic-role.md"
+    }
+  },
+  {
+    "labels": [
+      "Enumeration"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T14:04:48.639000000+00:00",
+      "created": "2026-04-13T14:04:48.639000000+00:00",
+      "ba_trace": [],
+      "name": "TemplateStatus",
+      "description": "",
+      "id": "EN-template-status",
+      "updated": "2026-04-13T14:04:48.639000000+00:00",
+      "source_file": "docs/02-domain/enumerations/template-status.md"
+    }
+  },
+  {
+    "labels": [
+      "Enumeration"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T14:04:48.639000000+00:00",
+      "created": "2026-04-13T14:04:48.639000000+00:00",
+      "ba_trace": [],
+      "name": "VersionStatus",
+      "description": "",
+      "id": "EN-version-status",
+      "updated": "2026-04-13T14:04:48.639000000+00:00",
+      "source_file": "docs/02-domain/enumerations/version-status.md"
+    }
+  }
+]

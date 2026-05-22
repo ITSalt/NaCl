@@ -1,0 +1,132 @@
+[
+  {
+    "labels": [
+      "NavigationItem"
+    ],
+    "properties": {
+      "path": "/register",
+      "role": "guest",
+      "section": "auth",
+      "id": "nav-auth-register",
+      "label": "Регистрация",
+      "order": 1
+    }
+  },
+  {
+    "labels": [
+      "NavigationItem"
+    ],
+    "properties": {
+      "path": "/login",
+      "role": "guest",
+      "section": "auth",
+      "label": "Вход",
+      "id": "nav-auth-login",
+      "order": 2
+    }
+  },
+  {
+    "labels": [
+      "NavigationItem"
+    ],
+    "properties": {
+      "path": "/sessions",
+      "role": "end_user",
+      "section": "user_main",
+      "label": "Мои сессии",
+      "id": "nav-user-sessions",
+      "order": 1
+    }
+  },
+  {
+    "labels": [
+      "NavigationItem"
+    ],
+    "properties": {
+      "path": "/sessions/:sessionId/tasks/new",
+      "role": "end_user",
+      "section": "user_main",
+      "id": "nav-user-task-create",
+      "label": "Новая задача",
+      "order": 2
+    }
+  },
+  {
+    "labels": [
+      "NavigationItem"
+    ],
+    "properties": {
+      "path": "/tasks/:taskId",
+      "role": "end_user",
+      "section": "user_main",
+      "id": "nav-user-task-view",
+      "label": "Задача",
+      "order": 3
+    }
+  },
+  {
+    "labels": [
+      "NavigationItem"
+    ],
+    "properties": {
+      "path": "(header)",
+      "role": "end_user",
+      "section": "user_header",
+      "id": "nav-user-notifications",
+      "label": "Уведомления",
+      "order": 4
+    }
+  },
+  {
+    "labels": [
+      "NavigationItem"
+    ],
+    "properties": {
+      "path": "/admin/users",
+      "role": "admin",
+      "section": "admin_main",
+      "id": "nav-admin-users",
+      "label": "Пользователи",
+      "order": 1
+    }
+  },
+  {
+    "labels": [
+      "NavigationItem"
+    ],
+    "properties": {
+      "path": "/admin/prompts",
+      "role": "admin",
+      "section": "admin_main",
+      "id": "nav-admin-prompts",
+      "label": "Бизнес-промпты",
+      "order": 2
+    }
+  },
+  {
+    "labels": [
+      "NavigationItem"
+    ],
+    "properties": {
+      "path": "/admin/model-profiles",
+      "role": "admin",
+      "section": "admin_main",
+      "label": "Профили моделей",
+      "id": "nav-admin-models",
+      "order": 3
+    }
+  },
+  {
+    "labels": [
+      "NavigationItem"
+    ],
+    "properties": {
+      "path": "/admin/categories",
+      "role": "admin",
+      "section": "admin_main",
+      "id": "nav-admin-categories",
+      "label": "Категории",
+      "order": 4
+    }
+  }
+]

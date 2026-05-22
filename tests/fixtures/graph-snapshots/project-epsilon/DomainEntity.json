@@ -1,0 +1,206 @@
+[
+  {
+    "labels": [
+      "DomainEntity"
+    ],
+    "properties": {
+      "stereotypes": [],
+      "migrated_at": "2026-04-13T15:03:41.870000000+00:00",
+      "created": "2026-04-13T09:15:26.822000000+00:00",
+      "ba_trace": [
+        "OBJ-020"
+      ],
+      "module": "data-import",
+      "name": "ArticleCoefficientImport",
+      "description": "Сессия загрузки файла с коэффициентами для артикулов. Загружается товарником независимо, до создания ежедневного расчёта — аналогично справочнику артикулов (ArticleImport). При создании расчёта товарник опционально выбирает актуальный файл коэффициентов; если не выбран — коэффициенты не применяются (всем артикулам = 1).",
+      "id": "DE-article-coefficient-import",
+      "updated": "2026-04-13T15:03:41.870000000+00:00",
+      "source_file": "docs/12-domain/entities/article-coefficient-import.md"
+    }
+  },
+  {
+    "labels": [
+      "DomainEntity"
+    ],
+    "properties": {
+      "stereotypes": [],
+      "migrated_at": "2026-04-13T15:03:41.870000000+00:00",
+      "created": "2026-04-13T09:15:26.822000000+00:00",
+      "ba_trace": [
+        "OBJ-020"
+      ],
+      "module": "data-import",
+      "name": "ArticleCoefficientRow",
+      "description": "Одна строка файла коэффициентов — пара «артикул 1С + значение коэффициента».",
+      "id": "DE-article-coefficient-row",
+      "updated": "2026-04-13T15:03:41.870000000+00:00",
+      "source_file": "docs/12-domain/entities/article-coefficient-row.md"
+    }
+  },
+  {
+    "labels": [
+      "DomainEntity"
+    ],
+    "properties": {
+      "stereotypes": [],
+      "migrated_at": "2026-04-13T15:03:41.870000000+00:00",
+      "created": "2026-04-13T09:15:26.822000000+00:00",
+      "ba_trace": [
+        "OBJ-001",
+        "BRQ-001"
+      ],
+      "module": "data-import",
+      "name": "ArticleImport",
+      "description": "Запись о загрузке файла «Список артикулов» из 1С. Aggregate root группы ArticleList. Хранит метаданные загрузки и ссылку на строки (ArticleRow). Содержит только товары с признаком id == mp (т.е. присутствующие на маркетплейсах).",
+      "id": "DE-article-import",
+      "updated": "2026-04-13T15:03:41.870000000+00:00",
+      "source_file": "docs/12-domain/entities/article-import.md"
+    }
+  },
+  {
+    "labels": [
+      "DomainEntity"
+    ],
+    "properties": {
+      "stereotypes": [],
+      "migrated_at": "2026-04-13T15:03:41.870000000+00:00",
+      "created": "2026-04-13T09:15:26.822000000+00:00",
+      "ba_trace": [
+        "OBJ-009",
+        "BRQ-007"
+      ],
+      "module": "demand-planning",
+      "name": "ArticleMappingError",
+      "description": "Запись об артикуле из справочника 1С (ArticleRow), для которого не найдено соответствие в таблице сопоставления. Формируется в процессе расчёта. Отображается в отчёте, но не блокирует расчёт (BRQ-007).",
+      "id": "DE-article-mapping-error",
+      "updated": "2026-04-13T15:03:41.870000000+00:00",
+      "source_file": "docs/12-domain/entities/article-mapping-error.md"
+    }
+  },
+  {
+    "labels": [
+      "DomainEntity"
+    ],
+    "properties": {
+      "stereotypes": [],
+      "migrated_at": "2026-04-13T15:03:41.870000000+00:00",
+      "created": "2026-04-13T09:15:26.822000000+00:00",
+      "ba_trace": [
+        "OBJ-005",
+        "BRQ-002",
+        "BRQ-003",
+        "BRQ-006"
+      ],
+      "module": "demand-planning",
+      "name": "ArticleMappingRow",
+      "description": "Одна строка таблицы сопоставления артикулов 1С с артикулами маркетплейсов (OBJ-005). Читается из Google Sheets при каждом расчёте и кэшируется в БД системы. Сопоставление выполняется по паре «Артикул 1С + Размер» (BRQ-006).\n\nРешение по дизайну: Сущность не имеет собственного aggregate root — таблица сопоставления является внешним справочником (Google Sheets). Система делает её snapshot при запуске расчёта и сохраняет копию для воспроизводимости.",
+      "id": "DE-article-mapping-row",
+      "updated": "2026-04-13T15:03:41.870000000+00:00",
+      "source_file": "docs/12-domain/entities/article-mapping-row.md"
+    }
+  },
+  {
+    "labels": [
+      "DomainEntity"
+    ],
+    "properties": {
+      "stereotypes": [],
+      "migrated_at": "2026-04-13T15:03:41.870000000+00:00",
+      "created": "2026-04-13T09:15:26.822000000+00:00",
+      "ba_trace": [
+        "OBJ-001",
+        "BRQ-001"
+      ],
+      "module": "data-import",
+      "name": "ArticleRow",
+      "description": "Одна строка из файла «Список артикулов» (OBJ-001). Дочерняя сущность aggregate ArticleList (корень: ArticleImport). Хранит характеристики одного артикула с одним размером — атомарная единица справочника.",
+      "id": "DE-article-row",
+      "updated": "2026-04-13T15:03:41.870000000+00:00",
+      "source_file": "docs/12-domain/entities/article-row.md"
+    }
+  },
+  {
+    "labels": [
+      "DomainEntity"
+    ],
+    "properties": {
+      "stereotypes": [],
+      "migrated_at": "2026-04-13T15:03:41.870000000+00:00",
+      "created": "2026-04-13T09:15:26.822000000+00:00",
+      "ba_trace": [
+        "OBJ-008",
+        "BRQ-005"
+      ],
+      "module": "demand-planning",
+      "name": "DailyOrderCalculation",
+      "description": "Центральная сущность ядра системы. Представляет один ежедневный расчёт потребности в товарах. Aggregate root группы DailyOrderCalculation. Создаётся Товарником (DATA_MANAGER), содержит параметры горизонтов планирования, ссылки на опциональные файлы 1С и порождает NeedsReport.",
+      "id": "DE-daily-order-calculation",
+      "updated": "2026-04-13T15:03:41.870000000+00:00",
+      "source_file": "docs/12-domain/entities/daily-order-calculation.md"
+    }
+  },
+  {
+    "labels": [
+      "DomainEntity"
+    ],
+    "properties": {
+      "stereotypes": [],
+      "migrated_at": "2026-04-13T15:03:41.870000000+00:00",
+      "created": "2026-04-13T09:15:26.822000000+00:00",
+      "ba_trace": [
+        "OBJ-010",
+        "BRQ-008",
+        "BRQ-016"
+      ],
+      "module": "order-generation",
+      "name": "DeliveryOrderLine",
+      "description": "Одна позиция (артикул+размер) в заявке на поставку. Дочерняя сущность aggregate DeliveryOrder. Хранит расчётное количество и ручные поля (МХ, УИН), добавляемые Менеджером МП перед публикацией.",
+      "id": "DE-delivery-order-line",
+      "updated": "2026-04-13T15:03:41.870000000+00:00",
+      "source_file": "docs/12-domain/entities/delivery-order-line.md"
+    }
+  },
+  {
+    "labels": [
+      "DomainEntity"
+    ],
+    "properties": {
+      "stereotypes": [],
+      "migrated_at": "2026-04-13T15:03:41.870000000+00:00",
+      "created": "2026-04-13T09:15:26.822000000+00:00",
+      "ba_trace": [
+        "OBJ-010",
+        "BRQ-008",
+        "BRQ-010",
+        "BRQ-016",
+        "BRQ-017"
+      ],
+      "module": "order-generation",
+      "name": "DeliveryOrder",
+      "description": "Заявка на поставку товаров на склад маркетплейса (WB или Ozon). Формируется системой автоматически на основе утверждённого NeedsReport. Aggregate root группы DeliveryOrder. Разбивается по принципу «один маркетплейс + один склад = одна заявка» (BRQ-010). Перед публикацией обогащается менеджером (МХ, УИН).\n\nВладелец: order-generation. Читается: 1c-integration, marketplace-integration.",
+      "id": "DE-delivery-order",
+      "updated": "2026-04-13T15:03:41.870000000+00:00",
+      "source_file": "docs/12-domain/entities/delivery-order.md"
+    }
+  },
+  {
+    "labels": [
+      "DomainEntity"
+    ],
+    "properties": {
+      "stereotypes": [],
+      "migrated_at": "2026-04-13T15:03:41.870000000+00:00",
+      "created": "2026-04-13T09:15:26.822000000+00:00",
+      "ba_trace": [
+        "OBJ-018",
+        "BRQ-004"
+      ],
+      "module": "order-generation",
+      "name": "DiscountOrderLine",
+      "description": "Одна позиция в заявке Дискаунтер. Дочерняя сущность aggregate DiscountOrder. Поле marketplace определяет принадлежность к листу WB Дискаунтер или Ozon Дискаунтер.",
+      "id": "DE-discount-order-line",
+      "updated": "2026-04-13T15:03:41.870000000+00:00",
+      "source_file": "docs/12-domain/entities/discount-order-line.md"
+    }
+  }
+]

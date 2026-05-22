@@ -375,7 +375,7 @@ class DomainEntityMixedPrefixBaTraceTests(unittest.TestCase):
 class LetterPrefixUcTests(unittest.TestCase):
     """Letter-prefix UC family (``UC-F01``, ``UC-G02``, ``UC-T03``).
 
-    Infographic uses this convention. The R2 retrospective watch-item #4
+    Project-Zeta uses this convention. The R2 retrospective watch-item #4
     requires ``original_id`` to be populated even when the canonical and
     source values are identical.
     """
@@ -494,7 +494,7 @@ class NumberingDetectionTests(unittest.TestCase):
     """``_detect_numbering`` picks the right layout based on disk layout."""
 
     def test_detect_00_06_layout(self):
-        """Infographic-style ``00-06`` numbering is detected."""
+        """Project-Zeta-style ``00-06`` numbering is detected."""
         from nacl_migrate_core.adapters.frontmatter_v1_sa import (
             FrontmatterV1SaAdapter,
         )

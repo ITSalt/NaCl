@@ -1,0 +1,71 @@
+[
+  {
+    "labels": [
+      "SystemRole"
+    ],
+    "properties": {
+      "system_only": false,
+      "name": "Teacher",
+      "description": "Full access to all management features. CRUD courses, lectures, materials. Manage groups, schedule, students. Grade submissions, comment. AI Studio without quota limits. Manage other teachers (create accounts). View all student data in their courses.",
+      "id": "role-001"
+    }
+  },
+  {
+    "labels": [
+      "SystemRole"
+    ],
+    "properties": {
+      "system_only": false,
+      "name": "Student (active)",
+      "description": "Active enrollment. View course materials (open lectures only). Submit homework (before deadline). Resubmit after revision_requested (even after deadline). View own grades and comments. Use AI Studio within quotas. View own profile.",
+      "id": "role-002"
+    }
+  },
+  {
+    "labels": [
+      "SystemRole"
+    ],
+    "properties": {
+      "system_only": false,
+      "name": "Student (expired)",
+      "description": "Expired enrollment. Read-only access to materials and grades. No AI Studio access. No homework submission. No Mattermost group channels (moved to alumni).",
+      "id": "role-003"
+    }
+  },
+  {
+    "labels": [
+      "SystemRole"
+    ],
+    "properties": {
+      "system_only": false,
+      "name": "Student (closed)",
+      "description": "Closed enrollment. No access to the group at all. Can still access alumni Mattermost channel.",
+      "id": "role-004"
+    }
+  },
+  {
+    "labels": [
+      "SystemRole"
+    ],
+    "properties": {
+      "system_only": true,
+      "name": "System",
+      "description": "Automated system actor for background jobs and scheduled tasks",
+      "id": "role-005"
+    }
+  },
+  {
+    "labels": [
+      "SystemRole"
+    ],
+    "properties": {
+      "updated_at": "2026-05-21T12:18:13.029000000+00:00",
+      "name": "ExternalWorkflow",
+      "channel": "api-gateway",
+      "description": "Non-human actor representing the external HTTP client (n8n workflow, OpenAI SDK, curl, etc.) authenticated by an ApiKey bearer token. Acts on behalf of the Student who owns the ApiKey; permissions are derived from that Student. Used in UC actor diagrams for /v1/* endpoints.",
+      "is_actor": true,
+      "id": "role-006",
+      "is_user": false
+    }
+  }
+]

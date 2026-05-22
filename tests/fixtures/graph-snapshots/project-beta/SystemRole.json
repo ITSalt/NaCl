@@ -1,0 +1,34 @@
+[
+  {
+    "labels": [
+      "SystemRole"
+    ],
+    "properties": {
+      "system_only": false,
+      "responsibilities": "Upload meeting recordings; observe pipeline progress; view/download transcripts; review and edit generated protocols; export protocols to PDF; delete own meetings and derived artifacts.",
+      "created": "2026-05-18T06:53:14.885000000+00:00",
+      "name": "AUTHOR",
+      "description": "The end-user who uploads a meeting recording and owns the derived artifacts (Recording, Transcript, Protocol). The sole active human role at MVP. Merges BA roles ROL-01 Author and ROL-02 Reviewer (the Reviewer has no distinct behavior at MVP per BA assumption).",
+      "id": "SR-01",
+      "type": "internal",
+      "updated": "2026-05-18T06:53:14.885000000+00:00",
+      "status": "draft"
+    }
+  },
+  {
+    "labels": [
+      "SystemRole"
+    ],
+    "properties": {
+      "system_only": true,
+      "responsibilities": "Run TranscriptionJob workflow (ASR + diarization); auto-create ProtocolGenerationJob on transcript completion; run LLM protocol generation; persist Transcript and Protocol artifacts; update Meeting.status as the pipeline progresses; record error_reason on failures.",
+      "created": "2026-05-18T06:53:14.885000000+00:00",
+      "name": "SYSTEM",
+      "description": "Infrastructure role representing automated background workers and async pipeline machinery. Owns job lifecycles (transcription, protocol generation), auto-triggers downstream jobs per BRQ-007, and writes Meeting.status updates per BRQ-008. No BA mapping; not user-facing.",
+      "id": "SR-02",
+      "type": "internal",
+      "updated": "2026-05-18T06:53:14.885000000+00:00",
+      "status": "draft"
+    }
+  }
+]

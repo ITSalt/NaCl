@@ -1,0 +1,255 @@
+[
+  {
+    "labels": [
+      "UseCase"
+    ],
+    "properties": {
+      "complexity": "S",
+      "migrated_at": "2026-05-06T18:39:46.866000000+00:00",
+      "created": "2026-04-19T21:04:35.690000000+00:00",
+      "ba_trace": [
+        "BP-001"
+      ],
+      "module": "landing-module",
+      "description": "Пользователь переходит на сайт (по рекламе, ссылке из соцсетей или прямому URL) и видит промо-страницу с эмоциональным заголовком, описанием предложения и CTA-кнопкой. Страница оформлена в тёплых, кинематографичных тонах с визуальными эффектами (grain, vignette), создающими атмосферу документального кино. Целевое действие -- нажатие CTA-кнопки «Продолжить историю» для перехода в Telegram-бот.\n\n---",
+      "priority": "PRIMARY (MVP)",
+      "source_file": "docs/14-usecases/UC001-view-landing.md",
+      "actor": "ACT-01 Пользователь (Посетитель)",
+      "system_uc": false,
+      "name": "Просмотр лендинга",
+      "iteration": "1",
+      "id": "UC-001",
+      "original_id": "UC-001",
+      "updated": "2026-05-06T18:39:46.866000000+00:00",
+      "has_ui": true
+    }
+  },
+  {
+    "labels": [
+      "UseCase"
+    ],
+    "properties": {
+      "complexity": "S",
+      "migrated_at": "2026-05-06T18:39:46.866000000+00:00",
+      "created": "2026-04-19T21:04:35.690000000+00:00",
+      "ba_trace": [
+        "BP-002"
+      ],
+      "module": "landing-module",
+      "description": "Пользователь нажимает CTA-кнопку «Продолжить историю» на лендинге. Система фиксирует конверсию в Яндекс.Метрике и открывает Telegram-бот https://t.me/filmhistorybot в новой вкладке браузера. Лендинг остаётся открытым в исходной вкладке для возможного возврата. На мобильных устройствах с установленным Telegram deeplink открывает нативное приложение.\n\n---",
+      "priority": "PRIMARY (MVP)",
+      "source_file": "docs/14-usecases/UC002-telegram-redirect.md",
+      "actor": "ACT-01 Пользователь (Посетитель)",
+      "system_uc": false,
+      "name": "Переход в Telegram",
+      "iteration": "1",
+      "id": "UC-002",
+      "original_id": "UC-002",
+      "updated": "2026-05-06T18:39:46.866000000+00:00",
+      "has_ui": true
+    }
+  },
+  {
+    "labels": [
+      "UseCase"
+    ],
+    "properties": {
+      "complexity": "L",
+      "migrated_at": "2026-05-06T18:39:46.866000000+00:00",
+      "created": "2026-04-19T21:04:35.690000000+00:00",
+      "ba_trace": [
+        "BP-003"
+      ],
+      "module": "generation-module",
+      "description": "",
+      "priority": "PRIMARY",
+      "source_file": "docs/14-usecases/UC003-interview.md",
+      "actor": "ACT-01 Пользователь",
+      "system_uc": false,
+      "name": "Быстрые вопросы (5 вопросов)",
+      "iteration": "2+",
+      "id": "UC-003",
+      "original_id": "UC-003",
+      "updated": "2026-05-06T18:39:46.866000000+00:00",
+      "has_ui": true
+    }
+  },
+  {
+    "labels": [
+      "UseCase"
+    ],
+    "properties": {
+      "complexity": "L",
+      "migrated_at": "2026-05-06T18:39:46.866000000+00:00",
+      "created": "2026-04-19T21:04:35.690000000+00:00",
+      "ba_trace": [
+        "BP-004"
+      ],
+      "module": "generation-module",
+      "description": "",
+      "priority": "PRIMARY",
+      "source_file": "docs/14-usecases/UC004-generate-script.md",
+      "actor": "Система (триггер: завершение UC-003)",
+      "system_uc": true,
+      "name": "Генерация сценария",
+      "iteration": "2+",
+      "id": "UC-004",
+      "original_id": "UC-004",
+      "updated": "2026-05-06T18:39:46.866000000+00:00",
+      "has_ui": true
+    }
+  },
+  {
+    "labels": [
+      "UseCase"
+    ],
+    "properties": {
+      "complexity": "L",
+      "migrated_at": "2026-05-06T18:39:46.866000000+00:00",
+      "created": "2026-04-19T21:04:35.690000000+00:00",
+      "ba_trace": [
+        "BP-005"
+      ],
+      "detail_status": "complete",
+      "module": "generation-module",
+      "description": "",
+      "priority": "PRIMARY",
+      "source_file": "docs/14-usecases/UC005-generate-media.md",
+      "actor": "Система (триггер: завершение UC-004 — server-initiated fire-and-forget)",
+      "system_uc": true,
+      "name": "Генерация медиа",
+      "iteration": "2+",
+      "id": "UC-005",
+      "original_id": "UC-005",
+      "updated": "2026-05-06T18:39:46.866000000+00:00",
+      "has_ui": true
+    }
+  },
+  {
+    "labels": [
+      "UseCase"
+    ],
+    "properties": {
+      "complexity": "M",
+      "migrated_at": "2026-05-06T18:39:46.866000000+00:00",
+      "created": "2026-04-19T21:04:35.690000000+00:00",
+      "ba_trace": [
+        "BP-006"
+      ],
+      "detail_status": "complete",
+      "module": "conversion-module",
+      "description": "",
+      "priority": "PRIMARY",
+      "source_file": "docs/14-usecases/UC006-view-result.md",
+      "actor": "ACT-01 Пользователь",
+      "system_uc": false,
+      "name": "Просмотр результата",
+      "iteration": "2+",
+      "id": "UC-006",
+      "original_id": "UC-006",
+      "updated": "2026-05-06T18:39:46.866000000+00:00",
+      "has_ui": true
+    }
+  },
+  {
+    "labels": [
+      "UseCase"
+    ],
+    "properties": {
+      "complexity": "M",
+      "migrated_at": "2026-05-06T18:39:46.866000000+00:00",
+      "created": "2026-04-19T21:04:35.690000000+00:00",
+      "ba_trace": [
+        "BP-007"
+      ],
+      "detail_status": "complete",
+      "module": "conversion-module",
+      "description": "",
+      "priority": "PRIMARY",
+      "source_file": "docs/14-usecases/UC007-capture-lead.md",
+      "actor": "ACT-01 Пользователь",
+      "system_uc": false,
+      "name": "Сохранение лида",
+      "iteration": "2+",
+      "id": "UC-007",
+      "original_id": "UC-007",
+      "updated": "2026-05-06T18:39:46.866000000+00:00",
+      "has_ui": true
+    }
+  },
+  {
+    "labels": [
+      "UseCase"
+    ],
+    "properties": {
+      "complexity": "S",
+      "migrated_at": "2026-05-06T18:39:46.866000000+00:00",
+      "created": "2026-04-19T21:04:35.690000000+00:00",
+      "ba_trace": [
+        "BP-008"
+      ],
+      "module": "conversion-module",
+      "description": "",
+      "priority": "SECONDARY",
+      "source_file": "docs/14-usecases/UC008-share-result.md",
+      "actor": "ACT-01 Пользователь",
+      "system_uc": true,
+      "name": "Шеринг результата",
+      "iteration": "2+",
+      "id": "UC-008",
+      "original_id": "UC-008",
+      "updated": "2026-05-06T18:39:46.866000000+00:00",
+      "has_ui": true
+    }
+  },
+  {
+    "labels": [
+      "UseCase"
+    ],
+    "properties": {
+      "complexity": "M",
+      "migrated_at": "2026-05-06T18:39:46.866000000+00:00",
+      "created": "2026-04-19T21:04:35.690000000+00:00",
+      "ba_trace": [
+        "BP-009"
+      ],
+      "module": "admin-module",
+      "description": "",
+      "priority": "SECONDARY",
+      "source_file": "docs/14-usecases/UC009-manage-prompts.md",
+      "actor": "ACT-03 Администратор",
+      "system_uc": false,
+      "name": "Управление промптами",
+      "iteration": "2+",
+      "id": "UC-009",
+      "original_id": "UC-009",
+      "updated": "2026-05-06T18:39:46.866000000+00:00",
+      "has_ui": true
+    }
+  },
+  {
+    "labels": [
+      "UseCase"
+    ],
+    "properties": {
+      "complexity": "S",
+      "migrated_at": "2026-05-06T18:39:46.866000000+00:00",
+      "created": "2026-04-19T21:04:35.690000000+00:00",
+      "ba_trace": [
+        "BP-010"
+      ],
+      "module": "admin-module",
+      "description": "",
+      "priority": "SECONDARY",
+      "source_file": "docs/14-usecases/UC010-view-statistics.md",
+      "actor": "ACT-03 Администратор",
+      "system_uc": true,
+      "name": "Просмотр статистики",
+      "iteration": "2+",
+      "id": "UC-010",
+      "original_id": "UC-010",
+      "updated": "2026-05-06T18:39:46.866000000+00:00",
+      "has_ui": true
+    }
+  }
+]

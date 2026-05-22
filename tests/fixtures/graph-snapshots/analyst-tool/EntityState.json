@@ -1,0 +1,122 @@
+[
+  {
+    "labels": [
+      "EntityState"
+    ],
+    "properties": {
+      "is_initial": true,
+      "is_terminal": false,
+      "name": "never-synced",
+      "description": "Board has never had a successful sync run; lastSyncedAt is null in meta.",
+      "id": "ES-BOARD-NEVER-SYNCED"
+    }
+  },
+  {
+    "labels": [
+      "EntityState"
+    ],
+    "properties": {
+      "is_initial": false,
+      "is_terminal": false,
+      "name": "dirty",
+      "description": "Board was previously synced but current content hash differs from contentHashAtLastSync — unsynced edits exist.",
+      "id": "ES-BOARD-DIRTY"
+    }
+  },
+  {
+    "labels": [
+      "EntityState"
+    ],
+    "properties": {
+      "is_initial": false,
+      "is_terminal": false,
+      "name": "synced",
+      "description": "Board content hash matches contentHashAtLastSync — the graph reflects the current board state exactly.",
+      "id": "ES-BOARD-SYNCED"
+    }
+  },
+  {
+    "labels": [
+      "EntityState"
+    ],
+    "properties": {
+      "is_initial": true,
+      "is_terminal": false,
+      "name": "queued",
+      "description": "Run has been accepted by the queue and recorded in the ring-buffer; skill execution not yet started.",
+      "id": "ES-RUN-QUEUED"
+    }
+  },
+  {
+    "labels": [
+      "EntityState"
+    ],
+    "properties": {
+      "is_initial": false,
+      "is_terminal": false,
+      "name": "running",
+      "description": "Skill invocation is actively executing (pinch task in flight or local renderer active).",
+      "id": "ES-RUN-RUNNING"
+    }
+  },
+  {
+    "labels": [
+      "EntityState"
+    ],
+    "properties": {
+      "is_initial": false,
+      "is_terminal": false,
+      "name": "blocked",
+      "description": "Run is paused because the itsalt-pinch pacer has reached its global concurrency cap; will retry after msUntilRetry.",
+      "id": "ES-RUN-BLOCKED"
+    }
+  },
+  {
+    "labels": [
+      "EntityState"
+    ],
+    "properties": {
+      "is_initial": false,
+      "is_terminal": true,
+      "name": "completed",
+      "description": "Skill invocation finished with exitCode 0; board meta has been updated.",
+      "id": "ES-RUN-COMPLETED"
+    }
+  },
+  {
+    "labels": [
+      "EntityState"
+    ],
+    "properties": {
+      "is_initial": false,
+      "is_terminal": true,
+      "name": "failed",
+      "description": "Skill invocation finished with non-zero exitCode or the process threw an unhandled error.",
+      "id": "ES-RUN-FAILED"
+    }
+  },
+  {
+    "labels": [
+      "EntityState"
+    ],
+    "properties": {
+      "is_initial": true,
+      "is_terminal": false,
+      "name": "running",
+      "description": "Batch is actively executing; at least one run remains in the queue; currentRunId is non-null.",
+      "id": "ES-BATCH-RUNNING"
+    }
+  },
+  {
+    "labels": [
+      "EntityState"
+    ],
+    "properties": {
+      "is_initial": false,
+      "is_terminal": true,
+      "name": "done",
+      "description": "All scheduled runs have reached completed or failed; batch loop exited normally; currentRunId is null.",
+      "id": "ES-BATCH-DONE"
+    }
+  }
+]

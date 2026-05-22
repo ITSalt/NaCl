@@ -61,7 +61,7 @@ Procedure (when tools and confirmation permit; otherwise BLOCKED):
 7. Run-smoke: boot the entrypoint (`build.entrypoint` or
    `package.json` `main` or `dist/index.js`), wait for a port bind
    (60s timeout — exceeding it produces
-   `BLOCKED — clean-checkout-entrypoint-no-port`, the transcriber
+   `BLOCKED — clean-checkout-entrypoint-no-port`, the project-beta
    pm2 pattern), call `/api/health`, then call each path in
    `deploy.smoke.endpoints`. Default endpoint list is `["/api/health"]`
    which records `PASS_HEALTH_ONLY` (not full smoke). Non-2xx →
@@ -80,9 +80,9 @@ Override paths (no inline flag exists):
   vars). Advances under recorded bypass; closed Status: is
   `PARTIALLY_VERIFIED` with `(emergency-bypass)` suffix.
 
-Worked examples: the Karatov pnpm/Prisma/TEST_DATABASE_URL cluster (the
+Worked examples: the Project-Alpha pnpm/Prisma/TEST_DATABASE_URL cluster (the
 first clean CI runner surfaced drift after green local + green review)
-and the transcriber ffmpeg / pm2 entry / prompt-markdown cluster
+and the project-beta ffmpeg / pm2 entry / prompt-markdown cluster
 (non-TS runtime assets disappeared from `dist/` and the wrong file was
 treated as the pm2 entrypoint). Both clusters now produce a
 `BLOCKED — clean-checkout-<detail>` headline at delivery rather than a

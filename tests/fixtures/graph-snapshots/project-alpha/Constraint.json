@@ -1,0 +1,16 @@
+[
+  {
+    "labels": [
+      "Constraint"
+    ],
+    "properties": {
+      "severity": "must",
+      "updated_at": "2026-05-18T13:15:46.134000000+00:00",
+      "module": "MOD-ADMIN",
+      "name": "Test isolation — admin module",
+      "description": "Each admin test file MUST import router/QueryClient/MSW setup from frontend/src/__test-utils/admin-setup.tsx. No inline duplication across admin test files — duplication caused 6-file regression cascades (commits 8522d1d, 43fc84d, 311635f, 17f71a3) when any single admin form changed.",
+      "id": "UC-303-TEST-ISO",
+      "layer": "test-infrastructure"
+    }
+  }
+]

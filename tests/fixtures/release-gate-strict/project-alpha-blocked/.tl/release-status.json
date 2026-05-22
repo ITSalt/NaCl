@@ -1,0 +1,20 @@
+{
+  "started": "2026-05-22T10:00:00Z",
+  "prs": [],
+  "merge": { "status": "skipped", "reason": "git.strategy=direct (commits already on main)" },
+  "ci": { "status": "skipped", "reason": "no CI configured" },
+  "health": { "status": "pending" },
+  "version": { "status": "pending", "bump": null, "value": null },
+  "tag": { "status": "pending" },
+  "graph": {
+    "status": "pending",
+    "baseline": {
+      "nodes": 970,
+      "labels": { "DomainAttribute": 145, "WorkflowStep": 110, "ActivityStep": 105 },
+      "rels":   { "HAS_ATTRIBUTE": 220, "NEXT_STEP": 130 }
+    }
+  },
+  "release": { "status": "pending" },
+  "yougile": { "status": "skipped", "reason": "fixture; no YouGile" },
+  "exceptions": []
+}

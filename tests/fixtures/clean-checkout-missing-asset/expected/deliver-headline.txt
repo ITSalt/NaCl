@@ -1,0 +1,24 @@
+DELIVER HALTED — UNVERIFIED (clean-checkout-runtime-assets-missing)
+
+Missing runtime assets (declared in config.yaml -> runtime_assets but
+absent from the built artifact tree):
+  - bin/ffprobe
+  - dist/llm/prompts/ru/protocol.md
+
+IntakeItems for the wave-tip commit have NOT been stamped delivered.
+
+Resolution options:
+  [1] Restore the missing assets in the build pipeline (ship the
+      ffprobe binary; arrange tsc / a build step to copy non-TS
+      assets into dist/). Re-run /nacl-tl-deliver.
+  [2] File a signed exception under .tl/exceptions/ with
+      affected_gates: [clean-checkout-runtime-assets-missing] for
+      a single-run carve-out, then re-run.
+  [3] Invoke emergency mode (NACL_EMERGENCY=1 + companion env vars);
+      the delivery advances with a (emergency-bypass) suffix and is
+      NEVER promoted to VERIFIED.
+
+Downstream consequence: nacl-tl-deploy will refuse this commit with
+DEPLOY HALTED — BLOCKED (clean-checkout-runtime-assets-missing) until
+the evidence artifact reports terminal_status: PASS (or a signed
+exception covers the named blocker_detail).

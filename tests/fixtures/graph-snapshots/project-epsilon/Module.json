@@ -1,0 +1,114 @@
+[
+  {
+    "labels": [
+      "Module"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T15:03:35.082000000+00:00",
+      "created": "2026-04-13T09:15:20.940000000+00:00",
+      "name": "core",
+      "iteration": "",
+      "description": "core",
+      "id": "MOD-core",
+      "updated": "2026-04-13T15:03:35.082000000+00:00",
+      "source_file": "docs/10-architecture/module-tree.md",
+      "related_process_ids": []
+    }
+  },
+  {
+    "labels": [
+      "Module"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T15:03:35.082000000+00:00",
+      "created": "2026-04-13T09:15:20.940000000+00:00",
+      "name": "data-import",
+      "description": "data-import",
+      "iteration": "",
+      "id": "MOD-data-import",
+      "updated": "2026-04-13T15:03:35.082000000+00:00",
+      "source_file": "docs/10-architecture/module-tree.md",
+      "related_process_ids": []
+    }
+  },
+  {
+    "labels": [
+      "Module"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T15:03:35.082000000+00:00",
+      "created": "2026-04-13T09:15:20.940000000+00:00",
+      "name": "demand-planning",
+      "description": "demand-planning",
+      "iteration": "",
+      "id": "MOD-demand-planning",
+      "updated": "2026-04-13T15:03:35.082000000+00:00",
+      "source_file": "docs/10-architecture/module-tree.md",
+      "related_process_ids": []
+    }
+  },
+  {
+    "labels": [
+      "Module"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T15:03:35.082000000+00:00",
+      "created": "2026-04-13T09:15:20.940000000+00:00",
+      "name": "order-generation",
+      "description": "order-generation",
+      "iteration": "",
+      "id": "MOD-order-generation",
+      "updated": "2026-04-13T15:03:35.082000000+00:00",
+      "source_file": "docs/10-architecture/module-tree.md",
+      "related_process_ids": []
+    }
+  },
+  {
+    "labels": [
+      "Module"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T15:03:35.082000000+00:00",
+      "created": "2026-04-13T09:15:20.940000000+00:00",
+      "name": "1c-integration",
+      "description": "1c-integration",
+      "iteration": "",
+      "id": "MOD-1c-integration",
+      "updated": "2026-04-13T15:03:35.082000000+00:00",
+      "source_file": "docs/10-architecture/module-tree.md",
+      "related_process_ids": []
+    }
+  },
+  {
+    "labels": [
+      "Module"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T15:03:35.082000000+00:00",
+      "created": "2026-04-13T09:15:20.940000000+00:00",
+      "name": "marketplace-integration",
+      "description": "marketplace-integration",
+      "iteration": "",
+      "id": "MOD-marketplace-integration",
+      "updated": "2026-04-13T15:03:35.082000000+00:00",
+      "source_file": "docs/10-architecture/module-tree.md",
+      "related_process_ids": []
+    }
+  },
+  {
+    "labels": [
+      "Module"
+    ],
+    "properties": {
+      "migrated_at": "2026-04-13T15:03:35.082000000+00:00",
+      "created": "2026-04-13T09:15:20.940000000+00:00",
+      "name": "warehouse-notification",
+      "description": "warehouse-notification",
+      "iteration": "",
+      "id": "MOD-warehouse-notification",
+      "updated": "2026-04-13T15:03:35.082000000+00:00",
+      "source_file": "docs/10-architecture/module-tree.md",
+      "related_process_ids": []
+    }
+  }
+]

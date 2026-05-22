@@ -1,0 +1,52 @@
+[
+  {
+    "labels": [
+      "ProcessGroup"
+    ],
+    "properties": {
+      "name": "Board Lifecycle",
+      "description": "All operations that govern board discovery, opening, canvas editing, saving, synchronization status, regeneration from the graph, and markdown rendering.",
+      "id": "PG-BOARD-LIFECYCLE"
+    }
+  },
+  {
+    "labels": [
+      "ProcessGroup"
+    ],
+    "properties": {
+      "name": "Project Management",
+      "description": "Operations against the project registry (~/.nacl/projects.json): listing all registered projects, reading the active project with resolved config, and switching the active project.",
+      "id": "PG-PROJECT-MANAGEMENT"
+    }
+  },
+  {
+    "labels": [
+      "ProcessGroup"
+    ],
+    "properties": {
+      "name": "Skill Orchestration",
+      "description": "Triggering individual and batch NaCl skill runs (regenerate/sync/analyze), monitoring Pacer throughput, and browsing the run ring-buffer.",
+      "id": "PG-SKILL-ORCHESTRATION"
+    }
+  },
+  {
+    "labels": [
+      "ProcessGroup"
+    ],
+    "properties": {
+      "name": "Snapshot Management",
+      "description": "Automatic and on-demand board snapshots: capture, list, diff against current or another timestamp, and restore.",
+      "id": "PG-SNAPSHOT-MANAGEMENT"
+    }
+  },
+  {
+    "labels": [
+      "ProcessGroup"
+    ],
+    "properties": {
+      "name": "Search and Discovery",
+      "description": "Full-text search spanning board elements and graph nodes; build identity verification via the version endpoint.",
+      "id": "PG-SEARCH-DISCOVERY"
+    }
+  }
+]

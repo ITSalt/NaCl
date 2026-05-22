@@ -1,0 +1,162 @@
+[
+  {
+    "labels": [
+      "Requirement"
+    ],
+    "properties": {
+      "target_value": "< 500ms",
+      "metric": "p95 response time",
+      "created": "2026-04-06T00:20:14.497000000+00:00",
+      "description": "API response time < 500ms for 95th percentile under normal load (~40 concurrent users per group)",
+      "id": "NFR-001",
+      "type": "nfr",
+      "category": "performance",
+      "priority": "high",
+      "status": "active"
+    }
+  },
+  {
+    "labels": [
+      "Requirement"
+    ],
+    "properties": {
+      "metric": "concurrent users",
+      "target_value": "200",
+      "created": "2026-04-06T00:20:16.150000000+00:00",
+      "description": "System supports ~40 students per group with several groups running in parallel (~120-200 concurrent users)",
+      "id": "NFR-002",
+      "type": "nfr",
+      "category": "performance",
+      "priority": "high",
+      "status": "active"
+    }
+  },
+  {
+    "labels": [
+      "Requirement"
+    ],
+    "properties": {
+      "target_value": "access=15min, refresh=7d",
+      "metric": "token TTL",
+      "created": "2026-04-06T00:20:18.370000000+00:00",
+      "description": "JWT authentication with httpOnly cookies; access token 15min TTL, refresh token 7 days with rotation; refresh token stored as hash in DB",
+      "id": "NFR-003",
+      "type": "nfr",
+      "category": "security",
+      "priority": "high",
+      "status": "active"
+    }
+  },
+  {
+    "labels": [
+      "Requirement"
+    ],
+    "properties": {
+      "target_value": "per-endpoint limits configured",
+      "metric": "rate limit enforcement",
+      "created": "2026-04-06T00:20:20.273000000+00:00",
+      "description": "Rate limiting on all API endpoints via @fastify/rate-limit to prevent abuse",
+      "id": "NFR-004",
+      "type": "nfr",
+      "category": "security",
+      "priority": "high",
+      "status": "active"
+    }
+  },
+  {
+    "labels": [
+      "Requirement"
+    ],
+    "properties": {
+      "metric": "max file size",
+      "target_value": "submissions=1GB, materials=2GB",
+      "created": "2026-04-06T00:20:24.299000000+00:00",
+      "description": "File uploads: submissions up to 1GB, group materials up to 2GB via multipart upload to MinIO private bucket with presigned URLs",
+      "id": "NFR-005",
+      "type": "nfr",
+      "category": "performance",
+      "priority": "high",
+      "status": "active"
+    }
+  },
+  {
+    "labels": [
+      "Requirement"
+    ],
+    "properties": {
+      "target_value": "presigned URLs only",
+      "metric": "file access method",
+      "created": "2026-04-06T00:20:24.562000000+00:00",
+      "description": "All files stored in MinIO private bucket; access only via time-limited presigned URLs (no public bucket access)",
+      "id": "NFR-006",
+      "type": "nfr",
+      "category": "security",
+      "priority": "high",
+      "status": "active"
+    }
+  },
+  {
+    "labels": [
+      "Requirement"
+    ],
+    "properties": {
+      "target_value": "6 queues + SSE",
+      "metric": "queue count and real-time updates",
+      "created": "2026-04-06T00:20:27.050000000+00:00",
+      "description": "AI generation supports 6 BullMQ queues (one per model group: text, image_standard, image_premium, video_fast, video_quality, music) with real-time SSE updates via Redis Pub/Sub",
+      "id": "NFR-007",
+      "type": "nfr",
+      "category": "performance",
+      "priority": "high",
+      "status": "active"
+    }
+  },
+  {
+    "labels": [
+      "Requirement"
+    ],
+    "properties": {
+      "target_value": "PostgreSQL advisory locks",
+      "metric": "concurrency safety mechanism",
+      "created": "2026-04-06T00:20:29.077000000+00:00",
+      "description": "Advisory locks (PostgreSQL) for AI quota race condition protection during concurrent generation requests",
+      "id": "NFR-008",
+      "type": "nfr",
+      "category": "reliability",
+      "priority": "high",
+      "status": "active"
+    }
+  },
+  {
+    "labels": [
+      "Requirement"
+    ],
+    "properties": {
+      "metric": "deployment architecture",
+      "target_value": "VPS 16GB, Docker + pm2 + Caddy",
+      "created": "2026-04-06T00:20:31.047000000+00:00",
+      "description": "Deployment: single VPS 16GB RAM; Docker for Redis, Mattermost, PostgreSQL, MinIO; pm2 for API + Worker processes; Caddy for HTTPS + reverse proxy",
+      "id": "NFR-009",
+      "type": "nfr",
+      "category": "infrastructure",
+      "priority": "high",
+      "status": "active"
+    }
+  },
+  {
+    "labels": [
+      "Requirement"
+    ],
+    "properties": {
+      "target_value": "GitHub Actions + SSH",
+      "metric": "deployment method",
+      "created": "2026-04-06T00:20:33.348000000+00:00",
+      "description": "CI/CD: GitHub Actions -> SSH -> git pull -> build -> pm2 restart; automated deployment pipeline",
+      "id": "NFR-010",
+      "priority": "medium",
+      "type": "nfr",
+      "category": "infrastructure",
+      "status": "active"
+    }
+  }
+]

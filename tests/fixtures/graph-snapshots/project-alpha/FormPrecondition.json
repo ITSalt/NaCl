@@ -1,0 +1,18 @@
+[
+  {
+    "labels": [
+      "FormPrecondition"
+    ],
+    "properties": {
+      "error_message": "Дождитесь завершения загрузки всех файлов перед запуском генерации",
+      "fix_level": "L1",
+      "affected_field": "input_files",
+      "name": "AllUploadsComplete",
+      "affected_action": "submit",
+      "rule": "All TaskInputFile entries must reach status=complete (S3 PUT confirmed) before the Submit button becomes enabled",
+      "created_at": "2026-05-18T13:17:21.307000000+00:00",
+      "id": "precond-104-uploads_complete",
+      "commit_ref": "2cdb42e"
+    }
+  }
+]

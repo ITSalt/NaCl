@@ -1,0 +1,148 @@
+[
+  {
+    "labels": [
+      "FormField"
+    ],
+    "properties": {
+      "updated_at": "2026-04-29T08:11:07.581000000+00:00",
+      "is_required": true,
+      "field_category": "input",
+      "name": "email",
+      "id": "field-001",
+      "label": "Email",
+      "field_type": "string",
+      "validation": "valid email format"
+    }
+  },
+  {
+    "labels": [
+      "FormField"
+    ],
+    "properties": {
+      "updated_at": "2026-04-29T08:11:07.581000000+00:00",
+      "is_required": true,
+      "field_category": "input",
+      "name": "password",
+      "id": "field-002",
+      "label": "Password",
+      "field_type": "password",
+      "validation": "non-empty"
+    }
+  },
+  {
+    "labels": [
+      "FormField"
+    ],
+    "properties": {
+      "updated_at": "2026-04-29T08:11:07.581000000+00:00",
+      "is_required": true,
+      "field_category": "input",
+      "name": "email",
+      "id": "field-003",
+      "label": "Email",
+      "field_type": "string",
+      "validation": "valid email format"
+    }
+  },
+  {
+    "labels": [
+      "FormField"
+    ],
+    "properties": {
+      "updated_at": "2026-04-29T08:11:07.581000000+00:00",
+      "is_required": true,
+      "field_category": "input",
+      "name": "password",
+      "id": "field-004",
+      "label": "Password",
+      "field_type": "password",
+      "validation": "min 8 characters"
+    }
+  },
+  {
+    "labels": [
+      "FormField"
+    ],
+    "properties": {
+      "updated_at": "2026-04-29T08:11:07.581000000+00:00",
+      "is_required": true,
+      "field_category": "input",
+      "name": "name",
+      "id": "field-005",
+      "label": "Name",
+      "field_type": "string",
+      "validation": "non-empty, max 255 chars"
+    }
+  },
+  {
+    "labels": [
+      "FormField"
+    ],
+    "properties": {
+      "updated_at": "2026-04-29T08:11:07.581000000+00:00",
+      "is_required": true,
+      "field_category": "input",
+      "name": "promo_code",
+      "id": "field-006",
+      "label": "Promo Code",
+      "field_type": "string",
+      "validation": "non-empty, existing valid code"
+    }
+  },
+  {
+    "labels": [
+      "FormField"
+    ],
+    "properties": {
+      "updated_at": "2026-04-29T08:11:07.581000000+00:00",
+      "is_required": true,
+      "field_category": "input",
+      "name": "title",
+      "id": "field-100",
+      "label": "Course Title",
+      "field_type": "string"
+    }
+  },
+  {
+    "labels": [
+      "FormField"
+    ],
+    "properties": {
+      "updated_at": "2026-04-29T08:11:07.581000000+00:00",
+      "is_required": false,
+      "field_category": "input",
+      "name": "short_description",
+      "id": "field-101",
+      "label": "Short Description",
+      "field_type": "textarea_markdown"
+    }
+  },
+  {
+    "labels": [
+      "FormField"
+    ],
+    "properties": {
+      "updated_at": "2026-04-29T08:11:07.581000000+00:00",
+      "is_required": false,
+      "field_category": "input",
+      "name": "full_description",
+      "id": "field-102",
+      "label": "Full Description",
+      "field_type": "textarea_markdown"
+    }
+  },
+  {
+    "labels": [
+      "FormField"
+    ],
+    "properties": {
+      "updated_at": "2026-04-29T08:11:07.581000000+00:00",
+      "is_required": false,
+      "field_category": "input",
+      "name": "grading_type",
+      "id": "field-103",
+      "label": "Grading Type",
+      "field_type": "select"
+    }
+  }
+]

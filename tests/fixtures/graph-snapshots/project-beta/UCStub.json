@@ -1,0 +1,137 @@
+[
+  {
+    "labels": [
+      "UCStub"
+    ],
+    "properties": {
+      "primary_actor": "ROL-01",
+      "source_bp": "BP-001",
+      "created": "2026-05-17",
+      "description": "User selects a video file, optionally sets a language hint; system validates the file, uploads to object storage, persists Meeting + Recording, enqueues TranscriptionJob.",
+      "label": "Upload video and create meeting",
+      "id": "UC-001",
+      "updated": "2026-05-17",
+      "status": "candidate"
+    }
+  },
+  {
+    "labels": [
+      "UCStub"
+    ],
+    "properties": {
+      "primary_actor": "System",
+      "source_bp": "BP-002",
+      "created": "2026-05-17",
+      "description": "Automated pipeline: dequeue job, fetch video from storage, extract audio, submit to ASR/diarization engine (EXT-02), receive speaker-attributed segments, assemble and persist Transcript.",
+      "label": "Transcribe audio with diarization",
+      "id": "UC-002",
+      "updated": "2026-05-17",
+      "status": "candidate"
+    }
+  },
+  {
+    "labels": [
+      "UCStub"
+    ],
+    "properties": {
+      "primary_actor": "System",
+      "source_bp": "BP-002-S07B",
+      "created": "2026-05-17",
+      "description": "After diarization, system scans the transcript for self-introductions and addressed names. Anonymous speaker labels (Speaker 1, Speaker 2...) are substituted with resolved names where confidence is sufficient. Unresolved labels remain.",
+      "label": "Resolve speaker names in transcript",
+      "id": "UC-003",
+      "updated": "2026-05-17",
+      "status": "candidate"
+    }
+  },
+  {
+    "labels": [
+      "UCStub"
+    ],
+    "properties": {
+      "primary_actor": "System",
+      "source_bp": "BP-004",
+      "created": "2026-05-17",
+      "description": "On transcript-ready event, system loads transcript, selects prompt template by language, submits to LLM (EXT-03), parses response into structured Markdown protocol with required sections, persists.",
+      "label": "Generate meeting protocol via LLM",
+      "id": "UC-004",
+      "updated": "2026-05-17",
+      "status": "candidate"
+    }
+  },
+  {
+    "labels": [
+      "UCStub"
+    ],
+    "properties": {
+      "primary_actor": "System",
+      "source_bp": "BP-002-S09 + BP-004-S10",
+      "created": "2026-05-17",
+      "description": "Pipeline failure handling: mark job as failed with error_reason, update Meeting status to failed, surface in UI. Retry strategy (manual vs. auto) TBD.",
+      "label": "Handle transcription and protocol failures",
+      "id": "UC-005",
+      "updated": "2026-05-17",
+      "status": "candidate"
+    }
+  },
+  {
+    "labels": [
+      "UCStub"
+    ],
+    "properties": {
+      "primary_actor": "ROL-01",
+      "source_bp": "BP-003",
+      "created": "2026-05-17",
+      "description": "User views and downloads the verbatim transcript from the recording detail page.",
+      "label": "View and download transcript",
+      "id": "UC-006",
+      "updated": "2026-05-17",
+      "status": "candidate"
+    }
+  },
+  {
+    "labels": [
+      "UCStub"
+    ],
+    "properties": {
+      "primary_actor": "ROL-01",
+      "source_bp": "BP-005",
+      "created": "2026-05-17",
+      "description": "User opens the generated protocol in an in-app Markdown editor, reviews and edits content, saves changes. Save increments version and edit_count.",
+      "label": "Review and edit protocol in Markdown editor",
+      "id": "UC-007",
+      "updated": "2026-05-17",
+      "status": "candidate"
+    }
+  },
+  {
+    "labels": [
+      "UCStub"
+    ],
+    "properties": {
+      "primary_actor": "ROL-01",
+      "source_bp": "BP-006",
+      "created": "2026-05-17",
+      "description": "User clicks Export to PDF; system renders Markdown protocol to PDF via export script and delivers as a download.",
+      "label": "Export protocol as PDF",
+      "id": "UC-008",
+      "updated": "2026-05-17",
+      "status": "candidate"
+    }
+  },
+  {
+    "labels": [
+      "UCStub"
+    ],
+    "properties": {
+      "primary_actor": "ROL-01",
+      "source_bp": "cross-cutting",
+      "created": "2026-05-17",
+      "description": "Cross-cutting: UI surfaces Meeting.status reflecting the pipeline stage (uploading -> transcribing -> transcript_ready -> protocol_generating -> protocol_ready -> edited | failed).",
+      "label": "Display meeting processing status",
+      "id": "UC-009",
+      "updated": "2026-05-17",
+      "status": "candidate"
+    }
+  }
+]
