@@ -23,6 +23,13 @@ description: |
   / BLOCKED / REGRESSION / FAIL
 - Static-analysis report (data-flow trace, type checks, runtime concerns)
 - Test-runner output snippet when the suite was actually executed
+- Per-finding metadata (optional, backward-compatible): `kind`
+  (`code-defect` | `spec-drift` | `coverage-gap` | `suggestion` | `info`),
+  `routedTo` (downstream skill route, e.g. `/nacl-tl-reconcile`), and
+  `note` (pre-flag suppression breadcrumb such as
+  `pre-flagged in review-be.md:84`). Absence of these fields is
+  equivalent to `kind: code-defect` for ISSUE status and
+  `kind: suggestion` for SUGGESTION status.
 
 **Downstream consumers of this output:**
 - nacl-tl-verify (orchestrator that aggregates this skill's result with QA)
@@ -80,6 +87,52 @@ You are a code verification specialist. You verify that a change is CORRECTLY im
 - Identify changed files (`git diff` or explicit `--files`)
 - Determine affected module(s)
 
+#### 1.4 Load prior review flags (pre-flag suppression input)
+
+Before tracing data flow, read every `.tl/tasks/<UC>/review-*.md` file for
+the UC under verification (`review.md`, `review-be.md`, `review-fe.md`,
+`review-tech.md` — whichever exist). These reviews may have already
+catalogued issues as non-blocking and routed them downstream; Step 2.5
+must not re-flag those same issues as fresh defects.
+
+Parse the "issues" sections under both conventions:
+
+1. **Template convention** (see `nacl-tl-core/templates/review-template.md`
+   §"Issues Found"): headings `### 🔴 Blockers (Must Fix)`,
+   `### 🟠 Critical Issues (Should Fix)`,
+   `### 🟡 Major Issues (Should Fix)`,
+   `### 🟢 Minor Issues (Nice to Have)`, with sub-issue IDs
+   `B01` / `C01` / `M01` / `N01`.
+2. **Ad-hoc convention** (seen in projects that diverged from the
+   template before it was canonised): `## Critical Issues` /
+   `## Minor Issues (carried forward, non-blocking)`, with lowercase
+   IDs `m-1` / `m-2`. The fixture
+   `tests/fixtures/verify-code-enum-drift-snapshot/.tl/tasks/UC-EXP-001/review-be.md`
+   demonstrates this layout.
+
+Build `prior_flagged` as a list of `{ tokens, kind, severity, source }`:
+
+- `tokens`: a **set** of fingerprints extracted from the issue body —
+  every CAPS sequence matching `[A-Z][A-Z0-9_]{2,}` plus every
+  ``code span`` (back-tick-wrapped identifier). One real-world issue
+  often catalogues a multi-token rename (e.g. `QUEUED/IN_PROGRESS/
+  COMPLETED/FAILED` renamed to `PENDING/PROCESSING/DONE/ERROR`); the
+  set captures all of them so a later Step 2.5.5 suppression match
+  works on any one of the drifted tokens. Filter out the same common
+  acronyms enumerated in Step 2.5.2 to avoid spurious matches on
+  `HTTP`, `JSON`, etc.
+- `kind`: heuristic from the issue text — `spec-drift` if the body
+  mentions "spec ... drift", "vocabulary drift", "spec lags",
+  "task-be.md uses ... vs actual", or "route to /nacl-tl-reconcile";
+  `code-defect` otherwise.
+- `severity`: `blocker` / `critical` / `major` / `minor` from the
+  section heading or the symbol prefix.
+- `source`: `review-<phase>.md:<line of issue heading>`.
+
+This step is read-only. Do not write or modify any review file. If no
+review-*.md files exist for the UC, `prior_flagged` is empty and Step 2.5
+proceeds without suppression.
+
 ### Step 2: TRACE DATA FLOW
 
 For each changed area, trace the FULL flow:
@@ -106,10 +159,132 @@ Check at each step:
 - Error cases propagated?
 - New fields reach the final consumer (UI)?
 
+### Step 2.5: ENUM VOCABULARY CROSS-CHECK
+
+**Goal:** distinguish three vocabulary-drift situations that look similar
+in casual inspection but require very different routing:
+
+| Class | Code | Spec | Action |
+|---|---|---|---|
+| `SPEC_DRIFT` | consistent canonical values | uses a stale value | non-blocking SUGGESTION routed to `/nacl-tl-reconcile` |
+| `CODE_DRIFT` | inconsistent (some files stale) | (either way) | blocking ISSUE → FAIL |
+| `UNUSED_ENUM_VALUE` | declares a value never used | n/a | informational SUGGESTION |
+
+The verifier MUST run this structured check before classifying any
+enum-named token as a defect. Reading a stale spec and reporting "spec
+says X but code uses Y" without this procedure is the recurring false
+positive this step is designed to prevent.
+
+#### 2.5.1 Build `code_enums` (canonical set)
+
+Read enum declarations from:
+
+- `**/prisma/schema.prisma` — DB-level enums.
+  Pattern: `enum <Name> {\n  VALUE\n  ...\n}`.
+- `**/shared/**/enums.{ts,js,mjs,cjs}` — runtime-level enums exported
+  from a shared package. Patterns:
+  - `export enum <Name> { VALUE = "...", ... }`
+  - `export const <Name> = { VALUE: "..." } as const`
+- Optionally extend with `config.yaml → verify_code.runtime_enum_globs`
+  when the workspace declares additional canonical sources.
+
+Build `code_enums: [{ name, values, source }]` where `source` is
+`<file>:<line of declaration>`.
+
+#### 2.5.2 Build `spec_terms`
+
+Grep `.tl/tasks/<UC>/task-*.md` for ALL-CAPS tokens matching
+`[A-Z][A-Z0-9_]{2,}`. Strip common acronyms that never participate in
+runtime enums: `HTTP`, `HTTPS`, `SQL`, `JSON`, `API`, `URL`, `UC`, `RQ`,
+`BRQ`, `NFR`, `ADR`, `TDD`, `CRUD`, `JWT`, `CORS`, `DTO`, `MVP`, `SLA`,
+`MIME`, `UUID`, `ASR`, `NULL`, `TRUE`, `FALSE`. Build `spec_terms` as a
+set with `{ token, occurrences: [<file>:<line>, ...] }`.
+
+#### 2.5.3 Build `code_usage`
+
+For each `value` in every `code_enums[*].values`, grep all source roots
+(`src/`, `api/`, `web/`, `worker/`, `packages/`, `apps/`, plus any
+workspace-declared root) — but exclude `.tl/`, `docs/`, `prisma/`,
+`node_modules/`, build/dist folders. Record where each canonical value
+is used: `code_usage: Map<value, [<file>:<line>, ...]>`.
+
+Also grep the same roots for `spec_terms` tokens that are NOT in any
+`code_enums[*].values` — these are "alien tokens": present in spec, not
+canonical. Record where each alien token appears in code:
+`alien_code_usage: Map<token, [<file>:<line>, ...]>`.
+
+#### 2.5.4 Classify per (enum, drift) pair
+
+For every `code_enum` (call it `E`) and every alien token `T` whose name
+is enum-shaped and plausibly belongs to `E`'s domain (heuristic: `T`
+appears in `task-*.md` paragraphs that also mention `E.name` or any of
+`E.values`), classify:
+
+| Condition | Class | finding.status | finding.kind | finding.routedTo |
+|---|---|---|---|---|
+| `alien_code_usage[T]` is **empty** and `code_usage` for `E.values` is non-empty everywhere | `SPEC_DRIFT` | `SUGGESTION` | `spec-drift` | `/nacl-tl-reconcile` |
+| `alien_code_usage[T]` is **non-empty** (T is used in code AND a canonical `E.values` member is also used elsewhere) | `CODE_DRIFT` | `ISSUE` | `code-defect` | (none) |
+| `code_usage[v]` is empty for some `v ∈ E.values` (declared but unused) | `UNUSED_ENUM_VALUE` | `SUGGESTION` | `suggestion` | (none) |
+
+`SPEC_DRIFT` and `UNUSED_ENUM_VALUE` are **never** by themselves grounds
+for a `FAIL` result. They contribute findings only. `CODE_DRIFT` is.
+
+#### 2.5.5 Apply pre-flag suppression
+
+For each classified finding `F`, search `prior_flagged` (from Step 1.4)
+for a matching entry `P`. A match exists when **any** of the following
+holds (case-sensitive throughout):
+
+1. `F.token ∈ P.tokens` — the exact alien/stale token the verifier
+   re-flagged was already named in the prior issue.
+2. `F.enum_name ∈ P.tokens` — the enum-name itself appears in the
+   prior issue (less common, but handles bare-name flags).
+3. **Umbrella match:** `(F.enum_canonical_values ∩ P.tokens) ≠ ∅` —
+   at least one canonical value of the disputed enum is mentioned in
+   the prior issue. This is the case when the catalogued review entry
+   reads "spec uses A vs actual B" and B is a current canonical value
+   of the same enum. The prior issue covers the entire rename family,
+   not only the specific stale pair.
+
+Severity ordering: `blocker > critical > major > minor`. Kind ordering:
+`code-defect > spec-drift > suggestion > info`.
+
+- If `F.severity ≤ P.severity` AND `F.kind ≤ P.kind` → **suppress**:
+  set `F.status = INFO`, add `F.note = "pre-flagged in <P.source>"`.
+- If `F.kind > P.kind` (e.g. current finding is `CODE_DRIFT` but prior
+  flag was `SPEC_DRIFT`) → **escalate, do not suppress**: keep
+  `F.status = ISSUE`, add
+  `F.note = "escalated from prior <P.source> SPEC_DRIFT classification"`.
+- If no match → no change.
+
+This guarantees that a drift previously reviewed as non-blocking spec
+drift but newly leaking into code (becoming code drift) still surfaces
+as a real defect.
+
+#### 2.5.6 Skip conditions
+
+Skip Step 2.5 silently and emit no enum findings when **any** of:
+
+- `.tl/tasks/<UC>/` directory does not exist (TECH task with no UC
+  context).
+- `code_enums` is empty (no Prisma schema, no shared enums file).
+- No `task-*.md` exists for the UC.
+
+A skipped Step 2.5 is not an error and does not affect the top-level
+result.
+
 ### Step 3: DB VERIFICATION (if DB changes)
 
 - Check migration exists and is correct
-- Verify schema matches entity definition in docs
+- Verify schema matches entity definition in docs.
+  **Canonicality for runtime artefacts:** DB schema columns,
+  language-level enums, runtime constants, and shared API DTOs are
+  CANONICAL. Spec text that disagrees with code-that-compiles is
+  `SPEC_DRIFT` (see Step 2.5), not a code defect — finding goes out as
+  `SUGGESTION` routed to `/nacl-tl-reconcile`, NOT `FAIL`. Docs remain
+  canonical for new-requirement *meaning* (the semantic intent of a new
+  field or new entity), but never for the wire-level name of a token
+  already present in compiled code.
 - Check indexes for query performance
 - Verify constraints (NOT NULL, UNIQUE, FK)
 - Sample data query if possible (via MCP if available)
@@ -118,7 +293,11 @@ Check at each step:
 
 - Missing fields after rename/refactor (field renamed in DB but not in service)
 - Type mismatches (string in DB, number in TypeScript)
-- Incomplete renames (old name still used in some files)
+- Incomplete CODE rename — old name still used in some code files
+  (`CODE_DRIFT` per Step 2.5 → ISSUE → contributes to `FAIL`)
+- Spec lags code rename — code consistent on the new name, only the
+  spec text still uses the old name (`SPEC_DRIFT` per Step 2.5 →
+  SUGGESTION + `routedTo: /nacl-tl-reconcile`, never `FAIL`)
 - Missing null checks on optional fields
 - Missing error handling for new error codes
 - Frontend displays field that backend doesn't send
@@ -242,9 +421,12 @@ VERIFY_CODE_RESULT:
   findings:
     - file: src/routes/analytics.ts
       line: 42
-      status: OK | ISSUE | SUGGESTION
+      status: OK | ISSUE | SUGGESTION | INFO
+      kind: code-defect | spec-drift | coverage-gap | suggestion | info   # optional; default code-defect for ISSUE, suggestion for SUGGESTION
       detail: "description"
       suggestedFix: "what to change" (only for ISSUE)
+      routedTo: "/nacl-tl-reconcile"     # optional; non-empty implies a downstream skill should pick this up
+      note: "pre-flagged in review-be.md:84"   # optional; pre-flag suppression breadcrumb
   dbChecks:
     - query: "SELECT ..."
       expected: "column exists, type is varchar"
@@ -261,7 +443,8 @@ VERIFY_CODE_RESULT:
 - **RUNNER_BROKEN**: `scripts.test` exists but runner could not execute, or `tests_collected == 0` even after known-good-file re-run — environment issue
 - **BLOCKED**: `new_failures` is empty but `postfix_failures` is non-empty — pre-existing failures not introduced by this change; surfaces `postfix_failures` list
 - **REGRESSION**: `new_failures` is non-empty — change introduced test failures; surfaces `new_failures` list
-- **FAIL**: Static analysis found runtime errors or incorrect behavior (regardless of tests)
+- **FAIL**: Static analysis found runtime errors or incorrect behavior (regardless of tests). CODE_DRIFT findings from Step 2.5 contribute here. SPEC_DRIFT findings do NOT.
+- **SPEC_DRIFT findings never affect the top-level result.** They surface as SUGGESTIONS with `kind: spec-drift` and `routedTo: /nacl-tl-reconcile`. The top-level result (PASS / PASS_NEEDS_E2E / UNVERIFIED / NO_INFRA / RUNNER_BROKEN / BLOCKED / REGRESSION / FAIL) is determined solely by the test suite, the integrity gate, and CODE_DRIFT-class findings — never by spec drift.
 
 ## Output Language
 

@@ -15,6 +15,9 @@ description: |
 **Inputs this skill consumes:**
 - nacl-tl-verify-code result (eight-status vocabulary: PASS / PASS_NEEDS_E2E /
   UNVERIFIED / NO_INFRA / RUNNER_BROKEN / BLOCKED / REGRESSION / FAIL)
+- nacl-tl-verify-code `findings[*]` with optional metadata
+  (`kind`, `routedTo`, `note`) used only for the Suggestions rendering
+  in Step 5 — never to derive the headline or Decision Matrix outcome
 - nacl-tl-qa result
 - YouGile config (optional — may be unavailable)
 
@@ -212,7 +215,24 @@ Headline: VERIFY COMPLETE (E2E-verified, 1 scenario GREEN)
 
 Suggestions (non-blocking):
   1. [SUGGESTION] Consider adding index on funnel_events.created_at
+  2. [SUGGESTION → /nacl-tl-reconcile] Spec lags code: Widget.status uses ARCHIVED in code, UC-EXP-001/task-be.md still says INACTIVE
+     (pre-flagged in review-be.md:m-1)
 ```
+
+**Suggestion rendering** — for each entry in `findings[*]` whose
+`status` is `SUGGESTION` or `INFO`, format the prefix from optional
+fields:
+
+- If `routedTo` is non-empty, prefix is `[SUGGESTION → <routedTo>]`
+  (or `[INFO → <routedTo>]` for INFO findings).
+- Otherwise prefix is `[SUGGESTION]` (or `[INFO]`).
+- If `note` is non-empty, append it on a continuation line indented
+  with five spaces, in parentheses: `     (note text)`.
+
+This applies only to console rendering and YouGile chat posting. The
+top-level result vocabulary and the headline table (above) are
+unaffected — a finding with `kind: spec-drift` never causes the
+headline to flip from `VERIFY COMPLETE` to a non-COMPLETE state.
 
 **PASS rationale distinction** — include in the report body:
 

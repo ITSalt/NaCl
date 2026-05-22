@@ -1,0 +1,23 @@
+{
+  "id": "UC-EXP-001",
+  "title": "Widget archival pipeline",
+  "type": "uc-be-only",
+  "wave": 1,
+  "phases": {
+    "be": {
+      "status": "approved"
+    },
+    "review-be": {
+      "status": "approved",
+      "reviewed": "2026-04-12",
+      "headline": "REVIEW APPLIED — APPROVED (with carried-forward minor drift)"
+    }
+  },
+  "minor_carried_forward": [
+    {
+      "id": "m-1",
+      "summary": "WidgetStatus vocabulary drift in task-be.md",
+      "route": "/nacl-tl-reconcile"
+    }
+  ]
+}

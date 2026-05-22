@@ -4,6 +4,44 @@ All notable changes to NaCl (Natural Agent Control Language) will be documented 
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [2.8.1] — 2026-05-22
+
+Patch release. `nacl-tl-verify-code` no longer mis-classifies stale enum
+vocabulary in a UC's `task-*.md` as a code defect when the code is
+internally consistent on the canonical name. Spec drift is now its own
+class — `kind: spec-drift` finding with `routedTo: /nacl-tl-reconcile` —
+and never causes `FAIL`. The eight-status top-level result vocabulary is
+unchanged.
+
+`nacl-tl-verify-code` gains a structured `Step 2.5` enum cross-check
+(enumerate canonical enums from `**/prisma/schema.prisma` and
+`**/shared/**/enums.*`, extract CAPS tokens from `task-*.md`,
+cross-reference usage across source roots, classify as `SPEC_DRIFT` /
+`CODE_DRIFT` / `UNUSED_ENUM_VALUE`); a new `Step 1.4` pre-flag loader
+that parses both template (`B01/C01/M01/N01`) and ad-hoc (`m-1/m-2`)
+review conventions and downgrades any current finding whose tokens
+were already catalogued upstream; and an explicit `Step 3` directionality
+rule that names code (not docs) as canonical for runtime artefacts.
+`findings[*]` schema extends with three optional, backward-compatible
+fields: `kind`, `routedTo`, `note`. An escalation guard refuses to
+suppress fresh `CODE_DRIFT` regressions that previously appeared as
+`SPEC_DRIFT`.
+
+`nacl-tl-verify` Suggestions block renders the new `routedTo` and `note`
+fields when present. Headline vocabulary, Decision Matrix, and integrity
+gate are unchanged.
+
+Regression fixture: `tests/fixtures/verify-code-enum-drift-snapshot/` —
+plain ESM JavaScript, generic `WidgetStatus` enum, three documented
+scenarios (default SPEC_DRIFT suppression, CODE_DRIFT escalation,
+pre-fix replay). `node --test` runs without a TypeScript loader.
+
+Migration impact: none. New finding fields are optional with documented
+defaults; no flag surfaces, exit codes, headline strings, or
+`config.yaml` keys changed.
+
+Full release notes: `docs/releases/2.8.1-verify-code-spec-drift/release-notes.md`.
+
 ## [2.8.0] — 2026-05-22
 
 Strict-mode transition. The chain moves from evidence-descriptive to
