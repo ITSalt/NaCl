@@ -40,6 +40,13 @@ creating graph or task-tracker artifacts.
   `nacl-tl-reopened`.
 - Do not auto-execute the downstream workflow unless the user explicitly
   confirms that exact scope in the current turn.
+- The user gate is differentiated by classification certainty: HIGH+GRAPH with
+  no spec gap and low blast radius (L0/L1) may auto-route without prompt;
+  SPEC_GAP atoms (matched UC exists but does not specify the sub-aspect being
+  requested) always prompt for the bug-vs-feature policy call; L2/L3 atoms
+  fire a launch-sanity check; MEDIUM and LOW always prompt with reasoning.
+  See the main `nacl-tl-intake/SKILL.md` for the decision tree and prompt
+  templates.
 
 ## Capabilities
 

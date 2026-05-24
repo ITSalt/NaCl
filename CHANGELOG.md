@@ -4,6 +4,66 @@ All notable changes to NaCl (Natural Agent Control Language) will be documented 
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [2.9.0] — 2026-05-25
+
+Minor release. `/nacl-tl-intake` no longer fires the same generic
+"Correct? [yes / adjust / skip]" prompt after every atom classification.
+The confirmation gate is now case-driven: clean HIGH-confidence
+graph-backed calls auto-route without prompting, and the cases that do
+warrant a prompt get a template that names the actual ambiguity instead
+of asking a question that hides it.
+
+A new `SPEC_GAP` branch in Step 2b's decision tree distinguishes
+"matching UC exists and the behavior is broken" (regular BUG) from
+"matching UC exists but does not specify the sub-aspect the user is
+asking about" (BUG L2 with `spec_gap: true`, bug-vs-feature escalated
+as a `POLICY_CALL` to the user). Four heuristics set `spec_gap: true`:
+per-X qualifier absent from the matched UC's name/description;
+refinement noun (naming, ordering, chronology, count, format detail)
+not in acceptance criteria; UI element or artifact type unreachable via
+`HAS_FORM → HAS_FIELD` or `PRODUCES`; or the reasoning paragraph
+naturally containing the phrase "spec gap also present" / "UC-X does
+not currently specify ...".
+
+Five prompt templates are now selected by a small case table:
+**A** auto-route with no prompt (HIGH+GRAPH, no spec gap, L0/L1);
+**B** launch-sanity check (HIGH+GRAPH, no spec gap, L2/L3 — asks about
+launch readiness, not classification);
+**C** SPEC_GAP policy-call prompt (HIGH+GRAPH, `spec_gap: true` —
+names the sub-aspect and offers BUG / FEATURE / SKIP with the
+implicit-requirement vs. new-scope distinction explained);
+**D** recommendation prompt (MEDIUM+GRAPH);
+**E** open-disambiguation prompt (LOW / HEURISTIC).
+
+`--yes` flag scope tightened: auto-confirm fires Template A ONLY when
+all of `confidence: HIGH`, `evidence: GRAPH`, `spec_gap: false`, and
+classification level L0/L1 hold. The flag does NOT bypass SPEC_GAP
+atoms, L2/L3 launch-sanity, MEDIUM, or LOW/HEURISTIC. Clean L0/L1
+HIGH+GRAPH atoms now auto-route without `--yes`; L2/L3 HIGH+GRAPH atoms
+now prompt with `--yes` — launch readiness and classification certainty
+are separate questions.
+
+Final-summary headline gains one first-match-wins rule:
+`INTAKE TRIAGE APPLIED — REROUTED (spec-gap policy call: N atoms moved
+to /nacl-sa-feature)` when one or more atoms travel through the
+SPEC_GAP gate to FEATURE. All other headline rules unchanged.
+
+Step 2d evidence block now prints explicit `Spec gap:`, `Confidence:`,
+and `Level:` lines so the gate-template selection is auditable from
+output. The "Neo4j unavailable" edge case wording was aligned with the
+decision tree's `confidence: LOW` assignment (was inconsistently called
+MEDIUM). The Codex contract variant
+(`skills-for-codex/nacl-tl-intake/SKILL.md`) gets one bullet under
+Source-Parity Requirements referencing the differentiated gate and
+pointing back at the main skill for the decision tree.
+
+Migration impact: none for downstream projects. Inputs unchanged,
+downstream skill invocations unchanged, no `config.yaml` / Neo4j /
+YouGile schema changes.
+
+Full release notes:
+`docs/releases/2.9.0-intake-differentiated-gate/release-notes.md`.
+
 ## [2.8.1] — 2026-05-22
 
 Patch release. `nacl-tl-verify-code` no longer mis-classifies stale enum

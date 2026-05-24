@@ -161,8 +161,15 @@ Did sa_find_uc_by_keywords return matching UCs?
   |
   +-- YES, matching UC found with detail_status = 'detailed' or 'approved':
   |     The behavior IS specified. Is the atom reporting broken/wrong behavior?
-  |       -> YES: BUG  (confidence: HIGH, evidence: GRAPH)
-  |       -> NO (wants different behavior): FEATURE  (confidence: HIGH, evidence: GRAPH)
+  |       -> YES (matches existing spec — behavior is broken):
+  |            BUG  (confidence: HIGH, evidence: GRAPH, spec_gap: false)
+  |       -> NO, wants different existing behavior:
+  |            FEATURE  (confidence: HIGH, evidence: GRAPH, spec_gap: false)
+  |       -> SPEC_GAP: atom names a sub-aspect the UC does NOT currently specify
+  |            (per-X qualifier, refinement noun, UI element, or artifact type
+  |             absent from the matched UC's name/description/forms/fields):
+  |            BUG (L2)  (confidence: HIGH for classification, spec_gap: true,
+  |                       bug-vs-feature is a POLICY_CALL — user gate mandatory)
   |
   +-- YES, matching UC found with detail_status = 'draft' or 'stub':
   |     The behavior is partially specified.
@@ -179,26 +186,117 @@ Did sa_find_uc_by_keywords return matching UCs?
         All atoms get confidence: LOW, evidence: HEURISTIC
 ```
 
-**Per-atom confirmation gate (mandatory — runs after classifying EACH atom before moving to the next):**
+**SPEC_GAP detection heuristics** (any one sufficient to set `spec_gap: true`):
 
-After classifying atom #N, prompt the user:
+- Atom mentions a **per-X qualifier** (per-iteration, per-step, per-attempt, per-row, per-version) that does not appear in the matched UC's `name` or `description`.
+- Atom requests a **refinement noun** — naming convention, ordering, chronology, count, format detail, label, sort order — that is not mentioned in the matched UC's acceptance criteria / form fields.
+- Atom names a **UI element or artifact type** not reachable from the matched UC via `UseCase -[:HAS_FORM]-> Form -[:HAS_FIELD]-> Field` or `UseCase -[:PRODUCES]-> Artifact` (text-level check for now; structured Cypher follow-up is out of scope).
+- Reasoning paragraph for the atom would naturally contain the phrase *"spec gap also present"* or *"UC-X does not currently specify ..."* — this is the signal the skill *already* writes today but does not act on.
+
+When `spec_gap: true`, the classification stays BUG with HIGH confidence, but the **bug-vs-feature decision is escalated to the user** via the SPEC_GAP gate in Step 2b's confirmation block (below). `--yes` does NOT bypass.
+
+**Per-atom confirmation gate (runs after classifying EACH atom — behavior differs by case):**
+
+A generic "Correct? [yes / adjust / skip]" trains the user to rubber-stamp and squanders the confidence label. Pick the gate behavior from the case table below, then fire the matching prompt template (or no prompt at all). **Do NOT proceed to Step 3 (GROUP) until every atom has been confirmed, auto-routed, or skipped.**
+
+| Case | Gate behavior |
+|------|---------------|
+| HIGH + GRAPH, **no spec gap**, classification level **L0/L1** (low blast radius) | **Auto-route, no prompt.** Print the auto-route line (template A) and proceed. |
+| HIGH + GRAPH, **no spec gap**, classification level **L2/L3** (high blast radius) | **Launch-sanity prompt** (template B) — not a classification question, just a "ready to launch?" check. |
+| HIGH + GRAPH, **spec_gap: true** | **Mandatory SPEC_GAP prompt** (template C). Names the actual ambiguity. NOT bypassed by `--yes`. |
+| MEDIUM + GRAPH | **Recommendation prompt** (template D) — leading option + alternatives + reasoning. |
+| LOW / HEURISTIC | **Open-disambiguation prompt** (template E) — present options with equal weight, no forced recommendation. |
+
+#### Template A — auto-route line (no prompt)
+
+```
+Atom #N: "[atom title]" -> [TYPE] (auto-routed)
+  Matched UC: UC-XXX "name" (detail_status: detailed)
+  Evidence: GRAPH | Confidence: HIGH | Spec gap: false | Level: L0/L1
+  Routing to [downstream skill]...
+```
+
+#### Template B — launch-sanity prompt (L2/L3 only)
+
+```
+Atom #N: "[atom title]" -> [TYPE] (HIGH confidence, graph-backed)
+  Matched UC: UC-XXX
+  Classification level: L2 (cross-module) | spans: UC-XXX, UC-YYY, API contract
+
+  Routing to [downstream skill]. Proceed?
+    1. proceed -> launch [downstream skill]
+    2. skip    -> drop atom from plan
+```
+
+(Note: this prompt asks about *launch readiness*, not classification. The classification is already settled at HIGH+GRAPH.)
+
+#### Template C — SPEC_GAP prompt (mandatory, not bypassed by `--yes`)
 
 ```
 Atom #N: "[atom title]"
-  Classified as: [TYPE]
-  Evidence: [GRAPH | HEURISTIC]
-  Reasoning: [one sentence: which UC matched / why no match / why heuristic used]
+  Matched UC: UC-XXX "name" (detail_status: detailed)
+  Classification: BUG (L2 — cross-module spec gap)
 
-  Correct? [yes / adjust / skip]
+  SPEC GAP DETECTED:
+  UC-XXX does not currently specify: [the sub-aspect, e.g. "per-iteration
+  naming/chronology convention for verifier reports"].
+
+  The bug-vs-feature distinction is a policy call:
+    - BUG     if this was an IMPLICIT requirement (customer/contract expected
+              it, spec was incomplete)
+    - FEATURE if this is NEW scope (genuinely added now, not previously
+              promised)
+
+  Choose:
+    1. BUG     -> /nacl-tl-fix --uc UC-XXX
+                  (amends UC-XXX spec + fixes implementation)
+    2. FEATURE -> /nacl-sa-feature
+                  (creates new UC / FR for this aspect; evidence recorded as
+                   USER_OVERRIDE (spec_gap))
+    3. SKIP    -> drop atom from plan
+```
+
+#### Template D — recommendation prompt (MEDIUM confidence)
+
+```
+Atom #N: "[atom title]"
+  Best guess: [TYPE]  (confidence: MEDIUM, evidence: GRAPH)
+  Reasoning: [one sentence — why this is the leading call]
+  Alternatives: [other plausible TYPE(s) and what would tip the scale]
+
+  Correct? [yes / adjust to <other type> / skip]
+```
+
+#### Template E — open-disambiguation prompt (LOW / HEURISTIC)
+
+```
+Atom #N: "[atom title]"
+  Classification uncertain (confidence: LOW, evidence: HEURISTIC).
+  Possible types: BUG | FEATURE | TASK
+  Reasoning: [why graph didn't resolve, what keywords lean each way]
+
+  Pick a type — no forced recommendation:
+    1. BUG     -> /nacl-tl-fix
+    2. FEATURE -> /nacl-sa-feature
+    3. TASK    -> /nacl-tl-dev
+    4. SKIP
 ```
 
 **`--yes` flag behavior:**
-- `--yes` auto-confirms **only** when `confidence: HIGH` AND `evidence: GRAPH` (exact graph match, `detail_status = detailed | approved`).
-- `--yes` does NOT bypass the prompt when confidence is MEDIUM or LOW, or when evidence is HEURISTIC. Re-prompt regardless of the flag.
+
+- `--yes` auto-confirms (i.e. fires Template A without prompting) ONLY when ALL of the following hold for the atom:
+  - `confidence: HIGH`
+  - `evidence: GRAPH` (matched UC `detail_status = detailed | approved`)
+  - `spec_gap: false`
+  - classification level: `L0` or `L1` (low blast radius — per `nacl-tl-core/references/fix-classification-rules.md`)
+- `--yes` does NOT bypass the prompt for:
+  - SPEC_GAP atoms — policy call required from user (template C)
+  - L2/L3 atoms — launch-sanity check required (template B)
+  - MEDIUM confidence atoms (template D)
+  - LOW / HEURISTIC atoms (template E)
 - "skip" drops the atom from the execution plan; user must explicitly re-add it later.
 - "adjust" accepts a corrected type from the user; record the manual override as `evidence: USER_OVERRIDE`.
-
-**Do NOT proceed to Step 3 (GROUP) until every atom has been confirmed or skipped.**
+- For SPEC_GAP atoms where the user chooses FEATURE, record `evidence: USER_OVERRIDE (spec_gap)` so the final summary headline can route through the new REROUTED rule (see "Final summary" below).
 
 #### Step 2c: Fallback -- keyword-based classification (when Neo4j is unavailable)
 
@@ -226,19 +324,32 @@ Is it unclear?
 
 #### Step 2d: Present classification evidence
 
-For each atom, show the user WHY it was classified as it was:
+For each atom, show the user WHY it was classified as it was. Always print `Spec gap:` and `Confidence:` explicitly so the gate template selection (Step 2b) is auditable from the output:
 
 ```
 #1 "Image format selection" -> FEATURE
     Graph: No matching UC found for "image format"
     Reasoning: New behavior, not specified in graph
+    Spec gap: n/a (no matching UC)
+    Evidence: GRAPH | Confidence: MEDIUM
 
 #2 "Share button doesn't work" -> BUG
     Graph: UC-012 "Share Content" (status: detailed)
     Reasoning: UC exists and is detailed, user reports broken behavior
+    Spec gap: false
+    Evidence: GRAPH | Confidence: HIGH | Level: L1
+
+#3 "Task artifacts page missing verifier reports + per-iteration images" -> BUG (L2)
+    Graph: UC-105 "View task status and results" (status: detailed)
+           UC-151 "Verifier verification loop" (status: complete)
+    Reasoning: UC-105 specifies the status page, but per-iteration naming /
+               chronology convention is NOT in the current spec
+    Spec gap: per-iteration naming + ordering not specified in UC-105
+    Evidence: GRAPH | Confidence: HIGH (classification) / POLICY_CALL (bug-vs-feature)
+    Level: L2 (cross-module: UC-105, UC-151, API contract, FE form)
 ```
 
-This transparency helps the user validate classifications and reduces the ~30% misclassification rate that keyword-only approaches produce.
+This transparency helps the user validate classifications and reduces the ~30% misclassification rate that keyword-only approaches produce. The `Spec gap` and `Level` lines also tell the user *which* gate template they are about to see (A/B/C/D/E from Step 2b).
 
 ---
 
@@ -515,6 +626,7 @@ Headline selection rules (first match wins):
 - Any bug atom resolved with `Status: NO_INFRA` ⇒ `INTAKE TRIAGE APPLIED — UNVERIFIED (NO_INFRA: N atoms unfinished)`
 - Any bug atom resolved with `Status: UNVERIFIED` ⇒ `INTAKE TRIAGE APPLIED — UNVERIFIED (no regression test: N atoms unfinished)`
 - Any bug atom resolved with `Status: BLOCKED` (no operator accept) ⇒ `INTAKE TRIAGE APPLIED — UNVERIFIED (BLOCKED: N atoms unfinished)`
+- Any atom resolved via SPEC_GAP gate with user choosing FEATURE (evidence `USER_OVERRIDE (spec_gap)`) ⇒ `INTAKE TRIAGE APPLIED — REROUTED (spec-gap policy call: N atoms moved to /nacl-sa-feature)`
 - All bug atoms `Status: PASS` AND any atom heuristic-backed OR any USER_OVERRIDE ⇒ `INTAKE TRIAGE APPLIED — UNVERIFIED (heuristic-backed)`
 - All bug atoms `Status: PASS` AND all atoms graph-backed ⇒ `INTAKE TRIAGE COMPLETE (graph-backed)`
 
@@ -622,7 +734,7 @@ If the user provides >10 items:
 If `mcp__neo4j__read-cypher` fails on the first query:
 1. Log warning: "Neo4j unavailable, falling back to keyword-based classification"
 2. Use Step 2c (fallback) for ALL atoms; mark every atom `evidence: HEURISTIC`
-3. Per-atom confirmation gate still runs (heuristic classifications are MEDIUM confidence — `--yes` does NOT bypass)
+3. Per-atom confirmation gate still runs as Template E (LOW confidence, HEURISTIC evidence — `--yes` does NOT bypass; no forced recommendation)
 4. Route features to `/nacl-sa-feature` anyway (it has its own fallback handling)
 5. Final report headline: `INTAKE TRIAGE APPLIED — UNVERIFIED (heuristic-backed)`
 6. Graph unavailability does NOT block triage, but the result is always UNVERIFIED
