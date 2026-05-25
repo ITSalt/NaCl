@@ -50,6 +50,13 @@ graph-infra/.env
 # Task tracking (project-specific, not repo-level)
 .tl/tasks/
 
+# /nacl-goal intake wrapper run state and PII (2.10.1+)
+# request.json contains user email, free-text goal, image refs, project path.
+# Wrapper-authored exception YAMLs live under .tl/exceptions/goal-runs/.
+# See nacl-goal/run-artifacts.md §Privacy.
+.tl/goal-runs/
+.tl/exceptions/goal-runs/
+
 # Binary documents
 *.docx
 

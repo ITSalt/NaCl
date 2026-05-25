@@ -1,7 +1,9 @@
 # /nacl-goal alias catalog
 
-The four aliases shipped in 2.10.0. Three more (`stubs-cleanup`,
-`migrate-canary`, `feature`) ship in 2.10.1.
+The four aliases shipped in 2.10.0 (preview-by-default; `--start` opt-in for autonomy).
+2.10.1 adds `intake` (autonomy-by-default orchestrator with `--plan-only` /
+`--strict` opt-outs — see SKILL.md §Alias UX modes). Three more aliases
+(`stubs-cleanup`, `migrate-canary`, `feature`) remain deferred.
 
 Each alias entry is the binding contract between the wrapper, the
 check script, and the GOAL_PROOF protocol. All check scripts MUST
@@ -13,12 +15,17 @@ Format:
 ```
 alias_name              <string>
 tier                    <S|M|L|XL>
+default_mode            preview|autonomous       # 2.10.1+
 check_script            <path under nacl-goal/checks/>
 check_script_args_schema  <args contract>
 expected_evidence_keys  <ordered list>
 result_decision_rule    <when each result fires>
 tier_c_collisions       <gates this alias must refuse to cross>
 ```
+
+`default_mode` is absent on the four 2.10.0 aliases (they predate the
+field; their behavior is `preview`). `intake` was added in 2.10.1 with
+`default_mode: autonomous`. Future aliases MUST specify the field.
 
 ---
 
@@ -193,7 +200,115 @@ tier_c_collisions
 
 ---
 
-## Aliases deferred to 2.10.1
+## intake (2.10.1)
+
+The autonomous goal orchestrator. Ingests free-text + image intent, classifies
+via `/nacl-tl-intake --emit-state` into BUG / TASK / FEATURE_SMALL atoms (with
+`depends_on` topological execution), runs them on one feature branch producing
+one PR, drives that PR through CI to a healthy staging stand.
+
+`intake` is the FIRST alias with `default_mode: autonomous` — it runs without
+`--start`. Opt out via `--plan-only`, `--strict`, or `--target=dev-only`.
+
+See SKILL.md §`intake` alias UX, §Flow, §Default safe-exception envelope.
+
+```
+alias_name              intake
+tier                    M
+default_mode            autonomous
+check_script            nacl-goal/checks/intake.sh
+check_script_args_schema
+  required:
+    --run-id <goal-run-id>           # script reads ONLY .tl/goal-runs/<run_id>/
+                                     # goal text / images / target / policy / budget
+                                     # live in artifacts, not shell args
+invocation_args (user-facing — NOT passed to check_script)
+  positional: <goal: free-text string>     # may include image refs
+  opt-out flags:
+    --plan-only                            # planning artifacts only
+    --strict                               # disable default safe-exception envelope
+    --target=staging|dev-only              # default: staging (auto from config)
+    --budget=<profile>                     # optional budget override
+    --new-run                              # force fresh run-id on fingerprint match
+expected_evidence_keys
+  - intake_status                  # classified | ambiguous | refused
+  - plan_locked                    # bool
+  - dependency_graph_valid         # bool — topological sort succeeded
+  - unsupported_atoms_count        # int — FEATURE_HEAVY or hard-refused atoms
+  - atoms_total                    # int
+  - atoms_implemented              # int — per-atom state.json == verified
+  - feature_atoms_total            # int
+  - feature_spec_delta_count       # int — UC/spec edits written for FEATURE atoms
+  - feature_atoms_verified         # int — /nacl-tl-verify PASS for FEATURE atoms
+  - branch                         # string — feature/goal-<short-hash>
+  - branch_head_sha                # string — must equal goal_final_sha at deliver
+  - pr_url                         # string | null — one PR per run
+  - pr_head_sha                    # string — must equal goal_final_sha
+  - goal_final_sha                 # string — frozen after last atom verified
+  - ci_status                      # success | pending | failure
+  - no_new_regressions             # bool — mechanical baseline diff
+  - regression_check_mode          # stable_ids | best_effort
+  - baseline_command               # string — resolved test command (audit)
+  - deploy_target                  # staging | dev-only | none
+  - deploy_status                  # healthy | degraded | failed | n/a
+  - deployed_sha_matches           # true | false | n/a
+  - staging_functional_verified    # bool | n/a
+  - dev_verified                   # bool | n/a — dev-only path only
+result_decision_rule
+  GOAL_OK
+    when intake_status == classified
+    AND plan_locked == true
+    AND dependency_graph_valid == true
+    AND unsupported_atoms_count == 0
+    AND atoms_implemented == atoms_total
+    AND feature_spec_delta_count >= feature_atoms_total
+    AND feature_atoms_verified == feature_atoms_total
+    AND pr_url != null
+    AND branch_head_sha == goal_final_sha
+    AND pr_head_sha == goal_final_sha
+    AND ci_status == success
+    AND no_new_regressions == true
+    AND (
+          (deploy_target == staging
+           AND deploy_status == healthy
+           AND (deployed_sha_matches == true
+                OR (deployed_sha_matches == n/a AND staging_functional_verified == true)))
+          OR (deploy_target == dev-only AND dev_verified == true AND no_new_regressions == true)
+        )
+  GOAL_NOT_OK
+    default — atoms still implementing, CI still pending, etc.
+  GOAL_BLOCKED
+    when probe-stop-signals.sh emitted any blocker (when wired in 2.10.1)
+    OR any of the runtime block codes from refusal-catalog.md GOAL_BLOCKED_*
+       (atom failed, branch drifted, regressions detected, CI failed,
+        staging unhealthy, deployed SHA mismatch, feature requires product decision)
+  GOAL_BUDGET_EXHAUSTED
+    when turns_so_far >= 200
+    OR elapsed >= 3h
+    OR observed_tokens >= 4_000_000   # token accounting is best-effort
+tier_c_collisions
+  - REFUSE_HUMAN_GATE_BA_SA_HANDOFF
+      if classified atoms require BA-layer changes (must pre-run /nacl-ba-handoff)
+  - REFUSE_HUMAN_GATE_SA_PHASE_CONFIRMATION
+      if classified atoms imply SA-phase confirmation (escalate to interactive /nacl-sa-full)
+  - REFUSE_HOTFIX_JUDGMENT
+      if any atom has hard_refuse_triggers including "hotfix_or_release_routing"
+  - REFUSE_PRODUCTION_MUTATION
+      if the working tree is on main/master/release/* (precheck refuses pre-/goal
+      with PLAN_BLOCKED_UNSAFE_PRODUCTION_MUTATION)
+```
+
+Additional intake-specific refusals (NOT covered by existing REFUSE_* codes;
+see `refusal-catalog.md` for full entries):
+
+- Pre-`/goal` refusals (`PLAN_BLOCKED_*`): fired by precheck, classify, lock,
+  strict pre-flight, privacy precheck, fingerprint dedup.
+- Runtime block codes (`GOAL_BLOCKED_*`): emitted during the autonomous loop
+  via the check script's `result: GOAL_BLOCKED` + an evidence sub-reason.
+
+---
+
+## Aliases deferred (post-2.10.1)
 
 ```
 stubs-cleanup:<MOD-ID>       # Tier S; check stub-registry.json empty >= medium
