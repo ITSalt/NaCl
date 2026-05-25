@@ -32,6 +32,23 @@ description: |
 **Contract change discipline:**
 The 0.10.0→0.10.1 regression was caused by the absence of this discipline. `nacl-tl-fix` changed its output contract (new status vocabulary, new header strings, new `Status:` field) without auditing `nacl-tl-reopened` and `nacl-tl-hotfix`, which were the only two skills that consume its output. Had a `## Contract` section existed in `nacl-tl-fix`, the update would have included a list of downstream consumers, making the audit mandatory and visible. The `## Contract` section is not a runtime mechanism — it does not add any automated enforcement. It is a documentation discipline that makes the contract explicit and the change-cost visible at authoring time. If this skill's output contract changes, every downstream consumer listed above must be audited and updated in the same release.
 
+## Flags
+
+| Flag | Description |
+|------|-------------|
+| `UC###` | Task ID to implement (required positional) |
+| `--continue` | Re-work after review rejection (reads review.md) — see `## --continue Flag` below |
+| `--dry-run` | Show execution plan without making changes |
+| `--auto-ship` | After successful TDD cycle + green tests + clean baseline diff, automatically invoke `/nacl-tl-ship` (2.10.1+). Used by `/nacl-goal intake` to chain dev→ship. Mirrors `/nacl-tl-fix --auto-ship`: only DEV-BE COMPLETE auto-ships; any non-COMPLETE exit STOPs, the user makes the call. |
+
+## Goal-context env vars (2.10.1+)
+
+When this skill is invoked under `/nacl-goal intake`, the wrapper exports `NACL_GOAL_RUN_ID`, `NACL_GOAL_BRANCH`, `NACL_SHIP_MODE=append`, and `NACL_GOAL_BUDGET_FILE`. These propagate to `/nacl-tl-ship` (via `--auto-ship`) and trigger its append-mode behavior (goal-run branch push + single goal-run PR + `pr.json` write). See `nacl-tl-ship/SKILL.md` §Goal-context append mode for the full contract.
+
+If `--auto-ship` triggers a sub-invocation of `/nacl-tl-fix` (e.g. for a fix-up commit on a related bug surfaced during dev), the spec-first exception lookup glob scans both `.tl/exceptions/*.yaml` AND `.tl/exceptions/goal-runs/*/EXC-goal-*.yaml` automatically (see `nacl-tl-fix/SKILL.md` Step 6.SF rule 4).
+
+**Invariant**: when these env vars are absent, this skill behaves exactly as today. Interactive `/nacl-tl-dev-be UC###` is unaffected.
+
 ---
 
 You are a **senior backend developer** implementing features using strict TDD (Test-Driven Development) workflow. You work from self-sufficient backend task files created by `nacl-tl-plan`. Your scope is **backend only** -- services, controllers, repositories, DTOs, database operations.

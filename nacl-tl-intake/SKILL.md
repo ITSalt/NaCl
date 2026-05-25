@@ -67,6 +67,98 @@ Or even less structured:
 a payment system, and we need to update the deploy docs for the new server"
 ```
 
+### Flags
+
+| Flag | Description |
+|------|-------------|
+| `--yes` | Auto-confirm HIGH+GRAPH+no-spec-gap+L0/L1 atoms without prompting (see `--yes flag behavior` below). |
+| `--emit-state <path>` | Write the deterministic routing table as a JSON file (2.10.1+). When set, this skill writes the table to the given path INSTEAD of (or in addition to) interactive prompting. Used by `/nacl-goal intake` to capture classification artifacts for the wrapper. Format: see §`--emit-state` JSON schema below. |
+| `--namespace=<DOMAIN>` | (sa-feature passthrough, optional) Restrict classification to a single domain namespace. |
+
+### `--emit-state` JSON schema (2.10.1+)
+
+When `--emit-state <path>` is set, this skill writes a JSON file at `<path>` with the following shape (per `nacl-goal/plan-lock-schema.md` §intake.json):
+
+```json
+{
+  "schema_version": 1,
+  "atoms": [
+    {
+      "id": "atom-<short_sha256(type + linked_uc + normalized_title)>[:12]",
+      "type": "BUG|TASK|FEATURE_SMALL|FEATURE_HEAVY",
+      "title": "<one-line atom summary>",
+      "linked_uc": "UC-NNN|TECH-NNN|null",
+      "evidence": ["GRAPH", "HEURISTIC", "USER_OVERRIDE"],
+      "confidence": "HIGH|MEDIUM|LOW",
+      "risk_level": "L0|L1|L2|L3",
+      "depends_on": ["atom-<...>"],
+      "hard_refuse_triggers": ["<trigger>"],
+      "trigger_evidence": "<short quote from goal text justifying each trigger>",
+      "spec_gap": false,
+      "skill_path": "nacl-tl-fix|nacl-tl-dev|nacl-sa-feature -> nacl-tl-dev"
+    }
+  ],
+  "classification_metadata": {
+    "ambiguous": false,
+    "ambiguity_reason": null,
+    "requires_split": false,
+    "split_reason": null
+  }
+}
+```
+
+#### FEATURE size class
+
+The `type` field distinguishes `FEATURE_SMALL` (bounded — can be implemented inside one PR without product decisions) from `FEATURE_HEAVY` (requires migrations, auth/security, billing, multiple architecture trade-offs, or a product-decision the orchestrator can't make).
+
+Classification rule for FEATURE atoms:
+
+```
+FEATURE_HEAVY if ANY of:
+  • hard_refuse_triggers contains any of: schema_migration, public_api_contract,
+    auth_or_security, permissions, billing, destructive_data_operation,
+    l2_l3_architecture, product_decision_required, hotfix_or_release_routing
+  • the atom would require >1 new HTTP route AND >1 new DB column AND >1 new graph entity
+  • the goal text mentions ≥3 of: pricing, payment, auth, role, permission,
+    migration, schema, refactor architecture, API contract
+  • the linked UC does not exist AND the goal requires a new bounded context
+
+FEATURE_SMALL otherwise (the default for feature requests that have:
+  - a clear linked UC (existing or trivially creatable),
+  - no hard_refuse triggers,
+  - implementation fits one feature branch + one PR + one CI run)
+```
+
+#### `depends_on` hints
+
+When this skill can infer that one atom semantically depends on another (e.g. atom A creates a route that atom B consumes), it populates `atom_B.depends_on = ["atom-A"]`. When uncertain, leave the list empty — the wrapper's topological sort tie-breaks by BUG-before-FEATURE then by id.
+
+`depends_on` is a hint, not a hard constraint. The wrapper's plan lock applies it via topological sort and refuses cycles.
+
+#### `hard_refuse_triggers` closed set
+
+The wrapper consumes this field mechanically (see `nacl-goal/plan-lock-schema.md` §hard_refuse_triggers → refusal mapping). This skill MUST emit triggers ONLY from this closed set:
+
+- `schema_migration` — DB migration, message-contract change
+- `public_api_contract` — public API surface modification
+- `auth_or_security` — authentication, authorization, security-policy change
+- `permissions` — role/permission matrix change
+- `billing` — payment, pricing, invoicing change
+- `destructive_data_operation` — bulk delete, data migration, backup-incompatible change
+- `l2_l3_architecture` — bounded-context boundary change, cross-module contract change
+- `product_decision_required` — feature requires choosing between alternatives
+- `hotfix_or_release_routing` — atom is L0/L1 emergency or release-pipeline-touching
+
+Each trigger MUST also populate `trigger_evidence` with a short verbatim quote from the user's goal text.
+
+`--emit-state` does NOT preclude interactive prompting. When both `--emit-state <path>` and `--yes` are set, the skill writes the JSON AND auto-confirms eligible atoms. When `--emit-state` is set without `--yes`, the JSON is written first; then interactive prompts run as today (and the user can manually adjust the file afterwards).
+
+### Goal-context env vars (2.10.1+)
+
+When this skill is invoked under `/nacl-goal intake`, the wrapper exports `NACL_GOAL_RUN_ID` (and the other goal env vars). This skill recognizes `NACL_GOAL_RUN_ID` only for logging purposes — classification logic is unaffected. The wrapper itself passes `--yes --emit-state .tl/goal-runs/<run_id>/intake.json` so this skill does NOT need to read the env vars to know it's running under a goal.
+
+**Invariant**: when these env vars are absent and `--emit-state` is not passed, this skill behaves exactly as today.
+
 ---
 
 ## Language Rules
