@@ -92,3 +92,29 @@ THEN write code that conforms to that behavior.
 ## Deployment
 
 {{DEPLOYMENT_SECTION}}
+
+## /goal command — local rules
+
+The `/goal` command (Claude Code 2.1.139+) sets a session-scoped objective evaluated by a transcript-only sub-model. Use it only with skills that have a `## Use with /goal` section in their SKILL.md. Skills with `## NOT for /goal` sections will refuse the wrapper at invocation time.
+
+**Supported aliases for this project** (check `nacl-goal/aliases.md` for the current list):
+
+| Alias | Skill | Tier | When to use |
+|-------|-------|------|-------------|
+| `wave:<N>` | /nacl-tl-full | M | Drive an entire development wave to completion |
+| `feature:<FR-NNN>` | /nacl-tl-conductor | L | Deploy a single feature request end-to-end |
+| `batch:<list>` | /nacl-tl-conductor | L | Deploy a comma-separated list of FR/task IDs |
+| `reopened-drain` | /nacl-tl-reopened | M | Drain the Reopened column to empty |
+| `validate:module:<MOD-ID>` | /nacl-sa-validate | S | Run all SA checks for one module |
+| `fix:<BUG-NNN>` | /nacl-tl-fix | S | Drive a single bug fix to RED→GREEN |
+
+**Tiers (soft limits):** S = 150 turns / 2h / 3M tokens, M = 500 / 6h / 8M, L = 1200 / 16h / 20M.
+
+**Never wrap with /goal:**
+- `/nacl-ba-full` — BA→SA handoff gate requires human review (`REFUSE_HUMAN_GATE_BA_SA_HANDOFF`)
+- `/nacl-sa-full` — every phase boundary requires domain expert confirmation (`REFUSE_HUMAN_GATE_SA_PHASE_CONFIRMATION`)
+- `/nacl-tl-hotfix` — production branch decisions require operator presence (`REFUSE_HOTFIX_JUDGMENT`)
+
+**Check scripts** live in `nacl-goal/checks/`. Each script exits 0 and prints a `GOAL_PROOF` / `END_GOAL_PROOF` block to stdout. The `/goal` evaluator reads the block; the primary session prints it to the transcript at the end of every turn.
+
+**Reference:** `docs/guides/goal-command.md`

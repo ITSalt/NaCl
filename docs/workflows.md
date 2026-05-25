@@ -189,6 +189,35 @@ Cherry-picks the commit onto a `hotfix/` branch from `main` and opens a PR.
 
 ---
 
+---
+
+## 10. Goal-driven workflow
+
+**When to use:** A long deterministic loop that has a graph-checkable finish line —
+draining a wave, fixing a tracked bug, or validating a module — and you want it to run
+without manual prompting between turns. Use `/nacl-goal` instead of `/goal` directly;
+it enforces NaCl gate rules and writes a structured run file.
+
+**Choose `/nacl-goal` when:**
+- The task maps to a built-in alias (`wave`, `fix`, `validate`, `reopened-drain`).
+- The finish line is objectively verifiable by a script (not a human judgment call).
+- You are comfortable leaving the session running for Tier S (up to 2 h) or Tier M (up to 6 h).
+
+**Do not use `/nacl-goal` for:**
+- Anything that crosses a BA-SA handoff, SA phase confirmation, or hotfix routing decision.
+  Those are mandatory human-approval gates — `/nacl-goal` refuses them by code.
+- Tier L / XL unattended overnight (until 2.10.2 calibration data is available).
+
+```
+/nacl-goal wave:5             # preview — prints tier, budget, check script, gates, denylist
+/nacl-goal wave:5 --start     # issues /goal with the GOAL_PROOF-instructing condition
+```
+
+After the run, inspect `.tl/goal-runs/<run_id>.md` for the machine-parseable record,
+including the post-completion re-check result and any gate-violation attempts logged.
+
+Full reference: [docs/guides/goal-command.md](guides/goal-command.md)
+
 ## Next Steps
 
 - [Quick Start](quickstart.md) -- get running in 10 minutes

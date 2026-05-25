@@ -7,6 +7,15 @@ description: |
   Chains all nacl-sa-* skills with user confirmation gates.Use when: create complete SA spec with graph, or the user says "/nacl-sa-full".
 ---
 
+## NOT for /goal
+
+This skill contains mandatory user confirmation gates at every phase boundary. Each gate requires the domain expert to verify graph writes before the next phase begins — Phase 2 (domain model per module), Phase 5 (UC detail per primary UC), and Phase 7 (validation) all produce graph output that must be reviewed for business correctness before proceeding. Autonomous execution would skip those reviews.
+
+**Refusal code:** `REFUSE_HUMAN_GATE_SA_PHASE_CONFIRMATION`
+**Background:** `docs/guides/goal-command.md`
+
+---
+
 # /nacl-sa-full --- Full SA Specification (Graph Orchestrator)
 
 ## Purpose

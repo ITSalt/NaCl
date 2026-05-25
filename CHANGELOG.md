@@ -4,6 +4,54 @@ All notable changes to NaCl (Natural Agent Control Language) will be documented 
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [2.10.0] — 2026-05-25
+
+Minor release. New `/nacl-goal` skill wraps Anthropic's `/goal` command
+(Claude Code 2.1.139, approx. May 2026) with NaCl semantics. The
+`/goal` evaluator (Haiku 4.5 by default) is transcript-only — it cannot
+run Cypher, read files, or inspect graph state — so this release ships
+the GOAL_PROOF wire format: a structured block the primary session prints
+into the transcript every turn so the evaluator has something
+deterministic to judge.
+
+Alias catalog (four aliases in 2.10.0): `wave:<N>` (Tier M),
+`fix:<BUG-NNN>` (Tier S), `validate:module:<MOD-ID>` (Tier S),
+`reopened-drain` (Tier M). Check scripts live under `nacl-goal/checks/`.
+Contracts pinned in `nacl-goal/aliases.md`.
+
+Ten refusal codes in `nacl-goal/refusal-catalog.md` cover every
+mandatory human gate: BA-SA handoff, SA phase confirmation, hotfix
+judgment, post-canary retrospective, production mutations,
+`--dangerously-skip-permissions`, and more. Each refusal names the gate
+and prints the copy-paste command for the interactive path.
+
+`/nacl-goal` runs in preview mode by default. The `--start` flag exists
+but warns for Tier S/M and refuses for Tier L/XL; autonomous execution
+is deferred to 2.10.1. No `.tl/goal-runs/` writes, no concurrent lock,
+no crash/resume, no runtime gate detector in this release.
+
+Seven orchestrator SKILL.md files gain `## Use with /goal` sections
+(`nacl-tl-full`, `nacl-tl-conductor`, `nacl-tl-reopened`,
+`nacl-sa-validate`, `nacl-tl-fix`, `nacl-tl-stubs`, `nacl-migrate`).
+Three gate skills gain `## NOT for /goal` sections (`nacl-ba-full`,
+`nacl-sa-full`, `nacl-tl-hotfix`). Four new docs under `docs/guides/`:
+`goal-command.md`, `goal-proof-protocol.md`, `goal-run-schema.md`,
+`goal-permissions.md`.
+
+Migration impact: none for existing projects. No config.yaml, Neo4j, or
+YouGile schema changes.
+
+Full release notes:
+`docs/releases/2.10.0-goal-protocol-foundation/release-notes.md`.
+
+## [2.10.1] — in development
+
+Autonomous execution: `--start` fully enabled, `.tl/goal-runs/` enforced,
+concurrent-execution lock, crash/resume, three new aliases
+(`stubs-cleanup`, `migrate-canary`, `feature`), stop-signal probe, and
+runtime gate detector. See
+`docs/releases/2.10.1-autonomous-execution/release-notes.md`.
+
 ## [2.9.0] — 2026-05-25
 
 Minor release. `/nacl-tl-intake` no longer fires the same generic

@@ -155,6 +155,17 @@ Skills for migrating existing projects from markdown-based specs into the NaCl g
 | `nacl-migrate-ba` | Extract and import BA artifacts (processes, entities, roles, rules) from existing markdown documents into Neo4j BA layer nodes. | `/nacl-migrate-ba path/to/docs` | — |
 | `nacl-migrate-sa` | Extract and import SA artifacts (modules, use cases, domain model, forms) from existing markdown documents into Neo4j SA layer nodes. | `/nacl-migrate-sa path/to/docs` | — |
 
+
+---
+
+## Goal Orchestration (1)
+
+Wraps Anthropic's `/goal` command with NaCl semantics and safety rails.
+
+| Skill | Description | Example invocation | Key modifiers |
+|-------|-------------|-------------------|---------------|
+| `nacl-goal` | Resolves a NaCl alias into a `/goal` completion condition that the transcript-only evaluator can verify via the GOAL_PROOF wire format. Preview mode by default; `--start` issues the real `/goal`. Refuses Tier-C gates (BA-SA handoff, SA phase confirmation, hotfix judgment). See `docs/guides/goal-command.md`. | `/nacl-goal wave:5` | `--start`, `--tier=<S\|M\|L\|XL>`, `--check-script=<path>`, `--description` |
+
 ---
 
 ## Next Steps

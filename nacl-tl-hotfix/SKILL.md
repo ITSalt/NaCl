@@ -35,6 +35,15 @@ auditing consumers.
 
 ---
 
+## NOT for /goal
+
+Emergency hotfix requires human judgment on urgency, scope, and whether to target main directly. The skill touches the production branch, creates PRs with auto-merge, and optionally pushes directly to main — decisions that require the operator to be present and explicitly confirm at Step 6. Autonomous execution on a production branch is out of scope for /goal regardless of fix status.
+
+**Refusal code:** `REFUSE_HOTFIX_JUDGMENT`
+**Background:** `docs/guides/goal-command.md`
+
+---
+
 # TeamLead Hotfix -- Emergency Fix to Main
 
 ## Your Role

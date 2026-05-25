@@ -38,6 +38,20 @@ making the audit mandatory and visible.
 
 ---
 
+## Use with /goal
+
+**Wrap with:** `/nacl-goal wave:<N>` (tier M)
+
+This skill is a good fit for autonomous `/goal` loops because progress is graph-verifiable per task: every Task node carries a six-status value the check script reads directly from Neo4j. The wrapper composes a completion condition that all tasks in Wave N have status=PASS with zero UNVERIFIED, BLOCKED, or REGRESSION nodes remaining.
+
+**Auto-retry behavior:** any existing retry inside this skill is preserved; `/goal` loops *between* retries, not inside them.
+
+**Check script:** `nacl-goal/checks/wave.sh`
+**Refusals:** see `nacl-goal/refusal-catalog.md` for the gates this wrapper guards.
+**Background:** `docs/guides/goal-command.md`
+
+---
+
 # /nacl-tl-full -- Graph-Aware Full Lifecycle Orchestrator
 
 ## Your Role

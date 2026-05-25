@@ -37,6 +37,20 @@ making the audit mandatory and visible.
 
 ---
 
+## Use with /goal
+
+**Wrap with:** `/nacl-goal feature:<FR-NNN>` or `/nacl-goal batch:<comma-list>` (tier L)
+
+This skill is a good fit for autonomous `/goal` loops because batch execution progress is graph-verifiable: each FR/task item reaches a terminal status in Neo4j that the check script can query directly. The wrapper composes a completion condition that the FR or batch is deployed to staging with a health check PASS and all task nodes in terminal status.
+
+**Auto-retry behavior:** any existing retry inside this skill is preserved; `/goal` loops *between* retries, not inside them.
+
+**Check script:** `nacl-goal/checks/feature.sh`
+**Refusals:** see `nacl-goal/refusal-catalog.md` for the gates this wrapper guards.
+**Background:** `docs/guides/goal-command.md`
+
+---
+
 # Graph TeamLead Conductor -- Process Manager
 
 ## Your Role

@@ -127,6 +127,15 @@ What do you need?
 | Render graph to Markdown/Excalidraw | `/nacl-render md uc UC-101` | Namespaces: `md`, `excalidraw`; `--output` |
 | Publish to Docmost | `/nacl-publish docmost` | Also: `boards`, `full`, `docmost-incremental` |
 
+### Goal-driven workflows
+
+Use `/nacl-goal` when you want an alias-driven autonomous loop instead of running skills
+manually turn by turn. It wraps Anthropic's `/goal` with NaCl gate enforcement and the
+GOAL_PROOF protocol so the transcript-only evaluator has something deterministic to judge.
+Run without `--start` for a full preview (tier, soft budget, check script, denylist); add
+`--start` to issue the real `/goal`. See [docs/guides/goal-command.md](guides/goal-command.md)
+for the complete reference.
+
 ## Next Steps
 
 - [Skills Reference](skills-reference.md) — complete catalog with descriptions

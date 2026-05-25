@@ -524,6 +524,36 @@ No user-facing modifiers. Invoked as: `/nacl-tl-docs UC###`
 
 ---
 
+### Goal Orchestration
+
+#### nacl-goal
+
+**Paradigm:** Alias + flag. Preview by default; `--start` issues the underlying `/goal`. See [Goal-driven workflows](guides/goal-command.md).
+
+| Invocation | Description |
+|-----------|-------------|
+| `/nacl-goal wave:<N>` | Preview: finish Wave N (Tier M) — `nacl-tl-full` work |
+| `/nacl-goal fix:<BUG-NNN>` | Preview: drive a bug fix to GREEN (Tier S) — `nacl-tl-fix` work |
+| `/nacl-goal validate:module:<MOD-ID>` | Preview: turn all L1–L7 validators GREEN (Tier S) |
+| `/nacl-goal reopened-drain` | Preview: drain the Reopened YouGile column (Tier M) |
+| `/nacl-goal stubs-cleanup:<MOD-ID>` | Preview: empty stub registry ≥ medium (Tier S, **ships in 2.10.1**) |
+| `/nacl-goal feature:<FR-NNN>` | Preview: deliver an FR end-to-end (Tier L, **ships in 2.10.1**) |
+| `/nacl-goal migrate-canary` | Preview: migrate canary project up to retrospective gate (Tier L, **ships in 2.10.1**) |
+| `/nacl-goal custom "<condition>" --check-script=<path> --tier=<T> --description=<…>` | Custom alias with user-supplied check script |
+| `/nacl-goal resume` | Re-attach to a stale `goal_in_progress` marker (**2.10.1**) |
+| `/nacl-goal abort <run_id>` | Clear a stale marker, write `exit_reason=crashed` to run file (**2.10.1**) |
+
+| Flag | Description |
+|------|-------------|
+| `--start` | Actually issue `/goal` with the composed condition. Without it, the wrapper only prints the preview block. In 2.10.0, `--start` warns for Tier S/M and refuses Tier L/XL; in 2.10.1 it is fully enabled. |
+| `--tier=<S\|M\|L\|XL>` | Required for `custom`. Overrides the alias-default soft budget. Tier table in `docs/guides/goal-command.md`. |
+| `--check-script=<path>` | Required for `custom`. Must exist, be executable, and emit a GOAL_PROOF-compatible block per `docs/guides/goal-proof-protocol.md`. |
+| `--description="<one line>"` | Recorded in the run file for human review. |
+
+Refuses Tier-C skills (`nacl-ba-full`, `nacl-sa-full`, `nacl-tl-hotfix`, post-canary `nacl-migrate`) and all production-mutation actions. Full catalog: `nacl-goal/refusal-catalog.md`.
+
+---
+
 ### Utility Skills
 
 #### nacl-render

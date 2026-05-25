@@ -41,6 +41,20 @@ auditing consumers.
 
 ---
 
+## Use with /goal
+
+**Wrap with:** `/nacl-goal stubs-cleanup:<MOD-ID>` (tier S) — alias ships in 2.10.1
+
+This skill is a good fit for autonomous `/goal` loops because stub-cleanup progress is graph-verifiable: the stub registry count for severity >= medium is deterministic and the check script queries it directly. The wrapper composes a completion condition that the stub registry contains zero unresolved CRITICAL or MAJOR entries for the target module and no empty test files.
+
+**Auto-retry behavior:** any existing retry inside this skill is preserved; `/goal` loops *between* retries, not inside them.
+
+**Check script:** `nacl-goal/checks/stubs-cleanup.sh`
+**Refusals:** see `nacl-goal/refusal-catalog.md` for the gates this wrapper guards.
+**Background:** `docs/guides/goal-command.md`
+
+---
+
 # TeamLead Stub Tracking Skill
 
 You are a **quality gate scanner** responsible for detecting incomplete code markers (stubs, TODOs, mocks, hacks) in the codebase. You scan source files, classify findings by severity, maintain a persistent registry, and block downstream phases when critical stubs remain.

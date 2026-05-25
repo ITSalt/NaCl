@@ -10,6 +10,20 @@ description: |
   Use when: validate specification, check consistency, find errors, run checks, quality gate.
 ---
 
+## Use with /goal
+
+**Wrap with:** `/nacl-goal validate:module:<MOD-ID>` (tier S)
+
+This skill is a good fit for autonomous `/goal` loops because all checks are read-only Cypher queries whose results are deterministic: the check script queries the same Neo4j graph and counts zero-row (PASS) vs non-zero-row (FAIL) outcomes for each L1–L7 and XL6–XL9 check. The wrapper composes a completion condition that all enabled checks return zero findings.
+
+**Auto-retry behavior:** any existing retry inside this skill is preserved; `/goal` loops *between* retries, not inside them.
+
+**Check script:** `nacl-goal/checks/validate.sh`
+**Refusals:** see `nacl-goal/refusal-catalog.md` for the gates this wrapper guards.
+**Background:** `docs/guides/goal-command.md`
+
+---
+
 # /nacl-sa-validate -- Specification Validation (Graph)
 
 ## Purpose

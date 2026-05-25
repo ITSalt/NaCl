@@ -51,6 +51,20 @@ auditing consumers.
 
 ---
 
+## Use with /goal
+
+**Wrap with:** `/nacl-goal reopened-drain` (tier M)
+
+This skill is a good fit for autonomous `/goal` loops because drain progress is graph-verifiable: each reopened task moves to a terminal YouGile column (DevDone or InWork-halted) and its Task node status updates in Neo4j. The wrapper composes a completion condition that the Reopened column is empty and no new reopened tasks have arrived for 2 consecutive turns.
+
+**Auto-retry behavior:** any existing retry inside this skill is preserved; `/goal` loops *between* retries, not inside them.
+
+**Check script:** `nacl-goal/checks/reopened-drain.sh`
+**Refusals:** see `nacl-goal/refusal-catalog.md` for the gates this wrapper guards.
+**Background:** `docs/guides/goal-command.md`
+
+---
+
 # TeamLead — Reopened Task Handler
 
 ## Your Role

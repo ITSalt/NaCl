@@ -10,6 +10,20 @@ description: |
   or the user says "/nacl-tl-fix" followed by a problem description.
 ---
 
+## Use with /goal
+
+**Wrap with:** `/nacl-goal fix:<BUG-NNN>` (tier S)
+
+This skill is a good fit for autonomous `/goal` loops because bug fix progress is graph-verifiable: the regression test transitions RED→GREEN in a way the check script can observe, and the fix commit appears in the task's graph evidence. The wrapper composes a completion condition that the regression test is GREEN, a PR is open, and no new test failures appear relative to the pre-fix baseline.
+
+**Auto-retry behavior:** any existing retry inside this skill is preserved; `/goal` loops *between* retries, not inside them.
+
+**Check script:** `nacl-goal/checks/fix.sh`
+**Refusals:** see `nacl-goal/refusal-catalog.md` for the gates this wrapper guards.
+**Background:** `docs/guides/goal-command.md`
+
+---
+
 # TeamLead Spec-First Bug Fix Skill
 
 ## CRITICAL: Follow ALL 8 Steps

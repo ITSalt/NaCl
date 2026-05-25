@@ -42,6 +42,10 @@ Each use case is committed atomically. QA runs at two levels: locally during dev
 
 - **Config-driven workflow.** Each project has a `config.yaml` that controls git strategy (direct vs feature-branch), Neo4j connection, Docmost space, YouGile board, and other project-specific settings.
 
+## 2.10.0 — goal-protocol-foundation (2026-05-25)
+
+NaCl wraps Anthropic's `/goal` command (Claude Code 2.1.139, approx. May 2026) via the new `/nacl-goal` skill. Safety rails ship first: the GOAL_PROOF wire format, four aliases (`wave`, `fix`, `validate`, `reopened-drain`), a structured refusal catalog, and a permissions denylist. Autonomous execution (`--start` fully enabled, concurrent lock, crash/resume, runtime gate detector) follows in 2.10.1. See [docs/guides/goal-command.md](docs/guides/goal-command.md).
+
 ## Strict mode (since 2.8.0)
 
 NaCl 2.8.0 transitions the skill chain from **evidence-descriptive** to **evidence-blocking** gates. Missing evidence — a `BLOCKED` task, an `UNVERIFIED` sub-skill, an unanswered external-contract gap, a stale graph — halts the chain instead of being downgraded to "explained." Eight skip flags were removed (`--skip-merge`, `--skip-verify`, `--skip-deploy`, `--skip-qa`, `--skip-deliver`, `--skip-plan`, `--no-test`, `--force`); only `--skip-e2e` is retained with explicit scope. Closure skills (`nacl-tl-release`, `nacl-tl-conductor`, `nacl-tl-deliver`) refuse to declare success on any task with terminal state in `{UNVERIFIED, BLOCKED, FAILED, NOT_RUN}`. The only sanctioned overrides are signed exceptions under `.tl/exceptions/` and one-shot emergency mode under `.tl/emergencies/`.

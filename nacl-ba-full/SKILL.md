@@ -7,6 +7,15 @@ description: |
   Chains all nacl-ba-* skills sequentially with user confirmation gates.Use when: create complete BA model with graph, full business analysis, or the user says "/nacl-ba-full".
 ---
 
+## NOT for /goal
+
+This skill contains a mandatory human-approval gate between Phase 9 (BA→SA handoff) and SA phase start. The orchestrator pauses for the domain expert to review the full handoff package — traceability matrix, automation scope, and module grouping — before any SA work begins. That review requires domain judgment that cannot be delegated to an autonomous loop.
+
+**Refusal code:** `REFUSE_HUMAN_GATE_BA_SA_HANDOFF`
+**Background:** `docs/guides/goal-command.md`
+
+---
+
 # /nacl-ba-full --- Full BA Model (Graph Orchestrator)
 
 ## Purpose

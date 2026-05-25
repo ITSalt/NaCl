@@ -11,6 +11,20 @@ description: |
   Use when: migrate project to graph, import old-methodology project, nacl-migrate.
 ---
 
+## Use with /goal
+
+**Wrap with:** `/nacl-goal migrate-canary` (tier L) — alias ships in 2.10.1
+
+This skill is a good fit for autonomous `/goal` loops because migration progress is graph-verifiable: MIGRATION-REPORT.md records coverage percentages and phase outcomes that the check script reads directly. The wrapper composes a completion condition that MIGRATION-REPORT.md shows >= 98% source coverage AND the retrospective gate has not yet been crossed (which requires human approval before expanding to further projects).
+
+**Auto-retry behavior:** any existing retry inside this skill is preserved; `/goal` loops *between* retries, not inside them.
+
+**Check script:** `nacl-goal/checks/migrate-canary.sh`
+**Refusals:** see `nacl-goal/refusal-catalog.md` for the gates this wrapper guards.
+**Background:** `docs/guides/goal-command.md`
+
+---
+
 # /nacl-migrate — Old-Methodology → Graph Migration Orchestrator
 
 ## Role
