@@ -138,6 +138,50 @@ Windows PowerShell:
 Test-Path "$HOME\.agents\skills\nacl-core\SKILL.md"
 ```
 
+## Обновление Claude-Code-скиллов
+
+После `git pull` существующие скиллы обновляются сразу, потому что установка —
+это набор симлинков в checkout репозитория. Новые директории скиллов **не**
+подключаются автоматически — повторно запустите установщик, чтобы их добавить.
+
+### macOS / Linux / WSL2
+
+```sh
+cd "$HOME/NaCl"
+git pull --ff-only
+
+for dir in "$HOME"/NaCl/*/; do
+  [ -f "$dir/SKILL.md" ] && ln -sf "$dir" "$HOME/.claude/skills/$(basename "$dir")"
+done
+```
+
+### Windows PowerShell
+
+Запустите PowerShell от имени Администратора (или с включённым Developer Mode):
+
+```powershell
+cd $HOME\NaCl
+git pull --ff-only
+
+$skillsDir = "$env:USERPROFILE\.claude\skills"
+Get-ChildItem -Path "$HOME\NaCl" -Directory | ForEach-Object {
+    if (Test-Path "$($_.FullName)\SKILL.md") {
+        $target = Join-Path $skillsDir $_.Name
+        if (Test-Path $target) { Remove-Item $target -Force -Recurse }
+        New-Item -ItemType SymbolicLink -Path $target -Target $_.FullName | Out-Null
+    }
+}
+```
+
+Оба сниппета идемпотентны: существующие симлинки пересоздаются на тот же
+таргет; для новых директорий скиллов с `SKILL.md` создаются новые симлинки.
+После выполнения цикла проверьте, что количество совпадает с числом корневых
+`nacl-*` директорий в репозитории:
+
+```sh
+ls "$HOME/.claude/skills" | wc -l
+```
+
 ## Обновление Codex-скиллов
 
 Обновите checkout репозитория:

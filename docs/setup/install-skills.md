@@ -136,6 +136,50 @@ Windows PowerShell:
 Test-Path "$HOME\.agents\skills\nacl-core\SKILL.md"
 ```
 
+## Update Claude Code Skills
+
+After pulling new commits, existing skills update instantly because the install
+is a set of symlinks into the repository checkout. New skill directories,
+however, are **not** linked automatically — re-run the installer to add them.
+
+### macOS / Linux / WSL2
+
+```sh
+cd "$HOME/NaCl"
+git pull --ff-only
+
+for dir in "$HOME"/NaCl/*/; do
+  [ -f "$dir/SKILL.md" ] && ln -sf "$dir" "$HOME/.claude/skills/$(basename "$dir")"
+done
+```
+
+### Windows PowerShell
+
+Run as Administrator (or with Developer Mode enabled):
+
+```powershell
+cd $HOME\NaCl
+git pull --ff-only
+
+$skillsDir = "$env:USERPROFILE\.claude\skills"
+Get-ChildItem -Path "$HOME\NaCl" -Directory | ForEach-Object {
+    if (Test-Path "$($_.FullName)\SKILL.md") {
+        $target = Join-Path $skillsDir $_.Name
+        if (Test-Path $target) { Remove-Item $target -Force -Recurse }
+        New-Item -ItemType SymbolicLink -Path $target -Target $_.FullName | Out-Null
+    }
+}
+```
+
+Both snippets are idempotent: existing symlinks are recreated to the same
+target; new skill directories with `SKILL.md` get fresh symlinks. After the
+loop, verify the count matches the number of root-level `nacl-*` directories
+in the repository:
+
+```sh
+ls "$HOME/.claude/skills" | wc -l
+```
+
 ## Update Codex Skills
 
 Update the repository checkout:

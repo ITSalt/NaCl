@@ -93,6 +93,16 @@ Write-Host "Linked $((Get-ChildItem $agentsDir -Filter '*.md').Count) agents"
 
 > Note: Creating symlinks on Windows requires either Administrator privileges or Developer Mode enabled (Settings > Update & Security > For Developers).
 
+### After `git pull`
+
+Existing skill symlinks update instantly when the underlying files change in
+`$HOME\NaCl`. **New** skill directories shipped in a release are not linked
+automatically — re-run the same PowerShell block above. It is idempotent: it
+recreates the existing links to the same target and creates fresh links for
+any new `nacl-*` directory with a `SKILL.md`. See
+[Update Claude Code Skills](install-skills.md#update-claude-code-skills) for
+the canonical update procedure across all platforms.
+
 ### 4. Build optional CLI tools
 
 ```powershell
