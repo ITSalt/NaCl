@@ -286,7 +286,7 @@ export async function renderDomainModel(driver: Driver): Promise<ExcalidrawScene
       backgroundColor: '#e3f2fd',
       strokeColor: '#1565c0',
       strokeWidth: 2,
-      roughness: 1,
+      roughness: 0,
       groupIds: cardGroup,
       customData: { nodeId: entity.id, nodeType: 'DomainEntity', confidence: 'high', synced: true },
     });
@@ -349,7 +349,7 @@ export async function renderDomainModel(driver: Driver): Promise<ExcalidrawScene
       backgroundColor: '#fff8e1',
       strokeColor: '#f57f17',
       strokeWidth: 2,
-      roughness: 1,
+      roughness: 0,
       groupIds: cardGroup,
       customData: { nodeId: en.enum_id, nodeType: 'Enumeration', confidence: 'high', synced: true },
     });

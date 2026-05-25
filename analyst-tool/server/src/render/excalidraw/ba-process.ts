@@ -206,7 +206,7 @@ export async function renderBaProcess(driver: Driver, bpId: string): Promise<Exc
       backgroundColor: '#fafafa',
       strokeColor: '#e0e0e0',
       strokeWidth: 1,
-      roughness: 1,
+      roughness: 0,
       opacity: 20,
       groupIds: laneGroup,
     }));
@@ -224,7 +224,7 @@ export async function renderBaProcess(driver: Driver, bpId: string): Promise<Exc
       backgroundColor: '#fafafa',
       strokeColor: '#424242',
       strokeWidth: 2,
-      roughness: 1,
+      roughness: 0,
       groupIds: laneGroup,
       customData: roleId ? { nodeId: roleId, nodeType: 'BusinessRole', confidence: 'high', synced: true } : undefined,
     });
@@ -289,7 +289,7 @@ export async function renderBaProcess(driver: Driver, bpId: string): Promise<Exc
       backgroundColor: bgColor,
       strokeColor,
       strokeWidth: 2,
-      roughness: 1,
+      roughness: 0,
       groupIds: stepGroup,
       customData: { nodeId: step.step_id, nodeType: 'WorkflowStep', confidence: 'high', synced: true },
     });
@@ -335,7 +335,7 @@ export async function renderBaProcess(driver: Driver, bpId: string): Promise<Exc
         backgroundColor: '#f3e5f5',
         strokeColor: '#6a1b9a',
         strokeWidth: 2,
-        roughness: 1,
+        roughness: 0,
         groupIds: stepGroup,
         customData: doc.doc_id ? { nodeId: doc.doc_id, nodeType: 'BusinessEntity', confidence: 'high', synced: true } : undefined,
       });

@@ -661,6 +661,61 @@ describe('renderBoard — ba-process renderer', () => {
 });
 
 // ---------------------------------------------------------------------------
+// Render style: clean (non-wireframe). Boards must generate with roughness 0
+// (Excalidraw "Architect") rather than the hand-drawn roughness 1 ("Artist").
+// Regression for: BA cannot switch off the sketchy look via board settings
+// because the deterministic renderer overwrites it on every generation.
+// ---------------------------------------------------------------------------
+
+describe('render style — clean (roughness 0, not wireframe)', () => {
+  it('factory defaults: makeRect / makeDiamond / makeArrow / makeText default to roughness 0', () => {
+    const rect = makeRect({ logicalId: 'r', x: 0, y: 0, width: 50, height: 20 });
+    assert.equal(rect.roughness, 0, 'rect default roughness must be 0');
+    const diamond = makeDiamond({ logicalId: 'd', x: 0, y: 0, width: 50, height: 20 });
+    assert.equal(diamond.roughness, 0, 'diamond default roughness must be 0');
+    const arrow = makeArrow({ logicalId: 'a', startX: 0, startY: 0, endX: 10, endY: 10 });
+    assert.equal(arrow.roughness, 0, 'arrow default roughness must be 0');
+    const text = makeText({ logicalId: 't', x: 0, y: 0, width: 100, text: 'X' });
+    assert.equal(text.roughness, 0, 'text roughness must be 0');
+  });
+
+  it('domain-model: every rectangle, arrow and text in the scene has roughness 0', async () => {
+    const { renderBoard } = await import('./index.js');
+
+    const driver = makeFakeDriver([
+      {
+        match: 'DomainEntity',
+        rows: [
+          {
+            id: 'DE-Order', name: 'Order', description: 'An order',
+            module_name: 'Sales',
+            attributes: [{ attr_name: 'id', attr_type: 'UUID' }],
+            relationships: [],
+          },
+          {
+            id: 'DE-Item', name: 'Item', description: 'Line item',
+            module_name: 'Sales',
+            attributes: [{ attr_name: 'qty', attr_type: 'Int' }],
+            relationships: [{ target_id: 'DE-Order', target_name: 'Order', rel_type: 'belongs_to', cardinality: '*:1' }],
+          },
+        ],
+      },
+      { match: 'HAS_ENUM', rows: [] },
+    ]);
+
+    const scene = await renderBoard('domain-model', null, driver);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const els = scene.elements as any[];
+    const styled = els.filter((e) => e.type === 'rectangle' || e.type === 'arrow' || e.type === 'text');
+    assert.ok(styled.length > 0, 'fixture must produce rect/arrow/text elements');
+    for (const el of styled) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      assert.equal(Number(el.roughness), 0, `${String(el.type)} ${String(el.id)} must have roughness 0 (clean), got ${String(el.roughness)}`);
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
 // 5. Round-trip determinism test
 // ---------------------------------------------------------------------------
 
