@@ -575,8 +575,133 @@ With `--feature FR-001`:
 
 ---
 
+## Goal-context append mode (2.10.1+)
+
+When this skill is invoked under `/nacl-goal intake` (the autonomous goal orchestrator added in 2.10.1), the wrapper exports four env vars that modify Steps 2, 4, and 5 below. **When any of these env vars are absent, the default behavior documented above applies unchanged** — interactive `/nacl-tl-ship` is not affected.
+
+| Variable | Set by | Used here |
+|---|---|---|
+| `NACL_GOAL_RUN_ID` | `/nacl-goal intake` | Commit message footer + PR body trailer for traceability |
+| `NACL_GOAL_BRANCH` | `/nacl-goal intake` | Branch to push to (pre-created by the wrapper) |
+| `NACL_SHIP_MODE` | `/nacl-goal intake` (always `append`) | Triggers append-mode behavior below |
+| `NACL_GOAL_BUDGET_FILE` | `/nacl-goal intake` | Inner-skill envelope appended at end of run |
+
+### Behavior when `NACL_SHIP_MODE=append` AND `NACL_GOAL_BRANCH` is set
+
+**Step 2 (DETERMINE GIT STRATEGY)** — modified branch resolution:
+
+- DO NOT create a new branch. The goal-run branch (`$NACL_GOAL_BRANCH`, conventionally `feature/goal-<short-hash>`) is pre-created by `/nacl-goal intake` Step 5. The current `HEAD` must already be on that branch (verify with `git rev-parse --abbrev-ref HEAD == "$NACL_GOAL_BRANCH"`; if not, FATAL — report the mismatch and exit).
+- The base-branch guard (Step 2.5) is still enforced. The goal-run branch is by definition not `main`/`master`/`release/*`, so the guard passes.
+- This is structurally identical to the existing conductor-driven invocation note above. The goal-run branch is just another pre-created feature branch.
+
+**Step 3 (COMMIT)** — commit message footer addition:
+
+Append a stable trailer line at the end of the commit message body:
+
+```
+Goal-run-id: <NACL_GOAL_RUN_ID>
+```
+
+This lets `git log --grep="goal-run-id:"` find every commit that belongs to a goal-run. The trailer goes ABOVE the existing `Co-Authored-By:` and `Generated with Claude Code` lines if present.
+
+**Step 4 (PUSH)** — unchanged. Push to `$NACL_GOAL_BRANCH` (which is the current branch).
+
+**Step 5 (CREATE MERGE REQUEST / PR)** — append-to-existing-PR semantics:
+
+```bash
+# Check whether a PR already exists for this branch
+existing_pr=$(gh pr list --head "$NACL_GOAL_BRANCH" --json url,number --limit 1 2>/dev/null)
+existing_pr_url=$(echo "$existing_pr" | jq -r '.[0].url // empty')
+existing_pr_number=$(echo "$existing_pr" | jq -r '.[0].number // empty')
+
+if [ -n "$existing_pr_url" ]; then
+  # Subsequent push — the PR already exists. Do NOT call `gh pr create` again
+  # (it would error with "a pull request for branch X already exists").
+  # Refresh the PR body if .tl/goal-runs/<run_id>/pr-body.md exists:
+  pr_body_file=".tl/goal-runs/$NACL_GOAL_RUN_ID/pr-body.md"
+  if [ -f "$pr_body_file" ]; then
+    gh pr edit "$existing_pr_url" --body-file "$pr_body_file"
+  fi
+  # Update pr.json.head_sha + updated_at; head_sha = new HEAD after this push.
+  new_head_sha=$(git rev-parse HEAD)
+  pr_json=".tl/goal-runs/$NACL_GOAL_RUN_ID/pr.json"
+  # Write/update pr.json (per nacl-goal/plan-lock-schema.md §pr.json):
+  jq -n \
+    --arg url "$existing_pr_url" \
+    --argjson number "$existing_pr_number" \
+    --arg branch "$NACL_GOAL_BRANCH" \
+    --arg head_sha "$new_head_sha" \
+    --arg updated_at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+    '{ schema_version: 1, url: $url, number: $number, branch: $branch,
+       head_ref: $branch, head_sha: $head_sha,
+       created_at: (input.created_at // $updated_at),
+       updated_at: $updated_at }' \
+    "$pr_json" > "${pr_json}.tmp" && mv "${pr_json}.tmp" "$pr_json"
+else
+  # First push for this goal-run — open the goal-run PR.
+  # Read the body from .tl/goal-runs/<run_id>/pr-body.md (rendered by the wrapper).
+  pr_body_file=".tl/goal-runs/$NACL_GOAL_RUN_ID/pr-body.md"
+  base_branch="${base_branch:-main}"   # from config.yaml as usual
+  if [ -f "$pr_body_file" ]; then
+    pr_url=$(gh pr create \
+      --base "$base_branch" \
+      --head "$NACL_GOAL_BRANCH" \
+      --title "$(head -n 1 "$pr_body_file" | sed 's/^## //')" \
+      --body-file "$pr_body_file")
+  else
+    # Fallback: compose a minimal body if the wrapper artifact is missing.
+    pr_url=$(gh pr create \
+      --base "$base_branch" \
+      --head "$NACL_GOAL_BRANCH" \
+      --title "$(git log -1 --pretty=%s)" \
+      --body "Goal-run-id: $NACL_GOAL_RUN_ID")
+  fi
+  new_head_sha=$(git rev-parse HEAD)
+  pr_number=$(gh pr view "$pr_url" --json number --jq '.number')
+  pr_json=".tl/goal-runs/$NACL_GOAL_RUN_ID/pr.json"
+  created_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+  jq -n \
+    --arg url "$pr_url" \
+    --argjson number "$pr_number" \
+    --arg branch "$NACL_GOAL_BRANCH" \
+    --arg head_sha "$new_head_sha" \
+    --arg ts "$created_at" \
+    '{ schema_version: 1, url: $url, number: $number, branch: $branch,
+       head_ref: $branch, head_sha: $head_sha,
+       created_at: $ts, updated_at: $ts }' > "$pr_json"
+fi
+```
+
+**Step 6 (YOUGILE UPDATE)** — unchanged when invoked under `/nacl-goal intake`. The goal-run does not bind to a single YouGile card; if `intake.json` carries `youGile_card_id` per atom, the existing per-atom YouGile flow runs as today.
+
+**Inner-skill envelope (end of skill execution)** — if `$NACL_GOAL_BUDGET_FILE` is set and the file exists, append a single entry:
+
+```bash
+if [ -n "$NACL_GOAL_BUDGET_FILE" ] && [ -f "$NACL_GOAL_BUDGET_FILE" ]; then
+  jq --arg skill "nacl-tl-ship" \
+     --arg started_at "$ship_started_at" \
+     --arg ended_at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+     --argjson duration "$(( $(date +%s) - ship_started_epoch ))" \
+     --arg exit_status "shipped" \
+     '.inner_skill_runs += [{
+        skill: $skill, started_at: $started_at, ended_at: $ended_at,
+        duration_seconds: $duration, exit_status: $exit_status
+      }]' \
+     "$NACL_GOAL_BUDGET_FILE" > "${NACL_GOAL_BUDGET_FILE}.tmp" \
+    && mv "${NACL_GOAL_BUDGET_FILE}.tmp" "$NACL_GOAL_BUDGET_FILE"
+fi
+```
+
+Failures to write to `budget.json` are silent — this is best-effort observability for `/nacl-goal intake`'s GOAL_PROOF block.
+
+**Invariant**: this entire section is gated on `NACL_SHIP_MODE=append AND NACL_GOAL_BRANCH set`. With either absent, the default behavior in Steps 1–6 above runs unchanged. Interactive `/nacl-tl-ship UC028` is unaffected.
+
+---
+
 ## References
 
 - `config.yaml` → modules.[name].git_strategy, git_base_branch
 - `nacl-tl-core/references/commit-conventions.md` — commit message format
 - `.tl/changelog.md` — source for commit message content
+- `nacl-goal/plan-lock-schema.md` — `pr.json` and `budget.json` schemas (2.10.1)
+- `nacl-goal/pr-body-template.md` — goal-run PR body template (2.10.1)
