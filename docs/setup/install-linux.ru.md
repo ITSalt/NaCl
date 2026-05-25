@@ -31,18 +31,21 @@ sudo usermod -aG docker $USER && newgrp docker
 
 ```bash
 git clone https://github.com/ITSalt/NaCl.git ~/NaCl
-
+sh ~/NaCl/scripts/install-claude-code-skills.sh
 ```
 
-Алиас для обновления (добавить в `~/.bashrc`):
+Скрипт сначала выполняет `git pull --ff-only`, потом обновляет симлинки для
+каждого `nacl-*` скилла с `SKILL.md` и каждого профиля агента в
+`.claude/agents/`. Передайте `--no-pull` чтобы пропустить git-шаг.
+
+Для Codex см. [Установка скиллов](install-skills.ru.md#codex).
+
+Тот же скрипт работает и для обновлений — добавьте короткий алиас в
+`~/.bashrc`:
 
 ```bash
-alias nacl-update='cd ~/NaCl && git pull && for dir in ~/NaCl/*/; do [ -f "$dir/SKILL.md" ] && ln -sf "$dir" ~/.claude/skills/"$(basename "$dir")"; done && for f in ~/NaCl/.claude/agents/*.md; do [ -f "$f" ] && ln -sf "$f" ~/.claude/agents/"$(basename "$f")"; done'
+alias nacl-update='sh ~/NaCl/scripts/install-claude-code-skills.sh'
 ```
-
-Для установки скиллов выберите Claude Code или Codex в
-[инструкции по установке скиллов](install-skills.ru.md). Раздел Codex создаёт
-симлинки на git checkout, поэтому обновления приходят через `git pull`.
 
 ## Дальше
 

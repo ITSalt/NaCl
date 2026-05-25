@@ -18,22 +18,25 @@
 ## Установка
 
 ```bash
-# Клонировать
 git clone https://github.com/ITSalt/NaCl.git ~/NaCl
+sh ~/NaCl/scripts/install-claude-code-skills.sh
 
 # Опционально: CLI-инструменты
 cd ~/NaCl/docmost-sync && npm install && npm run build
 cd ~/NaCl/yougile-setup && npm install && npm run build
 ```
 
-Для установки скиллов выберите Claude Code или Codex в
-[инструкции по установке скиллов](install-skills.ru.md). Раздел Codex создаёт
-симлинки на git checkout, поэтому обновления приходят через `git pull`.
+Скрипт сначала выполняет `git pull --ff-only`, потом обновляет симлинки для
+каждого `nacl-*` скилла с `SKILL.md` и каждого профиля агента в
+`.claude/agents/`. Передайте `--no-pull` чтобы пропустить git-шаг.
 
-Алиас для обновления (добавить в `~/.zshrc`):
+Для Codex см. [Установка скиллов](install-skills.ru.md#codex).
+
+Тот же скрипт работает и для обновлений — добавьте короткий алиас в
+`~/.zshrc`:
 
 ```bash
-alias nacl-update='cd ~/NaCl && git pull && for dir in ~/NaCl/*/; do [ -f "$dir/SKILL.md" ] && ln -sf "$dir" ~/.claude/skills/"$(basename "$dir")"; done && for f in ~/NaCl/.claude/agents/*.md; do [ -f "$f" ] && ln -sf "$f" ~/.claude/agents/"$(basename "$f")"; done'
+alias nacl-update='sh ~/NaCl/scripts/install-claude-code-skills.sh'
 ```
 
 ## Проверка

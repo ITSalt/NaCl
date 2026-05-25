@@ -54,54 +54,45 @@ git clone https://github.com/ITSalt/NaCl.git $HOME\NaCl
 
 ### 3. Install skills
 
-Use [Skill Installation](install-skills.md) and choose Claude Code or Codex.
-The Codex section includes native PowerShell commands.
-
-Claude Code PowerShell shortcut (run as Administrator for symlinks):
+For Claude Code, run the bundled installer (PowerShell as Administrator,
+or with Developer Mode enabled):
 
 ```powershell
-$skillsDir = "$env:USERPROFILE\.claude\skills"
-New-Item -ItemType Directory -Force -Path $skillsDir | Out-Null
-
-Get-ChildItem -Path "$HOME\NaCl" -Directory | ForEach-Object {
-    if (Test-Path "$($_.FullName)\SKILL.md") {
-        $target = Join-Path $skillsDir $_.Name
-        if (Test-Path $target) { Remove-Item $target -Force -Recurse }
-        New-Item -ItemType SymbolicLink -Path $target -Target $_.FullName | Out-Null
-    }
-}
-
-Write-Host "Linked $((Get-ChildItem $skillsDir).Count) skills"
+& "$HOME\NaCl\scripts\install-claude-code-skills.ps1"
 ```
 
-### Link agents
+The script links every `nacl-*` directory with a `SKILL.md` into
+`%USERPROFILE%\.claude\skills` and every agent profile into
+`%USERPROFILE%\.claude\agents`. It runs `git pull --ff-only` first so a
+single command both installs and updates. Pass `-NoPull` to skip the git
+step. Falls back to directory junctions for skills if symlink creation is
+unavailable; agents require true symlinks.
+
+For Codex (separate distribution), use the matching script:
 
 ```powershell
-$agentsDir = "$env:USERPROFILE\.claude\agents"
-New-Item -ItemType Directory -Force -Path $agentsDir | Out-Null
-
-Get-ChildItem -Path "$HOME\NaCl\.claude\agents" -Filter "*.md" | ForEach-Object {
-    $target = Join-Path $agentsDir $_.Name
-    if (Test-Path $target) { Remove-Item $target -Force }
-    New-Item -ItemType SymbolicLink -Path $target -Target $_.FullName | Out-Null
-}
-
-Write-Host "Linked $((Get-ChildItem $agentsDir -Filter '*.md').Count) agents"
+& "$HOME\NaCl\skills-for-codex\scripts\install-user-symlinks.ps1"
 ```
 
-> Skills and agents linked to `~/.claude/` (or `%USERPROFILE%\.claude\` on native Windows) are automatically available in all local Claude Code platforms: CLI, Desktop app, and IDE extensions. Codex uses `%USERPROFILE%\.agents\skills`.
+Full reference for both runtimes:
+[Skill Installation](install-skills.md).
 
-> Note: Creating symlinks on Windows requires either Administrator privileges or Developer Mode enabled (Settings > Update & Security > For Developers).
+> Skills and agents linked to `%USERPROFILE%\.claude\` on native Windows
+> (or `~/.claude/` in WSL2) are automatically available in all local Claude
+> Code platforms: CLI, Desktop app, and IDE extensions. Codex uses
+> `%USERPROFILE%\.agents\skills`.
+
+> Note: Creating symlinks on Windows requires either Administrator
+> privileges or Developer Mode enabled
+> (Settings > Update & Security > For Developers).
 
 ### After `git pull`
 
-Existing skill symlinks update instantly when the underlying files change in
-`$HOME\NaCl`. **New** skill directories shipped in a release are not linked
-automatically — re-run the same PowerShell block above. It is idempotent: it
-recreates the existing links to the same target and creates fresh links for
-any new `nacl-*` directory with a `SKILL.md`. See
-[Update Claude Code Skills](install-skills.md#update-claude-code-skills) for
-the canonical update procedure across all platforms.
+The installer is the update tool too. Re-run the same command — it is
+idempotent: existing symlinks are recreated to the same target and new
+`nacl-*` directories shipped in a release get fresh links. See
+[Update Claude Code Skills](install-skills.md#update-claude-code-skills)
+for the canonical procedure across all platforms.
 
 ### 4. Build optional CLI tools
 

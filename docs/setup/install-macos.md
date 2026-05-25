@@ -54,14 +54,22 @@ git clone https://github.com/ITSalt/NaCl.git ~/NaCl
 
 ### Install skills
 
-Choose Claude Code or Codex in [Skill Installation](install-skills.md). The
-Codex section installs symlinks to a git checkout so updates come from
-`git pull`.
-
-Add to `~/.zshrc` for easy updates:
+For Claude Code, one command installs both skills and agents:
 
 ```bash
-alias nacl-update='cd ~/NaCl && git pull && for dir in ~/NaCl/*/; do [ -f "$dir/SKILL.md" ] && ln -sf "$dir" ~/.claude/skills/"$(basename "$dir")"; done && for f in ~/NaCl/.claude/agents/*.md; do [ -f "$f" ] && ln -sf "$f" ~/.claude/agents/"$(basename "$f")"; done'
+sh ~/NaCl/scripts/install-claude-code-skills.sh
+```
+
+The script runs `git pull --ff-only` first, then refreshes symlinks for
+every `nacl-*` skill with a `SKILL.md` and every agent profile under
+`.claude/agents/`. Pass `--no-pull` to skip git.
+
+For Codex, see [Skill Installation](install-skills.md#codex).
+
+The same script doubles as the update tool — add a short alias for daily use:
+
+```bash
+alias nacl-update='sh ~/NaCl/scripts/install-claude-code-skills.sh'
 ```
 
 ### Build optional CLI tools

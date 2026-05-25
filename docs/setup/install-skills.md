@@ -18,50 +18,34 @@ project opened by that runtime on the same machine.
 ## Claude Code
 
 Claude Code uses the root-level NaCl skill folders and the `.claude/agents/`
-agent profiles.
+agent profiles. A single script installs both.
 
 ### macOS / Linux / WSL2
 
 ```sh
 git clone https://github.com/ITSalt/NaCl.git "$HOME/NaCl"
-
-mkdir -p "$HOME/.claude/skills" "$HOME/.claude/agents"
-
-for dir in "$HOME"/NaCl/*/; do
-  [ -f "$dir/SKILL.md" ] && ln -sf "$dir" "$HOME/.claude/skills/$(basename "$dir")"
-done
-
-for file in "$HOME"/NaCl/.claude/agents/*.md; do
-  [ -f "$file" ] && ln -sf "$file" "$HOME/.claude/agents/$(basename "$file")"
-done
+sh "$HOME/NaCl/scripts/install-claude-code-skills.sh"
 ```
+
+The script runs `git pull --ff-only` first, then refreshes user-level symlinks
+for every `nacl-*` directory with a `SKILL.md` and every agent file under
+`.claude/agents/`. Pass `--no-pull` to skip the git step in offline or
+sandboxed environments.
 
 ### Windows PowerShell
 
-The installer creates directory symlinks when Windows allows it. If symlink
-creation is unavailable, it falls back to directory junctions.
+Run PowerShell as Administrator (or with Developer Mode enabled — see
+[Windows Setup](install-windows.md)):
 
 ```powershell
 git clone https://github.com/ITSalt/NaCl.git "$HOME\NaCl"
-
-$skillsDir = "$env:USERPROFILE\.claude\skills"
-$agentsDir = "$env:USERPROFILE\.claude\agents"
-New-Item -ItemType Directory -Force -Path $skillsDir, $agentsDir | Out-Null
-
-Get-ChildItem -Path "$HOME\NaCl" -Directory | ForEach-Object {
-    if (Test-Path "$($_.FullName)\SKILL.md") {
-        $target = Join-Path $skillsDir $_.Name
-        if (Test-Path $target) { Remove-Item $target -Force -Recurse }
-        New-Item -ItemType SymbolicLink -Path $target -Target $_.FullName | Out-Null
-    }
-}
-
-Get-ChildItem -Path "$HOME\NaCl\.claude\agents" -Filter "*.md" | ForEach-Object {
-    $target = Join-Path $agentsDir $_.Name
-    if (Test-Path $target) { Remove-Item $target -Force }
-    New-Item -ItemType SymbolicLink -Path $target -Target $_.FullName | Out-Null
-}
+& "$HOME\NaCl\scripts\install-claude-code-skills.ps1"
 ```
+
+Same behaviour as the shell script: optional `git pull` plus symlink refresh
+for skills and agents. Pass `-NoPull` to skip the git step. Skill links
+fall back to directory junctions if symlinks are unavailable; agent links
+require true symlinks (and therefore Administrator or Developer Mode).
 
 ### Verify Claude Code
 
@@ -117,7 +101,7 @@ If Codex is running on a machine where NaCl is not installed, send this prompt:
 ```text
 Install NaCl Codex skills globally on this machine.
 
-Clone https://github.com/ITSalt/NaCl.git into $HOME/NaCl if it is not already present. If it is present, run git pull --ff-only there. Then run the Codex installer from $HOME/NaCl/skills-for-codex/scripts and verify that $HOME/.agents/skills contains 58 NaCl skill links and that each linked directory has SKILL.md. Use network or escalated permission if needed.
+Clone https://github.com/ITSalt/NaCl.git into $HOME/NaCl if it is not already present. If it is present, run git pull --ff-only there. Then run the Codex installer from $HOME/NaCl/skills-for-codex/scripts and verify that $HOME/.agents/skills contains 59 NaCl skill links and that each linked directory has SKILL.md. Use network or escalated permission if needed.
 ```
 
 ### Verify Codex
@@ -138,47 +122,24 @@ Test-Path "$HOME\.agents\skills\nacl-core\SKILL.md"
 
 ## Update Claude Code Skills
 
-After pulling new commits, existing skills update instantly because the install
-is a set of symlinks into the repository checkout. New skill directories,
-however, are **not** linked automatically — re-run the installer to add them.
+Re-run the same installer used for the first install. The script is
+idempotent: it runs `git pull --ff-only`, recreates existing symlinks to
+the same target, and creates fresh symlinks for any new skill or agent.
 
 ### macOS / Linux / WSL2
 
 ```sh
-cd "$HOME/NaCl"
-git pull --ff-only
-
-for dir in "$HOME"/NaCl/*/; do
-  [ -f "$dir/SKILL.md" ] && ln -sf "$dir" "$HOME/.claude/skills/$(basename "$dir")"
-done
+sh "$HOME/NaCl/scripts/install-claude-code-skills.sh"
 ```
 
 ### Windows PowerShell
 
-Run as Administrator (or with Developer Mode enabled):
-
 ```powershell
-cd $HOME\NaCl
-git pull --ff-only
-
-$skillsDir = "$env:USERPROFILE\.claude\skills"
-Get-ChildItem -Path "$HOME\NaCl" -Directory | ForEach-Object {
-    if (Test-Path "$($_.FullName)\SKILL.md") {
-        $target = Join-Path $skillsDir $_.Name
-        if (Test-Path $target) { Remove-Item $target -Force -Recurse }
-        New-Item -ItemType SymbolicLink -Path $target -Target $_.FullName | Out-Null
-    }
-}
+& "$HOME\NaCl\scripts\install-claude-code-skills.ps1"
 ```
 
-Both snippets are idempotent: existing symlinks are recreated to the same
-target; new skill directories with `SKILL.md` get fresh symlinks. After the
-loop, verify the count matches the number of root-level `nacl-*` directories
-in the repository:
-
-```sh
-ls "$HOME/.claude/skills" | wc -l
-```
+Add `--no-pull` (sh) or `-NoPull` (PowerShell) to refresh symlinks without
+pulling new commits.
 
 ## Update Codex Skills
 
