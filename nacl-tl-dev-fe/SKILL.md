@@ -89,6 +89,15 @@ Step N.6 — STATUS-AWARE OUTPUT
 | `UC###` | Yes | Task identifier (e.g., UC001, UC012) |
 | `--continue` | No | Re-work after review: reads `review-fe.md`, fixes issues |
 | `--dry-run` | No | Show plan without writing code |
+| `--auto-ship` | No | After successful TDD cycle + green tests + clean baseline diff, automatically invoke `/nacl-tl-ship` (2.10.1+). Used by `/nacl-goal intake` to chain dev→ship. Mirrors `/nacl-tl-fix --auto-ship`: only DEV-FE COMPLETE auto-ships; any non-COMPLETE exit STOPs. |
+
+## Goal-context env vars (2.10.1+)
+
+When this skill is invoked under `/nacl-goal intake`, the wrapper exports `NACL_GOAL_RUN_ID`, `NACL_GOAL_BRANCH`, `NACL_SHIP_MODE=append`, and `NACL_GOAL_BUDGET_FILE`. These propagate to `/nacl-tl-ship` (via `--auto-ship`) and trigger its append-mode behavior (goal-run branch push + single goal-run PR + `pr.json` write). See `nacl-tl-ship/SKILL.md` §Goal-context append mode for the full contract.
+
+If `--auto-ship` triggers a sub-invocation of `/nacl-tl-fix` for a related fix-up, the spec-first exception lookup glob scans both `.tl/exceptions/*.yaml` AND `.tl/exceptions/goal-runs/*/EXC-goal-*.yaml` automatically (see `nacl-tl-fix/SKILL.md` Step 6.SF rule 4).
+
+**Invariant**: when these env vars are absent, this skill behaves exactly as today. Interactive `/nacl-tl-dev-fe UC###` is unaffected.
 
 ## Pre-Development Checks
 

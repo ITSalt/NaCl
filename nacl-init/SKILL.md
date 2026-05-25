@@ -786,8 +786,20 @@ When creating or updating a project, verify `.gitignore` includes:
 ```
 .tl/reports/
 .tl/qa-screenshots/
+
+# /nacl-goal intake wrapper run state and PII (2.10.1+)
+# request.json contains user email, free-text goal, image refs, project path.
+# Wrapper-authored exception YAMLs live under .tl/exceptions/goal-runs/.
+# See nacl-goal/run-artifacts.md §Privacy.
+.tl/goal-runs/
+.tl/exceptions/goal-runs/
 ```
-These are generated artifacts (HTML reports, screenshots) that should not be in the repository.
+
+The first two are generated artifacts (HTML reports, screenshots) that should not be in the repository.
+
+The last two are added in 2.10.1+ to protect PII written by `/nacl-goal intake`. The wrapper's privacy precheck (Flow step 0) refuses with `PLAN_BLOCKED_GOAL_ARTIFACTS_NOT_GITIGNORED` if these paths are missing from `.gitignore`. If a project intends to use `/nacl-goal intake` for autonomous goal runs, both lines are mandatory.
+
+For an existing project that hasn't adopted them yet: the user will see the `PLAN_BLOCKED_*` refusal at the next `/nacl-goal intake` invocation and must add the lines manually. The 2.10.1 wrapper does NOT auto-patch `.gitignore`.
 
 ---
 

@@ -80,6 +80,15 @@ You work from self-sufficient task files created by `nacl-tl-plan`.
 | `TECH-###` | Task ID to implement (required) |
 | `--continue` | Re-work after review rejection (reads review.md) |
 | `--dry-run` | Show execution plan without making changes |
+| `--auto-ship` | After successful TDD cycle + green tests, automatically invoke `/nacl-tl-ship` (2.10.1+). Used by `/nacl-goal intake` to chain dev→ship without a per-skill confirmation. Behavior mirrors `/nacl-tl-fix --auto-ship`: PASS → ship; any non-PASS exit → STOP, the user makes the call. |
+
+## Goal-context env vars (2.10.1+)
+
+When this skill is invoked under `/nacl-goal intake`, the wrapper exports `NACL_GOAL_RUN_ID`, `NACL_GOAL_BRANCH`, `NACL_SHIP_MODE=append`, and `NACL_GOAL_BUDGET_FILE`. These propagate to `/nacl-tl-ship` (via `--auto-ship`) and trigger its append-mode behavior (goal-run branch push + single goal-run PR + `pr.json` write). See `nacl-tl-ship/SKILL.md` §Goal-context append mode for the full contract.
+
+Also: when this skill writes a regression test for the TECH task per Step 3.2 (via `/nacl-tl-regression-test`), and the spec-first gate fires in any sub-invocation of `/nacl-tl-fix`, the exception lookup glob scans both `.tl/exceptions/*.yaml` AND `.tl/exceptions/goal-runs/*/EXC-goal-*.yaml` (see `nacl-tl-fix/SKILL.md` Step 6.SF rule 4).
+
+**Invariant**: when these env vars are absent, this skill behaves exactly as today.
 
 ## Pre-Development Checks
 

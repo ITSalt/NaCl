@@ -73,6 +73,60 @@ The user describes the feature in natural language:
 
 No need to specify UC numbers, modules, or domains. The skill determines impact automatically via graph traversal.
 
+### Flags
+
+| Flag | Description |
+|------|-------------|
+| `--namespace=<DOMAIN>` | Optional FR sub-namespace allocation |
+| `--bounded-only` | (2.10.1+) Refuse to draft a feature spec that exceeds the bounded execution envelope. Used by `/nacl-goal intake` for FEATURE_SMALL atoms — see `## --bounded-only mode` below. |
+
+## --bounded-only mode (2.10.1+)
+
+When invoked with `--bounded-only`, this skill checks the proposed feature against an envelope of constraints BEFORE drafting any new UC/spec. If the feature exceeds the envelope, this skill refuses with a structured output instead of producing a partial spec; if within the envelope, the standard skill flow runs unchanged.
+
+### Refuse criteria (any one triggers `BOUNDED REFUSE`)
+
+The feature exceeds the envelope when ANY of the following holds:
+
+- **Migration required** — would require a DB schema migration, a public-API contract change, a message-contract change, or any other non-additive backwards-incompatibility
+- **Auth/security/permissions touched** — modifies authentication, authorization, the permission matrix, or any security-policy surface
+- **Billing/payment touched** — adds, modifies, or removes pricing, payment flow, invoicing, or any monetization surface
+- **L2/L3 architecture amendment** — changes bounded-context boundaries, cross-module contracts, or the system's macro architecture (Context Map level)
+- **Destructive data operation** — bulk delete, data migration that loses information, backup-incompatible change
+- **Unresolved product decision** — feature spec requires the human to choose between alternatives (e.g. "should pricing be tier-based or usage-based?") that this skill cannot resolve from graph evidence alone
+
+### Refuse output
+
+When refused, this skill writes TWO artifacts to `.tl/goal-runs/<NACL_GOAL_RUN_ID>/planning/` (if `NACL_GOAL_RUN_ID` is set; otherwise to `.tl/feature-plans/<sanitized-feature-slug>/`) and exits with headline `FEATURE BOUNDED REFUSE`:
+
+1. **`feature-plan.md`** — what this skill understood from the feature description:
+   - Candidate UCs that would need to be created or modified
+   - Suggested module placement
+   - Identified affected entities and existing UCs
+   - Suggested NFRs from existing patterns
+   - Missing inputs the human needs to provide
+
+2. **`open-decisions.md`** — explicit decision points requiring human input:
+   - Each decision as a bullet with: alternatives, trade-offs, suggested-but-not-chosen default
+   - Migration-impact notes if any
+   - Security/billing/permissions impact notes if any
+
+The human reviews these artifacts and either:
+- Resolves the decisions and re-runs `/nacl-sa-feature` interactively (without `--bounded-only`) to draft the full spec, OR
+- Narrows the feature to a bounded subset and re-runs `/nacl-goal intake "<narrower goal>"` for autonomous execution
+
+### Accept path
+
+When the feature is within the envelope, `--bounded-only` runs the standard skill flow without modification — the same FR allocation, UC drafting, graph persistence, and handoff that an interactive invocation produces. The only difference: this skill records `bounded_only: true` in the FR artifact metadata so downstream skills (`/nacl-tl-dev*`) know the feature was constrained.
+
+### Invariant
+
+When `--bounded-only` is NOT passed, this skill behaves exactly as today (drafts whatever the feature description implies, prompts the user for clarifications). Interactive `/nacl-sa-feature "..."` is unaffected. The bounded mode is opt-in by the orchestrator, not the default.
+
+## Goal-context env vars (2.10.1+)
+
+When this skill is invoked under `/nacl-goal intake`, the wrapper exports `NACL_GOAL_RUN_ID`, `NACL_GOAL_BRANCH`, `NACL_SHIP_MODE=append`, `NACL_GOAL_BUDGET_FILE`. The bounded-mode refuse output writes to `.tl/goal-runs/<NACL_GOAL_RUN_ID>/planning/` (see above). On accept, the wrapper subsequently invokes `/nacl-tl-dev --auto-ship` for implementation, inheriting the env vars and triggering append-mode ship.
+
 ---
 
 ## Language Rules

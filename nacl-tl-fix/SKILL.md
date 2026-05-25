@@ -210,7 +210,7 @@ Apply the rules in order — first match wins:
 | 1 | classification is `L0` | SKIP gate. Proceed to Step 6 sub-flow 6M / TDD. (L0 is environment / infra, not spec-touching.) |
 | 2 | `--dry-run` is set | SKIP gate. The check is recorded in the Step 8 report but does not refuse, since no code is written. |
 | 3 | verdict is `PASS` | Proceed to Step 6 sub-flow. Record the satisfying spec-update commit SHA in the Step 8 report. |
-| 4 | verdict is `FAIL` AND a valid signed exception against gate `spec-first-prerequisite` exists for this project at `.tl/exceptions/` (W4 schema; unexpired; specific `affected_gates`; concrete `reason`; valid `followup_task`) | Proceed to Step 6 sub-flow. Record the `exception_id`, `expiry`, and `followup_task` in the Step 8 report. The header becomes `FIX APPLIED — UNVERIFIED (spec-first-bypassed-by-signed-exception)`. |
+| 4 | verdict is `FAIL` AND a valid signed exception against gate `spec-first-prerequisite` exists for this project (W4 schema; unexpired; specific `affected_gates`; concrete `reason`; valid `followup_task`). Lookup scans **both** namespaces: `.tl/exceptions/*.yaml` (human-authored, persistent) AND `.tl/exceptions/goal-runs/*/EXC-goal-*.yaml` (wrapper-authored by `/nacl-goal intake`, run-scoped, expires with the run — see `nacl-goal/envelope.md`) | Proceed to Step 6 sub-flow. Record the `exception_id`, `expiry`, and `followup_task` in the Step 8 report. The header becomes `FIX APPLIED — UNVERIFIED (spec-first-bypassed-by-signed-exception)`. |
 | 5 | verdict is `FAIL` AND no valid signed exception exists | REFUSE. Halt with `Status: BLOCKED` and workflow detail `spec-first-prerequisite-missing`. Do not touch production code. Print the refusal advisory below and exit. |
 | 6 | detection emitted `Status: BLOCKED (graph-delta-unobservable)` AND no signed exception against gate `spec-first-prerequisite` exists | REFUSE with workflow detail `graph-delta-unobservable`. |
 
@@ -943,6 +943,21 @@ If `--auto-ship` is set:
 - Status `BLOCKED` / `UNVERIFIED` / `NO_INFRA` / `RUNNER_BROKEN` / `REGRESSION` → do NOT auto-ship. Print the report and stop. The user makes the call.
 
 `--auto-ship` ALWAYS uses `/nacl-tl-ship` (commits to current branch). It NEVER uses `/nacl-tl-hotfix`. If the user wants a hotfix to main, they must explicitly invoke `/nacl-tl-hotfix` after the fix is complete.
+
+### Goal-context env vars (2.10.1+)
+
+When this skill is invoked by `/nacl-goal intake` (the autonomous goal orchestrator added in 2.10.1), the wrapper exports four env vars before the invocation. The fix skill recognizes them additively — when ANY are absent, behavior is exactly as documented above.
+
+| Variable | Meaning | Effect on this skill |
+|---|---|---|
+| `NACL_GOAL_RUN_ID` | Current goal-run identifier | Included as `Goal-run-id: <id>` line in commit message bodies (for traceability via `git log --grep`). Logged in the Step 8 report. |
+| `NACL_GOAL_BRANCH` | The goal-run feature branch name | Inherited by `/nacl-tl-ship` (see below); fix skill itself does not switch branches. |
+| `NACL_SHIP_MODE=append` | Tells `/nacl-tl-ship` to use append-to-existing-PR semantics | Inherited by `/nacl-tl-ship` when `--auto-ship` is set. Without this env, ship behavior is unchanged. |
+| `NACL_GOAL_BUDGET_FILE` | Absolute path to `.tl/goal-runs/<run_id>/budget.json` | Fix skill appends a single entry to `budget.json.inner_skill_runs[]` at end of Step 8: `{ "skill": "nacl-tl-fix", "atom_id": "<from goal context>", "started_at": "...", "ended_at": "...", "duration_seconds": <N>, "exit_status": "shipped|failed|skipped" }`. If the file is absent or unwritable, fix continues silently — this is best-effort observability. |
+
+These env vars are also what makes the spec-first exception lookup pick up wrapper-authored YAMLs from `.tl/exceptions/goal-runs/<NACL_GOAL_RUN_ID>/EXC-goal-*.yaml` automatically (rule 4 above scans both namespaces unconditionally; the env var is not strictly required for the lookup, but the wrapper-authored YAMLs only exist when the env var is set).
+
+**Invariant**: when these env vars are not in the environment, this skill behaves exactly as today. The goal-context behavior is purely additive. Interactive `/nacl-tl-fix` invocations are not affected.
 
 ---
 

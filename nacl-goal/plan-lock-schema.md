@@ -1,0 +1,462 @@
+# /nacl-goal artifact schemas
+
+All schemas for the artifacts under `.tl/goal-runs/<run_id>/` used by the
+`intake` alias. Each schema is the wire format between the wrapper, the
+inner skills, the `intake.sh` check script, and any future
+`/nacl-goal status|resume|abort` tooling (2.10.2+).
+
+Stability:
+- Field renames are major-version bumps for `/nacl-goal`.
+- New optional fields may be added without a version bump.
+- Removed fields require a major-version bump.
+
+---
+
+## Directory layout
+
+```
+.tl/goal-runs/
+├── index.json                          # fingerprint → run_id index (flock-protected)
+├── index.lock                          # flock target (empty file)
+└── <run_id>/
+    ├── request.json                    # user invocation snapshot — PII
+    ├── intake.json                     # /nacl-tl-intake --emit-state output
+    ├── plan.lock.json                  # locked execution plan
+    ├── authorization.json              # envelope authorization record
+    ├── budget.json                     # enforceable wall-clock + best-effort token/turn
+    ├── goal-final-sha.txt              # written after last atom verified
+    ├── pr.json                         # source of truth for the goal-run PR
+    ├── pr-body.md                      # current PR body (re-rendered on transitions)
+    ├── progress.jsonl                  # wrapper-level event log, append-only
+    ├── progress.<N>.jsonl              # rotated logs (when prior exceeds 10MB)
+    ├── regression-baseline.json        # pre-execution test ID snapshot
+    ├── regression-postfix.json         # post-deliver test ID snapshot
+    ├── exceptions.log                  # JSONL audit trail
+    ├── atoms/
+    │   └── <atom_id>.state.json        # per-atom state machine record
+    └── planning/                       # populated only for FEATURE_HEAVY blocks
+        ├── feature-plan.md
+        └── open-decisions.md
+```
+
+Wrapper-authored exception YAMLs live OUTSIDE this directory at
+`.tl/exceptions/goal-runs/<run_id>/EXC-goal-<gate>.yaml` so they share the
+exception namespace, not the run namespace. Both are gitignored.
+
+---
+
+## `index.json`
+
+```json
+{
+  "version": 1,
+  "entries": [
+    {
+      "fingerprint": "sha256:<hex>",
+      "run_id": "goal-intake-<utc-iso>-<short-hash>",
+      "state": "init|planned|plan_blocked|running|goal_ok|goal_blocked|failed",
+      "resumable": true,
+      "reason": null,
+      "branch": "feature/goal-<short-hash>",
+      "pr_url": "https://github.com/.../pull/123",
+      "issued_at": "<utc-iso>",
+      "ended_at": "<utc-iso>|null"
+    }
+  ]
+}
+```
+
+`reason` is `null` for `init|planned|running|goal_ok` states. For
+`plan_blocked|goal_blocked|failed` entries it carries the refusal/block code
+from `refusal-catalog.md` (e.g. `"PLAN_BLOCKED_DIRTY_WORKTREE"`).
+
+`resumable` is determined by the `Resumable state table` in SKILL.md §Flow
+step 14:
+- `true` for transient interruptions (running with no terminal state, planned
+  not-yet-executed, transient CI/staging disconnects)
+- `false` for drift, regressions, atom failures, product-decision blocks,
+  deployed-SHA mismatches, and all `plan_blocked` states
+
+### Write protocol
+
+All writes to `index.json` MUST follow:
+
+1. `flock --exclusive --timeout 30 .tl/goal-runs/index.lock` (else
+   `PLAN_BLOCKED_INDEX_LOCK_BUSY`)
+2. Read current `index.json` (treat absent file as `{"version": 1, "entries": []}`)
+3. Mutate in memory
+4. Write to `index.json.tmp.<pid>`
+5. `fsync` + atomic `rename(index.json.tmp.<pid>, index.json)`
+6. Release flock
+
+This is necessary because two concurrent `/nacl-goal intake` invocations
+could otherwise corrupt the index.
+
+---
+
+## `request.json`
+
+```json
+{
+  "schema_version": 1,
+  "run_id": "goal-intake-...",
+  "goal": "<full free-text goal as the user invoked it>",
+  "images": [
+    {
+      "ref": "<image identifier as passed in invocation>",
+      "content_sha256": "<hex>",
+      "byte_length": 0
+    }
+  ],
+  "invocation_args": {
+    "plan_only": false,
+    "strict": false,
+    "target": "auto|staging|dev-only",
+    "budget_profile": null,
+    "new_run": false
+  },
+  "goal_fingerprint": "sha256:<hex>",
+  "user_email": "<git user.email>",
+  "project_root": "/absolute/path",
+  "git_remote_url": "<canonicalized origin URL>",
+  "target_requested": "auto|staging|dev-only",
+  "issued_at": "<utc-iso>"
+}
+```
+
+**PII warning**: `goal`, `images[].ref`, and `user_email` are personal /
+client-confidential. This file is gitignored. The privacy precheck (Flow
+step 0) refuses with `PLAN_BLOCKED_GOAL_ARTIFACTS_NOT_GITIGNORED` if the
+gitignore is missing, before any write happens.
+
+---
+
+## `intake.json`
+
+Direct output of `/nacl-tl-intake --emit-state`. The wrapper does not
+synthesize this — it executes `/nacl-tl-intake --yes --emit-state <path>`
+and treats the file as authoritative.
+
+```json
+{
+  "schema_version": 1,
+  "atoms": [
+    {
+      "id": "atom-<short_sha256(type + linked_uc + normalized_title)>",
+      "type": "BUG|TASK|FEATURE_SMALL|FEATURE_HEAVY",
+      "title": "...",
+      "linked_uc": "UC-NNN|TECH-NNN|null",
+      "evidence": ["GRAPH", "HEURISTIC", "USER_OVERRIDE"],
+      "confidence": "HIGH|MEDIUM|LOW",
+      "risk_level": "L0|L1|L2|L3",
+      "depends_on": ["atom-<...>"],
+      "hard_refuse_triggers": ["billing"],
+      "trigger_evidence": "Goal mentions Stripe billing for API key tiers",
+      "spec_gap": false,
+      "skill_path": "nacl-tl-fix|nacl-tl-dev|nacl-sa-feature -> nacl-tl-dev"
+    }
+  ],
+  "classification_metadata": {
+    "ambiguous": false,
+    "ambiguity_reason": null,
+    "requires_split": false,
+    "split_reason": null
+  }
+}
+```
+
+### Closed `hard_refuse_triggers` set
+
+| Trigger | Wrapper refusal |
+|---|---|
+| `schema_migration` | `PLAN_BLOCKED_FEATURE_REQUIRES_SCHEMA_MIGRATION` |
+| `public_api_contract` | `PLAN_BLOCKED_FEATURE_REQUIRES_SCHEMA_MIGRATION` |
+| `auth_or_security` | `PLAN_BLOCKED_FEATURE_REQUIRES_AUTH_OR_SECURITY_CHANGE` |
+| `permissions` | `PLAN_BLOCKED_FEATURE_REQUIRES_AUTH_OR_SECURITY_CHANGE` |
+| `billing` | `PLAN_BLOCKED_FEATURE_REQUIRES_PRODUCT_DECISION` (or `_FEATURE_REQUIRES_HUMAN_PRODUCT_DECISION` if FEATURE) |
+| `destructive_data_operation` | `PLAN_BLOCKED_FEATURE_REQUIRES_PRODUCT_DECISION` |
+| `l2_l3_architecture` | `PLAN_BLOCKED_FEATURE_REQUIRES_PRODUCT_DECISION` |
+| `product_decision_required` | `PLAN_BLOCKED_FEATURE_REQUIRES_PRODUCT_DECISION` |
+| `hotfix_or_release_routing` | REFUSE (interactive `/nacl-tl-hotfix` or `/nacl-tl-release`) |
+
+The set is closed: `/nacl-tl-intake` MUST NOT emit triggers outside this
+list. Future trigger additions are a major-version bump for the intake
+emit-state schema and require corresponding refusal entries here.
+
+---
+
+## `plan.lock.json`
+
+```json
+{
+  "schema_version": 1,
+  "run_id": "goal-intake-...",
+  "goal_fingerprint": "sha256:<hex>",
+  "goal": "...",
+  "branch": "feature/goal-<short-hash>",
+  "deploy_target": "staging|dev-only",
+  "atoms": [
+    {
+      "id": "atom-<short_sha256(...)>",
+      "type": "BUG|TASK|FEATURE_SMALL",
+      "skill_path": "nacl-tl-fix",
+      "linked_uc": "UC-NNN",
+      "risk_level": "L1",
+      "depends_on": [],
+      "title": "..."
+    }
+  ],
+  "hard_blocks": [],
+  "authorization": {
+    "source": "user invocation",
+    "user_email": "<git user.email>",
+    "issued_at": "<utc-iso>",
+    "strict_mode": false,
+    "envelope_gates": ["spec-first-prerequisite", "spec-gap-routing"]
+  }
+}
+```
+
+### Atom ID invariant
+
+`atom.id` is assigned exactly once at LOCK PLAN time (Flow step 5) and is
+**immutable** for the run. Resume reads `plan.lock.json` and
+`atoms/<atom_id>.state.json` — it does NOT re-run classification or
+regenerate IDs.
+
+Suggested deterministic form:
+
+```
+atom_id = "atom-" + short_sha256(atom.type + "|" + atom.linked_uc + "|" + normalize(atom.title))[:12]
+```
+
+where `normalize` lowercases and collapses whitespace. Other forms are
+acceptable as long as the invariant holds.
+
+### Topological execution
+
+Atoms execute in topological order of `depends_on`. Cycle → `PLAN_BLOCKED_ATOM_DEPENDENCY_CYCLE`. Tie-break for unrelated atoms: BUG before
+FEATURE_SMALL, then by `id` lexicographically.
+
+---
+
+## `authorization.json`
+
+A copy of `plan.lock.json.authorization` written as a standalone artifact for
+audit tooling. Identical schema. Wrapper writes both at LOCK PLAN time and
+never modifies them after.
+
+---
+
+## `budget.json`
+
+```json
+{
+  "schema_version": 1,
+  "run_id": "goal-intake-...",
+  "started_at": "<utc-iso>",
+  "wall_clock_limit_seconds": 10800,
+  "turn_soft_limit": 200,
+  "token_soft_limit": 4000000,
+  "inner_skill_runs": [
+    {
+      "skill": "nacl-tl-fix",
+      "atom_id": "atom-001",
+      "started_at": "<utc-iso>",
+      "ended_at": "<utc-iso>",
+      "duration_seconds": 145,
+      "exit_status": "shipped|failed|skipped"
+    }
+  ]
+}
+```
+
+- **Wall-clock is enforceable** by the wrapper checking `now() - started_at`
+  before each atom and at deliver-time. Exceeding the limit emits
+  `GOAL_BLOCKED_BUDGET_EXHAUSTED` with `resumable: false`.
+- **Turn / token are best-effort**. NaCl inner skills do not all expose turn
+  or token counters; until they do, these fields are advisory.
+- **`inner_skill_runs[]` is append-only**. Each inner-skill invocation
+  records its envelope here, not in `progress.jsonl` (which is reserved
+  for wrapper-level events).
+
+The wrapper exports `NACL_GOAL_BUDGET_FILE=<absolute path to budget.json>`
+into the environment of every inner-skill invocation so that PR2 changes to
+inner skills can append to this file directly.
+
+---
+
+## `atoms/<atom_id>.state.json`
+
+```json
+{
+  "schema_version": 1,
+  "atom_id": "atom-...",
+  "state": "pending|implementing|shipped|verified|failed",
+  "last_commit_sha": "<sha>|null",
+  "verify_status": "pass|fail|skipped|null",
+  "error": "<string>|null",
+  "updated_at": "<utc-iso>"
+}
+```
+
+State transitions (one direction only, per atom):
+
+```
+pending → implementing → shipped → verified
+                                 → failed
+implementing → failed     # inner-skill returned a non-shippable status
+```
+
+Resume scans `atoms/*.state.json` and continues from the first atom whose
+`state != "verified"`. A `failed` atom is non-resumable on its own — the
+run as a whole becomes `goal_blocked` with `resumable: false`.
+
+---
+
+## `pr.json`
+
+```json
+{
+  "schema_version": 1,
+  "url": "https://github.com/.../pull/123",
+  "number": 123,
+  "branch": "feature/goal-<short-hash>",
+  "head_ref": "feature/goal-<short-hash>",
+  "head_sha": "<sha>",
+  "created_at": "<utc-iso>",
+  "updated_at": "<utc-iso>"
+}
+```
+
+Source of truth for the goal-run PR. Written by `/nacl-tl-ship` (in append
+mode, recognized via `NACL_SHIP_MODE=append`) on the first push that opens
+the PR. Updated on every subsequent push.
+
+`intake.sh` reads `pr.json` first; falls back to `gh pr list --head <branch>` only
+if the file is missing or stale. This avoids re-querying the GitHub API on every
+GOAL_PROOF turn.
+
+---
+
+## `goal-final-sha.txt`
+
+Plain text file. One line. The HEAD SHA of `feature/goal-<short-hash>` after
+the last atom is verified and before `/nacl-tl-deliver` starts.
+
+```
+abc1234567890abcdef...
+```
+
+Used by:
+- Step 10 PRE-DELIVER DRIFT CHECK (compare `git rev-parse HEAD` and `gh pr view --json headRefOid`)
+- Step 11.5 POST-DELIVER DRIFT CHECK (same comparison)
+- `intake.sh` for the `goal_final_sha` evidence key
+
+---
+
+## `pr-body.md`
+
+The current PR body content, rendered from `plan.lock.json` per the template
+in `nacl-goal/pr-body-template.md`. The wrapper writes this file at LOCK
+PLAN time (initial WIP body), refreshes it on every atom state transition,
+and finalizes it at GOAL_OK / GOAL_BLOCKED.
+
+`/nacl-tl-ship` in append mode reads this file when it opens or updates the
+PR. The wrapper does not call `gh pr edit` directly — it lets `/nacl-tl-ship`
+own the GitHub API surface, which keeps PR2's inner-skill changes minimal.
+
+---
+
+## `progress.jsonl`
+
+Append-only event log. One JSON event per line. Wrapper-level events ONLY.
+
+```jsonl
+{"ts":"...","kind":"run_init","run_id":"..."}
+{"ts":"...","kind":"plan_locked","atoms_total":2}
+{"ts":"...","kind":"envelope_materialized","gate":"spec-first-prerequisite","atom_ids":["atom-001"]}
+{"ts":"...","kind":"atom_state","atom_id":"atom-001","state":"implementing"}
+{"ts":"...","kind":"atom_state","atom_id":"atom-001","state":"shipped","commit":"..."}
+{"ts":"...","kind":"atom_state","atom_id":"atom-001","state":"verified"}
+{"ts":"...","kind":"goal_final_sha","sha":"..."}
+{"ts":"...","kind":"pre_deliver_drift_check","result":"ok"}
+{"ts":"...","kind":"deliver_complete"}
+{"ts":"...","kind":"post_deliver_drift_check","result":"ok"}
+{"ts":"...","kind":"regression_check","result":"clean"}
+{"ts":"...","kind":"goal_ok"}
+```
+
+Inner skills MUST NOT write to `progress.jsonl`. They append entries to
+`budget.json → inner_skill_runs[]` instead. This keeps the log small enough
+to tail manually and prevents inner-skill verbosity from drowning the
+wrapper signal.
+
+### Rotation
+
+When `progress.jsonl` exceeds 10 MB, rename it to `progress.<N>.jsonl` (next
+integer N starting from 1) and start a fresh `progress.jsonl`. Old rotated
+files are kept for audit and never deleted by the wrapper.
+
+---
+
+## `exceptions.log`
+
+JSONL audit trail of wrapper-authored exceptions. One line per exception YAML.
+
+```jsonl
+{"ts":"...","run_id":"...","exc_file":".tl/exceptions/goal-runs/.../EXC-goal-spec-first-prerequisite.yaml","gate":"spec-first-prerequisite","atom_ids":["atom-001"],"owner":"<email>","expires":"..."}
+```
+
+This is the machine-readable face of the audit; the YAML files themselves
+remain the canonical record. Future audit / status tooling (2.10.2+) reads
+this log to summarize per-run exception authorization without needing to
+parse every YAML.
+
+---
+
+## `regression-baseline.json` / `regression-postfix.json`
+
+Shared schema. See `nacl-goal/regression-schema.md` for the per-runner
+test-ID extractor table and the best-effort fallback semantics.
+
+```json
+{
+  "schema_version": 1,
+  "captured_at": "<utc-iso>",
+  "command": "npm test",
+  "runner": "vitest|jest|pytest|go|unknown",
+  "exit_code": 0,
+  "collected_count": 42,
+  "tests": {
+    "passed":  ["<test-id>", "..."],
+    "failed":  ["<test-id>", "..."],
+    "skipped": ["<test-id>", "..."]
+  }
+}
+```
+
+---
+
+## `planning/feature-plan.md` and `planning/open-decisions.md`
+
+Markdown documents produced by CLASSIFY (Flow step 4) when an atom is
+typed `FEATURE_HEAVY`. Together they form the artifact handed back to the
+user when the wrapper refuses with
+`PLAN_BLOCKED_FEATURE_REQUIRES_HUMAN_PRODUCT_DECISION`.
+
+- `feature-plan.md` — what we understood from the goal, candidate UCs to
+  create, suggested module placement, suggested NFRs, missing inputs
+- `open-decisions.md` — the explicit product-decision questions the user
+  needs to answer before this work can be classified down to FEATURE_SMALL
+
+The wrapper writes these and stops. It never authors the decisions itself.
+
+---
+
+## Version control
+
+This schema is versioned via `schema_version: 1` on every artifact root.
+Reading code MUST refuse unknown versions. Increment to `2` on any breaking
+field rename or removal; ship a migration path for existing run
+directories alongside the bump.
