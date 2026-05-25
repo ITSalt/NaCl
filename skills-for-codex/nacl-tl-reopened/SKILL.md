@@ -18,6 +18,18 @@ reports remain English.
 Read `../references/migration-rules.md` and
 `../references/verification-vocabulary.md` before executing the workflow.
 
+## Goal Compatibility
+
+This skill can be a target behind `nacl-goal` only through the
+`reopened-drain` alias. Reference `../nacl-goal/SKILL.md` and
+`../references/goal-codex-contract.md`.
+
+Codex itself must not claim that Anthropic `/goal` ran unless the runtime
+exposes it and evidence exists. The deterministic proof source is
+`../../nacl-goal/checks/reopened-drain.sh`. GOAL_PROOF is transcript evidence
+for the evaluator, not a replacement for local verification. Use the closed
+Codex status vocabulary when the wrapper cannot run.
+
 ## Contract
 
 Inputs consumed:

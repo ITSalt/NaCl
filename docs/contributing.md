@@ -95,6 +95,21 @@ Before submitting a PR:
 - [ ] Modifiers documented (if any) per [conventions](skill-modifiers.md#conventions)
 - [ ] Documentation updated if needed
 
+### Codex Skill Sync
+
+For changes under root `nacl-*/SKILL.md`, update the matching
+`skills-for-codex/<skill>/SKILL.md` file or add a documented exemption under
+`skills-for-codex/sync-exemptions/<skill>.md`.
+
+Run the guard locally before opening the PR:
+
+```sh
+sh skills-for-codex/scripts/check-root-codex-sync.sh origin/main HEAD
+```
+
+Codex SKILL.md frontmatter is intentionally different from Claude skills:
+`skills-for-codex/*/SKILL.md` uses `name` and `description` only.
+
 ## Code Style (CLI Tools)
 
 For changes to `docmost-sync/` or `yougile-setup/`:

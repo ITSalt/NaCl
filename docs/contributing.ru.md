@@ -95,6 +95,21 @@ description: |
 - [ ] Модификаторы задокументированы (если есть) по [конвенциям](skill-modifiers.md#conventions)
 - [ ] Документация обновлена при необходимости
 
+### Синхронизация Codex-скиллов
+
+Если меняется корневой `nacl-*/SKILL.md`, обновите соответствующий
+`skills-for-codex/<skill>/SKILL.md` или добавьте документированное исключение в
+`skills-for-codex/sync-exemptions/<skill>.md`.
+
+Перед PR запустите guard локально:
+
+```sh
+sh skills-for-codex/scripts/check-root-codex-sync.sh origin/main HEAD
+```
+
+Frontmatter у Codex SKILL.md отличается от Claude-скиллов:
+`skills-for-codex/*/SKILL.md` использует только `name` и `description`.
+
 ## Стиль кода (CLI-инструменты)
 
 Для изменений в `docmost-sync/` или `yougile-setup/`:

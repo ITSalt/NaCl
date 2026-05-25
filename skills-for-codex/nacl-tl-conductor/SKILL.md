@@ -19,6 +19,20 @@ Read `../references/orchestration-model.md`,
 `../references/verification-evidence.md`, and `../nacl-core/SKILL.md` before
 executing this skill.
 
+## Goal Compatibility
+
+This skill can be a target behind `nacl-goal` only through a named alias from
+`../../nacl-goal/aliases.md`, primarily `feature:<FR-NNN>` when that deferred
+2.10.1 alias is available. Reference `../nacl-goal/SKILL.md` and
+`../references/goal-codex-contract.md`.
+
+The root annotation mentions `batch:<comma-list>`, but the current alias
+catalog does not define `batch`; treat it as unsupported unless the root
+catalog adds it. Codex itself must not claim that Anthropic `/goal` ran unless
+the runtime exposes it and evidence exists. GOAL_PROOF is transcript evidence
+for the evaluator, not a replacement for local verification. Use the closed
+Codex status vocabulary when the wrapper cannot run.
+
 ## Contract
 
 Inputs consumed:

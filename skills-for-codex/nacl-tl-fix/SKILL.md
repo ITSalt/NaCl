@@ -24,6 +24,19 @@ Read these references before executing:
 - `../nacl-tl-core/references/sa-doc-update-matrix.md`
 - `../nacl-tl-core/references/tdd-workflow.md`
 
+## Goal Compatibility
+
+This skill can be a target behind `nacl-goal` only through the
+`fix:<BUG-NNN>` alias. Reference `../nacl-goal/SKILL.md` and
+`../references/goal-codex-contract.md`.
+
+Codex itself must not claim that Anthropic `/goal` ran unless the runtime
+exposes it and evidence exists. The deterministic proof source is
+`../../nacl-goal/checks/fix.sh <BUG-NNN>`. Preserve non-hotfix scope:
+emergency L0/L1 production issues route to the refusal or interactive hotfix
+path, not this goal loop. GOAL_PROOF is transcript evidence for the evaluator,
+not a replacement for local verification.
+
 ## Critical Rule: Execute All 8 Steps
 
 Execute every step in order and announce it before acting:

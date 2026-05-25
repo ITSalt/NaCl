@@ -48,7 +48,7 @@ not be written before that model exists.
 - Static validation VERIFIED.
 - User-level symlink discovery VERIFIED.
 - Read-only invocation smoke test VERIFIED.
-- Full Codex skill conversion completed: 58 installable `SKILL.md` files under
+- Full Codex skill conversion completed: 59 installable `SKILL.md` files under
   `skills-for-codex/`.
 - Installer updated to discover every `skills-for-codex/*/SKILL.md` directory
   instead of linking the pilot list only.

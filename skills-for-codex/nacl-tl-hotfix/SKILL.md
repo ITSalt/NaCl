@@ -17,6 +17,19 @@ English.
 Read `../references/migration-rules.md` and
 `../references/verification-vocabulary.md` before executing the workflow.
 
+## Goal Boundary
+
+This skill is not safe to wrap in `/goal` because hotfix routing requires
+human production-incident judgment and branch/action confirmation. Use this
+skill interactively; production branch actions remain confirmation-gated even
+when a later verification alias is goal-wrapped.
+
+Reference `../nacl-goal/SKILL.md`,
+`../references/goal-codex-contract.md`, and
+`../../nacl-goal/refusal-catalog.md`. The refusal code is
+`REFUSE_HOTFIX_JUDGMENT`. Do not provide bypass flags. If autonomous execution
+is requested, report `Status: BLOCKED` or `Status: NOT_RUN`.
+
 ## Contract
 
 Inputs consumed:

@@ -18,6 +18,19 @@ Read `../references/migration-rules.md`,
 `../references/verification-vocabulary.md`, and
 `../references/verification-evidence.md` before executing the workflow.
 
+## Goal Compatibility
+
+This skill can be a target behind `nacl-goal` only through the
+`stubs-cleanup:<MOD-ID>` alias after that deferred 2.10.1 alias is available.
+Reference `../nacl-goal/SKILL.md` and
+`../references/goal-codex-contract.md`.
+
+Codex itself must not claim that Anthropic `/goal` ran unless the runtime
+exposes it and evidence exists. The alias check script is the deterministic
+proof source once shipped; until then, report `Status: BLOCKED`,
+`Status: NOT_RUN`, or `Status: UNVERIFIED` rather than treating the alias as a
+2.10.0-ready path.
+
 ## Closure Criterion: Shape Validation (W10 binding)
 
 This skill does NOT treat "absence of TODO marker" as evidence that a stub

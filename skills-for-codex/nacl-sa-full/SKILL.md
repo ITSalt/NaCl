@@ -16,6 +16,20 @@ Read `../references/orchestration-model.md`,
 `../references/migration-rules.md`, `../references/verification-vocabulary.md`,
 and `../nacl-core/SKILL.md` before executing this skill.
 
+## Goal Boundary
+
+This skill is not safe to wrap in `/goal` because SA completion contains
+mandatory phase-confirmation and handoff judgment gates. Use this skill
+interactively, then use a goal-wrapped verification alias only after the gate is
+complete.
+
+Reference `../nacl-goal/SKILL.md`,
+`../references/goal-codex-contract.md`,
+`../../nacl-goal/refusal-catalog.md`, and `../../docs/guides/goal-command.md`.
+The refusal code is `REFUSE_HUMAN_GATE_SA_PHASE_CONFIRMATION`. Do not provide
+bypass flags. If autonomous execution is requested, report `Status: BLOCKED` or
+`Status: NOT_RUN`.
+
 ## Contract
 
 Inputs consumed:

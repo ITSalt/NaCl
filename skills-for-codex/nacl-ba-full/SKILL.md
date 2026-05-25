@@ -17,6 +17,18 @@ Read `../references/orchestration-model.md`,
 `../references/ba-codex-contract.md`, and `../nacl-core/SKILL.md` before
 executing this skill.
 
+## Goal Boundary
+
+This skill is not safe to wrap in `/goal` because BA completion includes the
+mandatory BA-to-SA handoff judgment gate. Use this skill interactively, then
+use a goal-wrapped verification alias only after the gate is complete.
+
+Reference `../nacl-goal/SKILL.md`,
+`../references/goal-codex-contract.md`, and
+`../../nacl-goal/refusal-catalog.md`. The refusal code is
+`REFUSE_HUMAN_GATE_BA_SA_HANDOFF`. Do not provide bypass flags. If autonomous
+execution is requested, report `Status: BLOCKED` or `Status: NOT_RUN`.
+
 ## Contract
 
 Inputs consumed:

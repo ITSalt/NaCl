@@ -13,9 +13,9 @@ removing Claude-specific model routing and Task-agent assumptions.
 
 ## Scope
 
-The current Codex package contains all 58 migrated `SKILL.md` files:
+The current Codex package contains all 59 installable `SKILL.md` files:
 
-- `nacl-core`, `nacl-init`, `nacl-render`, `nacl-publish`
+- `nacl-core`, `nacl-init`, `nacl-render`, `nacl-publish`, `nacl-goal`
 - `nacl-tl-core` shared TL references
 - 14 `nacl-ba-*` business-analysis skills
 - 10 `nacl-sa-*` system-analysis skills

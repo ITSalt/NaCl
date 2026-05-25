@@ -13,6 +13,19 @@ Coordinate migration phases without parsing Markdown directly. Read
 `../nacl-core/SKILL.md`, `../references/migration-rules.md`, and
 `../references/verification-vocabulary.md` before executing.
 
+## Goal Compatibility
+
+This skill can be a target behind `nacl-goal` only through the
+`migrate-canary` alias after that deferred 2.10.1 alias is available. Reference
+`../nacl-goal/SKILL.md`, `../references/goal-codex-contract.md`, and
+`../../nacl-goal/refusal-catalog.md`.
+
+The goal loop may run only to the canary retrospective boundary. After that,
+the interactive retrospective gate wins and the refusal code is
+`REFUSE_POST_CANARY_RETROSPECTIVE`. Codex itself must not claim that Anthropic
+`/goal` ran unless the runtime exposes it and evidence exists. Use the closed
+Codex status vocabulary when the wrapper cannot run.
+
 ## Workflow
 
 1. Preflight the project path, git state, Python availability, NaCl home, and

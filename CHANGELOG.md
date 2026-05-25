@@ -4,6 +4,22 @@ All notable changes to NaCl (Natural Agent Control Language) will be documented 
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [2.10.2] — 2026-05-25
+
+Codex sync release for the 2.10.0 `/goal` protocol. Adds the Codex
+`nacl-goal` skill, a shared Codex goal compatibility reference, and compact
+goal compatibility or boundary sections for the ten root skills that gained
+2.10.0 `/goal` annotations. Codex install documentation now expects 59
+user-level skill symlinks, matching every `skills-for-codex/*/SKILL.md`
+directory.
+
+Also adds a local and CI-capable guard that checks root `nacl-*/SKILL.md`
+changes against matching `skills-for-codex/` updates or an explicit sync
+exemption.
+
+Release notes:
+`docs/releases/2.10.2-codex-sync-2.10.0/release-notes.md`.
+
 ## [2.10.0] — 2026-05-25
 
 Minor release. New `/nacl-goal` skill wraps Anthropic's `/goal` command

@@ -19,6 +19,18 @@ Read `../references/orchestration-model.md`,
 `../nacl-core/SKILL.md`, and `../nacl-tl-conductor/SKILL.md` before executing
 this skill.
 
+## Goal Compatibility
+
+This skill can be a target behind `nacl-goal` only through the `wave:<N>`
+alias. Reference `../nacl-goal/SKILL.md` and
+`../references/goal-codex-contract.md`.
+
+Codex itself must not claim that Anthropic `/goal` ran unless the runtime
+exposes it and evidence exists. The deterministic proof source is
+`../../nacl-goal/checks/wave.sh <N>`. GOAL_PROOF is transcript evidence for the
+evaluator, not a replacement for local verification. Use the closed Codex
+status vocabulary when the wrapper cannot run.
+
 ## Contract
 
 Inputs consumed:

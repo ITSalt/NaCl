@@ -9,6 +9,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Check SKILL.md frontmatter
         run: |
@@ -45,3 +47,9 @@ jobs:
             exit 1
           fi
           echo "No credential patterns found"
+
+      - name: Check root/Codex skill sync
+        run: |
+          sh skills-for-codex/scripts/check-root-codex-sync.sh \
+            "${{ github.event.pull_request.base.sha }}" \
+            "${{ github.sha }}"

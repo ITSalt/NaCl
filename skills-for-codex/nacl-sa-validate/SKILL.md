@@ -14,6 +14,18 @@ coverage only; repairs belong to the relevant SA skill and require confirmation.
 Read `../nacl-core/SKILL.md`, `../references/migration-rules.md`, and
 `../references/verification-vocabulary.md` before using this workflow.
 
+## Goal Compatibility
+
+This skill can be a target behind `nacl-goal` only through the
+`validate:module:<MOD-ID>` alias. Reference `../nacl-goal/SKILL.md` and
+`../references/goal-codex-contract.md`.
+
+Codex itself must not claim that Anthropic `/goal` ran unless the runtime
+exposes it and evidence exists. The deterministic proof source is
+`../../nacl-goal/checks/validate.sh <MOD-ID>`, with validation truth surfaced
+through GOAL_PROOF. Use the closed Codex status vocabulary when the wrapper
+cannot run.
+
 ## Workflow
 
 Levels:
