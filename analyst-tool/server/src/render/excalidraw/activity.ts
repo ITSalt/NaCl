@@ -251,7 +251,7 @@ export async function renderActivity(driver: Driver, ucId: string): Promise<Exca
     strokeColor: '#e0e0e0',
     strokeStyle: 'solid',
     strokeWidth: 1,
-    roughness: 1,
+    roughness: 0,
     opacity: 30,
     groupIds: userGroup,
   });
@@ -271,7 +271,7 @@ export async function renderActivity(driver: Driver, ucId: string): Promise<Exca
       strokeColor: '#e0e0e0',
       strokeStyle: 'solid',
       strokeWidth: 1,
-      roughness: 1,
+      roughness: 0,
       opacity: 30,
       groupIds: sysGroup,
     });
@@ -291,7 +291,7 @@ export async function renderActivity(driver: Driver, ucId: string): Promise<Exca
     backgroundColor: '#fafafa',
     strokeColor: '#424242',
     strokeWidth: 2,
-    roughness: 1,
+    roughness: 0,
     opacity: 100,
     groupIds: userGroup,
   });
@@ -334,7 +334,7 @@ export async function renderActivity(driver: Driver, ucId: string): Promise<Exca
       backgroundColor: '#fafafa',
       strokeColor: '#424242',
       strokeWidth: 2,
-      roughness: 1,
+      roughness: 0,
       opacity: 100,
       groupIds: sysGroup,
     });
@@ -426,7 +426,7 @@ export async function renderActivity(driver: Driver, ucId: string): Promise<Exca
       // at a glance that this step needs proper data in the graph.
       strokeStyle: isEmpty ? 'dashed' : 'solid',
       strokeWidth: 2,
-      roughness: 1,
+      roughness: 0,
       opacity: isEmpty ? 70 : 100,
       customData: { nodeId: step.step_id, nodeType: 'ActivityStep', confidence: 'high', synced: true },
     });

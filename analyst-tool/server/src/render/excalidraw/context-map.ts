@@ -191,7 +191,7 @@ export async function renderContextMap(driver: Driver): Promise<ExcalidrawScene>
       backgroundColor: '#e8f5e9',
       strokeColor: '#2e7d32',
       strokeWidth: 2,
-      roughness: 1,
+      roughness: 0,
       groupIds: moduleGroup,
       customData: { nodeId: mod.id, nodeType: 'Module', confidence: 'high', synced: true },
     });
