@@ -88,7 +88,11 @@ describe('run-queue concurrency guard', () => {
     const { enqueue } = await import('./run-queue.js');
     const ctrl = makeControllablePacer();
 
-    const handle = enqueue({ kind: 'regenerate', board: 'domain-model' }, ctrl.pacer);
+    // Use a pacer-backed kind ('sync'/'analyze'). 'regenerate' runs locally
+    // (Wave 0) and bypasses the injected pacer, opening a real Neo4j driver via
+    // getDriverAsync() that is never closed — so ctrl.resolve() is a no-op AND
+    // the leaked handle keeps the test process from ever exiting.
+    const handle = enqueue({ kind: 'analyze', board: 'domain-model' }, ctrl.pacer);
     assert.match(handle.runId, /^r-[0-9a-f]{8}$/);
 
     // Let it finish so we don't pollute the active set for later tests
@@ -147,7 +151,8 @@ describe('run-queue concurrency guard', () => {
     const ctrl1 = makeControllablePacer();
     const ctrl2 = makeControllablePacer();
 
-    const h1 = enqueue({ kind: 'regenerate', board: 'domain-model' }, ctrl1.pacer);
+    // Two distinct pacer-backed kinds (see note above on avoiding 'regenerate').
+    const h1 = enqueue({ kind: 'analyze', board: 'domain-model' }, ctrl1.pacer);
     const h2 = enqueue({ kind: 'sync', board: 'domain-model' }, ctrl2.pacer);
 
     // Both handles are valid (no throw)
