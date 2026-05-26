@@ -94,7 +94,10 @@ jobs:
       - name: Run E2E tests
         run: |
           cd analyst-tool
-          mkdir -p "$NACL_BOARDS_DIR"
+          # Pre-create the boards dir AND its .snapshots subdir: the server's
+          # chokidar snapshot watcher (ignoreInitial) is set up at boot and only
+          # detects later-written files if .snapshots already exists.
+          mkdir -p "$NACL_BOARDS_DIR/.snapshots"
           npm run e2e
         env:
           CI: 'true'

@@ -210,6 +210,10 @@ export const test = base.extend<FixtureOptions, FixtureWorkerData>({
   ensureTestBoard: [
     async ({}, use) => {
       mkdirSync(BOARDS_DIR, { recursive: true });
+      // The snapshot watcher (chokidar, ignoreInitial) only catches files
+      // written after boot if .snapshots exists when the server starts. For
+      // local runs the dir may not exist yet; CI also pre-creates it.
+      mkdirSync(path.join(BOARDS_DIR, '.snapshots'), { recursive: true });
       const boardPath = path.join(BOARDS_DIR, `${TEST_BOARD_NAME}.excalidraw`);
       let original: string | null = null;
 
