@@ -16,7 +16,7 @@ import { versionRoutes } from './routes/version.js';
 import { renderRoutes } from './routes/render.js';
 import { getVersionInfo } from './services/version.js';
 import { start as startWatcher } from './services/fs-watcher.js';
-import { isRecentSelfWrite } from './services/self-writes.js';
+import { consumePendingOrigin } from './services/boards.js';
 import { start as startRegistryWatcher, stop as stopRegistryWatcher } from './services/registry-watcher.js';
 import { getPacer, shutdown as shutdownPinch } from './services/pinch.js';
 import { subscribe, unsubscribe, unsubscribeAll, broadcast } from './ws/events.js';
@@ -94,10 +94,19 @@ export async function startServer(options: StartServerOptions): Promise<() => Pr
     fastify.get('/ws', { websocket: true }, (socket) => {
       socket.on('message', (raw: Buffer | string) => {
         try {
-          const msg = JSON.parse(raw.toString()) as { op?: string; channel?: string };
-          if (msg.op === 'subscribe' && typeof msg.channel === 'string') {
+          const msg = JSON.parse(raw.toString()) as {
+            op?: string;
+            type?: string;
+            channel?: string;
+            originId?: string;
+          };
+          // FR-002: the web client sends `type`; older callers used `op`. Accept both.
+          // `originId` may ride along on subscribe; suppression is client-side, so it is
+          // parsed-and-ignored here (the server tags board.changed from the PUT origin).
+          const action = msg.type ?? msg.op;
+          if (action === 'subscribe' && typeof msg.channel === 'string') {
             subscribe(msg.channel, socket);
-          } else if (msg.op === 'unsubscribe' && typeof msg.channel === 'string') {
+          } else if (action === 'unsubscribe' && typeof msg.channel === 'string') {
             unsubscribe(msg.channel, socket);
           }
         } catch {
@@ -139,13 +148,19 @@ export async function startServer(options: StartServerOptions): Promise<() => Pr
   const watcherStop = startWatcher(
     getConfig().boardsDir,
     (event) => {
-      // Drop events caused by our own writeBoard() — otherwise a single
-      // canvas edit fans out to GET /boards refetches that re-render the
-      // canvas and produce another save (positive feedback loop).
-      if (isRecentSelfWrite(event.boardName)) return;
-      const mtime = event.mtime ?? new Date().toISOString();
+      // Consume the originId set by writeBoard (null for external/skill writes).
+      // The isRecentSelfWrite gate has been removed: every write produces a
+      // board.changed broadcast. Clients suppress their own echo client-side
+      // using the originId they sent on subscribe (FR-002 / UC-020-BE).
+      const originId = consumePendingOrigin(event.boardName);
+      const mtimeMs = event.mtime != null ? new Date(event.mtime).getTime() : Date.now();
       broadcast('boards', { type: 'tree.changed', boardName: event.boardName, eventType: event.type });
-      broadcast(`board:${event.boardName}`, { type: 'board.changed', mtime });
+      broadcast(`board:${event.boardName}`, {
+        type: 'board.changed',
+        board: event.boardName,
+        mtime: mtimeMs,
+        originId,
+      });
     },
     (snapEvent) => {
       broadcast(`board:${snapEvent.boardName}`, {

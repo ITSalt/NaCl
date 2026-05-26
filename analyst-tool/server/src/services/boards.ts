@@ -4,7 +4,6 @@ import { join, resolve, basename } from 'node:path';
 import { getConfig } from '../config.js';
 import { classifyBoard, type BoardKind } from './board-classifier.js';
 import { readMeta, writeMeta, computeBoardHash, type BoardMeta } from './meta.js';
-import { markSelfWrite } from './self-writes.js';
 import { repairArrowBindings } from './excalidraw-bindings.js';
 import { getDriverAsync } from './neo4j.js';
 
@@ -201,22 +200,51 @@ export async function readBoard(name: string): Promise<{ scene: ExcalidrawScene;
   };
 }
 
+// ---------------------------------------------------------------------------
+// Pending-origin map — carries originId from writeBoard to fs-watcher handler.
+// The fs-watcher fires within milliseconds; the 5 s TTL is a safety net only.
+// ---------------------------------------------------------------------------
+
+type PendingEntry = { originId: string | null; expiresAt: number };
+const pendingOrigins = new Map<string, PendingEntry>();
+
+/**
+ * Record the originId for the next fs-watcher event on this board.
+ * Called by writeBoard; consumed (and cleared) by consumePendingOrigin.
+ */
+export function setPendingOrigin(name: string, originId: string | null): void {
+  pendingOrigins.set(name, { originId, expiresAt: Date.now() + 5000 });
+}
+
+/**
+ * Read and clear the pending originId for a board.
+ * Returns null if no entry exists or if the entry has expired.
+ */
+export function consumePendingOrigin(name: string): string | null {
+  const entry = pendingOrigins.get(name);
+  pendingOrigins.delete(name);
+  if (!entry || Date.now() > entry.expiresAt) return null;
+  return entry.originId;
+}
+
 export async function writeBoard(
   name: string,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   scene: any,
+  opts: { originId?: string } = {},
 ): Promise<{ mtime: string; hasUnsyncedEdits: boolean }> {
   const boardsDir = getConfig().boardsDir;
   const filePath = assertSafePath(boardsDir, name);
+
   const tmp = `${filePath}.tmp`;
+
+  // Store originId BEFORE the write so the fs-watcher can read it.
+  // The write is synchronous-ish (writeFile+rename) and the watcher fires
+  // after rename completes — by then setPendingOrigin has already been called.
+  setPendingOrigin(name, opts.originId ?? null);
 
   await writeFile(tmp, JSON.stringify(scene, null, 2), 'utf-8');
   await rename(tmp, filePath);
-
-  // Mark this board as a recent self-write so the fs-watcher event triggered
-  // by this rename doesn't bounce back as a tree.changed broadcast and start
-  // a re-render → onChange → PUT loop in the canvas.
-  markSelfWrite(name);
 
   const fileStat = await stat(filePath);
   const mtime = fileStat.mtime.toISOString();

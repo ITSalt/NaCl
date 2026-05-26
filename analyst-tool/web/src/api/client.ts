@@ -1,3 +1,5 @@
+import { originId } from './ws.js';
+
 export type BoardMeta = {
   lastGeneratedAt: string | null;
   lastGeneratedBy: string | null;
@@ -157,7 +159,7 @@ export const apiClient = {
   putBoard(name: string, scene: ExcalidrawScene): Promise<WriteResult> {
     return request<WriteResult>(`/boards/${encodeURIComponent(name)}`, {
       method: 'PUT',
-      body: JSON.stringify({ scene }),
+      body: JSON.stringify({ scene, originId }),
     });
   },
 

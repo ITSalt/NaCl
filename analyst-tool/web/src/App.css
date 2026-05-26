@@ -487,6 +487,17 @@ body,
   max-width: 100%;
 }
 
+.sidebar-item-changed-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent, #f59e0b);
+  flex-shrink: 0;
+  margin-left: auto;
+  align-self: center;
+}
+
 /* Canvas */
 
 .app-canvas {

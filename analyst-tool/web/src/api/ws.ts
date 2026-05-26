@@ -3,6 +3,14 @@ type MessageHandler = (payload: Record<string, unknown>) => void;
 const WS_URL = `ws://${window.location.host}/ws`;
 const MAX_BACKOFF_MS = 10_000;
 
+/**
+ * Stable per-client session token. Generated once at module load (one UUID per
+ * browser tab). The same value is sent in every WS subscribe message and in
+ * every PUT /boards/:name request body so the server can echo it back in
+ * board.changed, letting this client suppress its own writes.
+ */
+export const originId: string = crypto.randomUUID();
+
 type ChannelHandlers = Map<MessageHandler, true>;
 const handlers = new Map<string, ChannelHandlers>();
 
@@ -29,7 +37,7 @@ function notifyConnectionChange(state: boolean): void {
 function resubscribeAll(): void {
   if (!socket || socket.readyState !== WebSocket.OPEN) return;
   for (const channel of handlers.keys()) {
-    socket.send(JSON.stringify({ op: 'subscribe', channel }));
+    socket.send(JSON.stringify({ type: 'subscribe', channel, originId }));
   }
 }
 
@@ -87,7 +95,7 @@ export function subscribe(channel: string, handler: MessageHandler): void {
   handlers.get(channel)!.set(handler, true);
 
   if (socket && socket.readyState === WebSocket.OPEN) {
-    socket.send(JSON.stringify({ op: 'subscribe', channel }));
+    socket.send(JSON.stringify({ type: 'subscribe', channel, originId }));
   }
 }
 
@@ -98,10 +106,38 @@ export function unsubscribe(channel: string, handler: MessageHandler): void {
   if (channelHandlers.size === 0) {
     handlers.delete(channel);
     if (socket && socket.readyState === WebSocket.OPEN) {
-      socket.send(JSON.stringify({ op: 'unsubscribe', channel }));
+      socket.send(JSON.stringify({ type: 'unsubscribe', channel }));
     }
   }
 }
 
 // Auto-connect on module load
 connect();
+
+// ---------------------------------------------------------------------------
+// Test helper — expose originId and a WS message injector on window so that
+// Playwright e2e tests can inject synthetic server events without a live WS.
+// Only installed in non-production or when the test hook is requested.
+// ---------------------------------------------------------------------------
+
+export function exposeTestHooks(): void {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const w = window as any;
+  w.__originId = originId;
+  w.__injectWsMessage = (msg: Record<string, unknown>) => {
+    const channel = typeof msg['channel'] === 'string' ? msg['channel'] : null;
+    if (!channel) return;
+    const channelHandlers = handlers.get(channel);
+    if (!channelHandlers) return;
+    for (const handler of channelHandlers.keys()) {
+      handler(msg);
+    }
+  };
+}
+
+// Always expose in the browser (safe — this is a local dev tool, not a public app)
+exposeTestHooks();
+
+// Expose handler channel count for debugging (dev tool only)
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+(window as any).__wsChannels = () => Array.from(handlers.keys());

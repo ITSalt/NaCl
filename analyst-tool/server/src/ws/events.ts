@@ -2,6 +2,18 @@ import type { WebSocket } from '@fastify/websocket';
 
 type Channel = string;
 
+// ---------------------------------------------------------------------------
+// Typed payload for board.changed (FR-002 / UC-020-BE)
+// ---------------------------------------------------------------------------
+
+/** Metadata-only payload for the board.changed event. NEVER includes scene. */
+export type BoardChangedPayload = {
+  type: 'board.changed';
+  board: string;
+  mtime: number;
+  originId: string | null;
+};
+
 const subscriptions = new Map<Channel, Set<WebSocket>>();
 
 export function subscribe(channel: Channel, socket: WebSocket): void {

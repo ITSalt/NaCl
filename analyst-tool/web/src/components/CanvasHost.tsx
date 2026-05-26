@@ -6,6 +6,7 @@ import type { BinaryFiles } from '@excalidraw/excalidraw/types/types';
 import type { ExcalidrawImperativeAPI } from '@excalidraw/excalidraw/types/types';
 import { useStore } from '../state/store.js';
 import type { DiffEntry } from '../state/store.js';
+import { BoardChangedBanner } from './BoardChangedBanner.js';
 
 const DEBOUNCE_MS = 800;
 const HIGHLIGHT_DURATION_MS = 3000;
@@ -80,6 +81,7 @@ export default function CanvasHost() {
   const selectedBoard = useStore((s) => s.selectedBoard);
   const current = useStore((s) => s.current);
   const currentRevision = useStore((s) => s.currentRevision);
+  const reloadKey = useStore((s) => s.reloadKey);
   const saveCurrent = useStore((s) => s.saveCurrent);
   const diffMode = useStore((s) => s.diffMode);
   const pendingHighlightElementId = useStore((s) => s.pendingHighlightElementId);
@@ -267,8 +269,10 @@ export default function CanvasHost() {
   }
 
   return (
-    <div className="canvas-host" key={`${selectedBoard}:${currentRevision}`}>
+    <div className="canvas-host" style={{ position: 'relative' }}>
+      <BoardChangedBanner />
       <Excalidraw
+        key={`${selectedBoard}:${currentRevision}:${reloadKey}`}
         excalidrawAPI={(api) => { excalidrawApiRef.current = api; }}
         initialData={{
           elements: displayElements,

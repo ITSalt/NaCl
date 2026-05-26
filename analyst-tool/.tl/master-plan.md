@@ -80,3 +80,69 @@ Start with Wave 1: `UC-003-BE` or `UC-008-BE` (either; they're parallel).
 Run: `/nacl-tl-dev-be UC-003-BE` or `/nacl-tl-dev-be UC-008-BE`.
 
 Run: `/nacl-tl-status` to see progress.
+
+---
+
+# Master Plan — NaCl Analyst Tool (FR-002 slice)
+
+**Generated:** 2026-05-26
+**Source:** Neo4j graph (nacl-tl-plan, bolt 3608 — tool spec graph)
+**Feature Request:** FR-002 — Live-update on External Board Edits
+**Scope:** Incremental — UC-020 (NEW) + UC-002 contract delta (folded into UC-020-BE). FR-001 is complete.
+
+## Module Structure (UCs in scope)
+
+| Module          | UCs in this FR        | Description                                              |
+|-----------------|-----------------------|----------------------------------------------------------|
+| M-BACKEND-API   | UC-020 (owner)        | fs-watcher broadcast, PUT/writeBoard origin contract, ws board.changed payload. |
+| M-WEB-UI        | UC-020 (FE), UC-002   | Consent banner, sidebar changed-indicator, per-client originId; UC-002 PUT contract gains originId. |
+
+## Task List
+
+### UC Tasks
+
+| Task ID    | UC      | Title                                                        | Type  | Wave | Priority | Depends On | Blocks      |
+|------------|---------|--------------------------------------------------------------|-------|------|----------|------------|-------------|
+| UC-020-BE  | UC-020  | Live-update — server WS/PUT origin contract                  | uc-be | 3    | high     | —          | UC-020-FE   |
+| UC-020-FE  | UC-020  | Live-update — consent banner + sidebar indicator + originId  | uc-fe | 4    | high     | UC-020-BE  | —           |
+
+### TECH Tasks
+
+**None.** Per FR-002: all changes are incremental to existing files (additive WS/PUT contract).
+
+## Execution Waves
+
+### Wave 3 — Backend (WS/PUT origin contract)
+
+| Task       | Title                                       | Agent          | Notes                                                            |
+|------------|---------------------------------------------|----------------|------------------------------------------------------------------|
+| UC-020-BE  | Live-update — server WS/PUT origin contract | nacl-tl-dev-be | Removes global `markSelfWrite` suppression (root cause of #4); threads `originId`. Covers REQ-UC020-01/02/04 + REQ-UC002-03. **Regression-first**: #4 symptom must be RED before fix. |
+
+### Wave 4 — Frontend (consent banner + sidebar)
+
+| Task       | Title                                                       | Agent          | Depends On |
+|------------|-------------------------------------------------------------|----------------|------------|
+| UC-020-FE  | Live-update — consent banner + sidebar indicator + originId | nacl-tl-dev-fe | UC-020-BE  |
+
+Covers REQ-UC020-03/05/06 + the client half of REQ-UC020-02. NEW component CMP-BOARD-CHANGED-BANNER; modifies CanvasHost, Sidebar, store, App, api/client, api/ws.
+
+## Critical Path
+
+```
+UC-020-BE  →  UC-020-FE
+```
+
+One chain (BE contract must land before the FE consent banner is useful). Longest path: two tasks.
+
+## Open Questions
+
+1. **originId transport:** task `api-contract.md` chose a **PUT body field** (not an `X-Origin-Id` header) for `originId`. Confirm or override before UC-020-BE starts.
+2. **UC-002 owner module:** UC-002 lives in M-WEB-UI but the contract delta (REQ-UC002-03) is implemented server-side as part of UC-020-BE. No standalone UC-002 task is generated.
+
+## Next Task
+
+Start with Wave 3: `UC-020-BE`.
+
+Run: `/nacl-tl-dev-be UC-020-BE` (regression test first, per FR-002 anchor).
+
+Run: `/nacl-tl-status` to see progress.

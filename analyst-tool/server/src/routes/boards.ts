@@ -54,7 +54,7 @@ export async function boardsRoutes(fastify: FastifyInstance): Promise<void> {
 
   fastify.put<{
     Params: { name: string };
-    Body: { scene: { elements: unknown[]; [key: string]: unknown } };
+    Body: { scene: { elements: unknown[]; [key: string]: unknown }; originId?: string };
   }>(
     '/boards/:name',
     {
@@ -70,6 +70,7 @@ export async function boardsRoutes(fastify: FastifyInstance): Promise<void> {
                 elements: { type: 'array' },
               },
             },
+            originId: { type: 'string' },
           },
         },
       },
@@ -80,7 +81,8 @@ export async function boardsRoutes(fastify: FastifyInstance): Promise<void> {
         return reply.status(400).send({ error: 'Invalid board name' });
       }
       try {
-        const result = await writeBoard(name, req.body.scene);
+        const { originId } = req.body;
+        const result = await writeBoard(name, req.body.scene, { originId });
         return result;
       } catch (err) {
         const e = err as { statusCode?: number; message?: string };

@@ -133,6 +133,8 @@ export default function Sidebar() {
   const runs = useStore((s) => s.runs);
   const selectedBoard = useStore((s) => s.selectedBoard);
   const selectBoard = useStore((s) => s.selectBoard);
+  const changedBoards = useStore((s) => s.changedBoards);
+  const clearChangedBoard = useStore((s) => s.clearChangedBoard);
   const startRegenerate = useStore((s) => s.startRegenerate);
   const startSync = useStore((s) => s.startSync);
   const searchQuery = useStore((s) => s.searchQuery);
@@ -306,7 +308,10 @@ export default function Sidebar() {
                     <button
                       className={clsx('sidebar-item sidebar-item--flex', { 'sidebar-item--active': selectedBoard === board.name })}
                       title={`${board.name}.excalidraw`}
-                      onClick={() => void selectBoard(board.name)}
+                      onClick={() => {
+                        clearChangedBoard(board.name);
+                        void selectBoard(board.name);
+                      }}
                     >
                       <span className="sidebar-item-dot">{statusDot(board.syncStatus)}</span>
                       <span className="sidebar-item-text">
@@ -317,6 +322,14 @@ export default function Sidebar() {
                           </span>
                         )}
                       </span>
+                      {changedBoards.has(board.name) && (
+                        <span
+                          className="sidebar-item-changed-dot"
+                          data-testid={`sidebar-item-changed-${board.name}`}
+                          title="Изменено на сервере"
+                          aria-label="Changed externally"
+                        />
+                      )}
                     </button>
                     {canRegen && (
                       <button

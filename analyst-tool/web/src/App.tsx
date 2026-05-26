@@ -81,6 +81,33 @@ export default function App() {
     return () => unsubscribe('boards', handler);
   }, [applyBoardListPatch, ingestBoardsCleared]);
 
+  // WebSocket: subscribe to all board channels for non-open board changed indicators
+  // This catches board.changed events for boards other than the currently-open one.
+  const boards = useStore((s) => s.boards);
+  useEffect(() => {
+    if (!boards.length) return;
+    const handlers: Array<{ channel: string; handler: (msg: Record<string, unknown>) => void }> = [];
+    for (const board of boards) {
+      if (board.name === selectedBoard) continue; // open board handled by the per-board subscription
+      const channel = `board:${board.name}`;
+      const handler = (msg: Record<string, unknown>) => {
+        if (msg['type'] === 'board.changed') {
+          const originId = typeof msg['originId'] === 'string' ? msg['originId'] : null;
+          const mtime = typeof msg['mtime'] === 'number' ? msg['mtime'] : 0;
+          applyBoardChange(board.name, mtime, originId);
+        }
+      };
+      subscribe(channel, handler);
+      handlers.push({ channel, handler });
+    }
+    return () => {
+      for (const { channel, handler } of handlers) {
+        unsubscribe(channel, handler);
+      }
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [boards, selectedBoard, applyBoardChange]);
+
   // WebSocket: subscribe to projects channel
   useEffect(() => {
     const handler = (msg: Record<string, unknown>) => {
@@ -108,8 +135,10 @@ export default function App() {
     const channel = `board:${selectedBoard}`;
     const handler = (msg: Record<string, unknown>) => {
       if (msg['type'] === 'board.changed') {
-        const mtime = typeof msg['mtime'] === 'string' ? msg['mtime'] : undefined;
-        void applyBoardChange(selectedBoard, mtime);
+        // mtime is a Unix ms number in the new payload
+        const mtime = typeof msg['mtime'] === 'number' ? msg['mtime'] : 0;
+        const originId = typeof msg['originId'] === 'string' ? msg['originId'] : null;
+        applyBoardChange(selectedBoard, mtime, originId);
       } else if (msg['type'] === 'snapshot.created') {
         const ts = msg['timestamp'];
         const board = msg['boardName'];

@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { apiClient, type BoardListItem, type BoardData, type ExcalidrawScene, type SnapshotEntry, type DiffEntry, type ProjectRecord, type ResolvedConfig } from '../api/client.js';
+import { originId as ownOriginId } from '../api/ws.js';
 
 export type { ProjectRecord, ResolvedConfig };
 
@@ -82,6 +83,11 @@ export interface BatchStatus {
 // Store interface
 // ---------------------------------------------------------------------------
 
+export type PendingBoardChange = {
+  board: string;
+  mtime: number;
+};
+
 interface Store {
   boards: BoardListItem[];
   selectedBoard: string | null;
@@ -93,10 +99,14 @@ interface Store {
    * remount; local saves don't.
    */
   currentRevision: number;
+  /** Incremented when user explicitly consents to reload — forces CanvasHost remount. */
+  reloadKey: number;
   loading: boolean;
   error: string | null;
-  // mtime we wrote last — used to suppress echo from WS
-  expectedMtime: string | null;
+  /** Board that changed while the canvas was open — drives the consent banner. */
+  pendingBoardChange: PendingBoardChange | null;
+  /** Boards that changed while not open — drives the sidebar changed indicator. */
+  changedBoards: Set<string>;
   // run tracking
   runs: Map<string, Run>;
   /** Latest pacer-wide block (window closed / wave cooldown). null when running freely. */
@@ -133,8 +143,11 @@ interface Store {
   selectBoard(name: string): Promise<void>;
   saveCurrent(scene: ExcalidrawScene): Promise<void>;
   applyBoardListPatch(): Promise<void>;
-  applyBoardChange(name: string, mtime?: string): Promise<void>;
-  setExpectedMtime(mtime: string | null): void;
+  applyBoardChange(name: string, mtime: number, originId: string | null): void;
+  confirmBoardReload(): void;
+  dismissBoardChange(): void;
+  clearChangedBoard(name: string): void;
+  reloadBoard(name: string): Promise<void>;
   startRegenerate(board: string): Promise<string>;
   startSync(board: string): Promise<string>;
   startAnalyze(board: string): Promise<string>;
@@ -212,9 +225,11 @@ export const useStore = create<Store>((set, get) => ({
   selectedBoard: null,
   current: null,
   currentRevision: 0,
+  reloadKey: 0,
   loading: false,
   error: null,
-  expectedMtime: null,
+  pendingBoardChange: null,
+  changedBoards: new Set<string>(),
   runs: new Map(),
   pacerBlocked: null,
   renderable: [],
@@ -238,10 +253,6 @@ export const useStore = create<Store>((set, get) => ({
   configSource: 'env',
   resolvedConfig: null,
   projectSwitching: false,
-
-  setExpectedMtime(mtime) {
-    set({ expectedMtime: mtime });
-  },
 
   async loadBoardList() {
     set({ loading: true, error: null });
@@ -293,8 +304,6 @@ export const useStore = create<Store>((set, get) => ({
     if (diffMode.active) return;
     try {
       const result = await apiClient.putBoard(selectedBoard, scene);
-      // Track the mtime we expect from WS echo — suppress that notification
-      set({ expectedMtime: result.mtime });
       // Update current meta snapshot
       const { current, boards } = get();
       if (current) {
@@ -346,24 +355,45 @@ export const useStore = create<Store>((set, get) => ({
     }
   },
 
-  async applyBoardChange(name, mtime) {
-    const { selectedBoard, expectedMtime } = get();
-    if (selectedBoard !== name) return;
+  applyBoardChange(name, mtime, originId) {
+    // Suppress own writes — originId-based (replaces obsolete ISO-mtime comparison)
+    if (originId !== null && originId === ownOriginId) return;
 
-    // Suppress echo of our own save
-    if (mtime && expectedMtime === mtime) {
-      set({ expectedMtime: null });
-      return;
+    const { selectedBoard } = get();
+    if (selectedBoard === name) {
+      // Open board: show consent banner instead of force-remounting
+      set({ pendingBoardChange: { board: name, mtime } });
+    } else {
+      // Non-open board: mark sidebar row with changed indicator
+      set((s) => ({ changedBoards: new Set(s.changedBoards).add(name) }));
     }
-    set({ expectedMtime: null });
+  },
 
+  confirmBoardReload() {
+    const pending = get().pendingBoardChange;
+    if (!pending) return;
+    set({ pendingBoardChange: null });
+    void get().reloadBoard(pending.board);
+  },
+
+  dismissBoardChange() {
+    set({ pendingBoardChange: null });
+  },
+
+  clearChangedBoard(name) {
+    set((s) => {
+      const next = new Set(s.changedBoards);
+      next.delete(name);
+      return { changedBoards: next };
+    });
+  },
+
+  async reloadBoard(name) {
     try {
       const data = await apiClient.getBoard(name);
-      // External update — force a CanvasHost remount so Excalidraw picks up
-      // the new scene (initialData is read only at mount time).
-      set((s) => ({ current: data, currentRevision: s.currentRevision + 1 }));
+      set((s) => ({ current: data, currentRevision: s.currentRevision + 1, reloadKey: s.reloadKey + 1 }));
     } catch {
-      // ignore
+      // ignore fetch errors during reload
     }
   },
 
@@ -387,14 +417,15 @@ export const useStore = create<Store>((set, get) => ({
       return { runs: next };
     });
 
-    // After a run completes/fails on the open board, refresh board data
-    const { selectedBoard, applyBoardChange } = get();
+    // After a run completes/fails on the open board, reload board data directly
+    // (skill completions are explicit user-triggered actions — no consent gate needed)
+    const { selectedBoard, reloadBoard } = get();
     if (
       (evt.phase === 'completed' || evt.phase === 'failed') &&
       evt.board &&
       selectedBoard === evt.board
     ) {
-      void applyBoardChange(evt.board);
+      void reloadBoard(evt.board);
     }
 
     // After success, refresh board list to show updated syncStatus
@@ -639,7 +670,8 @@ export const useStore = create<Store>((set, get) => ({
       searchLoading: false,
       batches: new Map(),
       pendingHighlightElementId: null,
-      expectedMtime: null,
+      pendingBoardChange: null,
+      changedBoards: new Set<string>(),
     });
   },
 
