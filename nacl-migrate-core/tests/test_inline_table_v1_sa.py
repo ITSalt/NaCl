@@ -217,6 +217,64 @@ class ActivityStepSubsectionTests(unittest.TestCase):
         self.assertEqual(len(uc.activity_steps), 5)
 
 
+class NumberedListScenarioTests(unittest.TestCase):
+    """Fix 5: UC with ## Основной сценарий expressed as a numbered list
+    (1. … 2. …) rather than a table or ### Шаг subsections — the dominant
+    inline-table dialect.
+    """
+
+    _UC = (
+        "# UC-301: Просмотр списка\n"
+        "\n"
+        "## 1. Метаданные\n"
+        "\n"
+        "| Поле | Значение |\n"
+        "|------|----------|\n"
+        "| ID | UC-301 |\n"
+        "| Название | Просмотр списка |\n"
+        "| Актор | Пользователь |\n"
+        "| Модуль | core |\n"
+        "\n"
+        "## 2. Описание\n"
+        "Тестовый сценарий.\n"
+        "\n"
+        "## 3. Основной сценарий\n"
+        "1. Пользователь открывает раздел «Заказы»\n"
+        "2. Система загружает список заказов\n"
+        "3. Отображается таблица со следующими колонками:\n"
+        "   - **Номер заказа** — ссылка\n"
+        "   - **Статус** — цветной тег\n"
+        "4. Пользователь применяет фильтры\n"
+        "\n"
+        "## 4. Альтернативные сценарии\n"
+        "1. Если данных нет — показать заглушку\n"
+    )
+
+    def _parse(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = Path(tmp) / "fix"
+            uc_dir = project / "docs" / "14-usecases"
+            uc_dir.mkdir(parents=True)
+            (uc_dir / "UC-301-orders-list.md").write_text(self._UC, encoding="utf-8")
+            return InlineTableV1SaAdapter().parse(project)
+
+    def test_numbered_list_scenario_steps(self):
+        ir, _ = self._parse()
+        self.assertEqual(len(ir.use_cases), 1)
+        uc = ir.use_cases[0]
+        # Four top-level numbered items become steps; the nested "-" bullets
+        # under item 3 and the Альтернативные-сценарии list are excluded.
+        self.assertEqual(len(uc.activity_steps), 4)
+        self.assertEqual([s.step_number for s in uc.activity_steps], [1, 2, 3, 4])
+        self.assertEqual(uc.activity_steps[0].id, "UC-301-A01")
+        self.assertEqual(uc.activity_steps[0].description,
+                         "Пользователь открывает раздел «Заказы»")
+        self.assertEqual(uc.activity_steps[3].description,
+                         "Пользователь применяет фильтры")
+        # Nested bullet text must not leak into any step description.
+        self.assertFalse(any("Номер заказа" in s.description for s in uc.activity_steps))
+
+
 class DomainAttributeMultiTableTests(unittest.TestCase):
     """Fix 3: Entity with ## Схема таблицы + Колонка|Тип multi-subsection."""
 

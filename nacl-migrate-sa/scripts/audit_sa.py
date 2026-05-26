@@ -3,6 +3,21 @@
 
 Same contract as audit_ba.py: reads IR + a live-counts JSON that the SKILL
 gathered via mcp__neo4j__read-cypher.
+
+COUNT-PARITY BLIND SPOT (read before trusting "All SA counts match")
+--------------------------------------------------------------------
+The expected counts below are derived from the *same IR* that was just
+written to the graph (see _expected_node_counts / _expected_edge_counts).
+So this audit can only ever prove "what we parsed got written" — it is
+structurally incapable of detecting *under-extraction*. If the parser emits
+4 ActivitySteps total, this script expects 4, finds 4 live, and reports a
+clean match, even when nearly every UseCase is an empty shell.
+
+The completeness dimension lives in validate_sa_ir.py (the SC1–SC7 "Coverage"
+section), which measures how much of each node type was actually populated.
+A green audit here is necessary but NOT sufficient for a complete migration —
+always read the Coverage section in sa-validation.json alongside this report.
+That is what the pointer line printed below directs the reader to.
 """
 
 from __future__ import annotations
@@ -71,7 +86,12 @@ def main(argv: list[str] | None = None) -> int:
     if payload["summary"]["blockers"]:
         print(f"\nBLOCKERS: {payload['summary']['blockers']}")
         return 1
+    # Count parity proves IR→graph fidelity, NOT extraction completeness.
+    # Point the reader at the Coverage section so this clean line is never
+    # mistaken for a complete migration (see module docstring).
     print("\nAll SA counts match.")
+    print("count parity ✓ — see validation coverage (SC1–SC7 in "
+          "sa-validation.json) for completeness")
     return 0
 
 

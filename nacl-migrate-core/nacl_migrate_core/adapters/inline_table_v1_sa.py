@@ -198,20 +198,24 @@ class InlineTableV1SaAdapter:
 
     @staticmethod
     def _extract_uc_ids(value: str) -> List[str]:
-        """Accept both 3-digit family and letter-prefix family.
+        """Accept 3-digit, 4-digit, and letter-prefix UC ID families.
 
         ``UC-001`` / ``UC001`` / ``UC 001`` → ``UC-001`` (canonical).
+        ``UC-1001`` / ``UC1001`` → ``UC-1001`` (4-digit canonical).
         ``UC-F01`` / ``UCF01`` / ``UC F01`` → ``UC-F01`` (canonical).
         """
         ids = set()
-        # Either UC-NNN (3-digit, with or without dash) or UC-X<NN>.
-        pat = re.compile(r"\bUC-?\s?(?:0*(\d{1,3})|([A-Z])(\d{2}))\b")
+        # UC-NNNN (4-digit, must match before 3-digit to avoid truncation),
+        # UC-NNN (3-digit), or UC-X<NN> (letter-prefix).
+        pat = re.compile(r"\bUC-?\s?(?:0*(\d{1,4})|([A-Z])(\d{2}))\b")
         for m in pat.finditer(value or ""):
             digits, letter, two = m.group(1), m.group(2), m.group(3)
             if digits is not None:
                 n = int(digits)
                 if 1 <= n <= 999:
                     ids.add(f"UC-{n:03d}")
+                elif 1000 <= n <= 9999:
+                    ids.add(f"UC-{n}")
             elif letter and two:
                 ids.add(f"UC-{letter}{two}")
         return sorted(ids)
@@ -292,6 +296,35 @@ class InlineTableV1SaAdapter:
                     related_process_ids=list(dict.fromkeys(related)),
                 ))
             break
+
+        # Fallback: numbered-H2 module layout (e.g., "## 1. Orders (Заказы)").
+        # Supplements table-based modules; deduplication via the `seen` set.
+        for m in re.finditer(r"^#{1,3}\s+(?:\d+\.\s+)?(.+?)$", text, re.MULTILINE):
+            raw = m.group(1).strip()
+            # Skip section headers that are not domain modules
+            if re.search(r"cross.cutting|Общи|Дополнит", raw, re.IGNORECASE):
+                continue
+            pre_paren = re.sub(r"\s*\(.*$", "", raw).strip()
+            pre_paren = re.sub(r"^\d+\.\s+", "", pre_paren).strip()
+            in_paren_m = re.search(r"\(([A-Z][A-Za-z0-9/\s]+?)\)", raw)
+            if re.match(r"^[A-Z][A-Za-z0-9/\s]+$", pre_paren):
+                eng_name = pre_paren
+            elif in_paren_m:
+                eng_name = in_paren_m.group(1).strip()
+            else:
+                continue
+            if not eng_name or eng_name in seen:
+                continue
+            seen.add(eng_name)
+            mod_slug = slugify(eng_name)
+            ir.modules.append(Module(
+                id=f"MOD-{mod_slug}",
+                name=eng_name,
+                source_file=self._rel(project, tree),
+                description="",
+                iteration="",
+                related_process_ids=[],
+            ))
 
     # ---- domain entities ------------------------------------------------
 
@@ -584,12 +617,16 @@ class InlineTableV1SaAdapter:
             if not re.match(r"^SCR-(?:\d{3}|[A-Z]\d{2})$", scr_id):
                 m = re.match(r"^(SCR-(?:\d{3}|[A-Z]\d{2}))-", path.name)
                 scr_id = m.group(1) if m else ""
-            # Derive SCR-NNN from "uc: UC101" frontmatter when no explicit id
+            # Derive SCR-NNN from "uc: UC101" or "relatedUC: [UC609]" frontmatter
             if not scr_id:
-                uc_raw = metadata.get("uc", "") or metadata.get("use case", "")
-                uc_nums = re.findall(r"\bUC-?(\d{1,3})\b", uc_raw)
+                uc_raw = (
+                    metadata.get("uc", "") or metadata.get("use case", "")
+                    or metadata.get("relateduc", "")
+                )
+                uc_nums = re.findall(r"\bUC-?(\d{1,4})\b", uc_raw)
                 if uc_nums:
-                    scr_id = f"SCR-{int(uc_nums[0]):03d}"
+                    n = int(uc_nums[0])
+                    scr_id = f"SCR-{n:03d}" if n <= 999 else f"SCR-{n}"
             if not scr_id:
                 self._warn(ir, "FORM_ID_MISSING",
                            f"No SCR-NNN/SCR-X## id found in {path.name}",
@@ -624,7 +661,7 @@ class InlineTableV1SaAdapter:
         if uc_dir is None:
             return
         known_modules = {m.name for m in ir.modules}
-        for path in sorted(uc_dir.glob("*.md")):
+        for path in sorted(uc_dir.rglob("*.md")):
             if path.name.startswith("_"):
                 continue
             text = self._read(path) or ""
@@ -639,8 +676,8 @@ class InlineTableV1SaAdapter:
 
             raw_id = metadata.get("id", "").strip()
             # Accept ``UC-001``/``UC001`` and ``UC-F01``/``UCF01``.
-            if not re.match(r"^UC-?(?:\d{3}|[A-Z]\d{2})$", raw_id):
-                m = re.match(r"^(UC-?(?:\d{3}|[A-Z]\d{2}))", path.stem)
+            if not re.match(r"^UC-?(?:\d{3,4}|[A-Z]\d{2})$", raw_id):
+                m = re.match(r"^(UC-?(?:\d{3,4}|[A-Z]\d{2}))", path.stem)
                 raw_id = m.group(1) if m else ""
             ids = self._extract_uc_ids(raw_id)
             if not ids:
@@ -656,7 +693,7 @@ class InlineTableV1SaAdapter:
             heading = self._heading_name(text)
             # heading like "UC-001: Просмотр лендинга" or "UC-F01: Leave feedback"
             name = re.sub(
-                r"^UC-?(?:\d{3}|[A-Z]\d{2})\s*[:\u2014\-\u2013]\s*",
+                r"^UC-?(?:\d{3,4}|[A-Z]\d{2})\s*[:\u2014\-\u2013]\s*",
                 "", heading,
             ).strip()
             if not name:
@@ -866,6 +903,19 @@ class InlineTableV1SaAdapter:
             else:
                 desc = title or "(no description)"
             out.append((None, md.strip_markdown_inline(desc)))
+        if out:
+            return out
+
+        # Fallback: top-level numbered-list steps under "Основной сценарий"
+        # (``1. …`` / ``2. …``) — the most common UC dialect in inline-table
+        # projects (no scenario table, no ``### Шаг`` subsections). Only
+        # top-level items are captured; nested ``-`` bullets and more deeply
+        # indented continuation lines are ignored.
+        num_re = re.compile(r"^\s{0,3}\d+\.\s+(.+)$", re.MULTILINE)
+        for m in num_re.finditer(body):
+            desc = md.strip_markdown_inline(m.group(1).strip())
+            if desc:
+                out.append((None, desc))
         return out
 
     @staticmethod

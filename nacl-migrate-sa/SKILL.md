@@ -142,7 +142,26 @@ python3 "$NACL_HOME/nacl-migrate-sa/scripts/validate_sa_ir.py" \
   --output .nacl-migrate/sa-validation.json
 ```
 
-13 checks (SV1–SV8 + HV1–HV5). Exit 0 → all pass. Exit 1 → stop and print the failure list.
+13 referential checks (SV1–SV8 + HV1–HV5). Exit 0 → all pass. Exit 1 → stop and print the failure list.
+
+The script also prints a **Coverage** section (SC1–SC7) and writes a
+`coverage` block to `sa-validation.json`. This is the *completeness*
+dimension — it measures how much of each node type the adapter actually
+populated (UC activity steps, UC module, UC↔form links, entity attributes,
+enum values, form fields). It exists because the referential checks and the
+Phase 7 audit are both blind to *under-extraction*: an IR with 1 ActivityStep
+total is internally consistent and writes cleanly, yet leaves nearly every
+UseCase an empty shell.
+
+**Coverage is advisory by default** (it does not change the exit code — some
+emptiness is legitimate, e.g. a pure list-view UC has no steps). Surface the
+Coverage lines to the user verbatim; do not bury them. A severely
+under-extracted migration now shows e.g. `SC1 UC activity steps: 1/50 (2.0%)`
+instead of a silent "clean".
+
+To gate in CI, add `--strict` (fail any metric below 100%) or
+`--min-coverage PCT` (fail below PCT). These flip the exit code to non-zero;
+leave them off for the normal interactive migration.
 
 ---
 
@@ -232,6 +251,12 @@ python3 "$NACL_HOME/nacl-migrate-sa/scripts/audit_sa.py" \
 
 Exit 0 → "All SA counts match." Exit 1 → surface mismatches to the user.
 
+The audit prints a pointer line — `count parity ✓ — see validation coverage
+(SC1–SC7 …)` — because count parity only proves IR→graph fidelity, never
+extraction completeness. When you report the audit result to the user, quote
+the Phase-2 Coverage numbers next to it; never present "All SA counts match"
+as if it meant the migration is complete.
+
 ---
 
 ## Phase 7b — Backfill validation exemption flags
@@ -269,6 +294,28 @@ Write `MIGRATION-REPORT-SA.md` at project root:
 
 ## SA IR vs live Neo4j
 (Copy from sa-audit.json — node + edge tables.)
+
+**Audit result: N/N CLEAN** — but count parity only proves IR→graph fidelity.
+See Completeness / Coverage below for whether the IR itself is complete.
+
+## Completeness / Coverage
+(Copy the `coverage` block from sa-validation.json. One line per metric, kept
+adjacent to the audit headline so "CLEAN" is never read as "complete".)
+
+| Metric | Covered | % | Sample missing |
+|--------|---------|---|----------------|
+| SC1 UC activity steps | {covered}/{total} | {pct}% | {sample_missing} |
+| SC2 UC module | {covered}/{total} | {pct}% | … |
+| SC3 UC→form link | {covered}/{total} | {pct}% | … |
+| SC3f Form→UC link | {covered}/{total} | {pct}% | … |
+| SC4 DomainEntity module | {covered}/{total} | {pct}% | … |
+| SC5 DomainEntity attributes | {covered}/{total} | {pct}% | … |
+| SC6 Enumeration values | {covered}/{total} | {pct}% | … |
+| SC7 Form fields | {covered}/{total} | {pct}% | … |
+
+Coverage is advisory: low percentages flag adapter under-extraction (or
+legitimately empty nodes), not a write failure. Investigate any metric well
+below 100% before declaring the migration done.
 
 ## Cross-layer handoff
 (Counts of AUTOMATES_AS, REALIZED_AS, TYPED_AS, MAPPED_TO, IMPLEMENTED_BY, SUGGESTS.)
@@ -356,7 +403,7 @@ migration correctness.
 - [ ] Prelude: `$NACL_HOME` resolved, Python 3.11+ present
 - [ ] Phase 0: adapter + numbering detected (or user supplied)
 - [ ] Phase 1: SA IR + Handoff IR emitted
-- [ ] Phase 2: validation 13/13 pass (or blocker list surfaced)
+- [ ] Phase 2: validation 13/13 pass (or blocker list surfaced) + Coverage (SC1–SC7) reported
 - [ ] Phase 3: Cypher plan generated
 - [ ] Phase 4: every batch executed via `mcp__neo4j__write-cypher`
 - [ ] Phase 5: SUGGESTS edges emitted (or skipped with `--no-ba`)

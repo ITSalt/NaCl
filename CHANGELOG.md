@@ -4,6 +4,41 @@ All notable changes to NaCl (Natural Agent Control Language) will be documented 
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [2.10.3] — 2026-05-26
+
+Patch release closing the "clean audit, empty migration" gap in the SA
+migration pipeline (`/nacl-migrate-sa`). Two halves of one incident:
+
+**Parser (extraction).** The inline-table SA adapter under-extracted on
+several common document dialects, so use cases migrated as empty shells —
+blank module, zero activity steps, zero form links. Fixed:
+
+- 4-digit use-case id families (`UC-NNNN`) alongside the existing 3-digit and
+  letter-prefix shapes, in both the id validators and the adapter's id scan.
+- A numbered-H2 module-layout fallback (e.g. `## 1. Orders (...)`), so
+  `Module` nodes and `UseCase.module` populate when there is no module table.
+- Screen→use-case derivation from `uc` / `relatedUC` frontmatter, so
+  `Form.used_by_uc` (and therefore `USES_FORM` edges) populate.
+- A numbered-list activity-step fallback under "main scenario" (`1. … 2. …`),
+  the dominant inline-table dialect, so `activity_steps` populate.
+
+**Audit (visibility).** The migration audit (`audit_sa.py`) compared
+IR-expected counts to live graph counts, but derived the "expected" numbers
+from the same IR just written — so it was structurally blind to
+under-extraction and could report "All SA counts match" while most use cases
+were empty. New completeness/coverage dimension in `validate_sa_ir.py`
+(SC1–SC7): per-node-type populated-vs-total ratios with capped samples of the
+missing ids (UC activity steps, UC module, UC↔form links, entity attributes,
+enum values, form fields). Advisory by default — some emptiness is legitimate,
+e.g. a pure list-view use case has no steps — with `--strict` / `--min-coverage`
+to gate it in CI. `audit_sa.py` now documents the count-parity blind spot and
+prints a pointer to the coverage section so a clean audit is never mistaken for
+a complete one. The `nacl-migrate-sa` report template carries a
+Completeness / Coverage section adjacent to the audit headline.
+
+Release notes:
+`docs/releases/2.10.3-clean-isnt-complete/release-notes.md`.
+
 ## [2.10.2] — 2026-05-25
 
 Codex sync release for the 2.10.0 `/goal` protocol. Adds the Codex

@@ -32,8 +32,8 @@ from typing import Any, List, Optional
 # already permit the slug shapes the adapters emit.
 _ID_PATTERNS = {
     "Module":           re.compile(r"^MOD-[a-z0-9\-/]+$"),
-    "UseCase":          re.compile(r"^UC-(?:\d{3}|[A-Z]\d{2})$"),
-    "ActivityStep":     re.compile(r"^UC-(?:\d{3}|[A-Z]\d{2})-A\d{2}$"),
+    "UseCase":          re.compile(r"^UC-(?:\d{3,4}|[A-Z]\d{2})$"),
+    "ActivityStep":     re.compile(r"^UC-(?:\d{3,4}|[A-Z]\d{2})-A\d{2}$"),
     "DomainEntity":     re.compile(r"^DE-[a-z0-9\-]+$"),
     "DomainAttribute":  re.compile(r"^DE-[a-z0-9\-]+-A\d{2}$"),
     "Enumeration":      re.compile(r"^EN-[a-z0-9\-]+$"),

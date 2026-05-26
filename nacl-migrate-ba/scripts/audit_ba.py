@@ -12,6 +12,14 @@ to a JSON file in this shape:
 
 This script compares those live counts against the IR and emits a report.
 Exit 0 on clean match, 1 on any mismatch, 3 on missing input.
+
+NOTE (follow-up, not yet implemented): like audit_sa.py, this audit derives
+its expected counts from the same IR that was written, so it is blind to
+*under-extraction* — it proves "what we parsed got written", never "what we
+parsed is complete". The SA side gained a completeness/coverage dimension
+(SC1–SC7 in nacl-migrate-sa/scripts/validate_sa_ir.py); an equivalent pass
+for BA (e.g. in validate_ba_ir.py) is a deliberate future task, out of scope
+here.
 """
 
 from __future__ import annotations
