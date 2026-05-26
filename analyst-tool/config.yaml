@@ -73,8 +73,8 @@ ports:
   frontend_dev: 3582       # Vite dev (web workspace)
 
 graph:
-  neo4j_bolt_port: 3607
-  neo4j_http_port: 3594
+  neo4j_bolt_port: 3608
+  neo4j_http_port: 3595
   neo4j_password: "neo4j_graph_dev"
   container_prefix: "nacl-analyst-tool"
   boards_dir: "graph-infra/boards"

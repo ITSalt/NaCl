@@ -5,7 +5,7 @@
       "command": "neo4j-mcp",
       "args": [],
       "env": {
-        "NEO4J_URI": "bolt://localhost:3607",
+        "NEO4J_URI": "bolt://localhost:3608",
         "NEO4J_USERNAME": "neo4j",
         "NEO4J_PASSWORD": "neo4j_graph_dev",
         "NEO4J_DATABASE": "neo4j"

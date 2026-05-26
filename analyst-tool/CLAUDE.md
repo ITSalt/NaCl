@@ -183,8 +183,8 @@ Benchmarks and tests for non-trivial changes must be reproducible, recordable, a
 
 ## References
 
-- Neo4j Bolt: `bolt://localhost:3607` (login: `neo4j` / `neo4j_graph_dev`)
-- Neo4j Browser: http://localhost:3594
+- Neo4j Bolt: `bolt://localhost:3608` (login: `neo4j` / `neo4j_graph_dev`)
+- Neo4j Browser: http://localhost:3595
 - Dev backend: http://127.0.0.1:3583
 - Dev frontend: http://127.0.0.1:3582
 - Project registry: `~/.nacl/projects.json`
