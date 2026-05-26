@@ -11,7 +11,7 @@
  */
 
 import { test as base, expect } from '@playwright/test';
-import { readFileSync, writeFileSync, existsSync } from 'fs';
+import { readFileSync, writeFileSync, existsSync, mkdirSync, rmSync } from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -200,28 +200,69 @@ interface FixtureWorkerData {
   ensureTestBoard: void;
 }
 
+/**
+ * Synced-baseline meta for test-board. Makes the board start "synced" (clean)
+ * so 02-canvas can observe a real clean→dirty (🟡) transition when it PUTs a
+ * modified scene. `contentHashAtLastSync` MUST equal the server's
+ * computeBoardHash(FIXTURE_SCENE); if FIXTURE_SCENE changes, regenerate via:
+ *   cd e2e && npx tsx -e "import {computeBoardHash} from '../server/src/services/meta.js';\
+ *     import {FIXTURE_SCENE} from './fixtures.js';console.log(computeBoardHash(FIXTURE_SCENE))"
+ */
+const TEST_BOARD_SYNCED_META = {
+  lastGeneratedAt: '2024-01-01T00:00:00.000Z',
+  lastGeneratedBy: 'e2e-fixture',
+  lastSyncedAt: '2024-01-01T00:00:00.000Z',
+  lastSyncStatus: 'ok',
+  lastSyncRunId: null,
+  contentHashAtLastSync: 'sha256:4170d0140f16df76f62684f8ad8be4b82273d443fb42f0c94a36fa1a34e580a1',
+};
+
 export const test = base.extend<FixtureOptions, FixtureWorkerData>({
+  // `auto: true` is essential: specs 01–05 rely on `test-board.excalidraw`
+  // existing on disk but never list `ensureTestBoard` as a parameter, so a
+  // non-auto fixture would never run and the sidebar would be empty (the CI
+  // failure this fixes). Auto runs it once per worker before the first test.
+  // It writes into BOARDS_DIR, which equals the server's boardsDir as long as
+  // NACL_BOARDS_DIR is exported for both (see e2e CI job + config.ts priority 1).
   ensureTestBoard: [
     async ({}, use) => {
+      mkdirSync(BOARDS_DIR, { recursive: true });
+      // The snapshot watcher (chokidar, ignoreInitial) only catches files
+      // written after boot if .snapshots exists when the server starts. For
+      // local runs the dir may not exist yet; CI also pre-creates it.
+      mkdirSync(path.join(BOARDS_DIR, '.snapshots'), { recursive: true });
       const boardPath = path.join(BOARDS_DIR, `${TEST_BOARD_NAME}.excalidraw`);
+      const metaPath = path.join(BOARDS_DIR, `${TEST_BOARD_NAME}.meta.json`);
       let original: string | null = null;
+      let originalMeta: string | null = null;
 
-      // Save original content for restore, or write the fixture if missing
+      // Save originals for restore, or write the fixtures if missing
       if (existsSync(boardPath)) {
         original = readFileSync(boardPath, 'utf-8');
       }
+      if (existsSync(metaPath)) {
+        originalMeta = readFileSync(metaPath, 'utf-8');
+      }
 
-      // Always write the canonical fixture so tests start from a known state
+      // Always write the canonical fixture + synced-baseline meta so tests
+      // start from a known state (board present, classified, synced/clean).
       writeFileSync(boardPath, JSON.stringify(FIXTURE_SCENE, null, 2), 'utf-8');
+      writeFileSync(metaPath, JSON.stringify(TEST_BOARD_SYNCED_META, null, 2), 'utf-8');
 
       await use();
 
-      // Restore original after test (if it existed before)
+      // Restore originals after the worker's tests (or clean up if they were
+      // created by this fixture).
       if (original !== null) {
         writeFileSync(boardPath, original, 'utf-8');
       }
+      if (originalMeta !== null) {
+        writeFileSync(metaPath, originalMeta, 'utf-8');
+      } else if (existsSync(metaPath)) {
+        rmSync(metaPath);
+      }
     },
-    { scope: 'worker' },
+    { scope: 'worker', auto: true },
   ],
 });
 
