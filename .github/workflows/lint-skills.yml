@@ -34,16 +34,36 @@ jobs:
 
       - name: Check for hardcoded paths
         run: |
-          if git ls-files | xargs grep -l '~/projects/\|/Users/' 2>/dev/null | grep -v '.github/'; then
-            echo "ERROR: Found hardcoded paths in tracked files"
+          # Flag genuine machine-specific absolute paths like /Users/<name>/... ,
+          # which leak a developer's username / local layout. Home-relative '~'
+          # examples and docs that merely cite the patterns (the contributing
+          # checklist, the canary-rule text in CLAUDE.md, and the tool's own
+          # `~/projects/NaCl` search-path documentation) carry no private info
+          # and must not trip this gate. The previous `~/projects/|/Users/`
+          # substring match false-positived on all of the above.
+          if git ls-files | grep -vE '^\.github/' \
+               | xargs grep -nE '/Users/[A-Za-z0-9_-]+/' 2>/dev/null; then
+            echo "ERROR: Found hardcoded machine-specific paths in tracked files"
             exit 1
           fi
           echo "No hardcoded paths found"
 
       - name: Check for credential patterns
         run: |
-          if git ls-files | grep -v '\.env' | xargs grep -lE 'API_KEY=.+|PASSWORD=.+|SECRET=.+' 2>/dev/null | grep -v '.github/'; then
+          # Flag literal secret assignments while ignoring the legitimate
+          # scaffolding this repo ships: env-var references ($VAR), templated
+          # placeholders ({...}/<...>), commented-out examples, and the
+          # documented local dev default (neo4j_graph_dev). The previous bare
+          # `PASSWORD=.+` match false-positived on all of these.
+          matches=$(git ls-files | grep -vE '^\.github/|\.env' \
+            | xargs grep -nHE '(API_KEY|PASSWORD|SECRET)=[^[:space:]]+' 2>/dev/null \
+            | grep -vE '^[^:]+:[0-9]+:[[:space:]]*#' \
+            | grep -vE '=[^[:space:]]*[$<{]' \
+            | grep -vE '=neo4j_graph_dev([[:space:]]|$)' \
+            || true)
+          if [ -n "$matches" ]; then
             echo "ERROR: Found potential credentials in tracked files"
+            echo "$matches"
             exit 1
           fi
           echo "No credential patterns found"
