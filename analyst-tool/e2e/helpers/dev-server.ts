@@ -72,6 +72,15 @@ export async function startDevServer(opts: DevServerOptions = {}): Promise<DevSe
     NACL_NO_OPEN: 'true',
   };
 
+  // Pattern B isolation: a spawned per-project server must resolve its boards
+  // and project purely from its own NACL_HOME/registry. Boards/project pins
+  // inherited from the PARENT environment (e.g. NACL_BOARDS_DIR set for the
+  // shared CI dev server) are config.ts priority 1 and would override project
+  // switching, so drop them unless the caller passed them explicitly.
+  for (const key of ['NACL_BOARDS_DIR', 'NACL_PROJECT_ROOT', 'NACL_PROJECT_ID']) {
+    if (!(opts.env && key in opts.env)) delete env[key];
+  }
+
   // tsx is a devDep of the root analyst-tool workspace (hoisted)
   const tsxBin = join(TOOL_ROOT, 'node_modules', '.bin', 'tsx');
 
