@@ -11,7 +11,7 @@
  */
 
 import { test as base, expect } from '@playwright/test';
-import { readFileSync, writeFileSync, existsSync } from 'fs';
+import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -201,8 +201,15 @@ interface FixtureWorkerData {
 }
 
 export const test = base.extend<FixtureOptions, FixtureWorkerData>({
+  // `auto: true` is essential: specs 01–05 rely on `test-board.excalidraw`
+  // existing on disk but never list `ensureTestBoard` as a parameter, so a
+  // non-auto fixture would never run and the sidebar would be empty (the CI
+  // failure this fixes). Auto runs it once per worker before the first test.
+  // It writes into BOARDS_DIR, which equals the server's boardsDir as long as
+  // NACL_BOARDS_DIR is exported for both (see e2e CI job + config.ts priority 1).
   ensureTestBoard: [
     async ({}, use) => {
+      mkdirSync(BOARDS_DIR, { recursive: true });
       const boardPath = path.join(BOARDS_DIR, `${TEST_BOARD_NAME}.excalidraw`);
       let original: string | null = null;
 
@@ -221,7 +228,7 @@ export const test = base.extend<FixtureOptions, FixtureWorkerData>({
         writeFileSync(boardPath, original, 'utf-8');
       }
     },
-    { scope: 'worker' },
+    { scope: 'worker', auto: true },
   ],
 });
 

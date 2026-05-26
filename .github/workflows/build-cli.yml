@@ -94,6 +94,14 @@ jobs:
       - name: Run E2E tests
         run: |
           cd analyst-tool
+          mkdir -p "$NACL_BOARDS_DIR"
           npm run e2e
         env:
           CI: 'true'
+          # Pin a single boards directory for BOTH the Playwright-spawned dev
+          # server (it inherits this env) and the test workers / ensureTestBoard
+          # fixture. config.ts treats NACL_BOARDS_DIR as priority 1, so the
+          # server reads exactly where the fixture writes test-board.excalidraw.
+          # Without this, the two resolve to different graph-infra/boards dirs
+          # and the sidebar is empty → specs 01–05 time out.
+          NACL_BOARDS_DIR: ${{ runner.temp }}/nacl-e2e-boards
