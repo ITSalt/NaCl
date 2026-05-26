@@ -1,22 +1,22 @@
 {
   "project": "NaCl Analyst Tool",
   "created": "2026-05-07T00:00:00Z",
-  "updated": "2026-05-26T00:00:00Z",
+  "updated": "2026-05-27T00:00:00Z",
   "source": "nacl-tl-plan",
   "feature_request": "FR-002",
   "summary": {
     "total_uc": 3,
     "total_tech": 0,
-    "pending": 2,
+    "pending": 0,
     "in_progress": 0,
     "ready_for_review": 0,
     "approved": 0,
-    "done": 4,
+    "done": 6,
     "blocked": 0
   },
   "waves": {
     "total": 4,
-    "current": 3
+    "current": 4
   },
   "tasks": [
     {
@@ -94,12 +94,14 @@
       "type": "uc-be",
       "uc": "UC-020",
       "feature_request": "FR-002",
-      "status": "pending",
+      "status": "done",
+      "commit": "b2ccd51",
       "wave": 3,
       "priority": "high",
+      "verification_evidence": "test-GREEN:analyst-tool/server/src/routes/boards-ws.regression.test.ts",
       "phases": {
-        "be": { "status": "pending" },
-        "review-be": { "status": "pending" }
+        "be": { "status": "done" },
+        "review-be": { "status": "done" }
       },
       "blockers": [],
       "blocks": ["UC-020-FE"]
@@ -110,14 +112,16 @@
       "type": "uc-fe",
       "uc": "UC-020",
       "feature_request": "FR-002",
-      "status": "pending",
+      "status": "done",
+      "commit": "b2ccd51",
       "wave": 4,
       "priority": "high",
+      "verification_evidence": "test-GREEN:analyst-tool/e2e/specs/08-live-update.spec.ts",
       "phases": {
-        "fe": { "status": "pending" },
-        "sync": { "status": "pending" },
-        "review-fe": { "status": "pending" },
-        "qa": { "status": "pending" }
+        "fe": { "status": "done" },
+        "sync": { "status": "done" },
+        "review-fe": { "status": "done" },
+        "qa": { "status": "done" }
       },
       "blockers": ["UC-020-BE"],
       "blocks": []
