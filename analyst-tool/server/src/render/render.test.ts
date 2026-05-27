@@ -703,6 +703,45 @@ describe('renderBoard — ba-process renderer', () => {
     const ids4 = (scene.elements as any[]).map((e) => e.id as unknown);
     assert.equal(new Set(ids4).size, ids4.length, 'unique ids');
   });
+
+  it('TC-NULL-STEP-NAME: step text element has non-empty text when ws.function_name is null in graph', async () => {
+    // Regression for: WorkflowStep with function_name=null produces step rectangle
+    // with text='' (invisible block). Expected: fallback to step_id so the block
+    // is always readable on the canvas.
+    const { renderBoard } = await import('./index.js');
+
+    const driver = makeFakeDriver([
+      {
+        match: 'BusinessProcess',
+        rows: [
+          {
+            bp_id: 'BP-NULL', bp_name: 'Null Name Process',
+            step_id: 'WS-NULL-01',
+            step_name: null,           // simulates ws.function_name = null in Neo4j
+            stereotype: null,
+            step_number: { toNumber: () => 1, low: 1, high: 0 },
+            role_id: 'BR-Analyst', role_name: 'Analyst',
+            documents: [],
+          },
+        ],
+      },
+    ]);
+
+    const scene = await renderBoard('process', 'BP-NULL', driver);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const els = scene.elements as any[];
+
+    // Find the text element bound to the step rectangle
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const stepTextEl = els.find((e: any) => String(e.id) === 'text-step-BP-NULL-WS-NULL-01') as any;
+    assert.ok(stepTextEl, 'step text element must be present in the scene');
+    // The text must NOT be empty — the step rectangle must be visually readable
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    assert.ok(
+      String(stepTextEl.text).trim().length > 0,
+      `step text must be non-empty when step_name is null; got: "${String(stepTextEl.text)}"`,
+    );
+  });
 });
 
 // ---------------------------------------------------------------------------

@@ -1,5 +1,17 @@
 # Changelog
 
+## [2026-05-27] nacl-tl-fix: ba-process renderer — empty step blocks + fc-neo4j down
+
+- **Level:** L0 + L1
+- **Status:** PASS
+- **Spec-first verdict:** SKIPPED (L0 env fix) / PASS (L1: no prior code-fix commits)
+- **Root cause (L0):** fc-neo4j container exited 2 days ago (port 7689); analyst-tool couldn't connect for Family Cinema regeneration
+- **Root cause (L1):** PROCESS_QUERY used `ws.function_name` and `ws.step_number`; nacl-migrate-ba graphs store these in `ws.name` and `ws.step_order` respectively — causing empty step blocks
+- **Affected:** process board renderers (Family Cinema + any project migrated with nacl-migrate-ba)
+- **Docs updated:** none (L1, renderer behaviour spec unchanged)
+- **Code changed:** `server/src/render/excalidraw/ba-process.ts`
+- **Tests:** `server/src/render/render.test.ts` — TC-NULL-STEP-NAME added; RED→GREEN confirmed
+
 ## [2026-05-27] nacl-tl-fix: activity diagram duplicates step boxes for multi-actor UCs
 
 - **Level:** L1

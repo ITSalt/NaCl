@@ -107,8 +107,8 @@ OPTIONAL MATCH (ws)-[:READS]->(doc_r:BusinessEntity)
 OPTIONAL MATCH (ws)-[:PRODUCES]->(doc_p:BusinessEntity)
 OPTIONAL MATCH (ws)-[:MODIFIES]->(doc_m:BusinessEntity)
 RETURN bp.id AS bp_id, bp.name AS bp_name,
-       ws.id AS step_id, ws.function_name AS step_name,
-       ws.stereotype AS stereotype, ws.step_number AS step_number,
+       ws.id AS step_id, coalesce(ws.function_name, ws.name, '') AS step_name,
+       ws.stereotype AS stereotype, coalesce(ws.step_number, ws.step_order) AS step_number,
        br.id AS role_id, br.full_name AS role_name,
        collect(DISTINCT {doc_id: doc_r.id, doc_name: doc_r.name, relation: "READS"}) +
        collect(DISTINCT {doc_id: doc_p.id, doc_name: doc_p.name, relation: "PRODUCES"}) +
@@ -137,7 +137,7 @@ async function fetchSteps(driver: Driver, bpId: string): Promise<StepRecord[]> {
         bp_id: toStr(r.get('bp_id')) ?? '',
         bp_name: toStr(r.get('bp_name')) ?? '',
         step_id: toStr(r.get('step_id')) ?? '',
-        step_name: toStr(r.get('step_name')) ?? '',
+        step_name: toStr(r.get('step_name')) || toStr(r.get('step_id')) || '',
         stereotype: toStr(r.get('stereotype')),
         step_number: toNum(r.get('step_number')),
         role_id: toStr(r.get('role_id')),
