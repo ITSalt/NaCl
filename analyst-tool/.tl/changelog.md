@@ -1,5 +1,18 @@
 # Changelog
 
+## [2026-05-27] nacl-tl-fix: activity diagram duplicates step boxes for multi-actor UCs
+
+- **Level:** L1
+- **Status:** PASS
+- **Spec-first verdict:** PASS (vacuous — source-of-truth spec `nacl-render/SKILL.md §1095` already correct via `collect(DISTINCT as_step)`; the port regressed from it. No in-repo doc described the buggy behavior → no doc update required.)
+- **Root cause:** `ACTIVITY_QUERY` in `server/src/render/excalidraw/activity.ts` carried a dead `OPTIONAL MATCH (uc)-[:ACTOR]->(sr:SystemRole)` clause. The upstream query collapses all OPTIONAL MATCHes with `collect(DISTINCT …)`; this port dropped the `collect()` but kept the actor match, so Cypher fanned the result out to one row **per actor** (row cardinality is set by pattern matching, not the `RETURN` list). `fetchSteps` mapped one rectangle per row with no de-dup → each step rendered k times for k actors (A,A,B,B). `sr` was never used downstream (lanes derive from per-step `as_step.actor`).
+- **Affected UC:** none (analyst-tool renderer infrastructure)
+- **Docs updated:** none (L1)
+- **Code changed:** `server/src/render/excalidraw/activity.ts` — removed the dead `OPTIONAL MATCH … ACTOR` clause (root cause); added `step_id` de-duplication in `fetchSteps` (defense-in-depth against duplicate graph edges / future query changes).
+- **Tests:** new regression test `multi-actor UC does not duplicate step boxes (fan-out regression)` in `server/src/render/render.test.ts` — authored by an independent sub-agent, RED (4≠2) before fix, GREEN after. Feeds duplicate fan-out rows via the fake driver and asserts exactly N step rectangles.
+- **Test counts:** render suite 33→34 pass/0 fail; full server suite 211 pass/0 fail.
+- **Operational note:** board files already rendered with duplicates need one **Regen** to refresh; rendering is read-only/on-demand, so no graph data was affected.
+
 ## [PLAN] 2026-05-26 — FR-002 development plan
 
 - Created development plan from the Neo4j graph (`/nacl-tl-plan --feature FR-002`, bolt 3608 — tool spec graph).

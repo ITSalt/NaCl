@@ -491,17 +491,62 @@ describe('renderBoard — activity renderer', () => {
     assert.ok(warning, 'warning banner is added when actor is missing on every step');
     // Regression: warning text and header must use "actor" not legacy "actor_type"
     // These two assertions are RED until activity.ts lines 312 and 375 are updated.
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     assert.ok(
       !String((warning as any).text ?? '').includes('actor_type'),
       `warning text must not contain legacy "actor_type" — got: ${(warning as any).text}`,
     );
     const userHeaderText = els.find((e) => e.id === 'text-swim-user-header');
     assert.ok(userHeaderText, 'user header text element must exist');
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     assert.ok(
       !String((userHeaderText as any).text ?? '').includes('actor_type'),
       `user header text must not contain legacy "actor_type" — got: ${(userHeaderText as any).text}`,
+    );
+  });
+
+  it('multi-actor UC does not duplicate step boxes (fan-out regression)', async () => {
+    const { renderBoard } = await import('./index.js');
+
+    // Simulate the production fan-out: 2 distinct ActivitySteps × 2 ACTOR edges
+    // = 4 rows returned by the buggy OPTIONAL MATCH (uc)-[:ACTOR]->(sr:SystemRole).
+    // Each step row is repeated twice (once per actor), exactly as the real query
+    // returns when the UseCase has k=2 actors. The renderer must de-duplicate by
+    // step_id and render exactly 2 step rectangles, not 4.
+    const driver = makeFakeDriver([
+      {
+        match: 'HAS_STEP',
+        rows: [
+          // AS-001 row — repeated twice (fan-out from 2 ACTOR edges)
+          { uc_id: 'UC-FAN', uc_name: 'Fan-out UC', step_id: 'AS-001', step_desc: 'Enter credentials', actor: 'User',   step_number: { toNumber: () => 1, low: 1, high: 0 } },
+          { uc_id: 'UC-FAN', uc_name: 'Fan-out UC', step_id: 'AS-001', step_desc: 'Enter credentials', actor: 'User',   step_number: { toNumber: () => 1, low: 1, high: 0 } },
+          // AS-002 row — repeated twice (fan-out from 2 ACTOR edges)
+          { uc_id: 'UC-FAN', uc_name: 'Fan-out UC', step_id: 'AS-002', step_desc: 'Validate',          actor: 'System', step_number: { toNumber: () => 2, low: 2, high: 0 } },
+          { uc_id: 'UC-FAN', uc_name: 'Fan-out UC', step_id: 'AS-002', step_desc: 'Validate',          actor: 'System', step_number: { toNumber: () => 2, low: 2, high: 0 } },
+        ],
+      },
+    ]);
+
+    const scene = await renderBoard('activity', 'UC-FAN', driver);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const els = scene.elements as any[];
+
+    // Count step rectangles: type==='rectangle' AND id starts with 'step-'
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const stepRects = els.filter((e: any) => e.type === 'rectangle' && String(e.id ?? '').startsWith('step-'));
+    assert.equal(
+      stepRects.length,
+      2,
+      `expected exactly 2 step rectangles (one per distinct ActivityStep) but got ${stepRects.length} — fan-out duplication detected`,
+    );
+
+    // Complementary: all step-rect element ids must be unique
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const stepIds = stepRects.map((e: any) => String(e.id));
+    assert.equal(
+      new Set(stepIds).size,
+      stepIds.length,
+      `step rectangle ids must be unique — got duplicates: ${stepIds.join(', ')}`,
     );
   });
 });

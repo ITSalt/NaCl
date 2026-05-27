@@ -140,9 +140,17 @@ function classifyActor(raw: string | null): 'User' | 'System' | null {
 
 // Note: graph schema uses `actor` (not `actor_type` as some older docs claimed).
 // We expose values to the renderer verbatim and normalize per-step below.
+//
+// The upstream SKILL.md §1095 query collapses every OPTIONAL MATCH (forms,
+// requirements, actors, deps) into a single row via `collect(DISTINCT …)`.
+// This port only needs the per-step rows, so it must NOT re-introduce a
+// bare `OPTIONAL MATCH (uc)-[:ACTOR]->(sr:SystemRole)` here: without the
+// surrounding collect(), that clause fans the result set out to one row
+// *per actor*, duplicating every ActivityStep box (UC with User+System
+// actors rendered each step twice). The lane for each step is derived from
+// `as_step.actor` below — no SystemRole join is required.
 const ACTIVITY_QUERY = `
 MATCH (uc:UseCase {id: $ucId})-[:HAS_STEP]->(as_step:ActivityStep)
-OPTIONAL MATCH (uc)-[:ACTOR]->(sr:SystemRole)
 RETURN uc.id AS uc_id, uc.name AS uc_name,
        as_step.id AS step_id, as_step.description AS step_desc,
        as_step.actor AS actor, as_step.step_number AS step_number
@@ -157,7 +165,7 @@ async function fetchSteps(driver: Driver, ucId: string): Promise<StepRecord[]> {
   const session = driver.session({ defaultAccessMode: neo4j.session.READ });
   try {
     const result = await session.run(ACTIVITY_QUERY, { ucId });
-    return result.records.map((r) => ({
+    const rows = result.records.map((r) => ({
       uc_id: toStr(r.get('uc_id')) ?? '',
       uc_name: toStr(r.get('uc_name')) ?? '',
       step_id: toStr(r.get('step_id')) ?? '',
@@ -165,6 +173,14 @@ async function fetchSteps(driver: Driver, ucId: string): Promise<StepRecord[]> {
       actor: toStr(r.get('actor')),
       step_number: toNum(r.get('step_number')),
     })).filter((s) => s.step_id.length > 0);
+
+    // De-duplicate by step_id (first occurrence wins, preserving query order).
+    // The query above returns one row per ActivityStep, but a malformed graph
+    // (e.g. a duplicate HAS_STEP edge) or a future query change could fan the
+    // rows out again. Each step renders exactly one box keyed on `step-<id>`;
+    // duplicate rows would otherwise emit boxes with colliding element ids.
+    const seen = new Set<string>();
+    return rows.filter((s) => (seen.has(s.step_id) ? false : (seen.add(s.step_id), true)));
   } finally {
     await session.close();
   }
