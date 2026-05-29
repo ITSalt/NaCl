@@ -88,7 +88,7 @@
 
 exception_id: "EXC-YYYY-MM-DD-<slug>"
 # REQUIRED. Format-enforced: ^EXC-\d{4}-\d{2}-\d{2}-[a-z0-9][a-z0-9-]*$
-# Example: "EXC-2026-05-22-stale-graph-procontent"
+# Example: "EXC-2026-05-22-stale-graph-projectalpha"
 
 owner: "<github_handle_or_team>"
 # REQUIRED. GitHub handle (no @) or team name. Routed to in the

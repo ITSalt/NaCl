@@ -153,6 +153,8 @@ NaCl routes each skill to one of 6 cognitive agents, matching task complexity to
 | **operator** | Sonnet | 8 | Git operations, CI/CD, publishing, migration orchestration |
 | **scout** | Haiku | 6 | Fast lookups, status queries |
 
+A 7th agent, **diagnostician** (Opus), is not routed a top-level skill — it is invoked as a sub-agent to run the diagnose-and-spec phase of `/nacl-tl-fix` (Steps 1–5), so the bug-fix skill's reasoning runs on Opus while its code generation stays on Sonnet.
+
 Agent definitions live in `.claude/agents/`. See [docs/agents.md](docs/agents.md) for the full model selection rationale.
 
 ## Migration from Markdown
@@ -194,7 +196,7 @@ The tool supports multiple projects from a single daemon: initialize each projec
 
 ```
 NaCl/
-  .claude/agents/     6 cognitive agent definitions (strategist, analyst, developer, ...)
+  .claude/agents/     7 cognitive agent definitions (strategist, diagnostician, analyst, developer, ...)
   nacl-ba-*/          14 business analysis skills
   nacl-sa-*/          10 system analysis skills
   nacl-tl-*/          26 development lifecycle skills

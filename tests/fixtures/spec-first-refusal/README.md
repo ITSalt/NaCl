@@ -9,7 +9,7 @@ This is the canonical replay target for W11.
 
 ## Source episode
 
-Project-Alpha-procontent Wave 4 close → FIX-B audit (post-mortem § 3.12 and
+Project-Alpha Wave 4 close → FIX-B audit (post-mortem § 3.12 and
 § "Process/docs catch-up" row of the bucket table):
 
 - Wave 4 closed at 17:07 on 2026-05-11 with lint red, typecheck red,

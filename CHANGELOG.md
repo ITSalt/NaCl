@@ -4,6 +4,55 @@ All notable changes to NaCl (Natural Agent Control Language) will be documented 
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [2.11.0] — 2026-05-29
+
+Minor release splitting `/nacl-tl-fix` into a two-phase orchestrator so its
+diagnostic half runs on Opus and its code-generation half stays on Sonnet.
+
+**The diagnose/execute split.** `/nacl-tl-fix` ran entirely on Sonnet because it
+ends in code generation and was routed wholesale to the `developer` agent — but
+its first five steps (graph impact traversal, gap-check, L0/L1/L2/L3
+classification, correct-behavior definition, spec authoring) are strategist-tier
+reasoning. Running them on Sonnet under-powered the single most important guardrail
+in the skill, the L3-feature classification. Now:
+
+- **New agent `diagnostician`** (Opus, high effort) runs Phase A (Steps 1–5) as a
+  sub-agent and returns a structured fix-plan. It authors specs/docs/graph nodes —
+  never production code, never commits. The framework grows from six agents to
+  seven.
+- `/nacl-tl-fix` becomes a two-phase orchestrator: Phase A (diagnose & spec) on
+  Opus, the USER GATE presented between phases, Phase B (execute: baseline →
+  RED-first regression test → apply → six-status → impact survey) inline on Sonnet.
+  The seam falls after Step 5 so Phase B receives a complete spec, restoring the
+  developer-tier premise. Phase B is the same honest-execution core that
+  `nacl-tl-dev-be/fe --continue`, `nacl-tl-reopened`, and `nacl-tl-hotfix` already
+  delegate into — a new `## Contract` section makes that dependency explicit.
+
+**L1 spec-first gate fix.** The 6.SF gate required a spec-update *commit* for "L1
+or higher", but a pure L1 fix changes no docs and could never produce one — so
+every honest L1 was structurally forced to BLOCK or file a signed exception. L1
+now passes 6.SF with a **gap-check attestation** (the diagnostician's "docs
+current, no drift" verdict, recorded to `.tl/status.json` as
+`phases.spec: gapcheck-no-drift` before code). Anti-gaming preserved: no attestation
+→ FAIL (the "jumped straight to code" case). The W10 binding logic for L2/L3 is
+unchanged.
+
+**Design Principle 1 refined** in `docs/agents.md`: "thinkers don't write" →
+"thinkers don't write _code_." An Opus agent may write specifications (docs,
+`.tl/*` artifacts, graph nodes), not production code, and must not commit — the
+firewall is spec author ≠ code author.
+
+No breaking changes — the output contract and default behavior are preserved; the
+Codex variant (`skills-for-codex/nacl-tl-fix`) stays monolithic (no sub-agents in
+that runtime).
+
+Housekeeping: the pre-release canary caught a leftover client-name fragment on the
+sanitized `Project-Alpha` placeholder in post-mortem examples (skill bodies, two
+fixture READMEs, an exception-id example, one stale fixture path); all sanitized.
+
+Release notes:
+`docs/releases/2.11.0-diagnose-execute-split/release-notes.md`.
+
 ## [2.10.3] — 2026-05-26
 
 Patch release closing the "clean audit, empty migration" gap in the SA

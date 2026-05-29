@@ -26,12 +26,140 @@ This skill is a good fit for autonomous `/goal` loops because bug fix progress i
 
 # TeamLead Spec-First Bug Fix Skill
 
-## CRITICAL: Follow ALL 8 Steps
+## CRITICAL: Follow ALL 8 Steps (across two phases)
 
 **You MUST execute every step of the workflow below, in order, without skipping.**
 Do NOT jump straight to fixing code. Do NOT skip triage, context loading, or gap-check.
 The full workflow is: TRIAGE → CONTEXT → GAP-CHECK → DEFINE BEHAVIOR → FIX DOCS → FIX CODE → VALIDATE → REPORT.
 **Skipping steps leads to regressions. This has been proven empirically.**
+
+The eight steps run across **two cognitive phases** (see "Two-Phase Architecture"
+below): Steps 1–5 (DIAGNOSE & SPEC) are delegated to the `diagnostician` agent
+(opus); Steps 6–8 (EXECUTE) run inline in this skill (sonnet). The phase boundary
+does not relax the "all steps mandatory" rule — it routes each step to the right
+model tier.
+
+## Two-Phase Architecture: diagnose (opus) → execute (sonnet)
+
+`nacl-tl-fix` is an **orchestrator over two cognitive tiers**, not a monolith:
+
+- **Phase A — DIAGNOSE & SPEC (Steps 1–5).** Delegated to the `diagnostician`
+  agent (opus, high effort). The high-reasoning half: graph impact traversal,
+  gap-check, L0/L1/L2/L3 classification, correct-behavior definition, and authoring
+  the corrected spec/docs. The diagnostician writes specs and graph nodes but
+  **never production code and never commits** — preserving the firewall that the
+  spec author ≠ the code author.
+- **USER GATE (L2 / L3-spec-gap).** Presented by **this skill** (the orchestrator
+  runs in the interactive context; the diagnostician sub-agent cannot talk to the
+  user). In autonomous `/nacl-goal` mode the gate auto-resolves exactly as before.
+- **Phase B — EXECUTE (Steps 6–8).** Runs inline in this skill (sonnet, the
+  developer tier). This is the **honest-execution core**: capture baseline →
+  RED-first regression test (itself delegated to a separate test-author sub-agent
+  at 6d) → apply fix → six-status determination → impact survey → report. This same
+  core is what `nacl-tl-dev-be/fe --continue`, `nacl-tl-reopened`, and
+  `nacl-tl-hotfix` delegate into — they are thin wrappers over Phase B, not peers.
+
+### Why this split
+
+The diagnostic half is the work the framework defines as strategist-tier
+("misclassified triage wastes entire cycles", `docs/agents.md`). Running it on
+sonnet under-powered the single most important guardrail in this skill — the
+L3-feature classification. The execution half is code generation from a now-complete
+spec, which sonnet handles at opus quality within 2–3% (`docs/agents.md`, developer
+rationale). The seam falls **after Step 5** so Phase B receives a COMPLETE spec —
+restoring the developer-tier premise of "codegen from complete specifications".
+
+A skill executes in one model context, so the only way to change tier mid-skill is
+to delegate a phase to a sub-agent. This seam mirrors the existing 6d test-author
+seam.
+
+### Phase A delegation (how the orchestrator invokes the diagnostician)
+
+At invocation, after parsing flags, this skill delegates Phase A:
+
+```
+Agent: diagnostician
+Prompt: Load /nacl-tl-fix Phase A (Steps 1–5) for this bug. Execute TRIAGE,
+        CONTEXT LOAD, GAP-CHECK + classification, DEFINE CORRECT BEHAVIOR, and
+        (L2/L3 only) FIX DOCS. Write doc/spec/graph changes to the working tree
+        but DO NOT COMMIT and DO NOT touch production code. Return the fix-plan
+        artifact below.
+Inputs:  <verbatim user problem description>, flags (--uc, --dry-run,
+         --treat-as-l3-spec-gap), config.yaml graph section, goal-context env
+         vars if present.
+```
+
+The diagnostician returns the **fix-plan artifact**:
+
+```yaml
+classification: L0 | L1 | L2 | L3-spec-gap | L3-feature
+exit_reason: null | "L3-feature"        # if L3-feature, orchestrator prints the
+                                          # Step 3 routing report and EXITS — no code.
+affected:
+  ucs: [UC-###, ...]                      # union of Step 1 Stage 2 + Stage 3
+  domain_entity: { id, name }
+  module: ...
+  code_files: [...]
+  docs: [...]
+  tasks: [...]
+root_cause: "..."
+correct_behavior:                         # Step 4
+  current: "..."
+  expected: "..."
+  unchanged: ["..."]
+docs_changed:                             # Step 5 — written to working tree, UNCOMMITTED
+  - { path: ..., diff: ... }              # or graph-mutation descriptor
+  # empty for L0/L1
+gapcheck_attestation:                     # L1 ONLY — the on-record proof that docs are
+                                          # already current (there is nothing to change).
+                                          # null for L0/L2/L3. See Step 5 (L1 branch) + 6.SF.
+  affected_docs: [...]                    # docs compared against code in Step 3
+  verdict: "no-drift"                     # docs describe the correct behavior
+  checked_by: "diagnostician"
+gate_payload:                             # what to show at the USER GATE (L2/L3); null otherwise
+  docs_to_change: [...]
+  doc_diffs: ...
+  code_fix_plan: "..."
+impact_targets:                           # seeds Step 7.5 data-flow survey
+  read_paths:    [{ uc, file }]
+  write_paths:   [{ uc, file }]
+  refresh_paths: [...]
+  source_of_truth: code | user_data
+impact_unverified: false                  # true if Neo4j was unavailable (Step 1 flag)
+```
+
+This skill (Phase B) consumes the artifact, presents the USER GATE if
+`gate_payload` is non-null, then proceeds to Step 6 — committing the spec-update
+FIRST (which satisfies the 6.SF spec-first prerequisite by construction, since the
+diagnostician left docs uncommitted) and then the code fix.
+
+**Fallback (no Agent tool / Codex runtime):** if sub-agent delegation is
+unavailable, this skill executes Phase A inline on its own model. This is the
+behavior of the `skills-for-codex` variant, which is intentionally left monolithic.
+
+## Contract
+
+This skill's **output contract** is consumed by downstream skills. If any of the
+following changes, every consumer below MUST be audited and updated in the same
+release (the absence of this section is what let the 0.10.0→0.10.1 status-vocab
+change ship without auditing consumers):
+
+**Output contract:**
+- Six-status vocabulary: `PASS | BLOCKED | UNVERIFIED | NO_INFRA | RUNNER_BROKEN | REGRESSION`
+- Step 8 report header strings (see Step 8 table)
+- The authoritative `Status:` line
+- The regression-test seam block (`Tests > Regression test`, `Tests > RED→GREEN`)
+
+**Downstream consumers:**
+- `nacl-tl-dev-be` (`--continue` delegates here)
+- `nacl-tl-dev-fe` (`--continue` delegates here)
+- `nacl-tl-reopened`
+- `nacl-tl-hotfix`
+
+**This restructure (diagnose/execute split) changes the *internal* flow only.**
+Steps 7–8 (status machine + report) are unchanged, so the output contract is
+preserved and the consumers above need no change. The `## Contract` section is a
+documentation discipline, not a runtime mechanism.
 
 ## Routing — When `/nacl-tl-fix` vs `/nacl-tl-intake`
 
@@ -42,6 +170,13 @@ If the bug's surface is ambiguous (could be a feature, could be a bug, or you ca
 ## Your Role
 
 You are a **senior developer and specification maintainer** who fixes bugs using the spec-first approach. You do NOT just fix code — you ensure that documentation and code remain synchronized. Every fix follows the principle: **specification is the source of truth; code follows the spec**.
+
+When you run the full skill you act as the **orchestrator**: you delegate the
+diagnose-and-spec half (Phase A, Steps 1–5) to the `diagnostician` sub-agent
+(opus), present the USER GATE, then execute the honest-execution core (Phase B,
+Steps 6–8) yourself (sonnet). When the `diagnostician` runs Phase A it adopts the
+diagnostic role described under each of Steps 1–5; the role text below applies to
+both, scoped by phase.
 
 ## Key Principle: Spec-First
 
@@ -61,12 +196,22 @@ The spec-first approach is supported by:
 
 ## Spec-First Prerequisite (Strict-Only) — W10 binding
 
-**L1+ blocked without preceding spec-update commit; override via signed exception only.**
+**No code change ships while its spec is stale. The required spec-first evidence
+depends on the fix level:**
 
-For any fix classified L1 or higher (i.e. anything that touches production
-code — L1, L2, L3-spec-gap; L3-feature already exits at Step 3), this skill
-**refuses to enter Step 6 (APPLY FIX)** unless the fix chain already contains
-at least one **spec-update commit** that precedes the first code-fix commit.
+- **L2 / L3-spec-gap** — the docs *do* change, so the evidence is a **spec-update
+  commit** that precedes the first code-fix commit.
+- **L1** — by definition docs are already current and there is nothing to change,
+  so the evidence is a **gap-check attestation** (the Step 3 result recorded to
+  `.tl/status.json` / `.tl/changelog.md`, timestamped before code — see Step 5 L1
+  branch). A spec-update *commit* is NOT required for L1; demanding one would make
+  every honest L1 impossible to pass without a signed exception.
+- **L0** — environment/infra, not spec-touching: the gate is skipped.
+
+For any fix that touches production code (L1, L2, L3-spec-gap; L3-feature already
+exits at Step 3), this skill **refuses to enter Step 6 (APPLY FIX)** unless the
+level-appropriate evidence above is present and predates the first code-fix commit.
+Override via signed exception only.
 
 A **spec-update commit** is any commit that mutates one of the following:
 
@@ -94,7 +239,7 @@ spec-update commit, regardless of the message.
 
 ### Why this gate exists
 
-Project-Alpha-procontent shipped Wave 4 with `a7eb747 docs(SA): UC-105/UC-106/UC-107
+Project-Alpha shipped Wave 4 with `a7eb747 docs(SA): UC-105/UC-106/UC-107
 post-commit emit timing (L2)` landing **AFTER** the FIX-B code wave
 (`01f2fcb`, `135b14b`, `6ed12ac`, `3acb2fd`) — the spec caught up to code,
 not the other way around. The DIAGNOSTIC-REPORT.md dated 2026-05-18 measured
@@ -175,7 +320,12 @@ the intake:
      done` entry whose timestamp is strictly before the first code-fix
      commit timestamp, the chain has spec-update evidence even if no
      graph mutation was detected. Record this as
-     `spec-update-by-status-json` in the Step 8 report.
+     `spec-update-by-status-json` in the Step 8 report. **This is the
+     channel that carries the L1 gap-check attestation**: a
+     `phases.spec: { status: "done", kind: "gapcheck-no-drift" }` entry
+     (written in Step 5's L1 branch) is a valid `spec-update-by-status-json`
+     signal — it is the level-appropriate evidence for L1, which never
+     produces a doc-change commit.
    - If `.tl/changelog.md` has an entry whose timestamp precedes the
      first code-fix commit and whose body mentions any of the L2/L3
      doc-update categories (enum/status, API endpoint, UC flow, screen
@@ -200,6 +350,7 @@ Step 6.SF-1: SPEC-FIRST PREREQUISITE CHECK
   last_spec_idx_before_code: <index, or "none">
   status.json signal:    <spec-update-by-status-json | none>
   changelog signal:      <spec-update-by-changelog | none>
+  L1 attestation:        <gapcheck-no-drift (predates code) | none | n/a (not L1)>
   verdict:               <PASS | FAIL>
 ```
 
@@ -209,50 +360,71 @@ Apply the rules in order — first match wins:
 |---|---|---|
 | 1 | classification is `L0` | SKIP gate. Proceed to Step 6 sub-flow 6M / TDD. (L0 is environment / infra, not spec-touching.) |
 | 2 | `--dry-run` is set | SKIP gate. The check is recorded in the Step 8 report but does not refuse, since no code is written. |
-| 3 | verdict is `PASS` | Proceed to Step 6 sub-flow. Record the satisfying spec-update commit SHA in the Step 8 report. |
+| 3 | verdict is `PASS` | Proceed to Step 6 sub-flow. Record the satisfying evidence in the Step 8 report: for L2/L3 the spec-update commit SHA; for **L1** the gap-check attestation (`gapcheck-no-drift`, `phases.spec` ts predating code). |
 | 4 | verdict is `FAIL` AND a valid signed exception against gate `spec-first-prerequisite` exists for this project (W4 schema; unexpired; specific `affected_gates`; concrete `reason`; valid `followup_task`). Lookup scans **both** namespaces: `.tl/exceptions/*.yaml` (human-authored, persistent) AND `.tl/exceptions/goal-runs/*/EXC-goal-*.yaml` (wrapper-authored by `/nacl-goal intake`, run-scoped, expires with the run — see `nacl-goal/envelope.md`) | Proceed to Step 6 sub-flow. Record the `exception_id`, `expiry`, and `followup_task` in the Step 8 report. The header becomes `FIX APPLIED — UNVERIFIED (spec-first-bypassed-by-signed-exception)`. |
 | 5 | verdict is `FAIL` AND no valid signed exception exists | REFUSE. Halt with `Status: BLOCKED` and workflow detail `spec-first-prerequisite-missing`. Do not touch production code. Print the refusal advisory below and exit. |
 | 6 | detection emitted `Status: BLOCKED (graph-delta-unobservable)` AND no signed exception against gate `spec-first-prerequisite` exists | REFUSE with workflow detail `graph-delta-unobservable`. |
+
+**How L1 maps onto these rules (no special-case skip).** L1 stays inside the same
+verdict machinery; nothing routes around it:
+- **L1 with attestation → PASS via rule 3.** The `gapcheck-no-drift` entry in
+  `.tl/status.json` (Step 5 L1 branch), timestamped before code, is read by detection
+  step 5 as `spec-update-by-status-json`, so verdict step 6 composes to PASS. The
+  satisfying evidence recorded is the attestation, not a doc commit.
+- **L1 with NO attestation → FAIL → rule 5 (REFUSE).** A missing attestation means
+  Phase A's gap-check never ran (or was not recorded) — the "jumped straight to code"
+  case the gate exists to catch. The fix is to re-run Phase A so the diagnostician
+  records the attestation, **not** to file a signed exception. The refusal advisory
+  below names this path for L1.
+
+This is why L1 no longer needs a signed exception to ship: the honest L1 path produces
+its own level-appropriate evidence.
 
 #### Refusal advisory (rule 5)
 
 ```
 ┌──────────────────────────────────────────────────────────┐
-│ FIX HALTED — SPEC-FIRST PREREQUISITE MISSING             │
+│ FIX HALTED — SPEC-FIRST PREREQUISITE MISSING              │
 ├──────────────────────────────────────────────────────────┤
-│ Classification: L1 (code change without spec update)    │
-│                                                          │
-│ The fix chain contains <N> code-fix commit(s) but no    │
-│ preceding spec-update commit. The W10 Spec-First         │
-│ prerequisite requires that every L1+ fix be preceded by  │
-│ a graph mutation or a .tl/* schema artifact change in   │
-│ the same chain.                                          │
-│                                                          │
-│ Without that ordering, the post-mortem record shows      │
-│ that 39% of fixes never update docs (Project-Alpha, 2026-05-  │
-│ 18). The fix skill refuses to ship into that pattern.    │
-│                                                          │
-│ Three legitimate paths forward (no flag bypass):         │
-│   [1] Re-run Step 5 (FIX DOCS) and commit the spec      │
-│       update FIRST. Then re-invoke /nacl-tl-fix and the │
-│       gate passes by construction.                       │
-│   [2] If Step 3 classified L2/L3 but Step 5 was         │
-│       skipped, return to Step 3 and re-classify.        │
-│   [3] If the fix is genuinely L1 (docs ARE current and  │
-│       complete) and the detection has a false negative  │
-│       (e.g. an external code-mode workspace where the   │
-│       spec lives outside .tl/ and outside the graph),   │
-│       file a signed exception against gate              │
-│       `spec-first-prerequisite` per W4 schema:          │
-│       - affected_gates: [spec-first-prerequisite]       │
-│       - reason: <concrete justification of the L1       │
-│         classification + why no spec update is needed> │
-│       - expiry: ≤ 24h                                    │
-│       - followup_task: <UC or TECH that audits the     │
-│         classification>                                  │
-│                                                          │
-│ Status: BLOCKED                                          │
-│ Workflow detail: spec-first-prerequisite-missing         │
+│ Classification: <L1 | L2 | L3-spec-gap>                   │
+│                                                           │
+│ The fix chain contains <N> code-fix commit(s) but no      │
+│ level-appropriate spec-first evidence preceding the       │
+│ first code-fix commit.                                    │
+│                                                           │
+│ Without that ordering, the post-mortem record shows that  │
+│ 39% of fixes never update docs (Project-Alpha postmortem).│
+│ The fix skill refuses to ship into that pattern.          │
+│                                                           │
+│ Paths forward (no flag bypass):                           │
+│                                                           │
+│ IF L1 (the common case — docs ARE current):               │
+│   [1] Re-run /nacl-tl-fix. The diagnostician (Phase A)    │
+│       records the gap-check attestation                   │
+│       (phases.spec: gapcheck-no-drift) to .tl/status.json │
+│       BEFORE Phase B writes code, and the gate passes.    │
+│       No doc change and no signed exception are needed —  │
+│       a missing attestation just means Phase A's          │
+│       gap-check did not run or was not recorded.          │
+│                                                           │
+│ IF actually L2/L3 (Step 3 mis-skipped Step 5):            │
+│   [2] Return to Step 3, re-classify, author the doc       │
+│       change, and commit the spec update FIRST. Re-invoke │
+│       and the gate passes by construction.                │
+│                                                           │
+│ IF genuinely L1 but detection has a false negative        │
+│ (e.g. external code-mode workspace where the spec lives   │
+│ outside .tl/ and outside the graph, so the attestation    │
+│ cannot be written):                                       │
+│   [3] File a signed exception against gate                │
+│       `spec-first-prerequisite` per W4 schema:            │
+│       - affected_gates: [spec-first-prerequisite]         │
+│       - reason: <why the attestation can't be recorded>   │
+│       - expiry: ≤ 24h                                     │
+│       - followup_task: <UC/TECH that audits it>           │
+│                                                           │
+│ Status: BLOCKED                                           │
+│ Workflow detail: spec-first-prerequisite-missing          │
 └──────────────────────────────────────────────────────────┘
 ```
 
@@ -352,6 +524,16 @@ Use reference: `nacl-tl-core/references/fix-classification-rules.md` (if availab
 
 **Before each step, announce it:** "Step N: [NAME]". This ensures no step is skipped.
 **After Step 8, print the full report.** Never end without the report.
+
+**Phase routing:** Steps 1–5 below constitute **Phase A** and are executed by the
+`diagnostician` sub-agent (opus) — see "Phase A delegation" above. Steps 6–8
+constitute **Phase B** and are executed inline by this skill (sonnet). When the
+Agent tool is unavailable (Codex runtime), all eight steps run inline on this
+skill's own model.
+
+---
+
+## Phase A — DIAGNOSE & SPEC (Steps 1–5, `diagnostician` / opus)
 
 ### Step 1: TRIAGE (auto-detect) — announce: "Step 1: TRIAGE"
 
@@ -560,7 +742,35 @@ with body { dialog, messages: [...history] }. Endpoint is idempotent.
 
 Use reference: `nacl-tl-core/references/sa-doc-update-matrix.md`
 
-**For L0/L1:** Skip this step entirely. Proceed to Step 6.
+**For L0:** Skip this step entirely. Proceed to Step 6. (L0 is environment/infra; the
+6.SF gate is skipped for L0 anyway.)
+
+**For L1 — no doc *change*, but a gap-check attestation IS required.** By definition
+L1 means "docs are current and describe correct behavior", so there is nothing to
+edit. But the 6.SF spec-first gate must be satisfiable for honest L1 fixes without a
+signed exception. The proof that docs are current is the **gap-check attestation** —
+the on-record result of the Step 3 GAP-CHECK for the affected docs. The diagnostician
+(Phase A) records it BEFORE Phase B writes any code:
+
+1. Populate `gapcheck_attestation` in the fix-plan artifact:
+   `{ affected_docs: [<docs compared in Step 3>], verdict: "no-drift", checked_by: "diagnostician" }`.
+   If Step 3 found *any* drift, the fix is not L1 — reclassify L2/L3 and author the doc change instead.
+2. Write the attestation to `.tl/status.json` as a `phases.spec` entry, timestamped
+   before any code-fix commit:
+   ```json
+   "phases": { "spec": { "status": "done", "kind": "gapcheck-no-drift",
+                          "affected_docs": ["..."], "ts": "<ISO8601, before code>" } }
+   ```
+3. Add a `.tl/changelog.md` line (timestamp before code): `spec verified current
+   (gap-check, no drift) for <UC/area> — L1, no doc change`.
+
+This is what the 6.SF cross-check (detection step 5) reads as the
+`spec-update-by-status-json` signal, so the L1 verdict composes to PASS without a
+doc-change commit. The diagnostician still does NOT commit — the orchestrator commits
+`.tl/status.json` + `.tl/changelog.md` at Phase B entry, before the code-fix commit
+(see Step 6 Phase B intro). An L1 fix that reaches Step 6 with **no** recorded
+attestation means Phase A's gap-check was skipped — that is exactly the "jumped
+straight to code" case the gate exists to catch, and 6.SF FAILs it.
 
 #### For L2 (update existing docs):
 
@@ -598,6 +808,12 @@ L3-feature requests never reach Step 5. They exited at Step 3.
 
 #### → USER GATE (L2 / L3-spec-gap only)
 
+**Presented by the orchestrator, not the diagnostician.** Phase A leaves the doc
+changes uncommitted in the working tree and returns `gate_payload`. The
+orchestrator (this skill, running in the interactive context) presents that
+payload here, between Phase A and Phase B — the diagnostician sub-agent cannot
+talk to the user.
+
 Present to user (in their language):
 1. Which docs will be changed/created
 2. Diff of doc changes
@@ -605,9 +821,38 @@ Present to user (in their language):
 
 **Do NOT proceed without explicit user confirmation.**
 **L0/L1 fixes proceed without USER GATE** unless `--confirm` flag is used.
-**L3-feature does not reach this gate** — it already exited at Step 3.
+**L3-feature does not reach this gate** — it already exited at Step 3 (the
+diagnostician returned `exit_reason: L3-feature` and the orchestrator printed the
+routing report).
+**Autonomous `/nacl-goal` mode:** the gate auto-resolves exactly as before — the
+wrapper's envelope governs confirmation, not an interactive prompt.
 
 ---
+
+---
+
+## Phase B — EXECUTE (Steps 6–8, this skill / sonnet)
+
+**Phase B begins here.** Phase A has returned the fix-plan artifact and (for L2/L3)
+the USER GATE has resolved. This skill now runs the honest-execution core on its
+own model.
+
+**Spec-first commit ordering — by fix level.** Whatever spec-first evidence Phase A
+produced is committed **first**, at Phase B entry, before the Step 6.SF check below,
+so the prerequisite passes by construction (the evidence predates any code-fix
+commit). Only after that does code change.
+
+- **L2 / L3-spec-gap.** `docs_changed` is non-empty: the diagnostician left the
+  doc/spec/graph changes uncommitted in the working tree. The orchestrator commits
+  them first → a spec-update commit precedes any code-fix commit.
+- **L1.** `docs_changed` is empty (docs are current), but Phase A recorded a
+  **gap-check attestation** (`gapcheck_attestation` in the fix-plan;
+  `phases.spec: gapcheck-no-drift` in `.tl/status.json` + a `.tl/changelog.md`
+  line). The orchestrator commits `.tl/status.json` + `.tl/changelog.md` first →
+  the attestation's timestamp predates the code-fix commit, which 6.SF reads as the
+  `spec-update-by-status-json` signal. (See the "Spec-First Prerequisite" section
+  for why L1 evidence is an attestation, not a doc-change commit.)
+- **L0.** The 6.SF gate is skipped entirely; no spec-first commit.
 
 ### Step 6: APPLY FIX (TDD-ordered) — announce: "Step 6: APPLY FIX"
 
@@ -811,7 +1056,7 @@ If any item in 1–4 cannot be answered with a concrete file path and a stated v
 - **Level:** L0/L1/L2/L3
 - **Status:** PASS / BLOCKED / UNVERIFIED / NO_INFRA / RUNNER_BROKEN
 - **Spec-first verdict:** PASS / FAIL (bypassed-by-EXC-...) / SKIPPED (L0) / SKIPPED (--dry-run)
-- **Spec-update commit (if PASS):** <SHA> (<message>)
+- **Spec-first evidence (if PASS):** L2/L3 → spec-update commit `<SHA> (<message>)`; L1 → gap-check attestation `gapcheck-no-drift` (phases.spec ts `<ISO8601>`, affected docs: [list])
 - **Root cause:** [what was wrong]
 - **Affected UC:** UC-### (or "infrastructure")
 - **Docs updated:** [list] or "none (L0/L1)"
@@ -957,6 +1202,12 @@ When this skill is invoked by `/nacl-goal intake` (the autonomous goal orchestra
 
 These env vars are also what makes the spec-first exception lookup pick up wrapper-authored YAMLs from `.tl/exceptions/goal-runs/<NACL_GOAL_RUN_ID>/EXC-goal-*.yaml` automatically (rule 4 above scans both namespaces unconditionally; the env var is not strictly required for the lookup, but the wrapper-authored YAMLs only exist when the env var is set).
 
+**Phase propagation**: the orchestrator passes these env vars through to the
+`diagnostician` sub-agent (Phase A) as well — Phase A authors docs and may invoke
+`/nacl-sa-*` skills, and the spec-first exception lookup it informs spans the
+`goal-runs/<NACL_GOAL_RUN_ID>/` namespace. The diagnostician still does not commit,
+so the `Goal-run-id:` commit-body line is written by Phase B (this skill).
+
 **Invariant**: when these env vars are not in the environment, this skill behaves exactly as today. The goal-context behavior is purely additive. Interactive `/nacl-tl-fix` invocations are not affected.
 
 ---
@@ -993,8 +1244,11 @@ For TECH/infra issues:
 
 ### --dry-run mode
 
-Execute Steps 1-4, show the report, do NOT execute Steps 5-8.
-Useful for understanding scope before making changes.
+Run **Phase A only** (the `diagnostician` sub-agent), through Step 4 — TRIAGE,
+CONTEXT, GAP-CHECK + classification, DEFINE CORRECT BEHAVIOR — show the fix-plan as
+a report, and do NOT execute Step 5 (no doc writes) or Phase B (Steps 6–8). The
+diagnostician receives `--dry-run` in its inputs and writes nothing. Useful for
+understanding scope before making changes.
 
 ---
 

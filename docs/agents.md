@@ -2,7 +2,7 @@
 
 # Agent Architecture
 
-NaCl assigns every skill a cognitive profile: which Claude model runs it, how deeply it reasons, and what tools it can access. Six agent definitions in `.claude/agents/` encode these profiles. Orchestrator skills delegate work to the right agent automatically.
+NaCl assigns every skill a cognitive profile: which Claude model runs it, how deeply it reasons, and what tools it can access. Seven agent definitions in `.claude/agents/` encode these profiles. Orchestrator skills delegate work to the right agent automatically.
 
 ## Why Model Selection Matters
 
@@ -35,9 +35,11 @@ description: |
 | `model` | `opus`, `sonnet`, `haiku` | Which Claude model executes the skill |
 | `effort` | `high`, `medium`, `low` | Reasoning depth (adaptive thinking budget) |
 
-## The Six Agents
+## The Seven Agents
 
 Agents live in `.claude/agents/` and are symlinked to `~/.claude/agents/` during installation (same pattern as skills). Each agent defines a model, effort level, tool restrictions, and a system prompt describing its cognitive profile.
+
+Six agents are routed whole skills via the orchestrators. The seventh -- `diagnostician` -- is not routed a top-level skill; it is invoked as a sub-agent to run **Phase A of `nacl-tl-fix`** (the diagnose-and-spec half), the way `nacl-tl-regression-test` is invoked as a sub-agent to write a test.
 
 ### strategist -- Opus, high effort (12 skills)
 
@@ -52,6 +54,18 @@ The thinking brain. Reads, analyzes, judges -- never writes code.
 - TL quality: `nacl-tl-review`, `nacl-tl-hotfix`
 
 **Why Opus:** These skills make decisions that cascade downstream. Wrong architecture wastes all development. Missed review findings become production bugs. Misclassified triage wastes entire cycles.
+
+### diagnostician -- Opus, high effort (Phase A of `nacl-tl-fix`)
+
+The bug-fix reasoner. Diagnoses a bug and authors the specification that fixes it, then hands a structured fix-plan to the sonnet execution core.
+
+**Tools:** Read, Write, Edit, Grep, Glob, Bash
+
+**Runs:** `nacl-tl-fix` Steps 1–5 — TRIAGE (graph impact traversal), CONTEXT LOAD, GAP-CHECK + L0/L1/L2/L3 classification, DEFINE CORRECT BEHAVIOR, FIX DOCS. Returns the fix-plan artifact; never writes production code; never commits.
+
+**Why Opus:** The bug-fix pipeline's diagnostic half is exactly the work that justifies Opus elsewhere — graph impact analysis and the L3-feature classification, the single most important guardrail in `nacl-tl-fix` (a misclassified feature shipped through the fix path becomes an UNVERIFIED feature factory). Before this split, that judgment ran on Sonnet because `nacl-tl-fix` ended in code generation and was routed wholesale to the developer agent.
+
+**Why it has Write (unlike the strategist):** it authors *specifications* — docs, `.tl/*` artifacts, graph nodes — not production code, and it does not commit. The firewall the framework depends on is "the spec author ≠ the code author"; that holds, because the sonnet core (Phase B) writes and commits the code. See Design Principle 1 below.
 
 ### analyst -- Sonnet, medium effort (13 skills)
 
@@ -75,6 +89,8 @@ The code generator. Implements features via TDD from specifications.
 **Skills:** `nacl-tl-dev`, `nacl-tl-dev-be`, `nacl-tl-dev-fe`, `nacl-tl-fix`, `nacl-tl-docs`, `nacl-tl-reopened`
 
 **Why Sonnet:** Code generation from complete specifications is a translation task. Sonnet matches Opus quality here within 2-3% while running faster and cheaper.
+
+**Note on `nacl-tl-fix`:** it is routed here because it ends in code generation and is the shared honest-execution core that `nacl-tl-dev-be/fe --continue`, `nacl-tl-reopened`, and `nacl-tl-hotfix` delegate into. But its *diagnose-and-spec half* (Steps 1–5) is delegated up to the `diagnostician` (Opus) sub-agent — so the seam premise holds: Sonnet's Phase B (Steps 6–8) receives a complete spec and only generates code. This mirrors how `nacl-tl-regression-test` is delegated as a sub-agent for the test.
 
 ### verifier -- Sonnet, medium effort (5 skills)
 
@@ -141,6 +157,8 @@ effort:medium │             │    │ analyst (13)     │    │          �
               └─────────────┘    └──────────────────┘    └──────────┘
 ```
 
+The seventh agent, **`diagnostician`** (Opus, high effort), is not in the skill counts above: it runs no top-level skill. It is invoked as a sub-agent for **Phase A of `nacl-tl-fix`** (Steps 1–5), so its reasoning sits in the Opus/high-effort tier while the skill itself stays counted under `developer` (Sonnet) for its Phase B. This is the same pattern as `nacl-tl-regression-test` being delegated as a sub-agent.
+
 ## Installation
 
 Agents are installed alongside skills using symlinks:
@@ -168,7 +186,7 @@ See platform-specific guides: [macOS](setup/install-macos.md) | [Linux](setup/in
 
 ## Design Principles
 
-1. **Thinkers don't write.** The strategist has no Write or Edit tools. It reads, analyzes, and returns verdicts. Separation between judgment and implementation prevents a reviewer from silently "fixing" code during review.
+1. **Thinkers don't write _code_.** The strategist has no Write or Edit tools — it reads, analyzes, and returns verdicts, so a reviewer can't silently "fix" code during review. The refinement the `diagnostician` adds: an Opus agent _may_ write **specifications** (docs, `.tl/*` artifacts, graph nodes) and still respect this principle, as long as it writes no production code and does not commit. The firewall that matters is **spec author ≠ code author** — the diagnostician authors the spec, the Sonnet core writes and commits the code. (The `analyst` agent is the same shape at Sonnet tier: it writes BA/SA specs, never code.)
 
 2. **Skills load on demand.** Agents don't preload skills via the `skills:` frontmatter field. 12 skills at 200-400 lines each would consume 2400-4800 lines of context before any work begins.
 

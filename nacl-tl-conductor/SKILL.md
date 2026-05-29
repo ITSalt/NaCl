@@ -842,8 +842,8 @@ Status: BLOCKED (workflow detail: artifact-drift)
 
 The Codex postmortem episode-10 "Project-Alpha live graph 1083 nodes vs
 handover artifact 970 nodes" surfaces here as `P-S1` failing (the
-handover snapshot at `tests/fixtures/graph-snapshots/project-alpha-
-procontent/_summary.json` shows 1083 nodes; a stale `.tl/status.json`
+handover snapshot at `tests/fixtures/graph-snapshots/project-alpha/_summary.json`
+shows 1083 nodes; a stale `.tl/status.json`
 reflecting the 970-node handover would disagree). The
 `conductor-state-says-clean-but-CI-says-red` episode surfaces here as
 `P-S4` failing (conductor-state advancing to

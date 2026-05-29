@@ -274,7 +274,7 @@ Signed exceptions consumed by a release run are surfaced in
    ```json
    "exceptions": [
      {
-       "exception_id": "EXC-2026-05-22-stale-graph-procontent",
+       "exception_id": "EXC-2026-05-22-stale-graph-projectalpha",
        "affected_gates": ["graph-stale"],
        "expiry": "2026-05-23T08:35:00Z",
        "followup_task": "TECH-042-graph-refresh"

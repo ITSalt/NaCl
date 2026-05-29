@@ -12,7 +12,7 @@ from the broader W11 retrospective replay.
 
 ## Source episode
 
-Project-Alpha-procontent commit `8522d1d` "fix(admin): unstub WORKFLOW_STEPS +
+Project-Alpha commit `8522d1d` "fix(admin): unstub WORKFLOW_STEPS +
 categories envelope + WSC dropdown paging" (post-mortem § "Stub/mock leak"
 row of the bucket table, § 4 nacl-tl-stubs).
 
