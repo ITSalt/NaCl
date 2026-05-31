@@ -212,6 +212,15 @@ Skills use the following priority order when looking up values:
 
 If `config.yaml` is missing entirely, all fields fall back to their defaults. Skills that require `graph.*` (BA/SA layer) or `deploy.*` (deploy monitoring) will report an error when those sections are absent — there is no sensible default for a database URL or server address.
 
+### Branch-name discipline (for skill authors)
+
+`config.yaml` is the **single source of truth** for the base branch. When writing or editing a skill:
+
+- **Never hardcode a branch name** (`main`, `master`, `develop`, …) in a `git`/`gh` command. Always resolve and use the variable — `{main_branch}` (or `<git_base_branch>` for per-module flows) — from the resolution chain above. The fallback default *being* `"main"` masks the bug: a literal `main` works on default projects and silently breaks the moment a project sets `git.main_branch`/`git_base_branch` to anything else.
+- **Never duplicate config values into a convenience table** inside a skill (e.g. a per-module "Base branch" column listing literal branch names). That table becomes a second source of truth and goes stale the instant someone renames a branch in `config.yaml`. Reference the config key instead — point the reader at `config.yaml → modules.[name].git_base_branch`.
+
+A literal branch name in a git command inside a shell code fence is rejected by CI (`scripts/check-branch-literals.sh`, wired into `Lint Skills`). Prose, output blocks, and prohibition rules ("never `git checkout main`") are not flagged; if a literal is genuinely intentional, append `# branch-literal-ok` to that line. The runtime counterpart of this rule — what to do when you *find* such a hardcoded value in an existing skill — is in `nacl-tl-core/references/tl-protocol.md` ("Skill / framework defects").
+
 ---
 
 ## Minimal Configs

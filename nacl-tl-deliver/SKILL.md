@@ -825,11 +825,11 @@ On start, if `.tl/delivery-status.json` exists and branch matches:
 
 When `--env production` is specified, additional safety checks:
 
-1. **Pre-check:** verify branch has been merged to main (or is main)
+1. **Pre-check:** verify branch has been merged to `{main_branch}` (or is `{main_branch}`)
    ```bash
-   git log main --oneline | grep [commit_hash]
+   git log {main_branch} --oneline | grep [commit_hash]
    ```
-   - If commit not on main → **STOP**: "Code must be merged to main before production deploy"
+   - If commit not on `{main_branch}` → **STOP**: "Code must be merged to {main_branch} before production deploy"
 
 2. **Pre-check:** verify all UCs passed verification on staging
    - Read delivery-status.json for staging results

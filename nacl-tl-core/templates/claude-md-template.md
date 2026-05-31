@@ -85,6 +85,10 @@ THEN write code that conforms to that behavior.
 4. **No ad-hoc docs:** If no task exists in .tl/ — CREATE a task instead of bypassing the workflow.
 5. **Artifact hierarchy:** BA → SA → TL → Code. Each level follows the previous one.
 
+## Skill / Framework Defects
+
+You may inspect any file, including the skill/framework files themselves — this is encouraged. If you find a contradiction or defect in a global skill while working a task (e.g. a hardcoded value — like a git branch name — that duplicates and now disagrees with `config.yaml`), **STOP, show the exact contradiction (file, lines, both conflicting values), and wait for instructions.** Do NOT autonomously edit a global skill, and do NOT silently proceed as if it were consistent. Framework-skill fixes are made centrally, with explicit user approval — surfacing the find is the expected, correct behavior, not overreach.
+
 ## Architecture Conventions
 
 {{ARCHITECTURE_SECTION}}

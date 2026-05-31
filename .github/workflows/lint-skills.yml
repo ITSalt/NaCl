@@ -68,6 +68,18 @@ jobs:
           fi
           echo "No credential patterns found"
 
+      - name: Check for hardcoded branch names
+        run: |
+          # Flag literal branch names (main/master/develop) in git/gh commands
+          # inside shell code fences. Skills must resolve the base branch from
+          # config.yaml ({main_branch} / <git_base_branch>), never hardcode it —
+          # a hardcoded branch silently breaks on projects with a non-default
+          # base branch (this is how a stale `develop` / `main` slips through).
+          # Prose and output blocks are not scanned; escape hatch is a trailing
+          # `# branch-literal-ok` comment. See config-schema.md "Branch-name
+          # discipline".
+          sh scripts/check-branch-literals.sh
+
       - name: Check root/Codex skill sync
         run: |
           sh skills-for-codex/scripts/check-root-codex-sync.sh \

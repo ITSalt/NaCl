@@ -115,9 +115,9 @@ Never push directly to main without explicit --push-direct-to-main + double conf
    - If description string provided (no flags): **Scenario 3** (write fix from scratch).
    - If none of the above: error with usage help.
 4. Record the source branch name (for later restore).
-5. Verify `main` branch is reachable:
+5. Verify `{main_branch}` is reachable:
    ```bash
-   git fetch origin main
+   git fetch origin {main_branch}
    ```
 
 Present triage summary to user:
@@ -144,10 +144,10 @@ No stash needed. Record the commit hash to cherry-pick.
 **Scenario 3 (from scratch):**
 No stash needed. The fix will be written on the hotfix branch.
 
-**All scenarios — create hotfix branch from fresh main:**
+**All scenarios — create hotfix branch from fresh `{main_branch}`:**
 ```bash
-git checkout main
-git pull origin main
+git checkout {main_branch}
+git pull origin {main_branch}
 git checkout -b hotfix/{slug}
 ```
 
@@ -268,12 +268,12 @@ No regression test path was recorded for Scenario {1|2}. Cannot proceed without 
 
 #### Step 4.0: CAPTURE MAIN BASELINE (worktree)
 
-Before running the postfix suite, capture a `main`-branch baseline using
+Before running the postfix suite, capture a `{main_branch}` baseline using
 `git worktree add` (no stash juggling on the active hotfix branch):
 
 ```bash
 baseline_dir=$(mktemp -d -t hotfix-baseline.XXXXXX)
-git worktree add "$baseline_dir" "$(git rev-parse main)"
+git worktree add "$baseline_dir" "$(git rev-parse {main_branch})"
 ( cd "$baseline_dir/[module_path]" && [test_cmd] ) > "$baseline_dir/baseline.log" 2>&1 || true
 ```
 
@@ -362,19 +362,19 @@ Classify the outcome (P3 — no claim about pre-existing failures without the ca
 **Do NOT** claim a failure is "pre-existing", "unrelated", or "may not be
 related" without `baseline_failures` set membership confirming it.
 
-If the failure is a dependency issue (code from feature branch not on main):
+If the failure is a dependency issue (code from feature branch not on {main_branch}):
 STOP with advisory:
 ```
-This fix depends on code from {source_branch} that does not exist on main.
+This fix depends on code from {source_branch} that does not exist on {main_branch}.
 Options:
   (a) Include the dependency in the hotfix
   (b) Merge the full feature branch first
-  (c) Write a standalone fix for main
+  (c) Write a standalone fix for {main_branch}
 ```
 
 Show impact summary:
 ```bash
-git diff --stat main..HEAD
+git diff --stat {main_branch}..HEAD
 ```
 
 ### Step 4.3: WRITE EVIDENCE TO GRAPH -- announce: "Step 4.3: WRITE EVIDENCE"

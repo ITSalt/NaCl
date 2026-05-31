@@ -4,6 +4,50 @@ All notable changes to NaCl (Natural Agent Control Language) will be documented 
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [2.12.1] — 2026-05-31
+
+Patch release: skills must never hardcode a git branch name — `config.yaml` is the
+single source of truth. A literal branch in a `git`/`gh` command works on default
+projects and silently breaks the moment a project sets a non-default base branch. This
+release removes the literals, adds a CI guard against reintroduction, and codifies what
+an agent should do when it *finds* such a defect.
+
+**Fixed — hardcoded `main` → `{main_branch}`.** Seven git/gh commands across
+`nacl-tl-hotfix` (fetch / checkout / pull / `rev-parse` baseline / `diff` impact),
+`nacl-tl-deliver` (production-merge pre-check), and `nacl-tl-release` (changelog-freshness
+PR query) used a literal `main` while the rest of each skill already resolved
+`{main_branch}` from `config.yaml → git.main_branch > modules.[name].git_base_branch`.
+The fallback default *being* `"main"` masked the bug — it only surfaced on projects whose
+base branch is `master`, `develop`, etc. Adjacent user-facing advisory prose was switched
+to `{main_branch}` too, so messages read correctly on non-`main` projects.
+
+**Added — branch-literal CI guard.** New `scripts/check-branch-literals.sh` (wired into
+the `Lint Skills` workflow) fails a PR that hardcodes `main`/`master`/`develop` in a
+git/gh command inside a shell code fence. It scans only `bash`/`sh` fences, so prose,
+output blocks, and prohibition rules ("never `git checkout main`") don't trip; an
+intentional literal can be whitelisted with a trailing `# branch-literal-ok`. A
+"Branch-name discipline" section in `docs/configuration.md` documents the rule for skill
+authors: resolve from config, never duplicate config values into a convenience table.
+
+**Added — "skill defect → surface and wait" rule.** New rule in
+`nacl-tl-core/references/tl-protocol.md` (#8) and a matching `Skill / Framework Defects`
+section in the generated-project `CLAUDE.md` template: an agent may inspect any file,
+including skill/framework files, and when it finds a contradiction in a global skill
+(e.g. a hardcoded value that duplicates and now disagrees with `config.yaml`) it must
+surface the exact contradiction and wait — never silently fix the global skill, never
+silently proceed. Inspection is encouraged; only the autonomous *write* to a framework
+skill is gated.
+
+**Codex parity.** The three changed root skills have condensed delegating variants in
+`skills-for-codex/` that carry no inline git-command blocks (already literal-free), so the
+fix is root-only and recorded via valid `skills-for-codex/sync-exemptions/` entries.
+
+No breaking changes — the literal fix is a no-op on default-`main` projects, and the new
+rule, guard, and discipline note are additive.
+
+Release notes:
+`docs/releases/2.12.1-no-hardcoded-branches/release-notes.md`.
+
 ## [2.12.0] — 2026-05-31
 
 Minor release harvesting the dynamic-workflows experiment's verdict into the framework:

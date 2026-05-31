@@ -619,8 +619,8 @@ Read `.tl/changelog.md` entries since last tag. Group by type:
 # Date of the latest changelog entry (first ## line after last tag)
 CHANGELOG_DATE=$(grep -m1 '^## ' .tl/changelog.md | grep -oE '[0-9]{4}-[0-9]{2}-[0-9]{2}')
 
-# Date of the most recent PR merged into main since the last tag
-LAST_MERGE_DATE=$(gh pr list --state merged --base main --limit 20 \
+# Date of the most recent PR merged into {main_branch} since the last tag
+LAST_MERGE_DATE=$(gh pr list --state merged --base {main_branch} --limit 20 \
   --json mergedAt --jq '[.[].mergedAt] | sort | last | .[0:10]')
 ```
 
