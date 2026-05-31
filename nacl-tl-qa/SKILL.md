@@ -355,6 +355,8 @@ The scenario is saved for reuse in regression testing.
 
 Read `acceptance.md` (and the scenario if generated) and map each criterion to a test. Classify each as **UI-testable** (test it) or **N/A** (cannot verify via UI -- mark with reason).
 
+**Requirements-coverage gate (traceability).** Build the explicit matrix `criterion → stage(s) → status` for **every** criterion, not just the ones you happened to exercise. A criterion is only allowed to be **N/A** when it genuinely cannot be observed through the browser *and* it carries no provider/runtime dependency — never use N/A to drop a provider-dependent criterion (route those to `LIVE_PROVIDER_SMOKE`/`PROD_GOLDEN_PATH`). Any UI-testable criterion left **unmapped** (no stage exercises it) is **not verified**: it forces the aggregate to `UNVERIFIED` via the same weakest-stage floor as a `NOT_RUN` mandatory stage — a green run that silently skipped a required criterion must not read as `VERIFIED`. Record unmapped criteria alongside `qa_not_run_mandatory_stages`.
+
 ### Step 2: Update Status
 
 Set `phases.qa` to `in_progress` in `status.json`. Record `qa_started` timestamp.

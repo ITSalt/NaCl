@@ -4,6 +4,53 @@ All notable changes to NaCl (Natural Agent Control Language) will be documented 
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [2.12.0] — 2026-05-31
+
+Minor release harvesting the dynamic-workflows experiment's verdict into the framework:
+the high-ROI **techniques** go into existing skills, and the **one workflow that justifies
+its cost** — the post-mortem / deep audit — ships as opt-in.
+
+**The verdict being executed.** A prior experiment found a critic-panel workflow costs
+~15× the tokens of a single strong agent *with repo access* for the same result — "single
+agent wins" really meant "repo access wins" — and that the cheap, large wins were
+techniques, not workflows. This release does both halves, with a head-to-head validation
+behind every adopted change (`docs/research/workstream-B-skill-hardening-report.md`).
+
+**Workstream B — techniques into skills (all additive, output contracts preserved).**
+- **Cross-file tracing (B1)** — `nacl-tl-review` (`4a`), `nacl-tl-verify-code` (`2.6`), and
+  `nacl-tl-sync` (call-site binding) now judge a change in repo context, not just the diff.
+  Head-to-head on `family-cinema` UC033-BE: a diff-only review *missed* the `kie.client.ts`
+  image-only BLOCKER and *false-passed* a requirement; the repo-tracing review caught it.
+- **Requirements traceability (B2)** — `nacl-tl-review` Step 3 is per-criterion
+  (implemented? reachable? tested?); `verify-code` routes an unmet criterion through
+  `coverage-gap → UNVERIFIED`; `nacl-tl-qa` gains a requirements-coverage gate.
+- **Deterministic decision table (B3)** — `nacl-tl-verify-code/scripts/classify-status.mjs`
+  + a 17/17 contract-pin `node --test` suite port the 8-status precedence (incl. the
+  prose-only `FAIL` overlay) into tested code. Same tokens; only the derivation moved.
+- **Keep-if-uncertain (B4)** + **self-adversarial pass (B5)** — generalized the
+  refute-only-with-evidence rule in `review`; closed a `nacl-sa-validate` hole (a SKIP'd
+  check can't roll up to `PASS`); added a root-cause re-read to `nacl-tl-fix` (`7.0`).
+
+**Workstream A — `nacl-postmortem`.** New skill + workflow
+(`.claude/workflows/nacl-postmortem-panel.js`): five parallel auditors → evidence verify →
+a deterministic `GAP_TO_SKILL` synthesis (ten GAP categories → owning skill + G1–G11) → one
+writer, for a once-per-project "which skill gate let this bug through" audit. Validated on a
+labeled fixture (`bench/fixtures/postmortem/`) and head-to-head on `family-cinema`: 10 cases
+/ 36 QA-skips / 4 cross-UC findings (two the single agent missed) at ~7.7× cost — model
+tiering nearly halved the experiment's 15×. Opt-in (CC ≥ 2.1.154); the prose recipe
+(`skill-postmortem-algorithm`) is the portable fallback.
+
+**Evaluated, not blindly adopted:** structured handoffs (B6) adopted *inside* workflow
+producers but declined for the markdown string contract (churn risk); model tiering (B7)
+already sensible at the skill level; benchmark-as-validation (B8) institutionalized as the
+standing gate. Codex mirrors updated in parity, reusing each mirror's own status vocabulary.
+
+No breaking changes — every skill edit is additive and the output contract is preserved; the
+new workflow and skill are opt-in.
+
+Release notes:
+`docs/releases/2.12.0-techniques-over-workflows/release-notes.md`.
+
 ## [2.11.0] — 2026-05-29
 
 Minor release splitting `/nacl-tl-fix` into a two-phase orchestrator so its

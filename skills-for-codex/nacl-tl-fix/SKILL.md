@@ -378,6 +378,15 @@ Then follow this order:
 
 ### Step 7: VALIDATE
 
+**Self-adversarial root-cause re-read (before scoring the outcome).** A GREEN
+regression test proves the *symptom* is gone, not that the *root cause* is
+fully addressed. Re-read the fix once more and try to refute it: did the change
+narrow only one of several carriers/call-sites of the defect (one of several
+producers, consumers, or entrypoints from the Step 1 impact survey)? Enumerate
+the others and confirm each is either covered by the fix or genuinely out of
+scope. Do not promote to `Fix outcome: PASS` while a sibling carrier remains
+unaddressed on uncertainty — keep the finding and report it.
+
 Determine the workflow-specific fix outcome from the captured evidence:
 
 | Condition | Fix outcome | Codex status |

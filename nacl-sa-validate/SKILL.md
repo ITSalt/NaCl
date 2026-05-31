@@ -1189,6 +1189,7 @@ After all levels complete:
    - **PASS** -- zero CRITICAL, fewer than 5 WARNINGs
    - **WARN** -- zero CRITICAL, 5 or more WARNINGs
    - **FAIL** -- one or more CRITICALs
+   - **If any check was SKIP'd** (query timeout, or an XL-level check skipped for a missing BA layer), the overall status MUST carry an `(incomplete: N checks skipped)` suffix and list the skipped checks — a skipped check is **unverified, not passed**, and absence of a CRITICAL from an unrun check must not read as a clean PASS.
 3. For each level, determine level status using the same logic.
 
 ### Step 4: Generate report

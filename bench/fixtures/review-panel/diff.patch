@@ -1,0 +1,111 @@
+diff --git a/src/orders/order.service.ts b/src/orders/order.service.ts
+new file mode 100644
+index 0000000..1a2b3c4
+--- /dev/null
++++ b/src/orders/order.service.ts
+@@ -0,0 +1,42 @@
++import { Injectable } from '@nestjs/common';
++import { Db } from '../db/db';
++
++export interface LineItem {
++  price: number;
++  qty: number;
++}
++
++export interface Order {
++  id: string;
++  createdAt: string;
++}
++
++export interface ListOpts {
++  limit?: number;
++}
++
++@Injectable()
++export class OrderService {
++  constructor(private readonly db: Db) {}
++
++  async getOrderById(id: string): Promise<Order | null> {
++    // Look the order up by id.
++    const rows = await this.db.query(
++      `SELECT * FROM orders WHERE id = '${id}'`,
++    );
++    return rows[0] ?? null;
++  }
++
++  async listOrders(opts: ListOpts = {}): Promise<Order[]> {
++    const limit = opts.limit ?? 50;
++    return this.db.query(
++      'SELECT * FROM orders ORDER BY created_at DESC LIMIT $1',
++      [limit],
++    );
++  }
++
++  async deleteOrder(id: string): Promise<void> {
++    await this.db.query('DELETE FROM orders WHERE id = $1', [id]);
++  }
++
++  computeTotal(items: LineItem[] = []): number {
++    return items.reduce((sum, it) => sum + it.price * it.qty, 0);
++  }
++}
+diff --git a/src/orders/orders.controller.ts b/src/orders/orders.controller.ts
+new file mode 100644
+index 0000000..5d6e7f8
+--- /dev/null
++++ b/src/orders/orders.controller.ts
+@@ -0,0 +1,24 @@
++import { Controller, Get, Delete, Param, UseGuards } from '@nestjs/common';
++import { AuthGuard } from '../auth/auth.guard';
++import { OrderService } from './order.service';
++
++// Authorization is enforced for every route on this controller.
++@Controller('orders')
++@UseGuards(AuthGuard)
++export class OrdersController {
++  constructor(private readonly orders: OrderService) {}
++
++  @Get(':id')
++  getOne(@Param('id') id: string) {
++    return this.orders.getOrderById(id);
++  }
++
++  @Delete(':id')
++  remove(@Param('id') id: string) {
++    return this.orders.deleteOrder(id);
++  }
++}
+diff --git a/src/orders/order.service.spec.ts b/src/orders/order.service.spec.ts
+new file mode 100644
+index 0000000..9a0b1c2
+--- /dev/null
++++ b/src/orders/order.service.spec.ts
+@@ -0,0 +1,29 @@
++import { OrderService } from './order.service';
++
++describe('OrderService', () => {
++  const rows = [{ id: 'o1', createdAt: '2026-01-01' }];
++  const db = { query: jest.fn().mockResolvedValue(rows) };
++  const svc = new OrderService(db as any);
++
++  it('returns an order by id', async () => {
++    const o = await svc.getOrderById('o1');
++    expect(o).toEqual(rows[0]);
++  });
++
++  it('lists orders with a default limit', async () => {
++    await svc.listOrders();
++    expect(db.query).toHaveBeenCalledWith(
++      expect.stringContaining('LIMIT $1'),
++      [50],
++    );
++  });
++
++  it('computes the total of line items', () => {
++    const total = svc.computeTotal([
++      { price: 10, qty: 2 },
++      { price: 5, qty: 1 },
++    ]);
++    expect(total).toBe(25);
++  });
++});

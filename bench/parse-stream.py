@@ -25,11 +25,11 @@ from collections import Counter
 from pathlib import Path
 from typing import Any, Iterable
 
-# Claude Opus 4.7 pricing (public list, USD per 1M tokens), April 2026.
+# Claude Opus 4.8 pricing (public list, USD per 1M tokens), May 2026.
 # Input and output prices differ; cache reads are cheaper.
-PRICE_INPUT = 15.0
-PRICE_OUTPUT = 75.0
-PRICE_CACHE_READ = 1.5
+PRICE_INPUT = 5.0
+PRICE_OUTPUT = 25.0
+PRICE_CACHE_READ = 0.5
 
 
 def iter_events(path: Path) -> Iterable[dict[str, Any]]:

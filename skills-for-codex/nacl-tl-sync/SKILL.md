@@ -21,6 +21,13 @@ Sync verification compares both sides to the API contract. Read
 2. Check prerequisites for approved backend and frontend implementation.
 3. Compare endpoints, methods, request bodies, response shapes, auth, errors,
    shared types, and mock remnants. This dimension is **type-alignment**.
+   Bind the call-site pair, not just the declarations: resolve the literal
+   URL, method, and body each FE call actually sends and match it to a BE
+   route. The contract is the spec, but a live mismatch can hide when FE and BE
+   each match a different reading of the contract, or when the contract is
+   stale relative to both. An FE call that resolves to no BE route — or a BE
+   route no FE call reaches — is a producer/consumer mismatch independent of
+   contract match; flag it as a BLOCKER under endpoint compliance.
 4. Run configured backend and frontend tests when available.
 5. Check endpoint test coverage for changed endpoints.
 6. **Run the wire-evidence gate** for any UC whose `actor != SYSTEM` (see

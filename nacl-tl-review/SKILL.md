@@ -454,13 +454,31 @@ Set the appropriate phase in `status.json`:
 - FE: `phases.review_fe = "in_review"`
 - TECH: `status = "in_review"`
 
-### Step 3: Verify Acceptance Criteria
+### Step 3: Verify Acceptance Criteria (requirements traceability)
 
-Check each criterion from `acceptance.md`: Functional, Business Rules, Error Handling, Performance, Security. Document PASS, PARTIAL, or FAIL for each. PARTIAL means the criterion is partly met but has a gap that does not block (e.g., covered for happy path but missing an edge case).
+Enumerate **every** acceptance criterion / REQ in `acceptance.md` as its own row — do not collapse them into the category groups (Functional, Business Rules, Error Handling, Performance, Security). Category-grouped review lets a single missing requirement hide inside a mostly-passing group; a per-criterion pass is the cheapest defence against the "missing-requirement" defect class (e.g. an AI-call audit log the spec demands but no code writes).
+
+For each criterion, establish three facts before scoring:
+
+- **Implemented?** the code under review actually does what the criterion requires — confirmed by reading the runtime that produces the behaviour (Step 4a cross-file trace), not by the presence of a plausibly-named function. A "feature" that calls the wrong runtime (dead config) is **NOT** implemented.
+- **Reachable?** the behaviour is reachable end-to-end from a real entrypoint — for UI-affecting criteria reuse the Nav-actions natural-entrypoint evidence (see the Nav-actions consumer check) as the reachability witness.
+- **Tested?** a test or QA path exercises it.
+
+Score each criterion **PASS / PARTIAL / FAIL**. A criterion implemented but unreachable — or implemented but untested where the spec demands a test — is at most **PARTIAL**. A criterion not implemented, or implemented against the wrong runtime, is **FAIL**. PARTIAL means partly met with a gap that does not block (e.g., happy path covered but an edge case missing); the verdict aggregator decides promotion. If any of the three facts (implemented / reachable / tested) cannot be **positively confirmed** from the code or tests, score the criterion at most **PARTIAL** and record the unconfirmed fact — never **PASS** on absence of evidence.
 
 ### Step 4: Code Quality Review
 
 Apply the appropriate checklist (see detailed checklists below).
+
+#### 4a. Cross-file trace (Mandatory)
+
+The change under review is the diff, but you MUST judge it in context — read the files the diff depends on and the files that depend on it, using the actual repo (not just the diff hunks):
+
+- **Imports / callees:** for each symbol the diff calls, open the file that defines it and confirm the diff's assumptions about its behaviour hold — signature, return shape, side effects, and any **hardcoded value** that silently overrides a parameter.
+- **Callers / consumers:** for each symbol the diff *changes* (a renamed field, a new return shape, a changed enum), grep the source roots (the same roots Step 2.5 uses) for its call-sites and confirm every consumer still works.
+- **Runtime that produces the data:** trace back to the service/client/migration that actually produces a value the diff consumes — a field can be declared in the contract or config yet never be set by the runtime (**dead config**), so a "feature" reads as implemented while the runtime does something else.
+
+Cross-file and missing-integration defects are exactly what review must catch; do NOT restrict yourself to the diff hunks. A `BLOCKER`/`CRITICAL` finding may be **refuted only with positive cross-file evidence** — you read the guard/handler/consumer/runtime that makes it a non-issue; never downgrade or dismiss a high-severity finding on the strength of the diff alone, or on uncertainty (see the `adversarial-verify-needs-context` rule). Emit any cross-file defect as a normal finding using the existing severity vocabulary (no new status).
 
 ### Step 5: Verify TDD Compliance
 
@@ -561,7 +579,11 @@ This check is non-blocking at the review layer. A MAJOR flag does not prevent RE
 
 ### Step 7: Document Issues
 
-Categorize by severity: **Blocker** (must fix), **Critical** (should fix), **Major** (should fix), **Minor** (nice to have). For each issue document file, line, description, recommended fix, rationale.
+Categorize by severity: **Blocker** (must fix), **Critical** (should fix), **Major** (should fix), **Minor** (nice to have). For each issue document file, line, description, recommended fix, rationale. A finding's severity may be lowered, or the finding dropped, **only on positive evidence it is a non-issue** (you read the guard/handler/consumer/requirement that resolves it); on uncertainty keep it at its assessed severity and flag the open question (QUESTION) rather than silently dropping or downgrading it (`adversarial-verify-needs-context`).
+
+#### 7a. Self-adversarial pass (Mandatory for BLOCKER/CRITICAL)
+
+Before assigning the verdict, take each **BLOCKER** and **CRITICAL** finding and try to **refute your own claim**: re-read the actual code path it cites — and its callers/consumers/runtime (Step 4a) — one more time, asking "what would make this a non-issue?". This is the single-agent analogue of an independent verifier: a cheap second look that kills false positives without a second reviewer. Drop a finding here **only** if the second read produces positive evidence it is wrong (a guard/handler you missed, a consumer that never hits the path); on uncertainty, **keep it** (Step 7's evidence rule — never drop on doubt). Log what you re-read for each finding you drop.
 
 ### Step 8: Make Decision and Assign Headline
 
@@ -685,6 +707,7 @@ Each checklist row uses tri-state scoring:
 - [ ] Async/await patterns used correctly
 - [ ] No unhandled promise rejections
 - [ ] Error propagation is correct through the call chain
+- [ ] Cross-file: callees behave as assumed and all callers/consumers of changed symbols still work — traced in the repo, not inferred from the diff (see Step 4a)
 
 ### 2. Code Quality
 - [ ] Descriptive naming conventions

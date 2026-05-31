@@ -28,11 +28,52 @@ phases. Read `../nacl-tl-core/SKILL.md` before reviewing.
    workflow detail `repo-checks-RED`, `repo-checks-UNRUN`, or
    `repo-checks-UNRUNNABLE` and stop. No quality review proceeds.
 4. Compare implementation against task requirements and acceptance criteria.
-5. Run or inspect relevant tests when available.
-6. Check stubs, mocks, error handling, API contract alignment, security, and
+   **Enumerate every acceptance criterion as its own row** (not the category
+   groups), and score each on three axes — **implemented?** (the change
+   actually produces the behaviour, confirmed by the Step 5 cross-file trace,
+   not by a plausibly-named function or dead config), **reachable?** (the
+   behaviour is reachable end-to-end from a real entrypoint — for UI-affecting
+   criteria reuse the nav-actions natural-entrypoint evidence as the
+   reachability witness), and **tested?** (a test or QA path exercises it).
+   Per criterion record `PASS` / `PARTIAL` / `FAIL`: a criterion implemented
+   but unreachable, or untested where the spec demands a test, is at most
+   `PARTIAL`; a criterion not implemented or implemented against the wrong
+   runtime is `FAIL`. Category-grouped scoring lets one missing requirement
+   (e.g. an audit-log row the spec demands but no code writes) hide inside a
+   mostly-passing group — per-criterion rows are the cheapest defence. If any
+   of the three facts (implemented / reachable / tested) cannot be **positively
+   confirmed** from the code or tests, score the criterion at most `PARTIAL` and
+   record the unconfirmed fact — never `PASS` on absence of evidence.
+5. **Trace cross-file, not just the diff.** Judge the change in context using
+   the actual repo: for each symbol the change calls, open the callee/runtime
+   that produces the data and confirm the change's assumptions hold (signature,
+   return shape, side effects, any hardcoded value that silently overrides a
+   parameter, and dead config — a field declared in the contract or config yet
+   never set by the runtime). For each symbol the change modifies (renamed
+   field, new return shape, changed enum), grep the source roots for its
+   callers/consumers and confirm each still works. Cross-file and
+   missing-integration defects are exactly what review must catch. A blocking
+   finding may be refuted only with positive cross-file evidence (the
+   guard/consumer/runtime that makes it a non-issue), never on the strength of
+   the diff alone or on uncertainty.
+6. Run or inspect relevant tests when available.
+7. Check stubs, mocks, error handling, API contract alignment, security, and
    data persistence expectations.
-7. Produce findings ordered by severity with file references.
-8. Update review reports or TL tracking files when available and confirmed.
+8. Produce findings ordered by severity with file references. A finding's
+   severity may be lowered, or the finding dropped, **only on positive evidence
+   it is a non-issue** (you read the guard/handler/consumer/requirement that
+   resolves it); on uncertainty, keep it at its assessed severity and flag the
+   open question rather than silently dropping or downgrading it.
+8a. **Self-adversarial pass (mandatory for blocking findings).** Before
+   assigning the status in step 9, take each blocking finding and try to
+   **refute your own claim**: re-read the cited code path — and its
+   callers/consumers/runtime (step 5) — once more, asking "what would make this
+   a non-issue?". This is the single-agent analogue of an independent verifier:
+   a cheap second look that kills false positives. Drop a finding here **only**
+   if the second read produces positive evidence it is wrong (a guard/consumer
+   you missed); on uncertainty, **keep it** (the step 8 evidence rule — never
+   drop on doubt). Log what you re-read for each finding you drop.
+9. Update review reports or TL tracking files when available and confirmed.
 
 ## Nav-actions consumer check
 

@@ -135,7 +135,8 @@ mark any other stage as `NOT_RUN`. It is NOT a bulk QA bypass.
 2. Check task readiness from sync and stub evidence.
 3. Determine the UC trait (`actor`, `provider_dependency`) and compute the mandatory-stage set from the matrix + any project `qa_mandatory_stages` override.
 4. For each of the six stages: run when in scope, capture per-stage evidence, and emit a closed-set status.
-5. Compute the aggregate per the Aggregate Status Rule (weakest non-NOT_RUN, then mandatory-NOT_RUN floor).
+4a. **Requirements-coverage gate (traceability).** Build the explicit matrix `criterion → stage(s) → status` for **every** acceptance criterion, not just the ones a stage happened to exercise. A criterion may be dropped only when it genuinely cannot be observed through the browser **and** carries no provider/runtime dependency — never use a non-applicable marker to drop a provider/runtime-dependent criterion (route those to `LIVE_PROVIDER_SMOKE` / `PROD_GOLDEN_PATH`). Any UI-testable criterion left **unmapped** (no stage exercises it) is **not verified**: it forces the aggregate to `UNVERIFIED` via the same weakest-stage floor as a `NOT_RUN` mandatory stage — a green run that silently skipped a required criterion must not read as `VERIFIED`. Record unmapped criteria alongside the not-run mandatory stages in the report.
+5. Compute the aggregate per the Aggregate Status Rule (weakest non-NOT_RUN, then mandatory-NOT_RUN floor; an unmapped UI-testable criterion is treated as a NOT_RUN mandatory stage for the floor).
 6. Write per-stage statuses and the aggregate to `qa-report.md` and to `phases.qa_stages` / `phases.qa_aggregate_status` in the task tracking file when file editing is available and confirmed.
 
 ## Source-Parity Requirements

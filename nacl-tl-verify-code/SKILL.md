@@ -133,6 +133,23 @@ This step is read-only. Do not write or modify any review file. If no
 review-*.md files exist for the UC, `prior_flagged` is empty and Step 2.5
 proceeds without suppression.
 
+#### 1.5 Enumerate acceptance criteria (requirements traceability input)
+
+Read `.tl/tasks/<UC>/acceptance.md` and build `acceptance: [{ id, text }]` —
+one entry per acceptance criterion / REQ, **not** the category groups. This is
+the requirements checklist Step 5.4 traces against: verification keyed on
+code-presence alone passes a change that touches clean-tracing code while an
+acceptance criterion is entirely unimplemented (the "missing-requirement"
+defect class — e.g. an audit-log row the spec demands but no code writes).
+
+For each `acceptance[i]`, during the Step 2 trace, mark whether it is
+**implemented** (a changed-code path actually produces the required behaviour —
+confirmed via the Step 2.6 cross-file trace, not a plausibly-named function)
+and whether it is **covered** (a collected test exercises it). A criterion that
+is neither implemented in the change nor covered by a test is a coverage gap,
+handled in Step 5.4. If the UC has no `acceptance.md`, `acceptance` is empty
+and this traceability check is skipped (record it, do not fail).
+
 ### Step 2: TRACE DATA FLOW
 
 For each changed area, trace the FULL flow:
@@ -158,6 +175,15 @@ Check at each step:
 - Null/undefined handled?
 - Error cases propagated?
 - New fields reach the final consumer (UI)?
+
+#### 2.6 Trace beyond the canonical chain (Mandatory)
+
+The flows above are the canonical chain — but a defect often lives one hop off it, in a caller or a runtime the chain does not name. Do NOT stop at the template; trace the actual code graph:
+
+- **Callees / runtime that produces the data:** for each external symbol the changed code calls (a client, a service, a util it depends on), open the file that defines it and confirm the changed code's assumptions hold — signature, return shape, and any **hardcoded value that silently overrides a parameter**. A field can be declared in the contract or config yet never set by the runtime (**dead config**) — so the feature reads as implemented while the runtime does something else. This is invisible if you only read the changed files.
+- **Callers / consumers:** for each exported symbol the change *modifies* (renamed field, new return shape, changed enum), grep the same source roots Step 2.5.3 enumerates (`src/`, `api/`, `web/`, `worker/`, `packages/`, `apps/`, plus workspace-declared roots; exclude `.tl/`, `docs/`, `prisma/`, `node_modules/`, build folders) for `import`/`require` of the module and for call-sites of the symbol, then re-apply the per-step checks (types, field names, null handling, error propagation) at each consumer found.
+
+Emit any cross-file mismatch as a normal finding (`status: ISSUE`, `kind: code-defect`) — it contributes to FAIL like any other static defect. Do not introduce a new status.
 
 ### Step 2.5: ENUM VOCABULARY CROSS-CHECK
 
@@ -375,6 +401,10 @@ Then grep test files for any `import` or `require` of the module name(s) being v
 - If no test file imports the changed module → note `coverage_gap = true`.
 - If at least one test file imports the changed module → note `coverage_gap = false`.
 
+##### 5.3a Acceptance-criteria traceability gap
+
+Cross the `acceptance` checklist from Step 1.5 against the trace results: for every criterion that is **neither implemented in the change (Step 2.6) nor covered by a collected test**, emit a finding `kind: coverage-gap` naming the criterion id, and set `coverage_gap = true`. This routes an unmet acceptance criterion through the existing coverage-gap → `UNVERIFIED` mapping below — a change cannot reach `PASS` while a required behaviour is unverified. (A criterion implemented but contradicted by the code is a `code-defect`/`ISSUE` → `FAIL`, not a coverage gap.)
+
 #### 5.4 Classify suite result
 
 **Precondition checked FIRST, before any exit-code logic:** `tests_collected > 0` must hold for the postfix run.
@@ -392,6 +422,15 @@ Then grep test files for any `import` or `require` of the module name(s) being v
 | `postfix_failures.size == 0` AND `coverage_gap = false` AND UI changes present | `PASS_NEEDS_E2E` |
 
 Note: `BLOCKED` supersedes `UNVERIFIED` (coverage-gap variant) when pre-existing failures are present AND a baseline is available. Without a baseline, the result is `UNVERIFIED`, not `BLOCKED` — set arithmetic is undefined when one operand is missing (Cross-cutting principle P3).
+
+**Authoritative classifier (determinism).** Do not re-derive the precedence by hand. Once the inputs are computed (Steps 2.5/5.1–5.3a), run the decision-table script and emit its token verbatim into `VERIFY_CODE_RESULT.result`:
+
+```
+node nacl-tl-verify-code/scripts/classify-status.mjs \
+  '{"staticFail":<bool>,"scriptsTestMissing":<bool>,"emptyTestStubs":<bool>,"runnerCouldNotExecute":<bool>,"testsCollected":<int>,"baselineResolved":<bool>,"newFailures":<int>,"postfixFailures":<int>,"coverageGap":<bool>,"uiChanges":<bool>}'
+```
+
+`coverageGap` is `true` if no test imports the changed module **or** Step 5.3a found an unmet acceptance criterion. The script encodes the full precedence in one place (including the `FAIL` overlay, which the prose left without a defined order — a confirmed static defect blocks **regardless of tests**, so `FAIL` is highest). The table above documents the logic the script implements; the script is the tie-break authority. Equivalence and precedence are pinned by `scripts/classify-status.test.mjs` (`node --test nacl-tl-verify-code/scripts/classify-status.test.mjs`) — every row maps to the exact same one of the 8 canonical tokens, so this is a derivation change, **not** a contract change.
 
 ### Step 6: RETURN RESULT
 
@@ -443,7 +482,7 @@ VERIFY_CODE_RESULT:
 - **RUNNER_BROKEN**: `scripts.test` exists but runner could not execute, or `tests_collected == 0` even after known-good-file re-run — environment issue
 - **BLOCKED**: `new_failures` is empty but `postfix_failures` is non-empty — pre-existing failures not introduced by this change; surfaces `postfix_failures` list
 - **REGRESSION**: `new_failures` is non-empty — change introduced test failures; surfaces `new_failures` list
-- **FAIL**: Static analysis found runtime errors or incorrect behavior (regardless of tests). CODE_DRIFT findings from Step 2.5 contribute here. SPEC_DRIFT findings do NOT.
+- **FAIL**: Static analysis found runtime errors or incorrect behavior (regardless of tests). CODE_DRIFT findings from Step 2.5 contribute here. SPEC_DRIFT findings do NOT. **Self-adversarial check:** before emitting a `FAIL` / CODE_DRIFT finding, re-read the cited code path once more and try to refute your own claim (a guard, a consumer that never hits it, a type that makes it safe); keep the finding unless that second read gives positive evidence it is a non-issue — never drop on uncertainty.
 - **SPEC_DRIFT findings never affect the top-level result.** They surface as SUGGESTIONS with `kind: spec-drift` and `routedTo: /nacl-tl-reconcile`. The top-level result (PASS / PASS_NEEDS_E2E / UNVERIFIED / NO_INFRA / RUNNER_BROKEN / BLOCKED / REGRESSION / FAIL) is determined solely by the test suite, the integrity gate, and CODE_DRIFT-class findings — never by spec drift.
 
 ## Output Language

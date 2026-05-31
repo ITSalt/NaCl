@@ -560,7 +560,7 @@ Enforced from 2.10.1. In 2.10.0 no run file is written.
 | `nacl-goal/aliases.md` | Binding alias contracts: check script, args schema, evidence keys, result decision rules, Tier-C collisions |
 | `nacl-goal/refusal-catalog.md` | All REFUSE_* / PLAN_BLOCKED_* / GOAL_BLOCKED_* codes with triggers, messages, fallback commands |
 | `nacl-goal/gate-fire-detector.md` | Tier-C gate signatures for runtime detection (populated 2.10.1) |
-| `nacl-goal/pricing.json` | v0 Opus 4.7 + Haiku 4.5 rates for Tier L/XL dollar-cost preview |
+| `nacl-goal/pricing.json` | v0 Opus 4.8 + Haiku 4.5 rates for Tier L/XL dollar-cost preview |
 | `nacl-goal/envelope.md` | `intake` default safe-exception envelope: auto-enabled gates, hard-refuse list, YAML template, namespace, lifecycle (2.10.1) |
 | `nacl-goal/plan-lock-schema.md` | All `intake` artifact schemas: index.json, request.json, intake.json, plan.lock.json, authorization.json, budget.json, atoms/state.json, pr.json, goal-final-sha.txt, pr-body.md, progress.jsonl, exceptions.log, regression-{baseline,postfix}.json (2.10.1) |
 | `nacl-goal/run-artifacts.md` | `intake` directory contract, fingerprint algorithm, flock-protected index.json, re-invocation rules, resumable state table, `--new-run` caveats (2.10.1) |

@@ -132,6 +132,8 @@ For each contract endpoint find: route declaration, DTO/validation schema, respo
 
 For each contract endpoint find: API call, request body construction, response parsing, error handling (catch blocks, status checks), auth header setup.
 
+Then **bind the call-site pair, not just the declarations**: resolve the literal URL/method/body the FE call actually sends and match it to the BE route declaration found in Step 3. The contract is the spec, but a live mismatch can hide when the FE and BE each match a *different* reading of the contract, or when the contract is stale relative to both. An FE call that resolves to no BE route (or a BE route no FE call reaches) is a producer/consumer mismatch independent of contract match — flag it under Endpoint Compliance.
+
 ### Step 5: Compare -- Run All Static Checks
 
 For each endpoint, compare contract vs BE vs FE across all 8 verification categories below.
@@ -367,6 +369,7 @@ Verify BE implements and FE calls every endpoint from the contract.
 | URL path | Exact match | BLOCKER |
 | Path params | All params present | BLOCKER |
 | Query params | All required params sent | WARNING |
+| Producer/consumer call-site | Each FE call-site resolves to a real BE route and vice-versa (traced, not contract-inferred) | BLOCKER |
 
 ### 2. Request DTO Matching
 

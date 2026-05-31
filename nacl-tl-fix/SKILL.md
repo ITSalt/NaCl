@@ -983,6 +983,10 @@ Trust the DB, not the exit code. Claims need evidence; exit codes are not eviden
 
 **Goal:** Determine the honest status of the fix, then run impact checks and update the changelog. This step never claims tests passed when no tests honestly passed, and never claims failures are unrelated without baseline evidence.
 
+#### 7.0 Self-adversarial root-cause re-read (Mandatory)
+
+A GREEN regression test proves the **symptom** is gone, not that the **root cause** is fixed. Before recording the status, re-read the changed code and the regression test together and try to **refute your own fix**: could the test pass while the underlying defect persists? Watch specifically for — the test asserts the symptom rather than the cause; the fix narrows **one of several** code paths that carry the same defect (e.g. one of N call-sites / prompt-carriers / handlers); a sibling caller or a second entrypoint still reaches the bug. Use the Step 1 graph neighbours + the `impact_targets` survey to enumerate the other paths. If the re-read surfaces an unfixed path, the fix is **incomplete** — extend it, or record the residual path explicitly. Conclude "root cause resolved" only on positive evidence across all carriers (pair with the keep-if-uncertain rule — never assume completeness from one green test).
+
 #### 7.1 Discover the test command (no fallback runner)
 
 Locate the workspace owning the changed files (the nearest `package.json` walking up from a changed file). Read its `scripts.test`. Run **exactly that command** at every test step (6b, 6e, 6g). Do NOT substitute another runner — do not invent `npx vitest`, `npx jest`, etc., even if `npm test` looks unfamiliar. The runner is whatever the workspace declares.
