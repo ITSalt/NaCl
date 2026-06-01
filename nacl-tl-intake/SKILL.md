@@ -95,6 +95,7 @@ When `--emit-state <path>` is set, this skill writes a JSON file at `<path>` wit
       "hard_refuse_triggers": ["<trigger>"],
       "trigger_evidence": "<short quote from goal text justifying each trigger>",
       "spec_gap": false,
+      "residual_note": null,
       "skill_path": "nacl-tl-fix|nacl-tl-dev|nacl-sa-feature -> nacl-tl-dev"
     }
   ],
@@ -135,6 +136,22 @@ When this skill can infer that one atom semantically depends on another (e.g. at
 
 `depends_on` is a hint, not a hard constraint. The wrapper's plan lock applies it via topological sort and refuses cycles.
 
+#### `residual_note` (aspect-split residual)
+
+When an atom carries BOTH an unconditionally-correct defensive part AND a genuinely-ambiguous residual (see Step 2b "aspect split"), the shipped part keeps `spec_gap: false` and the residual is recorded here instead of blocking the user:
+
+```json
+"residual_note": {
+  "summary": "<plain-language open question, no internal tokens>",
+  "working_assumption": "<what the fix proceeds on>",
+  "verify_by": "staging|user|null",
+  "followup_task": "<YouGile child-task id OR .tl/open-questions.md anchor>",
+  "route": "note|L2-with-flag"
+}
+```
+
+`null` when the atom has no residual. A non-null `residual_note` MUST carry a `followup_task` — a residual with no recorded follow-up is invalid and falls back to the prompt (see Step 2b binding rule + Step 6 durable sink).
+
 #### `hard_refuse_triggers` closed set
 
 The wrapper consumes this field mechanically (see `nacl-goal/plan-lock-schema.md` §hard_refuse_triggers → refusal mapping). This skill MUST emit triggers ONLY from this closed set:
@@ -166,6 +183,11 @@ When this skill is invoked under `/nacl-goal intake`, the wrapper exports `NACL_
 - **This SKILL.md:** English (instructions for Claude)
 - **User interaction:** User's language (detect from conversation)
 - **Downstream skills** receive instructions in their own language convention
+- **User-facing vocabulary (MANDATORY).** Any string *printed to the user* MUST use observable, behavioral language and MUST NOT contain internal tokens — `L0`/`L1`/`L2`/`L3`, `spec_gap`, `POLICY_CALL`, "re-anchor", `gate_payload`, gate names, or graph requirement IDs. Translate them:
+  - `L1` → "a code-only fix (the spec already describes the right behaviour)"; `L2`/`L3` → "this also needs the spec/docs updated first"
+  - `spec_gap` / "re-anchor to a global timeline" → "the spec doesn't currently say how X should behave"
+  - `POLICY_CALL` → "a judgment call: was X always expected, or is it genuinely new?"
+  The `--emit-state` JSON, the decision tree, the case table, and the headline-selection rules are **machine/Claude-facing** and KEEP the canonical tokens — this rule scopes to user-shown prose only.
 
 ---
 
@@ -260,8 +282,11 @@ Did sa_find_uc_by_keywords return matching UCs?
   |       -> SPEC_GAP: atom names a sub-aspect the UC does NOT currently specify
   |            (per-X qualifier, refinement noun, UI element, or artifact type
   |             absent from the matched UC's name/description/forms/fields):
-  |            BUG (L2)  (confidence: HIGH for classification, spec_gap: true,
-  |                       bug-vs-feature is a POLICY_CALL — user gate mandatory)
+  |            BUG, spec_gap: true. Resolve via Step 2b-pre + 2b-split below:
+  |            ship any unconditionally-correct defensive part at L1; route the
+  |            ambiguous residual at L2-with-flag (or as a tracked NOTE); block
+  |            for a human decision ONLY when the residual carries a
+  |            hard_refuse_trigger. NOT an unconditional user gate.
   |
   +-- YES, matching UC found with detail_status = 'draft' or 'stub':
   |     The behavior is partially specified.
@@ -285,7 +310,32 @@ Did sa_find_uc_by_keywords return matching UCs?
 - Atom names a **UI element or artifact type** not reachable from the matched UC via `UseCase -[:HAS_FORM]-> Form -[:HAS_FIELD]-> Field` or `UseCase -[:PRODUCES]-> Artifact` (text-level check for now; structured Cypher follow-up is out of scope).
 - Reasoning paragraph for the atom would naturally contain the phrase *"spec gap also present"* or *"UC-X does not currently specify ..."* — this is the signal the skill *already* writes today but does not act on.
 
-When `spec_gap: true`, the classification stays BUG with HIGH confidence, but the **bug-vs-feature decision is escalated to the user** via the SPEC_GAP gate in Step 2b's confirmation block (below). `--yes` does NOT bypass.
+When `spec_gap: true`, the classification stays BUG with HIGH confidence. The bug-vs-feature distinction used to be an unconditional user gate; it is now resolved by the two rules below, and surfaced to the user ONLY when the input has not already answered it AND getting the residual wrong is genuinely costly.
+
+##### Step 2b-pre: honor a decision the input already made
+
+Before firing ANY per-atom gate, scan the atom's own source span (the slice of the user's request / card that produced this atom) for an **explicit** decision answering the gate's question. Three recognizers, each requiring an explicit token:
+
+- **Explicit level expectation** — a named level or its plain equivalent, e.g. "expect L1", "this is just a code fix", "L2 only if the contract pins X".
+- **Explicit sub-mode handling instruction** — an imperative for a specific failure mode, e.g. "guard regardless", "reproduce on <real path> first", "downgrade/close if not reproducible".
+- **Explicit bug-vs-feature call** — e.g. "this is a bug, the spec was incomplete" / "treat as new scope".
+
+If a recognizer fires, record the resolution and **skip that gate's prompt**. Provenance: add `USER_OVERRIDE` to `evidence` and capture the verbatim source slice in `trigger_evidence` (same pattern as hard_refuse triggers) — this is what keeps the audit honest. On ANY ambiguity, do NOT guess — fall through to the (plain-language) prompt; a too-eager skip is worse than a too-eager gate. A recognizer may answer only PART of the question (the sub-mode but not bug-vs-feature) — resolve only what it answers; the rest continues to Step 2b-split.
+
+##### Step 2b-split: ship what is unconditionally correct, defer only the genuine residual
+
+A spec_gap atom often bundles two separable parts:
+
+- an **unconditionally-correct defensive part** — a guard / clamp / graceful-degrade that is correct under EVERY interpretation of the ambiguity AND touches no contract/schema/auth/billing surface. Litmus: it changes observable behaviour in **no** case where current behaviour is already correct (a negative-duration clamp fires only on the already-broken path → qualifies; a clamp that also alters a valid in-range value does NOT → stays gated).
+- an **ambiguous residual** — the genuinely-unspecified semantic.
+
+Resolution:
+
+1. **Defensive part** → route to `/nacl-tl-fix` at **L1**, no prompt (`spec_gap: false` for this part; it is contract-free, so the spec is not stale for it). Announce via Template A-note.
+2. **Ambiguous residual** → record as `residual_note` and route at **L2-with-flag** (or keep as a tracked NOTE). NEVER L1: `spec_gap: true` *is* doc-staleness, and an L1 attestation would let `/nacl-tl-fix` ship code against a stale spec (its 6.SF gate checks ordering, not staleness — see `nacl-tl-fix` W10). The residual MUST carry a `followup_task` (Step 6 Backlog task / `.tl/open-questions.md`); a residual with no follow-up is invalid and falls back to the prompt.
+3. **Block for a human decision (plain-language Template C) ONLY** when the residual carries a `hard_refuse_trigger` from the closed set — `schema_migration` / `public_api_contract` (external/breaking only — documenting consumer-side input tolerance does NOT count) / `auth_or_security` / `permissions` / `billing` / `destructive_data_operation` / `l2_l3_architecture` / `product_decision_required`. This is the "costly/irreversible" carve-out. Otherwise proceed with the working assumption + the recorded follow-up.
+
+`--yes` and `/nacl-goal` autonomous mode follow these same rules; the only thing that still forces a prompt is an unresolved hard_refuse residual.
 
 **Per-atom confirmation gate (runs after classifying EACH atom — behavior differs by case):**
 
@@ -295,7 +345,7 @@ A generic "Correct? [yes / adjust / skip]" trains the user to rubber-stamp and s
 |------|---------------|
 | HIGH + GRAPH, **no spec gap**, classification level **L0/L1** (low blast radius) | **Auto-route, no prompt.** Print the auto-route line (template A) and proceed. |
 | HIGH + GRAPH, **no spec gap**, classification level **L2/L3** (high blast radius) | **Launch-sanity prompt** (template B) — not a classification question, just a "ready to launch?" check. |
-| HIGH + GRAPH, **spec_gap: true** | **Mandatory SPEC_GAP prompt** (template C). Names the actual ambiguity. NOT bypassed by `--yes`. |
+| HIGH + GRAPH, **spec_gap: true** | Apply Step 2b-pre + Step 2b-split. Ship the defensive part with no prompt (template A-note); record the residual as a tracked follow-up. Fire the **plain-language template C** ONLY if the residual carries a hard_refuse_trigger; otherwise proceed on the working assumption. |
 | MEDIUM + GRAPH | **Recommendation prompt** (template D) — leading option + alternatives + reasoning. |
 | LOW / HEURISTIC | **Open-disambiguation prompt** (template E) — present options with equal weight, no forced recommendation. |
 
@@ -303,92 +353,103 @@ A generic "Correct? [yes / adjust / skip]" trains the user to rubber-stamp and s
 
 ```
 Atom #N: "[atom title]" -> [TYPE] (auto-routed)
-  Matched UC: UC-XXX "name" (detail_status: detailed)
-  Evidence: GRAPH | Confidence: HIGH | Spec gap: false | Level: L0/L1
+  Matched UC: UC-XXX "name"
+  Backed by: the project graph (high confidence)
+  Routing to [downstream skill]...
+```
+
+#### Template A-note — auto-route a safe fix while flagging a deferred question (Step 2b-split)
+
+No prompt. The note is backed by a tracked follow-up (Step 6 / `.tl/open-questions.md`), so the question is not lost — it just doesn't block the fix.
+
+```
+Atom #N: "[atom title]" -> BUG (auto-routed — shipping the safe fix now)
+  Matched UC: UC-XXX "name"
+  Open question (won't block this fix): [plain-language residual — e.g.
+    "the spec doesn't say whether each voice comment starts from the start of
+     its clip or at a set moment in the finished video"].
+  Proceeding on the assumption: [working assumption]. Verifying on staging.
+  Tracked as: [followup task id / open-questions anchor] — tell me if the
+  assumption is wrong and I'll adjust.
   Routing to [downstream skill]...
 ```
 
 #### Template B — launch-sanity prompt (L2/L3 only)
 
 ```
-Atom #N: "[atom title]" -> [TYPE] (HIGH confidence, graph-backed)
+Atom #N: "[atom title]" -> [TYPE] (high confidence, backed by the project graph)
   Matched UC: UC-XXX
-  Classification level: L2 (cross-module) | spans: UC-XXX, UC-YYY, API contract
+  This change also needs the spec/docs updated first, and touches: UC-XXX, UC-YYY, the API contract.
 
-  Routing to [downstream skill]. Proceed?
-    1. proceed -> launch [downstream skill]
-    2. skip    -> drop atom from plan
+  Ready to start?
+    1. start -> launch [downstream skill]
+    2. skip  -> set this one aside for now
 ```
 
 (Note: this prompt asks about *launch readiness*, not classification. The classification is already settled at HIGH+GRAPH.)
 
-#### Template C — SPEC_GAP prompt (mandatory, not bypassed by `--yes`)
+#### Template C — decision needed (fires ONLY when the residual is costly to get wrong)
+
+Fires only when Step 2b-split flags a residual carrying a hard_refuse_trigger (the input did not already answer it, and getting it wrong is expensive to undo). Plain language — no internal tokens. Internally this routes choice 1 → `/nacl-tl-fix --uc UC-XXX`, choice 2 → `/nacl-sa-feature` (record `evidence: USER_OVERRIDE (spec_gap)`), choice 3 → drop.
 
 ```
 Atom #N: "[atom title]"
-  Matched UC: UC-XXX "name" (detail_status: detailed)
-  Classification: BUG (L2 — cross-module spec gap)
+  Matched UC: UC-XXX "name"
 
-  SPEC GAP DETECTED:
-  UC-XXX does not currently specify: [the sub-aspect, e.g. "per-iteration
-  naming/chronology convention for verifier reports"].
+  I can stop the crash either way — that part ships now. But before I write
+  down how this should behave, I need one decision from you, because getting
+  it wrong here is expensive to undo ([why — e.g. it changes the published
+  API / a billing rule]):
 
-  The bug-vs-feature distinction is a policy call:
-    - BUG     if this was an IMPLICIT requirement (customer/contract expected
-              it, spec was incomplete)
-    - FEATURE if this is NEW scope (genuinely added now, not previously
-              promised)
+  [plain-language statement of what the spec doesn't currently say].
 
-  Choose:
-    1. BUG     -> /nacl-tl-fix --uc UC-XXX
-                  (amends UC-XXX spec + fixes implementation)
-    2. FEATURE -> /nacl-sa-feature
-                  (creates new UC / FR for this aspect; evidence recorded as
-                   USER_OVERRIDE (spec_gap))
-    3. SKIP    -> drop atom from plan
+  Was this always expected to work this way, or is it genuinely new?
+    1. Always expected -> I fix it and write the behaviour into the spec
+    2. Genuinely new   -> I scope it as a new feature instead
+    3. Set aside       -> drop it for now
 ```
 
 #### Template D — recommendation prompt (MEDIUM confidence)
 
 ```
 Atom #N: "[atom title]"
-  Best guess: [TYPE]  (confidence: MEDIUM, evidence: GRAPH)
-  Reasoning: [one sentence — why this is the leading call]
-  Alternatives: [other plausible TYPE(s) and what would tip the scale]
+  Best guess: [TYPE]  (fairly confident, based on the project graph)
+  Why: [one sentence — why this is the leading call]
+  Could also be: [other plausible TYPE(s) and what would tip the scale]
 
-  Correct? [yes / adjust to <other type> / skip]
+  Correct? [yes / change to <other type> / set aside]
 ```
 
 #### Template E — open-disambiguation prompt (LOW / HEURISTIC)
 
 ```
 Atom #N: "[atom title]"
-  Classification uncertain (confidence: LOW, evidence: HEURISTIC).
-  Possible types: BUG | FEATURE | TASK
-  Reasoning: [why graph didn't resolve, what keywords lean each way]
+  I'm not sure how to classify this (the project graph didn't resolve it).
+  Could be a bug, a new feature, or a task.
+  What I see: [why the graph didn't resolve, what wording leans each way]
 
-  Pick a type — no forced recommendation:
-    1. BUG     -> /nacl-tl-fix
-    2. FEATURE -> /nacl-sa-feature
-    3. TASK    -> /nacl-tl-dev
-    4. SKIP
+  Pick one — no recommendation:
+    1. Bug      -> fix it
+    2. Feature  -> design it as new functionality
+    3. Task     -> infra / docs / process work
+    4. Set aside
 ```
 
 **`--yes` flag behavior:**
 
-- `--yes` auto-confirms (i.e. fires Template A without prompting) ONLY when ALL of the following hold for the atom:
+- `--yes` auto-confirms (i.e. fires Template A / A-note without prompting) ONLY when ALL of the following hold for the atom:
   - `confidence: HIGH`
   - `evidence: GRAPH` (matched UC `detail_status = detailed | approved`)
-  - `spec_gap: false`
+  - `spec_gap: false`, OR `spec_gap: true` whose residual is resolved by Step 2b-pre / 2b-split with NO hard_refuse_trigger (ships via Template A-note + tracked follow-up)
   - classification level: `L0` or `L1` (low blast radius — per `nacl-tl-core/references/fix-classification-rules.md`)
 - `--yes` does NOT bypass the prompt for:
-  - SPEC_GAP atoms — policy call required from user (template C)
+  - SPEC_GAP atoms whose residual carries a hard_refuse_trigger — plain-language decision required (template C)
   - L2/L3 atoms — launch-sanity check required (template B)
   - MEDIUM confidence atoms (template D)
   - LOW / HEURISTIC atoms (template E)
-- "skip" drops the atom from the execution plan; user must explicitly re-add it later.
-- "adjust" accepts a corrected type from the user; record the manual override as `evidence: USER_OVERRIDE`.
-- For SPEC_GAP atoms where the user chooses FEATURE, record `evidence: USER_OVERRIDE (spec_gap)` so the final summary headline can route through the new REROUTED rule (see "Final summary" below).
+- "skip" / "set aside" drops the atom from the execution plan; user must explicitly re-add it later.
+- "adjust" / "change" accepts a corrected type from the user; record the manual override as `evidence: USER_OVERRIDE`.
+- For SPEC_GAP atoms where the user chooses FEATURE, record `evidence: USER_OVERRIDE (spec_gap)` so the final summary headline can route through the REROUTED rule (see "Final summary" below).
 
 #### Step 2c: Fallback -- keyword-based classification (when Neo4j is unavailable)
 
@@ -416,32 +477,29 @@ Is it unclear?
 
 #### Step 2d: Present classification evidence
 
-For each atom, show the user WHY it was classified as it was. Always print `Spec gap:` and `Confidence:` explicitly so the gate template selection (Step 2b) is auditable from the output:
+For each atom, show the user WHY it was classified as it was — in **plain language**. The internal labels (`spec_gap`, `risk_level`/level, `confidence`, `evidence`, `POLICY_CALL`) are written to the `--emit-state` JSON for audit and read by Step 2b to pick the gate behaviour; they are NOT printed to the user (Language Rules → user-facing vocabulary):
 
 ```
 #1 "Image format selection" -> FEATURE
     Graph: No matching UC found for "image format"
-    Reasoning: New behavior, not specified in graph
-    Spec gap: n/a (no matching UC)
-    Evidence: GRAPH | Confidence: MEDIUM
+    Why: new behaviour, not described in the spec yet
+    (fairly confident — the graph didn't fully resolve it)
 
 #2 "Share button doesn't work" -> BUG
-    Graph: UC-012 "Share Content" (status: detailed)
-    Reasoning: UC exists and is detailed, user reports broken behavior
-    Spec gap: false
-    Evidence: GRAPH | Confidence: HIGH | Level: L1
+    Graph: UC-012 "Share Content" (already specified)
+    Why: the behaviour is specified and the user reports it broken
+    A code-only fix — the spec already describes the right behaviour.
 
-#3 "Task artifacts page missing verifier reports + per-iteration images" -> BUG (L2)
-    Graph: UC-105 "View task status and results" (status: detailed)
-           UC-151 "Verifier verification loop" (status: complete)
-    Reasoning: UC-105 specifies the status page, but per-iteration naming /
-               chronology convention is NOT in the current spec
-    Spec gap: per-iteration naming + ordering not specified in UC-105
-    Evidence: GRAPH | Confidence: HIGH (classification) / POLICY_CALL (bug-vs-feature)
-    Level: L2 (cross-module: UC-105, UC-151, API contract, FE form)
+#3 "Task artifacts page missing verifier reports + per-iteration images" -> BUG
+    Graph: UC-105 "View task status and results"; UC-151 "Verifier loop"
+    Why: UC-105 specifies the status page, but the spec doesn't currently say
+         how per-iteration items should be named / ordered.
+    I'll fix the crash safely now; the naming/ordering question is tracked as
+    an open follow-up (verified later), and only needs your decision if it
+    turns out to touch the published API.
 ```
 
-This transparency helps the user validate classifications and reduces the ~30% misclassification rate that keyword-only approaches produce. The `Spec gap` and `Level` lines also tell the user *which* gate template they are about to see (A/B/C/D/E from Step 2b).
+This transparency helps the user validate classifications and reduces the ~30% misclassification rate that keyword-only approaches produce. The machine-facing `spec_gap` / level / confidence values live in the `--emit-state` JSON (Step 2b reads them to choose the gate behaviour) — the user sees plain prose, not the tokens.
 
 ---
 
@@ -516,7 +574,7 @@ From your 5 requests, I identified:
   | Reason: same screen, shared data model,      |
   |         #4 depends on #3, #3 depends on #2   |
   | Graph evidence: No matching UCs found        |
-  | Evidence type: GRAPH                         |
+  | Based on: the project graph                  |
   | Estimate: ~3-4 UCs, ~1 wave                  |
   | -> /nacl-sa-feature                         |
   |                                              |
@@ -525,7 +583,7 @@ From your 5 requests, I identified:
   | Reason: different API flow (img-to-img),     |
   |         can ship independently               |
   | Graph evidence: No matching UCs found        |
-  | Evidence type: GRAPH                         |
+  | Based on: the project graph                  |
   | Depends on: Feature 1 (needs tabs UI)        |
   | Estimate: ~1-2 UCs, ~1 wave                  |
   | -> /nacl-sa-feature (after Feature 1)       |
@@ -535,8 +593,8 @@ From your 5 requests, I identified:
   +----------------------------------------------+
   | Bug 1: "Share button broken on mobile"       |
   | Graph evidence: UC-012 "Share Content"       |
-  |   (status: detailed) -- behavior specified   |
-  | Evidence type: GRAPH                         |
+  |   (already specified) -- behaviour defined   |
+  | Based on: the project graph                  |
   | -> /nacl-tl-fix                              |
   +----------------------------------------------+
 
@@ -612,7 +670,21 @@ If YouGile is configured AND a parent task exists (from Step 0):
    ")
    ```
 
-If YouGile NOT configured -> skip this step entirely.
+5. **Open-question follow-ups (durable sink).** For EVERY atom carrying a non-null `residual_note` (a deferred ambiguity from Step 2b-split, OR any discrepancy surfaced during analysis but not fixed now), create a child task in Backlog so the finding is never lost:
+   ```
+   create_task(
+     title: "[Open question] <plain residual summary>",
+     columnId: config.yougile.columns.backlog,
+     description: "Working assumption: <residual.working_assumption>.
+                   Verify by: <residual.verify_by>.
+                   Parent atom: <atom title / UC>.
+                   Surfaced by intake; resolve before the parent is closed.",
+     stickers: { task_type: open_question, source: agent }
+   )
+   ```
+   Link it as a subtask of the parent card and write its id back into `atom.residual_note.followup_task`. **Closure gate:** the parent card MUST NOT move to Done while any `[Open question]` subtask is open. A `residual_note` that produces no follow-up id is a bug in this step — fall back to the plain-language prompt for that atom.
+
+If YouGile NOT configured -> skip the task-creation steps above, BUT still persist every `residual_note` by appending it to `.tl/open-questions.md` (one entry per residual: summary, working assumption, verify-by, parent atom). A residual is NEVER left as console-only output.
 
 ---
 
@@ -722,6 +794,8 @@ Headline selection rules (first match wins):
 - All bug atoms `Status: PASS` AND any atom heuristic-backed OR any USER_OVERRIDE ⇒ `INTAKE TRIAGE APPLIED — UNVERIFIED (heuristic-backed)`
 - All bug atoms `Status: PASS` AND all atoms graph-backed ⇒ `INTAKE TRIAGE COMPLETE (graph-backed)`
 
+**Modifier (applies on top of any headline above):** if M atoms carry an unresolved `residual_note` follow-up, append ` — M open questions pending verification` to the selected headline and list them in the summary block. These are tracked (Backlog `[Open question]` subtasks / `.tl/open-questions.md`), not dropped — the parent card cannot close until they resolve.
+
 ```
 ===============================================
   <HEADLINE per rules above>
@@ -730,6 +804,7 @@ Headline selection rules (first match wins):
 Processed: 6 requests -> 2 features, 1 bug, 0 tasks
 Classification method: [Neo4j graph | keyword-fallback (Neo4j unavailable)]
 Atoms unfinished (non-PASS downstream): N
+Open questions pending verification: M (Backlog [Open question] / .tl/open-questions.md)
 
 +------+------------------------------------+---------+----------+--------------------+----------+
 | Atom | Title                              | Type    | Evidence | Fix Status         | State    |
