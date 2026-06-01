@@ -24,6 +24,13 @@ Shipping mutates git and possibly external trackers. It is confirmation-gated.
 6. Execute approved git operations and record evidence.
 7. Update graph or tracker metadata only when tooling exists and confirmation is
    given.
+8. Report the result and name the concrete follow-on skill for the next action —
+   never a prose description. Resolve it from the shipped state: `/nacl-tl-verify`
+   to verify the implementation; `/nacl-tl-release --pr <N>` to merge the PR into
+   the resolved base branch (release is the only skill that merges a PR, and it
+   reads the base branch from `git.main_branch`). When no UC/FR id is available
+   (a bare bug-fix), omit the id argument rather than substituting prose like
+   "review and merge the PR".
 
 ## Source-Parity Requirements
 
@@ -84,6 +91,8 @@ Shipping mutates git and possibly external trackers. It is confirmation-gated.
 - Base-branch safety guard.
 - Local checks before shipping.
 - Commit, push, PR, and tracker update workflow.
+- Next-step handoff names a concrete follow-on skill (verify, or release to merge
+  the PR), never a prose description.
 
 ### Removed Claude Mechanics
 

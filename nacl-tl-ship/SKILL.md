@@ -390,7 +390,7 @@ If `config.yaml → yougile` is configured:
    Tests: 34 passing
    Build: OK
 
-   Next: /nacl-tl-verify UC028
+   Next: /nacl-tl-verify UC028   (bare fix, no UC id → /nacl-tl-release --pr 42 to merge)
    ")
    ```
 
@@ -405,6 +405,13 @@ the aggregated status, then a `Verification status:` line surfaces the per-task 
 that was consumed (PASS / UNVERIFIED / BLOCKED / NO_INFRA / RUNNER_BROKEN /
 REGRESSION) so the reader sees the per-task status at a glance. Present to user
 (in their language):
+
+**Next-step invariant:** the `Next step:` block lists only concrete `/nacl-...`
+commands (with current, real flags) — **never prose**. The block always names the
+skill that performs the next action. When no UC/FR id is available (e.g. a bare
+bug-fix), omit the id argument; do **not** substitute a prose description like
+"review and merge the PR". See the **Next-step resolution** table below for how to
+fill it.
 
 **Without `--deploy` (PASS case):**
 ```
@@ -427,7 +434,8 @@ Build: OK
 YouGile: task moved to DevDone, summary posted
 
 Next step:
-  /nacl-tl-verify UC028  — verify implementation
+  /nacl-tl-verify UC028     — verify implementation (E2E/code)
+  /nacl-tl-release --pr 42  — merge PR #42 into main (after verify)
 ═══════════════════════════════════════════════
 ```
 
@@ -470,7 +478,8 @@ Build: OK
 YouGile: task moved to DevDone, summary posted
 
 Next step:
-  /nacl-tl-verify UC028  — verify implementation
+  /nacl-tl-verify UC028     — verify implementation (E2E/code)
+  /nacl-tl-release --pr 42  — merge PR #42 into main (after verify)
 ═══════════════════════════════════════════════
 ```
 
@@ -504,6 +513,36 @@ Next step:
 ═══════════════════════════════════════════════
 ```
 
+**Bare bug-fix (PASS, no UC id) — feature-branch:**
+When ship is invoked with a bare commit message (no UC/FR id) and upstream status
+is already PASS (e.g. shipped after `/nacl-tl-fix`, which ran a RED→GREEN regression
+test), the only remaining action is the merge. Name the merge skill — do NOT emit
+prose like "Review and merge the PR":
+```
+═══════════════════════════════════════════════
+  SHIP COMPLETE
+═══════════════════════════════════════════════
+
+fix: <commit message>
+Verification status: PASS
+
+Git:
+  Branch: fix/<slug>
+  Commit: abc1234
+  PR: #5 (https://github.com/org/repo/pull/5)
+  Base: main-v2
+  Push: origin (GitHub) — OK
+
+Tests: 28 passing
+
+YouGile: not configured
+
+Next step:
+  /nacl-tl-release --pr 5   — merge PR #5 into main-v2
+  (/nacl-tl-verify          — optional: E2E-verify the fix before merge)
+═══════════════════════════════════════════════
+```
+
 **Headline selection (the only authoritative classifier is the consumed
 `Status:` line — see Step 1.0):**
 
@@ -526,6 +565,24 @@ Next step:
     — runner cannot be exercised.
   SHIP INCOMPLETE — REGRESSION
     — upstream REGRESSION; no PR, no deploy.
+
+### Next-step resolution
+
+Fill the `Next step:` block from the data this skill already has — `strategy`,
+`pr_number` + resolved `base_branch` (`git.main_branch`), the consumed verification
+status, and whether a UC/FR id was provided. `<base>` = resolved `base_branch`;
+`<N>` = the PR number just created/found. The block always names a skill.
+
+| Strategy | Verification status | `Next step:` block (named skills, in order) |
+|---|---|---|
+| feature-branch | PASS, UC/FR id present | `/nacl-tl-verify <id>` — verify implementation; then `/nacl-tl-release --pr <N>` — merge PR #<N> into `<base>` |
+| feature-branch | PASS, **no id** (bare fix) | `/nacl-tl-release --pr <N>` — merge PR #<N> into `<base>`; `(/nacl-tl-verify` — optional E2E before merge`)` |
+| feature-branch | UNVERIFIED / BLOCKED (operator override) | `/nacl-tl-deploy --staging` — explicit operator deploy; `/nacl-tl-verify <id>` — restore verified status before re-shipping |
+| direct | PASS | `/nacl-tl-deploy` — monitor CI/deploy (no PR to merge) |
+
+The merge skill is always `/nacl-tl-release` — it is the only skill that runs
+`gh pr merge`, reads the base branch from `git.main_branch` (so it targets `<base>`,
+e.g. `main-v2`), and gates the merge on PASS status.
 
 ---
 

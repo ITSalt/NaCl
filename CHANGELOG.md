@@ -4,6 +4,43 @@ All notable changes to NaCl (Natural Agent Control Language) will be documented 
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [2.12.2] — 2026-06-01
+
+Patch release: `nacl-tl-ship`'s final `Next step:` block must always name a concrete
+`/nacl-...` command — never prose. A bare bug-fix ship (already PASS, no UC id, PR open
+against a non-default base) ended with a prose "review and merge the PR" instead of naming
+the skill that merges. This release makes the next-step block data-driven and surfaces the
+merge skill (`/nacl-tl-release`) in the suggested chain.
+
+**Fixed — prose next-step on the bare bug-fix path.** Ship's `Next step:` templates assumed
+the UC development flow and a UC id (`/nacl-tl-verify UC028 …`); with no id to substitute
+and verification already PASS, the model filled the line with prose. The root cause was the
+absence of a documented variant for "PASS + PR open + no UC id".
+
+**Added — `Next step:` invariant + resolution table.** The `## Output` section now states
+the block lists only concrete `/nacl-...` commands (omit the id when none exists, never
+prose), and a resolution table fills it from data ship already has (strategy, PR number +
+resolved base branch, verification status, id-presence). It names `/nacl-tl-release --pr
+<N>` as the merge route and states that release is the only skill running `gh pr merge`,
+reads the base from `git.main_branch`, and gates on PASS. The two PASS report templates show
+the `verify → release --pr <N>` chain; a new worked bare-bug-fix example mirrors the
+scenario that surfaced the gap.
+
+**Codex parity.** `skills-for-codex/nacl-tl-ship` mirrors the methodology (a Workflow step
+naming the concrete follow-on skill + a Preserved Methodology bullet), changed in the same
+commit per the root↔Codex sync gate.
+
+**Repo hygiene.** A pre-release canary removed an internal audit artifact and genericized a
+couple of example identifiers in the `analyst-tool` subproject (separate commit; no skill
+or output-contract change).
+
+No breaking changes — the `Next step:` block is human-facing guidance, not part of ship's
+machine output contract, so no downstream consumer needed a contract audit; only the
+existing `--pr` flag is referenced.
+
+Release notes:
+`docs/releases/2.12.2-ship-next-step-names-skill/release-notes.md`.
+
 ## [2.12.1] — 2026-05-31
 
 Patch release: skills must never hardcode a git branch name — `config.yaml` is the
