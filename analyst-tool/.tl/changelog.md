@@ -36,7 +36,7 @@
 
 ## [SPEC] 2026-05-26 — FR-002 live-update on external edits
 
-- Specified `FR-002` via `/nacl-sa-feature` (impact analysis by **code inspection**). **Graph-persisted 2026-05-26**: the tool's SA graph was initially unreachable (Neo4j host-port collision routed the MCP to the EVCharge client graph); after re-porting the tool graph to `bolt://localhost:3608`, `FeatureRequest FR-002` + `UC-020` (REQ-UC020-01..06, 6 ActivitySteps) + the `UC-002` contract delta (`REQ-UC002-03`) were written. Board-save UC reconciled to **UC-002**.
+- Specified `FR-002` via `/nacl-sa-feature` (impact analysis by **code inspection**). **Graph-persisted 2026-05-26**: the tool's SA graph was initially unreachable (Neo4j host-port collision routed the MCP to another client's graph); after re-porting the tool graph to `bolt://localhost:3608`, `FeatureRequest FR-002` + `UC-020` (REQ-UC020-01..06, 6 ActivitySteps) + the `UC-002` contract delta (`REQ-UC002-03`) were written. Board-save UC reconciled to **UC-002**.
 - Root cause (confirmed in code): server-side `markSelfWrite` is global per-board, so any out-of-band `PUT /boards/:name` suppresses the `board.changed` broadcast for all subscribers → open clients keep a stale scene (#4 symptom).
 - Resolved design (client experience + system load): notify-only WS ping → explicit consent banner → fetch full scene only on consent; per-origin (`originId`) suppression replacing the global marker; open-board banner + sidebar "changed" indicator; push-based (no polling); never discard unsaved edits without consent.
 - Scope: +1 NEW UC-020 (REQ-UC020-01..06), ~1 MODIFIED board-save UC (PUT gains `originId`), +1 NEW component (consent banner), ~2 MODIFIED (CanvasHost, Sidebar). 0 TECH tasks (incremental to existing files).

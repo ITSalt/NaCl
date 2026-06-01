@@ -43,7 +43,7 @@ vps:
   # The analyst runs `nacl-analyst-tool` on their own machine.
 
 docmost:
-  api_url: "https://docs.viziapp.dev"
+  api_url: "https://docs.example.com"
   spaces:
     ba:
       space_id: ""           # populate when BA docs space is created

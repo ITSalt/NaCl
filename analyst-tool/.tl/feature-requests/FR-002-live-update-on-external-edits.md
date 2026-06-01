@@ -6,7 +6,7 @@
 | Created | 2026-05-26 |
 | Status | spec-complete |
 | Source | /nacl-sa-feature "Live-update on external edits — surfaced during #4: an out-of-band API PUT does not notify already-open clients (self-write echo suppression) — must be realized live-update" |
-| Impact method | **Code inspection** at draft time → **graph-persisted 2026-05-26**. The tool's SA graph was unreachable when this FR was first drafted (a Neo4j host-port collision routed the MCP to the EVCharge client graph). After re-porting the tool graph to `bolt://localhost:3608`, `FeatureRequest FR-002` + `UC-020` (+ REQ-UC020-01..06 + 6 ActivitySteps) + the `UC-002` contract delta were written to the graph. |
+| Impact method | **Code inspection** at draft time → **graph-persisted 2026-05-26**. The tool's SA graph was unreachable when this FR was first drafted (a Neo4j host-port collision routed the MCP to another client's graph). After re-porting the tool graph to `bolt://localhost:3608`, `FeatureRequest FR-002` + `UC-020` (+ REQ-UC020-01..06 + 6 ActivitySteps) + the `UC-002` contract delta were written to the graph. |
 | Classification | **L2** — cross-module contract change (server WS/PUT ↔ web store/UI) |
 
 ## Feature Description
