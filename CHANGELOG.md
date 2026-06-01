@@ -4,6 +4,66 @@ All notable changes to NaCl (Natural Agent Control Language) will be documented 
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [2.13.0] — 2026-06-01
+
+Minor release: the question-gates in `nacl-tl-intake` and `nacl-tl-fix` are recalibrated to
+decide what they can decide and ask the user only what is genuinely a human call — in plain,
+observable language. A spec-gap on a crash bug used to block the unconditionally-correct fix
+behind a bug-vs-feature question phrased in internal vocabulary (`L1`/`L2`, `spec_gap`,
+`POLICY_CALL`, "re-anchor"), and re-ask decisions the request had already stated. Both gates
+now ship the safe part autonomously and track the genuine ambiguity as a closure-gating
+follow-up instead of an interrupt.
+
+**Added — honor a decision the input already made (intake Step 2b-pre).** Before firing any
+per-atom gate, intake scans the atom's own source text for an explicit decision answering the
+gate's question (a named level; a sub-mode handling instruction like "guard regardless /
+reproduce on X first / downgrade if not reproducible"; an explicit bug-vs-feature call). If
+present, it records the resolution with `USER_OVERRIDE` provenance and skips the prompt. On any
+ambiguity it falls through to the prompt — a too-eager skip is worse than a too-eager gate.
+
+**Added — aspect split (intake Step 2b-split).** A spec-gap atom is split into the
+unconditionally-correct defensive part (a guard / clamp / graceful-degrade, correct under every
+interpretation and touching no external contract) and the genuinely-ambiguous residual. The
+defensive part ships at `L1` with no prompt; the residual routes `L2-with-flag` (or a tracked
+note) — never silent `L1`, because a spec gap *is* doc-staleness and an `L1` attestation would
+let code ship against a stale spec (preserves `nacl-tl-fix`'s W10 spec-first invariant).
+
+**Changed — spec-gap gate: proceed-and-flag, block only when costly.** The mandatory,
+non-bypassable spec-gap prompt becomes a proceed-and-flag default. A human decision is requested
+(in plain language) only when the residual carries a `hard_refuse_trigger` (external/breaking API
+contract, schema migration, auth, billing, destructive data). Documenting consumer-side input
+tolerance — a clamp table, a field-interpretation note — is reversible internal spec work and no
+longer blocks.
+
+**Added — durable sink: "defer" means tracked-to-closure, never dropped.** A deferred residual is
+recorded as a `residual_note` and persisted as a follow-up (a tracker `[open-question]` subtask or
+a `.tl/open-questions.md` entry) that gates the parent work-item's closure — never a console-only
+note. A demotion with no recorded `followup_task` is invalid and falls back to the prompt. This is
+stricter than the old gate, which could be rubber-stamped without the check ever happening.
+
+**Changed — user-facing vocabulary is mandatory.** Every string printed to the user uses
+observable, behavioural language; internal tokens (`L0`–`L3`, `spec_gap`, `POLICY_CALL`,
+"re-anchor", `gate_payload`) are scrubbed from all prompt templates, the classification-evidence
+block, and the triage box, and retained only in the machine-facing `--emit-state` JSON, decision
+tree, case table, and headline rules.
+
+**Changed — `nacl-tl-fix` L2 USER GATE.** The same calibration reaches the fix skill's
+post-diagnosis gate: the unconditionally-correct defensive part ships without sign-off; a
+confident, reversible, verifiable spec change proceeds-and-flags (a plain-language working
+assumption + a documented-with-caveat callout + a follow-up task) instead of blocking on a diff
+approval; explicit sign-off is reserved for genuinely-uncertain interpretations or
+external-contract-breaking / irreversible changes. Spec-first commit ordering (W10) is unchanged.
+
+**Schema.** `intake.json` atoms gain an additive, nullable `residual_note` field (`summary`,
+`working_assumption`, `verify_by`, `followup_task`, `route`). Existing consumers are unaffected.
+
+**Codex parity.** `skills-for-codex/nacl-tl-intake` and `skills-for-codex/nacl-tl-fix` mirror the
+calibrated gate behaviour, changed in the same commit per the root↔Codex sync gate.
+
+No breaking changes — the `--emit-state` contract is additive, machine-facing tokens are retained,
+and the spec-first ordering invariant is preserved; the change makes the gates more autonomous and
+their prompts plain-language.
+
 ## [2.12.2] — 2026-06-01
 
 Patch release: `nacl-tl-ship`'s final `Next step:` block must always name a concrete
