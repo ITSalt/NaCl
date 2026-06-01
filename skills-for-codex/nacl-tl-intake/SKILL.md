@@ -40,13 +40,21 @@ creating graph or task-tracker artifacts.
   `nacl-tl-reopened`.
 - Do not auto-execute the downstream workflow unless the user explicitly
   confirms that exact scope in the current turn.
-- The user gate is differentiated by classification certainty: HIGH+GRAPH with
-  no spec gap and low blast radius (L0/L1) may auto-route without prompt;
-  SPEC_GAP atoms (matched UC exists but does not specify the sub-aspect being
-  requested) always prompt for the bug-vs-feature policy call; L2/L3 atoms
-  fire a launch-sanity check; MEDIUM and LOW always prompt with reasoning.
-  See the main `nacl-tl-intake/SKILL.md` for the decision tree and prompt
-  templates.
+- The user gate is differentiated by classification certainty AND calibrated to
+  avoid needless prompts. HIGH+GRAPH with no spec gap and low blast radius (L0/L1)
+  auto-routes without prompt. For a SPEC_GAP atom (matched UC exists but does not
+  specify the sub-aspect requested): first honor any decision the request text
+  already states (do not re-ask what the user already answered), then split it —
+  ship the unconditionally-correct defensive part (guard/clamp/graceful-degrade,
+  touching no external contract) at L1 without a prompt, and record the genuinely
+  ambiguous residual as a tracked follow-up (tracker `[open-question]` subtask or
+  `.tl/open-questions.md`, never console-only, blocks parent closure until
+  resolved). Prompt for the bug-vs-feature decision ONLY when the residual carries
+  a hard-refuse trigger (external/breaking API, schema, auth, billing, destructive
+  data). L2/L3 atoms fire a launch-sanity check; MEDIUM and LOW always prompt with
+  reasoning. All user-shown prompts use plain, observable language — never internal
+  tokens (L0–L3, spec_gap, POLICY_CALL, gate names). See the main
+  `nacl-tl-intake/SKILL.md` for the decision tree and prompt templates.
 
 ## Capabilities
 

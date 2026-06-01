@@ -806,20 +806,61 @@ If during Step 5 the agent notices any of the forbidden items is required, **abo
 
 L3-feature requests never reach Step 5. They exited at Step 3.
 
-#### → USER GATE (L2 / L3-spec-gap only)
+#### → USER GATE (L2 / L3-spec-gap only) — calibrated: proceed-and-flag by default, block only when genuinely costly
 
 **Presented by the orchestrator, not the diagnostician.** Phase A leaves the doc
-changes uncommitted in the working tree and returns `gate_payload`. The
-orchestrator (this skill, running in the interactive context) presents that
-payload here, between Phase A and Phase B — the diagnostician sub-agent cannot
-talk to the user.
+changes uncommitted in the working tree and returns its payload. The orchestrator
+(this skill, running in the interactive context) decides here, between Phase A and
+Phase B, whether to proceed autonomously or stop for a human decision — the
+diagnostician sub-agent cannot talk to the user.
 
-Present to user (in their language):
-1. Which docs will be changed/created
-2. Diff of doc changes
-3. Code fix plan
+**Decouple the guard from the spec decision.** If the fix has an unconditionally-
+correct defensive part (a guard / clamp / graceful-degrade, correct under every
+interpretation of the ambiguity and touching no external contract / schema / auth /
+billing surface), that part ships at L1 WITHOUT sign-off. Never hold a crash fix
+behind approval of a spec diff. Only the genuine spec-write decision is eligible for
+a checkpoint.
 
-**Do NOT proceed without explicit user confirmation.**
+**Default = proceed and flag (no blocking prompt)** when ALL hold:
+- the diagnostician is confident in the interpretation it authored (it reconciled
+  the spec change against existing behaviour / formulas / call-sites, not guessed);
+- the change is reversible — an internal spec doc (documenting consumer-side input
+  tolerance, a field-interpretation note, a clamp table), NOT the external/published
+  contract surface;
+- it is verifiable later (a staging run, a test, a user glance).
+
+In that case, state the working assumption in PLAIN language and continue — no
+"approve this N-line diff" prompt. Example:
+```
+I'm treating each voice comment's start/end as positions inside that clip
+(the spec computes its length as end − start, and the generator's cumulative
+timeline shouldn't be applied literally). I'll ship the crash fix on that and
+verify voice alignment on staging — tell me if the generator actually emits a
+cumulative timeline and I'll re-anchor.
+```
+Record the assumption durably: write it into the committed spec as an explicit
+`> [!WARNING] working assumption — pending staging verification (see <followup>)`
+callout (so the doc is documented-with-caveat, not silently stale), AND emit a
+`followup_task` (the audit task that resolves it). A demotion with NO recorded
+`followup_task` is invalid — fall back to the prompt.
+
+**Block for explicit sign-off (plain-language prompt) ONLY when:**
+- the diagnostician is NOT confident in the interpretation — it genuinely needs the
+  user's domain knowledge (e.g. "does the generator emit per-clip or cumulative
+  timings?" and nothing in the code/spec settles it), OR
+- the spec change is external-contract-breaking or otherwise irreversible/costly
+  (public/published API surface, a schema migration, auth/billing).
+
+When blocking, present in the user's language and in observable terms — show what
+behaviour will be written down and why the call is expensive to undo. Do NOT show
+internal tokens (`L2`, `spec-first`, requirement IDs like `REQ-0XX` / `NFR-...`,
+`gate_payload`). **Do NOT proceed without explicit user confirmation.**
+
+**W10 / spec-first ordering is unchanged:** whenever the spec genuinely IS stale and
+a spec change is committed (whether after a block or after a proceed-and-flag), it
+still commits BEFORE the code fix. This calibration changes *how/whether the user is
+interrupted*, never the commit ordering.
+
 **L0/L1 fixes proceed without USER GATE** unless `--confirm` flag is used.
 **L3-feature does not reach this gate** — it already exited at Step 3 (the
 diagnostician returned `exit_reason: L3-feature` and the orchestrator printed the

@@ -296,9 +296,18 @@ For each affected area:
   environment issue, or ambiguous acceptance criteria;
 - fix level: L0/L1/L2/L3.
 
-For L2/L3, prepare the documentation change plan and stop at the user gate
-before mutating docs or code. For `--dry-run`, stop after Step 4 with
-`Status: NOT_RUN` for mutation steps.
+For L2/L3, prepare the documentation change plan. The user gate is calibrated to
+avoid needless blocking: ship any unconditionally-correct defensive part
+(guard/clamp/graceful-degrade, touching no external contract) WITHOUT sign-off, and
+by default proceed-and-flag the spec change — state the working assumption in plain
+language, record it as a documented-with-caveat note plus a tracked follow-up task,
+and verify later (staging/test) — rather than blocking the user. Stop for explicit,
+plain-language sign-off ONLY when the interpretation is genuinely uncertain (it needs
+the user's domain knowledge) OR the spec change is external-contract-breaking /
+irreversible. Never show internal tokens (L2, spec-first, requirement IDs,
+`gate_payload`) in user-facing copy. Spec-first ordering (W10) is unchanged: a
+committed spec change always precedes the code fix. For `--dry-run`, stop after
+Step 4 with `Status: NOT_RUN` for mutation steps.
 
 ### Step 4: DEFINE CORRECT BEHAVIOR
 
