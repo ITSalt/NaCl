@@ -138,9 +138,17 @@ codes above. They are SCOPED TO `intake` — none of them apply to `wave`,
   `evidence`. Index entry is set to `state: goal_blocked, resumable:
   <per resumable state table in run-artifacts.md>, reason: <code>`.
 
-All entries include a copy-paste fallback. User-facing messages avoid
-internal-gate vocabulary in favor of "why this goal cannot be safely
-driven autonomously" copy. See `feedback-autonomy-default-ux.md`.
+All entries include a copy-paste fallback.
+
+**Rendering rule — how to surface ANY refusal to the user.** Lead with the
+plain-language `Message` field (the "why this goal cannot be safely driven
+autonomously" copy), immediately followed by the copy-paste fallback. The
+`PLAN_BLOCKED_*` / `GOAL_BLOCKED_*` code is wire-format: it may appear only as
+a trailing tag on the last line (e.g. `— PLAN_BLOCKED_DIRTY_WORKTREE`), NEVER
+as the headline. Never surface internal step numbers (`step 0`, `step 3`) or
+tier vocabulary (`Tier-C`) in user-facing text. The code stays verbatim in the
+PR body (`pr-body-template.md`) — that is a reviewer surface, not the local
+user's console. See `feedback-autonomy-default-ux.md`.
 
 ---
 
@@ -169,8 +177,8 @@ driven autonomously" copy. See `feedback-autonomy-default-ux.md`.
 | | |
 |---|---|
 | Triggers | `git status --porcelain` is non-empty at precheck |
-| Message | "`/nacl-goal intake` refuses to start with uncommitted changes in the working tree (`<file count>` files modified/added/deleted). The orchestrator captures a regression baseline against the current code and would otherwise conflate your uncommitted work with the goal-run diff. Commit, stash, or revert your changes and re-run." |
-| Fallback | `git stash` OR commit your work; then re-run |
+| Message | "`/nacl-goal intake` refuses to start with uncommitted changes in the working tree (`<file count>` files modified/added/deleted/untracked). The orchestrator captures a regression baseline against the current code and would otherwise conflate your uncommitted work with the goal-run diff. Commit, stash, or revert your changes and re-run." |
+| Fallback | `git stash -u` (includes untracked) OR commit your work; then re-run |
 | Logs to runs/ | No |
 | Reference | `nacl-goal/SKILL.md` Flow step 3 |
 

@@ -185,6 +185,12 @@ Every refusal must:
 3. Offer a split-mode suggestion (interactive skill then wrapper)
 4. Print copy-paste commands for the interactive path
 
+User-facing rendering follows the rendering rule in `nacl-goal/refusal-catalog.md`:
+lead with the plain-language reason + copy-paste fallback; the gate code is a
+trailing tag, not the headline; and step numbers / `Tier-C` never appear in
+user-facing text. (Items 1–2 above are satisfied by the trailing tag and the
+internal cross-reference — they are not the headline.)
+
 Refusal codes (full catalog in `nacl-goal/refusal-catalog.md`):
 
 ```
@@ -482,6 +488,8 @@ exception envelope see `nacl-goal/envelope.md`. For gate prediction see
       index.json state: "goal_blocked" | "failed", resumable: <per state table>
       update PR body to "BLOCKED — <reason>"
       print user-facing reason + copy-paste fallback per refusal-catalog.md
+        (lead with the reason; the code is a trailing tag, not the headline —
+         see refusal-catalog.md "Rendering rule")
 ```
 
 ### Goal-context env vars (for `intake` inner-skill integration)

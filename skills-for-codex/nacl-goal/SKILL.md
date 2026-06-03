@@ -187,6 +187,10 @@ If a mandatory gate blocks autonomous operation, report `Status: BLOCKED` or
   disabled hooks, untrusted workspace, or denied permissions.
 - Use `UNVERIFIED` when preview can be composed but no check script ran.
 - Use `NOT_RUN` when `--start` is intentionally not attempted by Codex.
+- Lead the report with the plain-language reason + copy-paste fallback; the
+  `PLAN_BLOCKED_*` / `REFUSE_*` code is a trailing tag, not the headline, and
+  internal step numbers / `Tier-C` never appear in user-facing text (see the
+  rendering rule in `../../nacl-goal/refusal-catalog.md`).
 
 ## Source Comparison
 
