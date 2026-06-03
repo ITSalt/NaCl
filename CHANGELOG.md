@@ -4,6 +4,35 @@ All notable changes to NaCl (Natural Agent Control Language) will be documented 
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [2.13.1] — 2026-06-03
+
+Patch release: the refusal surface of `/nacl-goal` now obeys the same plain-language rule
+2.13.0 brought to the `nacl-tl-intake` / `nacl-tl-fix` question-gates. A correctness check of
+`/nacl-goal intake` confirmed the decision logic was fully correct — the right `PLAN_BLOCKED_*`
+codes fired, no run artifacts were written, no `/goal` was issued — but the refusal output led
+with internal vocabulary (`PLAN_BLOCKED_*` codes as headlines, `Tier-C`, `step 0` / `step 3`) and
+subordinated the plain-language "why" beneath it, contradicting the skill's own "print user-facing
+reason + fallback" contract.
+
+**Changed — a normative refusal Rendering rule.** `nacl-goal/refusal-catalog.md`'s descriptive
+"avoid internal-gate vocabulary" note becomes an imperative rule: the headline is the
+plain-language `Message` + copy-paste fallback; the `PLAN_BLOCKED_*` / `GOAL_BLOCKED_*` code may
+appear only as a trailing tag, never the headline; internal step numbers and `Tier-C` never reach
+user-facing text. The code is unchanged where machines and reviewers read it (PR body,
+`index.json`, logs). Reinforced at the two always-loaded surfacing touchpoints in
+`nacl-goal/SKILL.md`.
+
+**Fixed — `PLAN_BLOCKED_DIRTY_WORKTREE` wording.** The trigger (`git status --porcelain`
+non-empty) includes untracked files — as fired in a real run — but the message described only
+"modified/added/deleted" and offered a bare `git stash`. Now reads ".../untracked" with a
+`git stash -u` fallback.
+
+**Codex parity.** `skills-for-codex/nacl-goal/SKILL.md` mirrors the rendering rule for the Codex
+`Status: BLOCKED` / `NOT_RUN` contract, changed in the same commit per the root↔Codex sync gate.
+The catalog flows through by reference (no duplication).
+
+No breaking changes — documentation-and-rendering only; no schema, code-ID, or contract changes.
+
 ## [2.13.0] — 2026-06-01
 
 Minor release: the question-gates in `nacl-tl-intake` and `nacl-tl-fix` are recalibrated to
