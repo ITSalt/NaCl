@@ -642,6 +642,7 @@ that cannot be fixed by any SA skill (the data is correct, the query is wrong).
 | L7.2 | `AND fr.legacy_origin IS NULL` | Exempt FR tombstones (renamed legacy nodes preserved for traceability) |
 | L7.4 | `WHERE fr.legacy_origin IS NULL` | Exempt FR tombstones (same reason as L7.2) |
 | L7.6 | `AND NOT n.id STARTS WITH 'FR-LEG-'` | Exempt all tombstone namespaces from cross-label collision check |
+| L9.1 | `AND coalesce(fr.decision_exempt, false) = false` | Exempt grandfathered pre-provenance FRs (rationale unrecoverable at gap-closure; see provenance-gap-closure runbook) |
 | XL8.2 | `AND coalesce(sr.system_only, false) = false` | Exempt infrastructure-only roles |
 
 If executing via HTTP API (curl) instead of MCP tools, copy queries CHARACTER-FOR-CHARACTER
@@ -987,10 +988,15 @@ This level writes nothing.
 ```cypher
 // L9.1 -- Severity: CRITICAL
 // A structural change (new/modified UCs via an FR) landed with no recorded "why".
-// Tombstones are exempt (same convention as L7.2).
+// Tombstones are exempt (same convention as L7.2). FRs that predate the
+// provenance feature and whose rationale was unrecoverable during gap-closure
+// are exempt via `decision_exempt=true` (a grandfather flag — see L9.5 and
+// nacl-tl-core/references/provenance-gap-closure.md). Grandfathering is a last
+// resort; the runbook backfills a real Decision wherever rationale is recoverable.
 MATCH (fr:FeatureRequest)
 WHERE fr.legacy_origin IS NULL
   AND coalesce(fr.status, '') <> 'tombstone'
+  AND coalesce(fr.decision_exempt, false) = false  -- REQUIRED FILTER: exempt grandfathered FRs
   AND NOT (fr)-[:IMPLEMENTS]->(:Decision)
 RETURN fr.id AS fr_id, fr.status AS status,
        'FeatureRequest has no IMPLEMENTS -> Decision (structural change with no recorded rationale)' AS problem
@@ -1033,6 +1039,21 @@ WHERE coalesce(old.status, '') <> 'superseded'
 RETURN old.id AS dec_id, newer.id AS superseded_by,
        'Decision is superseded but status not set to superseded' AS problem
 ORDER BY old.id
+```
+
+#### Check 9.5: Grandfathered FRs (informational — visible, not hidden)
+
+```cypher
+// L9.5 -- Severity: INFO
+// FRs exempted from L9.1 via the grandfather flag. Surfaced (not hidden) so the
+// provenance debt is always visible: these predate the provenance feature and
+// had no recoverable rationale at gap-closure time. Aim to retire them as
+// rationale surfaces. A non-zero count is acceptable but should trend to zero.
+MATCH (fr:FeatureRequest)
+WHERE coalesce(fr.decision_exempt, false) = true
+RETURN fr.id AS fr_id, fr.decision_exempt_reason AS reason, fr.decision_exempt_since AS since,
+       'Grandfathered: no recoverable rationale at gap-closure; no Decision required' AS note
+ORDER BY fr.id
 ```
 
 ---

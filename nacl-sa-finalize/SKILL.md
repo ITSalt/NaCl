@@ -256,6 +256,50 @@ RETURN d.id;
 
 Also import any standalone `docs/adr/*.md` files the same way (`source:'<file> (imported)'`).
 
+#### Backfill: FeatureRequests without a Decision (provenance gap-closure)
+
+Projects created before the provenance feature have `:FeatureRequest` nodes with
+no linked `:Decision` — `nacl-sa-validate` L9.1 flags every one. Close the gap by
+writing one honest `:Decision` per FR, with rationale drawn from the project's
+own recorded text (never invented). Full runbook:
+`nacl-tl-core/references/provenance-gap-closure.md`.
+
+Per FR without `IMPLEMENTS -> :Decision`, resolve `rationale` in priority order:
+
+1. FR node `description` (if non-empty).
+2. FR markdown at `markdown_path` — the `## Feature Description` section, plus the
+   `Source:` metadata line (the original `/sa-feature "..."` intent). This is real
+   recorded rationale, not fabrication.
+3. `git log` of the FR markdown / its UCs.
+4. **None recoverable →** do NOT invent. Grandfather via `nacl-sa-flags`-style flag
+   (`decision_exempt=true`, `decision_exempt_reason`, `decision_exempt_since`), which
+   L9.1 skips and L9.5 surfaces as visible debt.
+
+For a recoverable FR, write the Decision and wire it to the FR's own scope:
+
+```cypher
+// mcp__neo4j__write-cypher  (per FR; $rationale extracted from md/description; $decId = next DEC-NNN)
+MATCH (fr:FeatureRequest {id: $frId})
+MERGE (d:Decision {id: $decId})
+SET d.title = coalesce(fr.title, $frId), d.chosen = $chosen,
+    d.rationale = $rationale,                              // REQUIRED, non-empty, from project's own records
+    d.context = $context, d.alternatives_considered = [],
+    d.status = CASE WHEN fr.status IN ['shipped','implemented','dev-complete'] THEN 'accepted' ELSE 'accepted' END,
+    d.created_at = coalesce(fr.created_at, datetime()),
+    d.created_by = 'nacl-sa-finalize',
+    d.source = $frId + ' (backfilled from ' + $rationaleSource + ')',   // 'description' | 'markdown' | 'git'
+    d.level = 'feature'
+MERGE (fr)-[:IMPLEMENTS]->(d)
+WITH d, fr
+MATCH (fr)-[r:INCLUDES_UC]->(uc:UseCase)
+MERGE (d)-[:JUSTIFIES {role: CASE WHEN r.kind = 'new' THEN 'creates' ELSE 'shapes' END}]->(uc)
+RETURN d.id;
+```
+
+Verify-before-bulk: backfill ONE FR, confirm the Decision reads honestly and
+`sa-validate --scope` L9 clears for it, then batch the rest. Present a sample to
+the user before the bulk write.
+
 #### Detect implicit decisions not yet recorded
 
 Check for architectural patterns that imply a decision worth recording:

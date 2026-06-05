@@ -60,6 +60,15 @@ as `Requirement {type:'adr'}` (and any `docs/adr/*.md`) are backfilled into
 `:Decision` nodes with `migrated_to` set on the old node (never deleted).
 `nacl-sa-validate` L9 enforces non-empty rationale and the JUSTIFIES link.
 
+Provenance gap-closure (FRs without a Decision, flagged by L9.1): write one honest
+`:Decision` per FR, with `rationale` drawn from the project's own records in
+priority order — FR `description`, else the FR markdown `## Feature Description` +
+`Source:` line, else git history — and wire `(:FeatureRequest)-[:IMPLEMENTS]->(:Decision)`
+plus `JUSTIFIES {role}` to each `INCLUDES_UC` target. Never invent rationale. When
+none is recoverable, grandfather via `decision_exempt=true` (+ reason/since), which
+L9.1 skips and L9.5 surfaces. Verify-before-bulk: backfill one FR and confirm scoped
+L9 clears before batching. Full procedure: provenance-gap-closure runbook.
+
 ## Capabilities
 
 ### May Do

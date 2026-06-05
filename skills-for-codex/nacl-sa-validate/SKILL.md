@@ -71,8 +71,13 @@ Internal checks:
 - L9 decision provenance: every active `FeatureRequest` has
   `IMPLEMENTS -> :Decision`; every non-superseded `:Decision` has a `JUSTIFIES`
   edge and a non-empty `rationale`; superseded decisions carry
-  `status='superseded'`. L9.1–L9.3 CRITICAL, L9.4 WARNING. Decisions are the
-  graph-native "why" — never stored as standalone markdown.
+  `status='superseded'`. L9.1–L9.3 CRITICAL, L9.4 WARNING. L9.1 exempts
+  grandfathered FRs via `coalesce(fr.decision_exempt,false)=false`; L9.5 (INFO)
+  lists grandfathered FRs so the debt stays visible. Decisions are the
+  graph-native "why" — never stored as standalone markdown. Closing this gap on
+  a pre-provenance project follows the provenance-gap-closure runbook (honest
+  backfill from the FR's own recorded rationale; grandfather only when none is
+  recoverable).
 
 BA-to-SA checks:
 
