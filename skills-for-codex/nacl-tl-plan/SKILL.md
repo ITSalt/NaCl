@@ -153,6 +153,17 @@ if violations:
 - Resolve `--feature FR-NNN` scope from the graph (`(:FeatureRequest)-[:INCLUDES_UC]->`,
   with `kind` splitting new vs modified), falling back to the markdown file only
   if the FR node is absent.
+- Consume behavior slices: when a planned UC has `(:UseCase)-[:HAS_SLICE]->(:Slice)`
+  nodes (authored by `nacl-sa-uc slices`), (a) embed a "Behavior Slices" section
+  (kind, Given/When/Then, covered machine elements, called endpoints) into
+  `task-be.md` / `task-fe.md` / `acceptance.md` — self-sufficiency holds, dev
+  agents never query the graph; (b) MERGE `(:Slice)-[:VERIFIED_BY]->(:Task)`
+  for every slice of the UC — default rule: all of the UC's `GENERATES` tasks;
+  refine to the FE task for `COVERS`-anchored slices and the BE task for
+  `CALLS`-anchored slices only when task ids carry the canonical `-BE`/`-FE`
+  suffixes, then default-link any slice still unlinked. This is the consumer
+  half of the L11.4 verification-closure gate — a re-plan must never leave a
+  slice without a verifying task.
 - Read `ExternalContract` graph nodes and `REQUIRES_EXTERNAL` /
   `DEPENDS_ON_EXTERNAL` edges to drive the External Contracts Gate.
 - Write `.tl/tasks/<TASK_ID>/` files, `.tl/master-plan.md`, `.tl/status.json`,
@@ -214,6 +225,8 @@ if violations:
 - Wave planning by dependencies and priority.
 - Self-sufficient backend, frontend, technical, and API contract task files.
 - TL graph Task and Wave awareness.
+- Behavior-slice consumption: task-file "Behavior Slices" section +
+  `VERIFIED_BY` re-linking on every (re-)plan of a slice-adopting UC.
 
 ### Removed Claude Mechanics
 

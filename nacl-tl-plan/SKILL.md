@@ -489,6 +489,46 @@ MATCH (t1:Task {id: $taskId}), (t2:Task {id: $dependsOnId})
 MERGE (t1)-[:DEPENDS_ON]->(t2)
 ```
 
+### Step 2.5: Re-link behavior slices (VERIFIED_BY)
+
+If the UC has behavior slices (`(:UseCase)-[:HAS_SLICE]->(:Slice)`, authored by
+`/nacl-sa-uc slices`), every slice must point at the delivery unit that proves
+it — `nacl-sa-validate` **L11.4** gates on this once the UC has tasks. Tasks
+are born here, possibly **after** the slices were authored, so this step is the
+consumer half of the contract (the same lesson as `INCLUDES_UC`: an edge a
+producer writes but no consumer reads is drift). Skip silently when the UC has
+no slices.
+
+**Deterministic rule** (same as the producer's): default — link each slice to
+**all** of the UC's tasks; refinement — when the task ids carry the canonical
+`-BE`/`-FE` suffixes, link slices with ≥1 `COVERS` anchor to the FE task,
+slices with ≥1 `(sl:Slice)-[:CALLS]->` anchor to the BE task, both anchor
+types → both tasks. Never guess an aspect from a task title.
+
+```cypher
+// Re-link slice verification (default rule; idempotent)
+MATCH (uc:UseCase {id: $ucId})-[:HAS_SLICE]->(sl:Slice)
+MATCH (uc)-[:GENERATES]->(t:Task)
+MERGE (sl)-[:VERIFIED_BY]->(t)
+RETURN count(DISTINCT sl) AS slices_linked, collect(DISTINCT t.id) AS tasks
+```
+
+```cypher
+// Refinement when UC###-BE / UC###-FE naming is in effect: run instead of the default
+MATCH (uc:UseCase {id: $ucId})-[:HAS_SLICE]->(sl:Slice)
+MATCH (uc)-[:GENERATES]->(t:Task)
+WHERE (t.id ENDS WITH '-FE' AND EXISTS {
+         MATCH (sl)-[:COVERS]->(x) WHERE x:ScreenState OR x:Transition })
+   OR (t.id ENDS WITH '-BE' AND (sl)-[:CALLS]->(:APIEndpoint))
+MERGE (sl)-[:VERIFIED_BY]->(t)
+RETURN count(DISTINCT sl) AS slices_linked, collect(DISTINCT t.id) AS tasks
+```
+
+> After the refinement query, run the default query for any slice still without
+> a `VERIFIED_BY` (e.g. a slice whose only anchor type has no matching task) —
+> L11.4 requires ≥1 edge per slice, and an unlinked slice must not survive a
+> re-plan.
+
 ---
 
 ## Phase 3: Task Generation
@@ -539,6 +579,32 @@ OPTIONAL MATCH (de)-[:HAS_ENUM]->(en:Enumeration)-[:HAS_VALUE]->(ev:EnumValue)
 RETURN collect(DISTINCT en) AS enumerations,
        collect(DISTINCT ev) AS enum_values
 ```
+
+And fetch the UC's behavior slices, if any (authored by `/nacl-sa-uc slices`) —
+use the `sa_uc_slices` named query from `graph-infra/queries/sa-queries.cypher`:
+
+```cypher
+// Behavior slices of the UC (empty result = UC has not adopted slices; skip the section)
+// covers is null-filtered: bare map-collect over an unmatched OPTIONAL yields
+// [{id:NULL,…}] instead of [] for CALLS-only backend slices.
+MATCH (uc:UseCase {id: $ucId})-[:HAS_SLICE]->(sl:Slice)
+OPTIONAL MATCH (sl)-[:COVERS]->(cov)
+  WHERE cov:ScreenState OR cov:Transition
+OPTIONAL MATCH (sl)-[:CALLS]->(api:APIEndpoint)
+RETURN sl.id AS slice, sl.name AS name, sl.slice_kind AS kind,
+       sl.given AS given, sl.when AS when, sl.then AS then,
+       [c IN collect(DISTINCT {id: cov.id, type: labels(cov)[0]})
+        WHERE c.id IS NOT NULL] AS covers,
+       collect(DISTINCT api.id) AS calls
+ORDER BY slice
+```
+
+When slices exist, embed a **"Behavior Slices"** section into `task-be.md`,
+`task-fe.md`, and `acceptance.md` (self-sufficiency: dev agents never query
+the graph): one row per slice — kind, Given/When/Then, covered machine
+elements (FE-relevant), called endpoints (BE-relevant). These are the UC's
+graph-native acceptance scenarios; `test-spec*.md` test cases should reference
+the slice ids they exercise.
 
 ### Query Result to Task File Mapping
 
@@ -622,11 +688,19 @@ sa_uc_full_context result
   |     +---> impl-brief-fe.md: API hook / fetch implementation
   |
   +-- enumerations / enum_values
-        props: id, name, value, description
+  |     props: id, name, value, description
+  |     |
+  |     +---> api-contract.md: Shared Types (enum definitions)
+  |     +---> task-fe.md: Dropdown/select options
+  |     +---> task-be.md: Enum validation
+  |
+  +-- slices (Slice nodes, when the UC has adopted them)
+        props: id, name, slice_kind, given, when, then (+ covers, calls)
         |
-        +---> api-contract.md: Shared Types (enum definitions)
-        +---> task-fe.md: Dropdown/select options
-        +---> task-be.md: Enum validation
+        +---> task-be.md: Behavior Slices section (CALLS-anchored scenarios)
+        +---> task-fe.md: Behavior Slices section (COVERS-anchored scenarios)
+        +---> acceptance.md: Behavior Slices table (all)
+        +---> test-spec*.md: test cases reference the slice ids they exercise
 ```
 
 ### Task File Directory Structure
