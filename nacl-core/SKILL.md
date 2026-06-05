@@ -370,6 +370,19 @@ The NaCl Analyst Tool discovers projects through a per-user registry at `~/.nacl
 | External Entity | EXT-NN | EXT-01 | Global sequential |
 | Data Flow | DFL-NNN | DFL-001 | Global sequential |
 | Decision (provenance) | DEC-NNN | DEC-001 | Global sequential |
+| Screen | SCR-{PascalName} | SCR-ResultViewer | Name-based |
+| Screen State | SCRST-{Screen}-{State} | SCRST-ResultViewer-Loading | Per-screen, name-based |
+| Screen Event | SCREV-{Screen}-{Event} | SCREV-ResultViewer-OnRetry | Per-screen, name-based |
+| Screen Transition | SCRTR-{Screen}-NNN | SCRTR-ResultViewer-001 | Per-screen sequential |
+| Screen Effect | SCREF-{Screen}-NNN | SCREF-ResultViewer-001 | Per-screen sequential |
+| Analytics Event | ANEV-{Name} | ANEV-ResultViewed | Name-based |
+
+> **Screen state machine ids (`SCR-*` family)** belong to the SA screen state
+> machine written by `nacl-sa-ui state-machine` (labels `:Screen`,
+> `:ScreenState`, `:ScreenEvent`, `:Transition` (reified), `:ScreenEffect`,
+> `:AnalyticsEvent`). `{Screen}` in child ids is the PascalName part of the
+> Screen id without the `SCR-` prefix. See `graph-infra/schema/sa-schema.cypher`
+> § 3-bis and the `sa_screen_machine` named query.
 
 > **Decision (`DEC-NNN`)** is the graph-native provenance record (label `:Decision`).
 > Written by `nacl-sa-feature` (feature changes), `nacl-tl-fix` (L2/L3 fixes), and

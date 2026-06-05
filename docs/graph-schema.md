@@ -97,10 +97,19 @@ System Analysis nodes capture the "how the system is built" level — modules, u
 | `SystemRole` | A system-level actor with CRUD permissions | `id`, `name` |
 | `Component` | A reusable UI component | `id`, `name` |
 | `Decision` | A graph-native design-decision / rationale record (provenance) | `id`, `title`, `chosen`, `rationale`, `source`, `status`, `created_at`, `created_by`, `level` |
+| `Screen` | A screen with a deterministic state machine (owned by `nacl-sa-ui state-machine`) | `id`, `name`, `route`, `formless` |
+| `ScreenState` | A state of a `Screen` | `id`, `name`, `state_kind`, `is_initial`, `terminal` |
+| `ScreenEvent` | An event a `Screen` reacts to | `id`, `name`, `event_kind` |
+| `Transition` | A **reified** screen transition (stable id, effect source, orphan-checkable) | `id`, `guard` |
+| `ScreenEffect` | A side effect fired by a `Transition` | `id`, `effect_kind`, `description` |
+| `AnalyticsEvent` | Minimal sink for analytics effects | `id`, `name` |
 
 `priority` values: `MVP`, `Post-MVP`, `Nice-to-have`
 `Decision.status` values: `accepted`, `superseded`, `proposed`
 `Decision.level` values: `L2`, `L3-spec-gap`, `feature`, `architecture`
+`state_kind` values: `initial`, `loading`, `content`, `empty`, `error`
+`event_kind` values: `user`, `system`, `lifecycle`
+`effect_kind` values: `load`, `mutate`, `navigate`, `analytics`
 
 **Change-tracking properties.** `UseCase.spec_version` (Int) is bumped by any SA writer that changes a UC's shape and compared against `Task.planned_from_version` (Int) for idempotent re-planning. Any snapshot-bearing node (`Task`, `UseCase`, `Form`, `Requirement`) may carry `review_status` (`current`|`stale`), `stale_reason`, `stale_since`, `stale_origin` — set by write-skills after an upstream change, read with `coalesce(n.review_status,'current')` (no backfill needed). See `graph-infra/schema/sa-schema.cypher`.
 
@@ -124,9 +133,20 @@ System Analysis nodes capture the "how the system is built" level — modules, u
 | `HAS_PERMISSION` | `SystemRole` → `DomainEntity` | `crud: String` |
 | `USED_IN` | `Component` → `Form` | UI component used in form |
 | `EXPOSES` | `UseCase` → `APIEndpoint` | Use case exposed via API |
-| `JUSTIFIES` | `Decision` → `UseCase`/`DomainEntity`/`Module`/`Requirement`/`Form`/`Component`/`Enumeration`/`APIEndpoint` | `role: 'creates'|'shapes'|'constrains'` — decision shaped artifact |
+| `JUSTIFIES` | `Decision` → `UseCase`/`DomainEntity`/`Module`/`Requirement`/`Form`/`Component`/`Enumeration`/`APIEndpoint`/`Screen` | `role: 'creates'|'shapes'|'constrains'` — decision shaped artifact |
 | `SUPERSEDES` | `Decision` → `Decision` | Newer decision replaces older (sets older `status='superseded'`) — the evolving-rationale chain |
 | `IMPLEMENTS` | `FeatureRequest` → `Decision` | FR is the change anchor that carried out the decision |
+| `HAS_SCREEN` | `UseCase` → `Screen` | Required parent of every screen |
+| `RENDERS` | `Screen` → `Form` | Required bridge: domain changes reach the screen through it (exempt: `formless=true`) |
+| `HAS_STATE` | `Screen` → `ScreenState` | Required parent (name shared with BA `BusinessEntity→EntityState` — label-qualify) |
+| `HAS_EVENT` | `Screen` → `ScreenEvent` | Required parent |
+| `HAS_TRANSITION` | `Screen` → `Transition` | Required parent |
+| `FROM_STATE` / `TO_STATE` | `Transition` → `ScreenState` | Exactly one each, same screen |
+| `ON_EVENT` | `Transition` → `ScreenEvent` | Exactly one, same screen |
+| `TRIGGERS` | `Transition` → `ScreenEffect` | Required parent of effects (name shared with BA `BusinessProcess→BusinessProcess` — label-qualify) |
+| `CALLS` | `ScreenEffect` → `APIEndpoint` | Required for `load`/`mutate` effects |
+| `NAVIGATES_TO` | `ScreenEffect` → `Screen` | Required for `navigate` effects |
+| `EMITS` | `ScreenEffect` → `AnalyticsEvent` | Required for `analytics` effects |
 
 ### Constraints and Indexes
 

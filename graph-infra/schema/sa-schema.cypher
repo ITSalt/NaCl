@@ -54,6 +54,24 @@ CREATE CONSTRAINT constraint_featurerequest_id
 CREATE CONSTRAINT constraint_decision_id
   FOR (n:Decision) REQUIRE n.id IS UNIQUE;
 
+CREATE CONSTRAINT constraint_screen_id
+  FOR (n:Screen) REQUIRE n.id IS UNIQUE;
+
+CREATE CONSTRAINT constraint_screenstate_id
+  FOR (n:ScreenState) REQUIRE n.id IS UNIQUE;
+
+CREATE CONSTRAINT constraint_screenevent_id
+  FOR (n:ScreenEvent) REQUIRE n.id IS UNIQUE;
+
+CREATE CONSTRAINT constraint_transition_id
+  FOR (n:Transition) REQUIRE n.id IS UNIQUE;
+
+CREATE CONSTRAINT constraint_screeneffect_id
+  FOR (n:ScreenEffect) REQUIRE n.id IS UNIQUE;
+
+CREATE CONSTRAINT constraint_analyticsevent_id
+  FOR (n:AnalyticsEvent) REQUIRE n.id IS UNIQUE;
+
 
 // ---------------------------------------------------------------------------
 // 2. INDEXES (name lookup for each label + module index on DomainEntity)
@@ -113,6 +131,21 @@ CREATE INDEX index_decision_created_at
 // Full-text so impact analysis / audit can find prior decisions by keyword.
 CREATE FULLTEXT INDEX fulltext_decision_search
   FOR (n:Decision) ON EACH [n.title, n.context, n.rationale];
+
+CREATE INDEX index_screen_name
+  FOR (n:Screen) ON (n.name);
+
+CREATE INDEX index_screenstate_kind
+  FOR (n:ScreenState) ON (n.state_kind);
+
+CREATE INDEX index_screenevent_kind
+  FOR (n:ScreenEvent) ON (n.event_kind);
+
+CREATE INDEX index_screeneffect_kind
+  FOR (n:ScreenEffect) ON (n.effect_kind);
+
+CREATE INDEX index_analyticsevent_name
+  FOR (n:AnalyticsEvent) ON (n.name);
 
 
 // ---------------------------------------------------------------------------
@@ -185,7 +218,7 @@ CREATE FULLTEXT INDEX fulltext_decision_search
 //
 // (:Decision)-[:JUSTIFIES {role: String}]->(target)
 //   A decision shaped an artifact. target ∈ {UseCase, DomainEntity, Module,
-//   Requirement, Form, Component, Enumeration, APIEndpoint} (Screen|Slice|
+//   Requirement, Form, Component, Enumeration, APIEndpoint, Screen} (Slice|
 //   CachePolicy join later with no schema change). role ∈ {'creates','shapes',
 //   'constrains'}; default 'shapes'.
 //
@@ -246,6 +279,103 @@ CREATE FULLTEXT INDEX fulltext_decision_search
 //   stale_reason  : String      // human-readable cause, e.g. "upstream UC-014 modified"
 //   stale_since   : DateTime     // when it was stamped
 //   stale_origin  : String       // id of the node whose change caused it (UC/FR) — lineage answer
+
+
+// ---------------------------------------------------------------------------
+// 3-bis. SCREEN STATE MACHINE (deterministic UI behavior, owned by nacl-sa-ui)
+// ---------------------------------------------------------------------------
+// Mirrors the BA entity-state pattern (EntityState-[:TRANSITIONS_TO]->) at the
+// SA level, but with a REIFIED Transition node: (a) the validator needs a stable
+// transition id for reports, (b) only a node can be the source of
+// TRIGGERS->ScreenEffect, (c) a reified node falls under the orphan check.
+//
+// NAMESPACE NOTE (label-qualify in every query): two edge-type names are shared
+// with the BA layer by deliberate pattern-mirroring —
+//   HAS_STATE  : (:BusinessEntity)->(:EntityState)  AND  (:Screen)->(:ScreenState)
+//   TRIGGERS   : (:BusinessProcess)->(:BusinessProcess)  AND  (:Transition)->(:ScreenEffect)
+// NAVIGATES_TO also pre-exists in older graphs as Form->Form / Component->Form
+// navigation. Always constrain by node labels; never match these by type alone.
+//
+// (:UseCase)-[:HAS_SCREEN]->(:Screen)
+//   REQUIRED parent. Every Screen belongs to exactly one UseCase (L10.1).
+//
+// (:Screen)-[:RENDERS]->(:Form)
+//   REQUIRED sibling (L10.2; exemption: Screen.formless=true). This is the
+//   bridge that makes a DomainAttribute change reach the screen:
+//   DA <-MAPS_TO- FormField <-HAS_FIELD- Form <-RENDERS- Screen -> states.
+//   Without RENDERS the screen is unreachable from the domain model.
+//
+// (:Screen)-[:HAS_STATE]->(:ScreenState)
+//   REQUIRED parent of each state (L10.1).
+//
+// (:Screen)-[:HAS_EVENT]->(:ScreenEvent)
+//   REQUIRED parent of each event (L10.1).
+//
+// (:Screen)-[:HAS_TRANSITION]->(:Transition)
+//   REQUIRED parent of each reified transition (L10.1).
+//
+// (:Transition)-[:FROM_STATE]->(:ScreenState)
+// (:Transition)-[:TO_STATE]->(:ScreenState)
+// (:Transition)-[:ON_EVENT]->(:ScreenEvent)
+//   REQUIRED, exactly one each, and the target must belong to the SAME Screen
+//   as the Transition (L10.3 reference validity).
+//
+// (:Transition)-[:TRIGGERS]->(:ScreenEffect)
+//   0..n side effects fired when the transition is taken. Parent edge of
+//   ScreenEffect (L10.1).
+//
+// (:ScreenEffect)-[:CALLS]->(:APIEndpoint)
+//   REQUIRED for effect_kind in {load, mutate} (L10.2/L10.7). If the endpoint
+//   does not exist yet at authoring time, nacl-sa-ui MERGEs a provisional one
+//   (provisional=true) plus (:UseCase)-[:EXPOSES]-> so it cannot orphan;
+//   nacl-tl-plan enriches it later from api-contracts.
+//
+// (:ScreenEffect)-[:NAVIGATES_TO]->(:Screen)
+//   REQUIRED for effect_kind = 'navigate' (L10.2).
+//
+// (:ScreenEffect)-[:EMITS]->(:AnalyticsEvent)
+//   REQUIRED for effect_kind = 'analytics' (L10.2). AnalyticsEvent is a minimal
+//   sink node — without it an analytics effect would be a dead end and fail the
+//   connectivity invariant.
+//
+// --- Screen state machine properties (documented) ---
+// Screen {
+//   id: String,            // "SCR-<PascalName>"
+//   name: String,
+//   description: String,
+//   route: String,          // optional URL route, mirrors Component.route
+//   formless: Boolean,      // exemption flag for L10.2 (screen renders no Form,
+//                           // e.g. splash / 404); default false
+//   created_by: String,     // "nacl-sa-ui"
+//   created_at: DateTime
+// }
+// ScreenState {
+//   id: String,             // "SCRST-<Screen>-<State>"
+//   name: String,
+//   state_kind: String,     // 'initial' | 'loading' | 'content' | 'empty' | 'error'
+//   is_initial: Boolean,    // exactly ONE per Screen (L10.5a)
+//   terminal: Boolean       // exemption flag for L10.6 (intentional dead-end
+//                           // error state); default false
+// }
+// ScreenEvent {
+//   id: String,             // "SCREV-<Screen>-<Event>"
+//   name: String,           // e.g. "OnLoad", "OnLoaded", "OnRetry"
+//   event_kind: String      // 'user' | 'system' | 'lifecycle'
+// }
+// Transition {
+//   id: String,             // "SCRTR-<Screen>-NNN" (per-screen counter)
+//   guard: String           // optional guard condition; transitions sharing
+//                           // (from_state, on_event) MUST all be guarded (L10.4)
+// }
+// ScreenEffect {
+//   id: String,             // "SCREF-<Screen>-NNN" (per-screen counter)
+//   effect_kind: String,    // 'load' | 'mutate' | 'navigate' | 'analytics'
+//   description: String
+// }
+// AnalyticsEvent {
+//   id: String,             // "ANEV-<Name>"
+//   name: String
+// }
 
 
 // ---------------------------------------------------------------------------

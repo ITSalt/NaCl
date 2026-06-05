@@ -199,12 +199,21 @@ ORDER BY uc.id;
 //   New node-type phases (Screen/Slice/Error/Cache) APPEND their edge types to
 //   the allow-list below — that single edit makes them reachable by impact
 //   analysis. Read staleness with coalesce(node.review_status,'current').
+//   Phase 1 (screen state machine) appended: HAS_SCREEN, RENDERS, HAS_STATE,
+//   HAS_EVENT, HAS_TRANSITION, FROM_STATE, TO_STATE, ON_EVENT, TRIGGERS,
+//   CALLS, NAVIGATES_TO, EMITS. Note: HAS_STATE/TRIGGERS/NAVIGATES_TO names are
+//   shared with BA / legacy nav edges (same precedent as HAS_STEP) — harmless
+//   here because this closure is EXPLORATION/DISPLAY ONLY; the staleness gate
+//   stamp is computed by the tight directed query in the write-skills, never
+//   by this traversal.
 // ---------------------------------------------------------------------------
 MATCH (changed {id: $changedNodeId})
 MATCH path = (changed)
       -[:HAS_ATTRIBUTE|MAPS_TO|HAS_FIELD|USES_FORM|HAS_STEP|HAS_REQUIREMENT
        |ACTOR|CONTAINS_UC|CONTAINS_ENTITY|HAS_ENUM|HAS_VALUE|EXPOSES|IMPLEMENTS
-       |GENERATES|INCLUDES_UC|AFFECTS_ENTITY|AFFECTS_MODULE|DEPENDS_ON*1..6]
+       |GENERATES|INCLUDES_UC|AFFECTS_ENTITY|AFFECTS_MODULE|DEPENDS_ON
+       |HAS_SCREEN|RENDERS|HAS_STATE|HAS_EVENT|HAS_TRANSITION|FROM_STATE
+       |TO_STATE|ON_EVENT|TRIGGERS|CALLS|NAVIGATES_TO|EMITS*1..6]
       -(dep)
 WHERE dep <> changed
 WITH dep AS node, min(length(path)) AS hops
@@ -218,7 +227,7 @@ MATCH (changed {id: $changedNodeId})
 MATCH up = (origin)
       -[:AUTOMATES_AS|REALIZED_AS|IMPLEMENTED_BY|MAPPED_TO|TYPED_AS|SUGGESTS
        |HAS_REQUIREMENT|INCLUDES_UC|RAISES_REQUIREMENT|CONTAINS_UC|CONTAINS_ENTITY
-       |IMPLEMENTS|JUSTIFIES*1..5]
+       |IMPLEMENTS|JUSTIFIES|HAS_SCREEN*1..5]
       ->(changed)
 WHERE origin <> changed
 WITH origin AS node, min(length(up)) AS hops
@@ -270,3 +279,35 @@ CALL {
 }
 RETURN kind, at, id, what, why, source, by, status
 ORDER BY at ASC;
+
+
+// ---------------------------------------------------------------------------
+// Query: sa_screen_machine
+// Params: $screenId — Screen.id (e.g. "SCR-ResultViewer")
+// Description: The full deterministic state machine of one screen — states,
+//   events, reified transitions with guards, and the side effects each
+//   transition triggers (with their cross-layer targets: APIEndpoint for
+//   load/mutate, Screen for navigate, AnalyticsEvent for analytics).
+//   One row per transition: enough to render a Mermaid stateDiagram or to
+//   re-check determinism by eye. Label-qualified everywhere because HAS_STATE
+//   and TRIGGERS names are shared with the BA layer.
+// ---------------------------------------------------------------------------
+MATCH (scr:Screen {id: $screenId})
+OPTIONAL MATCH (uc:UseCase)-[:HAS_SCREEN]->(scr)
+OPTIONAL MATCH (scr)-[:RENDERS]->(f:Form)
+OPTIONAL MATCH (scr)-[:HAS_TRANSITION]->(tr:Transition)
+OPTIONAL MATCH (tr)-[:FROM_STATE]->(fromSt:ScreenState)
+OPTIONAL MATCH (tr)-[:TO_STATE]->(toSt:ScreenState)
+OPTIONAL MATCH (tr)-[:ON_EVENT]->(ev:ScreenEvent)
+OPTIONAL MATCH (tr)-[:TRIGGERS]->(eff:ScreenEffect)
+OPTIONAL MATCH (eff)-[:CALLS]->(api:APIEndpoint)
+OPTIONAL MATCH (eff)-[:NAVIGATES_TO]->(navScr:Screen)
+OPTIONAL MATCH (eff)-[:EMITS]->(anev:AnalyticsEvent)
+RETURN scr.id AS screen, uc.id AS use_case, f.id AS renders_form,
+       tr.id AS transition, fromSt.name AS from_state, ev.name AS on_event,
+       tr.guard AS guard, toSt.name AS to_state,
+       collect(DISTINCT {
+         effect: eff.id, kind: eff.effect_kind,
+         target: coalesce(api.id, navScr.id, anev.id)
+       }) AS effects
+ORDER BY transition;

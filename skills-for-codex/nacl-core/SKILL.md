@@ -60,6 +60,12 @@ change-tracking ids:
   `Task.planned_from_version`, and `review_status`/`stale_reason`/`stale_since`/
   `stale_origin` on snapshot-bearing nodes — read with
   `coalesce(n.review_status,'current')`.
+- Screen state machine ids (written by `nacl-sa-ui state-machine`):
+  `SCR-{PascalName}` (`:Screen`), `SCRST-{Screen}-{State}` (`:ScreenState`),
+  `SCREV-{Screen}-{Event}` (`:ScreenEvent`), `SCRTR-{Screen}-NNN` (reified
+  `:Transition`, per-screen sequential), `SCREF-{Screen}-NNN` (`:ScreenEffect`,
+  per-screen sequential), `ANEV-{Name}` (`:AnalyticsEvent`). `{Screen}` is the
+  PascalName part of the Screen id without the `SCR-` prefix.
 
 If these files are unavailable, report:
 
