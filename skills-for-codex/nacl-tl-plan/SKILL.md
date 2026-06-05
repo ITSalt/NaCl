@@ -164,6 +164,16 @@ if violations:
   suffixes, then default-link any slice still unlinked. This is the consumer
   half of the L11.4 verification-closure gate — a re-plan must never leave a
   slice without a verifying task.
+- Consume domain errors: when a planned UC's `EXPOSES` endpoints carry
+  `MAY_RAISE` edges (authored by `nacl-sa-uc errors`), embed a "Domain Errors"
+  section — `task-be.md` gets the envelope contract (code / error_kind /
+  http_status / retryable / raising endpoints; the code is emitted verbatim),
+  `task-fe.md` gets the handling table (code / machine state / presentation
+  kind / user-facing message, with unhandled errors listed as an L12.7
+  advisory), `acceptance.md` gets both halves, and `test-spec*.md` covers each
+  error code at least once. No new edges are written (errors carry no TL
+  overlay — verification belongs to slices). Null-filter the handled_by
+  map-collect (unmatched OPTIONAL yields an all-null map, not []).
 - Read `ExternalContract` graph nodes and `REQUIRES_EXTERNAL` /
   `DEPENDS_ON_EXTERNAL` edges to drive the External Contracts Gate.
 - Write `.tl/tasks/<TASK_ID>/` files, `.tl/master-plan.md`, `.tl/status.json`,
@@ -227,6 +237,8 @@ if violations:
 - TL graph Task and Wave awareness.
 - Behavior-slice consumption: task-file "Behavior Slices" section +
   `VERIFIED_BY` re-linking on every (re-)plan of a slice-adopting UC.
+- Domain-error consumption: task-file "Domain Errors" section (BE envelope
+  contract + FE handling table) on every (re-)plan of a taxonomy-adopting UC.
 
 ### Removed Claude Mechanics
 

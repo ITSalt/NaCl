@@ -606,6 +606,48 @@ elements (FE-relevant), called endpoints (BE-relevant). These are the UC's
 graph-native acceptance scenarios; `test-spec*.md` test cases should reference
 the slice ids they exercise.
 
+And fetch the UC's domain-error contract, if any (authored by
+`/nacl-sa-uc errors`) — the `sa_uc_errors` named query from
+`graph-infra/queries/sa-queries.cypher`:
+
+```cypher
+// Domain errors raisable through the UC's endpoints (empty result = UC has
+// not adopted the error taxonomy; skip the section). handled_by is
+// null-filtered: bare map-collect over an unmatched OPTIONAL yields one
+// all-null map instead of [] for unhandled / backend-only errors.
+MATCH (uc:UseCase {id: $ucId})-[:EXPOSES]->(api:APIEndpoint)-[:MAY_RAISE]->(err:DomainError)
+OPTIONAL MATCH (uc)-[:HAS_SCREEN]->(:Screen)-[:HAS_STATE]->(st:ScreenState)-[:HANDLES]->(err)
+OPTIONAL MATCH (st)-[:SHOWS]->(p:ErrorPresentation)<-[:PRESENTED_AS]-(err)
+RETURN err.id AS error, err.code AS code, err.error_kind AS kind,
+       err.http_status AS http_status, err.retryable AS retryable,
+       collect(DISTINCT api.id) AS raised_by,
+       [h IN collect(DISTINCT {state: st.id,
+                               presentation_kind: p.presentation_kind,
+                               message: p.message})
+        WHERE h.state IS NOT NULL] AS handled_by
+ORDER BY error
+```
+
+When errors exist, embed a **"Domain Errors"** section (same self-sufficiency
+principle; same consumer lesson — `MAY_RAISE`/`HANDLES` edges must be read by
+the planner, not written into the void):
+
+- `task-be.md` — the **error contract** the endpoints must return: one row per
+  error — `code` / `error_kind` / `http_status` / `retryable` / raising
+  endpoints. The code is the envelope join key the BE implementation must emit
+  verbatim.
+- `task-fe.md` — the **handling table**: one row per (error × handling state) —
+  code / machine state / presentation kind / user-facing message. The FE
+  implements exactly these presentations; an error with empty `handled_by` is
+  listed under "unhandled (L12.7 advisory)" so the gap stays visible in the
+  task file.
+- `acceptance.md` — the full error table (both halves).
+- `test-spec*.md` test cases should cover each error code at least once
+  (error-kind slices typically reference the same failure — cross-link ids).
+
+No new edges are written by this step (unlike Step 2.5's VERIFIED_BY: errors
+carry no TL overlay — verification belongs to slices).
+
 ### Query Result to Task File Mapping
 
 The sa_uc_full_context result maps directly to each task file section:
@@ -695,12 +737,20 @@ sa_uc_full_context result
   |     +---> task-be.md: Enum validation
   |
   +-- slices (Slice nodes, when the UC has adopted them)
-        props: id, name, slice_kind, given, when, then (+ covers, calls)
+  |     props: id, name, slice_kind, given, when, then (+ covers, calls)
+  |     |
+  |     +---> task-be.md: Behavior Slices section (CALLS-anchored scenarios)
+  |     +---> task-fe.md: Behavior Slices section (COVERS-anchored scenarios)
+  |     +---> acceptance.md: Behavior Slices table (all)
+  |     +---> test-spec*.md: test cases reference the slice ids they exercise
+  |
+  +-- domain errors (DomainError nodes, when the UC has adopted the taxonomy)
+        props: code, error_kind, http_status, retryable (+ raised_by, handled_by)
         |
-        +---> task-be.md: Behavior Slices section (CALLS-anchored scenarios)
-        +---> task-fe.md: Behavior Slices section (COVERS-anchored scenarios)
-        +---> acceptance.md: Behavior Slices table (all)
-        +---> test-spec*.md: test cases reference the slice ids they exercise
+        +---> task-be.md: Domain Errors section (the envelope contract per endpoint)
+        +---> task-fe.md: Domain Errors section (handling table: state x error x presentation)
+        +---> acceptance.md: Domain Errors table (both halves)
+        +---> test-spec*.md: each error code covered at least once
 ```
 
 ### Task File Directory Structure
