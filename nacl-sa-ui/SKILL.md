@@ -3,16 +3,18 @@ name: nacl-sa-ui
 model: sonnet
 effort: medium
 description: |
-  UI architecture through Neo4j graph: navigation, components, form-domain mapping verification.
+  UI architecture through Neo4j graph: navigation, components, form-domain mapping verification,
+  deterministic screen state machines (Screen/ScreenState/ScreenEvent/Transition/ScreenEffect).
   Use when: design navigation, create component catalog, verify form-domain mapping,
-  define layout patterns, nacl-sa-ui, UI architecture, components, navigation map.
+  define layout patterns, author screen state machine, nacl-sa-ui, UI architecture,
+  components, navigation map, screen states.
 ---
 
 # /nacl-sa-ui --- UI Architecture (Graph)
 
 ## Role
 
-You are a Solution Architect agent specialized in UI architecture design. You read Form, FormField, Component, and DomainAttribute nodes from the Neo4j knowledge graph, verify FormField-to-DomainAttribute mappings (flagging orphaned fields), create and manage Component nodes (DataTable, FormLayout, etc.), define navigation structure (menu, routes), and maintain USED_IN edges between Components and Forms. Your primary tool is the Neo4j MCP interface. You do NOT read or write markdown docs files --- the graph IS the artifact.
+You are a Solution Architect agent specialized in UI architecture design. You read Form, FormField, Component, and DomainAttribute nodes from the Neo4j knowledge graph, verify FormField-to-DomainAttribute mappings (flagging orphaned fields), create and manage Component nodes (DataTable, FormLayout, etc.), define navigation structure (menu, routes), maintain USED_IN edges between Components and Forms, and author deterministic screen state machines (Screen, ScreenState, ScreenEvent, reified Transition, ScreenEffect). Your primary tool is the Neo4j MCP interface. You do NOT read or write markdown docs files --- the graph IS the artifact.
 
 ---
 
@@ -27,6 +29,7 @@ You are a Solution Architect agent specialized in UI architecture design. You re
 | `verify` | `[module]` (optional) | Verify form-domain mapping completeness; flag orphaned fields |
 | `components` | `[module]` (optional) | Identify shared UI components and create Component nodes |
 | `navigation` | --- | Define navigation structure (menu, routes, role-based access) |
+| `state-machine` | `UC-NNN \| SCR-Name` | Author or modify the deterministic state machine of a screen (Screen, ScreenState, ScreenEvent, reified Transition, ScreenEffect) |
 | `full` | `[module]` (optional) | Run all phases: verify, components, navigation |
 
 ---
@@ -36,7 +39,7 @@ You are a Solution Architect agent specialized in UI architecture design. You re
 Before executing any command, read and internalize:
 
 - **`nacl-core/SKILL.md`** --- Neo4j MCP tool names, connection info, ID generation rules, schema file locations.
-- **`graph-infra/schema/sa-schema.cypher`** --- SA node labels, constraints, relationship types (Component, Form, FormField, DomainAttribute).
+- **`graph-infra/schema/sa-schema.cypher`** --- SA node labels, constraints, relationship types (Component, Form, FormField, DomainAttribute; § 3-bis: the screen state machine — Screen, ScreenState, ScreenEvent, Transition, ScreenEffect, AnalyticsEvent).
 - **`graph-infra/queries/sa-queries.cypher`** --- Named queries (sa_form_domain_mapping, sa_module_overview).
 - **`graph-infra/queries/validation-queries.cypher`** --- Validation queries (val_orphaned_form_fields, val_entity_without_uc).
 - **`nacl-sa-ui/references/reachability.cypher`** --- Cypher template for the UI-reachability rule (HAS_INBOUND_ACTION edge schema, blocker query, reachable-component traversal). Owned by this skill; consumed by `nacl-sa-validate` and `nacl-tl-review`.
@@ -62,6 +65,14 @@ All graph reads/writes use these tools:
 | Component | CMP-{Name} | CMP-DataTable | Name-based |
 | Form | FORM-{Name} | FORM-OrderCreate | Name-based (created by nacl-sa-uc) |
 | FormField | {FORM}-F{NN} | FORM-OrderCreate-F01 | Per-form (created by nacl-sa-uc) |
+| Screen | SCR-{PascalName} | SCR-ResultViewer | Name-based |
+| ScreenState | SCRST-{Screen}-{State} | SCRST-ResultViewer-Loading | Per-screen, name-based |
+| ScreenEvent | SCREV-{Screen}-{Event} | SCREV-ResultViewer-OnRetry | Per-screen, name-based |
+| Transition | SCRTR-{Screen}-{NNN} | SCRTR-ResultViewer-001 | Per-screen sequential |
+| ScreenEffect | SCREF-{Screen}-{NNN} | SCREF-ResultViewer-001 | Per-screen sequential |
+| AnalyticsEvent | ANEV-{Name} | ANEV-ResultViewed | Name-based |
+
+`{Screen}` in child ids is the PascalName part of the Screen id (without the `SCR-` prefix).
 
 ### Next available Component ID query
 
@@ -804,6 +815,319 @@ Next: `/nacl-sa-ui verify` to re-check form-domain mapping after navigation chan
 
 ---
 
+# Command: `state-machine`
+
+## Purpose
+
+Author (or modify) the **deterministic state machine** of one screen: which states the screen can be in, which events move it between states, and which side effects each transition fires. The machine is stored graph-natively — `Screen`, `ScreenState`, `ScreenEvent`, reified `Transition`, `ScreenEffect` (+ minimal `AnalyticsEvent` sinks) — so that a change to the UC, a domain attribute, or an API endpoint **reaches the screen through the graph** (impact closure), and `nacl-sa-validate` L10 can statically check determinism, reachability, and error-escape.
+
+**Why a reified Transition node (not an edge with properties):** (a) the validator needs a stable transition id (`SCRTR-*`) for reports; (b) only a node can be the source of `TRIGGERS -> ScreenEffect`; (c) a reified node falls under the orphan check. This mirrors the BA entity-state pattern (`EntityState-[:TRANSITIONS_TO]->`) one level up.
+
+**Namespace caution:** `HAS_STATE` and `TRIGGERS` edge-type names are shared with the BA layer, and `NAVIGATES_TO` may pre-exist as Form→Form/Component→Form navigation. Always label-qualify (`(:Screen)-[:HAS_STATE]->(:ScreenState)`), never match these types bare.
+
+## Parameters
+
+- `UC-NNN` — the UseCase whose screen is being modeled (one screen per invocation), **or**
+- `SCR-Name` — an existing Screen id, to modify its machine.
+
+## Workflow
+
+```
++-----------------+    +-----------------+    +-----------------+    +-----------------+
+| Phase 1         |    | Phase 2         |    | Phase 3         |    | Phase 4         |
+| Read UC context |--->| Propose machine |--->| Write machine   |--->| Stamp staleness |
+| (forms, API,    |    | (states/events/ |    | to graph        |    | + validate L10  |
+|  existing SCR)  |    |  transitions)   |    | (MERGE, idem.)  |    | + report        |
++-----------------+    +-----------------+    +-----------------+    +-----------------+
+```
+
+**Do not proceed to the next phase without explicit user confirmation.**
+
+---
+
+### Phase 1: Read UC Context
+
+#### 1.1 Query UC, its forms, endpoints, and any existing screen
+
+```cypher
+// uc_screen_context
+MATCH (uc:UseCase {id: $ucId})
+OPTIONAL MATCH (uc)-[:USES_FORM]->(f:Form)
+OPTIONAL MATCH (uc)-[:EXPOSES]->(api:APIEndpoint)
+OPTIONAL MATCH (uc)-[:HAS_SCREEN]->(scr:Screen)
+OPTIONAL MATCH (m:Module)-[:CONTAINS_UC]->(uc)
+RETURN uc.id AS uc_id, uc.name AS uc_name, uc.has_ui AS has_ui,
+       m.id AS module,
+       collect(DISTINCT f.id) AS forms,
+       collect(DISTINCT api.id) AS endpoints,
+       collect(DISTINCT scr.id) AS existing_screens
+```
+
+**Guards:**
+- If the UC does not exist → STOP, report.
+- If `coalesce(uc.has_ui, true) = false` → STOP: a backend-only UC has no screen to model.
+- If the UC has no `USES_FORM` → ask the user whether the screen is genuinely formless (`formless=true`, e.g. splash/404) or whether `/nacl-sa-uc detail` must run first. Do not silently invent a Form.
+- If a Screen already exists → load its current machine via the `sa_screen_machine` named query (`graph-infra/queries/sa-queries.cypher`) and present it; the run becomes a MODIFY.
+
+#### 1.2 Read the existing machine (MODIFY mode)
+
+Run `sa_screen_machine($screenId)` and render the result as a transition table + Mermaid `stateDiagram-v2` so the user sees the as-is machine before changing it.
+
+---
+
+### Phase 2: Propose the Machine
+
+Propose states, events, transitions, and effects based on the screen archetype. For a **data-loading screen** (list/detail/result) the canonical minimum is:
+
+| Element | Proposal |
+|---------|----------|
+| States | `Loading` (state_kind=loading, **is_initial**), `Loaded` (content), `Empty` (empty), `Error` (error) |
+| Events | `OnLoaded` (system), `OnLoadFailed` (system), `OnRetry` (user) |
+| Transitions | Loading→Loaded on OnLoaded [guard: `items.length > 0`]; Loading→Empty on OnLoaded [guard: `items.length == 0`]; Loading→Error on OnLoadFailed; Error→Loading on OnRetry |
+| Effects | one `load` effect on the Error→Loading (OnRetry) transition, CALLS the UC's endpoint |
+
+When the screen starts in `Loading`, the initial fetch is fired by the
+implementation on screen entry (the initial state IS the loading state); the
+graph-checkable `CALLS` contract hangs on the retry transition — the machine's
+only re-entry into `Loading`. Model an explicit `Idle` state
+(state_kind=initial) + `OnLoad` (lifecycle) event only when the screen does NOT
+fetch immediately on open; then the load effect moves to the Idle→Loading
+transition.
+
+**Authoring rules (the validator will enforce them as L10):**
+1. Exactly **one** state has `is_initial=true`.
+2. Two transitions may share `(from_state, on_event)` **only if every one of them has a guard** (the guards' disjointness is your responsibility).
+3. Every state must be reachable from the initial state.
+4. Every `error` state needs an escape transition; name the user-triggered event `OnRetry` by convention (the validator checks `event_kind='user'`, not the name).
+5. Every `load`/`mutate` effect CALLS an APIEndpoint; `navigate` effects NAVIGATES_TO a Screen; `analytics` effects EMITS an AnalyticsEvent.
+6. The Screen RENDERS the UC's Form — this is the bridge that makes DomainAttribute changes reach the screen. Omit only for genuinely formless screens (`formless=true`).
+
+**Present to user:** transition table + Mermaid `stateDiagram-v2` + effect list with cross-layer targets. Ask for confirmation.
+
+```
+Proposed state machine for SCR-{Name} (UC-NNN):
+
+stateDiagram-v2
+    [*] --> Loading
+    Loading --> Loaded: OnLoaded [items > 0]
+    Loading --> Empty: OnLoaded [items == 0]
+    Loading --> Error: OnLoadFailed
+    Error --> Loading: OnRetry
+
+Effects:
+| Transition | Effect | Kind | Target |
+|------------|--------|------|--------|
+| (entry) Loading | SCREF-{Name}-001 | load | {api-id} |
+
+Confirm or modify?
+```
+
+---
+
+### Phase 3: Write the Machine (MERGE, idempotent)
+
+All writes use `MERGE` on stable ids so re-running the command updates rather than duplicates.
+
+#### 3.1 Screen + parent + RENDERS
+
+```cypher
+// create_screen
+MATCH (uc:UseCase {id: $ucId})
+MERGE (scr:Screen {id: $screenId})
+SET scr.name = $name,
+    scr.description = $description,
+    scr.route = $route,
+    scr.formless = coalesce($formless, false),
+    scr.created_by = 'nacl-sa-ui',
+    scr.created_at = coalesce(scr.created_at, datetime()),
+    scr.updated = datetime()
+MERGE (uc)-[:HAS_SCREEN]->(scr)
+RETURN scr.id AS screen_id
+```
+
+```cypher
+// link_screen_renders_form (skip only when formless=true)
+MATCH (scr:Screen {id: $screenId})
+MATCH (f:Form {id: $formId})
+MERGE (scr)-[:RENDERS]->(f)
+RETURN scr.id AS screen_id, f.id AS form_id
+```
+
+#### 3.2 States and events
+
+```cypher
+// create_screen_state (once per state)
+MATCH (scr:Screen {id: $screenId})
+MERGE (st:ScreenState {id: $stateId})       // SCRST-{Screen}-{State}
+SET st.name = $stateName,
+    st.state_kind = $stateKind,              // initial|loading|content|empty|error
+    st.is_initial = $isInitial,
+    st.terminal = coalesce($terminal, false)
+MERGE (scr)-[:HAS_STATE]->(st)
+RETURN st.id AS state_id
+```
+
+```cypher
+// create_screen_event (once per event)
+MATCH (scr:Screen {id: $screenId})
+MERGE (ev:ScreenEvent {id: $eventId})        // SCREV-{Screen}-{Event}
+SET ev.name = $eventName,
+    ev.event_kind = $eventKind               // user|system|lifecycle
+MERGE (scr)-[:HAS_EVENT]->(ev)
+RETURN ev.id AS event_id
+```
+
+#### 3.3 Reified transitions
+
+```cypher
+// create_transition (once per transition; id from per-screen counter)
+MATCH (scr:Screen {id: $screenId})
+MATCH (fromSt:ScreenState {id: $fromStateId})
+MATCH (toSt:ScreenState {id: $toStateId})
+MATCH (ev:ScreenEvent {id: $eventId})
+MERGE (tr:Transition {id: $transitionId})    // SCRTR-{Screen}-NNN
+SET tr.guard = $guard                        // NULL when unguarded
+MERGE (scr)-[:HAS_TRANSITION]->(tr)
+MERGE (tr)-[:FROM_STATE]->(fromSt)
+MERGE (tr)-[:TO_STATE]->(toSt)
+MERGE (tr)-[:ON_EVENT]->(ev)
+RETURN tr.id AS transition_id
+```
+
+Next available transition/effect number:
+
+```cypher
+// next_transition_number
+MATCH (scr:Screen {id: $screenId})-[:HAS_TRANSITION]->(tr:Transition)
+WITH max(toInteger(split(tr.id, '-')[-1])) AS maxNum
+RETURN coalesce(maxNum, 0) + 1 AS next
+```
+
+#### 3.4 Effects with kind-required targets
+
+```cypher
+// create_load_effect (load | mutate)
+MATCH (tr:Transition {id: $transitionId})
+MATCH (api:APIEndpoint {id: $apiId})
+MERGE (eff:ScreenEffect {id: $effectId})     // SCREF-{Screen}-NNN
+SET eff.effect_kind = $effectKind,           // 'load' | 'mutate'
+    eff.description = $description
+MERGE (tr)-[:TRIGGERS]->(eff)
+MERGE (eff)-[:CALLS]->(api)
+RETURN eff.id AS effect_id, api.id AS endpoint
+```
+
+**If the APIEndpoint does not exist yet** (UC has no `EXPOSES` — common before `nacl-tl-plan` has run): MERGE a **provisional** endpoint and anchor it to the UC so it cannot orphan; `nacl-tl-plan` enriches it later from api-contracts. Report every provisional endpoint created.
+
+```cypher
+// create_provisional_endpoint
+MATCH (uc:UseCase {id: $ucId})
+MERGE (api:APIEndpoint {id: $apiId})         // e.g. "api-result-get"
+ON CREATE SET api.path = $path,              // e.g. "GET /api/result/{sessionId}"
+              api.provisional = true,
+              api.created_by = 'nacl-sa-ui',
+              api.created_at = datetime()
+MERGE (uc)-[:EXPOSES]->(api)
+RETURN api.id AS endpoint, api.provisional AS provisional
+```
+
+```cypher
+// create_navigate_effect
+MATCH (tr:Transition {id: $transitionId})
+MATCH (target:Screen {id: $targetScreenId})
+MERGE (eff:ScreenEffect {id: $effectId})
+SET eff.effect_kind = 'navigate', eff.description = $description
+MERGE (tr)-[:TRIGGERS]->(eff)
+MERGE (eff)-[:NAVIGATES_TO]->(target)
+RETURN eff.id AS effect_id, target.id AS target_screen
+```
+
+```cypher
+// create_analytics_effect
+MATCH (tr:Transition {id: $transitionId})
+MERGE (ae:AnalyticsEvent {id: $analyticsId}) // ANEV-{Name}
+SET ae.name = $analyticsName
+MERGE (eff:ScreenEffect {id: $effectId})
+SET eff.effect_kind = 'analytics', eff.description = $description
+MERGE (tr)-[:TRIGGERS]->(eff)
+MERGE (eff)-[:EMITS]->(ae)
+RETURN eff.id AS effect_id, ae.id AS analytics_event
+```
+
+#### 3.5 MODIFY mode: removing machine elements
+
+When the user removes a state/transition/effect, `DETACH DELETE` exactly the removed nodes by id — never a label-wide delete. Renumbering existing `SCRTR-*`/`SCREF-*` ids is forbidden (stable ids are what downstream reports reference).
+
+---
+
+### Phase 4: Stamp Staleness + Validate + Report
+
+Authoring or changing a screen state machine **changes the UC's shape**: tasks planned before the machine existed do not reflect it. Therefore (same contract as `nacl-sa-feature` step 3g):
+
+#### 4.1 Bump the UC spec version
+
+```cypher
+// bump_spec_version
+MATCH (uc:UseCase {id: $ucId})
+SET uc.spec_version = coalesce(uc.spec_version, 0) + 1
+RETURN uc.id AS uc_id, uc.spec_version AS spec_version
+```
+
+#### 4.2 Stamp staleness — DIRECTED and TIGHT (never the broad closure)
+
+The stamp follows the affected-UC list — **the same directed contract as `nacl-sa-feature` step 3g**: the screen's UC's `GENERATES` tasks + tasks of UCs that transitively `DEPENDS_ON` it (`*1..5`), and the directly-changed UC itself. **Never stamp via the undirected `sa_impact_closure` traversal** — it fans out through shared ACTOR/Requirement nodes and marks half the project stale (measured 20× false radius). Two clean statements; report `count(DISTINCT ...)`, never a cartesian row count.
+
+```cypher
+// stamp_stale_tasks (1/2) — the re-plan units
+MATCH (uc:UseCase {id: $ucId})
+OPTIONAL MATCH (dependent:UseCase)-[:DEPENDS_ON*1..5]->(uc)
+WITH collect(DISTINCT uc) + [d IN collect(DISTINCT dependent) WHERE d IS NOT NULL] AS affected
+UNWIND affected AS a
+MATCH (a)-[:GENERATES]->(t:Task)
+SET t.review_status = 'stale',
+    t.stale_reason = 'screen state machine ' + $changeKind + ' for ' + $ucId + ' (' + $screenId + ')',
+    t.stale_since = datetime(),
+    t.stale_origin = $screenId
+RETURN count(DISTINCT t) AS tasks_stamped
+```
+
+```cypher
+// stamp_stale_uc (2/2) — the directly-changed UC itself
+MATCH (uc:UseCase {id: $ucId})
+SET uc.review_status = 'stale',
+    uc.stale_reason = 'screen state machine ' + $changeKind + ' for ' + $ucId + ' (' + $screenId + ')',
+    uc.stale_since = datetime(),
+    uc.stale_origin = $screenId
+RETURN count(uc) AS ucs_stamped
+```
+
+`$changeKind` ∈ {'created', 'modified'}. The flags are cleared by `nacl-tl-plan` when it re-plans the UC (which also re-bakes the machine into task context).
+
+#### 4.3 Validate the machine (scoped L10)
+
+Run the L10 checks from `nacl-sa-validate` scoped to this screen (L10.1–L10.8; see that skill for the canonical queries). Any CRITICAL finding → present it and return to Phase 2; do not leave a broken machine in the graph.
+
+#### 4.4 Report
+
+```
+Screen state machine written: SCR-{Name} (UC-NNN)
+
+Nodes: 1 Screen, {N} states, {N} events, {N} transitions, {N} effects {(+ M provisional APIEndpoint)}
+Edges: HAS_SCREEN, RENDERS, {N} HAS_STATE, {N} HAS_EVENT, {N} HAS_TRANSITION,
+       {N} FROM_STATE/TO_STATE/ON_EVENT, {N} TRIGGERS, {N} CALLS/NAVIGATES_TO/EMITS
+
+Staleness stamped (directed): {N} tasks + {N} UCs (origin: SCR-{Name})
+spec_version: UC-NNN {old} -> {new}
+
+L10 validation: {PASS | N findings}
+
+Next:
+  - `/nacl-tl-plan` to re-plan the UC (clears the stale flags)
+  - `/nacl-sa-validate internal` for the full gate
+```
+
+---
+
 # Command: `full`
 
 ## Purpose
@@ -911,6 +1235,13 @@ If `verify` finds data fields but no DomainAttributes exist at all:
 | Node | Properties |
 |------|------------|
 | Component | id, name, component_type, description, props, route, roles, menu_order, parent_menu, updated |
+| Screen | id, name, description, route, formless, created_by, created_at, updated |
+| ScreenState | id, name, state_kind, is_initial, terminal |
+| ScreenEvent | id, name, event_kind |
+| Transition | id, guard |
+| ScreenEffect | id, effect_kind, description |
+| AnalyticsEvent | id, name |
+| APIEndpoint | id, path, provisional, created_by, created_at — **provisional only**, when a load/mutate effect needs an endpoint that does not exist yet; enriched later by nacl-tl-plan |
 
 ### Edge types created
 
@@ -919,6 +1250,18 @@ If `verify` finds data fields but no DomainAttributes exist at all:
 | USED_IN | Component | Form | --- |
 | HAS_INBOUND_ACTION | Component | Form | `affordance`, `label`, `updated` — created during `navigation` Phase 3.3; required for actor-triggered UCs (W7). |
 | MAPS_TO | FormField | DomainAttribute | --- (fix only, normally created by nacl-sa-uc) |
+| HAS_SCREEN | UseCase | Screen | --- (state-machine command) |
+| RENDERS | Screen | Form | --- |
+| HAS_STATE | Screen | ScreenState | --- (label-qualify: name shared with BA) |
+| HAS_EVENT | Screen | ScreenEvent | --- |
+| HAS_TRANSITION | Screen | Transition | --- |
+| FROM_STATE / TO_STATE | Transition | ScreenState | exactly one each |
+| ON_EVENT | Transition | ScreenEvent | exactly one |
+| TRIGGERS | Transition | ScreenEffect | --- (label-qualify: name shared with BA) |
+| CALLS | ScreenEffect | APIEndpoint | required for load/mutate effects |
+| NAVIGATES_TO | ScreenEffect | Screen | required for navigate effects |
+| EMITS | ScreenEffect | AnalyticsEvent | required for analytics effects |
+| EXPOSES | UseCase | APIEndpoint | only together with a provisional endpoint |
 
 ---
 
@@ -1036,6 +1379,19 @@ RETURN total_data_fields, mapped_fields,
 - [ ] **HAS_INBOUND_ACTION edges captured for every Form whose UC actor != SYSTEM (Phase 3.3)**
 - [ ] **`val_ui_reachability_blockers` query returns empty result set — or every remaining blocker is covered by a signed exception (W4)**
 - [ ] Navigation report presented
+
+### Before completing `state-machine`
+- [ ] UC context read (forms, endpoints, existing screens); MODIFY mode detected when a Screen exists
+- [ ] Machine proposed as transition table + Mermaid stateDiagram; user confirmed
+- [ ] Screen MERGEd with HAS_SCREEN parent and RENDERS → Form (or formless=true confirmed by user)
+- [ ] Exactly one is_initial=true state; every transition has same-screen FROM_STATE/TO_STATE/ON_EVENT
+- [ ] Shared (from_state, on_event) pairs are all-guarded (determinism)
+- [ ] Every error state has an escape transition (user-triggered by convention: OnRetry)
+- [ ] load/mutate effects CALL an APIEndpoint (provisional endpoint MERGEd + EXPOSES if missing, and reported)
+- [ ] uc.spec_version bumped
+- [ ] Staleness stamped DIRECTED, same contract as sa-feature 3g (UC's tasks + transitive DEPENDS_ON-dependents' tasks `*1..5` + the changed UC itself; count(DISTINCT) reported) — never via broad sa_impact_closure
+- [ ] Scoped L10 validation run; CRITICAL findings resolved before completing
+- [ ] Report presented (nodes/edges written, stamp counts, next steps)
 
 ### Before completing `full`
 - [ ] `verify` completed

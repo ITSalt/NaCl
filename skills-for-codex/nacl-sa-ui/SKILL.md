@@ -2,8 +2,9 @@
 name: nacl-sa-ui
 description: |
   Design and verify NaCl UI architecture in the SA graph: form-domain mapping,
-  component catalog, and navigation components. Use when verifying forms,
-  creating UI components, defining navigation, or says `/nacl-sa-ui`.
+  component catalog, navigation components, and deterministic screen state
+  machines. Use when verifying forms, creating UI components, defining
+  navigation, authoring screen states, or says `/nacl-sa-ui`.
 ---
 
 # NaCl SA UI For Codex
@@ -26,6 +27,9 @@ Commands:
   `Component` nodes with `USED_IN` edges.
 - `navigation`: define menu, route, role access, ordering, and parent menu as
   navigation components.
+- `state-machine UC-NNN | SCR-Name`: author or modify the deterministic state
+  machine of one screen (`Screen`, `ScreenState`, `ScreenEvent`, reified
+  `Transition`, `ScreenEffect`, minimal `AnalyticsEvent` sinks).
 - `full [module]`: run verify, components, and navigation in order.
 
 `verify` flow:
@@ -62,8 +66,40 @@ Commands:
    and refuse to leave this phase while any actor-triggered UC has no
    inbound nav-action from a reachable Component.
 
+`state-machine` flow:
+
+1. Read the UC context: forms, `EXPOSES` endpoints, existing screens, module.
+   Stop if the UC is backend-only (`has_ui=false`). If a Screen already exists,
+   load its machine (named query `sa_screen_machine`) — the run is a MODIFY.
+2. Propose states, events, transitions, and effects as a transition table plus
+   a Mermaid stateDiagram. For a data-loading screen the canonical minimum is
+   Loading (initial) / Loaded / Empty / Error states, OnLoad / OnLoaded /
+   OnRetry events, four transitions, and one `load` effect calling the UC's
+   endpoint. Stop for confirmation before writing.
+3. Write with MERGE on stable ids (`SCR-*`, `SCRST-*`, `SCREV-*`, `SCRTR-*`,
+   `SCREF-*`, `ANEV-*`): Screen with `HAS_SCREEN` parent and `RENDERS -> Form`
+   (formless screens carry `formless=true`); exactly one `is_initial=true`
+   state; reified transitions with exactly one same-screen
+   `FROM_STATE`/`TO_STATE`/`ON_EVENT` each; effects with kind-required targets —
+   load/mutate `CALLS -> APIEndpoint` (MERGE a provisional endpoint plus
+   `EXPOSES` when none exists, and report it), navigate
+   `NAVIGATES_TO -> Screen`, analytics `EMITS -> AnalyticsEvent`.
+4. Bump `uc.spec_version`, then stamp staleness DIRECTED and TIGHT (same
+   contract as `nacl-sa-feature` step 3g): the UC's `GENERATES` tasks plus
+   tasks of UCs that transitively `DEPENDS_ON` it (`*1..5`) get
+   `review_status='stale'` with `stale_origin` = the screen id; the
+   directly-changed UC itself is stamped in a second statement. Never stamp
+   via the broad undirected impact closure (measured 20x false radius).
+   Report `count(DISTINCT ...)` per statement.
+5. Re-check the machine against the L10 rules (determinism: shared
+   `(from_state, on_event)` pairs must be all-guarded; reachability from the
+   initial state; error states need an escape, user-triggered by convention
+   `OnRetry`). Resolve CRITICAL findings before completing.
+
 Do not introduce labels that are absent from the SA schema. Navigation is a
 component pattern unless the project schema explicitly defines another label.
+Label-qualify `HAS_STATE` and `TRIGGERS` in every query — both names are shared
+with the BA layer.
 
 ## Form Spec Template
 
@@ -161,10 +197,15 @@ Use only schema-supported UI records: `Form`, `FormField`, `Component`,
 `Form -[:HAS_FIELD]-> FormField`, `FormField -[:MAPS_TO]-> DomainAttribute`,
 `Component -[:USED_IN]-> Form`,
 `Component -[:HAS_INBOUND_ACTION { affordance, label, updated }]-> Form`,
-and existing UC/form/role relationships. Do not create `Screen`,
-`NavigationRoute`, or other unsupported labels. The
-`HAS_INBOUND_ACTION` edge is the W7 addition required for actor !=
-SYSTEM forms; see "Form Spec Template" below.
+the screen state machine shapes
+(`UseCase -[:HAS_SCREEN]-> Screen -[:RENDERS]-> Form`;
+`Screen -[:HAS_STATE]-> ScreenState`; `Screen -[:HAS_EVENT]-> ScreenEvent`;
+`Screen -[:HAS_TRANSITION]-> Transition` with
+`FROM_STATE`/`TO_STATE`/`ON_EVENT`;
+`Transition -[:TRIGGERS]-> ScreenEffect` with `CALLS`/`NAVIGATES_TO`/`EMITS`),
+and existing UC/form/role relationships. Do not create `NavigationRoute` or
+other unsupported labels. The `HAS_INBOUND_ACTION` edge is the W7 addition
+required for actor != SYSTEM forms; see "Form Spec Template" below.
 
 `verify` is read-only until the user confirms a repair. It must distinguish
 input fields from display and action fields using `field_category`; missing
@@ -214,10 +255,12 @@ verify role access against `UseCase -[:ACTOR]-> SystemRole` where available.
 
 ### Preserved Methodology
 
-- `verify`, `components`, `navigation`, and `full` commands.
+- `verify`, `components`, `navigation`, `state-machine`, and `full` commands.
 - FormField to DomainAttribute mapping checks.
 - Component catalog and `USED_IN` relationships.
 - Navigation represented in graph data.
+- Deterministic screen state machines with reified transitions, directed
+  staleness stamping, and `spec_version` bump.
 - Confirmation gates before writes.
 
 ### Removed Claude Mechanics
