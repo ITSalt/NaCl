@@ -871,6 +871,22 @@ UNWIND ucs AS uc
 > If the fix's own code change in Step 6 fully re-syncs a task (rare — usually
 > planning does), clear that task's flag at Step 7; otherwise leave it for `nacl-tl-plan`.
 
+**If the root cause is a missing or wrong domain-error branch** (the
+Project-Alpha class: restart returned 200 instead of `409 TASK_NOT_RESTARTABLE`
+because the spec never named the error), the spec gap *is* the error taxonomy —
+fix it there, in the same spec-update: author or update the `DomainError` (+
+`MAY_RAISE` from the endpoint whose behavior was wrong; + `HANDLES`/presentation
+when a screen surface mis-handled it) using the canonical Cypher templates from
+`nacl-sa-uc` command `errors` Phase 3 — MERGE by `ERR-{UPPER_SNAKE_CODE}`,
+module parent `HAS_ERROR`, never a duplicate of a shared error. Aim the
+Decision at the taxonomy too: `MERGE (d)-[:JUSTIFIES {role:'shapes'}]->(err)`
+(DomainError is a JUSTIFIES target since § 3-quater). Real errors arrive
+through bug fixes — this hook is the second producer that keeps the catalog
+honest. The staleness stamp above already covers the affected UCs; if the
+modified error is shared with other UCs' endpoints, extend the stamp to the
+raiser UCs exactly as `nacl-sa-uc errors` § 4.2 does (directed, origin = the
+ERR id — never the broad closure).
+
 #### → USER GATE (L2 / L3-spec-gap only) — calibrated: proceed-and-flag by default, block only when genuinely costly
 
 **Presented by the orchestrator, not the diagnostician.** Phase A leaves the doc

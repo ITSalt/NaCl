@@ -98,6 +98,17 @@ Tasks so `nacl-tl-plan` re-plans them. `Decision` is in the spec-update label
 list, so this satisfies the spec-first gate; `nacl-sa-validate` L9 enforces it.
 L0/L1 fixes record no Decision (no new "why").
 
+**Domain-error branch fixes (L2 / L3-spec-gap).** When the root cause is a
+missing or wrong domain-error branch (an endpoint returned the wrong envelope
+because the spec never named the error), fix the taxonomy in the same
+spec-update: author/update the `DomainError` (MERGE by
+`ERR-{UPPER_SNAKE_CODE}`, module parent `HAS_ERROR`, `MAY_RAISE` from the
+misbehaving endpoint, `HANDLES`/presentation when a screen mis-handled it)
+using the canonical templates from `nacl-sa-uc` command `errors`; never
+duplicate a shared error. Aim the Decision's `JUSTIFIES` at the DomainError
+too. If a shared error's properties changed, extend the staleness stamp to
+the raiser UCs directionally (origin = the ERR id), never the broad closure.
+
 ## Spec-First Prerequisite (Strict-Only) — W10 binding
 
 **L1+ blocked without preceding spec-update commit; override via signed exception only.**
