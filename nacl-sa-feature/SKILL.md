@@ -430,25 +430,35 @@ SET uc.spec_version = coalesce(uc.spec_version, 0) + 1,
     uc.updated_at   = datetime()
 ```
 
-2. Stamp staleness on the snapshot-bearing dependents of each changed node via
-   the impact-closure traversal. The traversal surfaces the full dependent set,
-   but the stamp is narrowed to `Task`/`UseCase`/`Form`/`Requirement` (the nodes
-   that embed snapshots) to bound graph pollution. Run once per changed node id:
+2. Stamp staleness on the **true downstream** of the change: the affected UCs'
+   generated `Task`s (the snapshot-bearers that re-plan regenerates), the `Task`s
+   of UCs that transitively depend on them, and the affected UCs themselves.
+
+   **Use the affected-UC list (`$affectedUcIds`) — NOT the broad undirected
+   closure.** `sa_impact_closure` is deliberately broad for *exploration/display*
+   ("what's potentially related"); the *stamp* gates release closure, so it must be
+   **precise**. An undirected blob fans out through shared `ACTOR` (one role → every
+   UC with that role) or a shared `Requirement`/`Form`, marking half the project
+   stale and blocking releases on false staleness. The directed, UC-keyed stamp
+   below is identical to `nacl-tl-fix`'s and stays bounded to real dependents.
 
 ```cypher
 // mcp__neo4j__write-cypher
-// Params: $changedNodeId — a changed UC or entity id (run once per changed node)
-//         $reason — e.g. "upstream UC-014 modified by FR-007"
-//         $origin — the change anchor id (the FR id, or the changed node id)
-MATCH (changed {id: $changedNodeId})
-MATCH (changed)-[:HAS_ATTRIBUTE|MAPS_TO|HAS_FIELD|USES_FORM|HAS_STEP|HAS_REQUIREMENT
-       |ACTOR|GENERATES|EXPOSES|IMPLEMENTS|DEPENDS_ON*1..6]-(dep)
-WHERE (dep:Task OR dep:UseCase OR dep:Form OR dep:Requirement)
-  AND dep <> changed
-SET dep.review_status = 'stale',
-    dep.stale_reason  = $reason,
-    dep.stale_since   = datetime(),
-    dep.stale_origin  = $origin
+// Params: $affectedUcIds — UCs created/modified in this feature (Phase 2/3)
+//         $reason — e.g. "feature FR-007 changed UC-014"
+//         $origin — the change anchor id (the FR id)
+MATCH (uc:UseCase) WHERE uc.id IN $affectedUcIds
+OPTIONAL MATCH (dependent:UseCase)-[:DEPENDS_ON*1..5]->(uc)   // UCs that depend ON the changed UC
+WITH collect(DISTINCT uc) + collect(DISTINCT dependent) AS affected
+UNWIND affected AS a
+WITH DISTINCT a WHERE a IS NOT NULL
+// stamp the affected UCs' tasks (the re-plan units)...
+OPTIONAL MATCH (a)-[:GENERATES]->(t:Task)
+SET t.review_status='stale', t.stale_reason=$reason, t.stale_since=datetime(), t.stale_origin=$origin
+// ...and the directly-changed UCs themselves
+WITH 1 AS _
+MATCH (uc:UseCase) WHERE uc.id IN $affectedUcIds
+SET uc.review_status='stale', uc.stale_reason=$reason, uc.stale_since=datetime(), uc.stale_origin=$origin
 ```
 
 > The dependent Tasks are now `stale`. This is **expected** — it is the signal

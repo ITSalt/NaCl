@@ -30,10 +30,14 @@ Read `../nacl-core/SKILL.md`, `../references/migration-rules.md`, and
    UI, validation flags. Use existing NaCl skills when available; otherwise
    apply the same graph contracts directly. After updates land, record change
    provenance: bump `spec_version` on every new/modified UC, and stamp
-   `review_status='stale'` (with `stale_origin`/`stale_since`) on snapshot-bearing
-   dependents (`Task`/`UseCase`/`Form`/`Requirement`) reached by impact traversal.
-   The stale Tasks are the expected hand-off signal to `nacl-tl-plan`; do not
-   clear them here.
+   `review_status='stale'` (with `stale_origin`/`stale_since`) on the TRUE
+   downstream — the affected UCs' `GENERATES` Tasks, the Tasks of UCs that
+   `DEPENDS_ON` them, and the affected UCs themselves. Key the stamp off the
+   affected-UC list, NOT the broad undirected `sa_impact_closure` (that query is
+   for exploration/display; an undirected stamp fans out through shared
+   ACTOR/Requirement and marks half the project stale, blocking releases on false
+   staleness). The stale Tasks are the expected hand-off signal to `nacl-tl-plan`;
+   do not clear them here.
 5. Incremental validation: run scoped checks for only affected nodes when graph
    tooling is available. Fix confirmed critical issues with at most two
    iterations unless the user asks to continue.
