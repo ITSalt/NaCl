@@ -2,10 +2,11 @@
 name: nacl-sa-uc
 description: |
   Create and detail NaCl use cases in the SA graph from BA automation scope:
-  registry, activity steps, forms, form fields, mappings, requirements, and
-  behavior slices (graph-native Given/When/Then acceptance scenarios).
+  registry, activity steps, forms, form fields, mappings, requirements,
+  behavior slices (graph-native Given/When/Then acceptance scenarios), and
+  domain errors (transport-independent error taxonomy).
   Use when creating UC stories, detailing a UC, authoring behavior slices,
-  listing UCs, or for compatibility with `/nacl-sa-uc`.
+  authoring domain errors, listing UCs, or for compatibility with `/nacl-sa-uc`.
 ---
 
 # NaCl SA UC For Codex
@@ -28,6 +29,10 @@ Commands:
 - `slices <UC-ID>`: author or modify the behavior slices of one UC —
   graph-native acceptance scenarios (Given/When/Then) anchored to the screen
   state machine and endpoints, verified by tasks.
+- `errors <UC-ID>`: author or modify the domain errors observable through one
+  UC's API surface — a transport-independent, module-scoped taxonomy
+  (`DomainError` + `MAY_RAISE`), with screen handling (`HANDLES`) and
+  user-facing presentations (`PRESENTED_AS` / `SHOWS`).
 - `list`: read-only UC registry view with detail coverage.
 
 `stories` flow:
@@ -100,8 +105,54 @@ Commands:
    `sl.id STARTS WITH 'SLC-NNN-'`); fix CRITICAL findings before completing;
    report slices, anchors, machine coverage, stamp counts.
 
+`errors` flow:
+
+1. Load UC context: module (`CONTAINS_UC`), `EXPOSES` endpoints, screen
+   machine, slices (`sa_uc_slices` — error-kind slices are candidates),
+   requirements (real graphs carry explicit codes like `404 PROMO_NOT_FOUND`
+   in requirement text), the module's existing error catalog, and the
+   RuntimeContract in BOTH formats — current `CONTAINS_RUNTIME_CONTRACT`
+   subgraph AND legacy `HAS_RUNTIME_CONTRACT` flat string properties (hints
+   only; never anchor to RC nodes, never invent contract structure).
+   Guards: UC without a Module → STOP (the catalog is module-owned — wire
+   `CONTAINS_UC` first); `has_ui=false` → MAY_RAISE-only mode (no handling,
+   no presentations — the envelope IS the presentation); UI UC without a
+   Screen → WARN and proceed taxonomy-only (the endpoint anchor exists
+   regardless; L12.7 self-signals the handling gap once the machine exists).
+2. Propose errors from requirements → error-kind slices → RC hints → the
+   machine's error states. One `DomainError` per code the API envelope can
+   distinguish; field-level validation is ONE `VALIDATION_FAILED`. Codes are
+   domain-prefixed UPPER_SNAKE latin (`PROMO_NOT_FOUND`, never `NOT_FOUND`).
+   error_kind ∈ validation|not_found|conflict|permission|rate_limit|external|
+   internal (transport-independent; http_status is only a hint). For each
+   UI-handled error propose ≥1 presentation: user-language message (never the
+   internal code), kind ∈ toast|banner|inline|modal|fullscreen|silent
+   (deliberate silence = a silent-kind presentation whose message documents
+   the observable absence). Stop for confirmation.
+3. Write `DomainError` (MERGE on `ERR-{UPPER_SNAKE_CODE}` — shared errors are
+   never duplicated, foreign-module errors never re-parented) with
+   `(:Module)-[:HAS_ERROR]->`; `(api)-[:MAY_RAISE]->(err)` per raising
+   endpoint (provisional endpoint + `EXPOSES` anchor when none exists; one
+   endpoint per distinct backend operation); `(st:ScreenState)-[:HANDLES]->`
+   only where the channel rule holds (the state's screen has a
+   ScreenEffect-CALLS to a raising endpoint); `ErrorPresentation`
+   (`ERRP-{CODE}-{PascalName}`, non-blank message) with `PRESENTED_AS` and
+   `SHOWS` only from handling states (triangle closure). Collect every
+   written err id. MODIFY deletions by explicit id only; never delete an
+   error other UCs still raise — remove only your own MAY_RAISE edges.
+4. Bump `spec_version`; stamp staleness DIRECTED (same contract as
+   `nacl-sa-feature` 3g; `stale_origin` = the UC id). If the run MODIFIED
+   properties of a shared error (raised by other UCs' endpoints), also stamp
+   the raiser UCs and their tasks with the same two-statement shape,
+   `stale_origin` = the error id — computed directionally via
+   `(err)<-[:MAY_RAISE]-(api)<-[:EXPOSES]-(raiser)`, never the broad closure.
+5. Run scoped L12 checks (`WHERE err.id IN $errIds` — errors are NOT
+   UC-scoped, there is no id-infix recipe); fix CRITICAL findings before
+   completing; report errors, anchors, handling, presentations, stamp counts.
+
 Use SA id conventions from the graph or schema: `UC-NNN`, `{UC}-ASNN`,
-`FORM-*`, `{FORM}-FNN`, `RQ-NNN`, and `SLC-{NNN}-{PascalName}`.
+`FORM-*`, `{FORM}-FNN`, `RQ-NNN`, `SLC-{NNN}-{PascalName}`,
+`ERR-{UPPER_SNAKE_CODE}`, and `ERRP-{CODE}-{PascalName}`.
 
 ## Graph Contract
 
@@ -119,7 +170,8 @@ and `UseCase -[:HAS_REQUIREMENT]-> Requirement`.
 Canonical writes are `UseCase`, `ActivityStep`, `Form`, `FormField`,
 `Requirement`, `RuntimeContract`, `RuntimeState`, `RuntimeTransition`,
 `RuntimeEvent`, `RuntimeLock`, `IdempotencyKey`, `RecoveryProcedure`,
-`Slice` (plus provisional `APIEndpoint` from the slices command),
+`Slice`, `DomainError`, `ErrorPresentation` (plus provisional `APIEndpoint`
+from the slices/errors commands),
 `CONTAINS_UC`, `AUTOMATES_AS`, `ACTOR`, `DEPENDS_ON`, `HAS_STEP`,
 `USES_FORM`, `HAS_FIELD`, `MAPS_TO`, `HAS_REQUIREMENT`, `IMPLEMENTED_BY`,
 `CONTAINS_RUNTIME_CONTRACT`, `HAS_STATE`, `HAS_INITIAL_STATE`,
@@ -127,8 +179,9 @@ Canonical writes are `UseCase`, `ActivityStep`, `Form`, `FormField`,
 `ACQUIRES_LOCK`, `EMITS_EVENT`, `RESOLVES_RACE_WITH`,
 `USES_IDEMPOTENCY_KEY`, `HAS_RECOVERY`, `HAS_SLICE`, `COVERS`, `CALLS`
 (label-qualify the source — the name is shared with
-`ScreenEffect -> APIEndpoint`), `VERIFIED_BY`, and `EXPOSES`
-(provisional-endpoint path only). Before each write batch, show
+`ScreenEffect -> APIEndpoint`), `VERIFIED_BY`, `EXPOSES`
+(provisional-endpoint path only), `HAS_ERROR`, `MAY_RAISE`, `HANDLES`,
+`PRESENTED_AS`, and `SHOWS` (all five error-taxonomy names unshared). Before each write batch, show
 the proposed ids, properties, source BA evidence, and relationship targets;
 after writes, read back with `sa_uc_full_context`, form-domain mapping
 checks, and (when present) the RuntimeContract read-back in
@@ -222,6 +275,8 @@ eight required fields is missing, refuse to advance.
   complete `RuntimeContract` subgraph exists.
 - Author behavior slices anchored to the screen machine / endpoints and link
   them to verifying tasks after confirmation.
+- Author module-scoped domain errors with raising endpoints, screen handling,
+  and user-facing presentations after confirmation.
 
 ### Must Not Do
 
@@ -235,6 +290,11 @@ eight required fields is missing, refuse to advance.
 - Write a Slice with no behavioral anchor (no COVERS and no CALLS) or with a
   blank `then` — anchorless behavior text belongs in `acceptance_criteria`.
 - Author slices for a UI UC that has no Screen (state machine first).
+- Write a DomainError with no raising endpoint (MAY_RAISE), a blank `code`, or
+  for a UC that has no Module; duplicate a shared error instead of MERGE by
+  id; delete an error other UCs still raise; write HANDLES without the call
+  channel or SHOWS without HANDLES; put the internal code into a
+  presentation `message`.
 - Stamp staleness via the broad undirected `sa_impact_closure` traversal.
 - Treat markdown files as the SA source of truth.
 - Select or constrain the runtime.

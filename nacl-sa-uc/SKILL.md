@@ -4,9 +4,11 @@ model: opus
 effort: high
 description: |
   Реестр Use Cases из BA automation scope + детализация UC (Activity, формы, требования)
-  + behavior slices (graph-native сценарии приёмки Given/When/Then) через Neo4j граф.
+  + behavior slices (graph-native сценарии приёмки Given/When/Then)
+  + domain errors (транспортно-независимая таксономия доменных ошибок) через Neo4j граф.
   Используй когда пользователь просит: создать use cases из BA, реестр UC, детализировать UC,
-  activity diagram, формы UC, behavior slices, сценарии приёмки, nacl-sa-uc, stories, detail UC, slices.
+  activity diagram, формы UC, behavior slices, сценарии приёмки, доменные ошибки, error taxonomy,
+  nacl-sa-uc, stories, detail UC, slices, errors.
 ---
 
 # /nacl-sa-uc --- Use Case Registry + Detailing (Graph)
@@ -28,6 +30,7 @@ You are a Solution Architect agent specialized in Use Case design. You read BA-l
 | `stories` | --- | Create UC registry from BA automation scope |
 | `detail` | `<UC-ID>` (e.g. `UC-101`) | Detail a specific UC: activity steps, forms, requirements |
 | `slices` | `<UC-ID>` (e.g. `UC-101`) | Author or modify the behavior slices of a UC (graph-native acceptance scenarios anchored to the screen machine / endpoints / tasks) |
+| `errors` | `<UC-ID>` (e.g. `UC-101`) | Author or modify the domain errors observable through a UC's endpoints (transport-independent taxonomy: DomainError + MAY_RAISE + screen handling + presentations) |
 | `list` | --- | Show all UCs from graph with detail status |
 
 **Flags:**
@@ -1283,6 +1286,245 @@ Next:
 
 ---
 
+# Command: `errors`
+
+## Purpose
+
+Author (or modify) the **domain errors** observable through one UseCase's API surface: a transport-independent taxonomy of named failure modes. A `DomainError` is a catalogued, caller-observable failure (`PROMO_NOT_FOUND`) — the `code` is the source of truth, the HTTP status only a projection hint. An `ErrorPresentation` is how one error is presented to the user (user-language message + presentation kind). Stored graph-natively — `(:Module)-[:HAS_ERROR]->(:DomainError)` with `MAY_RAISE` / `HANDLES` / `PRESENTED_AS` / `SHOWS` edges — so that a change to the UC, an endpoint, a screen state, or the error itself **reaches every affected artifact through the graph** (impact closure), and `nacl-sa-validate` L12 can statically check ownership, raisability, handling channels, and presentation closure.
+
+**Errors are shared vocabulary, not UC property.** The catalog is module-scoped: the same `ALREADY_SUBSCRIBED` is raised by endpoints of different UCs. The command is invoked per-UC (that is where the authoring context lives — requirements, machine, slices), but `DomainError` nodes are MERGEd by id: a second UC raising the same error adds a `MAY_RAISE` edge, never a duplicate node.
+
+**Anchor invariant (the validator enforces it as L12.2, no exemption):** every DomainError is raisable at ≥1 API surface (`MAY_RAISE`); every ErrorPresentation is shown by ≥1 screen state (`SHOWS`). A failure mode observable at no endpoint is an implementation detail — it belongs in Requirements / RuntimeContract notes, not in a node. Pipeline failures of backend UCs are observable through their status endpoint — that endpoint is the surface.
+
+**No shared edge names** (unlike `CALLS` in `slices`): `HAS_ERROR`, `MAY_RAISE`, `HANDLES`, `PRESENTED_AS`, `SHOWS` are all unshared — no label-qualification hazard.
+
+## Parameters
+
+- `UC-NNN` — the UseCase through whose API surface the errors are being catalogued (one UC per invocation).
+
+## Workflow
+
+```
++-----------------+    +-----------------+    +-----------------+    +-----------------+
+| Phase 1         |    | Phase 2         |    | Phase 3         |    | Phase 4         |
+| Read UC context |--->| Propose errors  |--->| Write taxonomy  |--->| Stamp staleness |
+| (module, APIs,  |    | (from reqs/     |    | to graph        |    | + validate L12  |
+|  machine, slices,|   |  slices/RC/     |    | (MERGE, idem.)  |    | + report        |
+|  requirements)  |    |  machine)       |    |                 |    |                 |
++-----------------+    +-----------------+    +-----------------+    +-----------------+
+```
+
+**Do not proceed to the next phase without explicit user confirmation.**
+
+---
+
+### Phase 1: Read UC Context
+
+#### 1.1 Query UC, its module, endpoints, machine, slices, requirements, and existing errors
+
+```cypher
+// uc_error_context
+MATCH (uc:UseCase {id: $ucId})
+OPTIONAL MATCH (m:Module)-[:CONTAINS_UC]->(uc)
+OPTIONAL MATCH (uc)-[:EXPOSES]->(api:APIEndpoint)
+OPTIONAL MATCH (uc)-[:HAS_SCREEN]->(scr:Screen)
+OPTIONAL MATCH (uc)-[:HAS_SLICE]->(sl:Slice)
+OPTIONAL MATCH (uc)-[:HAS_REQUIREMENT]->(rq:Requirement)
+OPTIONAL MATCH (api)-[:MAY_RAISE]->(existing:DomainError)
+RETURN uc.id AS uc_id, uc.name AS uc_name, uc.has_ui AS has_ui,
+       m.id AS module_id,
+       collect(DISTINCT api.id) AS endpoints,
+       collect(DISTINCT scr.id) AS screens,
+       collect(DISTINCT {id: sl.id, kind: sl.slice_kind}) AS slices,
+       count(DISTINCT rq) AS requirement_count,
+       collect(DISTINCT existing.id) AS existing_errors
+```
+
+Also read the requirements' text (errors usually live there — real graphs carry explicit codes like `404 PROMO_NOT_FOUND` in requirement descriptions) and the module's existing error catalog (`MATCH (m)-[:HAS_ERROR]->(err) RETURN err` — MODIFY candidates and MERGE targets for shared errors).
+
+**Read the RuntimeContract in BOTH formats.** Current format: `(:UseCase)-[:CONTAINS_RUNTIME_CONTRACT]->(:RuntimeContract)` with `RuntimeState`/`RuntimeTransition` subgraph. **Legacy format (real migrated graphs):** `(:UseCase)-[:HAS_RUNTIME_CONTRACT]->(:RuntimeContract)` with flat string properties (`durable_state_machine`, `retry_semantics`, `recovery_procedure`, …) and **no state/transition nodes**. Treat legacy flat strings as a source HINT only — never anchor edges to RC nodes, never invent contract structure that is not there.
+
+**Guards:**
+- If the UC does not exist → STOP, report.
+- If the UC has **no Module** (`CONTAINS_UC` missing) → STOP: the error catalog is module-owned (`HAS_ERROR` is the required parent — L12.1); wire the UC into a module first (`/nacl-sa-architect`). Real graphs do contain module-less UCs — do not guess a module.
+- If `has_ui = false` (backend-only UC) → **MAY_RAISE-only mode**: no HANDLES, no SHOWS, no presentations — for a machine-to-machine caller the HTTP envelope IS the presentation. The taxonomy half (DomainError + MAY_RAISE) is authored in full.
+- If `coalesce(uc.has_ui, true) = true` and the UC has **no Screen** → WARN and proceed **taxonomy-only** (DomainError + MAY_RAISE; defer HANDLES/SHOWS/presentations). Asymmetric to the `slices` STOP, deliberately: a slice's primary UI anchor is the machine, but an error's primary anchor is the endpoint, which exists (or is created provisionally) regardless. The handling gap self-signals: L12.7 lights up as soon as the machine is authored — recommend `/nacl-sa-ui state-machine UC-NNN`, then re-run `errors`.
+- If the UC's endpoints already MAY_RAISE errors → load them with the `sa_uc_errors` named query (`graph-infra/queries/sa-queries.cypher`) and present; the run becomes a MODIFY.
+
+---
+
+### Phase 2: Propose the Errors
+
+**DomainError id derivation (deterministic):** `ERR-{UPPER_SNAKE_CODE}` where the code is the **API-envelope join key**: domain-prefixed UPPER_SNAKE latin (`PROMO_NOT_FOUND`, never bare `NOT_FOUND` — prefix discipline keeps module catalogs collision-free). When requirements already name codes, use them verbatim. **ErrorPresentation id:** `ERRP-{CODE}-{PascalName}` where PascalName derives from the presentation kind/context by the Phase-1 latin rule (`ERRP-PROMO_NOT_FOUND-Inline`).
+
+**Sources, in priority order:** error-bearing Requirements (explicit codes and statuses — the richest source in real graphs) → `error`-kind behavior slices (their given/when/then describe observable failures; read via `sa_uc_slices`) → RuntimeContract (current subgraph or legacy flat strings — hints only) → the machine's `error`/`Failed` states. Treat placeholder text as absent (the `slices` rule applies).
+
+**Granularity rule:** one DomainError per code the API envelope can **distinguish**. If the envelope distinguishes (`PROMO_BLOCKED` vs `PROMO_EXPIRED`), the graph distinguishes; field-level form validation is ONE `VALIDATION_FAILED` error (the field details live in the presentation message), mirroring the provisional-endpoint granularity rule ("one endpoint per distinct backend operation, never one per slice").
+
+**`error_kind` mapping** (transport-independent; HTTP status is the hint, not the truth):
+
+| Observable failure | error_kind | typical http_status |
+|---|---|---|
+| Caller's input malformed / fails validation | `validation` | 400 / 422 |
+| Referenced thing does not exist | `not_found` | 404 |
+| State conflict: duplicates, races, already-done, not-restartable | `conflict` | 409 |
+| Caller lacks rights / not authenticated | `permission` | 401 / 403 |
+| Caller over quota / throttled | `rate_limit` | 429 |
+| Upstream provider / external dependency failed | `external` | 502 / 503 / 504 |
+| Our invariant broken (bug class) | `internal` | 500 |
+
+**Presentations (UI UCs with a machine):** for every error a screen state will handle, propose ≥1 presentation: `presentation_kind ∈ {toast, banner, inline, modal, fullscreen, silent}`, `message` in the **user's language, never the internal code** (`«Промокод не найден»`, not `PROMO_NOT_FOUND`), optional `recovery_action ∈ {retry, back, support, none}`. Deliberate silence is a `silent`-kind presentation whose message documents the observable absence ("stale data stays visible, no interruption") — silence must be a decision, not a gap.
+
+**Handling proposal:** map each error to the machine state that represents it — typically the `error`-kind state(s); inline validation may be handled by a `content`-kind state. Only propose HANDLES where the **channel rule** holds: the screen has (or will have, via this run's MAY_RAISE writes) a `ScreenEffect-CALLS` to an endpoint that raises the error — L12.3 enforces exactly this.
+
+**Present to user:** error table (id, code, kind, http_status, retryable, raised-by endpoints, source requirement/slice) + handling table (state × error × presentation kind/message) + which raisable errors remain unhandled. Ask for confirmation.
+
+---
+
+### Phase 3: Write the Taxonomy (MERGE, idempotent)
+
+All writes use `MERGE` on stable ids so re-running updates rather than duplicates. **Collect every written/updated `err.id` into `$errIds`** — Phase 4's scoped validation needs the explicit list (errors are not UC-scoped).
+
+#### 3.1 DomainError node + module parent
+
+```cypher
+// create_domain_error
+MATCH (m:Module {id: $moduleId})
+MERGE (err:DomainError {id: $errId})        // ERR-{UPPER_SNAKE_CODE}
+SET err.code = $code,                       // REQUIRED non-blank — the envelope join key
+    err.name = $name,
+    err.description = $description,
+    err.error_kind = $errorKind,            // validation|not_found|conflict|permission|rate_limit|external|internal
+    err.http_status = $httpStatus,          // optional projection hint
+    err.retryable = $retryable,             // optional
+    err.created_by = 'nacl-sa-uc',
+    err.created_at = coalesce(err.created_at, datetime()),
+    err.updated = datetime()
+MERGE (m)-[:HAS_ERROR]->(err)
+RETURN err.id AS error_id
+```
+
+When the error already exists in **another** module's catalog (shared cross-module), MERGE by id picks up the existing node; do NOT re-parent it — the first catalog keeps ownership, your endpoints just add MAY_RAISE edges.
+
+#### 3.2 MAY_RAISE anchors
+
+```cypher
+// link_may_raise (once per raising endpoint)
+MATCH (err:DomainError {id: $errId})
+MATCH (api:APIEndpoint {id: $apiId})
+MERGE (api)-[:MAY_RAISE]->(err)
+RETURN api.id AS endpoint, err.id AS may_raise
+```
+
+**If the APIEndpoint does not exist yet** (UC has no `EXPOSES` — common before `nacl-tl-plan` has run): MERGE a **provisional** endpoint anchored to the UC, exactly as `slices` § 3.3 does (`provisional = true` + `(:UseCase)-[:EXPOSES]->`). Same granularity rule: one endpoint per distinct backend operation (trigger vs status read), never one per error. Report every provisional endpoint created.
+
+#### 3.3 HANDLES + presentations (UI UCs with a machine; skip in MAY_RAISE-only / taxonomy-only modes)
+
+```cypher
+// link_handles (only where the channel rule holds)
+MATCH (st:ScreenState {id: $stateId})
+MATCH (err:DomainError {id: $errId})
+MERGE (st)-[:HANDLES]->(err)
+RETURN st.id AS state, err.id AS handles
+```
+
+```cypher
+// create_presentation + triangle closure
+MATCH (err:DomainError {id: $errId})
+MATCH (st:ScreenState {id: $stateId})
+MERGE (p:ErrorPresentation {id: $presId})   // ERRP-{CODE}-{PascalName}
+SET p.message = $message,                   // REQUIRED non-blank, user-language
+    p.presentation_kind = $presentationKind, // toast|banner|inline|modal|fullscreen|silent
+    p.recovery_action = $recoveryAction,
+    p.created_by = 'nacl-sa-uc',
+    p.created_at = coalesce(p.created_at, datetime()),
+    p.updated = datetime()
+MERGE (err)-[:PRESENTED_AS]->(p)
+MERGE (st)-[:SHOWS]->(p)
+RETURN p.id AS presentation
+```
+
+Write SHOWS **only** for states that HANDLE the error (L12.5 triangle); one presentation may be SHOWS-ed by several states (a shared retry toast).
+
+#### 3.4 MODIFY mode: removing errors / presentations
+
+`DETACH DELETE` exactly the removed nodes by explicit id — never a label-wide delete. Before deleting a DomainError, check for MAY_RAISE edges from OTHER UCs' endpoints (`MATCH (other:UseCase)-[:EXPOSES]->(:APIEndpoint)-[:MAY_RAISE]->(err) WHERE other.id <> $ucId`): if any exist, the error is shared — remove only YOUR endpoints' MAY_RAISE edges and report; never delete a node other UCs still raise.
+
+---
+
+### Phase 4: Stamp Staleness + Validate + Report
+
+Authoring or changing the error contract **changes the UC's shape**: tasks planned before the errors existed do not reflect the contract their code must return.
+
+#### 4.1 Bump the UC spec version
+
+```cypher
+// bump_spec_version
+MATCH (uc:UseCase {id: $ucId})
+SET uc.spec_version = coalesce(uc.spec_version, 0) + 1
+RETURN uc.id AS uc_id, uc.spec_version AS spec_version
+```
+
+#### 4.2 Stamp staleness — DIRECTED and TIGHT (never the broad closure)
+
+Same directed contract as `nacl-sa-feature` step 3g (the `slices` § 4.2 statements verbatim, with reason `'domain errors ' + $changeKind + ' for ' + $ucId`): the UC's `GENERATES` tasks + tasks of UCs that transitively `DEPENDS_ON` it (`*1..5`) + the changed UC itself; two statements; `count(DISTINCT)`; `stale_origin = $ucId`. **Never stamp via the undirected `sa_impact_closure`** (measured 20–51× false radius).
+
+**Shared-error extension (the one new stamp semantic):** if this run **modified properties** of a DomainError that endpoints of OTHER UCs also raise (merely adding your own MAY_RAISE edges does not count — that changes your contract, not theirs), those raiser UCs' contracts changed too. Compute the raiser set directionally and stamp it with the same two-statement shape, with the ERROR as the lineage origin:
+
+```cypher
+// stamp_shared_raisers (only after property-modifying MERGEs on shared errors)
+MATCH (err:DomainError) WHERE err.id IN $modifiedSharedErrIds
+MATCH (raiser:UseCase)-[:EXPOSES]->(:APIEndpoint)-[:MAY_RAISE]->(err)
+WHERE raiser.id <> $ucId
+WITH collect(DISTINCT raiser) AS raisers, collect(DISTINCT err.id) AS errIds
+UNWIND raisers AS r
+OPTIONAL MATCH (dependent:UseCase)-[:DEPENDS_ON*1..5]->(r)
+WITH errIds, collect(DISTINCT r) + [d IN collect(DISTINCT dependent) WHERE d IS NOT NULL] AS affected
+UNWIND affected AS a
+MATCH (a)-[:GENERATES]->(t:Task)
+SET t.review_status = 'stale',
+    t.stale_reason = 'shared domain error ' + reduce(s='', e IN errIds | s + e + ' ') + 'modified via ' + $ucId,
+    t.stale_since = datetime(),
+    t.stale_origin = errIds[0]
+WITH errIds, affected
+UNWIND affected AS a2
+SET a2.review_status = 'stale',
+    a2.stale_reason = 'shared domain error modified via ' + $ucId,
+    a2.stale_since = datetime(),
+    a2.stale_origin = errIds[0]
+RETURN count(DISTINCT a2) AS raiser_ucs_stamped
+```
+
+Still directed, still tight: the set is exactly the raisers (+ their dependents' tasks), never the broad closure. The flags are cleared by `nacl-tl-plan` when it re-plans each UC.
+
+#### 4.3 Validate (scoped L12)
+
+Run the L12 checks from `nacl-sa-validate` (canonical queries live there) scoped to this run. **Scope recipe:** errors are NOT UC-scoped — filter by the explicit id list collected in Phase 3: `WHERE err.id IN $errIds` (and presentations via `(err)-[:PRESENTED_AS]->(p)`). Any CRITICAL finding → present it and return to Phase 2; do not leave a broken taxonomy in the graph.
+
+#### 4.4 Report
+
+```
+Domain errors written: UC-NNN ({uc name}, module {MOD-ID})
+
+Errors: {N} ({K} new / {K} updated / {K} shared with other UCs)
+  {ERR-ID}: {kind}, {http_status}, raised by {endpoint ids} [source: REQ-NNN | SLC-NNN-X | RC]
+Anchors: {N errors} x {M endpoints} MAY_RAISE {(+ K provisional APIEndpoint)}
+Handling: {N} HANDLES from {state ids} | deferred (no machine — run /nacl-sa-ui state-machine, then re-run) | n/a (backend-only)
+Presentations: {N} ({K} inline / {K} toast / ...) — all SHOWS triangles closed
+
+Staleness stamped (directed): {N} tasks + 1 UC (origin: UC-NNN)
+  {+ shared-error stamp: {M} raiser UCs + {T} tasks (origin: ERR-X)}
+spec_version: UC-NNN {old} -> {new}
+
+L12 validation (scoped): {PASS | N findings}
+
+Next:
+  - `/nacl-tl-plan` to (re-)plan the UC (clears the stale flags, bakes the error contract into task files)
+  - `/nacl-sa-validate internal` for the full gate
+```
+
+---
+
 ## Error Handling
 
 ### Neo4j unavailable
@@ -1324,8 +1566,9 @@ If `detail` finds no DomainEntity realized from related BA entities:
 - mcp__neo4j__write-cypher   # UseCase, ActivityStep, Form, FormField, Requirement,
                               # RuntimeContract, RuntimeState, RuntimeTransition,
                               # RuntimeEvent, RuntimeLock, IdempotencyKey,
-                              # RecoveryProcedure, Slice nodes
-                              # (+ provisional APIEndpoint from the slices command)
+                              # RecoveryProcedure, Slice, DomainError,
+                              # ErrorPresentation nodes
+                              # (+ provisional APIEndpoint from the slices/errors commands)
                               # AUTOMATES_AS, CONTAINS_UC, ACTOR, HAS_STEP, USES_FORM,
                               # HAS_FIELD, MAPS_TO, HAS_REQUIREMENT, IMPLEMENTED_BY,
                               # CONTAINS_RUNTIME_CONTRACT, HAS_STATE,
@@ -1333,7 +1576,8 @@ If `detail` finds no DomainEntity realized from related BA entities:
                               # HAS_TRANSITION, FROM_STATE, TO_STATE, ACQUIRES_LOCK,
                               # EMITS_EVENT, RESOLVES_RACE_WITH,
                               # USES_IDEMPOTENCY_KEY, HAS_RECOVERY,
-                              # HAS_SLICE, COVERS, CALLS, VERIFIED_BY, EXPOSES edges
+                              # HAS_SLICE, COVERS, CALLS, VERIFIED_BY, EXPOSES,
+                              # HAS_ERROR, MAY_RAISE, HANDLES, PRESENTED_AS, SHOWS edges
 ```
 
 ### Node types created
@@ -1353,7 +1597,9 @@ If `detail` finds no DomainEntity realized from related BA entities:
 | IdempotencyKey | id, source, scope, ttl_seconds |
 | RecoveryProcedure | id, trigger, action, description |
 | Slice | id, name, slice_kind, given, when, then, criterion_index, created_by, created_at, updated |
-| APIEndpoint (provisional) | id, path, provisional, created_by, created_at — only when the slices command needs an endpoint that does not exist yet |
+| DomainError | id, code, name, description, error_kind, http_status, retryable, created_by, created_at, updated |
+| ErrorPresentation | id, message, presentation_kind, recovery_action, created_by, created_at, updated |
+| APIEndpoint (provisional) | id, path, provisional, created_by, created_at — only when the slices/errors commands need an endpoint that does not exist yet |
 
 ### Edge types created
 
@@ -1384,7 +1630,12 @@ If `detail` finds no DomainEntity realized from related BA entities:
 | COVERS | Slice | ScreenState / Transition | --- (slices command) |
 | CALLS | Slice | APIEndpoint | --- (slices command; name shared with ScreenEffect→APIEndpoint — label-qualify the source) |
 | VERIFIED_BY | Slice | Task | --- (slices command; also re-linked by nacl-tl-plan) |
-| EXPOSES | UseCase | APIEndpoint | --- (slices command, provisional-endpoint path only) |
+| EXPOSES | UseCase | APIEndpoint | --- (slices/errors commands, provisional-endpoint path only) |
+| HAS_ERROR | Module | DomainError | --- (errors command; required parent — module-scoped catalog) |
+| MAY_RAISE | APIEndpoint | DomainError | --- (errors command; anchor invariant, legal on provisional endpoints) |
+| HANDLES | ScreenState | DomainError | --- (errors command; channel rule — the screen actually calls a raising endpoint) |
+| PRESENTED_AS | DomainError | ErrorPresentation | --- (errors command; required parent) |
+| SHOWS | ScreenState | ErrorPresentation | --- (errors command; triangle closure with HANDLES) |
 
 ---
 
@@ -1432,6 +1683,18 @@ If `detail` finds no DomainEntity realized from related BA entities:
 - [ ] Staleness stamped DIRECTED, same contract as sa-feature 3g (UC's tasks + transitive DEPENDS_ON-dependents' tasks `*1..5` + the changed UC itself; count(DISTINCT) reported) — never via broad sa_impact_closure
 - [ ] Scoped L11 run clean (or findings fixed before completing)
 - [ ] Report presented (slices, anchors, coverage, stamp counts, next steps)
+
+### Before completing `errors`
+- [ ] UC context read (module, endpoints, machine, slices, requirements, RC in BOTH formats, existing errors); guards applied (no Module → STOP; backend-only → MAY_RAISE-only; UI without machine → WARN + taxonomy-only)
+- [ ] Errors proposed from requirements / error-slices / RC hints / machine and confirmed by user (codes domain-prefixed UPPER_SNAKE; one node per envelope-distinguishable code)
+- [ ] DomainError nodes MERGEd by id (shared errors never duplicated; foreign-module errors never re-parented) with non-blank `code`; HAS_ERROR parent wired
+- [ ] **Every error raisable: ≥1 MAY_RAISE from an endpoint** — CRITICAL (L12.2); provisional endpoints created with EXPOSES anchor and reported
+- [ ] HANDLES written only where the channel rule holds; SHOWS only with HANDLES (triangle closed); every presentation has a non-blank user-language `message`
+- [ ] MODIFY deletions by explicit id only; shared errors raised by other UCs never deleted
+- [ ] spec_version bumped
+- [ ] Staleness stamped DIRECTED, same contract as sa-feature 3g; shared-error property modifications additionally stamp raiser UCs (origin = ERR id) — never via broad sa_impact_closure
+- [ ] Scoped L12 run clean (`WHERE err.id IN $errIds`) — or findings fixed before completing
+- [ ] Report presented (errors, anchors, handling, presentations, stamp counts, next steps)
 
 ### Before completing `list`
 - [ ] All UCs queried with metrics
