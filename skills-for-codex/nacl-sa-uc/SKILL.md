@@ -116,15 +116,23 @@ Commands:
    only; never anchor to RC nodes, never invent contract structure).
    Guards: UC without a Module → STOP (the catalog is module-owned — wire
    `CONTAINS_UC` first); `has_ui=false` → MAY_RAISE-only mode (no handling,
-   no presentations — the envelope IS the presentation); UI UC without a
-   Screen → WARN and proceed taxonomy-only (the endpoint anchor exists
-   regardless; L12.7 self-signals the handling gap once the machine exists).
+   no presentations — the envelope IS the presentation; the
+   provisional-endpoint path still runs — a backend UC with no EXPOSES is
+   the common case); UI UC without a Screen → WARN and proceed taxonomy-only
+   (the endpoint anchor exists regardless; L12.7 self-signals the handling
+   gap once the machine exists). When endpoints already MAY_RAISE errors,
+   keep the before-image of contract properties; an idempotent re-run whose
+   proposal changes nothing is a no-op — skip the stamp phase entirely.
 2. Propose errors from requirements → error-kind slices → RC hints → the
    machine's error states. One `DomainError` per code the API envelope can
    distinguish; field-level validation is ONE `VALIDATION_FAILED`. Codes are
    domain-prefixed UPPER_SNAKE latin (`PROMO_NOT_FOUND`, never `NOT_FOUND`).
    error_kind ∈ validation|not_found|conflict|permission|rate_limit|external|
-   internal (transport-independent; http_status is only a hint). For each
+   internal (transport-independent; http_status is only a hint, and a status
+   named in a Requirement is verbatim-authoritative — never "correct" it to
+   the kind table's typical value). Errors attach to every endpoint where
+   the caller observes them: terminal pipeline failures → both trigger and
+   status endpoints; read-side errors (NOT_FOUND, stuck) → status only. For each
    UI-handled error propose ≥1 presentation: user-language message (never the
    internal code), kind ∈ toast|banner|inline|modal|fullscreen|silent
    (deliberate silence = a silent-kind presentation whose message documents
@@ -142,14 +150,19 @@ Commands:
    error other UCs still raise — remove only your own MAY_RAISE edges.
 4. Bump `spec_version`; stamp staleness DIRECTED (same contract as
    `nacl-sa-feature` 3g; `stale_origin` = the UC id). If the run MODIFIED
-   properties of a shared error (raised by other UCs' endpoints), also stamp
-   with the same two-statement 3g shape, `stale_origin` = the error id:
+   contract properties of a shared error (raised by other UCs' endpoints) —
+   mechanical trigger: one of code/name/description/error_kind/http_status/
+   retryable changed vs the before-image; bookkeeping `updated`/`created_*`
+   and added MAY_RAISE edges never count — also stamp with the same
+   two-statement 3g shape, `stale_origin` = the error id:
    first the tasks of raisers + their `DEPENDS_ON*1..5` dependents, then
    ONLY the raiser UC nodes themselves (dependent UCs get their tasks
    stamped, never the UC node) — computed directionally via
    `(err)<-[:MAY_RAISE]-(api)<-[:EXPOSES]-(raiser)`, never the broad closure.
 5. Run scoped L12 checks (`WHERE err.id IN $errIds` — errors are NOT
-   UC-scoped, there is no id-infix recipe); fix CRITICAL findings before
+   UC-scoped, there is no id-infix recipe; the screen-keyed L12.7 and
+   UC-keyed L12.9 are scoped by the UC's screens / the UC instead, and are
+   WARNING/INFO — report, never block); fix CRITICAL findings before
    completing; report errors, anchors, handling, presentations, stamp counts.
 
 Use SA id conventions from the graph or schema: `UC-NNN`, `{UC}-ASNN`,

@@ -234,18 +234,22 @@ L12 = {
    OPTIONAL MATCH (p:ErrorPresentation) WHERE NOT (:ScreenState)-[:SHOWS]->(p)
    WITH a, count(p) AS b RETURN a + b;""",
  # both halves as COUNT{} subqueries — a plain second MATCH whose WHERE filters
- # every row away would erase the carried count (the Фаза-1 cypher-shell gotcha)
+ # every row away would erase the carried count (the Фаза-1 cypher-shell gotcha).
+ # The trailing AS alias is LOAD-BEARING: an unaliased multi-line expression
+ # becomes a multi-line column header in cypher-shell plain format, and the
+ # scalar parser reads a header line instead of the value (run-1 of this
+ # harness silently returned 0 for L12.3/L12.4 because of exactly that).
  "L12.3": """RETURN
    COUNT { MATCH (s)-[:HANDLES]->(x) WHERE NOT s:ScreenState OR NOT x:DomainError } +
    COUNT { MATCH (st:ScreenState)-[:HANDLES]->(err:DomainError)
            MATCH (scr:Screen)-[:HAS_STATE]->(st)
            WHERE NOT EXISTS {
              MATCH (scr)-[:HAS_TRANSITION]->(:Transition)-[:TRIGGERS]->(:ScreenEffect)
-                   -[:CALLS]->(:APIEndpoint)-[:MAY_RAISE]->(err) } };""",
+                   -[:CALLS]->(:APIEndpoint)-[:MAY_RAISE]->(err) } } AS c;""",
  "L12.4": """RETURN
    COUNT { MATCH (a)-[:MAY_RAISE]->(b) WHERE NOT a:APIEndpoint OR NOT b:DomainError } +
    COUNT { MATCH (a)-[:PRESENTED_AS]->(b) WHERE NOT a:DomainError OR NOT b:ErrorPresentation } +
-   COUNT { MATCH (a)-[:SHOWS]->(b) WHERE NOT a:ScreenState OR NOT b:ErrorPresentation };""",
+   COUNT { MATCH (a)-[:SHOWS]->(b) WHERE NOT a:ScreenState OR NOT b:ErrorPresentation } AS c;""",
  "L12.5": """MATCH (st:ScreenState)-[:SHOWS]->(p:ErrorPresentation)<-[:PRESENTED_AS]-(err:DomainError)
    WHERE NOT (st)-[:HANDLES]->(err)
    RETURN count(*);""",
@@ -474,9 +478,12 @@ def make_defects(uc, name, api, module, nameF, apiF):
       ("parentless-error",
        f"MATCH (:Module)-[r:HAS_ERROR]->(:DomainError {{id:'{e1}'}}) DELETE r;",
        {"L12.1": 1}),
+      # deleting PRESENTED_AS also breaks the SHOWS triangle's PRESENTED_AS leg,
+      # so the handling state no longer shows any presentation OF that error —
+      # correct double-detection (run-1 expected only L12.1; the detector was right)
       ("parentless-presentation",
        f"MATCH (:DomainError)-[r:PRESENTED_AS]->(:ErrorPresentation {{id:'{p1}'}}) DELETE r;",
-       {"L12.1": 1}),
+       {"L12.1": 1, "L12.8": 1}),
       # unraisable error ALSO breaks the channel of its HANDLES edge — correct
       # double-detection by construction (handling an unraisable error is fiction)
       ("unraisable-error",

@@ -1347,9 +1347,9 @@ Also read the requirements' text (errors usually live there — real graphs carr
 **Guards:**
 - If the UC does not exist → STOP, report.
 - If the UC has **no Module** (`CONTAINS_UC` missing) → STOP: the error catalog is module-owned (`HAS_ERROR` is the required parent — L12.1); wire the UC into a module first (`/nacl-sa-architect`). Real graphs do contain module-less UCs — do not guess a module.
-- If `has_ui = false` (backend-only UC) → **MAY_RAISE-only mode**: no HANDLES, no SHOWS, no presentations — for a machine-to-machine caller the HTTP envelope IS the presentation. The taxonomy half (DomainError + MAY_RAISE) is authored in full.
+- If `has_ui = false` (backend-only UC) → **MAY_RAISE-only mode**: no HANDLES, no SHOWS, no presentations — for a machine-to-machine caller the HTTP envelope IS the presentation. The taxonomy half (DomainError + MAY_RAISE) is authored in full, **including the provisional-endpoint path of § 3.2** — a backend UC with no `EXPOSES` yet is the common case, not an exception.
 - If `coalesce(uc.has_ui, true) = true` and the UC has **no Screen** → WARN and proceed **taxonomy-only** (DomainError + MAY_RAISE; defer HANDLES/SHOWS/presentations). Asymmetric to the `slices` STOP, deliberately: a slice's primary UI anchor is the machine, but an error's primary anchor is the endpoint, which exists (or is created provisionally) regardless. The handling gap self-signals: L12.7 lights up as soon as the machine is authored — recommend `/nacl-sa-ui state-machine UC-NNN`, then re-run `errors`.
-- If the UC's endpoints already MAY_RAISE errors → load them with the `sa_uc_errors` named query (`graph-infra/queries/sa-queries.cypher`) and present; the run becomes a MODIFY.
+- If the UC's endpoints already MAY_RAISE errors → load them with the `sa_uc_errors` named query (`graph-infra/queries/sa-queries.cypher`) and present, **keeping the before-image of their contract properties** (code, name, description, error_kind, http_status, retryable) for the Phase-4 shared-stamp trigger. The run becomes a MODIFY **only if the confirmed proposal actually changes something** (new/removed nodes or edges, or a contract-property change); an idempotent re-run whose proposal changes nothing is a no-op — report and **skip Phase 4 entirely** (no spec_version bump, no stamp: nothing about the UC's shape changed).
 
 ---
 
@@ -1372,6 +1372,8 @@ Also read the requirements' text (errors usually live there — real graphs carr
 | Caller over quota / throttled | `rate_limit` | 429 |
 | Upstream provider / external dependency failed | `external` | 502 / 503 / 504 |
 | Our invariant broken (bug class) | `internal` | 500 |
+
+The "typical http_status" column is a fallback for when no status is named anywhere. **A status named in a Requirement is verbatim-authoritative** (the source-priority rule): if REQ text says `410` for an expired promo, write 410 with the semantically right `error_kind` — never "correct" an explicit requirement status to the table's typical value.
 
 **Presentations (UI UCs with a machine):** for every error a screen state will handle, propose ≥1 presentation: `presentation_kind ∈ {toast, banner, inline, modal, fullscreen, silent}`, `message` in the **user's language, never the internal code** (`«Промокод не найден»`, not `PROMO_NOT_FOUND`), optional `recovery_action ∈ {retry, back, support, none}`. Deliberate silence is a `silent`-kind presentation whose message documents the observable absence ("stale data stays visible, no interruption") — silence must be a decision, not a gap.
 
@@ -1416,7 +1418,7 @@ MERGE (api)-[:MAY_RAISE]->(err)
 RETURN api.id AS endpoint, err.id AS may_raise
 ```
 
-**If the APIEndpoint does not exist yet** (UC has no `EXPOSES` — common before `nacl-tl-plan` has run): MERGE a **provisional** endpoint anchored to the UC, exactly as `slices` § 3.3 does (`provisional = true` + `(:UseCase)-[:EXPOSES]->`). Same granularity rule: one endpoint per distinct backend operation (trigger vs status read), never one per error. Report every provisional endpoint created.
+**If the APIEndpoint does not exist yet** (UC has no `EXPOSES` — common before `nacl-tl-plan` has run): MERGE a **provisional** endpoint anchored to the UC, exactly as `slices` § 3.3 does (`provisional = true` + `(:UseCase)-[:EXPOSES]->`). Same granularity rule: one endpoint per distinct backend operation (trigger vs status read), never one per error. **Which errors attach to which surface:** an error attaches to every endpoint where the caller can observe it — terminal pipeline/processing failures are typically observable at BOTH the trigger and the status endpoint; read-side errors (`*_NOT_FOUND`, stuck-detection) attach to the status endpoint only. Worked backend example: a pipeline UC gets `POST …/run` + `GET …/status`; `PIPELINE_FAILED`/`UPSTREAM_FAILED` → both, `NOT_FOUND`/`STUCK` → status only. Report every provisional endpoint created.
 
 #### 3.3 HANDLES + presentations (UI UCs with a machine; skip in MAY_RAISE-only / taxonomy-only modes)
 
@@ -1467,9 +1469,9 @@ RETURN uc.id AS uc_id, uc.spec_version AS spec_version
 
 #### 4.2 Stamp staleness — DIRECTED and TIGHT (never the broad closure)
 
-Same directed contract as `nacl-sa-feature` step 3g (the `slices` § 4.2 statements verbatim, with reason `'domain errors ' + $changeKind + ' for ' + $ucId`): the UC's `GENERATES` tasks + tasks of UCs that transitively `DEPENDS_ON` it (`*1..5`) + the changed UC itself; two statements; `count(DISTINCT)`; `stale_origin = $ucId`. **Never stamp via the undirected `sa_impact_closure`** (measured 20–51× false radius).
+Same directed contract as `nacl-sa-feature` step 3g (the `slices` § 4.2 statements verbatim, with reason `'domain errors ' + $changeKind + ' for ' + $ucId`, `$changeKind ∈ {'created','modified'}` as in `slices`): the UC's `GENERATES` tasks + tasks of UCs that transitively `DEPENDS_ON` it (`*1..5`) + the changed UC itself; two statements; `count(DISTINCT)`; `stale_origin = $ucId`. **Never stamp via the undirected `sa_impact_closure`** (measured 20–51× false radius).
 
-**Shared-error extension (the one new stamp semantic):** if this run **modified properties** of a DomainError that endpoints of OTHER UCs also raise (merely adding your own MAY_RAISE edges does not count — that changes your contract, not theirs), those raiser UCs' contracts changed too. Compute the raiser set directionally and stamp it with the same two-statement shape, with the ERROR as the lineage origin:
+**Shared-error extension (the one new stamp semantic):** if this run **modified contract properties** of a DomainError that endpoints of OTHER UCs also raise, those raiser UCs' contracts changed too. The trigger is mechanical, not judgment: compare the Phase-1 before-image — a shared error counts as modified iff one of `code`, `name`, `description`, `error_kind`, `http_status`, `retryable` changed value (bookkeeping props `updated`/`created_*` never count — § 3.1 touches `updated` on every MERGE; merely adding your own MAY_RAISE edges does not count either — that changes your contract, not theirs). Compute the raiser set directionally and stamp it with the same two-statement shape, with the ERROR as the lineage origin:
 
 Two statements, exactly the 3g shape: tasks of raisers + their transitive
 dependents first, then **only the raiser UCs themselves** (dependent UCs get
@@ -1509,7 +1511,7 @@ Still directed, still tight: the set is exactly the raisers (+ their dependents'
 
 #### 4.3 Validate (scoped L12)
 
-Run the L12 checks from `nacl-sa-validate` (canonical queries live there) scoped to this run. **Scope recipe:** errors are NOT UC-scoped — filter by the explicit id list collected in Phase 3: `WHERE err.id IN $errIds` (and presentations via `(err)-[:PRESENTED_AS]->(p)`). Any CRITICAL finding → present it and return to Phase 2; do not leave a broken taxonomy in the graph.
+Run the L12 checks from `nacl-sa-validate` (canonical queries live there) scoped to this run. **Scope recipe:** errors are NOT UC-scoped — filter by the explicit id list collected in Phase 3: `WHERE err.id IN $errIds` (and presentations via `(err)-[:PRESENTED_AS]->(p)`). Two checks have no `err.id` to filter on — scope them by the UC instead: **L12.7** (screen-keyed) prefiltered with `MATCH (uc:UseCase {id: $ucId})-[:HAS_SCREEN]->(scr)`, **L12.9** (UC-keyed) anchored on the same UC. They are WARNING/INFO — report, never block. Any CRITICAL finding → present it and return to Phase 2; do not leave a broken taxonomy in the graph.
 
 #### 4.4 Report
 
