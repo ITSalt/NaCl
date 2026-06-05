@@ -1,0 +1,1220 @@
+{
+  "H0a_clean_graph": {
+    "checks": {
+      "L11.0": 0,
+      "L11.1": 0,
+      "L11.2": 0,
+      "L11.3": 0,
+      "L11.4": 0,
+      "L11.5": 0,
+      "L11.6a": 0,
+      "L11.6b": 0,
+      "L11.7": 0,
+      "L11.8": 0
+    },
+    "pass": true
+  },
+  "H0b_machines_no_slices": {
+    "n_machines": 31,
+    "checks": {
+      "L11.0": 0,
+      "L11.1": 0,
+      "L11.2": 0,
+      "L11.3": 0,
+      "L11.4": 0,
+      "L11.5": 0,
+      "L11.6a": 0,
+      "L11.6b": 0,
+      "L11.7": 0,
+      "L11.8": 0
+    },
+    "pass": true
+  },
+  "H1": {
+    "n_ucs": 31,
+    "rows": [
+      {
+        "uc": "UC-001",
+        "slices": [
+          "SLC-001-HappyPath",
+          "SLC-001-EmptyResult",
+          "SLC-001-LoadFailureRetry"
+        ],
+        "has_tasks": false,
+        "l11_intact_zero": true,
+        "old_from_uc": 2,
+        "new_from_uc": 3,
+        "old_from_api": 2,
+        "new_from_api": 3,
+        "old_from_da": 2,
+        "new_from_da": 3,
+        "old_from_task": null,
+        "new_from_task": null,
+        "old_uc_to_covers_only": -1,
+        "new_uc_to_covers_only": 1,
+        "new_uc_to_happy_hops": 1,
+        "h1_pass": true
+      },
+      {
+        "uc": "UC-002",
+        "slices": [
+          "SLC-002-HappyPath",
+          "SLC-002-EmptyResult",
+          "SLC-002-LoadFailureRetry"
+        ],
+        "has_tasks": false,
+        "l11_intact_zero": true,
+        "old_from_uc": 2,
+        "new_from_uc": 3,
+        "old_from_api": 2,
+        "new_from_api": 3,
+        "old_from_da": 2,
+        "new_from_da": 3,
+        "old_from_task": null,
+        "new_from_task": null,
+        "old_uc_to_covers_only": -1,
+        "new_uc_to_covers_only": 1,
+        "new_uc_to_happy_hops": 1,
+        "h1_pass": true
+      },
+      {
+        "uc": "UC-003",
+        "slices": [
+          "SLC-003-HappyPath",
+          "SLC-003-EmptyResult",
+          "SLC-003-LoadFailureRetry"
+        ],
+        "has_tasks": true,
+        "l11_intact_zero": true,
+        "old_from_uc": 2,
+        "new_from_uc": 3,
+        "old_from_api": 2,
+        "new_from_api": 3,
+        "old_from_da": 2,
+        "new_from_da": 3,
+        "old_from_task": 2,
+        "new_from_task": 3,
+        "old_uc_to_covers_only": -1,
+        "new_uc_to_covers_only": 1,
+        "new_uc_to_happy_hops": 1,
+        "h1_pass": true
+      },
+      {
+        "uc": "UC-004",
+        "slices": [
+          "SLC-004-HappyPath",
+          "SLC-004-EmptyResult",
+          "SLC-004-LoadFailureRetry"
+        ],
+        "has_tasks": true,
+        "l11_intact_zero": true,
+        "old_from_uc": 2,
+        "new_from_uc": 3,
+        "old_from_api": 2,
+        "new_from_api": 3,
+        "old_from_da": null,
+        "new_from_da": null,
+        "old_from_task": 2,
+        "new_from_task": 3,
+        "old_uc_to_covers_only": -1,
+        "new_uc_to_covers_only": 1,
+        "new_uc_to_happy_hops": 1,
+        "h1_pass": true
+      },
+      {
+        "uc": "UC-005",
+        "slices": [
+          "SLC-005-HappyPath",
+          "SLC-005-EmptyResult",
+          "SLC-005-LoadFailureRetry"
+        ],
+        "has_tasks": true,
+        "l11_intact_zero": true,
+        "old_from_uc": 2,
+        "new_from_uc": 3,
+        "old_from_api": 2,
+        "new_from_api": 3,
+        "old_from_da": null,
+        "new_from_da": null,
+        "old_from_task": 2,
+        "new_from_task": 3,
+        "old_uc_to_covers_only": -1,
+        "new_uc_to_covers_only": 1,
+        "new_uc_to_happy_hops": 1,
+        "h1_pass": true
+      },
+      {
+        "uc": "UC-006",
+        "slices": [
+          "SLC-006-HappyPath",
+          "SLC-006-EmptyResult",
+          "SLC-006-LoadFailureRetry"
+        ],
+        "has_tasks": true,
+        "l11_intact_zero": true,
+        "old_from_uc": 2,
+        "new_from_uc": 3,
+        "old_from_api": 2,
+        "new_from_api": 3,
+        "old_from_da": 2,
+        "new_from_da": 3,
+        "old_from_task": 2,
+        "new_from_task": 3,
+        "old_uc_to_covers_only": -1,
+        "new_uc_to_covers_only": 1,
+        "new_uc_to_happy_hops": 1,
+        "h1_pass": true
+      },
+      {
+        "uc": "UC-007",
+        "slices": [
+          "SLC-007-HappyPath",
+          "SLC-007-EmptyResult",
+          "SLC-007-LoadFailureRetry"
+        ],
+        "has_tasks": false,
+        "l11_intact_zero": true,
+        "old_from_uc": 2,
+        "new_from_uc": 3,
+        "old_from_api": 2,
+        "new_from_api": 3,
+        "old_from_da": 2,
+        "new_from_da": 3,
+        "old_from_task": null,
+        "new_from_task": null,
+        "old_uc_to_covers_only": -1,
+        "new_uc_to_covers_only": 1,
+        "new_uc_to_happy_hops": 1,
+        "h1_pass": true
+      },
+      {
+        "uc": "UC-008",
+        "slices": [
+          "SLC-008-HappyPath",
+          "SLC-008-EmptyResult",
+          "SLC-008-LoadFailureRetry"
+        ],
+        "has_tasks": false,
+        "l11_intact_zero": true,
+        "old_from_uc": 2,
+        "new_from_uc": 3,
+        "old_from_api": 2,
+        "new_from_api": 3,
+        "old_from_da": null,
+        "new_from_da": null,
+        "old_from_task": null,
+        "new_from_task": null,
+        "old_uc_to_covers_only": -1,
+        "new_uc_to_covers_only": 1,
+        "new_uc_to_happy_hops": 1,
+        "h1_pass": true
+      },
+      {
+        "uc": "UC-009",
+        "slices": [
+          "SLC-009-HappyPath",
+          "SLC-009-EmptyResult",
+          "SLC-009-LoadFailureRetry"
+        ],
+        "has_tasks": false,
+        "l11_intact_zero": true,
+        "old_from_uc": 2,
+        "new_from_uc": 3,
+        "old_from_api": 2,
+        "new_from_api": 3,
+        "old_from_da": 2,
+        "new_from_da": 3,
+        "old_from_task": null,
+        "new_from_task": null,
+        "old_uc_to_covers_only": -1,
+        "new_uc_to_covers_only": 1,
+        "new_uc_to_happy_hops": 1,
+        "h1_pass": true
+      },
+      {
+        "uc": "UC-010",
+        "slices": [
+          "SLC-010-HappyPath",
+          "SLC-010-EmptyResult",
+          "SLC-010-LoadFailureRetry"
+        ],
+        "has_tasks": false,
+        "l11_intact_zero": true,
+        "old_from_uc": 2,
+        "new_from_uc": 3,
+        "old_from_api": 2,
+        "new_from_api": 3,
+        "old_from_da": null,
+        "new_from_da": null,
+        "old_from_task": null,
+        "new_from_task": null,
+        "old_uc_to_covers_only": -1,
+        "new_uc_to_covers_only": 1,
+        "new_uc_to_happy_hops": 1,
+        "h1_pass": true
+      },
+      {
+        "uc": "UC-011",
+        "slices": [
+          "SLC-011-HappyPath",
+          "SLC-011-EmptyResult",
+          "SLC-011-LoadFailureRetry"
+        ],
+        "has_tasks": false,
+        "l11_intact_zero": true,
+        "old_from_uc": 2,
+        "new_from_uc": 3,
+        "old_from_api": 2,
+        "new_from_api": 3,
+        "old_from_da": 2,
+        "new_from_da": 3,
+        "old_from_task": null,
+        "new_from_task": null,
+        "old_uc_to_covers_only": -1,
+        "new_uc_to_covers_only": 1,
+        "new_uc_to_happy_hops": 1,
+        "h1_pass": true
+      },
+      {
+        "uc": "UC-012",
+        "slices": [
+          "SLC-012-HappyPath",
+          "SLC-012-EmptyResult",
+          "SLC-012-LoadFailureRetry"
+        ],
+        "has_tasks": true,
+        "l11_intact_zero": true,
+        "old_from_uc": 2,
+        "new_from_uc": 3,
+        "old_from_api": 2,
+        "new_from_api": 3,
+        "old_from_da": null,
+        "new_from_da": null,
+        "old_from_task": 2,
+        "new_from_task": 3,
+        "old_uc_to_covers_only": -1,
+        "new_uc_to_covers_only": 1,
+        "new_uc_to_happy_hops": 1,
+        "h1_pass": true
+      },
+      {
+        "uc": "UC-013",
+        "slices": [
+          "SLC-013-HappyPath",
+          "SLC-013-EmptyResult",
+          "SLC-013-LoadFailureRetry"
+        ],
+        "has_tasks": false,
+        "l11_intact_zero": true,
+        "old_from_uc": 2,
+        "new_from_uc": 3,
+        "old_from_api": 2,
+        "new_from_api": 3,
+        "old_from_da": 2,
+        "new_from_da": 3,
+        "old_from_task": null,
+        "new_from_task": null,
+        "old_uc_to_covers_only": -1,
+        "new_uc_to_covers_only": 1,
+        "new_uc_to_happy_hops": 1,
+        "h1_pass": true
+      },
+      {
+        "uc": "UC-014",
+        "slices": [
+          "SLC-014-HappyPath",
+          "SLC-014-EmptyResult",
+          "SLC-014-LoadFailureRetry"
+        ],
+        "has_tasks": true,
+        "l11_intact_zero": true,
+        "old_from_uc": 2,
+        "new_from_uc": 3,
+        "old_from_api": 2,
+        "new_from_api": 3,
+        "old_from_da": 2,
+        "new_from_da": 3,
+        "old_from_task": 2,
+        "new_from_task": 3,
+        "old_uc_to_covers_only": -1,
+        "new_uc_to_covers_only": 1,
+        "new_uc_to_happy_hops": 1,
+        "h1_pass": true
+      },
+      {
+        "uc": "UC-016",
+        "slices": [
+          "SLC-016-HappyPath",
+          "SLC-016-EmptyResult",
+          "SLC-016-LoadFailureRetry"
+        ],
+        "has_tasks": false,
+        "l11_intact_zero": true,
+        "old_from_uc": 2,
+        "new_from_uc": 3,
+        "old_from_api": 2,
+        "new_from_api": 3,
+        "old_from_da": 2,
+        "new_from_da": 3,
+        "old_from_task": null,
+        "new_from_task": null,
+        "old_uc_to_covers_only": -1,
+        "new_uc_to_covers_only": 1,
+        "new_uc_to_happy_hops": 1,
+        "h1_pass": true
+      },
+      {
+        "uc": "UC-020",
+        "slices": [
+          "SLC-020-HappyPath",
+          "SLC-020-EmptyResult",
+          "SLC-020-LoadFailureRetry"
+        ],
+        "has_tasks": true,
+        "l11_intact_zero": true,
+        "old_from_uc": 2,
+        "new_from_uc": 3,
+        "old_from_api": 2,
+        "new_from_api": 3,
+        "old_from_da": 2,
+        "new_from_da": 3,
+        "old_from_task": 2,
+        "new_from_task": 3,
+        "old_uc_to_covers_only": -1,
+        "new_uc_to_covers_only": 1,
+        "new_uc_to_happy_hops": 1,
+        "h1_pass": true
+      },
+      {
+        "uc": "UC-021",
+        "slices": [
+          "SLC-021-HappyPath",
+          "SLC-021-EmptyResult",
+          "SLC-021-LoadFailureRetry"
+        ],
+        "has_tasks": true,
+        "l11_intact_zero": true,
+        "old_from_uc": 2,
+        "new_from_uc": 3,
+        "old_from_api": 2,
+        "new_from_api": 3,
+        "old_from_da": null,
+        "new_from_da": null,
+        "old_from_task": 2,
+        "new_from_task": 3,
+        "old_uc_to_covers_only": -1,
+        "new_uc_to_covers_only": 1,
+        "new_uc_to_happy_hops": 1,
+        "h1_pass": true
+      },
+      {
+        "uc": "UC-022",
+        "slices": [
+          "SLC-022-HappyPath",
+          "SLC-022-EmptyResult",
+          "SLC-022-LoadFailureRetry"
+        ],
+        "has_tasks": true,
+        "l11_intact_zero": true,
+        "old_from_uc": 2,
+        "new_from_uc": 3,
+        "old_from_api": 2,
+        "new_from_api": 3,
+        "old_from_da": 2,
+        "new_from_da": 3,
+        "old_from_task": 2,
+        "new_from_task": 3,
+        "old_uc_to_covers_only": -1,
+        "new_uc_to_covers_only": 1,
+        "new_uc_to_happy_hops": 1,
+        "h1_pass": true
+      },
+      {
+        "uc": "UC-023",
+        "slices": [
+          "SLC-023-HappyPath",
+          "SLC-023-EmptyResult",
+          "SLC-023-LoadFailureRetry"
+        ],
+        "has_tasks": false,
+        "l11_intact_zero": true,
+        "old_from_uc": 2,
+        "new_from_uc": 3,
+        "old_from_api": 2,
+        "new_from_api": 3,
+        "old_from_da": 2,
+        "new_from_da": 3,
+        "old_from_task": null,
+        "new_from_task": null,
+        "old_uc_to_covers_only": -1,
+        "new_uc_to_covers_only": 1,
+        "new_uc_to_happy_hops": 1,
+        "h1_pass": true
+      },
+      {
+        "uc": "UC-025",
+        "slices": [
+          "SLC-025-HappyPath",
+          "SLC-025-EmptyResult",
+          "SLC-025-LoadFailureRetry"
+        ],
+        "has_tasks": true,
+        "l11_intact_zero": true,
+        "old_from_uc": 2,
+        "new_from_uc": 3,
+        "old_from_api": 2,
+        "new_from_api": 3,
+        "old_from_da": null,
+        "new_from_da": null,
+        "old_from_task": 2,
+        "new_from_task": 3,
+        "old_uc_to_covers_only": -1,
+        "new_uc_to_covers_only": 1,
+        "new_uc_to_happy_hops": 1,
+        "h1_pass": true
+      },
+      {
+        "uc": "UC-027",
+        "slices": [
+          "SLC-027-HappyPath",
+          "SLC-027-EmptyResult",
+          "SLC-027-LoadFailureRetry"
+        ],
+        "has_tasks": true,
+        "l11_intact_zero": true,
+        "old_from_uc": 2,
+        "new_from_uc": 3,
+        "old_from_api": 2,
+        "new_from_api": 3,
+        "old_from_da": null,
+        "new_from_da": null,
+        "old_from_task": 2,
+        "new_from_task": 3,
+        "old_uc_to_covers_only": -1,
+        "new_uc_to_covers_only": 1,
+        "new_uc_to_happy_hops": 1,
+        "h1_pass": true
+      },
+      {
+        "uc": "UC-029",
+        "slices": [
+          "SLC-029-HappyPath",
+          "SLC-029-EmptyResult",
+          "SLC-029-LoadFailureRetry"
+        ],
+        "has_tasks": false,
+        "l11_intact_zero": true,
+        "old_from_uc": 2,
+        "new_from_uc": 3,
+        "old_from_api": 2,
+        "new_from_api": 3,
+        "old_from_da": null,
+        "new_from_da": null,
+        "old_from_task": null,
+        "new_from_task": null,
+        "old_uc_to_covers_only": -1,
+        "new_uc_to_covers_only": 1,
+        "new_uc_to_happy_hops": 1,
+        "h1_pass": true
+      },
+      {
+        "uc": "UC-030",
+        "slices": [
+          "SLC-030-HappyPath",
+          "SLC-030-EmptyResult",
+          "SLC-030-LoadFailureRetry"
+        ],
+        "has_tasks": true,
+        "l11_intact_zero": true,
+        "old_from_uc": 2,
+        "new_from_uc": 3,
+        "old_from_api": 2,
+        "new_from_api": 3,
+        "old_from_da": 2,
+        "new_from_da": 3,
+        "old_from_task": 2,
+        "new_from_task": 3,
+        "old_uc_to_covers_only": -1,
+        "new_uc_to_covers_only": 1,
+        "new_uc_to_happy_hops": 1,
+        "h1_pass": true
+      },
+      {
+        "uc": "UC-031",
+        "slices": [
+          "SLC-031-HappyPath",
+          "SLC-031-EmptyResult",
+          "SLC-031-LoadFailureRetry"
+        ],
+        "has_tasks": true,
+        "l11_intact_zero": true,
+        "old_from_uc": 2,
+        "new_from_uc": 3,
+        "old_from_api": 2,
+        "new_from_api": 3,
+        "old_from_da": 2,
+        "new_from_da": 3,
+        "old_from_task": 2,
+        "new_from_task": 3,
+        "old_uc_to_covers_only": -1,
+        "new_uc_to_covers_only": 1,
+        "new_uc_to_happy_hops": 1,
+        "h1_pass": true
+      },
+      {
+        "uc": "UC-034",
+        "slices": [
+          "SLC-034-HappyPath",
+          "SLC-034-EmptyResult",
+          "SLC-034-LoadFailureRetry"
+        ],
+        "has_tasks": true,
+        "l11_intact_zero": true,
+        "old_from_uc": 2,
+        "new_from_uc": 3,
+        "old_from_api": 2,
+        "new_from_api": 3,
+        "old_from_da": 2,
+        "new_from_da": 3,
+        "old_from_task": 2,
+        "new_from_task": 3,
+        "old_uc_to_covers_only": -1,
+        "new_uc_to_covers_only": 1,
+        "new_uc_to_happy_hops": 1,
+        "h1_pass": true
+      },
+      {
+        "uc": "UC-035",
+        "slices": [
+          "SLC-035-HappyPath",
+          "SLC-035-EmptyResult",
+          "SLC-035-LoadFailureRetry"
+        ],
+        "has_tasks": false,
+        "l11_intact_zero": true,
+        "old_from_uc": 2,
+        "new_from_uc": 3,
+        "old_from_api": 2,
+        "new_from_api": 3,
+        "old_from_da": 2,
+        "new_from_da": 3,
+        "old_from_task": null,
+        "new_from_task": null,
+        "old_uc_to_covers_only": -1,
+        "new_uc_to_covers_only": 1,
+        "new_uc_to_happy_hops": 1,
+        "h1_pass": true
+      },
+      {
+        "uc": "UC-036",
+        "slices": [
+          "SLC-036-HappyPath",
+          "SLC-036-EmptyResult",
+          "SLC-036-LoadFailureRetry"
+        ],
+        "has_tasks": false,
+        "l11_intact_zero": true,
+        "old_from_uc": 2,
+        "new_from_uc": 3,
+        "old_from_api": 2,
+        "new_from_api": 3,
+        "old_from_da": 2,
+        "new_from_da": 3,
+        "old_from_task": null,
+        "new_from_task": null,
+        "old_uc_to_covers_only": -1,
+        "new_uc_to_covers_only": 1,
+        "new_uc_to_happy_hops": 1,
+        "h1_pass": true
+      },
+      {
+        "uc": "UC-037",
+        "slices": [
+          "SLC-037-HappyPath",
+          "SLC-037-EmptyResult",
+          "SLC-037-LoadFailureRetry"
+        ],
+        "has_tasks": true,
+        "l11_intact_zero": true,
+        "old_from_uc": 2,
+        "new_from_uc": 3,
+        "old_from_api": 2,
+        "new_from_api": 3,
+        "old_from_da": null,
+        "new_from_da": null,
+        "old_from_task": 2,
+        "new_from_task": 3,
+        "old_uc_to_covers_only": -1,
+        "new_uc_to_covers_only": 1,
+        "new_uc_to_happy_hops": 1,
+        "h1_pass": true
+      },
+      {
+        "uc": "UC-038",
+        "slices": [
+          "SLC-038-HappyPath",
+          "SLC-038-EmptyResult",
+          "SLC-038-LoadFailureRetry"
+        ],
+        "has_tasks": true,
+        "l11_intact_zero": true,
+        "old_from_uc": 2,
+        "new_from_uc": 3,
+        "old_from_api": 2,
+        "new_from_api": 3,
+        "old_from_da": null,
+        "new_from_da": null,
+        "old_from_task": 2,
+        "new_from_task": 3,
+        "old_uc_to_covers_only": -1,
+        "new_uc_to_covers_only": 1,
+        "new_uc_to_happy_hops": 1,
+        "h1_pass": true
+      },
+      {
+        "uc": "UC-039",
+        "slices": [
+          "SLC-039-HappyPath",
+          "SLC-039-EmptyResult",
+          "SLC-039-LoadFailureRetry"
+        ],
+        "has_tasks": true,
+        "l11_intact_zero": true,
+        "old_from_uc": 2,
+        "new_from_uc": 3,
+        "old_from_api": 2,
+        "new_from_api": 3,
+        "old_from_da": null,
+        "new_from_da": null,
+        "old_from_task": 2,
+        "new_from_task": 3,
+        "old_uc_to_covers_only": -1,
+        "new_uc_to_covers_only": 1,
+        "new_uc_to_happy_hops": 1,
+        "h1_pass": true
+      },
+      {
+        "uc": "UC-040",
+        "slices": [
+          "SLC-040-HappyPath",
+          "SLC-040-EmptyResult",
+          "SLC-040-LoadFailureRetry"
+        ],
+        "has_tasks": true,
+        "l11_intact_zero": true,
+        "old_from_uc": 2,
+        "new_from_uc": 3,
+        "old_from_api": 2,
+        "new_from_api": 3,
+        "old_from_da": null,
+        "new_from_da": null,
+        "old_from_task": 2,
+        "new_from_task": 3,
+        "old_uc_to_covers_only": -1,
+        "new_uc_to_covers_only": 1,
+        "new_uc_to_happy_hops": 1,
+        "h1_pass": true
+      }
+    ],
+    "pass": true
+  },
+  "H2": {
+    "n_ucs": 31,
+    "rows": [
+      {
+        "uc": "UC-001",
+        "tasks_flagged": 0,
+        "tasks_expected": 0,
+        "total_flagged": 1,
+        "expected_total": 1,
+        "broad_from_uc_tasks": 45,
+        "broad_from_slice_tasks": 41,
+        "h2_pass": true
+      },
+      {
+        "uc": "UC-002",
+        "tasks_flagged": 0,
+        "tasks_expected": 0,
+        "total_flagged": 1,
+        "expected_total": 1,
+        "broad_from_uc_tasks": 45,
+        "broad_from_slice_tasks": 41,
+        "h2_pass": true
+      },
+      {
+        "uc": "UC-003",
+        "tasks_flagged": 1,
+        "tasks_expected": 1,
+        "total_flagged": 2,
+        "expected_total": 2,
+        "broad_from_uc_tasks": 45,
+        "broad_from_slice_tasks": 45,
+        "h2_pass": true
+      },
+      {
+        "uc": "UC-004",
+        "tasks_flagged": 3,
+        "tasks_expected": 3,
+        "total_flagged": 4,
+        "expected_total": 4,
+        "broad_from_uc_tasks": 45,
+        "broad_from_slice_tasks": 44,
+        "h2_pass": true
+      },
+      {
+        "uc": "UC-005",
+        "tasks_flagged": 2,
+        "tasks_expected": 2,
+        "total_flagged": 3,
+        "expected_total": 3,
+        "broad_from_uc_tasks": 45,
+        "broad_from_slice_tasks": 44,
+        "h2_pass": true
+      },
+      {
+        "uc": "UC-006",
+        "tasks_flagged": 1,
+        "tasks_expected": 1,
+        "total_flagged": 2,
+        "expected_total": 2,
+        "broad_from_uc_tasks": 45,
+        "broad_from_slice_tasks": 45,
+        "h2_pass": true
+      },
+      {
+        "uc": "UC-007",
+        "tasks_flagged": 0,
+        "tasks_expected": 0,
+        "total_flagged": 1,
+        "expected_total": 1,
+        "broad_from_uc_tasks": 45,
+        "broad_from_slice_tasks": 39,
+        "h2_pass": true
+      },
+      {
+        "uc": "UC-008",
+        "tasks_flagged": 0,
+        "tasks_expected": 0,
+        "total_flagged": 1,
+        "expected_total": 1,
+        "broad_from_uc_tasks": 45,
+        "broad_from_slice_tasks": 39,
+        "h2_pass": true
+      },
+      {
+        "uc": "UC-009",
+        "tasks_flagged": 0,
+        "tasks_expected": 0,
+        "total_flagged": 1,
+        "expected_total": 1,
+        "broad_from_uc_tasks": 45,
+        "broad_from_slice_tasks": 40,
+        "h2_pass": true
+      },
+      {
+        "uc": "UC-010",
+        "tasks_flagged": 0,
+        "tasks_expected": 0,
+        "total_flagged": 1,
+        "expected_total": 1,
+        "broad_from_uc_tasks": 45,
+        "broad_from_slice_tasks": 41,
+        "h2_pass": true
+      },
+      {
+        "uc": "UC-011",
+        "tasks_flagged": 0,
+        "tasks_expected": 0,
+        "total_flagged": 1,
+        "expected_total": 1,
+        "broad_from_uc_tasks": 45,
+        "broad_from_slice_tasks": 45,
+        "h2_pass": true
+      },
+      {
+        "uc": "UC-012",
+        "tasks_flagged": 1,
+        "tasks_expected": 1,
+        "total_flagged": 2,
+        "expected_total": 2,
+        "broad_from_uc_tasks": 45,
+        "broad_from_slice_tasks": 45,
+        "h2_pass": true
+      },
+      {
+        "uc": "UC-013",
+        "tasks_flagged": 0,
+        "tasks_expected": 0,
+        "total_flagged": 1,
+        "expected_total": 1,
+        "broad_from_uc_tasks": 45,
+        "broad_from_slice_tasks": 45,
+        "h2_pass": true
+      },
+      {
+        "uc": "UC-014",
+        "tasks_flagged": 3,
+        "tasks_expected": 3,
+        "total_flagged": 4,
+        "expected_total": 4,
+        "broad_from_uc_tasks": 45,
+        "broad_from_slice_tasks": 44,
+        "h2_pass": true
+      },
+      {
+        "uc": "UC-016",
+        "tasks_flagged": 0,
+        "tasks_expected": 0,
+        "total_flagged": 1,
+        "expected_total": 1,
+        "broad_from_uc_tasks": 41,
+        "broad_from_slice_tasks": 25,
+        "h2_pass": true
+      },
+      {
+        "uc": "UC-020",
+        "tasks_flagged": 1,
+        "tasks_expected": 1,
+        "total_flagged": 2,
+        "expected_total": 2,
+        "broad_from_uc_tasks": 45,
+        "broad_from_slice_tasks": 45,
+        "h2_pass": true
+      },
+      {
+        "uc": "UC-021",
+        "tasks_flagged": 1,
+        "tasks_expected": 1,
+        "total_flagged": 2,
+        "expected_total": 2,
+        "broad_from_uc_tasks": 45,
+        "broad_from_slice_tasks": 45,
+        "h2_pass": true
+      },
+      {
+        "uc": "UC-022",
+        "tasks_flagged": 1,
+        "tasks_expected": 1,
+        "total_flagged": 2,
+        "expected_total": 2,
+        "broad_from_uc_tasks": 45,
+        "broad_from_slice_tasks": 45,
+        "h2_pass": true
+      },
+      {
+        "uc": "UC-023",
+        "tasks_flagged": 0,
+        "tasks_expected": 0,
+        "total_flagged": 1,
+        "expected_total": 1,
+        "broad_from_uc_tasks": 45,
+        "broad_from_slice_tasks": 45,
+        "h2_pass": true
+      },
+      {
+        "uc": "UC-025",
+        "tasks_flagged": 1,
+        "tasks_expected": 1,
+        "total_flagged": 2,
+        "expected_total": 2,
+        "broad_from_uc_tasks": 45,
+        "broad_from_slice_tasks": 45,
+        "h2_pass": true
+      },
+      {
+        "uc": "UC-027",
+        "tasks_flagged": 1,
+        "tasks_expected": 1,
+        "total_flagged": 2,
+        "expected_total": 2,
+        "broad_from_uc_tasks": 45,
+        "broad_from_slice_tasks": 45,
+        "h2_pass": true
+      },
+      {
+        "uc": "UC-029",
+        "tasks_flagged": 0,
+        "tasks_expected": 0,
+        "total_flagged": 1,
+        "expected_total": 1,
+        "broad_from_uc_tasks": 45,
+        "broad_from_slice_tasks": 41,
+        "h2_pass": true
+      },
+      {
+        "uc": "UC-030",
+        "tasks_flagged": 2,
+        "tasks_expected": 2,
+        "total_flagged": 3,
+        "expected_total": 3,
+        "broad_from_uc_tasks": 45,
+        "broad_from_slice_tasks": 44,
+        "h2_pass": true
+      },
+      {
+        "uc": "UC-031",
+        "tasks_flagged": 3,
+        "tasks_expected": 3,
+        "total_flagged": 4,
+        "expected_total": 4,
+        "broad_from_uc_tasks": 45,
+        "broad_from_slice_tasks": 44,
+        "h2_pass": true
+      },
+      {
+        "uc": "UC-034",
+        "tasks_flagged": 1,
+        "tasks_expected": 1,
+        "total_flagged": 2,
+        "expected_total": 2,
+        "broad_from_uc_tasks": 45,
+        "broad_from_slice_tasks": 44,
+        "h2_pass": true
+      },
+      {
+        "uc": "UC-035",
+        "tasks_flagged": 0,
+        "tasks_expected": 0,
+        "total_flagged": 1,
+        "expected_total": 1,
+        "broad_from_uc_tasks": 45,
+        "broad_from_slice_tasks": 45,
+        "h2_pass": true
+      },
+      {
+        "uc": "UC-036",
+        "tasks_flagged": 0,
+        "tasks_expected": 0,
+        "total_flagged": 1,
+        "expected_total": 1,
+        "broad_from_uc_tasks": 45,
+        "broad_from_slice_tasks": 41,
+        "h2_pass": true
+      },
+      {
+        "uc": "UC-037",
+        "tasks_flagged": 2,
+        "tasks_expected": 2,
+        "total_flagged": 3,
+        "expected_total": 3,
+        "broad_from_uc_tasks": 45,
+        "broad_from_slice_tasks": 41,
+        "h2_pass": true
+      },
+      {
+        "uc": "UC-038",
+        "tasks_flagged": 1,
+        "tasks_expected": 1,
+        "total_flagged": 2,
+        "expected_total": 2,
+        "broad_from_uc_tasks": 45,
+        "broad_from_slice_tasks": 45,
+        "h2_pass": true
+      },
+      {
+        "uc": "UC-039",
+        "tasks_flagged": 1,
+        "tasks_expected": 1,
+        "total_flagged": 2,
+        "expected_total": 2,
+        "broad_from_uc_tasks": 45,
+        "broad_from_slice_tasks": 44,
+        "h2_pass": true
+      },
+      {
+        "uc": "UC-040",
+        "tasks_flagged": 1,
+        "tasks_expected": 1,
+        "total_flagged": 2,
+        "expected_total": 2,
+        "broad_from_uc_tasks": 45,
+        "broad_from_slice_tasks": 44,
+        "h2_pass": true
+      }
+    ],
+    "tight_total": 58,
+    "broad_from_uc_total": 1391,
+    "broad_from_slice_total": 1326,
+    "pass": true
+  },
+  "H3": {
+    "n_defects": 14,
+    "uc": "UC-006",
+    "foreign_uc": "UC-003",
+    "rows": [
+      {
+        "defect": "orphan-slice",
+        "expected": {
+          "L11.0": 1,
+          "L11.1": 1,
+          "L11.2": 1
+        },
+        "fired": {
+          "L11.0": 1,
+          "L11.1": 1,
+          "L11.2": 1
+        },
+        "clean_before": true,
+        "h3_pass": true
+      },
+      {
+        "defect": "parentless-slice",
+        "expected": {
+          "L11.1": 1
+        },
+        "fired": {
+          "L11.1": 1
+        },
+        "clean_before": true,
+        "h3_pass": true
+      },
+      {
+        "defect": "anchorless-slice",
+        "expected": {
+          "L11.2": 1,
+          "L11.7": 2
+        },
+        "fired": {
+          "L11.2": 1,
+          "L11.7": 2
+        },
+        "clean_before": true,
+        "h3_pass": true
+      },
+      {
+        "defect": "foreign-covers",
+        "expected": {
+          "L11.3": 1
+        },
+        "fired": {
+          "L11.3": 1
+        },
+        "clean_before": true,
+        "h3_pass": true
+      },
+      {
+        "defect": "wrong-label-covers",
+        "expected": {
+          "L11.3": 1
+        },
+        "fired": {
+          "L11.3": 1
+        },
+        "clean_before": true,
+        "h3_pass": true
+      },
+      {
+        "defect": "unverified-slice",
+        "expected": {
+          "L11.4": 1
+        },
+        "fired": {
+          "L11.4": 1
+        },
+        "clean_before": true,
+        "h3_pass": true
+      },
+      {
+        "defect": "foreign-task-verifies",
+        "expected": {
+          "L11.5": 1
+        },
+        "fired": {
+          "L11.5": 1
+        },
+        "clean_before": true,
+        "h3_pass": true
+      },
+      {
+        "defect": "wrong-label-verified-by",
+        "expected": {
+          "L11.5": 1
+        },
+        "fired": {
+          "L11.5": 1
+        },
+        "clean_before": true,
+        "h3_pass": true
+      },
+      {
+        "defect": "wrong-label-slice-calls",
+        "expected": {
+          "L11.5": 1
+        },
+        "fired": {
+          "L11.5": 1
+        },
+        "clean_before": true,
+        "h3_pass": true
+      },
+      {
+        "defect": "empty-then",
+        "expected": {
+          "L11.6a": 1
+        },
+        "fired": {
+          "L11.6a": 1
+        },
+        "clean_before": true,
+        "h3_pass": true
+      },
+      {
+        "defect": "bad-kind",
+        "expected": {
+          "L11.6b": 1,
+          "L11.8": 1
+        },
+        "fired": {
+          "L11.6b": 1,
+          "L11.8": 1
+        },
+        "clean_before": true,
+        "h3_pass": true
+      },
+      {
+        "defect": "coverage-gap",
+        "expected": {
+          "L11.7": 1
+        },
+        "fired": {
+          "L11.7": 1
+        },
+        "clean_before": true,
+        "h3_pass": true
+      },
+      {
+        "defect": "no-happy-slice",
+        "expected": {
+          "L11.8": 1
+        },
+        "fired": {
+          "L11.8": 1
+        },
+        "clean_before": true,
+        "h3_pass": true
+      },
+      {
+        "defect": "effect-calls-wrong-label",
+        "expected": {
+          "L10.7a": 1,
+          "L10.2": 1
+        },
+        "fired": {
+          "L10.2": 1,
+          "L10.7a": 1
+        },
+        "clean_before": true,
+        "h3_pass": true
+      }
+    ],
+    "pass": true
+  },
+  "clone_clean": {
+    "nodes": 1913,
+    "rels": 2693,
+    "slices": 0,
+    "screens": 0,
+    "stale": 0
+  },
+  "overall_pass": true
+}
