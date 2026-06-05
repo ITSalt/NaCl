@@ -2,9 +2,10 @@
 name: nacl-sa-uc
 description: |
   Create and detail NaCl use cases in the SA graph from BA automation scope:
-  registry, activity steps, forms, form fields, mappings, and requirements.
-  Use when creating UC stories, detailing a UC, listing UCs, or for
-  compatibility with `/nacl-sa-uc`.
+  registry, activity steps, forms, form fields, mappings, requirements, and
+  behavior slices (graph-native Given/When/Then acceptance scenarios).
+  Use when creating UC stories, detailing a UC, authoring behavior slices,
+  listing UCs, or for compatibility with `/nacl-sa-uc`.
 ---
 
 # NaCl SA UC For Codex
@@ -24,6 +25,9 @@ Commands:
   automation and not yet connected by `AUTOMATES_AS`.
 - `detail <UC-ID>`: detail one use case with activity steps, forms, form
   fields, mappings, and requirements.
+- `slices <UC-ID>`: author or modify the behavior slices of one UC —
+  graph-native acceptance scenarios (Given/When/Then) anchored to the screen
+  state machine and endpoints, verified by tasks.
 - `list`: read-only UC registry view with detail coverage.
 
 `stories` flow:
@@ -60,8 +64,44 @@ Commands:
    requirements, actors, BA traceability, and (when present) the
    `RuntimeContract` subgraph.
 
+`slices` flow:
+
+1. Load UC context: `has_ui`, `acceptance_criteria`, screen machine
+   (`sa_screen_machine`), `EXPOSES` endpoints, `GENERATES` tasks, existing
+   slices (`sa_uc_slices`). Guards: a UI UC without a Screen → STOP and
+   require `/nacl-sa-ui state-machine` first (slices must not float);
+   `has_ui=false` → CALLS-only anchoring.
+2. Propose slices from acceptance_criteria (when present) → activity steps +
+   requirements → the machine → the RuntimeContract. Treat placeholder
+   ActivitySteps (`"--"`, no order) as absent. Backend-only priority:
+   RuntimeContract transitions → Requirements → ActivitySteps; if the UC looks
+   queue/async but has no RuntimeContract subgraph, warn (recommend `detail`
+   Phase 4.5) and author from Requirements — never invent the contract.
+   Canonical decompositions: data-loading screen → HappyPath / EmptyResult /
+   LoadFailureRetry; process screen → HappyPath / FailureRetry (+ per-stage
+   edge slices); backend-only UC → one slice per observable API behavior,
+   with one provisional endpoint per distinct backend operation (trigger vs
+   status are separate; slices share endpoints — never one endpoint per
+   slice). Backend-resilience kinds: recovery/degradation → `alternate`,
+   observed failure → `error`, idempotency/race/boundary → `edge`.
+   Stop for confirmation.
+3. Write `Slice` nodes (MERGE on `SLC-{NNN}-{PascalName}`; latin PascalName,
+   non-blank `then`) with `HAS_SLICE`, `COVERS -> ScreenState|Transition`
+   (own UC's screen only), `(sl:Slice)-[:CALLS]-> APIEndpoint` (provisional
+   endpoint + `EXPOSES` anchor when none exists), and `VERIFIED_BY -> Task`
+   — default rule: all of the UC's `GENERATES` tasks; refine to BE/FE tasks
+   only when task ids carry the canonical `-BE`/`-FE` suffixes. Every slice
+   must have at least one anchor (COVERS and/or CALLS) — no exemption.
+4. Bump `spec_version`; stamp staleness DIRECTED (same contract as
+   `nacl-sa-feature` 3g: the UC's tasks + tasks of transitive
+   `DEPENDS_ON*1..5` dependents + the UC itself; `stale_origin` = the UC id;
+   report `count(DISTINCT ...)`) — never via the broad `sa_impact_closure`.
+5. Run scoped L11 checks (anchor on the UC; for L11.0/11.1 filter
+   `sl.id STARTS WITH 'SLC-NNN-'`); fix CRITICAL findings before completing;
+   report slices, anchors, machine coverage, stamp counts.
+
 Use SA id conventions from the graph or schema: `UC-NNN`, `{UC}-ASNN`,
-`FORM-*`, `{FORM}-FNN`, and `RQ-NNN`.
+`FORM-*`, `{FORM}-FNN`, `RQ-NNN`, and `SLC-{NNN}-{PascalName}`.
 
 ## Graph Contract
 
@@ -79,12 +119,16 @@ and `UseCase -[:HAS_REQUIREMENT]-> Requirement`.
 Canonical writes are `UseCase`, `ActivityStep`, `Form`, `FormField`,
 `Requirement`, `RuntimeContract`, `RuntimeState`, `RuntimeTransition`,
 `RuntimeEvent`, `RuntimeLock`, `IdempotencyKey`, `RecoveryProcedure`,
+`Slice` (plus provisional `APIEndpoint` from the slices command),
 `CONTAINS_UC`, `AUTOMATES_AS`, `ACTOR`, `DEPENDS_ON`, `HAS_STEP`,
 `USES_FORM`, `HAS_FIELD`, `MAPS_TO`, `HAS_REQUIREMENT`, `IMPLEMENTED_BY`,
 `CONTAINS_RUNTIME_CONTRACT`, `HAS_STATE`, `HAS_INITIAL_STATE`,
 `HAS_TERMINAL_STATE`, `HAS_TRANSITION`, `FROM_STATE`, `TO_STATE`,
 `ACQUIRES_LOCK`, `EMITS_EVENT`, `RESOLVES_RACE_WITH`,
-`USES_IDEMPOTENCY_KEY`, and `HAS_RECOVERY`. Before each write batch, show
+`USES_IDEMPOTENCY_KEY`, `HAS_RECOVERY`, `HAS_SLICE`, `COVERS`, `CALLS`
+(label-qualify the source — the name is shared with
+`ScreenEffect -> APIEndpoint`), `VERIFIED_BY`, and `EXPOSES`
+(provisional-endpoint path only). Before each write batch, show
 the proposed ids, properties, source BA evidence, and relationship targets;
 after writes, read back with `sa_uc_full_context`, form-domain mapping
 checks, and (when present) the RuntimeContract read-back in
@@ -176,6 +220,8 @@ eight required fields is missing, refuse to advance.
 - Run the Runtime Contract decision tree and refuse to mark a queue / workflow
   / long-running / async-provider / recoverable UC as `detailed` until a
   complete `RuntimeContract` subgraph exists.
+- Author behavior slices anchored to the screen machine / endpoints and link
+  them to verifying tasks after confirmation.
 
 ### Must Not Do
 
@@ -186,6 +232,10 @@ eight required fields is missing, refuse to advance.
 - Mark a UC as `detailed` when the Runtime Contract decision tree returns
   mandatory and no `RuntimeContract` subgraph exists, or exists but omits any
   of the eight required fields.
+- Write a Slice with no behavioral anchor (no COVERS and no CALLS) or with a
+  blank `then` — anchorless behavior text belongs in `acceptance_criteria`.
+- Author slices for a UI UC that has no Screen (state machine first).
+- Stamp staleness via the broad undirected `sa_impact_closure` traversal.
 - Treat markdown files as the SA source of truth.
 - Select or constrain the runtime.
 
@@ -212,7 +262,9 @@ eight required fields is missing, refuse to advance.
 
 ### Preserved Methodology
 
-- `stories`, `detail`, and `list` commands.
+- `stories`, `detail`, `slices`, and `list` commands.
+- Behavior slices: anchor invariant (COVERS/CALLS), VERIFIED_BY task rule,
+  directed 3g staleness stamp, scoped L11 validation.
 - Russian SA artifact language by default.
 - BA automation scope to UseCase registry.
 - Activity, form, field, requirement, actor, and Runtime Contract subgraph

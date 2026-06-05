@@ -3,9 +3,10 @@ name: nacl-sa-uc
 model: opus
 effort: high
 description: |
-  Реестр Use Cases из BA automation scope + детализация UC (Activity, формы, требования) через Neo4j граф.
+  Реестр Use Cases из BA automation scope + детализация UC (Activity, формы, требования)
+  + behavior slices (graph-native сценарии приёмки Given/When/Then) через Neo4j граф.
   Используй когда пользователь просит: создать use cases из BA, реестр UC, детализировать UC,
-  activity diagram, формы UC, nacl-sa-uc, stories, detail UC.
+  activity diagram, формы UC, behavior slices, сценарии приёмки, nacl-sa-uc, stories, detail UC, slices.
 ---
 
 # /nacl-sa-uc --- Use Case Registry + Detailing (Graph)
@@ -26,6 +27,7 @@ You are a Solution Architect agent specialized in Use Case design. You read BA-l
 |---------|-----------|-------------|
 | `stories` | --- | Create UC registry from BA automation scope |
 | `detail` | `<UC-ID>` (e.g. `UC-101`) | Detail a specific UC: activity steps, forms, requirements |
+| `slices` | `<UC-ID>` (e.g. `UC-101`) | Author or modify the behavior slices of a UC (graph-native acceptance scenarios anchored to the screen machine / endpoints / tasks) |
 | `list` | --- | Show all UCs from graph with detail status |
 
 **Flags:**
@@ -77,6 +79,7 @@ All graph reads/writes use these tools:
 | Form | FORM-{Name} | FORM-OrderCreate | Name-based |
 | FormField | {FORM}-F{NN} | FORM-OrderCreate-F01 | Per-form |
 | Requirement | RQ-NNN | RQ-001 | Global sequential |
+| Slice | SLC-{NNN}-{PascalName} | SLC-006-HappyPath | Per-UC, name-based (latin) |
 
 ### Next available ID query
 
@@ -1022,6 +1025,264 @@ Next actions:
 
 ---
 
+# Command: `slices`
+
+## Purpose
+
+Author (or modify) the **behavior slices** of one UseCase: graph-native acceptance scenarios (Given/When/Then), each a vertical slice of observable behavior. A slice sits **below the UC, above the Task**: a UC has several slices; tasks stay per-UC (the slice layer is an **overlay** — per-slice tasks are deliberately out of scope). Stored graph-natively — `Slice` nodes with `HAS_SLICE` / `COVERS` / `CALLS` / `VERIFIED_BY` edges — so that a change to the UC, its screen machine, an endpoint, or a task **reaches the slice through the graph** (impact closure), and `nacl-sa-validate` L11 can statically check anchoring, ownership, and verification closure.
+
+**Why a node, not more `acceptance_criteria` strings:** (a) a string cannot carry COVERS/CALLS anchors, so impact analysis can never reach it; (b) a node falls under the orphan check; (c) only a node can be VERIFIED_BY a task. The same three reification criteria as the Phase-1 Transition node.
+
+**Anchor invariant (the validator enforces it as L11.2):** every slice carries at least one behavioral anchor — `COVERS` into the screen state machine and/or `CALLS` to an APIEndpoint. An anchorless slice is prose change propagation cannot reach; such text belongs in `UseCase.acceptance_criteria`, not in a node. There is deliberately no exemption flag.
+
+**Namespace caution:** the `CALLS` edge-type name is shared with `(:ScreenEffect)-[:CALLS]->(:APIEndpoint)` — deliberately (identical semantics). Always label-qualify the source: `(sl:Slice)-[:CALLS]->`, never match `CALLS` bare.
+
+## Parameters
+
+- `UC-NNN` — the UseCase whose behavior is being sliced (one UC per invocation).
+
+## Workflow
+
+```
++-----------------+    +-----------------+    +-----------------+    +-----------------+
+| Phase 1         |    | Phase 2         |    | Phase 3         |    | Phase 4         |
+| Read UC context |--->| Propose slices  |--->| Write slices    |--->| Stamp staleness |
+| (machine, APIs, |    | (from AC/steps/ |    | to graph        |    | + validate L11  |
+|  tasks, slices) |    |  machine/RC)    |    | (MERGE, idem.)  |    | + report        |
++-----------------+    +-----------------+    +-----------------+    +-----------------+
+```
+
+**Do not proceed to the next phase without explicit user confirmation.**
+
+---
+
+### Phase 1: Read UC Context
+
+#### 1.1 Query UC, its screen machine, endpoints, tasks, and any existing slices
+
+```cypher
+// uc_slice_context
+MATCH (uc:UseCase {id: $ucId})
+OPTIONAL MATCH (uc)-[:HAS_SCREEN]->(scr:Screen)
+OPTIONAL MATCH (uc)-[:EXPOSES]->(api:APIEndpoint)
+OPTIONAL MATCH (uc)-[:GENERATES]->(t:Task)
+OPTIONAL MATCH (uc)-[:HAS_SLICE]->(sl:Slice)
+OPTIONAL MATCH (uc)-[:HAS_STEP]->(as_step:ActivityStep)
+OPTIONAL MATCH (uc)-[:HAS_REQUIREMENT]->(rq:Requirement)
+RETURN uc.id AS uc_id, uc.name AS uc_name, uc.has_ui AS has_ui,
+       uc.acceptance_criteria AS acceptance_criteria,
+       collect(DISTINCT scr.id) AS screens,
+       collect(DISTINCT api.id) AS endpoints,
+       collect(DISTINCT t.id) AS tasks,
+       collect(DISTINCT sl.id) AS existing_slices,
+       count(DISTINCT as_step) AS step_count,
+       count(DISTINCT rq) AS requirement_count
+```
+
+**Guards:**
+- If the UC does not exist → STOP, report.
+- If `coalesce(uc.has_ui, true) = true` and the UC has **no Screen** → STOP: slices of a UI UC anchor into the screen state machine; author it first with `/nacl-sa-ui state-machine UC-NNN`, then re-run. Do not author floating slices.
+- If `has_ui = false` (backend-only UC) → CALLS-only mode: slices anchor to APIEndpoints (provisional path below if the UC has no `EXPOSES` yet); COVERS is not expected.
+- If slices already exist → load them via the `sa_uc_slices` named query (`graph-infra/queries/sa-queries.cypher`) and present; the run becomes a MODIFY.
+
+#### 1.2 Read the screen machine (UI UCs)
+
+Run `sa_screen_machine($screenId)` and keep the state/transition ids at hand — Phase 2 proposes COVERS anchors against them.
+
+---
+
+### Phase 2: Propose the Slices
+
+**Slice id derivation (deterministic):** `SLC-{NNN}-{PascalName}`, where `{NNN}` is the UC number (`UC-006` → `006`) and PascalName is derived from a **latin short scenario name**: kebab/snake/space → PascalCase (`happy-path` → `HappyPath`). When the display name is non-latin (default lang is ru), ask the user for (or propose) the latin short name — display `name` stays in the user's language, the id is always latin. Never embed screen or form names in the slice id.
+
+**Sources, in priority order:** `acceptance_criteria` (if present — each criterion is a slice candidate; record its index in `criterion_index`) → ActivitySteps + Requirements → the screen machine's states/transitions → the RuntimeContract (for queue/async UCs). Real graphs often have empty `acceptance_criteria` — the machine and steps are then the primary source. Treat **placeholder ActivitySteps** (description `"--"` / empty, no `order`) as absent and fall through to the next source. For **backend-only UCs** the effective priority is: RuntimeContract transitions (when the subgraph exists) → Requirements → ActivitySteps; and if the UC *looks* queue/async (Requirements mention retry / restart / recover / idempotent / queue / worker) but has **no RuntimeContract subgraph**, surface a warning recommending `/nacl-sa-uc detail` Phase 4.5 — author the slices from Requirements, never invent the missing contract yourself.
+
+**Canonical decompositions** (templates per screen archetype — guidance, not validator law; derive others when neither fits):
+
+**A. Data-loading screen** (4 states / 4 transitions, Phase-1 archetype A):
+
+| Slice | kind | COVERS | CALLS | then (essence) |
+|-------|------|--------|-------|----------------|
+| `HappyPath` | happy | `Loading` + `Loaded` states + Loading→Loaded transition | UC's endpoint | data is displayed |
+| `EmptyResult` | alternate | `Empty` state + Loading→Empty transition | — | empty-state affordance shown |
+| `LoadFailureRetry` | error | `Error` state + Loading→Error + Error→Loading (retry) transitions | UC's endpoint | error shown; retry re-fetches |
+
+Every scenario passes through `Loading`; covering it once (in `HappyPath`) is enough — with that, the three canonical slices cover the whole 4-state machine and L11.7 reports zero gaps.
+
+**B. Process screen** (Idle + busy stages, Phase-1 archetype B):
+
+| Slice | kind | COVERS | CALLS | then (essence) |
+|-------|------|--------|-------|----------------|
+| `HappyPath` | happy | stage transitions + `Completed` state | each stage's mutate endpoint | operation completes, result visible |
+| `FailureRetry` | error | `Failed` state + Failed→Idle (retry) transition | — | failure shown; user can restart |
+| per-stage edge slices | edge | the stage's state/transitions | stage endpoint | as needed |
+
+**C. Backend-only UC** (no screen): slices from RuntimeContract transitions / Requirements / ActivitySteps; anchors are `CALLS` only — one slice per observable API behavior (success, domain-error, idempotent-retry…). **Provisional-endpoint granularity:** one endpoint per **distinct backend operation/resource**, never one per slice — a trigger/mutation endpoint and a status/read endpoint are typically separate, and several slices share them (mirrors the sa-ui rule "one provisional endpoint per distinct backend operation"; the 3.3 example is a GET read — a POST trigger like `POST /api/internal/<pipeline>/{id}/run` is equally legal).
+
+**`slice_kind` for backend-resilience scenarios** (the A/B tables only cover UI archetypes): recovery-after-crash and graceful degradation → `alternate` (the system still reaches an acceptable outcome by another path); a failure the user/caller observes as failure → `error`; idempotency, boundary, and race scenarios → `edge`.
+
+**Authoring rules (the validator will enforce them as L11):**
+1. Every slice has ≥1 anchor: `COVERS` → ScreenState/Transition and/or `CALLS` → APIEndpoint (L11.2; no exemption).
+2. `COVERS` targets only your own UC's screen elements (L11.3).
+3. `then` (observable outcome) is REQUIRED non-blank; `given`/`when` strongly recommended (L11.6a).
+4. `slice_kind` ∈ {happy, alternate, error, edge} (L11.6b); include at least one `happy` slice (L11.8).
+5. Together the slices should cover every state and transition of the machine (L11.7 — WARNING-level aspiration, partial coverage is legal).
+6. If the UC is already planned (`GENERATES` tasks exist), every slice must get `VERIFIED_BY` in Phase 3 (L11.4).
+
+**Present to user:** slice table (id, kind, given/when/then, COVERS, CALLS) + which machine elements remain uncovered. Ask for confirmation.
+
+---
+
+### Phase 3: Write the Slices (MERGE, idempotent)
+
+All writes use `MERGE` on stable ids so re-running updates rather than duplicates.
+
+#### 3.1 Slice node + parent
+
+```cypher
+// create_slice
+MATCH (uc:UseCase {id: $ucId})
+MERGE (sl:Slice {id: $sliceId})            // SLC-{NNN}-{PascalName}
+SET sl.name = $name,
+    sl.slice_kind = $sliceKind,            // happy|alternate|error|edge
+    sl.given = $given,
+    sl.when = $when,
+    sl.then = $then,                       // REQUIRED non-blank
+    sl.criterion_index = $criterionIndex,  // NULL when not derived from acceptance_criteria
+    sl.created_by = 'nacl-sa-uc',
+    sl.created_at = coalesce(sl.created_at, datetime()),
+    sl.updated = datetime()
+MERGE (uc)-[:HAS_SLICE]->(sl)
+RETURN sl.id AS slice_id
+```
+
+#### 3.2 COVERS anchors (UI UCs)
+
+```cypher
+// link_slice_covers (once per covered state/transition)
+MATCH (sl:Slice {id: $sliceId})
+MATCH (x {id: $targetId})
+WHERE x:ScreenState OR x:Transition
+MERGE (sl)-[:COVERS]->(x)
+RETURN sl.id AS slice, x.id AS covers
+```
+
+#### 3.3 CALLS anchors
+
+```cypher
+// link_slice_calls
+MATCH (sl:Slice {id: $sliceId})
+MATCH (api:APIEndpoint {id: $apiId})
+MERGE (sl)-[:CALLS]->(api)
+RETURN sl.id AS slice, api.id AS calls
+```
+
+**If the APIEndpoint does not exist yet** (UC has no `EXPOSES` — common before `nacl-tl-plan` has run): MERGE a **provisional** endpoint anchored to the UC, exactly as `nacl-sa-ui state-machine` does. Report every provisional endpoint created.
+
+```cypher
+// create_provisional_endpoint
+MATCH (uc:UseCase {id: $ucId})
+MERGE (api:APIEndpoint {id: $apiId})       // e.g. "api-result-get"
+ON CREATE SET api.path = $path,            // e.g. "GET /api/result/{sessionId}"
+              api.provisional = true,
+              api.created_by = 'nacl-sa-uc',
+              api.created_at = datetime()
+MERGE (uc)-[:EXPOSES]->(api)
+RETURN api.id AS endpoint, api.provisional AS provisional
+```
+
+#### 3.4 VERIFIED_BY — deterministic task rule
+
+Skip when the UC has no `GENERATES` tasks yet (L11.4 stays silent; `nacl-tl-plan` creates these edges when it plans the UC). Otherwise:
+
+- **Default rule (always applicable):** link the slice to **all** tasks the UC `GENERATES`.
+- **Refinement (only when the task ids carry the canonical `-BE` / `-FE` suffixes):** slices with ≥1 `COVERS` anchor → the FE task(s); slices with ≥1 `CALLS` anchor → the BE task(s); a slice with both anchor types → both tasks.
+- Real graphs may have non-canonical task ids (`TASK-FR029-W4-*`, `TECH-*`) and multi-owner tasks — the default rule covers them; never guess an aspect from a task title.
+
+```cypher
+// link_slice_verified_by (default rule)
+MATCH (uc:UseCase {id: $ucId})-[:GENERATES]->(t:Task)
+MATCH (sl:Slice {id: $sliceId})
+MERGE (sl)-[:VERIFIED_BY]->(t)
+RETURN sl.id AS slice, collect(t.id) AS verified_by
+```
+
+#### 3.5 MODIFY mode: removing slices
+
+When the user removes a slice, `DETACH DELETE` exactly the removed nodes by id — never a label-wide delete. Re-pointing anchors of surviving slices = MERGE the new edge + DELETE the old edge explicitly.
+
+---
+
+### Phase 4: Stamp Staleness + Validate + Report
+
+Authoring or changing behavior slices **changes the UC's shape**: tasks planned before the slices existed do not reflect them.
+
+#### 4.1 Bump the UC spec version
+
+```cypher
+// bump_spec_version
+MATCH (uc:UseCase {id: $ucId})
+SET uc.spec_version = coalesce(uc.spec_version, 0) + 1
+RETURN uc.id AS uc_id, uc.spec_version AS spec_version
+```
+
+#### 4.2 Stamp staleness — DIRECTED and TIGHT (never the broad closure)
+
+The stamp follows the affected-UC list — **the same directed contract as `nacl-sa-feature` step 3g**: the UC's `GENERATES` tasks + tasks of UCs that transitively `DEPENDS_ON` it (`*1..5`), and the directly-changed UC itself. **Never stamp via the undirected `sa_impact_closure` traversal** — it fans out through shared ACTOR/Requirement nodes and marks half the project stale (measured 20–49× false radius). Two clean statements; report `count(DISTINCT ...)`, never a cartesian row count. `stale_origin` is the UC id — a slice batch has one cause: this UC's behavior layer changed.
+
+```cypher
+// stamp_stale_tasks (1/2) — the re-plan units
+MATCH (uc:UseCase {id: $ucId})
+OPTIONAL MATCH (dependent:UseCase)-[:DEPENDS_ON*1..5]->(uc)
+WITH collect(DISTINCT uc) + [d IN collect(DISTINCT dependent) WHERE d IS NOT NULL] AS affected
+UNWIND affected AS a
+MATCH (a)-[:GENERATES]->(t:Task)
+SET t.review_status = 'stale',
+    t.stale_reason = 'behavior slices ' + $changeKind + ' for ' + $ucId,
+    t.stale_since = datetime(),
+    t.stale_origin = $ucId
+RETURN count(DISTINCT t) AS tasks_stamped
+```
+
+```cypher
+// stamp_stale_uc (2/2) — the directly-changed UC itself
+MATCH (uc:UseCase {id: $ucId})
+SET uc.review_status = 'stale',
+    uc.stale_reason = 'behavior slices ' + $changeKind + ' for ' + $ucId,
+    uc.stale_since = datetime(),
+    uc.stale_origin = $ucId
+RETURN count(uc) AS ucs_stamped
+```
+
+`$changeKind` ∈ {'created', 'modified'}. The flags are cleared by `nacl-tl-plan` when it re-plans the UC (which also bakes the slices into task context and re-links VERIFIED_BY).
+
+#### 4.3 Validate the slices (scoped L11)
+
+Run the L11 checks from `nacl-sa-validate` (canonical queries live there) scoped to this UC. **Scope recipe:** anchor every UC-bound query on `(uc:UseCase {id: $ucId})`; for the non-anchored checks L11.0/L11.1, filter by the id family instead: `WHERE sl.id STARTS WITH 'SLC-' + $nnn + '-'` (the UC-number infix makes every slice id of one UC match). Any CRITICAL finding → present it and return to Phase 2; do not leave broken slices in the graph.
+
+#### 4.4 Report
+
+```
+Behavior slices written: UC-NNN ({uc name})
+
+Slices: {N} ({K} happy / {K} alternate / {K} error / {K} edge)
+Anchors: {N} COVERS ({list of covered states/transitions}), {N} CALLS {(+ M provisional APIEndpoint)}
+Verification: {N slices} x {M tasks} = {N*M} VERIFIED_BY (default rule, tasks: {task ids once})
+              | per-aspect: {FE task <- K slices, BE task <- K slices} | deferred (UC not planned yet)
+Machine coverage: {N}/{M} states, {N}/{M} transitions covered{; uncovered: list}
+
+Staleness stamped (directed): {N} tasks + 1 UC (origin: UC-NNN)
+spec_version: UC-NNN {old} -> {new}
+
+L11 validation: {PASS | N findings}
+
+Next:
+  - `/nacl-tl-plan` to (re-)plan the UC (clears the stale flags, re-links VERIFIED_BY)
+  - `/nacl-sa-validate internal` for the full gate
+```
+
+---
+
 ## Error Handling
 
 ### Neo4j unavailable
@@ -1063,14 +1324,16 @@ If `detail` finds no DomainEntity realized from related BA entities:
 - mcp__neo4j__write-cypher   # UseCase, ActivityStep, Form, FormField, Requirement,
                               # RuntimeContract, RuntimeState, RuntimeTransition,
                               # RuntimeEvent, RuntimeLock, IdempotencyKey,
-                              # RecoveryProcedure nodes
+                              # RecoveryProcedure, Slice nodes
+                              # (+ provisional APIEndpoint from the slices command)
                               # AUTOMATES_AS, CONTAINS_UC, ACTOR, HAS_STEP, USES_FORM,
                               # HAS_FIELD, MAPS_TO, HAS_REQUIREMENT, IMPLEMENTED_BY,
                               # CONTAINS_RUNTIME_CONTRACT, HAS_STATE,
                               # HAS_INITIAL_STATE, HAS_TERMINAL_STATE,
                               # HAS_TRANSITION, FROM_STATE, TO_STATE, ACQUIRES_LOCK,
                               # EMITS_EVENT, RESOLVES_RACE_WITH,
-                              # USES_IDEMPOTENCY_KEY, HAS_RECOVERY edges
+                              # USES_IDEMPOTENCY_KEY, HAS_RECOVERY,
+                              # HAS_SLICE, COVERS, CALLS, VERIFIED_BY, EXPOSES edges
 ```
 
 ### Node types created
@@ -1089,6 +1352,8 @@ If `detail` finds no DomainEntity realized from related BA entities:
 | RuntimeLock | id, resource, mode, timeout_ms |
 | IdempotencyKey | id, source, scope, ttl_seconds |
 | RecoveryProcedure | id, trigger, action, description |
+| Slice | id, name, slice_kind, given, when, then, criterion_index, created_by, created_at, updated |
+| APIEndpoint (provisional) | id, path, provisional, created_by, created_at — only when the slices command needs an endpoint that does not exist yet |
 
 ### Edge types created
 
@@ -1115,6 +1380,11 @@ If `detail` finds no DomainEntity realized from related BA entities:
 | RESOLVES_RACE_WITH | RuntimeTransition | RuntimeTransition | rule, winner, note |
 | USES_IDEMPOTENCY_KEY | RuntimeContract | IdempotencyKey | --- |
 | HAS_RECOVERY | RuntimeContract | RecoveryProcedure | --- |
+| HAS_SLICE | UseCase | Slice | --- (slices command) |
+| COVERS | Slice | ScreenState / Transition | --- (slices command) |
+| CALLS | Slice | APIEndpoint | --- (slices command; name shared with ScreenEffect→APIEndpoint — label-qualify the source) |
+| VERIFIED_BY | Slice | Task | --- (slices command; also re-linked by nacl-tl-plan) |
+| EXPOSES | UseCase | APIEndpoint | --- (slices command, provisional-endpoint path only) |
 
 ---
 
@@ -1149,6 +1419,19 @@ If `detail` finds no DomainEntity realized from related BA entities:
 - [ ] UC detail_status updated to `'detailed'`
 - [ ] Full UC subgraph query run for verification
 - [ ] Validation report presented to user
+
+### Before completing `slices`
+- [ ] UC context read (machine, endpoints, tasks, existing slices); guards applied (UI UC without Screen → STOP)
+- [ ] Slices proposed from acceptance_criteria / steps / machine / RuntimeContract and confirmed by user
+- [ ] Slice nodes MERGEd with non-blank `then`; HAS_SLICE edges created
+- [ ] **Every slice has ≥1 anchor (COVERS and/or CALLS)** — CRITICAL (L11.2)
+- [ ] COVERS targets belong to this UC's own screen; CALLS label-qualified
+- [ ] Provisional endpoints (if any) created with EXPOSES anchor and reported
+- [ ] VERIFIED_BY linked per the deterministic rule (or explicitly deferred — UC not planned)
+- [ ] spec_version bumped
+- [ ] Staleness stamped DIRECTED, same contract as sa-feature 3g (UC's tasks + transitive DEPENDS_ON-dependents' tasks `*1..5` + the changed UC itself; count(DISTINCT) reported) — never via broad sa_impact_closure
+- [ ] Scoped L11 run clean (or findings fixed before completing)
+- [ ] Report presented (slices, anchors, coverage, stamp counts, next steps)
 
 ### Before completing `list`
 - [ ] All UCs queried with metrics
