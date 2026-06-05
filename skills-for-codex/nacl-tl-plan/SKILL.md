@@ -137,16 +137,19 @@ if violations:
   `IN_WAVE`, `DEPENDS_ON`, `IMPLEMENTS`, `CONSUMES`, and `PRODUCES`.
 - Re-planning is idempotent and incremental by default (full overwrite only on
   explicit `--overwrite`). When Task/Wave nodes already exist, detect the narrow
-  changed set — UCs where `t.planned_from_version IS NOT NULL AND coalesce(uc.spec_version,0) > t.planned_from_version`,
-  UCs a `FeatureRequest -[:INCLUDES_UC {kind:'modified'}]->` flags, or UCs/Tasks
-  carrying `review_status='stale'` — and regenerate only those, leaving other UCs'
-  tasks and dev state untouched. `MERGE` Task nodes by stable id (`UC###-BE/FE`):
-  no duplicates. On each regen, set `Task.planned_from_version = uc.spec_version`
-  and clear `review_status`/`stale_*` on the Task and its source UC (the only
-  sanctioned way a node leaves `stale`). On a project just upgraded to Фаза 0,
-  baseline once (`SET t.planned_from_version = coalesce(uc.spec_version,0) WHERE t.planned_from_version IS NULL`)
-  so the first run does not over-regenerate; un-baselined real changes are still
-  caught by the `review_status='stale'` signal.
+  changed set from **two drift-confirmed signals only**: (1) version drift —
+  `t.planned_from_version IS NOT NULL AND coalesce(uc.spec_version,0) > t.planned_from_version`;
+  (2) explicit stale stamp — `review_status='stale'` on a UC or its Tasks. Do NOT
+  add an arm keyed only on `INCLUDES_UC {kind:'modified'}` + `status='spec-complete'`:
+  `spec-complete` is sticky and would re-flag already-current UCs every run,
+  resetting in-progress work. Regenerate only the changed set; `MERGE` Task nodes
+  by stable id (`UC###-BE/FE`) — no duplicates. On each regen set
+  `Task.planned_from_version = uc.spec_version` and clear `review_status`/`stale_*`
+  on BOTH the Task and its source UC (the only sanctioned way a node leaves `stale`;
+  forgetting the UC keeps L8 red). `INCLUDES_UC {kind}` is consumed for explicit
+  `--feature FR-NNN` scoping only. On a project just upgraded to Фаза 0, baseline
+  once (`SET t.planned_from_version = coalesce(uc.spec_version,0) WHERE t.planned_from_version IS NULL`)
+  so the first run does not over-regenerate.
 - Resolve `--feature FR-NNN` scope from the graph (`(:FeatureRequest)-[:INCLUDES_UC]->`,
   with `kind` splitting new vs modified), falling back to the markdown file only
   if the FR node is absent.

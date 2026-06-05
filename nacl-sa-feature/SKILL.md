@@ -442,23 +442,27 @@ SET uc.spec_version = coalesce(uc.spec_version, 0) + 1,
    stale and blocking releases on false staleness. The directed, UC-keyed stamp
    below is identical to `nacl-tl-fix`'s and stays bounded to real dependents.
 
+Run as **two statements** (keep them separate — a single statement that stamps
+tasks and then re-matches the UCs produces a cartesian whose row count is NOT the
+stale-task count, which misleads on a plain channel). Params for both:
+`$affectedUcIds` — UCs created/modified in this feature (Phase 2/3);
+`$reason` — e.g. "feature FR-007 changed UC-014"; `$origin` — the change anchor (FR id).
+
 ```cypher
-// mcp__neo4j__write-cypher
-// Params: $affectedUcIds — UCs created/modified in this feature (Phase 2/3)
-//         $reason — e.g. "feature FR-007 changed UC-014"
-//         $origin — the change anchor id (the FR id)
+// mcp__neo4j__write-cypher  (1/2) — stamp the dependent Tasks (the re-plan units)
 MATCH (uc:UseCase) WHERE uc.id IN $affectedUcIds
 OPTIONAL MATCH (dependent:UseCase)-[:DEPENDS_ON*1..5]->(uc)   // UCs that depend ON the changed UC
-WITH collect(DISTINCT uc) + collect(DISTINCT dependent) AS affected
+WITH collect(DISTINCT uc) + [d IN collect(DISTINCT dependent) WHERE d IS NOT NULL] AS affected
 UNWIND affected AS a
-WITH DISTINCT a WHERE a IS NOT NULL
-// stamp the affected UCs' tasks (the re-plan units)...
-OPTIONAL MATCH (a)-[:GENERATES]->(t:Task)
+MATCH (a)-[:GENERATES]->(t:Task)
 SET t.review_status='stale', t.stale_reason=$reason, t.stale_since=datetime(), t.stale_origin=$origin
-// ...and the directly-changed UCs themselves
-WITH 1 AS _
+RETURN count(DISTINCT t) AS tasks_stamped
+```
+```cypher
+// mcp__neo4j__write-cypher  (2/2) — stamp the directly-changed UCs themselves
 MATCH (uc:UseCase) WHERE uc.id IN $affectedUcIds
 SET uc.review_status='stale', uc.stale_reason=$reason, uc.stale_since=datetime(), uc.stale_origin=$origin
+RETURN count(uc) AS ucs_stamped
 ```
 
 > The dependent Tasks are now `stale`. This is **expected** — it is the signal
@@ -935,7 +939,7 @@ Before finishing, verify:
 - [ ] Dependency order respected: Architecture -> Domain -> Roles -> UCs -> UI
 - [ ] Progress reported after each sub-step
 - [ ] 3g: `spec_version` bumped on every new/modified UC
-- [ ] 3g: snapshot-bearing dependents stamped `review_status='stale'` with `stale_origin` (impact-closure traversal)
+- [ ] 3g: dependent Tasks stamped `review_status='stale'` with `stale_origin` via the **directed** affected-UC stamp (affected UCs' GENERATES Tasks + DEPENDS_ON-dependents + the UCs themselves) — NOT the broad `sa_impact_closure`
 
 ### Phase 4: Incremental Validation
 - [ ] Validation scoped to affected nodes only

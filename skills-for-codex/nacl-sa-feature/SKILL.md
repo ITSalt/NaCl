@@ -36,8 +36,10 @@ Read `../nacl-core/SKILL.md`, `../references/migration-rules.md`, and
    affected-UC list, NOT the broad undirected `sa_impact_closure` (that query is
    for exploration/display; an undirected stamp fans out through shared
    ACTOR/Requirement and marks half the project stale, blocking releases on false
-   staleness). The stale Tasks are the expected hand-off signal to `nacl-tl-plan`;
-   do not clear them here.
+   staleness). Run the stamp as TWO statements (stamp dependent Tasks, then stamp
+   the changed UCs) — a single statement that stamps tasks then re-matches the UCs
+   produces a cartesian whose row count misleads. The stale Tasks are the expected
+   hand-off signal to `nacl-tl-plan`; do not clear them here.
 5. Incremental validation: run scoped checks for only affected nodes when graph
    tooling is available. Fix confirmed critical issues with at most two
    iterations unless the user asks to continue.

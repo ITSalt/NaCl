@@ -167,31 +167,28 @@ regenerate only those.
 
 A Task's `.tl/tasks/UC###/*.md` files embed a point-in-time snapshot of the SA
 graph (field types, role permissions, enum values — see "Self-Sufficiency").
-That snapshot goes stale when its source UC changes. Two graph signals identify
-the stale set precisely — no markdown diffing, no whole-layer nuke:
+That snapshot goes stale when its source UC changes. **Two drift-confirmed
+signals** identify the stale set precisely — no markdown diffing, no whole-layer
+nuke. Both require *evidence of actual drift*; neither fires on a UC that is
+already current.
+
+**Signal 1 — version drift** (a Task baked from an older spec than its UC now carries):
 
 ```cypher
-// mcp__neo4j__read-cypher — UCs whose spec moved past what their Task was planned from.
+// mcp__neo4j__read-cypher
 // GUARD planned_from_version IS NOT NULL: a Task with no baseline (project upgraded to
 // Фаза 0 but gap-closure baseline not yet run) is NOT treated as drifted here — that
 // would over-flag every task on day one and reset in-progress work. Such a real change
-// is still caught by the review_status='stale' signal below (set by sa-feature/tl-fix).
+// is still caught by Signal 2 (set by sa-feature step 3g / tl-fix L2-L3).
 MATCH (uc:UseCase)-[:GENERATES]->(t:Task)
 WHERE t.planned_from_version IS NOT NULL
   AND coalesce(uc.spec_version, 0) > t.planned_from_version
 RETURN DISTINCT uc.id AS uc_id, uc.spec_version AS current_version,
        t.planned_from_version AS planned_version, 'spec-drift' AS reason
-UNION
-// UCs a FeatureRequest flagged 'modified' that already have tasks (regen, not first plan)
-MATCH (fr:FeatureRequest)-[r:INCLUDES_UC {kind:'modified'}]->(uc:UseCase)
-WHERE coalesce(fr.status,'') = 'spec-complete'
-  AND EXISTS { (uc)-[:GENERATES]->(:Task) }
-RETURN DISTINCT uc.id AS uc_id, uc.spec_version AS current_version,
-       null AS planned_version, 'FR-modified' AS reason
 ```
 
-Also detect any UC stamped stale directly (defensive — picks up `review_status`
-set by `nacl-tl-fix` L2/L3 even without a spec_version bump):
+**Signal 2 — explicit stale stamp** (set by the write-skills at change time; catches
+changes even without a version bump, e.g. some tl-fix paths):
 
 ```cypher
 // mcp__neo4j__read-cypher
@@ -201,8 +198,18 @@ WHERE coalesce(uc.review_status,'current') = 'stale'
 RETURN DISTINCT uc.id AS uc_id, uc.stale_origin AS origin
 ```
 
+> **Do NOT add a third "FR flagged modified" auto-detection arm keyed only on
+> `INCLUDES_UC {kind:'modified'}` + `status='spec-complete'`.** `spec-complete` is a
+> sticky state — an FR that was never advanced keeps that edge forever, so such an
+> arm re-flags its UCs on *every* run even after they're current, regenerating
+> already-current tasks and resetting in-progress work (the exact churn the Signal-1
+> guard prevents). `sa-feature` step 3g always bumps `spec_version` AND stamps stale
+> when it processes an FR, so Signals 1+2 already catch every real FR-driven change.
+> `INCLUDES_UC {kind}` is consumed for **explicit `--feature FR-NNN` scoping only**
+> (below), never for auto drift detection.
+
 **Incremental algorithm (default when tasks exist):**
-1. `stale_set` = UCs from the two queries above.
+1. `stale_set` = UCs from Signal 1 ∪ Signal 2 (both drift-confirmed).
 2. `new_set` = UCs from `INCLUDES_UC {kind:'new'}` (or in-scope UCs) with **no** `GENERATES` edge yet.
 3. Regenerate task files **only** for `stale_set ∪ new_set`. UCs not in either set are left untouched — their tasks and dev state survive.
 4. Use `MERGE (t:Task {id: $taskId})` (Step 2.4) so re-running is idempotent at the node level: the same `UC###-BE`/`UC###-FE` ids are updated in place, never duplicated.
@@ -461,17 +468,20 @@ MERGE (t)-[:IN_WAVE]->(w)
 WITH t
 MATCH (uc:UseCase {id: $ucId})
 MERGE (uc)-[:GENERATES]->(t)
+// Clear the SOURCE UC's staleness in the same statement — the UC node is itself a
+// stamp target (sa-feature step 3g), and a lingering UC flag keeps L8 red even after
+// its tasks are cleared. Idempotent if the UC has multiple tasks.
+REMOVE uc.review_status, uc.stale_reason, uc.stale_since, uc.stale_origin
 ```
 
 > Read `$specVersion` from the same `sa_uc_full_context` query that drives task
 > generation: `RETURN coalesce(uc.spec_version, 0) AS spec_version`. Stamping it
 > here is what lets a later `nacl-tl-plan` run detect (Step 1.5b) that the task's
-> baked snapshot has fallen behind the UC. Clearing the staleness flag here is
-> the **only** sanctioned way a Task leaves `stale` — it certifies the file was
-> regenerated from the current graph, satisfying `nacl-sa-validate` L8.
-
-> Also clear the source UC's own flag once all its tasks are regenerated:
-> `MATCH (uc:UseCase {id:$ucId}) REMOVE uc.review_status, uc.stale_reason, uc.stale_since, uc.stale_origin`.
+> baked snapshot has fallen behind the UC. Clearing the staleness flag here (on
+> BOTH the Task and its source UC, in the one statement above) is the **only**
+> sanctioned way a node leaves `stale` — it certifies regeneration from the current
+> graph, satisfying `nacl-sa-validate` L8. Leaving the source UC stamped while
+> clearing only its Tasks is the easy mistake that keeps L8 red — hence the combined clear.
 
 ```cypher
 // Create dependency edge between tasks
