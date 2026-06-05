@@ -1,0 +1,848 @@
+{
+  "H0": {
+    "checks": {
+      "L10.0": 0,
+      "L10.1": 0,
+      "L10.2": 0,
+      "L10.3": 0,
+      "L10.4": 0,
+      "L10.5a": 0,
+      "L10.5b": 0,
+      "L10.6a": 0,
+      "L10.6b": 0,
+      "L10.7a": 0,
+      "L10.8": 0
+    },
+    "pass": true
+  },
+  "H1": {
+    "n_ucs": 31,
+    "rows": [
+      {
+        "uc": "UC-001",
+        "form": "FORM-scr-010-promo-modal",
+        "screen": "SCR-Scr001",
+        "old_from_uc": 0,
+        "new_from_uc": 13,
+        "old_from_api": 0,
+        "new_from_api": 13,
+        "old_from_da": 0,
+        "new_from_da": 13,
+        "pre_machine_old_from_uc": 0,
+        "h1_pass": true
+      },
+      {
+        "uc": "UC-002",
+        "form": "FORM-scr-001-landing",
+        "screen": "SCR-Scr002",
+        "old_from_uc": 0,
+        "new_from_uc": 13,
+        "old_from_api": 0,
+        "new_from_api": 13,
+        "old_from_da": 0,
+        "new_from_da": 13,
+        "pre_machine_old_from_uc": 0,
+        "h1_pass": true
+      },
+      {
+        "uc": "UC-003",
+        "form": "FORM-scr-002-interview",
+        "screen": "SCR-Scr003",
+        "old_from_uc": 0,
+        "new_from_uc": 13,
+        "old_from_api": 0,
+        "new_from_api": 13,
+        "old_from_da": 0,
+        "new_from_da": 13,
+        "pre_machine_old_from_uc": 0,
+        "h1_pass": true
+      },
+      {
+        "uc": "UC-004",
+        "form": "FORM-scr-003-loading",
+        "screen": "SCR-Scr004",
+        "old_from_uc": 0,
+        "new_from_uc": 13,
+        "old_from_api": 0,
+        "new_from_api": 13,
+        "old_from_da": null,
+        "new_from_da": null,
+        "pre_machine_old_from_uc": 0,
+        "h1_pass": true
+      },
+      {
+        "uc": "UC-005",
+        "form": "FORM-scr-003-loading",
+        "screen": "SCR-Scr005",
+        "old_from_uc": 0,
+        "new_from_uc": 13,
+        "old_from_api": 0,
+        "new_from_api": 13,
+        "old_from_da": null,
+        "new_from_da": null,
+        "pre_machine_old_from_uc": 0,
+        "h1_pass": true
+      },
+      {
+        "uc": "UC-006",
+        "form": "FORM-scr-004-result",
+        "screen": "SCR-Scr006",
+        "old_from_uc": 0,
+        "new_from_uc": 13,
+        "old_from_api": 0,
+        "new_from_api": 13,
+        "old_from_da": 0,
+        "new_from_da": 13,
+        "pre_machine_old_from_uc": 0,
+        "h1_pass": true
+      },
+      {
+        "uc": "UC-007",
+        "form": "FORM-scr-005-lead-modal",
+        "screen": "SCR-Scr007",
+        "old_from_uc": 0,
+        "new_from_uc": 13,
+        "old_from_api": 0,
+        "new_from_api": 13,
+        "old_from_da": 0,
+        "new_from_da": 13,
+        "pre_machine_old_from_uc": 0,
+        "h1_pass": true
+      },
+      {
+        "uc": "UC-008",
+        "form": "FORM-scr-006-share-modal",
+        "screen": "SCR-Scr008",
+        "old_from_uc": 0,
+        "new_from_uc": 13,
+        "old_from_api": 0,
+        "new_from_api": 13,
+        "old_from_da": null,
+        "new_from_da": null,
+        "pre_machine_old_from_uc": 0,
+        "h1_pass": true
+      },
+      {
+        "uc": "UC-009",
+        "form": "FORM-scr-007-admin-prompts",
+        "screen": "SCR-Scr009",
+        "old_from_uc": 0,
+        "new_from_uc": 13,
+        "old_from_api": 0,
+        "new_from_api": 13,
+        "old_from_da": 0,
+        "new_from_da": 13,
+        "pre_machine_old_from_uc": 0,
+        "h1_pass": true
+      },
+      {
+        "uc": "UC-010",
+        "form": "FORM-scr-008-admin-statistics",
+        "screen": "SCR-Scr010",
+        "old_from_uc": 0,
+        "new_from_uc": 13,
+        "old_from_api": 0,
+        "new_from_api": 13,
+        "old_from_da": null,
+        "new_from_da": null,
+        "pre_machine_old_from_uc": 0,
+        "h1_pass": true
+      },
+      {
+        "uc": "UC-011",
+        "form": "FORM-scr-009-session-picker",
+        "screen": "SCR-Scr011",
+        "old_from_uc": 0,
+        "new_from_uc": 13,
+        "old_from_api": 0,
+        "new_from_api": 13,
+        "old_from_da": 0,
+        "new_from_da": 13,
+        "pre_machine_old_from_uc": 0,
+        "h1_pass": true
+      },
+      {
+        "uc": "UC-012",
+        "form": "FORM-scr-012-tg-callback",
+        "screen": "SCR-Scr012",
+        "old_from_uc": 0,
+        "new_from_uc": 13,
+        "old_from_api": 0,
+        "new_from_api": 13,
+        "old_from_da": null,
+        "new_from_da": null,
+        "pre_machine_old_from_uc": 0,
+        "h1_pass": true
+      },
+      {
+        "uc": "UC-013",
+        "form": "FORM-scr-030-mode-select",
+        "screen": "SCR-Scr013",
+        "old_from_uc": 0,
+        "new_from_uc": 13,
+        "old_from_api": 0,
+        "new_from_api": 13,
+        "old_from_da": 0,
+        "new_from_da": 13,
+        "pre_machine_old_from_uc": 0,
+        "h1_pass": true
+      },
+      {
+        "uc": "UC-014",
+        "form": "FORM-scr-002-interview-chat",
+        "screen": "SCR-Scr014",
+        "old_from_uc": 0,
+        "new_from_uc": 13,
+        "old_from_api": 0,
+        "new_from_api": 13,
+        "old_from_da": 0,
+        "new_from_da": 13,
+        "pre_machine_old_from_uc": 0,
+        "h1_pass": true
+      },
+      {
+        "uc": "UC-016",
+        "form": "FORM-scr-007-admin-prompts",
+        "screen": "SCR-Scr016",
+        "old_from_uc": 0,
+        "new_from_uc": 13,
+        "old_from_api": 0,
+        "new_from_api": 13,
+        "old_from_da": 0,
+        "new_from_da": 13,
+        "pre_machine_old_from_uc": 0,
+        "h1_pass": true
+      },
+      {
+        "uc": "UC-020",
+        "form": "FORM-scr-020-auth",
+        "screen": "SCR-Scr020",
+        "old_from_uc": 0,
+        "new_from_uc": 13,
+        "old_from_api": 0,
+        "new_from_api": 13,
+        "old_from_da": 0,
+        "new_from_da": 13,
+        "pre_machine_old_from_uc": 0,
+        "h1_pass": true
+      },
+      {
+        "uc": "UC-021",
+        "form": "FORM-scr-021-vk-callback",
+        "screen": "SCR-Scr021",
+        "old_from_uc": 0,
+        "new_from_uc": 13,
+        "old_from_api": 0,
+        "new_from_api": 13,
+        "old_from_da": null,
+        "new_from_da": null,
+        "pre_machine_old_from_uc": 0,
+        "h1_pass": true
+      },
+      {
+        "uc": "UC-022",
+        "form": "FORM-scr-012-pricing",
+        "screen": "SCR-Scr022",
+        "old_from_uc": 0,
+        "new_from_uc": 13,
+        "old_from_api": 0,
+        "new_from_api": 13,
+        "old_from_da": 0,
+        "new_from_da": 13,
+        "pre_machine_old_from_uc": 0,
+        "h1_pass": true
+      },
+      {
+        "uc": "UC-023",
+        "form": "FORM-scr-013-paywall-modal",
+        "screen": "SCR-Scr023",
+        "old_from_uc": 0,
+        "new_from_uc": 13,
+        "old_from_api": 0,
+        "new_from_api": 13,
+        "old_from_da": 0,
+        "new_from_da": 13,
+        "pre_machine_old_from_uc": 0,
+        "h1_pass": true
+      },
+      {
+        "uc": "UC-025",
+        "form": "FORM-scr-014-profile",
+        "screen": "SCR-Scr025",
+        "old_from_uc": 0,
+        "new_from_uc": 13,
+        "old_from_api": 0,
+        "new_from_api": 13,
+        "old_from_da": null,
+        "new_from_da": null,
+        "pre_machine_old_from_uc": 0,
+        "h1_pass": true
+      },
+      {
+        "uc": "UC-027",
+        "form": "FORM-scr-015-payment-return",
+        "screen": "SCR-Scr027",
+        "old_from_uc": 0,
+        "new_from_uc": 13,
+        "old_from_api": 0,
+        "new_from_api": 13,
+        "old_from_da": null,
+        "new_from_da": null,
+        "pre_machine_old_from_uc": 0,
+        "h1_pass": true
+      },
+      {
+        "uc": "UC-029",
+        "form": "FORM-scr-023-funnel-dashboard",
+        "screen": "SCR-Scr029",
+        "old_from_uc": 0,
+        "new_from_uc": 13,
+        "old_from_api": 0,
+        "new_from_api": 13,
+        "old_from_da": null,
+        "new_from_da": null,
+        "pre_machine_old_from_uc": 0,
+        "h1_pass": true
+      },
+      {
+        "uc": "UC-030",
+        "form": "FORM-scr-032-memory-photos-upload",
+        "screen": "SCR-Scr030",
+        "old_from_uc": 0,
+        "new_from_uc": 13,
+        "old_from_api": 0,
+        "new_from_api": 13,
+        "old_from_da": 0,
+        "new_from_da": 13,
+        "pre_machine_old_from_uc": 0,
+        "h1_pass": true
+      },
+      {
+        "uc": "UC-031",
+        "form": "FORM-scr-031-voice-recorder",
+        "screen": "SCR-Scr031",
+        "old_from_uc": 0,
+        "new_from_uc": 13,
+        "old_from_api": 0,
+        "new_from_api": 13,
+        "old_from_da": 0,
+        "new_from_da": 13,
+        "pre_machine_old_from_uc": 0,
+        "h1_pass": true
+      },
+      {
+        "uc": "UC-034",
+        "form": "FORM-scr-033-memory-result",
+        "screen": "SCR-Scr034",
+        "old_from_uc": 0,
+        "new_from_uc": 13,
+        "old_from_api": 0,
+        "new_from_api": 13,
+        "old_from_da": 0,
+        "new_from_da": 13,
+        "pre_machine_old_from_uc": 0,
+        "h1_pass": true
+      },
+      {
+        "uc": "UC-035",
+        "form": "FORM-scr-013-paywall-modal",
+        "screen": "SCR-Scr035",
+        "old_from_uc": 0,
+        "new_from_uc": 13,
+        "old_from_api": 0,
+        "new_from_api": 13,
+        "old_from_da": 0,
+        "new_from_da": 13,
+        "pre_machine_old_from_uc": 0,
+        "h1_pass": true
+      },
+      {
+        "uc": "UC-036",
+        "form": "FORM-scr-040-admin-promo-codes",
+        "screen": "SCR-Scr036",
+        "old_from_uc": 0,
+        "new_from_uc": 13,
+        "old_from_api": 0,
+        "new_from_api": 13,
+        "old_from_da": 0,
+        "new_from_da": 13,
+        "pre_machine_old_from_uc": 0,
+        "h1_pass": true
+      },
+      {
+        "uc": "UC-037",
+        "form": "FORM-scr-008-admin-pipelines-list",
+        "screen": "SCR-Scr037",
+        "old_from_uc": 0,
+        "new_from_uc": 13,
+        "old_from_api": 0,
+        "new_from_api": 13,
+        "old_from_da": null,
+        "new_from_da": null,
+        "pre_machine_old_from_uc": 0,
+        "h1_pass": true
+      },
+      {
+        "uc": "UC-038",
+        "form": "FORM-scr-038-hub",
+        "screen": "SCR-Scr038",
+        "old_from_uc": 0,
+        "new_from_uc": 13,
+        "old_from_api": 0,
+        "new_from_api": 13,
+        "old_from_da": null,
+        "new_from_da": null,
+        "pre_machine_old_from_uc": 0,
+        "h1_pass": true
+      },
+      {
+        "uc": "UC-039",
+        "form": "FORM-scr-039-mode-memory-book",
+        "screen": "SCR-Scr039",
+        "old_from_uc": 0,
+        "new_from_uc": 13,
+        "old_from_api": 0,
+        "new_from_api": 13,
+        "old_from_da": null,
+        "new_from_da": null,
+        "pre_machine_old_from_uc": 0,
+        "h1_pass": true
+      },
+      {
+        "uc": "UC-040",
+        "form": "FORM-scr-040-mode-living-moments",
+        "screen": "SCR-Scr040",
+        "old_from_uc": 0,
+        "new_from_uc": 13,
+        "old_from_api": 0,
+        "new_from_api": 13,
+        "old_from_da": null,
+        "new_from_da": null,
+        "pre_machine_old_from_uc": 0,
+        "h1_pass": true
+      }
+    ],
+    "pass": true
+  },
+  "H2": {
+    "n_ucs": 31,
+    "rows": [
+      {
+        "uc": "UC-001",
+        "screen": "SCR-Scr001",
+        "tasks_flagged": 0,
+        "tasks_expected": 0,
+        "total_flagged": 1,
+        "expected_total": 1,
+        "broad_radius_tasks": 41,
+        "h2_pass": true
+      },
+      {
+        "uc": "UC-002",
+        "screen": "SCR-Scr002",
+        "tasks_flagged": 0,
+        "tasks_expected": 0,
+        "total_flagged": 1,
+        "expected_total": 1,
+        "broad_radius_tasks": 41,
+        "h2_pass": true
+      },
+      {
+        "uc": "UC-003",
+        "screen": "SCR-Scr003",
+        "tasks_flagged": 1,
+        "tasks_expected": 1,
+        "total_flagged": 2,
+        "expected_total": 2,
+        "broad_radius_tasks": 45,
+        "h2_pass": true
+      },
+      {
+        "uc": "UC-004",
+        "screen": "SCR-Scr004",
+        "tasks_flagged": 3,
+        "tasks_expected": 3,
+        "total_flagged": 4,
+        "expected_total": 4,
+        "broad_radius_tasks": 44,
+        "h2_pass": true
+      },
+      {
+        "uc": "UC-005",
+        "screen": "SCR-Scr005",
+        "tasks_flagged": 2,
+        "tasks_expected": 2,
+        "total_flagged": 3,
+        "expected_total": 3,
+        "broad_radius_tasks": 44,
+        "h2_pass": true
+      },
+      {
+        "uc": "UC-006",
+        "screen": "SCR-Scr006",
+        "tasks_flagged": 1,
+        "tasks_expected": 1,
+        "total_flagged": 2,
+        "expected_total": 2,
+        "broad_radius_tasks": 45,
+        "h2_pass": true
+      },
+      {
+        "uc": "UC-007",
+        "screen": "SCR-Scr007",
+        "tasks_flagged": 0,
+        "tasks_expected": 0,
+        "total_flagged": 1,
+        "expected_total": 1,
+        "broad_radius_tasks": 39,
+        "h2_pass": true
+      },
+      {
+        "uc": "UC-008",
+        "screen": "SCR-Scr008",
+        "tasks_flagged": 0,
+        "tasks_expected": 0,
+        "total_flagged": 1,
+        "expected_total": 1,
+        "broad_radius_tasks": 39,
+        "h2_pass": true
+      },
+      {
+        "uc": "UC-009",
+        "screen": "SCR-Scr009",
+        "tasks_flagged": 0,
+        "tasks_expected": 0,
+        "total_flagged": 1,
+        "expected_total": 1,
+        "broad_radius_tasks": 40,
+        "h2_pass": true
+      },
+      {
+        "uc": "UC-010",
+        "screen": "SCR-Scr010",
+        "tasks_flagged": 0,
+        "tasks_expected": 0,
+        "total_flagged": 1,
+        "expected_total": 1,
+        "broad_radius_tasks": 41,
+        "h2_pass": true
+      },
+      {
+        "uc": "UC-011",
+        "screen": "SCR-Scr011",
+        "tasks_flagged": 0,
+        "tasks_expected": 0,
+        "total_flagged": 1,
+        "expected_total": 1,
+        "broad_radius_tasks": 45,
+        "h2_pass": true
+      },
+      {
+        "uc": "UC-012",
+        "screen": "SCR-Scr012",
+        "tasks_flagged": 1,
+        "tasks_expected": 1,
+        "total_flagged": 2,
+        "expected_total": 2,
+        "broad_radius_tasks": 45,
+        "h2_pass": true
+      },
+      {
+        "uc": "UC-013",
+        "screen": "SCR-Scr013",
+        "tasks_flagged": 0,
+        "tasks_expected": 0,
+        "total_flagged": 1,
+        "expected_total": 1,
+        "broad_radius_tasks": 45,
+        "h2_pass": true
+      },
+      {
+        "uc": "UC-014",
+        "screen": "SCR-Scr014",
+        "tasks_flagged": 3,
+        "tasks_expected": 3,
+        "total_flagged": 4,
+        "expected_total": 4,
+        "broad_radius_tasks": 44,
+        "h2_pass": true
+      },
+      {
+        "uc": "UC-016",
+        "screen": "SCR-Scr016",
+        "tasks_flagged": 0,
+        "tasks_expected": 0,
+        "total_flagged": 1,
+        "expected_total": 1,
+        "broad_radius_tasks": 25,
+        "h2_pass": true
+      },
+      {
+        "uc": "UC-020",
+        "screen": "SCR-Scr020",
+        "tasks_flagged": 1,
+        "tasks_expected": 1,
+        "total_flagged": 2,
+        "expected_total": 2,
+        "broad_radius_tasks": 45,
+        "h2_pass": true
+      },
+      {
+        "uc": "UC-021",
+        "screen": "SCR-Scr021",
+        "tasks_flagged": 1,
+        "tasks_expected": 1,
+        "total_flagged": 2,
+        "expected_total": 2,
+        "broad_radius_tasks": 45,
+        "h2_pass": true
+      },
+      {
+        "uc": "UC-022",
+        "screen": "SCR-Scr022",
+        "tasks_flagged": 1,
+        "tasks_expected": 1,
+        "total_flagged": 2,
+        "expected_total": 2,
+        "broad_radius_tasks": 45,
+        "h2_pass": true
+      },
+      {
+        "uc": "UC-023",
+        "screen": "SCR-Scr023",
+        "tasks_flagged": 0,
+        "tasks_expected": 0,
+        "total_flagged": 1,
+        "expected_total": 1,
+        "broad_radius_tasks": 45,
+        "h2_pass": true
+      },
+      {
+        "uc": "UC-025",
+        "screen": "SCR-Scr025",
+        "tasks_flagged": 1,
+        "tasks_expected": 1,
+        "total_flagged": 2,
+        "expected_total": 2,
+        "broad_radius_tasks": 45,
+        "h2_pass": true
+      },
+      {
+        "uc": "UC-027",
+        "screen": "SCR-Scr027",
+        "tasks_flagged": 1,
+        "tasks_expected": 1,
+        "total_flagged": 2,
+        "expected_total": 2,
+        "broad_radius_tasks": 44,
+        "h2_pass": true
+      },
+      {
+        "uc": "UC-029",
+        "screen": "SCR-Scr029",
+        "tasks_flagged": 0,
+        "tasks_expected": 0,
+        "total_flagged": 1,
+        "expected_total": 1,
+        "broad_radius_tasks": 41,
+        "h2_pass": true
+      },
+      {
+        "uc": "UC-030",
+        "screen": "SCR-Scr030",
+        "tasks_flagged": 2,
+        "tasks_expected": 2,
+        "total_flagged": 3,
+        "expected_total": 3,
+        "broad_radius_tasks": 44,
+        "h2_pass": true
+      },
+      {
+        "uc": "UC-031",
+        "screen": "SCR-Scr031",
+        "tasks_flagged": 3,
+        "tasks_expected": 3,
+        "total_flagged": 4,
+        "expected_total": 4,
+        "broad_radius_tasks": 44,
+        "h2_pass": true
+      },
+      {
+        "uc": "UC-034",
+        "screen": "SCR-Scr034",
+        "tasks_flagged": 1,
+        "tasks_expected": 1,
+        "total_flagged": 2,
+        "expected_total": 2,
+        "broad_radius_tasks": 44,
+        "h2_pass": true
+      },
+      {
+        "uc": "UC-035",
+        "screen": "SCR-Scr035",
+        "tasks_flagged": 0,
+        "tasks_expected": 0,
+        "total_flagged": 1,
+        "expected_total": 1,
+        "broad_radius_tasks": 45,
+        "h2_pass": true
+      },
+      {
+        "uc": "UC-036",
+        "screen": "SCR-Scr036",
+        "tasks_flagged": 0,
+        "tasks_expected": 0,
+        "total_flagged": 1,
+        "expected_total": 1,
+        "broad_radius_tasks": 41,
+        "h2_pass": true
+      },
+      {
+        "uc": "UC-037",
+        "screen": "SCR-Scr037",
+        "tasks_flagged": 2,
+        "tasks_expected": 2,
+        "total_flagged": 3,
+        "expected_total": 3,
+        "broad_radius_tasks": 40,
+        "h2_pass": true
+      },
+      {
+        "uc": "UC-038",
+        "screen": "SCR-Scr038",
+        "tasks_flagged": 1,
+        "tasks_expected": 1,
+        "total_flagged": 2,
+        "expected_total": 2,
+        "broad_radius_tasks": 45,
+        "h2_pass": true
+      },
+      {
+        "uc": "UC-039",
+        "screen": "SCR-Scr039",
+        "tasks_flagged": 1,
+        "tasks_expected": 1,
+        "total_flagged": 2,
+        "expected_total": 2,
+        "broad_radius_tasks": 44,
+        "h2_pass": true
+      },
+      {
+        "uc": "UC-040",
+        "screen": "SCR-Scr040",
+        "tasks_flagged": 1,
+        "tasks_expected": 1,
+        "total_flagged": 2,
+        "expected_total": 2,
+        "broad_radius_tasks": 44,
+        "h2_pass": true
+      }
+    ],
+    "tight_total": 58,
+    "broad_total": 1324,
+    "pass": true
+  },
+  "H3": {
+    "n_defects": 8,
+    "rows": [
+      {
+        "defect": "orphan-effect",
+        "expected": {
+          "L10.0": 1,
+          "L10.1": 1,
+          "L10.2": 1
+        },
+        "fired": {
+          "L10.0": 1,
+          "L10.1": 1,
+          "L10.2": 1
+        },
+        "clean_before": true,
+        "h3_pass": true
+      },
+      {
+        "defect": "missing-renders",
+        "expected": {
+          "L10.2": 1
+        },
+        "fired": {
+          "L10.2": 1
+        },
+        "clean_before": true,
+        "h3_pass": true
+      },
+      {
+        "defect": "foreign-state",
+        "expected": {
+          "L10.3": 1
+        },
+        "fired": {
+          "L10.3": 1
+        },
+        "clean_before": true,
+        "h3_pass": true
+      },
+      {
+        "defect": "nondeterminism",
+        "expected": {
+          "L10.4": 1
+        },
+        "fired": {
+          "L10.4": 1
+        },
+        "clean_before": true,
+        "h3_pass": true
+      },
+      {
+        "defect": "double-initial",
+        "expected": {
+          "L10.5a": 1
+        },
+        "fired": {
+          "L10.5a": 1
+        },
+        "clean_before": true,
+        "h3_pass": true
+      },
+      {
+        "defect": "unreachable-state",
+        "expected": {
+          "L10.5b": 1
+        },
+        "fired": {
+          "L10.5b": 1
+        },
+        "clean_before": true,
+        "h3_pass": true
+      },
+      {
+        "defect": "deadend-error",
+        "expected": {
+          "L10.6a": 1,
+          "L10.1": 1
+        },
+        "fired": {
+          "L10.1": 1,
+          "L10.6a": 1
+        },
+        "clean_before": true,
+        "h3_pass": true
+      },
+      {
+        "defect": "wrong-call-target",
+        "expected": {
+          "L10.7a": 1,
+          "L10.2": 1
+        },
+        "fired": {
+          "L10.2": 1,
+          "L10.7a": 1
+        },
+        "clean_before": true,
+        "h3_pass": true
+      }
+    ],
+    "pass": true
+  },
+  "overall_pass": true
+}
