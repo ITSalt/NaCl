@@ -206,6 +206,13 @@ ORDER BY uc.id;
 //   here because this closure is EXPLORATION/DISPLAY ONLY; the staleness gate
 //   stamp is computed by the tight directed query in the write-skills, never
 //   by this traversal.
+//   Phase 2 (behavior slices) appended: HAS_SLICE, COVERS, VERIFIED_BY
+//   (downstream) and HAS_SLICE (upstream, mirroring HAS_SCREEN). Slice-CALLS
+//   needs no registration — CALLS is already listed (name shared with
+//   ScreenEffect-CALLS by design; label-qualify the source in any query that
+//   must tell them apart). VERIFIED_BY is deliberately NOT in the upstream
+//   half: like GENERATES, it answers "what depends on this", not "why does
+//   this exist" — a Task's rationale chain runs through FR/Decision.
 // ---------------------------------------------------------------------------
 MATCH (changed {id: $changedNodeId})
 MATCH path = (changed)
@@ -213,7 +220,8 @@ MATCH path = (changed)
        |ACTOR|CONTAINS_UC|CONTAINS_ENTITY|HAS_ENUM|HAS_VALUE|EXPOSES|IMPLEMENTS
        |GENERATES|INCLUDES_UC|AFFECTS_ENTITY|AFFECTS_MODULE|DEPENDS_ON
        |HAS_SCREEN|RENDERS|HAS_STATE|HAS_EVENT|HAS_TRANSITION|FROM_STATE
-       |TO_STATE|ON_EVENT|TRIGGERS|CALLS|NAVIGATES_TO|EMITS*1..6]
+       |TO_STATE|ON_EVENT|TRIGGERS|CALLS|NAVIGATES_TO|EMITS
+       |HAS_SLICE|COVERS|VERIFIED_BY*1..6]
       -(dep)
 WHERE dep <> changed
 WITH dep AS node, min(length(path)) AS hops
@@ -227,7 +235,7 @@ MATCH (changed {id: $changedNodeId})
 MATCH up = (origin)
       -[:AUTOMATES_AS|REALIZED_AS|IMPLEMENTED_BY|MAPPED_TO|TYPED_AS|SUGGESTS
        |HAS_REQUIREMENT|INCLUDES_UC|RAISES_REQUIREMENT|CONTAINS_UC|CONTAINS_ENTITY
-       |IMPLEMENTS|JUSTIFIES|HAS_SCREEN*1..5]
+       |IMPLEMENTS|JUSTIFIES|HAS_SCREEN|HAS_SLICE*1..5]
       ->(changed)
 WHERE origin <> changed
 WITH origin AS node, min(length(up)) AS hops
@@ -311,3 +319,30 @@ RETURN scr.id AS screen, uc.id AS use_case, f.id AS renders_form,
          target: coalesce(api.id, navScr.id, anev.id)
        }) AS effects
 ORDER BY transition;
+
+
+// ---------------------------------------------------------------------------
+// Query: sa_uc_slices
+// Params: $ucId — UseCase.id (e.g. "UC-006")
+// Description: All behavior slices of one UseCase with their anchors and
+//   verification — one row per slice: the Given/When/Then contract, the
+//   screen-machine elements it COVERS, the endpoints it CALLS, and the tasks
+//   that VERIFY it. Enough to render a coverage table or to eyeball L11 by
+//   hand. CALLS is label-qualified on the source (the name is shared with
+//   ScreenEffect-CALLS). The covers map-collect is null-filtered: a bare
+//   collect(DISTINCT {…}) over an unmatched OPTIONAL emits one all-null map
+//   instead of [] (caught by the Фаза-2 skill-level verifier on a CALLS-only
+//   backend slice); scalar collects (calls/verified_by) skip nulls natively.
+// ---------------------------------------------------------------------------
+MATCH (uc:UseCase {id: $ucId})-[:HAS_SLICE]->(sl:Slice)
+OPTIONAL MATCH (sl)-[:COVERS]->(cov)
+  WHERE cov:ScreenState OR cov:Transition
+OPTIONAL MATCH (sl)-[:CALLS]->(api:APIEndpoint)
+OPTIONAL MATCH (sl)-[:VERIFIED_BY]->(t:Task)
+RETURN sl.id AS slice, sl.name AS name, sl.slice_kind AS kind,
+       sl.given AS given, sl.when AS when, sl.then AS then,
+       [c IN collect(DISTINCT {id: cov.id, type: labels(cov)[0]})
+        WHERE c.id IS NOT NULL] AS covers,
+       collect(DISTINCT api.id) AS calls,
+       collect(DISTINCT t.id) AS verified_by
+ORDER BY slice;

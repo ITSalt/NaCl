@@ -66,6 +66,11 @@ change-tracking ids:
   `:Transition`, per-screen sequential), `SCREF-{Screen}-NNN` (`:ScreenEffect`,
   per-screen sequential), `ANEV-{Name}` (`:AnalyticsEvent`). `{Screen}` is the
   PascalName part of the Screen id without the `SCR-` prefix.
+- `SLC-{NNN}-{PascalName}` — `:Slice` node (graph-native acceptance scenario,
+  written by `nacl-sa-uc slices`). `{NNN}` is the parent UC number
+  (`UC-006` → `006`); `{PascalName}` derives from a latin short scenario name
+  (kebab/snake/space → PascalCase). The infix keeps repeated scenario names
+  unique across UCs and enables `STARTS WITH 'SLC-NNN-'` scoping.
 
 If these files are unavailable, report:
 

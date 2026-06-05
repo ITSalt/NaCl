@@ -72,6 +72,9 @@ CREATE CONSTRAINT constraint_screeneffect_id
 CREATE CONSTRAINT constraint_analyticsevent_id
   FOR (n:AnalyticsEvent) REQUIRE n.id IS UNIQUE;
 
+CREATE CONSTRAINT constraint_slice_id
+  FOR (n:Slice) REQUIRE n.id IS UNIQUE;
+
 
 // ---------------------------------------------------------------------------
 // 2. INDEXES (name lookup for each label + module index on DomainEntity)
@@ -147,6 +150,12 @@ CREATE INDEX index_screeneffect_kind
 CREATE INDEX index_analyticsevent_name
   FOR (n:AnalyticsEvent) ON (n.name);
 
+CREATE INDEX index_slice_name
+  FOR (n:Slice) ON (n.name);
+
+CREATE INDEX index_slice_kind
+  FOR (n:Slice) ON (n.slice_kind);
+
 
 // ---------------------------------------------------------------------------
 // 3. SA-INTERNAL RELATIONSHIP TYPES (documentation)
@@ -218,8 +227,8 @@ CREATE INDEX index_analyticsevent_name
 //
 // (:Decision)-[:JUSTIFIES {role: String}]->(target)
 //   A decision shaped an artifact. target ∈ {UseCase, DomainEntity, Module,
-//   Requirement, Form, Component, Enumeration, APIEndpoint, Screen} (Slice|
-//   CachePolicy join later with no schema change). role ∈ {'creates','shapes',
+//   Requirement, Form, Component, Enumeration, APIEndpoint, Screen, Slice}
+//   (CachePolicy joins later with no schema change). role ∈ {'creates','shapes',
 //   'constrains'}; default 'shapes'.
 //
 // (:Decision)-[:SUPERSEDES]->(:Decision)
@@ -380,6 +389,71 @@ CREATE INDEX index_analyticsevent_name
 // AnalyticsEvent {
 //   id: String,             // "ANEV-<Name>"
 //   name: String
+// }
+
+
+// ---------------------------------------------------------------------------
+// 3-ter. BEHAVIOR SLICES (vertical behavior decomposition, owned by nacl-sa-uc)
+// ---------------------------------------------------------------------------
+// A Slice is the graph-native acceptance scenario (Given/When/Then): one
+// vertical slice of observable UC behavior, below the UseCase (a UC has
+// several slices), above the Task (tasks stay per-UC — the slice layer is an
+// OVERLAY; per-slice tasks are deliberately out of scope). Adoption is opt-in:
+// a graph with zero Slice nodes passes L11 vacuously, exactly as a graph with
+// zero Screen nodes passes L10.
+//
+// ANCHOR INVARIANT (L11.2): every Slice must carry at least one behavioral
+// anchor — COVERS into the screen state machine and/or CALLS to an
+// APIEndpoint. An anchorless slice is prose that change propagation can never
+// reach (the precise drift this whole extension family exists to kill); such
+// text belongs in UseCase.acceptance_criteria, not in a node. There is
+// deliberately NO exemption flag for L11.2.
+//
+// NAMESPACE NOTE: the CALLS edge-type name is shared with
+// (:ScreenEffect)-[:CALLS]->(:APIEndpoint) from § 3-bis — deliberately: the
+// semantics are identical ("artifact invokes endpoint") and the sharing
+// precedent (HAS_STATE/TRIGGERS/NAVIGATES_TO) is accepted. Label-qualify the
+// SOURCE in every query: (sl:Slice)-[:CALLS]-> vs (eff:ScreenEffect)-[:CALLS]->.
+//
+// (:UseCase)-[:HAS_SLICE]->(:Slice)
+//   REQUIRED parent. Every Slice belongs to exactly one UseCase (L11.1).
+//
+// (:Slice)-[:COVERS]->(:ScreenState)
+// (:Slice)-[:COVERS]->(:Transition)
+//   UI-behavior anchor into the Phase-1 screen-machine hub. A state target
+//   means "the slice covers being in this state" (e.g. Empty); a transition
+//   target means "the slice covers this behavior" (e.g. Error→Loading on
+//   retry). The target must belong to a Screen of the slice's OWN UseCase
+//   (L11.3, mirrors the L10.3 same-screen rule).
+//
+// (:Slice)-[:CALLS]->(:APIEndpoint)
+//   Backend-behavior anchor. For backend-only UCs (has_ui=false) this is the
+//   only anchor available. When the endpoint does not exist yet, use the
+//   provisional path from § 3-bis (MERGE provisional=true + (:UseCase)-[:EXPOSES]->).
+//
+// (:Slice)-[:VERIFIED_BY]->(:Task)
+//   TL overlay: which per-UC delivery unit proves this behavior. NOT required
+//   at authoring time (tasks may not exist before nacl-tl-plan has run);
+//   REQUIRED once the parent UC has GENERATES tasks (L11.4 verification
+//   closure — self-healing: nacl-tl-plan MERGEs these edges when it
+//   (re)plans a UC that has slices).
+//
+// --- Slice properties (documented) ---
+// Slice {
+//   id: String,             // "SLC-{NNN}-{PascalName}" — NNN is the UC number
+//                           // (SLC-006-HappyPath); the NNN infix makes repeated
+//                           // scenario names unique across UCs and enables the
+//                           // scoped-L11 filter sl.id STARTS WITH 'SLC-NNN-'
+//   name: String,           // short scenario name ("Happy path", "Empty result")
+//   slice_kind: String,     // 'happy' | 'alternate' | 'error' | 'edge' (L11.6b)
+//   given: String,          // precondition (recommended)
+//   when: String,           // trigger (recommended)
+//   then: String,           // observable outcome [REQUIRED non-blank on write —
+//                           // L11.6a, mirrors the L9.3 empty-rationale gate:
+//                           // a slice with no observable outcome is unverifiable]
+//   criterion_index: Int,   // optional back-ref into UseCase.acceptance_criteria
+//   created_by: String,     // "nacl-sa-uc"
+//   created_at: DateTime
 // }
 
 
