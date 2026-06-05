@@ -143,8 +143,10 @@ Commands:
 4. Bump `spec_version`; stamp staleness DIRECTED (same contract as
    `nacl-sa-feature` 3g; `stale_origin` = the UC id). If the run MODIFIED
    properties of a shared error (raised by other UCs' endpoints), also stamp
-   the raiser UCs and their tasks with the same two-statement shape,
-   `stale_origin` = the error id — computed directionally via
+   with the same two-statement 3g shape, `stale_origin` = the error id:
+   first the tasks of raisers + their `DEPENDS_ON*1..5` dependents, then
+   ONLY the raiser UC nodes themselves (dependent UCs get their tasks
+   stamped, never the UC node) — computed directionally via
    `(err)<-[:MAY_RAISE]-(api)<-[:EXPOSES]-(raiser)`, never the broad closure.
 5. Run scoped L12 checks (`WHERE err.id IN $errIds` — errors are NOT
    UC-scoped, there is no id-infix recipe); fix CRITICAL findings before

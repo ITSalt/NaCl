@@ -1471,8 +1471,12 @@ Same directed contract as `nacl-sa-feature` step 3g (the `slices` § 4.2 stateme
 
 **Shared-error extension (the one new stamp semantic):** if this run **modified properties** of a DomainError that endpoints of OTHER UCs also raise (merely adding your own MAY_RAISE edges does not count — that changes your contract, not theirs), those raiser UCs' contracts changed too. Compute the raiser set directionally and stamp it with the same two-statement shape, with the ERROR as the lineage origin:
 
+Two statements, exactly the 3g shape: tasks of raisers + their transitive
+dependents first, then **only the raiser UCs themselves** (dependent UCs get
+their tasks stamped, never the UC node — same as the base contract).
+
 ```cypher
-// stamp_shared_raisers (only after property-modifying MERGEs on shared errors)
+// stamp_shared_raisers (1/2) — tasks of raisers + their DEPENDS_ON*1..5 dependents
 MATCH (err:DomainError) WHERE err.id IN $modifiedSharedErrIds
 MATCH (raiser:UseCase)-[:EXPOSES]->(:APIEndpoint)-[:MAY_RAISE]->(err)
 WHERE raiser.id <> $ucId
@@ -1486,13 +1490,19 @@ SET t.review_status = 'stale',
     t.stale_reason = 'shared domain error ' + reduce(s='', e IN errIds | s + e + ' ') + 'modified via ' + $ucId,
     t.stale_since = datetime(),
     t.stale_origin = errIds[0]
-WITH errIds, affected
-UNWIND affected AS a2
-SET a2.review_status = 'stale',
-    a2.stale_reason = 'shared domain error modified via ' + $ucId,
-    a2.stale_since = datetime(),
-    a2.stale_origin = errIds[0]
-RETURN count(DISTINCT a2) AS raiser_ucs_stamped
+RETURN count(DISTINCT t) AS raiser_tasks_stamped
+```
+
+```cypher
+// stamp_shared_raisers (2/2) — only the raiser UCs themselves
+MATCH (err:DomainError) WHERE err.id IN $modifiedSharedErrIds
+MATCH (raiser:UseCase)-[:EXPOSES]->(:APIEndpoint)-[:MAY_RAISE]->(err)
+WHERE raiser.id <> $ucId
+SET raiser.review_status = 'stale',
+    raiser.stale_reason = 'shared domain error modified via ' + $ucId,
+    raiser.stale_since = datetime(),
+    raiser.stale_origin = err.id
+RETURN count(DISTINCT raiser) AS raiser_ucs_stamped
 ```
 
 Still directed, still tight: the set is exactly the raisers (+ their dependents' tasks), never the broad closure. The flags are cleared by `nacl-tl-plan` when it re-plans each UC.
