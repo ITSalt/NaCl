@@ -4,9 +4,9 @@ model: opus
 effort: high
 description: |
   Validate specification consistency through Neo4j Cypher queries.
-  Internal validation (L1-L9): data consistency, model connectivity, requirement completeness,
+  Internal validation (L1-L10): data consistency, model connectivity, requirement completeness,
   form-domain traceability, UC-form validation, cross-module consistency, FeatureRequest consistency,
-  staleness closure, decision provenance.
+  staleness closure, decision provenance, screen state machines (SA-extension connectivity).
   Cross-validation BA->SA (XL6-XL9): UC coverage, entity coverage, role coverage, rule coverage.
   Use when: validate specification, check consistency, find errors, run checks, quality gate.
 ---
@@ -15,7 +15,7 @@ description: |
 
 **Wrap with:** `/nacl-goal validate:module:<MOD-ID>` (tier S)
 
-This skill is a good fit for autonomous `/goal` loops because all checks are read-only Cypher queries whose results are deterministic: the check script queries the same Neo4j graph and counts zero-row (PASS) vs non-zero-row (FAIL) outcomes for each L1–L9 and XL6–XL9 check. The wrapper composes a completion condition that all enabled checks return zero findings.
+This skill is a good fit for autonomous `/goal` loops because all checks are read-only Cypher queries whose results are deterministic: the check script queries the same Neo4j graph and counts zero-row (PASS) vs non-zero-row (FAIL) outcomes for each L1–L10 and XL6–XL9 check. The wrapper composes a completion condition that all enabled checks return zero findings.
 
 **Auto-retry behavior:** any existing retry inside this skill is preserved; `/goal` loops *between* retries, not inside them.
 
@@ -58,9 +58,9 @@ IMPORTANT: This skill uses ONLY read-cypher. Validation must NEVER write to the 
 
 | Parameter | Values | Description |
 |-----------|--------|-------------|
-| `level` | `internal` | L1-L9: SA-internal consistency checks (incl. L8 staleness, L9 decision provenance) |
+| `level` | `internal` | L1-L10: SA-internal consistency checks (incl. L8 staleness, L9 decision provenance, L10 screen state machines) |
 | | `ba-cross` | XL6-XL9: BA-to-SA cross-layer coverage |
-| | `full` (default) | All levels: L1-L9 + XL6-XL9 |
+| | `full` (default) | All levels: L1-L10 + XL6-XL9 |
 | `--scope` | `intra-uc UC-NNN[,UC-NNN]` | Limit validation to specific UCs and their subgraph (forms, fields, requirements, entities). Used by nacl-sa-feature for incremental validation. |
 | | `intra-module mod-xxx` | Limit validation to a specific module's nodes. |
 
@@ -123,6 +123,11 @@ When `--scope` is provided, all Cypher queries are augmented with a WHERE clause
           |  Provenance       |            |
           +---------+---------+            |
                     |                      |
+          +---------+---------+            |
+          |  L10: Screen      |            |
+          |  State Machines   |            |
+          +---------+---------+            |
+                    |                      |
                     +----------+-----------+
                                |
                     +----------+-----------+
@@ -140,7 +145,7 @@ This skill assumes the **canonical SA schema** as defined in `graph-infra/schema
 - `/nacl-sa-domain` -- writes `:DomainEntity`, `:DomainAttribute`, `:Enumeration`, `:EnumValue` (with `.value` property)
 - `/nacl-sa-uc` -- writes `:UseCase`, `:Requirement`, `:Form`, `:FormField`, `:ActivityStep`
 - `/nacl-sa-roles` -- writes `:SystemRole`
-- `/nacl-sa-ui` -- writes `:Component`, `:FormField`
+- `/nacl-sa-ui` -- writes `:Component`, `:FormField`; `state-machine` command writes `:Screen`, `:ScreenState`, `:ScreenEvent`, `:Transition`, `:ScreenEffect`, `:AnalyticsEvent` with edges `HAS_SCREEN`, `RENDERS`, `HAS_STATE`, `HAS_EVENT`, `HAS_TRANSITION`, `FROM_STATE`, `TO_STATE`, `ON_EVENT`, `TRIGGERS`, `CALLS`, `NAVIGATES_TO`, `EMITS` (see `graph-infra/schema/sa-schema.cypher` § 3-bis; note `HAS_STATE`/`TRIGGERS` names are shared with the BA layer — every L10 query is label-qualified)
 - BA->SA handoff edges (canonical names): `AUTOMATES_AS`, `REALIZED_AS`, `IMPLEMENTED_BY`, `MAPPED_TO`, `TYPED_AS`, `SUGGESTS`
 - Provenance (canonical names, written by `/nacl-sa-feature`, `/nacl-tl-fix`, `/nacl-sa-finalize`): `:Decision` node, edges `(:Decision)-[:JUSTIFIES]->(...)`, `(:Decision)-[:SUPERSEDES]->(:Decision)`, `(:FeatureRequest)-[:IMPLEMENTS]->(:Decision)`
 - Staleness properties (set by `/nacl-sa-feature`, `/nacl-tl-fix`): `review_status`, `stale_reason`, `stale_since`, `stale_origin` — read with `coalesce(n.review_status,'current')`.
@@ -265,7 +270,8 @@ Once Step 0a has confirmed the graph is canonical, render a two-section node-cou
 // Step 0b: canonical SA-layer node counts
 UNWIND ['Module','UseCase','DomainEntity','DomainAttribute','Enumeration','EnumValue',
         'Form','FormField','Requirement','SystemRole','Component','ActivityStep',
-        'FeatureRequest'] AS labelName
+        'FeatureRequest','Screen','ScreenState','ScreenEvent','Transition',
+        'ScreenEffect','AnalyticsEvent'] AS labelName
 CALL {
   WITH labelName
   MATCH (n) WHERE labelName IN labels(n)
@@ -282,7 +288,8 @@ WITH label
 WHERE NOT label IN
    ['Module','UseCase','DomainEntity','DomainAttribute','Enumeration','EnumValue',
     'Form','FormField','Requirement','SystemRole','Component','ActivityStep',
-    'FeatureRequest','BusinessProcess','WorkflowStep','BusinessEntity','BusinessRole',
+    'FeatureRequest','Screen','ScreenState','ScreenEvent','Transition','ScreenEffect',
+    'AnalyticsEvent','BusinessProcess','WorkflowStep','BusinessEntity','BusinessRole',
     'BusinessRule','EntityAttribute','ProcessGroup','Term','Glossary','Stakeholder',
     'ExternalEntity','Document','DataFlow']
 CALL {
@@ -323,7 +330,7 @@ ORDER BY label
 
 **If the result is empty:**
 - `level=ba-cross` --> STOP, report that BA layer is not populated. User must run `/nacl-ba-import-doc` or `/nacl-ba-from-board` first.
-- `level=full` --> Run only L1-L9 (internal), skip XL6-XL9 with a WARNING in the report.
+- `level=full` --> Run only L1-L10 (internal), skip XL6-XL9 with a WARNING in the report.
 
 ### Step 0d: Verify exemption properties are populated
 
@@ -381,7 +388,7 @@ Every detected problem is assigned a severity:
 
 ---
 
-## Validation Levels -- Internal (L1-L9)
+## Validation Levels -- Internal (L1-L10)
 
 ### Level 1: Data Consistency
 
@@ -643,6 +650,8 @@ that cannot be fixed by any SA skill (the data is correct, the query is wrong).
 | L7.4 | `WHERE fr.legacy_origin IS NULL` | Exempt FR tombstones (same reason as L7.2) |
 | L7.6 | `AND NOT n.id STARTS WITH 'FR-LEG-'` | Exempt all tombstone namespaces from cross-label collision check |
 | L9.1 | `AND coalesce(fr.decision_exempt, false) = false` | Exempt grandfathered pre-provenance FRs (rationale unrecoverable at gap-closure; see provenance-gap-closure runbook) |
+| L10.2 | `AND coalesce(scr.formless, false) = false` | Exempt screens that render no Form (splash, 404) from the RENDERS requirement |
+| L10.6 | `AND coalesce(st.terminal, false) = false` | Exempt intentionally terminal error states from the escape-transition requirement |
 | XL8.2 | `AND coalesce(sr.system_only, false) = false` | Exempt infrastructure-only roles |
 
 If executing via HTTP API (curl) instead of MCP tools, copy queries CHARACTER-FOR-CHARACTER
@@ -1058,6 +1067,262 @@ ORDER BY fr.id
 
 ---
 
+### Level 10: Screen State Machines (SA-Extension Connectivity)
+
+**Goal:** Every screen state machine written by `nacl-sa-ui state-machine` is structurally sound: no orphaned extension nodes, every node anchored to its required parent and cross-layer sibling, transitions reference valid same-screen states/events, the machine is **deterministic** (no ambiguous `(from_state, on_event)` pairs), every state is **reachable** from the initial state, error states have an escape path, and load/mutate effects call real API endpoints. This is the connectivity invariant for the Screen extension: a Screen/ScreenState/ScreenEvent/Transition/ScreenEffect/AnalyticsEvent node cannot silently orphan.
+
+A graph with **zero** Screen nodes passes L10 cleanly (all checks match on the new labels only) — projects that have not adopted screen state machines are unaffected.
+
+**Label-qualify everything:** `HAS_STATE` and `TRIGGERS` edge-type names are shared with the BA layer (`BusinessEntity→EntityState`, `BusinessProcess→BusinessProcess`), and `NAVIGATES_TO` pre-exists in some graphs as Form→Form / Component→Form navigation. Every query below constrains node labels; never match these relationship types bare.
+
+This level writes nothing.
+
+#### Check 10.0: Orphaned extension nodes (mirrors L2.1)
+
+```cypher
+// L10.0 -- Severity: CRITICAL
+// Screen-machine nodes with zero relationships
+MATCH (n)
+WHERE (n:Screen OR n:ScreenState OR n:ScreenEvent OR n:Transition
+       OR n:ScreenEffect OR n:AnalyticsEvent)
+  AND NOT (n)--()
+RETURN labels(n)[0] AS node_type, n.id AS id,
+       coalesce(n.name, n.description, '') AS display_name,
+       'Completely disconnected screen-machine node (zero relationships)' AS problem
+```
+
+#### Check 10.1: Required parent per extension node (mirrors L2.2)
+
+```cypher
+// L10.1 -- Severity: CRITICAL
+// Every screen-machine node must hang off its required parent
+MATCH (s:Screen) WHERE NOT (:UseCase)-[:HAS_SCREEN]->(s)
+RETURN 'Screen' AS node_type, s.id AS id,
+       'Screen has no parent UseCase (HAS_SCREEN)' AS problem
+UNION ALL
+MATCH (st:ScreenState) WHERE NOT (:Screen)-[:HAS_STATE]->(st)
+RETURN 'ScreenState' AS node_type, st.id AS id,
+       'ScreenState has no parent Screen (HAS_STATE)' AS problem
+UNION ALL
+MATCH (ev:ScreenEvent) WHERE NOT (:Screen)-[:HAS_EVENT]->(ev)
+RETURN 'ScreenEvent' AS node_type, ev.id AS id,
+       'ScreenEvent has no parent Screen (HAS_EVENT)' AS problem
+UNION ALL
+MATCH (tr:Transition) WHERE NOT (:Screen)-[:HAS_TRANSITION]->(tr)
+RETURN 'Transition' AS node_type, tr.id AS id,
+       'Transition has no parent Screen (HAS_TRANSITION)' AS problem
+UNION ALL
+MATCH (eff:ScreenEffect) WHERE NOT (:Transition)-[:TRIGGERS]->(eff)
+RETURN 'ScreenEffect' AS node_type, eff.id AS id,
+       'ScreenEffect has no parent Transition (TRIGGERS)' AS problem
+UNION ALL
+MATCH (ae:AnalyticsEvent) WHERE NOT (:ScreenEffect)-[:EMITS]->(ae)
+RETURN 'AnalyticsEvent' AS node_type, ae.id AS id,
+       'AnalyticsEvent has no inbound EMITS from any ScreenEffect' AS problem
+```
+
+#### Check 10.2: Required cross-layer / sibling edge
+
+`RENDERS` is the bridge that makes a DomainAttribute change reach the screen (`DA ← MAPS_TO ← FormField ← HAS_FIELD ← Form ← RENDERS ← Screen`); without it the screen is invisible to impact analysis. Effects must point at their kind-specific target.
+
+```cypher
+// L10.2 -- Severity: CRITICAL
+// Screen without RENDERS -> Form; effect without its kind-required target.
+// Screens marked formless=true (splash, 404) are exempt from RENDERS.
+MATCH (scr:Screen)
+WHERE NOT (scr)-[:RENDERS]->(:Form)
+  AND coalesce(scr.formless, false) = false  -- REQUIRED FILTER: exempt formless screens
+RETURN 'Screen' AS node_type, scr.id AS id,
+       'Screen has no RENDERS -> Form (domain changes cannot reach it)' AS problem
+UNION ALL
+MATCH (eff:ScreenEffect)
+WHERE eff.effect_kind IN ['load', 'mutate']
+  AND NOT (eff)-[:CALLS]->(:APIEndpoint)
+RETURN 'ScreenEffect' AS node_type, eff.id AS id,
+       'load/mutate effect has no CALLS -> APIEndpoint' AS problem
+UNION ALL
+MATCH (eff:ScreenEffect)
+WHERE eff.effect_kind = 'navigate'
+  AND NOT (eff)-[:NAVIGATES_TO]->(:Screen)
+RETURN 'ScreenEffect' AS node_type, eff.id AS id,
+       'navigate effect has no NAVIGATES_TO -> Screen' AS problem
+UNION ALL
+MATCH (eff:ScreenEffect)
+WHERE eff.effect_kind = 'analytics'
+  AND NOT (eff)-[:EMITS]->(:AnalyticsEvent)
+RETURN 'ScreenEffect' AS node_type, eff.id AS id,
+       'analytics effect has no EMITS -> AnalyticsEvent' AS problem
+```
+
+#### Check 10.3: Transition reference validity (mirrors L4.3)
+
+A reified Transition must have **exactly one** FROM_STATE, TO_STATE, and ON_EVENT — and each target must belong to the **same Screen** as the transition itself.
+
+```cypher
+// L10.3 -- Severity: CRITICAL
+// Transitions with missing/duplicated/foreign FROM_STATE / TO_STATE / ON_EVENT
+MATCH (scr:Screen)-[:HAS_TRANSITION]->(tr:Transition)
+OPTIONAL MATCH (tr)-[:FROM_STATE]->(fs:ScreenState)
+OPTIONAL MATCH (tr)-[:TO_STATE]->(ts:ScreenState)
+OPTIONAL MATCH (tr)-[:ON_EVENT]->(ev:ScreenEvent)
+WITH scr, tr,
+     count(DISTINCT fs) AS from_cnt,
+     count(DISTINCT ts) AS to_cnt,
+     count(DISTINCT ev) AS event_cnt,
+     [x IN collect(DISTINCT fs) WHERE NOT (scr)-[:HAS_STATE]->(x) | x.id]
+       + [x IN collect(DISTINCT ts) WHERE NOT (scr)-[:HAS_STATE]->(x) | x.id] AS foreign_states,
+     [x IN collect(DISTINCT ev) WHERE NOT (scr)-[:HAS_EVENT]->(x) | x.id] AS foreign_events
+WHERE from_cnt <> 1 OR to_cnt <> 1 OR event_cnt <> 1
+   OR size(foreign_states) > 0 OR size(foreign_events) > 0
+RETURN scr.id AS screen, tr.id AS transition,
+       from_cnt, to_cnt, event_cnt, foreign_states, foreign_events,
+       'Transition references missing, duplicated, or foreign-screen state/event' AS problem
+```
+
+#### Check 10.4: Determinism
+
+Two transitions firing from the same state on the same event are ambiguous **unless every one of them is guarded** (guarded branching is legal; guard disjointness is the author's responsibility and cannot be checked statically).
+
+```cypher
+// L10.4 -- Severity: CRITICAL
+// Ambiguous (from_state, on_event) pairs: >1 unguarded, or unguarded mixed with guarded
+MATCH (scr:Screen)-[:HAS_TRANSITION]->(tr:Transition),
+      (tr)-[:FROM_STATE]->(fs:ScreenState),
+      (tr)-[:ON_EVENT]->(ev:ScreenEvent)
+WITH scr, fs, ev,
+     sum(CASE WHEN tr.guard IS NULL OR trim(tr.guard) = '' THEN 1 ELSE 0 END) AS unguarded,
+     count(tr) AS total,
+     collect(tr.id) AS transitions
+WHERE unguarded > 1 OR (unguarded >= 1 AND total > unguarded)
+RETURN scr.id AS screen, fs.name AS from_state, ev.name AS on_event,
+       unguarded, total - unguarded AS guarded, transitions,
+       'Non-deterministic: same (from_state, on_event) with unguarded transition overlap' AS problem
+```
+
+#### Check 10.5: Initial state and reachability
+
+**10.5a — exactly one initial state per screen.** Reachability is undefined without it.
+
+```cypher
+// L10.5a -- Severity: CRITICAL
+// Every Screen must have exactly ONE ScreenState with is_initial=true
+MATCH (scr:Screen)
+OPTIONAL MATCH (scr)-[:HAS_STATE]->(st:ScreenState)
+WHERE coalesce(st.is_initial, false) = true
+WITH scr, count(st) AS initial_count
+WHERE initial_count <> 1
+RETURN scr.id AS screen, initial_count,
+       'Screen must have exactly one is_initial=true ScreenState' AS problem
+```
+
+**10.5b — every non-initial state reachable from the initial state** following the directed transition relation `(:ScreenState)<-[:FROM_STATE]-(:Transition)-[:TO_STATE]->(:ScreenState)`. Uses a quantified path pattern (Neo4j ≥ 5.9; on older 5.x fall back to `apoc.path.expandConfig` with `relationshipFilter: '<FROM_STATE,TO_STATE>'`). Cross-screen wiring is already excluded by L10.3, so the walk cannot leak between screens unless L10.3 also fails — run 10.3 first.
+
+```cypher
+// L10.5b -- Severity: CRITICAL
+// Non-initial states not reachable from the screen's initial state
+MATCH (scr:Screen)-[:HAS_STATE]->(init:ScreenState),
+      (scr)-[:HAS_STATE]->(st:ScreenState)
+WHERE coalesce(init.is_initial, false) = true
+  AND st <> init
+  AND NOT EXISTS {
+        MATCH (init) ((:ScreenState)<-[:FROM_STATE]-(:Transition)-[:TO_STATE]->(:ScreenState)){1,12} (st)
+      }
+RETURN scr.id AS screen, st.id AS state_id, st.name AS state,
+       'ScreenState unreachable from the initial state' AS problem
+```
+
+#### Check 10.6: Error-state escape (retry guarantee)
+
+**10.6a — dead-end error state.** An error state the user can never leave is a trap. Intentionally terminal error states carry `terminal=true`.
+
+```cypher
+// L10.6a -- Severity: CRITICAL
+// error-kind states with NO outgoing transition at all
+MATCH (scr:Screen)-[:HAS_STATE]->(st:ScreenState)
+WHERE st.state_kind = 'error'
+  AND coalesce(st.terminal, false) = false  -- REQUIRED FILTER: exempt terminal states
+  AND NOT (st)<-[:FROM_STATE]-(:Transition)
+RETURN scr.id AS screen, st.id AS state_id, st.name AS state,
+       'error state has no outgoing transition (user is trapped)' AS problem
+```
+
+**10.6b — no user-facing retry affordance.** The error state has outgoing transitions, but none fires on a `user`-kind event (e.g. OnRetry) — recovery exists but the user cannot trigger it. Checked by `event_kind`, not by event name: name matching ('OnRetry') is brittle across languages; the kind property is the deterministic invariant. The OnRetry naming stays as authoring convention in `nacl-sa-ui`.
+
+```cypher
+// L10.6b -- Severity: WARNING
+// error states whose every escape is system/lifecycle-triggered
+MATCH (scr:Screen)-[:HAS_STATE]->(st:ScreenState)
+WHERE st.state_kind = 'error'
+  AND coalesce(st.terminal, false) = false  -- REQUIRED FILTER: exempt terminal states
+  AND (st)<-[:FROM_STATE]-(:Transition)
+  AND NOT EXISTS {
+        MATCH (st)<-[:FROM_STATE]-(tr2:Transition)-[:ON_EVENT]->(ev:ScreenEvent)
+        WHERE ev.event_kind = 'user'
+      }
+RETURN scr.id AS screen, st.id AS state_id, st.name AS state,
+       'error state has no user-triggered escape (no retry affordance)' AS problem
+```
+
+#### Check 10.7: Effect target integrity (mirrors L4.1/L4.3)
+
+Edges always point at existing nodes in Neo4j, so the dangling-reference failure mode here is a **wrong-label** target (e.g. CALLS at a Form) or a malformed endpoint.
+
+```cypher
+// L10.7a -- Severity: CRITICAL
+// Effect edges pointing at wrong-label or malformed targets
+MATCH (eff:ScreenEffect)-[:CALLS]->(x)
+WHERE NOT x:APIEndpoint OR x.id IS NULL
+RETURN eff.id AS effect_id, 'CALLS' AS edge,
+       labels(x)[0] AS target_label, x.id AS target_id,
+       'CALLS target is not a valid APIEndpoint' AS problem
+UNION ALL
+MATCH (eff:ScreenEffect)-[:NAVIGATES_TO]->(x)
+WHERE NOT x:Screen
+RETURN eff.id AS effect_id, 'NAVIGATES_TO' AS edge,
+       labels(x)[0] AS target_label, x.id AS target_id,
+       'NAVIGATES_TO target is not a Screen' AS problem
+UNION ALL
+MATCH (eff:ScreenEffect)-[:EMITS]->(x)
+WHERE NOT x:AnalyticsEvent
+RETURN eff.id AS effect_id, 'EMITS' AS edge,
+       labels(x)[0] AS target_label, x.id AS target_id,
+       'EMITS target is not an AnalyticsEvent' AS problem
+```
+
+```cypher
+// L10.7b -- Severity: INFO
+// Called endpoint not EXPOSES-linked to the screen's own UseCase.
+// Either a deliberate cross-UC call or a missing EXPOSES edge — surfaced, not gated.
+MATCH (uc:UseCase)-[:HAS_SCREEN]->(scr:Screen)-[:HAS_TRANSITION]->(:Transition)
+      -[:TRIGGERS]->(eff:ScreenEffect)-[:CALLS]->(api:APIEndpoint)
+WHERE NOT (uc)-[:EXPOSES]->(api)
+RETURN uc.id AS uc_id, scr.id AS screen, eff.id AS effect_id, api.id AS endpoint,
+       'Effect calls an endpoint not EXPOSES-linked to the screen''s UseCase' AS observation
+```
+
+#### Check 10.8: Kind-vocabulary validity
+
+```cypher
+// L10.8 -- Severity: WARNING
+// state_kind / event_kind / effect_kind outside the canonical vocabularies
+MATCH (st:ScreenState)
+WHERE NOT coalesce(st.state_kind, '') IN ['initial', 'loading', 'content', 'empty', 'error']
+RETURN 'ScreenState' AS node_type, st.id AS id, st.state_kind AS kind,
+       'state_kind outside {initial, loading, content, empty, error}' AS problem
+UNION ALL
+MATCH (ev:ScreenEvent)
+WHERE NOT coalesce(ev.event_kind, '') IN ['user', 'system', 'lifecycle']
+RETURN 'ScreenEvent' AS node_type, ev.id AS id, ev.event_kind AS kind,
+       'event_kind outside {user, system, lifecycle}' AS problem
+UNION ALL
+MATCH (eff:ScreenEffect)
+WHERE NOT coalesce(eff.effect_kind, '') IN ['load', 'mutate', 'navigate', 'analytics']
+RETURN 'ScreenEffect' AS node_type, eff.id AS id, eff.effect_kind AS kind,
+       'effect_kind outside {load, mutate, navigate, analytics}' AS problem
+```
+
+---
+
 ## Validation Levels -- Cross-Layer (XL6-XL9)
 
 These checks verify BA-to-SA traceability via handoff edges. They require both BA and SA layers to be populated in Neo4j.
@@ -1311,13 +1576,14 @@ RETURN total_ba, implemented, out_of_scope,
 
 ### Step 2: Execute validation levels
 
-For each enabled level (L1 through L9, XL6 through XL9):
+For each enabled level (L1 through L10, XL6 through XL9):
 
 1. Run ALL Cypher queries for that level using `mcp__neo4j__read-cypher`.
 2. Collect results into a structured list: `{level, check_id, severity, count, details[]}`.
 3. If a query returns zero rows, that check PASSES.
 4. If a query returns rows, each row is a problem -- assign the severity defined in the check.
 5. **L8 scope:** in `--scope=intra-uc UC-NNN` runs, prefer L8.2 (scoped to the changed node's closure) over L8.1 (project-wide). L9 always runs project-wide (decision provenance is a global invariant).
+6. **L10 scope:** in `--scope=intra-uc UC-NNN` runs, restrict L10 to the screens of the scoped UCs by prepending `MATCH (uc:UseCase)-[:HAS_SCREEN]->(scr:Screen) WHERE uc.id IN $ucIds` to each screen-anchored query. Run L10.3 before L10.5b (reachability assumes same-screen wiring, which 10.3 guarantees).
 
 ### Step 3: Aggregate results
 
@@ -1361,6 +1627,7 @@ Generate the following markdown report and output it directly to the user.
 | L7 | FeatureRequest Consistency | PASS/WARN/FAIL | N | N | N |
 | L8 | Staleness Closure | PASS/WARN/FAIL | N | N | N |
 | L9 | Decision Provenance | PASS/WARN/FAIL | N | N | N |
+| L10 | Screen State Machines | PASS/WARN/FAIL | N | N | N |
 | XL6 | UC Coverage (BA->SA) | PASS/WARN/FAIL/SKIP | N | N | N |
 | XL7 | Entity Coverage (BA->SA) | PASS/WARN/FAIL/SKIP | N | N | N |
 | XL8 | Role Coverage (BA->SA) | PASS/WARN/FAIL/SKIP | N | N | N |
@@ -1459,6 +1726,12 @@ If pre-flight returns zero nodes:
 # Provenance + staleness (L8/L9):
 - Decision (node), JUSTIFIES, SUPERSEDES, IMPLEMENTS (FeatureRequest->Decision)
 - node properties: review_status, stale_reason, stale_since, stale_origin
+
+# Screen state machines (L10):
+- Screen, ScreenState, ScreenEvent, Transition, ScreenEffect, AnalyticsEvent
+- edges: HAS_SCREEN, RENDERS, HAS_STATE, HAS_EVENT, HAS_TRANSITION,
+  FROM_STATE, TO_STATE, ON_EVENT, TRIGGERS, CALLS, NAVIGATES_TO, EMITS
+- exemption properties: Screen.formless, ScreenState.terminal
 ```
 
 ### Writes
@@ -1529,6 +1802,16 @@ Before completing, verify:
 - [ ] Every non-superseded Decision JUSTIFIES at least one artifact
 - [ ] No Decision has an empty rationale
 - [ ] Superseded Decisions carry status='superseded'
+
+### L10: Screen State Machines
+- [ ] No orphaned Screen/ScreenState/ScreenEvent/Transition/ScreenEffect/AnalyticsEvent nodes
+- [ ] Every extension node has its required parent edge (HAS_SCREEN / HAS_STATE / HAS_EVENT / HAS_TRANSITION / TRIGGERS / EMITS)
+- [ ] Every Screen RENDERS a Form (or formless=true); every effect points at its kind-required target
+- [ ] Every Transition has exactly one same-screen FROM_STATE / TO_STATE / ON_EVENT
+- [ ] No ambiguous (from_state, on_event) pairs (determinism)
+- [ ] Exactly one initial state per screen; all states reachable from it
+- [ ] Error states have an escape transition (and ideally a user-triggered one)
+- [ ] Effect edges target correct labels; kind vocabularies are canonical
 
 ### XL6: UC Coverage (ba-cross / full only)
 - [ ] All automated WorkflowSteps have AUTOMATES_AS -> UseCase
@@ -1662,4 +1945,4 @@ RETURN labels(a) AS source_labels, labels(b) AS target_labels, count(r) AS remai
 /nacl-sa-validate full
 ```
 
-Step 0a should now PASS the drift check, and L1-L9 / XL6-XL9 will execute against the canonical labels.
+Step 0a should now PASS the drift check, and L1-L10 / XL6-XL9 will execute against the canonical labels.

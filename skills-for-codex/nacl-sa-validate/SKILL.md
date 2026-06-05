@@ -3,8 +3,8 @@ name: nacl-sa-validate
 description: |
   Validate NaCl SA graph consistency, connectivity, requirements, form-domain
   traceability, UC-form coverage, cross-module rules, feature requests, staleness
-  closure, decision provenance, and BA-to-SA coverage. Use when checking SA
-  quality or says `/nacl-sa-validate`.
+  closure, decision provenance, screen state machines, and BA-to-SA coverage.
+  Use when checking SA quality or says `/nacl-sa-validate`.
 ---
 
 # NaCl SA Validate For Codex
@@ -78,6 +78,22 @@ Internal checks:
   a pre-provenance project follows the provenance-gap-closure runbook (honest
   backfill from the FR's own recorded rationale; grandfather only when none is
   recoverable).
+- L10 screen state machines (SA-extension connectivity): no orphaned
+  `Screen`/`ScreenState`/`ScreenEvent`/`Transition`/`ScreenEffect`/`AnalyticsEvent`
+  nodes; every extension node has its required parent edge (`HAS_SCREEN`,
+  `HAS_STATE`, `HAS_EVENT`, `HAS_TRANSITION`, `TRIGGERS`, `EMITS`); every Screen
+  has `RENDERS -> Form` (exempt via `coalesce(scr.formless,false)=false`);
+  load/mutate effects have `CALLS -> APIEndpoint`, navigate effects
+  `NAVIGATES_TO -> Screen`, analytics effects `EMITS -> AnalyticsEvent`; every
+  reified Transition has exactly one same-screen `FROM_STATE`/`TO_STATE`/`ON_EVENT`;
+  no two transitions share `(from_state, on_event)` unless all are guarded
+  (determinism); exactly one `is_initial=true` state per screen and every
+  non-initial state is reachable from it; error states have an escape transition
+  (exempt via `coalesce(st.terminal,false)=false`; missing user-triggered escape
+  is WARNING); effect edges target correct labels; kind vocabularies
+  (`state_kind`/`event_kind`/`effect_kind`) are canonical. A graph with zero
+  Screen nodes passes L10 cleanly. Label-qualify every query — `HAS_STATE` and
+  `TRIGGERS` names are shared with the BA layer.
 
 BA-to-SA checks:
 
@@ -172,7 +188,7 @@ as `val_orphaned_form_fields`, `val_uc_without_requirements`,
 
 - Read-only validation boundary.
 - Pre-flight graph and schema checks.
-- Internal SA levels L1 through L9 (L8 staleness closure, L9 decision provenance).
+- Internal SA levels L1 through L10 (L8 staleness closure, L9 decision provenance, L10 screen state machines).
 - BA-to-SA coverage levels XL6 through XL9.
 - Exemption-property handling for validation filters.
 
