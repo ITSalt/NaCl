@@ -4,9 +4,10 @@ model: opus
 effort: high
 description: |
   Validate specification consistency through Neo4j Cypher queries.
-  Internal validation (L1-L11): data consistency, model connectivity, requirement completeness,
+  Internal validation (L1-L12): data consistency, model connectivity, requirement completeness,
   form-domain traceability, UC-form validation, cross-module consistency, FeatureRequest consistency,
-  staleness closure, decision provenance, screen state machines, behavior slices (SA-extension connectivity).
+  staleness closure, decision provenance, screen state machines, behavior slices,
+  domain error taxonomy (SA-extension connectivity).
   Cross-validation BA->SA (XL6-XL9): UC coverage, entity coverage, role coverage, rule coverage.
   Use when: validate specification, check consistency, find errors, run checks, quality gate.
 ---
@@ -15,7 +16,7 @@ description: |
 
 **Wrap with:** `/nacl-goal validate:module:<MOD-ID>` (tier S)
 
-This skill is a good fit for autonomous `/goal` loops because all checks are read-only Cypher queries whose results are deterministic: the check script queries the same Neo4j graph and counts zero-row (PASS) vs non-zero-row (FAIL) outcomes for each L1–L11 and XL6–XL9 check. The wrapper composes a completion condition that all enabled checks return zero findings.
+This skill is a good fit for autonomous `/goal` loops because all checks are read-only Cypher queries whose results are deterministic: the check script queries the same Neo4j graph and counts zero-row (PASS) vs non-zero-row (FAIL) outcomes for each L1–L12 and XL6–XL9 check. The wrapper composes a completion condition that all enabled checks return zero findings.
 
 **Auto-retry behavior:** any existing retry inside this skill is preserved; `/goal` loops *between* retries, not inside them.
 
@@ -58,9 +59,9 @@ IMPORTANT: This skill uses ONLY read-cypher. Validation must NEVER write to the 
 
 | Parameter | Values | Description |
 |-----------|--------|-------------|
-| `level` | `internal` | L1-L11: SA-internal consistency checks (incl. L8 staleness, L9 decision provenance, L10 screen state machines, L11 behavior slices) |
+| `level` | `internal` | L1-L12: SA-internal consistency checks (incl. L8 staleness, L9 decision provenance, L10 screen state machines, L11 behavior slices, L12 domain error taxonomy) |
 | | `ba-cross` | XL6-XL9: BA-to-SA cross-layer coverage |
-| | `full` (default) | All levels: L1-L11 + XL6-XL9 |
+| | `full` (default) | All levels: L1-L12 + XL6-XL9 |
 | `--scope` | `intra-uc UC-NNN[,UC-NNN]` | Limit validation to specific UCs and their subgraph (forms, fields, requirements, entities). Used by nacl-sa-feature for incremental validation. |
 | | `intra-module mod-xxx` | Limit validation to a specific module's nodes. |
 
@@ -133,6 +134,11 @@ When `--scope` is provided, all Cypher queries are augmented with a WHERE clause
           |  Slices           |            |
           +---------+---------+            |
                     |                      |
+          +---------+---------+            |
+          |  L12: Domain      |            |
+          |  Error Taxonomy   |            |
+          +---------+---------+            |
+                    |                      |
                     +----------+-----------+
                                |
                     +----------+-----------+
@@ -148,7 +154,7 @@ This skill assumes the **canonical SA schema** as defined in `graph-infra/schema
 
 - `/nacl-sa-architect` -- writes `:Module`, `:Component`, edge `(:Module)-[:CONTAINS_UC]->(:UseCase)`, `(:Module)-[:CONTAINS_ENTITY]->(:DomainEntity)`
 - `/nacl-sa-domain` -- writes `:DomainEntity`, `:DomainAttribute`, `:Enumeration`, `:EnumValue` (with `.value` property)
-- `/nacl-sa-uc` -- writes `:UseCase`, `:Requirement`, `:Form`, `:FormField`, `:ActivityStep`; `slices` command writes `:Slice` with edges `HAS_SLICE`, `COVERS`, `CALLS`, `VERIFIED_BY` (see `graph-infra/schema/sa-schema.cypher` § 3-ter; note the `CALLS` name is shared with `ScreenEffect→APIEndpoint` — every L11 query label-qualifies the source as `(sl:Slice)`)
+- `/nacl-sa-uc` -- writes `:UseCase`, `:Requirement`, `:Form`, `:FormField`, `:ActivityStep`; `slices` command writes `:Slice` with edges `HAS_SLICE`, `COVERS`, `CALLS`, `VERIFIED_BY` (see `graph-infra/schema/sa-schema.cypher` § 3-ter; note the `CALLS` name is shared with `ScreenEffect→APIEndpoint` — every L11 query label-qualifies the source as `(sl:Slice)`); `errors` command writes `:DomainError`, `:ErrorPresentation` with edges `HAS_ERROR`, `MAY_RAISE`, `HANDLES`, `PRESENTED_AS`, `SHOWS` (see § 3-quater; all five names are unshared — no label-qualification hazard)
 - `/nacl-sa-roles` -- writes `:SystemRole`
 - `/nacl-sa-ui` -- writes `:Component`, `:FormField`; `state-machine` command writes `:Screen`, `:ScreenState`, `:ScreenEvent`, `:Transition`, `:ScreenEffect`, `:AnalyticsEvent` with edges `HAS_SCREEN`, `RENDERS`, `HAS_STATE`, `HAS_EVENT`, `HAS_TRANSITION`, `FROM_STATE`, `TO_STATE`, `ON_EVENT`, `TRIGGERS`, `CALLS`, `NAVIGATES_TO`, `EMITS` (see `graph-infra/schema/sa-schema.cypher` § 3-bis; note `HAS_STATE`/`TRIGGERS` names are shared with the BA layer — every L10 query is label-qualified)
 - BA->SA handoff edges (canonical names): `AUTOMATES_AS`, `REALIZED_AS`, `IMPLEMENTED_BY`, `MAPPED_TO`, `TYPED_AS`, `SUGGESTS`
@@ -393,7 +399,7 @@ Every detected problem is assigned a severity:
 
 ---
 
-## Validation Levels -- Internal (L1-L11)
+## Validation Levels -- Internal (L1-L12)
 
 ### Level 1: Data Consistency
 
@@ -661,6 +667,11 @@ that cannot be fixed by any SA skill (the data is correct, the query is wrong).
 
 L11 has **no exemption properties by design**: an anchorless Slice (L11.2) is not an exemptible
 state — behavior text with no graph anchor belongs in `UseCase.acceptance_criteria`, not in a node.
+
+L12 likewise has **no exemption properties by design**: an unraisable DomainError (L12.2) is not
+an exemptible state — a failure mode observable at no API surface is an implementation detail and
+belongs in Requirements / RuntimeContract notes, not in a node; an unshown ErrorPresentation is
+dead text. Deliberate UI silence is modeled as a `silent`-kind presentation, not as an exemption.
 
 If executing via HTTP API (curl) instead of MCP tools, copy queries CHARACTER-FOR-CHARACTER
 from the code blocks below. Do NOT simplify, rephrase, or omit WHERE clauses.
@@ -1502,6 +1513,212 @@ RETURN uc.id AS uc_id,
 
 ---
 
+### Level 12: Domain Error Taxonomy (SA-Extension Connectivity)
+
+**Goal:** Every domain error written by `nacl-sa-uc errors` (or `nacl-tl-fix` L2/L3) is structurally sound: no orphaned `DomainError`/`ErrorPresentation` nodes, every error owned by a Module catalog and raisable at ≥1 API surface, every presentation owned by its error and shown by ≥1 screen state, `HANDLES` wiring follows the channel rule (the handling state's screen actually calls a raising endpoint), and the state→presentation→error triangle is closed. The taxonomy is transport-independent: the `code` is the source of truth, `http_status` is only a projection hint.
+
+A graph with **zero** DomainError nodes passes L12 cleanly (all checks anchor on the `DomainError`/`ErrorPresentation` labels or the `MAY_RAISE` edge) — projects that have not adopted the error taxonomy are unaffected. A graph with screen machines and behavior slices but no errors also passes: the overlay is opt-in.
+
+**No shared edge names:** unlike L10 (`HAS_STATE`/`TRIGGERS` shared with BA) and L11 (`CALLS` shared with ScreenEffect), all five L12 edge types (`HAS_ERROR`, `MAY_RAISE`, `HANDLES`, `PRESENTED_AS`, `SHOWS`) are unshared — verified against both schemas and live-graph relationship types at design time. Queries below still label-qualify sources/targets as defense in depth.
+
+**Errors are shared vocabulary:** one DomainError may be raised by endpoints of several UCs (and modules). There is deliberately **no same-UC rule** for `HANDLES` (asymmetric to L11.3) — the channel rule is the real scope: a UC-B screen legally handles an error raised by a UC-A endpoint when one of its effects actually calls that endpoint.
+
+This level writes nothing.
+
+#### Check 12.0: Orphaned error-taxonomy nodes (mirrors L2.1)
+
+```cypher
+// L12.0 -- Severity: CRITICAL
+// DomainError / ErrorPresentation nodes with zero relationships
+MATCH (n)
+WHERE (n:DomainError OR n:ErrorPresentation)
+  AND NOT (n)--()
+RETURN labels(n)[0] AS node_type, n.id AS id,
+       coalesce(n.name, n.message, '') AS display_name,
+       'Completely disconnected error-taxonomy node (zero relationships)' AS problem
+```
+
+#### Check 12.1: Required parents (mirrors L2.2)
+
+```cypher
+// L12.1 -- Severity: CRITICAL
+// Every DomainError must belong to a Module catalog; every ErrorPresentation
+// must belong to its DomainError
+MATCH (err:DomainError)
+WHERE NOT (:Module)-[:HAS_ERROR]->(err)
+RETURN 'DomainError' AS node_type, err.id AS id,
+       'DomainError has no parent Module (HAS_ERROR)' AS problem
+UNION ALL
+MATCH (p:ErrorPresentation)
+WHERE NOT (:DomainError)-[:PRESENTED_AS]->(p)
+RETURN 'ErrorPresentation' AS node_type, p.id AS id,
+       'ErrorPresentation has no parent DomainError (PRESENTED_AS)' AS problem
+```
+
+#### Check 12.2: Required anchors
+
+An error that no API surface can raise is dead vocabulary — a failure mode observable at no surface is an implementation detail, not a domain error; it belongs in Requirements / RuntimeContract notes, not in a node. A presentation that no state shows is dead text. There is **deliberately no exemption flag** for either half (pipeline failures of backend UCs are observable through their status endpoint — that endpoint is the surface; deliberate UI silence is a `silent`-kind presentation, not a missing one). `MAY_RAISE` on provisional endpoints (`provisional=true`) satisfies the anchor.
+
+```cypher
+// L12.2 -- Severity: CRITICAL
+// Unraisable DomainError; unshown ErrorPresentation
+MATCH (err:DomainError)
+WHERE NOT (:APIEndpoint)-[:MAY_RAISE]->(err)
+RETURN 'DomainError' AS node_type, err.id AS id,
+       'DomainError is raised by no APIEndpoint (no incoming MAY_RAISE)' AS problem
+UNION ALL
+MATCH (p:ErrorPresentation)
+WHERE NOT (:ScreenState)-[:SHOWS]->(p)
+RETURN 'ErrorPresentation' AS node_type, p.id AS id,
+       'ErrorPresentation is shown by no ScreenState (no incoming SHOWS)' AS problem
+```
+
+#### Check 12.3: HANDLES validity (label + channel rule)
+
+A `HANDLES` edge must run ScreenState→DomainError, and the handling state's Screen must actually be exposed to the error: at least one of the screen's `ScreenEffect`s `CALLS` an endpoint that `MAY_RAISE` it. Handling an error the screen can never receive is spec fiction (mirrors the L11.3 mis-wiring severity; the scope is the call channel, not the UC).
+
+```cypher
+// L12.3 -- Severity: CRITICAL
+// HANDLES at wrong labels, or handling without a call channel
+MATCH (s)-[:HANDLES]->(x)
+WHERE NOT s:ScreenState OR NOT x:DomainError
+RETURN coalesce(s.id,'?') AS source, coalesce(x.id,'?') AS target,
+       labels(s)[0] + ' -> ' + labels(x)[0] AS labels,
+       'HANDLES must run ScreenState -> DomainError' AS problem
+UNION ALL
+MATCH (st:ScreenState)-[:HANDLES]->(err:DomainError)
+MATCH (scr:Screen)-[:HAS_STATE]->(st)
+WHERE NOT EXISTS {
+        MATCH (scr)-[:HAS_TRANSITION]->(:Transition)-[:TRIGGERS]->(eff:ScreenEffect)
+              -[:CALLS]->(api:APIEndpoint)-[:MAY_RAISE]->(err)
+      }
+RETURN st.id AS source, err.id AS target,
+       'ScreenState -> DomainError' AS labels,
+       'Handling state''s screen has no ScreenEffect CALLS to any endpoint that MAY_RAISE this error (channel rule)' AS problem
+```
+
+#### Check 12.4: Edge-target integrity (mirrors L10.7a / L11.5)
+
+```cypher
+// L12.4 -- Severity: CRITICAL
+// MAY_RAISE / PRESENTED_AS / SHOWS at wrong-label endpoints
+MATCH (a)-[:MAY_RAISE]->(b)
+WHERE NOT a:APIEndpoint OR NOT b:DomainError
+RETURN 'MAY_RAISE' AS edge, coalesce(a.id,'?') AS source, coalesce(b.id,'?') AS target,
+       labels(a)[0] + ' -> ' + labels(b)[0] AS labels,
+       'MAY_RAISE must run APIEndpoint -> DomainError' AS problem
+UNION ALL
+MATCH (a)-[:PRESENTED_AS]->(b)
+WHERE NOT a:DomainError OR NOT b:ErrorPresentation
+RETURN 'PRESENTED_AS' AS edge, coalesce(a.id,'?') AS source, coalesce(b.id,'?') AS target,
+       labels(a)[0] + ' -> ' + labels(b)[0] AS labels,
+       'PRESENTED_AS must run DomainError -> ErrorPresentation' AS problem
+UNION ALL
+MATCH (a)-[:SHOWS]->(b)
+WHERE NOT a:ScreenState OR NOT b:ErrorPresentation
+RETURN 'SHOWS' AS edge, coalesce(a.id,'?') AS source, coalesce(b.id,'?') AS target,
+       labels(a)[0] + ' -> ' + labels(b)[0] AS labels,
+       'SHOWS must run ScreenState -> ErrorPresentation' AS problem
+```
+
+#### Check 12.5: SHOWS triangle closure
+
+A state showing a presentation of an error it does not handle is mis-wiring: the `SHOWS` edge must close the triangle `(st)-[:HANDLES]->(err)-[:PRESENTED_AS]->(p)<-[:SHOWS]-(st)`.
+
+```cypher
+// L12.5 -- Severity: CRITICAL
+// SHOWS without HANDLES on the presentation's parent error
+MATCH (st:ScreenState)-[:SHOWS]->(p:ErrorPresentation)<-[:PRESENTED_AS]-(err:DomainError)
+WHERE NOT (st)-[:HANDLES]->(err)
+RETURN st.id AS state, p.id AS presentation, err.id AS error,
+       'State SHOWS a presentation of an error it does not HANDLE' AS problem
+```
+
+#### Check 12.6: Contract hygiene
+
+**12.6a — blank join key / blank user-facing message.** Mirrors the L9.3 / L11.6a empty-contract gates: `code` is the join key to the API envelope and the codebase ("forgot what the caller matches on"); `message` is what the user sees ("forgot what the user sees" — for `silent` presentations it documents the observable absence).
+
+```cypher
+// L12.6a -- Severity: CRITICAL
+// DomainError with blank code; ErrorPresentation with blank message
+MATCH (err:DomainError)
+WHERE err.code IS NULL OR trim(err.code) = ''
+RETURN 'DomainError' AS node_type, err.id AS id,
+       'DomainError has no code (the API-envelope join key)' AS problem
+UNION ALL
+MATCH (p:ErrorPresentation)
+WHERE p.message IS NULL OR trim(p.message) = ''
+RETURN 'ErrorPresentation' AS node_type, p.id AS id,
+       'ErrorPresentation has no user-facing message' AS problem
+```
+
+**12.6b — kind vocabularies** (mirrors L10.8 / L11.6b).
+
+```cypher
+// L12.6b -- Severity: WARNING
+// error_kind / presentation_kind outside the canonical vocabularies
+MATCH (err:DomainError)
+WHERE NOT coalesce(err.error_kind, '')
+      IN ['validation', 'not_found', 'conflict', 'permission', 'rate_limit', 'external', 'internal']
+RETURN 'DomainError' AS node_type, err.id AS id, err.error_kind AS kind,
+       'error_kind outside {validation, not_found, conflict, permission, rate_limit, external, internal}' AS problem
+UNION ALL
+MATCH (p:ErrorPresentation)
+WHERE NOT coalesce(p.presentation_kind, '')
+      IN ['toast', 'banner', 'inline', 'modal', 'fullscreen', 'silent']
+RETURN 'ErrorPresentation' AS node_type, p.id AS id, p.presentation_kind AS kind,
+       'presentation_kind outside {toast, banner, inline, modal, fullscreen, silent}' AS problem
+```
+
+#### Check 12.7: Handling-completeness gap
+
+For screens exposed to catalogued errors (an effect CALLS an endpoint that MAY_RAISE): errors no state of the screen handles are UX failure paths outside the spec. WARNING, not CRITICAL — aspect-split calibration: this gap has no self-healing closer (closing it requires authoring, `/nacl-sa-uc errors UC-NNN`), and a CRITICAL gate that only manual work can clear is a gate people disable. Screens whose UC has not adopted the taxonomy are silent here (no MAY_RAISE → no rows).
+
+```cypher
+// L12.7 -- Severity: WARNING
+// Errors raisable through a screen's own calls that no state of the screen handles
+MATCH (scr:Screen)-[:HAS_TRANSITION]->(:Transition)-[:TRIGGERS]->(eff:ScreenEffect)
+      -[:CALLS]->(api:APIEndpoint)-[:MAY_RAISE]->(err:DomainError)
+WHERE NOT EXISTS {
+        MATCH (scr)-[:HAS_STATE]->(st:ScreenState)-[:HANDLES]->(err)
+      }
+RETURN DISTINCT scr.id AS screen, err.id AS error, err.code AS code,
+       'Screen calls an endpoint that may raise this error, but no state of the screen handles it (run /nacl-sa-uc errors UC-NNN)' AS observation
+```
+
+#### Check 12.8: Handled-but-unpresented
+
+A state that handles an error but shows no presentation of it leaves the user-facing contract unspecified. Deliberate silence is modeled as a `silent`-kind presentation (whose `message` documents the observable absence), so this check stays meaningful. WARNING — completeness aspect.
+
+```cypher
+// L12.8 -- Severity: WARNING
+// HANDLES with no SHOWS on any presentation of the handled error
+MATCH (st:ScreenState)-[:HANDLES]->(err:DomainError)
+WHERE NOT EXISTS {
+        MATCH (st)-[:SHOWS]->(:ErrorPresentation)<-[:PRESENTED_AS]-(err)
+      }
+RETURN st.id AS state, err.id AS error, err.code AS code,
+       'State handles the error but shows no presentation of it (author one, or a silent-kind presentation for deliberate silence)' AS observation
+```
+
+#### Check 12.9: Error slices not joined to the taxonomy
+
+The Phase-2 attach point: for UCs that adopted **both** behavior slices and the error taxonomy, an `error`-kind slice whose covered error states handle no catalogued DomainError means the two layers describe the same failure without meeting in the graph. INFO — adoption-order tolerance (slices are often authored before errors).
+
+```cypher
+// L12.9 -- Severity: INFO
+// error-kind slices covering error states that HANDLE nothing, on UCs whose
+// endpoints carry MAY_RAISE
+MATCH (uc:UseCase)-[:HAS_SLICE]->(sl:Slice {slice_kind: 'error'})
+WHERE (uc)-[:EXPOSES]->(:APIEndpoint)-[:MAY_RAISE]->(:DomainError)
+MATCH (sl)-[:COVERS]->(st:ScreenState {state_kind: 'error'})
+WHERE NOT (st)-[:HANDLES]->(:DomainError)
+RETURN uc.id AS uc_id, sl.id AS slice, st.id AS error_state,
+       'Error slice covers an error state that handles no catalogued DomainError (taxonomy and slices not joined)' AS observation
+```
+
+---
+
 ## Validation Levels -- Cross-Layer (XL6-XL9)
 
 These checks verify BA-to-SA traceability via handoff edges. They require both BA and SA layers to be populated in Neo4j.
@@ -1755,7 +1972,7 @@ RETURN total_ba, implemented, out_of_scope,
 
 ### Step 2: Execute validation levels
 
-For each enabled level (L1 through L11, XL6 through XL9):
+For each enabled level (L1 through L12, XL6 through XL9):
 
 1. Run ALL Cypher queries for that level using `mcp__neo4j__read-cypher`.
 2. Collect results into a structured list: `{level, check_id, severity, count, details[]}`.
@@ -1764,6 +1981,7 @@ For each enabled level (L1 through L11, XL6 through XL9):
 5. **L8 scope:** in `--scope=intra-uc UC-NNN` runs, prefer L8.2 (scoped to the changed node's closure) over L8.1 (project-wide). L9 always runs project-wide (decision provenance is a global invariant).
 6. **L10 scope:** in `--scope=intra-uc UC-NNN` runs, restrict L10 to the screens of the scoped UCs by prepending `MATCH (uc:UseCase)-[:HAS_SCREEN]->(scr:Screen) WHERE uc.id IN $ucIds` to each screen-anchored query. Run L10.3 before L10.5b (reachability assumes same-screen wiring, which 10.3 guarantees).
 7. **L11 scope:** in `--scope=intra-uc UC-NNN` runs, restrict L11 to the slices of the scoped UCs by anchoring on `MATCH (uc:UseCase)-[:HAS_SLICE]->(sl:Slice) WHERE uc.id IN $ucIds`; for the non-anchored checks L11.0/L11.1, filter by the id family instead: `WHERE sl.id STARTS WITH 'SLC-' + <NNN> + '-'` (the UC-number infix makes every slice id of one UC match).
+8. **L12 scope:** domain errors are NOT UC-scoped (shared vocabulary, Module parent) — the slice id-infix recipe does not apply. In `--scope=intra-uc UC-NNN` runs, restrict L12 to the errors raisable from the scoped UCs' endpoints: `MATCH (uc:UseCase)-[:EXPOSES]->(:APIEndpoint)-[:MAY_RAISE]->(err:DomainError) WHERE uc.id IN $ucIds` (and their presentations via `PRESENTED_AS`); when invoked from a producer run, prefer the explicit id list the run collected: `WHERE err.id IN $errIds`.
 
 ### Step 3: Aggregate results
 
@@ -1809,6 +2027,7 @@ Generate the following markdown report and output it directly to the user.
 | L9 | Decision Provenance | PASS/WARN/FAIL | N | N | N |
 | L10 | Screen State Machines | PASS/WARN/FAIL | N | N | N |
 | L11 | Behavior Slices | PASS/WARN/FAIL | N | N | N |
+| L12 | Domain Error Taxonomy | PASS/WARN/FAIL | N | N | N |
 | XL6 | UC Coverage (BA->SA) | PASS/WARN/FAIL/SKIP | N | N | N |
 | XL7 | Entity Coverage (BA->SA) | PASS/WARN/FAIL/SKIP | N | N | N |
 | XL8 | Role Coverage (BA->SA) | PASS/WARN/FAIL/SKIP | N | N | N |
@@ -1918,6 +2137,12 @@ If pre-flight returns zero nodes:
 - Slice (node), edges: HAS_SLICE, COVERS, CALLS (source label-qualified), VERIFIED_BY
 - node properties: slice_kind, then (observable outcome)
 - no exemption properties (by design)
+
+# Domain error taxonomy (L12):
+- DomainError, ErrorPresentation (nodes)
+- edges: HAS_ERROR, MAY_RAISE, HANDLES, PRESENTED_AS, SHOWS (all unshared names)
+- node properties: code, error_kind, http_status, message, presentation_kind
+- no exemption properties (by design)
 ```
 
 ### Writes
@@ -2007,6 +2232,16 @@ Before completing, verify:
 - [ ] Every slice of a planned UC (GENERATES tasks) has VERIFIED_BY -> Task owned by that UC
 - [ ] No slice with an empty `then`; slice_kind vocabulary canonical
 - [ ] Machine-coverage gaps reviewed (WARNING); happy-path presence reviewed (INFO)
+
+### L12: Domain Error Taxonomy
+- [ ] No orphaned DomainError/ErrorPresentation nodes
+- [ ] Every DomainError has its parent Module (HAS_ERROR); every ErrorPresentation its parent DomainError (PRESENTED_AS)
+- [ ] Every DomainError is raisable (≥1 incoming MAY_RAISE); every ErrorPresentation is shown (≥1 incoming SHOWS)
+- [ ] HANDLES edges run ScreenState -> DomainError and satisfy the channel rule (the screen actually calls a raising endpoint)
+- [ ] MAY_RAISE / PRESENTED_AS / SHOWS edges target correct labels
+- [ ] SHOWS triangle closed (no state shows a presentation of an unhandled error)
+- [ ] No blank DomainError.code or ErrorPresentation.message; kind vocabularies canonical
+- [ ] Handling gaps (WARNING) and unpresented handled errors (WARNING) reviewed; unjoined error slices reviewed (INFO)
 
 ### XL6: UC Coverage (ba-cross / full only)
 - [ ] All automated WorkflowSteps have AUTOMATES_AS -> UseCase

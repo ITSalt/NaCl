@@ -111,6 +111,30 @@ Internal checks:
   a UC with slices but no happy-kind slice is INFO. A graph with zero Slice
   nodes passes L11 cleanly. Label-qualify `CALLS` by source — the name is
   shared with `ScreenEffect -> APIEndpoint`.
+- L12 domain error taxonomy (SA-extension connectivity): no orphaned
+  `DomainError`/`ErrorPresentation` nodes; every DomainError has its parent
+  `(:Module)-[:HAS_ERROR]->` and ≥1 incoming `(api:APIEndpoint)-[:MAY_RAISE]->`
+  (no exemption flag by design: an error observable at no API surface is an
+  implementation detail, not a domain error; provisional endpoints satisfy the
+  anchor); every ErrorPresentation has its parent
+  `(:DomainError)-[:PRESENTED_AS]->` and ≥1 incoming
+  `(st:ScreenState)-[:SHOWS]->`; `HANDLES` runs ScreenState -> DomainError and
+  obeys the channel rule — the handling state's screen has a
+  `ScreenEffect-CALLS` to an endpoint that MAY_RAISE the error (deliberately
+  NO same-UC rule: errors are shared module vocabulary); MAY_RAISE /
+  PRESENTED_AS / SHOWS targets carry correct labels; SHOWS closes the
+  triangle (a state never shows a presentation of an error it does not
+  handle); no blank `DomainError.code` (the API-envelope join key) or
+  `ErrorPresentation.message` (user-language text, never the internal code;
+  for `silent` presentations it documents the observable absence) — both
+  CRITICAL; `error_kind` ∈ validation|not_found|conflict|permission|
+  rate_limit|external|internal and `presentation_kind` ∈ toast|banner|inline|
+  modal|fullscreen|silent (WARNING); errors raisable through a screen's own
+  calls that no state handles are WARNING; handled errors with no shown
+  presentation are WARNING; error-kind slices covering error states that
+  handle no catalogued error are INFO. A graph with zero DomainError nodes
+  passes L12 cleanly. All five edge names are unshared (no label-qualification
+  hazard, unlike L10/L11).
 
 BA-to-SA checks:
 
@@ -205,7 +229,7 @@ as `val_orphaned_form_fields`, `val_uc_without_requirements`,
 
 - Read-only validation boundary.
 - Pre-flight graph and schema checks.
-- Internal SA levels L1 through L11 (L8 staleness closure, L9 decision provenance, L10 screen state machines, L11 behavior slices).
+- Internal SA levels L1 through L12 (L8 staleness closure, L9 decision provenance, L10 screen state machines, L11 behavior slices, L12 domain error taxonomy).
 - BA-to-SA coverage levels XL6 through XL9.
 - Exemption-property handling for validation filters.
 
