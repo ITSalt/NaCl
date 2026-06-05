@@ -3,8 +3,8 @@ name: nacl-sa-validate
 description: |
   Validate NaCl SA graph consistency, connectivity, requirements, form-domain
   traceability, UC-form coverage, cross-module rules, feature requests, staleness
-  closure, decision provenance, screen state machines, and BA-to-SA coverage.
-  Use when checking SA quality or says `/nacl-sa-validate`.
+  closure, decision provenance, screen state machines, behavior slices, and
+  BA-to-SA coverage. Use when checking SA quality or says `/nacl-sa-validate`.
 ---
 
 # NaCl SA Validate For Codex
@@ -96,6 +96,21 @@ Internal checks:
   load|mutate|navigate|analytics). A graph with zero Screen nodes passes L10
   cleanly. Label-qualify every query — `HAS_STATE` and `TRIGGERS` names are
   shared with the BA layer.
+- L11 behavior slices (SA-extension connectivity): no orphaned `Slice` nodes;
+  every Slice has its parent `(:UseCase)-[:HAS_SLICE]->`; every Slice has at
+  least one behavioral anchor — `COVERS -> ScreenState|Transition` and/or
+  `(sl:Slice)-[:CALLS]-> APIEndpoint` (no exemption flag by design: anchorless
+  behavior text belongs in `UseCase.acceptance_criteria`, not in a node);
+  COVERS targets belong to a screen of the slice's own UC; every slice of a
+  planned UC (one that `GENERATES` tasks) has `VERIFIED_BY -> Task` owned by
+  that UC (self-healing: `nacl-tl-plan` re-links on re-plan); `VERIFIED_BY`
+  and `CALLS` targets carry correct labels; no slice has an empty `then`
+  (CRITICAL — the unverifiable-behavior failure, mirror of the L9.3 empty
+  rationale); `slice_kind` ∈ happy|alternate|error|edge (WARNING); machine
+  elements of slice-adopting UCs not covered by any slice are WARNING;
+  a UC with slices but no happy-kind slice is INFO. A graph with zero Slice
+  nodes passes L11 cleanly. Label-qualify `CALLS` by source — the name is
+  shared with `ScreenEffect -> APIEndpoint`.
 
 BA-to-SA checks:
 
@@ -190,7 +205,7 @@ as `val_orphaned_form_fields`, `val_uc_without_requirements`,
 
 - Read-only validation boundary.
 - Pre-flight graph and schema checks.
-- Internal SA levels L1 through L10 (L8 staleness closure, L9 decision provenance, L10 screen state machines).
+- Internal SA levels L1 through L11 (L8 staleness closure, L9 decision provenance, L10 screen state machines, L11 behavior slices).
 - BA-to-SA coverage levels XL6 through XL9.
 - Exemption-property handling for validation filters.
 
