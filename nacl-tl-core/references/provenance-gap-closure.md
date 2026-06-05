@@ -34,9 +34,15 @@ that yields real text:
 
 1. **FR node `description`** — if non-empty. (Modern FRs written by
    `nacl-sa-feature` carry this.)
-2. **FR markdown** at `FeatureRequest.markdown_path` — the `## Feature Description`
-   section plus the `Source:` metadata line (the verbatim original
-   `/sa-feature "..."` intent). This is recorded rationale, not fabrication.
+2. **FR markdown** at `FeatureRequest.markdown_path` — the rationale section plus
+   the `Source:` metadata line (the verbatim original `/sa-feature "..."` intent).
+   This is recorded rationale, not fabrication. **Match localized headers:** NaCl
+   SA/BA artifacts are often written in the project's language, so the section may
+   be `## Обоснование` (best — literally "justification"), `## Описание фичи`, or
+   `## Feature Description`. Prefer `Обоснование`/justification when present; fall
+   back to the description in either language. An extractor that only matches the
+   English header will false-flag a localized FR as a grandfather candidate —
+   verify the actual headers before grandfathering.
 3. **git history** — `git log --follow` of the FR markdown, or of the UCs the FR
    `INCLUDES_UC`, for the commit message that introduced the change.
 4. **None recoverable** → do NOT invent. Grandfather the FR (see below). A
