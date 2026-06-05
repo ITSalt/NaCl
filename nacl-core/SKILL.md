@@ -377,6 +377,8 @@ The NaCl Analyst Tool discovers projects through a per-user registry at `~/.nacl
 | Screen Effect | SCREF-{Screen}-NNN | SCREF-ResultViewer-001 | Per-screen sequential |
 | Analytics Event | ANEV-{Name} | ANEV-ResultViewed | Name-based |
 | Behavior Slice | SLC-{NNN}-{PascalName} | SLC-006-HappyPath | Per-UC, name-based (latin) |
+| Domain Error | ERR-{UPPER_SNAKE_CODE} | ERR-PROMO_NOT_FOUND | Code-based (latin) |
+| Error Presentation | ERRP-{CODE}-{PascalName} | ERRP-PROMO_NOT_FOUND-Inline | Per-error, kind/context-based |
 
 > **Screen state machine ids (`SCR-*` family)** belong to the SA screen state
 > machine written by `nacl-sa-ui state-machine` (labels `:Screen`,
@@ -393,6 +395,20 @@ The NaCl Analyst Tool discovers projects through a per-user registry at `~/.nacl
 > name (kebab/snake/space → PascalCase); the display `name` property may stay
 > in the project language. See `graph-infra/schema/sa-schema.cypher` § 3-ter
 > and the `sa_uc_slices` named query.
+
+> **Domain Error (`ERR-{UPPER_SNAKE_CODE}`)** is the transport-independent
+> domain-error record (label `:DomainError`), written by `nacl-sa-uc errors`
+> (and by `nacl-tl-fix` when an L2/L3 fix uncovers a missing error branch).
+> `{UPPER_SNAKE_CODE}` equals the `code` property — the join key to the API
+> envelope and the codebase; codes are domain-prefixed (`PROMO_NOT_FOUND`,
+> never bare `NOT_FOUND`) so module catalogs stay collision-free. The catalog
+> is module-scoped (`(:Module)-[:HAS_ERROR]->`): the same error is shared by
+> endpoints of different UCs — MERGE by id, never duplicate per UC.
+> **Error Presentation (`ERRP-{CODE}-{PascalName}`)** is one user-facing
+> presentation of that error (label `:ErrorPresentation`); `{PascalName}`
+> derives from the presentation kind/context by the same latin-PascalName rule
+> as Screen states. See `graph-infra/schema/sa-schema.cypher` § 3-quater and
+> the `sa_uc_errors` named query.
 
 > **Decision (`DEC-NNN`)** is the graph-native provenance record (label `:Decision`).
 > Written by `nacl-sa-feature` (feature changes), `nacl-tl-fix` (L2/L3 fixes), and

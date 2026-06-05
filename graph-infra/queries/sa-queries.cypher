@@ -213,6 +213,15 @@ ORDER BY uc.id;
 //   must tell them apart). VERIFIED_BY is deliberately NOT in the upstream
 //   half: like GENERATES, it answers "what depends on this", not "why does
 //   this exist" — a Task's rationale chain runs through FR/Decision.
+//   Phase 3 (domain error taxonomy) appended: HAS_ERROR, MAY_RAISE, HANDLES,
+//   PRESENTED_AS, SHOWS (downstream) and HAS_ERROR, PRESENTED_AS (upstream —
+//   the two parent edges, mirroring HAS_SCREEN/HAS_SLICE; MAY_RAISE/HANDLES/
+//   SHOWS answer "what depends on this", so they stay downstream-only). All
+//   five names are NEW (verified free in both schemas, the skill texts, and
+//   db.relationshipTypes() of a live graph) — the first phase with no
+//   namespace sharing. Deepest legit probe: DomainAttribute → FormField →
+//   Form → Screen → ScreenState → HANDLES → DomainError → PRESENTED_AS →
+//   ErrorPresentation = 6 hops, exactly the *1..6 ceiling.
 // ---------------------------------------------------------------------------
 MATCH (changed {id: $changedNodeId})
 MATCH path = (changed)
@@ -221,7 +230,8 @@ MATCH path = (changed)
        |GENERATES|INCLUDES_UC|AFFECTS_ENTITY|AFFECTS_MODULE|DEPENDS_ON
        |HAS_SCREEN|RENDERS|HAS_STATE|HAS_EVENT|HAS_TRANSITION|FROM_STATE
        |TO_STATE|ON_EVENT|TRIGGERS|CALLS|NAVIGATES_TO|EMITS
-       |HAS_SLICE|COVERS|VERIFIED_BY*1..6]
+       |HAS_SLICE|COVERS|VERIFIED_BY
+       |HAS_ERROR|MAY_RAISE|HANDLES|PRESENTED_AS|SHOWS*1..6]
       -(dep)
 WHERE dep <> changed
 WITH dep AS node, min(length(path)) AS hops
@@ -235,7 +245,7 @@ MATCH (changed {id: $changedNodeId})
 MATCH up = (origin)
       -[:AUTOMATES_AS|REALIZED_AS|IMPLEMENTED_BY|MAPPED_TO|TYPED_AS|SUGGESTS
        |HAS_REQUIREMENT|INCLUDES_UC|RAISES_REQUIREMENT|CONTAINS_UC|CONTAINS_ENTITY
-       |IMPLEMENTS|JUSTIFIES|HAS_SCREEN|HAS_SLICE*1..5]
+       |IMPLEMENTS|JUSTIFIES|HAS_SCREEN|HAS_SLICE|HAS_ERROR|PRESENTED_AS*1..5]
       ->(changed)
 WHERE origin <> changed
 WITH origin AS node, min(length(up)) AS hops
@@ -346,3 +356,31 @@ RETURN sl.id AS slice, sl.name AS name, sl.slice_kind AS kind,
        collect(DISTINCT api.id) AS calls,
        collect(DISTINCT t.id) AS verified_by
 ORDER BY slice;
+
+
+// ---------------------------------------------------------------------------
+// Query: sa_uc_errors
+// Params: $ucId — UseCase.id (e.g. "UC-035")
+// Description: The domain-error contract of one UseCase — every DomainError
+//   its EXPOSES endpoints MAY_RAISE, with the handling states of this UC's own
+//   screens and the presentations those states SHOW. One row per error: enough
+//   to render the BE error-contract table and the FE handling table, or to
+//   eyeball L12 by hand. Handling is NOT restricted to this UC's screens by
+//   the model (errors are shared vocabulary; the channel rule is the real
+//   scope) — this query lists the UC's own handling states because that is
+//   what its task files need. Both map-collects are null-filtered: a bare
+//   collect over an unmatched OPTIONAL emits one all-null map instead of []
+//   (the Фаза-2 gotcha; scalar collects skip nulls natively).
+// ---------------------------------------------------------------------------
+MATCH (uc:UseCase {id: $ucId})-[:EXPOSES]->(api:APIEndpoint)-[:MAY_RAISE]->(err:DomainError)
+OPTIONAL MATCH (uc)-[:HAS_SCREEN]->(:Screen)-[:HAS_STATE]->(st:ScreenState)-[:HANDLES]->(err)
+OPTIONAL MATCH (st)-[:SHOWS]->(p:ErrorPresentation)<-[:PRESENTED_AS]-(err)
+RETURN err.id AS error, err.code AS code, err.error_kind AS kind,
+       err.http_status AS http_status, err.retryable AS retryable,
+       collect(DISTINCT api.id) AS raised_by,
+       [h IN collect(DISTINCT {state: st.id,
+                               presentation: p.id,
+                               message: p.message,
+                               presentation_kind: p.presentation_kind})
+        WHERE h.state IS NOT NULL] AS handled_by
+ORDER BY error;

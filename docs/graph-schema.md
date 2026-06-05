@@ -104,6 +104,8 @@ System Analysis nodes capture the "how the system is built" level — modules, u
 | `ScreenEffect` | A side effect fired by a `Transition` | `id`, `effect_kind`, `description` |
 | `AnalyticsEvent` | Minimal sink for analytics effects | `id`, `name` |
 | `Slice` | A behavior slice — graph-native acceptance scenario (Given/When/Then), below the UC, above the Task (owned by `nacl-sa-uc slices`) | `id`, `name`, `slice_kind`, `given`, `when`, `then`, `criterion_index` |
+| `DomainError` | A transport-independent domain error — named, catalogued failure mode observable at an API surface; module-scoped shared vocabulary (owned by `nacl-sa-uc errors`) | `id`, `code`, `name`, `error_kind`, `http_status`, `retryable` |
+| `ErrorPresentation` | One user-facing presentation of a `DomainError` (user-language message + kind) | `id`, `message`, `presentation_kind`, `recovery_action` |
 
 `priority` values: `MVP`, `Post-MVP`, `Nice-to-have`
 `Decision.status` values: `accepted`, `superseded`, `proposed`
@@ -112,6 +114,8 @@ System Analysis nodes capture the "how the system is built" level — modules, u
 `event_kind` values: `user`, `system`, `lifecycle`
 `effect_kind` values: `load`, `mutate`, `navigate`, `analytics`
 `slice_kind` values: `happy`, `alternate`, `error`, `edge` (`then` is required non-blank — a slice with no observable outcome is unverifiable)
+`error_kind` values: `validation`, `not_found`, `conflict`, `permission`, `rate_limit`, `external`, `internal` (`code` is required non-blank — the join key to the API envelope; `http_status` is only a projection hint)
+`presentation_kind` values: `toast`, `banner`, `inline`, `modal`, `fullscreen`, `silent` (`message` is required non-blank, user-language, never the internal code; for `silent` it documents the observable absence)
 
 **Change-tracking properties.** `UseCase.spec_version` (Int) is bumped by any SA writer that changes a UC's shape and compared against `Task.planned_from_version` (Int) for idempotent re-planning. Any snapshot-bearing node (`Task`, `UseCase`, `Form`, `Requirement`) may carry `review_status` (`current`|`stale`), `stale_reason`, `stale_since`, `stale_origin` — set by write-skills after an upstream change, read with `coalesce(n.review_status,'current')` (no backfill needed). See `graph-infra/schema/sa-schema.cypher`.
 
@@ -153,6 +157,11 @@ System Analysis nodes capture the "how the system is built" level — modules, u
 | `COVERS` | `Slice` → `ScreenState` / `Transition` | UI-behavior anchor into the screen machine; target must belong to the slice's own UC |
 | `CALLS` | `Slice` → `APIEndpoint` | Backend-behavior anchor (name shared with `ScreenEffect→APIEndpoint` — label-qualify the source). Every slice needs ≥1 anchor: COVERS and/or CALLS |
 | `VERIFIED_BY` | `Slice` → `Task` | TL overlay: the per-UC delivery unit that proves the behavior; required once the UC has `GENERATES` tasks (re-linked by `nacl-tl-plan`) |
+| `HAS_ERROR` | `Module` → `DomainError` | Required parent: the error catalog is module-scoped shared vocabulary |
+| `MAY_RAISE` | `APIEndpoint` → `DomainError` | Calling the endpoint may yield the error; every error needs ≥1 (anchor invariant, no exemption); legal on provisional endpoints |
+| `HANDLES` | `ScreenState` → `DomainError` | Being in the state is the handling of the error; legal iff the state's screen actually calls a raising endpoint (channel rule — deliberately no same-UC rule) |
+| `PRESENTED_AS` | `DomainError` → `ErrorPresentation` | Required parent of every presentation |
+| `SHOWS` | `ScreenState` → `ErrorPresentation` | Triangle closure: the state shows this presentation; requires `HANDLES` on the presentation's parent error |
 
 ### Constraints and Indexes
 

@@ -75,6 +75,12 @@ CREATE CONSTRAINT constraint_analyticsevent_id
 CREATE CONSTRAINT constraint_slice_id
   FOR (n:Slice) REQUIRE n.id IS UNIQUE;
 
+CREATE CONSTRAINT constraint_domainerror_id
+  FOR (n:DomainError) REQUIRE n.id IS UNIQUE;
+
+CREATE CONSTRAINT constraint_errorpresentation_id
+  FOR (n:ErrorPresentation) REQUIRE n.id IS UNIQUE;
+
 
 // ---------------------------------------------------------------------------
 // 2. INDEXES (name lookup for each label + module index on DomainEntity)
@@ -156,6 +162,15 @@ CREATE INDEX index_slice_name
 CREATE INDEX index_slice_kind
   FOR (n:Slice) ON (n.slice_kind);
 
+CREATE INDEX index_domainerror_code
+  FOR (n:DomainError) ON (n.code);
+
+CREATE INDEX index_domainerror_kind
+  FOR (n:DomainError) ON (n.error_kind);
+
+CREATE INDEX index_errorpresentation_kind
+  FOR (n:ErrorPresentation) ON (n.presentation_kind);
+
 
 // ---------------------------------------------------------------------------
 // 3. SA-INTERNAL RELATIONSHIP TYPES (documentation)
@@ -227,9 +242,9 @@ CREATE INDEX index_slice_kind
 //
 // (:Decision)-[:JUSTIFIES {role: String}]->(target)
 //   A decision shaped an artifact. target ∈ {UseCase, DomainEntity, Module,
-//   Requirement, Form, Component, Enumeration, APIEndpoint, Screen, Slice}
-//   (CachePolicy joins later with no schema change). role ∈ {'creates','shapes',
-//   'constrains'}; default 'shapes'.
+//   Requirement, Form, Component, Enumeration, APIEndpoint, Screen, Slice,
+//   DomainError} (CachePolicy joins later with no schema change).
+//   role ∈ {'creates','shapes','constrains'}; default 'shapes'.
 //
 // (:Decision)-[:SUPERSEDES]->(:Decision)
 //   The newer decision replaces an older one. On write, the older Decision gets
@@ -452,6 +467,97 @@ CREATE INDEX index_slice_kind
 //                           // L11.6a, mirrors the L9.3 empty-rationale gate:
 //                           // a slice with no observable outcome is unverifiable]
 //   criterion_index: Int,   // optional back-ref into UseCase.acceptance_criteria
+//   created_by: String,     // "nacl-sa-uc"
+//   created_at: DateTime
+// }
+
+
+// ---------------------------------------------------------------------------
+// 3-quater. DOMAIN ERROR TAXONOMY (transport-independent, owned by nacl-sa-uc)
+// ---------------------------------------------------------------------------
+// A DomainError is a named, catalogued failure mode of the domain
+// (PROMO_NOT_FOUND) — transport-independent: the code is the source of truth,
+// the HTTP status is only a projection hint. An ErrorPresentation is how one
+// error is presented to the user (user-language message + presentation kind).
+// Adoption is opt-in: a graph with zero DomainError nodes passes L12 vacuously,
+// exactly as zero Screens pass L10 and zero Slices pass L11.
+//
+// OWNERSHIP: the catalog is MODULE-scoped, not UC-scoped — an error is shared
+// vocabulary of a bounded context (the same ALREADY_SUBSCRIBED is raised by
+// endpoints of different UCs). MERGE by id shares the node across UCs; the
+// producer guard refuses UCs that have no CONTAINS_UC module.
+//
+// ANCHOR INVARIANT (L12.2, deliberately NO exemption flag, mirrors L11.2):
+//   - every DomainError carries ≥1 incoming (api:APIEndpoint)-[:MAY_RAISE]->.
+//     An error observable at no API surface is not a domain error but an
+//     implementation detail — it belongs in Requirements / RuntimeContract
+//     notes, not in a node. Pipeline failures of backend UCs are observable
+//     through their status endpoint — that endpoint is the surface.
+//   - every ErrorPresentation carries ≥1 incoming (st:ScreenState)-[:SHOWS]->.
+//     A presentation no state shows is dead text.
+// MAY_RAISE may legally point at provisional endpoints (provisional=true +
+// EXPOSES anchor — the § 3-bis path); real graphs may have no concrete
+// APIEndpoint nodes at all before nacl-tl-plan runs.
+//
+// (:Module)-[:HAS_ERROR]->(:DomainError)
+//   REQUIRED parent. Every DomainError belongs to exactly one Module (L12.1).
+//
+// (:APIEndpoint)-[:MAY_RAISE]->(:DomainError)
+//   Cross-layer anchor: calling this endpoint may yield this error. Several
+//   endpoints (across UCs and modules) may raise the same error.
+//
+// (:ScreenState)-[:HANDLES]->(:DomainError)
+//   Being in this state IS the handling of this error. CHANNEL RULE (L12.3):
+//   legal iff the state's Screen has a ScreenEffect-[:CALLS]->(endpoint) that
+//   MAY_RAISE the error — the exact channel through which the UI receives it.
+//   There is deliberately NO same-UC rule (asymmetric to L11.3): errors are
+//   shared vocabulary; a UC-B screen legally handles an error raised by a
+//   UC-A endpoint when it actually calls that endpoint. Source is ScreenState
+//   only, never Transition (the retry escape is L10.6's concern).
+//
+// (:DomainError)-[:PRESENTED_AS]->(:ErrorPresentation)
+//   REQUIRED parent of each presentation (L12.1). One error may have several
+//   presentations (inline on the form screen, toast on a list screen).
+//
+// (:ScreenState)-[:SHOWS]->(:ErrorPresentation)
+//   Triangle closure: which presentation of the error this state renders.
+//   Requires (st)-[:HANDLES]->(error) on the presentation's parent error
+//   (L12.5) — showing a presentation of an unhandled error is mis-wiring.
+//
+// --- DomainError properties (documented) ---
+// DomainError {
+//   id: String,             // "ERR-{UPPER_SNAKE_CODE}" (ERR-PROMO_NOT_FOUND)
+//   code: String,           // REQUIRED non-blank (L12.6a) — the join key to the
+//                           // API envelope and the codebase. Domain-prefixed
+//                           // UPPER_SNAKE latin: PROMO_NOT_FOUND, never NOT_FOUND
+//                           // (prefix discipline keeps module catalogs collision-free).
+//                           // Granularity: one node per code the API envelope can
+//                           // distinguish; field-level form validation is ONE
+//                           // VALIDATION_FAILED (details live in the presentation).
+//   name: String,
+//   description: String,
+//   error_kind: String,     // 'validation' | 'not_found' | 'conflict' | 'permission'
+//                           // | 'rate_limit' | 'external' | 'internal' (L12.6b)
+//   http_status: Int,       // optional projection hint (404, 409, …) — transport
+//                           // is NOT the source of truth, the code is
+//   retryable: Boolean,     // optional; feeds Phase-4 cache/degradation policies
+//   created_by: String,     // "nacl-sa-uc" | "nacl-tl-fix"
+//   created_at: DateTime
+// }
+// ErrorPresentation {
+//   id: String,             // "ERRP-{CODE}-{PascalName}" (ERRP-PROMO_NOT_FOUND-Inline);
+//                           // PascalName derives from the presentation kind/context
+//                           // by the Phase-1 latin-PascalName rule
+//   message: String,        // REQUIRED non-blank (L12.6a) — USER-LANGUAGE text,
+//                           // never the internal code (mirrors the L9.3 / L11.6a
+//                           // "forgot why" → "forgot what the user sees" gate).
+//                           // For kind='silent' the message documents the
+//                           // observable absence ("stale data stays visible,
+//                           // no interruption") — deliberate silence is a
+//                           // decision, not a gap.
+//   presentation_kind: String, // 'toast' | 'banner' | 'inline' | 'modal'
+//                              // | 'fullscreen' | 'silent' (L12.6b)
+//   recovery_action: String,   // optional: 'retry' | 'back' | 'support' | 'none'
 //   created_by: String,     // "nacl-sa-uc"
 //   created_at: DateTime
 // }

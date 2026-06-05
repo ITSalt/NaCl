@@ -71,6 +71,14 @@ change-tracking ids:
   (`UC-006` → `006`); `{PascalName}` derives from a latin short scenario name
   (kebab/snake/space → PascalCase). The infix keeps repeated scenario names
   unique across UCs and enables `STARTS WITH 'SLC-NNN-'` scoping.
+- `ERR-{UPPER_SNAKE_CODE}` — `:DomainError` node (transport-independent domain
+  error, written by `nacl-sa-uc errors`; also by `nacl-tl-fix` when an L2/L3
+  fix uncovers a missing error branch). `{UPPER_SNAKE_CODE}` equals the `code`
+  property — domain-prefixed (`PROMO_NOT_FOUND`, never bare `NOT_FOUND`).
+  Module-scoped shared vocabulary (`(:Module)-[:HAS_ERROR]->`): MERGE by id,
+  never duplicate per UC. `ERRP-{CODE}-{PascalName}` — `:ErrorPresentation`
+  node (one user-facing presentation; PascalName from the presentation
+  kind/context). See `sa-schema.cypher` § 3-quater and `sa_uc_errors`.
 
 If these files are unavailable, report:
 
