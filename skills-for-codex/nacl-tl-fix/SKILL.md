@@ -89,6 +89,15 @@ truth.
 Missing `scripts.test` is not L0. It is a verification outcome
 `Fix outcome: NO_INFRA`.
 
+**Decision + change provenance (L2 / L3-spec-gap only).** A behavior-shape fix
+must record *why*, graph-natively, as part of the spec-update commit: write a
+`:Decision` (`DEC-NNN`, `created_by:'nacl-tl-fix'`, non-empty `rationale` from the
+root cause + corrected behavior) linked to the affected UCs via `JUSTIFIES`; bump
+`spec_version` on those UCs and stamp `review_status='stale'` on their `GENERATES`
+Tasks so `nacl-tl-plan` re-plans them. `Decision` is in the spec-update label
+list, so this satisfies the spec-first gate; `nacl-sa-validate` L9 enforces it.
+L0/L1 fixes record no Decision (no new "why").
+
 ## Spec-First Prerequisite (Strict-Only) — W10 binding
 
 **L1+ blocked without preceding spec-update commit; override via signed exception only.**
@@ -103,7 +112,7 @@ A **spec-update commit** is any commit that mutates one of the following:
 1. **Graph state** — creates or modifies a node with one of these Neo4j
    labels: `DomainEntity`, `DomainAttribute`, `Enumeration`, `UseCase`,
    `FormField`, `Module`, `Requirement`, `FeatureRequest`,
-   `BusinessRule`, `Activity`. Detection uses the W5 reconciliation
+   `BusinessRule`, `Activity`, `Decision`. Detection uses the W5 reconciliation
    primitives (live graph reads only; no `.cypher` export fallback).
 2. **`.tl/*` schema artifact** — `.tl/tasks/<TASK_ID>/task-{be,fe}.md`,
    `.tl/tasks/<TASK_ID>/api-contract.md`,

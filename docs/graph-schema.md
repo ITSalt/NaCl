@@ -96,8 +96,13 @@ System Analysis nodes capture the "how the system is built" level — modules, u
 | `Requirement` | A functional or non-functional requirement | `id`, `description` |
 | `SystemRole` | A system-level actor with CRUD permissions | `id`, `name` |
 | `Component` | A reusable UI component | `id`, `name` |
+| `Decision` | A graph-native design-decision / rationale record (provenance) | `id`, `title`, `chosen`, `rationale`, `source`, `status`, `created_at`, `created_by`, `level` |
 
 `priority` values: `MVP`, `Post-MVP`, `Nice-to-have`
+`Decision.status` values: `accepted`, `superseded`, `proposed`
+`Decision.level` values: `L2`, `L3-spec-gap`, `feature`, `architecture`
+
+**Change-tracking properties.** `UseCase.spec_version` (Int) is bumped by any SA writer that changes a UC's shape and compared against `Task.planned_from_version` (Int) for idempotent re-planning. Any snapshot-bearing node (`Task`, `UseCase`, `Form`, `Requirement`) may carry `review_status` (`current`|`stale`), `stale_reason`, `stale_since`, `stale_origin` — set by write-skills after an upstream change, read with `coalesce(n.review_status,'current')` (no backfill needed). See `graph-infra/schema/sa-schema.cypher`.
 
 ### Relationship Types
 
@@ -119,6 +124,9 @@ System Analysis nodes capture the "how the system is built" level — modules, u
 | `HAS_PERMISSION` | `SystemRole` → `DomainEntity` | `crud: String` |
 | `USED_IN` | `Component` → `Form` | UI component used in form |
 | `EXPOSES` | `UseCase` → `APIEndpoint` | Use case exposed via API |
+| `JUSTIFIES` | `Decision` → `UseCase`/`DomainEntity`/`Module`/`Requirement`/`Form`/`Component`/`Enumeration`/`APIEndpoint` | `role: 'creates'|'shapes'|'constrains'` — decision shaped artifact |
+| `SUPERSEDES` | `Decision` → `Decision` | Newer decision replaces older (sets older `status='superseded'`) — the evolving-rationale chain |
+| `IMPLEMENTS` | `FeatureRequest` → `Decision` | FR is the change anchor that carried out the decision |
 
 ### Constraints and Indexes
 

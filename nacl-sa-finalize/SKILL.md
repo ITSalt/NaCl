@@ -25,7 +25,7 @@ viewable via `/nacl-render` or `/nacl-publish`.
 | Tool | Usage |
 |------|-------|
 | `mcp__neo4j__read-cypher` | All aggregation queries (statistics, glossary, readiness, traceability) |
-| `mcp__neo4j__write-cypher` | Create/update ADR nodes (Requirement with type='adr') |
+| `mcp__neo4j__write-cypher` | Create/update `:Decision` nodes + `JUSTIFIES` edges; backfill legacy `Requirement{type:'adr'}` → `:Decision` |
 | `mcp__neo4j__get-schema` | Introspect current graph schema before finalization |
 
 ---
@@ -205,13 +205,27 @@ RETURN g.id AS glo_id, g.term AS ba_term, g.definition AS definition,
 3. Cross-reference with BA GlossaryTerm nodes to map BA term -> SA entity
 4. Present combined glossary to user (do NOT write to files)
 
-### 2b: ADR Compilation
+### 2b: Architecture Decisions (graph-native)
 
-ADRs are stored as `Requirement` nodes with `type: 'adr'`.
+Architecture decisions are stored as first-class `:Decision` nodes
+(`level:'architecture'`, `created_by:'nacl-sa-finalize'`) linked to the
+artifacts they justify via `JUSTIFIES` — the same provenance model that
+`nacl-sa-feature` and `nacl-tl-fix` write. This is the authority; markdown ADRs
+are projections. (Legacy projects stored ADRs as `Requirement {type:'adr'}` with
+no link to what they justified — those are migrated below so the year-later
+"why" query reaches them.)
 
-#### Read existing ADRs
+#### Read existing decisions (both modern and legacy)
 
 ```cypher
+MATCH (d:Decision)
+RETURN d.id AS id, d.title AS title, d.rationale AS rationale,
+       d.status AS status, d.level AS level
+ORDER BY d.id;
+```
+
+```cypher
+// Legacy ADRs not yet migrated to :Decision
 MATCH (rq:Requirement {type: 'adr'})
 RETURN rq.id AS id, rq.description AS title, rq.context AS context,
        rq.decision AS decision, rq.alternatives AS alternatives,
@@ -219,57 +233,70 @@ RETURN rq.id AS id, rq.description AS title, rq.context AS context,
 ORDER BY rq.id;
 ```
 
+#### One-time backfill: legacy `Requirement{type:'adr'}` → `:Decision`
+
+For each legacy ADR, create a `:Decision` carrying the same content (rationale
+from `decision`+`consequences`), `source:'ADR-NNN (imported)'`, and — where the
+ADR's subject is identifiable — a `JUSTIFIES` edge to the module/entity/role it
+concerns. Present to the user before writing; never delete the legacy node
+(keep lineage), just mark it `migrated_to: <DEC-id>`.
+
+```cypher
+// mcp__neo4j__write-cypher  (per legacy ADR, after user confirms the JUSTIFIES target)
+MATCH (rq:Requirement {id: $adrId, type:'adr'})
+MERGE (d:Decision {id: $decId})
+SET d.title = rq.description, d.context = rq.context,
+    d.chosen = rq.decision, d.rationale = coalesce(rq.decision,'') + ' — ' + coalesce(rq.consequences,''),
+    d.alternatives_considered = CASE WHEN rq.alternatives IS NULL THEN [] ELSE [rq.alternatives] END,
+    d.status = coalesce(rq.status,'accepted'), d.created_at = coalesce(rq.created_at, datetime()),
+    d.created_by = 'nacl-sa-finalize', d.source = rq.id + ' (imported)', d.level = 'architecture'
+SET rq.migrated_to = $decId
+RETURN d.id;
+```
+
+Also import any standalone `docs/adr/*.md` files the same way (`source:'<file> (imported)'`).
+
 #### Detect implicit decisions not yet recorded
 
-Check for architectural patterns that imply decisions:
+Check for architectural patterns that imply a decision worth recording:
 
 ```cypher
-// Module decomposition decision
-MATCH (m:Module)
-RETURN count(m) AS module_count, collect(m.name) AS modules;
+MATCH (m:Module) RETURN count(m) AS module_count, collect({id:m.id, name:m.name}) AS modules;
 ```
+```cypher
+MATCH (sr:SystemRole) RETURN count(sr) AS role_count, collect({id:sr.id, name:sr.name}) AS roles;
+```
+
+#### Create missing Decision nodes (with JUSTIFIES)
+
+For each detected decision not yet in the graph, allocate `DEC-NNN`
+(`max(toInteger(replace(d.id,'DEC-',''))) + 1`) and write with
+`mcp__neo4j__write-cypher`, linking it to every artifact it shaped:
 
 ```cypher
-// Role model decision
-MATCH (sr:SystemRole)
-RETURN count(sr) AS role_count, collect(sr.name) AS roles;
+MERGE (d:Decision {id: $decId})
+SET d.title = $title, d.chosen = $chosen, d.rationale = $rationale,
+    d.context = $context, d.alternatives_considered = $alternatives,
+    d.status = 'accepted', d.created_at = coalesce(d.created_at, datetime()),
+    d.created_by = 'nacl-sa-finalize', d.source = 'finalize', d.level = 'architecture'
+WITH d
+UNWIND $justifiesIds AS x
+  MATCH (target {id: x})           // Module / DomainEntity / SystemRole / …
+  MERGE (d)-[:JUSTIFIES {role:'shapes'}]->(target)
+RETURN d.id;
 ```
 
-#### Create missing ADR nodes
+#### Typical decision categories to check
 
-For each detected decision not yet in the graph, create with `mcp__neo4j__write-cypher`:
-
-```cypher
-CREATE (rq:Requirement {
-  id: $adrId,
-  type: 'adr',
-  description: $title,
-  context: $context,
-  decision: $decision,
-  alternatives: $alternatives,
-  consequences: $consequences,
-  status: 'accepted',
-  created_at: datetime()
-})
-RETURN rq;
-```
-
-ADR ID format: `ADR-NNN` (get next available):
-```cypher
-MATCH (rq:Requirement {type: 'adr'})
-WITH max(toInteger(replace(rq.id, 'ADR-', ''))) AS maxNum
-RETURN 'ADR-' + apoc.text.lpad(toString(coalesce(maxNum, 0) + 1), 3, '0') AS nextId;
-```
-
-#### Typical ADR categories to check
-
-1. Module decomposition rationale
-2. Domain model key decisions (entity boundaries, shared vs. separate)
-3. Role model and authorization approach
+1. Module decomposition rationale (`JUSTIFIES` → the Modules)
+2. Domain model key decisions — entity boundaries, shared vs separate (`JUSTIFIES` → the DomainEntities)
+3. Role model and authorization approach (`JUSTIFIES` → the SystemRoles)
 4. Interface architecture decisions (SPA, navigation patterns)
-5. Technology-specific decisions (if captured in Requirements)
+5. Technology-specific decisions
 
-Present each new ADR to user for confirmation before writing.
+Present each new Decision to the user for confirmation before writing. Every
+Decision MUST have a non-empty `rationale` and at least one `JUSTIFIES` edge —
+`nacl-sa-validate` L9 enforces this.
 
 IMPORTANT: In `stats-only` mode, SKIP Phase 2 entirely.
 
@@ -535,14 +562,15 @@ Everything is computed from Neo4j aggregation queries. The graph is the single s
 - [ ] UC breakdown computed (primary/secondary/detailed)
 - [ ] Statistics table presented to user
 
-### Phase 2: Glossary + ADR (skip if stats-only)
+### Phase 2: Glossary + Decisions (skip if stats-only)
 - [ ] `sa_glossary_extract` executed
 - [ ] BA GlossaryTerm cross-reference checked
 - [ ] Combined glossary presented
-- [ ] Existing ADRs read
+- [ ] Existing `:Decision` nodes read; legacy `Requirement{type:'adr'}` read
+- [ ] Legacy ADRs backfilled to `:Decision` (with `JUSTIFIES`, `migrated_to` set), user-confirmed
 - [ ] Implicit decisions detected
-- [ ] New ADR nodes confirmed with user before creation
-- [ ] ADRs written to graph as Requirement nodes (type='adr')
+- [ ] New Decision nodes confirmed with user before creation
+- [ ] Decisions written to graph as `:Decision` nodes (non-empty rationale + ≥1 JUSTIFIES edge — satisfies L9)
 
 ### Phase 3: Traceability Matrix (skip if stats-only)
 - [ ] `handoff_traceability_matrix` executed

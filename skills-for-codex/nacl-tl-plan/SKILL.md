@@ -135,6 +135,18 @@ if violations:
   `UseCase -[:GENERATES]-> Task` edge when graph writes are in scope.
 - Preserve `Task`, `Wave`, and `APIEndpoint` creation semantics, including
   `IN_WAVE`, `DEPENDS_ON`, `IMPLEMENTS`, `CONSUMES`, and `PRODUCES`.
+- Re-planning is idempotent and incremental by default (full overwrite only on
+  explicit `--overwrite`). When Task/Wave nodes already exist, detect the narrow
+  changed set — UCs where `coalesce(uc.spec_version,0) > coalesce(t.planned_from_version,-1)`,
+  UCs a `FeatureRequest -[:INCLUDES_UC {kind:'modified'}]->` flags, or UCs/Tasks
+  carrying `review_status='stale'` — and regenerate only those, leaving other UCs'
+  tasks and dev state untouched. `MERGE` Task nodes by stable id (`UC###-BE/FE`):
+  no duplicates. On each regen, set `Task.planned_from_version = uc.spec_version`
+  and clear `review_status`/`stale_*` on the Task and its source UC (the only
+  sanctioned way a node leaves `stale`).
+- Resolve `--feature FR-NNN` scope from the graph (`(:FeatureRequest)-[:INCLUDES_UC]->`,
+  with `kind` splitting new vs modified), falling back to the markdown file only
+  if the FR node is absent.
 - Read `ExternalContract` graph nodes and `REQUIRES_EXTERNAL` /
   `DEPENDS_ON_EXTERNAL` edges to drive the External Contracts Gate.
 - Write `.tl/tasks/<TASK_ID>/` files, `.tl/master-plan.md`, `.tl/status.json`,

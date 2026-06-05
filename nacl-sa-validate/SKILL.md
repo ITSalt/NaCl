@@ -4,8 +4,9 @@ model: opus
 effort: high
 description: |
   Validate specification consistency through Neo4j Cypher queries.
-  Internal validation (L1-L7): data consistency, model connectivity, requirement completeness,
-  form-domain traceability, UC-form validation, cross-module consistency, FeatureRequest consistency.
+  Internal validation (L1-L9): data consistency, model connectivity, requirement completeness,
+  form-domain traceability, UC-form validation, cross-module consistency, FeatureRequest consistency,
+  staleness closure, decision provenance.
   Cross-validation BA->SA (XL6-XL9): UC coverage, entity coverage, role coverage, rule coverage.
   Use when: validate specification, check consistency, find errors, run checks, quality gate.
 ---
@@ -14,7 +15,7 @@ description: |
 
 **Wrap with:** `/nacl-goal validate:module:<MOD-ID>` (tier S)
 
-This skill is a good fit for autonomous `/goal` loops because all checks are read-only Cypher queries whose results are deterministic: the check script queries the same Neo4j graph and counts zero-row (PASS) vs non-zero-row (FAIL) outcomes for each L1–L7 and XL6–XL9 check. The wrapper composes a completion condition that all enabled checks return zero findings.
+This skill is a good fit for autonomous `/goal` loops because all checks are read-only Cypher queries whose results are deterministic: the check script queries the same Neo4j graph and counts zero-row (PASS) vs non-zero-row (FAIL) outcomes for each L1–L9 and XL6–XL9 check. The wrapper composes a completion condition that all enabled checks return zero findings.
 
 **Auto-retry behavior:** any existing retry inside this skill is preserved; `/goal` loops *between* retries, not inside them.
 
@@ -57,9 +58,9 @@ IMPORTANT: This skill uses ONLY read-cypher. Validation must NEVER write to the 
 
 | Parameter | Values | Description |
 |-----------|--------|-------------|
-| `level` | `internal` | L1-L7: SA-internal consistency checks |
+| `level` | `internal` | L1-L9: SA-internal consistency checks (incl. L8 staleness, L9 decision provenance) |
 | | `ba-cross` | XL6-XL9: BA-to-SA cross-layer coverage |
-| | `full` (default) | All levels: L1-L7 + XL6-XL9 |
+| | `full` (default) | All levels: L1-L9 + XL6-XL9 |
 | `--scope` | `intra-uc UC-NNN[,UC-NNN]` | Limit validation to specific UCs and their subgraph (forms, fields, requirements, entities). Used by nacl-sa-feature for incremental validation. |
 | | `intra-module mod-xxx` | Limit validation to a specific module's nodes. |
 
@@ -112,6 +113,16 @@ When `--scope` is provided, all Cypher queries are augmented with a WHERE clause
           |  Consistency      |            |
           +---------+---------+            |
                     |                      |
+          +---------+---------+            |
+          |  L8: Staleness    |            |
+          |  Closure          |            |
+          +---------+---------+            |
+                    |                      |
+          +---------+---------+            |
+          |  L9: Decision     |            |
+          |  Provenance       |            |
+          +---------+---------+            |
+                    |                      |
                     +----------+-----------+
                                |
                     +----------+-----------+
@@ -131,6 +142,8 @@ This skill assumes the **canonical SA schema** as defined in `graph-infra/schema
 - `/nacl-sa-roles` -- writes `:SystemRole`
 - `/nacl-sa-ui` -- writes `:Component`, `:FormField`
 - BA->SA handoff edges (canonical names): `AUTOMATES_AS`, `REALIZED_AS`, `IMPLEMENTED_BY`, `MAPPED_TO`, `TYPED_AS`, `SUGGESTS`
+- Provenance (canonical names, written by `/nacl-sa-feature`, `/nacl-tl-fix`, `/nacl-sa-finalize`): `:Decision` node, edges `(:Decision)-[:JUSTIFIES]->(...)`, `(:Decision)-[:SUPERSEDES]->(:Decision)`, `(:FeatureRequest)-[:IMPLEMENTS]->(:Decision)`
+- Staleness properties (set by `/nacl-sa-feature`, `/nacl-tl-fix`): `review_status`, `stale_reason`, `stale_since`, `stale_origin` — read with `coalesce(n.review_status,'current')`.
 - Stereotype on automated steps: `WorkflowStep.stereotype = 'Автоматизируется'` (Russian) or `'Automated'` (English) -- both accepted.
 
 **Non-canonical aliases are NOT supported.** If the graph uses any of these, validation will HALT in pre-flight (Step 0a) instead of producing false-positive criticals:
@@ -169,7 +182,7 @@ ORDER BY label
 
 ### Step 0a: Detect schema drift (CRITICAL gate)
 
-If canonical SA labels are absent but non-canonical aliases exist (e.g. `:SAModule`, `:SAEntity`, `:SARequirement`), the validator's queries silently return zero rows and produce **false-positive CRITICAL findings** for every L2-L7 / XL6-XL9 check. This step catches that scenario explicitly.
+If canonical SA labels are absent but non-canonical aliases exist (e.g. `:SAModule`, `:SAEntity`, `:SARequirement`), the validator's queries silently return zero rows and produce **false-positive CRITICAL findings** for every L2-L9 / XL6-XL9 check. This step catches that scenario explicitly.
 
 ```cypher
 // Step 0a: schema-drift detection
@@ -310,7 +323,7 @@ ORDER BY label
 
 **If the result is empty:**
 - `level=ba-cross` --> STOP, report that BA layer is not populated. User must run `/nacl-ba-import-doc` or `/nacl-ba-from-board` first.
-- `level=full` --> Run only L1-L7 (internal), skip XL6-XL9 with a WARNING in the report.
+- `level=full` --> Run only L1-L9 (internal), skip XL6-XL9 with a WARNING in the report.
 
 ### Step 0d: Verify exemption properties are populated
 
@@ -368,7 +381,7 @@ Every detected problem is assigned a severity:
 
 ---
 
-## Validation Levels -- Internal (L1-L7)
+## Validation Levels -- Internal (L1-L9)
 
 ### Level 1: Data Consistency
 
@@ -920,6 +933,110 @@ Resolution: rename the non-`:FeatureRequest` node into a tombstone namespace (e.
 
 ---
 
+### Level 8: Staleness Closure
+
+**Goal:** When an upstream node changes, write-skills run `sa_impact_closure` and stamp the snapshot-bearing dependents (`Task`, `UseCase`, `Form`, `Requirement`) with `review_status='stale'`. A node left `stale` is an un-reviewed downstream of a change. This level is the read-only gate that surfaces them; closure skills (`nacl-tl-release`, `nacl-tl-conductor`, `nacl-tl-deliver`) refuse while any remain. The flag is read with `coalesce(n.review_status,'current')`, so a graph that has never been stamped passes cleanly (every node is implicitly `current`).
+
+This level writes nothing — it reads the flag that the producers set.
+
+#### Check 8.1: Stale nodes not yet reviewed (project-wide)
+
+```cypher
+// L8.1 -- Severity: CRITICAL
+// Any node still marked stale is a downstream of an upstream change that has not
+// been re-synced. stale_origin/stale_since are the lineage answer ("why / since when").
+MATCH (n)
+WHERE coalesce(n.review_status, 'current') = 'stale'
+RETURN labels(n)[0] AS node_type, n.id AS id,
+       coalesce(n.name, n.title, n.description) AS display,
+       n.stale_origin AS caused_by, n.stale_reason AS reason, n.stale_since AS since,
+       'Node is stale (downstream of an upstream change) and not yet reviewed' AS problem
+ORDER BY n.stale_since
+```
+
+#### Check 8.2: Stale closure of a single change (scoped, `--scope=intra-uc`)
+
+Used by `nacl-sa-feature` Phase 4 after a change, to confirm the just-modified node's dependent set was cleared. Composes with `sa_impact_closure`.
+
+```cypher
+// L8.2 -- Severity: CRITICAL (scoped)
+// Params: $changedNodeId — the node that was just changed.
+// Only the dependents of $changedNodeId that are still stale.
+MATCH (changed {id: $changedNodeId})
+MATCH (changed)-[:HAS_ATTRIBUTE|MAPS_TO|HAS_FIELD|USES_FORM|HAS_STEP|HAS_REQUIREMENT
+       |ACTOR|CONTAINS_UC|CONTAINS_ENTITY|GENERATES|INCLUDES_UC
+       |EXPOSES|IMPLEMENTS|DEPENDS_ON*1..6]-(dep)
+WHERE coalesce(dep.review_status, 'current') = 'stale'
+RETURN DISTINCT dep.id AS id, labels(dep)[0] AS node_type,
+       dep.stale_origin AS caused_by, dep.stale_reason AS reason,
+       'Dependent of changed node is still stale' AS problem
+```
+
+---
+
+### Level 9: Decision Provenance
+
+**Goal:** Every structural change records *why* it was made, graph-natively, as a `:Decision` node linked to the artifacts it shaped — so "why was this decided, a year later" is the `sa_decisions_for_node` / `sa_timeline_of_why` query, not git archaeology. This is the **calibrated** gate: it bites on features (an active `FeatureRequest` with no linked `Decision`) and on malformed decisions, but it does NOT add a fix-time gate — `nacl-tl-fix` L2/L3 fixes are already forced to record a `Decision` inside the spec-first commit by the existing Step 6.SF detector.
+
+Rationale lives in the graph, never in standalone Markdown: the FR markdown file is a rendered projection, the `:Decision` node and its `JUSTIFIES`/`SUPERSEDES`/`IMPLEMENTS` edges are the authority.
+
+This level writes nothing.
+
+#### Check 9.1: Active FeatureRequest with no linked Decision
+
+```cypher
+// L9.1 -- Severity: CRITICAL
+// A structural change (new/modified UCs via an FR) landed with no recorded "why".
+// Tombstones are exempt (same convention as L7.2).
+MATCH (fr:FeatureRequest)
+WHERE fr.legacy_origin IS NULL
+  AND coalesce(fr.status, '') <> 'tombstone'
+  AND NOT (fr)-[:IMPLEMENTS]->(:Decision)
+RETURN fr.id AS fr_id, fr.status AS status,
+       'FeatureRequest has no IMPLEMENTS -> Decision (structural change with no recorded rationale)' AS problem
+ORDER BY fr.id
+```
+
+#### Check 9.2: Decision that justifies nothing (unanchored rationale)
+
+```cypher
+// L9.2 -- Severity: CRITICAL
+// A non-superseded Decision must point at >=1 artifact via JUSTIFIES, else it is
+// rationale floating free of what it explains.
+MATCH (d:Decision)
+WHERE coalesce(d.status, '') <> 'superseded'
+  AND NOT (d)-[:JUSTIFIES]->()
+RETURN d.id AS dec_id, d.title AS title,
+       'Decision justifies no artifact (no JUSTIFIES edge)' AS problem
+ORDER BY d.id
+```
+
+#### Check 9.3: Decision with empty rationale (the "we forgot why" failure)
+
+```cypher
+// L9.3 -- Severity: CRITICAL
+// The load-bearing field. A Decision with empty rationale cannot answer "why".
+MATCH (d:Decision)
+WHERE d.rationale IS NULL OR trim(d.rationale) = ''
+RETURN d.id AS dec_id, d.title AS title,
+       'Decision has empty rationale — cannot answer "why" a year later' AS problem
+ORDER BY d.id
+```
+
+#### Check 9.4: Supersession hygiene (informational)
+
+```cypher
+// L9.4 -- Severity: WARNING
+// A Decision pointed at by SUPERSEDES should carry status='superseded'.
+MATCH (newer:Decision)-[:SUPERSEDES]->(old:Decision)
+WHERE coalesce(old.status, '') <> 'superseded'
+RETURN old.id AS dec_id, newer.id AS superseded_by,
+       'Decision is superseded but status not set to superseded' AS problem
+ORDER BY old.id
+```
+
+---
+
 ## Validation Levels -- Cross-Layer (XL6-XL9)
 
 These checks verify BA-to-SA traceability via handoff edges. They require both BA and SA layers to be populated in Neo4j.
@@ -1173,12 +1290,13 @@ RETURN total_ba, implemented, out_of_scope,
 
 ### Step 2: Execute validation levels
 
-For each enabled level (L1 through L6, XL6 through XL9):
+For each enabled level (L1 through L9, XL6 through XL9):
 
 1. Run ALL Cypher queries for that level using `mcp__neo4j__read-cypher`.
 2. Collect results into a structured list: `{level, check_id, severity, count, details[]}`.
 3. If a query returns zero rows, that check PASSES.
 4. If a query returns rows, each row is a problem -- assign the severity defined in the check.
+5. **L8 scope:** in `--scope=intra-uc UC-NNN` runs, prefer L8.2 (scoped to the changed node's closure) over L8.1 (project-wide). L9 always runs project-wide (decision provenance is a global invariant).
 
 ### Step 3: Aggregate results
 
@@ -1219,6 +1337,9 @@ Generate the following markdown report and output it directly to the user.
 | L4 | Form-Domain Traceability | PASS/WARN/FAIL | N | N | N |
 | L5 | UC-Form Validation | PASS/WARN/FAIL | N | N | N |
 | L6 | Cross-Module Consistency | PASS/WARN/FAIL | N | N | N |
+| L7 | FeatureRequest Consistency | PASS/WARN/FAIL | N | N | N |
+| L8 | Staleness Closure | PASS/WARN/FAIL | N | N | N |
+| L9 | Decision Provenance | PASS/WARN/FAIL | N | N | N |
 | XL6 | UC Coverage (BA->SA) | PASS/WARN/FAIL/SKIP | N | N | N |
 | XL7 | Entity Coverage (BA->SA) | PASS/WARN/FAIL/SKIP | N | N | N |
 | XL8 | Role Coverage (BA->SA) | PASS/WARN/FAIL/SKIP | N | N | N |
@@ -1313,6 +1434,10 @@ If pre-flight returns zero nodes:
 
 # Cross-layer edges:
 - AUTOMATES_AS, REALIZED_AS, TYPED_AS, MAPPED_TO, IMPLEMENTED_BY
+
+# Provenance + staleness (L8/L9):
+- Decision (node), JUSTIFIES, SUPERSEDES, IMPLEMENTS (FeatureRequest->Decision)
+- node properties: review_status, stale_reason, stale_since, stale_origin
 ```
 
 ### Writes
@@ -1368,6 +1493,21 @@ Before completing, verify:
 - [ ] No circular UC dependencies
 - [ ] Cross-module relationships documented
 - [ ] All SystemRoles assigned as actors
+
+### L7: FeatureRequest Consistency
+- [ ] FR markdown files have matching :FeatureRequest nodes
+- [ ] FeatureRequests have INCLUDES_UC edges (tombstones exempt)
+- [ ] INCLUDES_UC kinds valid; no dangling UC references; no FR-id label collisions
+
+### L8: Staleness Closure
+- [ ] No node left with review_status='stale' (project-wide) — or scoped closure of the changed node is clean
+- [ ] Stale nodes (if any) carry stale_origin / stale_since for lineage
+
+### L9: Decision Provenance
+- [ ] Every active FeatureRequest IMPLEMENTS a Decision
+- [ ] Every non-superseded Decision JUSTIFIES at least one artifact
+- [ ] No Decision has an empty rationale
+- [ ] Superseded Decisions carry status='superseded'
 
 ### XL6: UC Coverage (ba-cross / full only)
 - [ ] All automated WorkflowSteps have AUTOMATES_AS -> UseCase
@@ -1501,4 +1641,4 @@ RETURN labels(a) AS source_labels, labels(b) AS target_labels, count(r) AS remai
 /nacl-sa-validate full
 ```
 
-Step 0a should now PASS the drift check, and L1-L7 / XL6-XL9 will execute against the canonical labels.
+Step 0a should now PASS the drift check, and L1-L9 / XL6-XL9 will execute against the canonical labels.

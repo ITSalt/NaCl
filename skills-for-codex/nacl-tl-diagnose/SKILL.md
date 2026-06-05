@@ -45,6 +45,11 @@ Diagnose and recommend next actions. Do not implement fixes in this skill.
 - Inspect git history, docs, `.tl/` files, and code health indicators.
 - Identify stale docs, hot files, repeated fixes, and missing verification
   evidence.
+- Read graph staleness as a first-class drift signal (not inferred from file
+  dates): count nodes with `review_status='stale'`, bucket by `stale_origin`,
+  note oldest `stale_since`. A non-empty result means an upstream change whose
+  dependents were never re-synced (`/nacl-tl-plan` clears them); mark the probe
+  unavailable if Neo4j is unreachable.
 - Produce a structured diagnostic report.
 - Recommend follow-up skills or manual investigation.
 

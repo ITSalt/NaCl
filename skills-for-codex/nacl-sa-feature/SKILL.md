@@ -28,7 +28,12 @@ Read `../nacl-core/SKILL.md`, `../references/migration-rules.md`, and
    confirms or adjusts scope.
 4. Apply updates in dependency order: architecture, domain, roles, use cases,
    UI, validation flags. Use existing NaCl skills when available; otherwise
-   apply the same graph contracts directly.
+   apply the same graph contracts directly. After updates land, record change
+   provenance: bump `spec_version` on every new/modified UC, and stamp
+   `review_status='stale'` (with `stale_origin`/`stale_since`) on snapshot-bearing
+   dependents (`Task`/`UseCase`/`Form`/`Requirement`) reached by impact traversal.
+   The stale Tasks are the expected hand-off signal to `nacl-tl-plan`; do not
+   clear them here.
 5. Incremental validation: run scoped checks for only affected nodes when graph
    tooling is available. Fix confirmed critical issues with at most two
    iterations unless the user asks to continue.
@@ -62,8 +67,13 @@ skill's contract and inspect its result before continuing.
 
 Phase 6 persistence must create `FeatureRequest` with documented properties and
 link it with `INCLUDES_UC {kind}`, `AFFECTS_MODULE`, `AFFECTS_ENTITY`, and
-optionally `RAISES_REQUIREMENT`. After confirmed graph and file writes, read the
-`FeatureRequest` subgraph back before reporting success.
+optionally `RAISES_REQUIREMENT`. It must also write one graph-native `:Decision`
+(`DEC-NNN`, non-empty `rationale`, `created_by:'nacl-sa-feature'`), anchored by
+`(:FeatureRequest)-[:IMPLEMENTS]->(:Decision)` and linked to every shaped artifact
+via `JUSTIFIES {role}`; if it reverses a prior decision, add `SUPERSEDES` and set
+the old one's `status='superseded'`. The Decision is mandatory — `nacl-sa-validate`
+L9 refuses an active FeatureRequest with no linked Decision. After confirmed graph
+and file writes, read the `FeatureRequest` subgraph back before reporting success.
 
 ## Capabilities
 
@@ -111,6 +121,8 @@ optionally `RAISES_REQUIREMENT`. After confirmed graph and file writes, read the
   UI, and validation.
 - FeatureRequest handoff for TL planning.
 - Collision-safe `FR-*` allocation across disk and graph.
+- Graph-native change provenance: `spec_version` bump, staleness stamping of
+  dependents, and a `:Decision` node (`IMPLEMENTS`/`JUSTIFIES`/`SUPERSEDES`).
 
 ### Removed Claude Mechanics
 

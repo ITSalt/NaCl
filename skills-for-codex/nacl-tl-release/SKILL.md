@@ -51,13 +51,13 @@ state changes.
 **Introduced in:** W4-blocking-release.
 
 The release skill refuses VERIFIED → release-tag / promote when ANY
-of the six conditions below holds. These gates are **strict-only**
+of the seven conditions below holds. These gates are **strict-only**
 — there is no fallback branch, no flag-driven bypass, and no inline
 operator-prompt override. The Project-Alpha stale-graph episode and the
 project-beta health-only episode are the canonical episodes these
 gates exist to prevent.
 
-### The Six Block Conditions
+### The Seven Block Conditions
 
 | # | Condition | Closed `Status:` | Workflow detail |
 |---|---|---|---|
@@ -67,6 +67,7 @@ gates exist to prevent.
 | 4 | `/nacl-sa-validate full` reports `Status: FAIL` with at least one finding at `severity: CRITICAL` | `BLOCKED` | `sa-validate-critical` |
 | 5 | **Missing PROD_GOLDEN_PATH evidence.** A bare HTTP 200 from `/health` is `HEALTH_ONLY` evidence and is **never product-readiness evidence**. The release requires a `PROD_GOLDEN_PATH` evidence string in the QA aggregate (per W3 six-stage decomposition) for every UC where the matrix marks `PROD_GOLDEN_PATH` mandatory. | `BLOCKED` | `missing-prod-golden-path` |
 | 6 | **PR / CI skipped without `project_kind: prototype` AND a signed exception.** Direct-strategy releases (no PR, no CI) are permitted only when `config.yaml` declares `project_kind: prototype` AND `.tl/exceptions/` contains a valid exception with `affected_gates` including the literal `skipped-pr` and / or `skipped-ci`. | `BLOCKED` | `skipped-pr-without-prototype-exception` or `skipped-ci-without-prototype-exception` |
+| 7 | **Stale downstream of an unreviewed change.** `/nacl-sa-validate full` reports an `L8` finding — ≥1 node carries `review_status='stale'` (a UC/entity/endpoint changed upstream and its dependents, typically Tasks, were never re-synced). Distinct from #4 (any CRITICAL) and #3 (snapshot vs live count): #7 names "a recorded change with un-propagated dependents". Clear by running `/nacl-tl-plan` or re-reviewing the flagged nodes. | `BLOCKED` | `stale-downstream` |
 
 ### HEALTH_ONLY vs PROD_GOLDEN_PATH
 
@@ -106,7 +107,7 @@ of those requires its own signed exception with its own
 ### Signed Exception Schema (Binding)
 
 `.tl/exceptions/<exception_id>.yaml` is the only override mechanism
-for the six block conditions (other than emergency mode). The
+for the seven block conditions (other than emergency mode). The
 schema is defined in `.tl/exceptions/_template.yaml`. The eight
 required fields are:
 

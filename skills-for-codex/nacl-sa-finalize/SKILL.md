@@ -51,10 +51,14 @@ BA graph data is missing, report BA-to-SA traceability as
 `PARTIALLY_VERIFIED`, `BLOCKED`, or `UNVERIFIED` according to the missing
 evidence instead of marking readiness complete.
 
-Decision records may be written only as schema-supported `Requirement` records,
-for example with `type='adr'`, after showing the proposed decision text,
-rationale, affected modules, and source evidence. Read back those records before
-claiming they were persisted.
+Architecture decisions are written as first-class graph-native `:Decision` nodes
+(`level:'architecture'`, non-empty `rationale`, ≥1 `JUSTIFIES {role}` edge to the
+module/entity/role the decision shaped) — never as standalone markdown. Show the
+proposed decision text, rationale, affected artifacts, and source evidence before
+writing, and read the records back before claiming persistence. Legacy ADRs stored
+as `Requirement {type:'adr'}` (and any `docs/adr/*.md`) are backfilled into
+`:Decision` nodes with `migrated_to` set on the old node (never deleted).
+`nacl-sa-validate` L9 enforces non-empty rationale and the JUSTIFIES link.
 
 ## Capabilities
 

@@ -76,8 +76,20 @@ CREATE INDEX index_apiendpoint_path
 //   priority: String,         // "critical"|"high"|"medium"|"low"
 //   created: DateTime,
 //   updated: DateTime,
-//   verification_evidence: String  // "test-GREEN:<path>" | "test-UNVERIFIED" | "no-test"
+//   verification_evidence: String, // "test-GREEN:<path>" | "test-UNVERIFIED" | "no-test"
 //                                  // — see nacl-core/SKILL.md § Task.verification_evidence
+//   planned_from_version: Int,    // the UseCase.spec_version this task's files were
+//                                  // generated from. nacl-tl-plan compares
+//                                  // coalesce(uc.spec_version,0) > coalesce(t.planned_from_version,-1)
+//                                  // to detect tasks whose baked-in snapshot is stale.
+//   review_status: String,        // 'current' | 'stale' (default 'current'); see
+//                                  // sa-schema.cypher § Staleness properties. A Task is
+//                                  // stamped 'stale' when its source UC changed, and
+//                                  // cleared on successful re-plan. Read with
+//                                  // coalesce(t.review_status,'current').
+//   stale_reason: String,         // human-readable cause
+//   stale_since: DateTime,        // when stamped
+//   stale_origin: String          // id of the node whose change caused it (UC/FR)
 // }
 //
 

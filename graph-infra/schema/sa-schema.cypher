@@ -51,6 +51,9 @@ CREATE CONSTRAINT constraint_component_id
 CREATE CONSTRAINT constraint_featurerequest_id
   FOR (n:FeatureRequest) REQUIRE n.id IS UNIQUE;
 
+CREATE CONSTRAINT constraint_decision_id
+  FOR (n:Decision) REQUIRE n.id IS UNIQUE;
+
 
 // ---------------------------------------------------------------------------
 // 2. INDEXES (name lookup for each label + module index on DomainEntity)
@@ -100,6 +103,16 @@ CREATE INDEX index_featurerequest_status
 
 CREATE INDEX index_featurerequest_created_at
   FOR (n:FeatureRequest) ON (n.created_at);
+
+CREATE INDEX index_decision_status
+  FOR (n:Decision) ON (n.status);
+
+CREATE INDEX index_decision_created_at
+  FOR (n:Decision) ON (n.created_at);
+
+// Full-text so impact analysis / audit can find prior decisions by keyword.
+CREATE FULLTEXT INDEX fulltext_decision_search
+  FOR (n:Decision) ON EACH [n.title, n.context, n.rationale];
 
 
 // ---------------------------------------------------------------------------
@@ -166,6 +179,21 @@ CREATE INDEX index_featurerequest_created_at
 // (:FeatureRequest)-[:RAISES_REQUIREMENT]->(:Requirement)
 //   FeatureRequest introduces or updates a requirement (optional).
 //
+// (:FeatureRequest)-[:IMPLEMENTS]->(:Decision)
+//   The FeatureRequest is the graph-native change anchor that carried out a
+//   decision. The FR markdown file is a rendered projection, NOT the authority.
+//
+// (:Decision)-[:JUSTIFIES {role: String}]->(target)
+//   A decision shaped an artifact. target ∈ {UseCase, DomainEntity, Module,
+//   Requirement, Form, Component, Enumeration, APIEndpoint} (Screen|Slice|
+//   CachePolicy join later with no schema change). role ∈ {'creates','shapes',
+//   'constrains'}; default 'shapes'.
+//
+// (:Decision)-[:SUPERSEDES]->(:Decision)
+//   The newer decision replaces an older one. On write, the older Decision gets
+//   status='superseded'. This is the year-long evolving-rationale chain: pull
+//   one thread, traverse SUPERSEDES, recover the full historicity.
+//
 // --- FeatureRequest properties (documented) ---
 // FeatureRequest {
 //   id: String,                // "FR-NNN"
@@ -175,7 +203,22 @@ CREATE INDEX index_featurerequest_created_at
 //   status: String,            // "spec-complete" | "in-development" | "shipped"
 //   created_at: DateTime,
 //   source_skill: String,      // "nacl-sa-feature"
-//   markdown_path: String      // ".tl/feature-requests/FR-NNN-<slug>.md"
+//   markdown_path: String      // ".tl/feature-requests/FR-NNN-<slug>.md" (projection, not authority)
+// }
+//
+// --- Decision properties (documented) — graph-native provenance ---
+// Decision {
+//   id: String,                       // "DEC-NNN" (project-wide sequence, like ADR-NNN)
+//   title: String,                    // one-line "what was decided"  [REQUIRED on write]
+//   chosen: String,                   // the option taken             [REQUIRED on write]
+//   rationale: String,                // WHY chosen — the load-bearing field [REQUIRED on write]
+//   source: String,                   // provenance handle: "FR-NNN" | git sha | "ADR-NNN (imported)" [REQUIRED]
+//   context: String,                  // the forces that made a decision necessary (default "")
+//   alternatives_considered: [String],// options weighed (default [])
+//   status: String,                   // "accepted" | "superseded" | "proposed"
+//   created_at: DateTime,
+//   created_by: String,               // "nacl-sa-feature" | "nacl-tl-fix" | "nacl-sa-finalize" | human
+//   level: String                     // "L2" | "L3-spec-gap" | "feature" | "architecture"
 // }
 //
 // --- Extended UseCase properties (documented) ---
@@ -183,8 +226,26 @@ CREATE INDEX index_featurerequest_created_at
 //   ...existing properties...,
 //   user_story: String,              // "As a [role], I want [action] so that [value]"
 //   acceptance_criteria: [String],   // list of acceptance criteria
-//   priority: String                 // "MVP" | "Post-MVP" | "Nice-to-have"
+//   priority: String,                // "MVP" | "Post-MVP" | "Nice-to-have"
+//   spec_version: Int                // bumped by any SA writer that changes UC shape
+//                                    // (nacl-sa-uc, nacl-sa-feature, nacl-tl-fix L2/L3).
+//                                    // Compared against Task.planned_from_version for
+//                                    // idempotent incremental re-planning. Read with
+//                                    // coalesce(uc.spec_version, 0).
 // }
+//
+// --- Staleness / review-status properties (documented) ---
+// These four properties may appear on any SA/TL node that carries an embedded
+// snapshot of upstream state (primarily Task, but also UseCase, Form,
+// Requirement). They are set by write-skills (nacl-sa-feature, nacl-tl-fix
+// L2/L3) after running the sa_impact_closure traversal, and cleared on
+// successful re-sync (nacl-tl-plan regen, nacl-tl-fix verify). All are read
+// with coalesce(n.review_status,'current') — no migration/backfill needed; an
+// absent property means 'current'.
+//   review_status : String     // 'current' | 'stale'   (default 'current')
+//   stale_reason  : String      // human-readable cause, e.g. "upstream UC-014 modified"
+//   stale_since   : DateTime     // when it was stamped
+//   stale_origin  : String       // id of the node whose change caused it (UC/FR) — lineage answer
 
 
 // ---------------------------------------------------------------------------

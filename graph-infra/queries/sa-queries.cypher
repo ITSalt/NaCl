@@ -185,3 +185,88 @@ WHERE toLower(uc.name) CONTAINS toLower($keywords)
    OR toLower(coalesce(uc.description, '')) CONTAINS toLower($keywords)
 RETURN uc.id AS id, uc.name AS name, uc.detail_status AS status
 ORDER BY uc.id;
+
+
+// ---------------------------------------------------------------------------
+// Query: sa_impact_closure
+// Params: $changedNodeId — id of the node that changed (UC, attribute, endpoint…)
+// Description: THE change-propagation engine. Given a changed node, returns the
+//   full transitive DOWNSTREAM dependent set ("what must be revisited") AND the
+//   UPSTREAM rationale chain ("why the node exists"), across BA→SA→TL layers.
+//   No reverse edges are introduced: relationships are matched WITHOUT arrowheads
+//   in the downstream half, so traversal crosses each edge in both directions;
+//   the type allow-list is what bounds the walk to relevant artifacts.
+//   New node-type phases (Screen/Slice/Error/Cache) APPEND their edge types to
+//   the allow-list below — that single edit makes them reachable by impact
+//   analysis. Read staleness with coalesce(node.review_status,'current').
+// ---------------------------------------------------------------------------
+MATCH (changed {id: $changedNodeId})
+MATCH path = (changed)
+      -[:HAS_ATTRIBUTE|MAPS_TO|HAS_FIELD|USES_FORM|HAS_STEP|HAS_REQUIREMENT
+       |ACTOR|CONTAINS_UC|CONTAINS_ENTITY|HAS_ENUM|HAS_VALUE|EXPOSES|IMPLEMENTS
+       |GENERATES|INCLUDES_UC|AFFECTS_ENTITY|AFFECTS_MODULE|DEPENDS_ON*1..6]
+      -(dep)
+WHERE dep <> changed
+WITH dep AS node, min(length(path)) AS hops
+RETURN labels(node)[0] AS node_type, node.id AS id,
+       coalesce(node.name, node.title, node.description, node.value) AS display,
+       hops, 'downstream' AS direction,
+       coalesce(node.review_status, 'current') AS review_status,
+       node.stale_origin AS stale_origin
+UNION
+MATCH (changed {id: $changedNodeId})
+MATCH up = (origin)
+      -[:AUTOMATES_AS|REALIZED_AS|IMPLEMENTED_BY|MAPPED_TO|TYPED_AS|SUGGESTS
+       |HAS_REQUIREMENT|INCLUDES_UC|RAISES_REQUIREMENT|CONTAINS_UC|CONTAINS_ENTITY
+       |IMPLEMENTS|JUSTIFIES*1..5]
+      ->(changed)
+WHERE origin <> changed
+WITH origin AS node, min(length(up)) AS hops
+RETURN labels(node)[0] AS node_type, node.id AS id,
+       coalesce(node.name, node.title, node.description, node.value) AS display,
+       hops, 'upstream-rationale' AS direction,
+       coalesce(node.review_status, 'current') AS review_status,
+       node.stale_origin AS stale_origin
+ORDER BY direction, hops, node_type, id;
+
+
+// ---------------------------------------------------------------------------
+// Query: sa_decisions_for_node
+// Params: $nodeId — any artifact id (UseCase/DomainEntity/Module/…)
+// Description: Every Decision that explains the node's current shape, oldest-first,
+//   with the supersession chain made explicit. The graph-native "why is this here"
+//   answer — pull one node, see every decision and how each shaped it.
+// ---------------------------------------------------------------------------
+MATCH (d:Decision)-[j:JUSTIFIES]->(x {id: $nodeId})
+OPTIONAL MATCH (d)-[:SUPERSEDES]->(prev:Decision)
+OPTIONAL MATCH (newer:Decision)-[:SUPERSEDES]->(d)
+RETURN d.id AS decision, d.title AS title, d.rationale AS why,
+       j.role AS how, d.status AS status, d.created_at AS when,
+       d.source AS source, prev.id AS supersedes, newer.id AS superseded_by
+ORDER BY d.created_at ASC;
+
+
+// ---------------------------------------------------------------------------
+// Query: sa_timeline_of_why
+// Params: $ucId — UseCase.id
+// Description: The full reasoning history of a UseCase, a year later, as one
+//   chronological table: every Decision (feature decisions + fix decisions, the
+//   latter carry created_by='nacl-tl-fix') and every FeatureRequest that touched
+//   it, time-ordered. "Why was this decided" as a single Cypher query.
+// ---------------------------------------------------------------------------
+MATCH (uc:UseCase {id: $ucId})
+CALL {
+  WITH uc
+  MATCH (d:Decision)-[:JUSTIFIES]->(uc)
+  RETURN 'decision' AS kind, d.created_at AS at, d.id AS id,
+         d.title AS what, d.rationale AS why, d.source AS source,
+         d.created_by AS by, d.status AS status
+  UNION
+  WITH uc
+  MATCH (fr:FeatureRequest)-[r:INCLUDES_UC]->(uc)
+  RETURN 'feature_request' AS kind, fr.created_at AS at, fr.id AS id,
+         fr.title AS what, ('UC ' + r.kind) AS why, fr.markdown_path AS source,
+         fr.source_skill AS by, fr.status AS status
+}
+RETURN kind, at, id, what, why, source, by, status
+ORDER BY at ASC;

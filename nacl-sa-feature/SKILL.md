@@ -412,6 +412,51 @@ Invoke `/nacl-sa-ui` via Skill tool or manually. The schema for UI is `Form/Form
 
 **After each sub-step:** Report progress to user. User can stop at any point.
 
+#### 3g. Mark change provenance (spec_version + staleness)
+
+After all spec updates land, record the change in the graph so downstream
+planning and closure skills can detect what must be revisited. This is the
+mechanism behind "pull one thread → see everything": the change stamps its
+dependents, and they stay stamped until re-synced.
+
+1. Bump `spec_version` on every created/modified UC so `nacl-tl-plan` can detect
+   tasks that were planned from an older version:
+
+```cypher
+// mcp__neo4j__write-cypher
+// Params: $affectedUcIds — new + modified UC ids from Phase 2/3
+MATCH (uc:UseCase) WHERE uc.id IN $affectedUcIds
+SET uc.spec_version = coalesce(uc.spec_version, 0) + 1,
+    uc.updated_at   = datetime()
+```
+
+2. Stamp staleness on the snapshot-bearing dependents of each changed node via
+   the impact-closure traversal. The traversal surfaces the full dependent set,
+   but the stamp is narrowed to `Task`/`UseCase`/`Form`/`Requirement` (the nodes
+   that embed snapshots) to bound graph pollution. Run once per changed node id:
+
+```cypher
+// mcp__neo4j__write-cypher
+// Params: $changedNodeId — a changed UC or entity id (run once per changed node)
+//         $reason — e.g. "upstream UC-014 modified by FR-007"
+//         $origin — the change anchor id (the FR id, or the changed node id)
+MATCH (changed {id: $changedNodeId})
+MATCH (changed)-[:HAS_ATTRIBUTE|MAPS_TO|HAS_FIELD|USES_FORM|HAS_STEP|HAS_REQUIREMENT
+       |ACTOR|GENERATES|EXPOSES|IMPLEMENTS|DEPENDS_ON*1..6]-(dep)
+WHERE (dep:Task OR dep:UseCase OR dep:Form OR dep:Requirement)
+  AND dep <> changed
+SET dep.review_status = 'stale',
+    dep.stale_reason  = $reason,
+    dep.stale_since   = datetime(),
+    dep.stale_origin  = $origin
+```
+
+> The dependent Tasks are now `stale`. This is **expected** — it is the signal
+> that `/nacl-tl-plan --feature FR-NNN` must regenerate them. The closure gate
+> (`nacl-tl-release` / `nacl-tl-conductor`) refuses until they clear. sa-feature
+> does NOT clear them; planning does. Surface the count in the FeatureRequest's
+> "Modified UCs to Re-plan" section and the completion summary.
+
 ---
 
 ### Phase 4: INCREMENTAL VALIDATION
@@ -472,6 +517,13 @@ RETURN de.id AS entity_id, de.name AS entity_name,
 #### Step 4.3: Fix and re-validate
 
 Fix critical issues (max 2 iterations). Present results to user.
+
+> **L8 (staleness) is expected to report the dependents just stamped in 3g.** Do
+> NOT treat freshly-stamped `stale` Tasks as a Phase-4 failure — they are the
+> hand-off signal to `nacl-tl-plan`. Run L8.2 (scoped) only to confirm the
+> stamp covered the right set, and record it as a next step, not a blocker.
+> L9 (decision provenance) is satisfied in Phase 6 when the FeatureRequest and
+> its `Decision` are written; it is not checked here.
 
 ---
 
@@ -627,6 +679,13 @@ Create `.tl/feature-requests/FR-NNN-[slug].md` with this structure:
 ## SA Artifacts Created/Modified
 - [list of graph nodes created or modified, with NEW/MODIFIED label]
 
+## Decisions
+- DEC-NNN: [title] — [one-line rationale] (graph: (:FeatureRequest)-[:IMPLEMENTS]->(:Decision); this list is a projection, the node is the authority)
+- [if superseding] DEC-NNN supersedes DEC-MMM
+
+## Stale (to re-plan)
+- [N Tasks marked review_status='stale' by step 3g → run `/nacl-tl-plan --feature FR-NNN` to clear]
+
 ## Skills Invoked
 - [list of nacl-sa-* skills that were actually invoked during this feature spec]
 ```
@@ -705,6 +764,65 @@ RETURN fr.id           AS fr_id,
 ```
 
 If the write fails (label/constraint missing), make sure `graph-infra/schema/sa-schema.cypher` has been applied — it must contain `constraint_featurerequest_id`.
+
+#### Step 6.2ter: Persist the Decision (graph-native rationale)
+
+Every feature is a structural change, so it MUST record *why* — graph-natively,
+never as a standalone Markdown ADR. Write one `:Decision` node, anchor it to the
+FeatureRequest with `IMPLEMENTS`, and link it to every UC/entity/module the
+feature shaped with `JUSTIFIES`. The "why" reuses the feature description and the
+scope the user already confirmed in Phase 1–2 — this is a one-sentence
+`rationale`, not new work. `nacl-sa-validate` L9.1 refuses to pass an active
+FeatureRequest with no linked Decision, so this step is mandatory, not optional.
+
+Allocate `DEC-NNN` like any global-sequential id (`max(toInteger(replace(d.id,'DEC-',''))) + 1`).
+
+```cypher
+// mcp__neo4j__write-cypher
+// Query: sa_persist_decision
+// Params (reuse the 6.2bis impact lists, plus):
+//   $decId        -- "DEC-NNN"
+//   $decTitle     -- one line: what was decided        [REQUIRED]
+//   $decChosen    -- the option taken                   [REQUIRED]
+//   $decRationale -- WHY chosen over alternatives        [REQUIRED — the load-bearing field]
+//   $decContext   -- the forces (default "")
+//   $decAlts      -- alternatives_considered (default [])
+//   $frId, $newUcIds, $modifiedUcIds, $affectedEntityIds, $affectedModuleIds
+MERGE (d:Decision {id: $decId})
+SET d.title                  = $decTitle,
+    d.chosen                 = $decChosen,
+    d.rationale              = $decRationale,
+    d.context                = $decContext,
+    d.alternatives_considered = $decAlts,
+    d.status                 = 'accepted',
+    d.created_at             = coalesce(d.created_at, datetime()),
+    d.created_by             = 'nacl-sa-feature',
+    d.source                 = $frId,
+    d.level                  = 'feature'
+WITH d
+MATCH (fr:FeatureRequest {id: $frId})
+MERGE (fr)-[:IMPLEMENTS]->(d)
+WITH d
+CALL { WITH d UNWIND $newUcIds        AS x MATCH (uc:UseCase {id:x})      MERGE (d)-[:JUSTIFIES {role:'creates'}]->(uc)  RETURN count(*) AS _a }
+CALL { WITH d UNWIND $modifiedUcIds   AS x MATCH (uc:UseCase {id:x})      MERGE (d)-[:JUSTIFIES {role:'shapes'}]->(uc)   RETURN count(*) AS _b }
+CALL { WITH d UNWIND $affectedEntityIds AS x MATCH (de:DomainEntity {id:x}) MERGE (d)-[:JUSTIFIES {role:'shapes'}]->(de) RETURN count(*) AS _c }
+CALL { WITH d UNWIND $affectedModuleIds AS x MATCH (m:Module {id:x})      MERGE (d)-[:JUSTIFIES {role:'shapes'}]->(m)    RETURN count(*) AS _d }
+RETURN d.id AS decision_id;
+```
+
+If this feature changes a decision made earlier (e.g. reverses an entity
+boundary or a role split), also chain it to the prior decision so the
+year-later history is intact, and demote the old one:
+
+```cypher
+// mcp__neo4j__write-cypher  (only when superseding a prior decision)
+MATCH (newer:Decision {id: $decId}), (old:Decision {id: $supersededDecId})
+MERGE (newer)-[:SUPERSEDES]->(old)
+SET old.status = 'superseded'
+```
+
+List `DEC-NNN` in the FeatureRequest markdown's `## Decisions` section (a
+projection of the graph node — the node remains the authority).
 
 #### Step 6.3: Present completion summary
 
@@ -806,6 +924,8 @@ Before finishing, verify:
 - [ ] Only flagged skills invoked (no unnecessary work)
 - [ ] Dependency order respected: Architecture -> Domain -> Roles -> UCs -> UI
 - [ ] Progress reported after each sub-step
+- [ ] 3g: `spec_version` bumped on every new/modified UC
+- [ ] 3g: snapshot-bearing dependents stamped `review_status='stale'` with `stale_origin` (impact-closure traversal)
 
 ### Phase 4: Incremental Validation
 - [ ] Validation scoped to affected nodes only
@@ -823,5 +943,7 @@ Before finishing, verify:
 - [ ] `.tl/feature-requests/FR-NNN-[slug].md` created
 - [ ] `:FeatureRequest` node + `INCLUDES_UC` / `AFFECTS_MODULE` / `AFFECTS_ENTITY` edges written via `mcp__neo4j__write-cypher` (Step 6.2bis)
 - [ ] Read-back via `mcp__neo4j__read-cypher` confirms `:FeatureRequest` is in graph and links to the expected UCs
+- [ ] 6.2ter: `:Decision` node written with non-empty `rationale`, anchored `(:FeatureRequest)-[:IMPLEMENTS]->(:Decision)`, linked to shaped artifacts via `JUSTIFIES` (satisfies L9.1)
+- [ ] 6.2ter: if a prior decision was reversed, `SUPERSEDES` chain written and old `status='superseded'`
 - [ ] Graph impact trace included in FR
-- [ ] Completion summary presented with next steps
+- [ ] Completion summary presented with next steps (incl. stale-task re-plan count)

@@ -112,7 +112,17 @@ Collect:
    - Empty or very short (< 100 bytes) UC specs
    - UCs listed in _uc-index.md but missing their file
 
-Return: JSON with doc ages, lag scores, stale items, placeholders
+6. Graph staleness (first-class drift signal — read drift FROM the graph,
+   not inferred from file dates). Via mcp__neo4j__read-cypher:
+   MATCH (n) WHERE coalesce(n.review_status,'current')='stale'
+   RETURN labels(n)[0] AS type, n.id AS id, n.stale_origin AS caused_by,
+          n.stale_since AS since
+   - Count stale nodes; bucket by stale_origin; note the oldest stale_since.
+   - A non-empty result means an upstream change (UC/entity/endpoint) was made
+     but its dependents (typically Tasks) were never re-synced via /nacl-tl-plan.
+   - If Neo4j is unavailable, mark this probe unavailable (do not infer).
+
+Return: JSON with doc ages, lag scores, stale items, placeholders, stale_nodes
 ```
 
 #### Agent 3: Code Health
@@ -379,6 +389,14 @@ IF doc_lag > 7 days for hot files:
     Required evidence: cite at least one specific file where code_date > doc_date,
     showing the commit that drifted and the last doc-update commit (show SHAs and dates).
     Without evidence → label as "candidate hypothesis (unverified)".
+
+IF stale_nodes is non-empty:
+  → Hypothesis: "An upstream change was made but its dependents were never
+    re-synced — the graph itself records the drift (review_status='stale')."
+    This is stronger than file-date inference: the stamp names stale_origin and
+    stale_since. Recommend /nacl-tl-plan (regenerates stale Tasks) or re-review of
+    the flagged nodes. Closure (release/conductor) is already blocked while these
+    persist (sa-validate L8 / release condition #7).
 
 IF doc_placeholders > 3:
   → Hypothesis: "Parts of the system are unspecified, no source of truth"

@@ -47,6 +47,20 @@ allowed only through graph tools available in the current Codex environment.
 - TL schema: `graph-infra/schema/tl-schema.cypher`
 - Queries: `graph-infra/queries/`
 
+## ID Conventions (selected)
+
+Allocate ids by scanning the existing max suffix and incrementing. Provenance and
+change-tracking ids:
+
+- `DEC-NNN` — `:Decision` node (graph-native rationale; global sequential, like
+  `ADR-NNN`). Written by `nacl-sa-feature`, `nacl-tl-fix` (L2/L3), and
+  `nacl-sa-finalize`. A `:Decision` is NOT a `Requirement` — keep it a distinct
+  label so it does not pollute the L3 requirement check or the planner.
+- Change-tracking properties (no new ids): `UseCase.spec_version`,
+  `Task.planned_from_version`, and `review_status`/`stale_reason`/`stale_since`/
+  `stale_origin` on snapshot-bearing nodes — read with
+  `coalesce(n.review_status,'current')`.
+
 If these files are unavailable, report:
 
 ```text

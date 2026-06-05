@@ -774,7 +774,7 @@ Also read active exceptions from `.tl/exceptions/`:
 # become blocking again per W4).
 ```
 
-#### Step 3: Pairwise cross-checks (5 binding pairs)
+#### Step 3: Pairwise cross-checks (6 binding pairs)
 
 Each row below is an independent assertion. Any FAIL emits
 `Status: BLOCKED` with the per-pair delta report (Step 4). A pair
@@ -789,6 +789,7 @@ assertion.
 | **P-S3** | `.tl/release-status.json` `release_tag` vs graph `release_tag` property | If `.tl/release-status.json.release_tag` is non-null, the graph has ≥1 `FeatureRequest {release_tag: <same>}` OR ≥1 `Task {release_tag: <same>}` for the intake. |
 | **P-S4** | `.tl/conductor-state.json` phase markers vs `.tl/status.json` terminal statuses | If `conductor-state.json.phase == "quality_gate_passed"`, then every entry in `status.json.tasks[*].status` for the intake is terminal (`done` / `verified-pending` / `blocked` / `failed`). No `pending` / `in_progress` may remain. |
 | **P-S5** | `.tl/conductor-state.json` per-task entries vs live graph `Task.status` | For every `taskId` in `conductor-state.json.{techTasks, ucTasks}`, the live graph `Task {id: <id>, intake_id: <intake>}.status` matches the JSON `status` field (mapped through the closed-set vocabulary: JSON `done` ↔ graph `done` / `verified-pending`; JSON `failed` ↔ graph `failed`; etc.). |
+| **P-S6** | live graph staleness (L8) for this intake's UC closure | No node in the intake's UC closure carries `review_status='stale'`. A change landed upstream (UC/entity/endpoint) but its dependents (typically Tasks) were never re-synced — `/nacl-tl-plan` clears them. Assertion: `MATCH (uc:UseCase {intake_id:$intake})-[:GENERATES\|HAS_REQUIREMENT\|USES_FORM*0..3]-(n) WHERE coalesce(n.review_status,'current')='stale' RETURN count(n)=0`. Mirrors `nacl-sa-validate` L8 / release condition #7; the W4 override gate is `stale-downstream`. |
 
 In addition, recording-only (informational, not blocking):
 
@@ -800,7 +801,7 @@ In addition, recording-only (informational, not blocking):
 
 #### Step 4: Delta report (on any FAIL)
 
-If any of P-S1 … P-S5 fails, HALT and emit a per-pair delta. Example
+If any of P-S1 … P-S6 fails, HALT and emit a per-pair delta. Example
 (Project-Alpha-style FR-007 changelog vs graph mismatch):
 
 ```
@@ -866,7 +867,7 @@ _template.json`. Required fields:
 - `intake_id` — the conductor's current intake.
 - `sources_checked` — list of 6, each with `name`, `path` (relative
   to project root), `read_at`, `summary` (counts where applicable).
-- `deltas` — per-pair object with `pair_id` (P-S1 … P-S5),
+- `deltas` — per-pair object with `pair_id` (P-S1 … P-S6),
   `assertion`, `outcome` (`PASS` / `FAIL` / `PASS_UNDER_EXCEPTION`),
   `details` (per-side values).
 - `active_exceptions` — list of exception entries that influenced

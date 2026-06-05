@@ -158,6 +158,7 @@ despite an unreachable graph file a signed exception against gate
 | P-S3 | `.tl/release-status.json.release_tag` vs graph `release_tag` | tag in JSON appears on ≥1 `FeatureRequest` or intake `Task`. |
 | P-S4 | `.tl/conductor-state.json.phase` vs `.tl/status.json` terminal statuses | if phase advanced to `quality_gate_passed`, no `pending` / `in_progress` Tasks remain in status.json. |
 | P-S5 | `.tl/conductor-state.json.{techTasks, ucTasks}[*].status` vs graph `Task.status` | per-task entries match (mapped through the closed-set vocabulary). |
+| P-S6 | live graph staleness (sa-validate L8) for the intake's UC closure | no node in the intake's UC closure carries `review_status='stale'` (a change landed upstream but dependents were never re-synced; `/nacl-tl-plan` clears them). W4 override gate: `stale-downstream`. |
 
 A pair PASSES iff the assertion holds; or holds after an active
 signed exception is applied. Expired exceptions do not satisfy a

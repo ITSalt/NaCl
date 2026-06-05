@@ -55,8 +55,9 @@ self-sufficient task files for dev agents (`nacl-tl-dev-be`, `nacl-tl-dev-fe`).
 | `scope` | `full` (default) | Plan all UCs from the graph |
 | | `module:<id>` | Plan only UCs in a specific module |
 | | `uc:<id1>,<id2>` | Plan only specific UCs |
-| `--feature` | `FR-NNN` | Plan only UCs from a feature request (reads `.tl/feature-requests/FR-NNN.md` to get UC list) |
+| `--feature` | `FR-NNN` | Plan only UCs from a feature request. Resolves the UC list and `new`/`modified` split from the **graph** (`(:FeatureRequest)-[:INCLUDES_UC]->`), falling back to `.tl/feature-requests/FR-NNN.md` only if the node is absent (Step 1.5b). |
 | `wave-start` | `0` (default) | Starting wave number (for incremental planning) |
+| `--overwrite` | (flag) | Destroy ALL existing Task/Wave nodes and re-plan from scratch. Default is incremental (Step 1.5b); use this only for an intentional clean rebuild. |
 
 ---
 
@@ -156,10 +157,65 @@ WHERE n:Task OR n:Wave
 RETURN labels(n)[0] AS label, count(n) AS count
 ```
 
-**If Tasks/Waves already exist:** Warn the user and ask whether to:
-- **Overwrite** -- delete existing TL data and re-plan
-- **Increment** -- add new tasks/waves to existing plan
-- **Abort** -- cancel planning
+**If Tasks/Waves already exist, the default is INCREMENTAL re-planning, not overwrite.**
+A full overwrite destroys in-progress dev state and re-bakes every snapshot; it
+happens only when the user explicitly passes `--overwrite`. Otherwise run Step 1.5b
+to find the *narrow* set of UCs that actually changed since the last plan, and
+regenerate only those.
+
+### Step 1.5b: Detect which UCs need re-planning (idempotency)
+
+A Task's `.tl/tasks/UC###/*.md` files embed a point-in-time snapshot of the SA
+graph (field types, role permissions, enum values — see "Self-Sufficiency").
+That snapshot goes stale when its source UC changes. Two graph signals identify
+the stale set precisely — no markdown diffing, no whole-layer nuke:
+
+```cypher
+// mcp__neo4j__read-cypher — UCs whose spec moved past what their Task was planned from
+MATCH (uc:UseCase)-[:GENERATES]->(t:Task)
+WHERE coalesce(uc.spec_version, 0) > coalesce(t.planned_from_version, -1)
+RETURN DISTINCT uc.id AS uc_id, uc.spec_version AS current_version,
+       t.planned_from_version AS planned_version, 'spec-drift' AS reason
+UNION
+// UCs a FeatureRequest flagged 'modified' that already have tasks (regen, not first plan)
+MATCH (fr:FeatureRequest)-[r:INCLUDES_UC {kind:'modified'}]->(uc:UseCase)
+WHERE coalesce(fr.status,'') = 'spec-complete'
+  AND EXISTS { (uc)-[:GENERATES]->(:Task) }
+RETURN DISTINCT uc.id AS uc_id, uc.spec_version AS current_version,
+       null AS planned_version, 'FR-modified' AS reason
+```
+
+Also detect any UC stamped stale directly (defensive — picks up `review_status`
+set by `nacl-tl-fix` L2/L3 even without a spec_version bump):
+
+```cypher
+// mcp__neo4j__read-cypher
+MATCH (uc:UseCase)
+WHERE coalesce(uc.review_status,'current') = 'stale'
+   OR EXISTS { (uc)-[:GENERATES]->(t:Task) WHERE coalesce(t.review_status,'current')='stale' }
+RETURN DISTINCT uc.id AS uc_id, uc.stale_origin AS origin
+```
+
+**Incremental algorithm (default when tasks exist):**
+1. `stale_set` = UCs from the two queries above.
+2. `new_set` = UCs from `INCLUDES_UC {kind:'new'}` (or in-scope UCs) with **no** `GENERATES` edge yet.
+3. Regenerate task files **only** for `stale_set ∪ new_set`. UCs not in either set are left untouched — their tasks and dev state survive.
+4. Use `MERGE (t:Task {id: $taskId})` (Step 2.4) so re-running is idempotent at the node level: the same `UC###-BE`/`UC###-FE` ids are updated in place, never duplicated.
+5. On each successful regeneration, stamp `planned_from_version` and **clear** the staleness flag (Step 2.4).
+6. If `stale_set ∪ new_set` is empty, report "plan is current — nothing to regenerate" and stop.
+
+**`--feature FR-NNN`:** resolve the UC list from the **graph**, not the markdown
+file — read `(fr:FeatureRequest {id:$frId})-[r:INCLUDES_UC]->(uc:UseCase)` and use
+`r.kind` to split new vs modified. This finally consumes the `INCLUDES_UC{kind}`
+edges that `nacl-sa-feature` writes (previously written but never read). Fall back
+to the markdown UC list only if the FR node is absent.
+
+```cypher
+// mcp__neo4j__read-cypher — resolve --feature scope from the graph
+MATCH (fr:FeatureRequest {id:$frId})-[r:INCLUDES_UC]->(uc:UseCase)
+RETURN uc.id AS uc_id, r.kind AS kind
+ORDER BY uc.id
+```
 
 ### Step 1.6: External Contracts Gate (W6)
 
@@ -357,7 +413,10 @@ SET w.number = $waveNumber,
 ```
 
 ```cypher
-// Create Task node and link to Wave and UseCase
+// Create Task node and link to Wave and UseCase.
+// MERGE by stable id ($taskId = "UC###-BE"/"UC###-FE") makes re-planning idempotent:
+// re-running updates the same node in place, never duplicates it.
+// $specVersion = the source UseCase.spec_version this task's files were generated from.
 MERGE (t:Task {id: $taskId})
 SET t.title = $title,
     t.type = $type,
@@ -371,8 +430,11 @@ SET t.title = $title,
     t.phase_review_fe = 'pending',
     t.phase_qa = 'pending',
     t.priority = coalesce($priority, 'medium'),
-    t.created = datetime(),
+    t.planned_from_version = coalesce($specVersion, 0),
+    t.created = coalesce(t.created, datetime()),
     t.updated = datetime()
+// Clear any staleness flag: this task has just been re-synced from current spec.
+REMOVE t.review_status, t.stale_reason, t.stale_since, t.stale_origin
 WITH t
 MATCH (w:Wave {number: $waveNumber})
 MERGE (t)-[:IN_WAVE]->(w)
@@ -380,6 +442,16 @@ WITH t
 MATCH (uc:UseCase {id: $ucId})
 MERGE (uc)-[:GENERATES]->(t)
 ```
+
+> Read `$specVersion` from the same `sa_uc_full_context` query that drives task
+> generation: `RETURN coalesce(uc.spec_version, 0) AS spec_version`. Stamping it
+> here is what lets a later `nacl-tl-plan` run detect (Step 1.5b) that the task's
+> baked snapshot has fallen behind the UC. Clearing the staleness flag here is
+> the **only** sanctioned way a Task leaves `stale` — it certifies the file was
+> regenerated from the current graph, satisfying `nacl-sa-validate` L8.
+
+> Also clear the source UC's own flag once all its tasks are regenerated:
+> `MATCH (uc:UseCase {id:$ucId}) REMOVE uc.review_status, uc.stale_reason, uc.stale_since, uc.stale_origin`.
 
 ```cypher
 // Create dependency edge between tasks
@@ -869,11 +941,16 @@ LIMIT 5
 
 ### Incremental planning conflicts
 
-If Task/Wave nodes already exist:
-1. Warn the user.
-2. Offer options: overwrite / increment / abort.
-3. For overwrite, delete existing TL nodes first:
+If Task/Wave nodes already exist, the **default is incremental** (Step 1.5b):
+regenerate only the UCs whose `spec_version > planned_from_version`, or that an
+FR marked `modified`, or that carry a `stale` flag — leaving every other UC's
+tasks and in-progress dev state untouched. `MERGE`-by-id makes this safe to
+re-run; no duplicate Task nodes.
+
+Full overwrite is opt-in via `--overwrite` only (it destroys in-progress dev
+state and re-bakes every snapshot):
 ```cypher
+// ONLY when the user passed --overwrite
 MATCH (n) WHERE n:Task OR n:Wave DETACH DELETE n
 ```
 
@@ -895,6 +972,10 @@ MATCH (n) WHERE n:Task OR n:Wave DETACH DELETE n
 - MAPS_TO, HAS_ATTRIBUTE, HAS_REQUIREMENT, DEPENDS_ON, ACTOR
 - HAS_ENUM, HAS_VALUE, EXPOSES, RELATES_TO
 - DEPENDS_ON_EXTERNAL, REQUIRES_EXTERNAL (Step 1.6)
+- INCLUDES_UC {kind} (FeatureRequest scope for --feature, Step 1.5b)
+
+# Change-tracking reads (Step 1.5b incremental detection):
+- UseCase.spec_version, Task.planned_from_version, *.review_status
 
 # TL layer nodes (for incremental check):
 - Task, Wave
@@ -912,9 +993,13 @@ MATCH (n) WHERE n:Task OR n:Wave DETACH DELETE n
 ### Writes (Neo4j -- via mcp__neo4j__write-cypher)
 
 ```yaml
-# TL layer nodes created:
+# TL layer nodes created (MERGE by id — idempotent, no duplicates):
 - Wave (id, number, name, status)
-- Task (id, title, type, status, wave, agent)
+- Task (id, title, type, status, wave, agent, planned_from_version)
+
+# Change-tracking writes:
+- Task.planned_from_version := source UseCase.spec_version (on every regen)
+- REMOVE review_status/stale_* on regenerated Task and its source UseCase (clears L8 staleness)
 
 # TL layer edges created:
 - (Task)-[:IN_WAVE]->(Wave)

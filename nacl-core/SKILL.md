@@ -369,6 +369,14 @@ The NaCl Analyst Tool discovers projects through a per-user registry at `~/.nacl
 | Stakeholder | STK-NN | STK-01 | Global sequential |
 | External Entity | EXT-NN | EXT-01 | Global sequential |
 | Data Flow | DFL-NNN | DFL-001 | Global sequential |
+| Decision (provenance) | DEC-NNN | DEC-001 | Global sequential |
+
+> **Decision (`DEC-NNN`)** is the graph-native provenance record (label `:Decision`).
+> Written by `nacl-sa-feature` (feature changes), `nacl-tl-fix` (L2/L3 fixes), and
+> `nacl-sa-finalize` (architecture ADRs + backfill). It is NOT a `Requirement` —
+> keeping it a distinct label avoids polluting the L3 "every UC needs a Requirement"
+> check and the planner's requirement queries. See `graph-infra/schema/sa-schema.cypher`
+> § Decision properties and the `sa_decisions_for_node` / `sa_timeline_of_why` queries.
 
 To get next available ID:
 ```cypher

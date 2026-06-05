@@ -107,6 +107,17 @@ correct_behavior:                         # Step 4
   current: "..."
   expected: "..."
   unchanged: ["..."]
+decision:                                 # Step 4/5 — L2 / L3-spec-gap ONLY (null for L0/L1)
+  title: "..."                            # one line: what was decided about the behavior
+  chosen: "..."                           # = correct_behavior.expected
+  rationale: "..."                        # = root_cause + why expected is correct  [REQUIRED]
+  alternatives_considered: ["keep current (rejected: <root_cause>)"]
+  context: "..."                          # = correct_behavior.current
+  justifies_ucs: [UC-###, ...]            # = affected.ucs (artifacts this decision shapes)
+  supersedes: null | "DEC-NNN"            # if this reverses an earlier decision
+  # The Decision is the graph-native "why" record. It is written as part of the
+  # Phase B spec-update commit (Step 6 / 7) so the 6.SF detector counts it as a
+  # spec mutation. nacl-sa-validate L9 refuses a structural change with no Decision.
 docs_changed:                             # Step 5 — written to working tree, UNCOMMITTED
   - { path: ..., diff: ... }              # or graph-mutation descriptor
   # empty for L0/L1
@@ -220,7 +231,7 @@ A **spec-update commit** is any commit that mutates one of the following:
    primitives, see "Detection logic" below):
    `DomainEntity`, `DomainAttribute`, `Enumeration`, `UseCase`,
    `FormField`, `Module`, `Requirement`, `FeatureRequest`,
-   `BusinessRule`, `Activity`.
+   `BusinessRule`, `Activity`, `Decision`.
 2. **`.tl/*` schema artifact** — at least one of:
    `.tl/tasks/<TASK_ID>/task-{be,fe}.md`,
    `.tl/tasks/<TASK_ID>/api-contract.md`,
@@ -806,6 +817,60 @@ If during Step 5 the agent notices any of the forbidden items is required, **abo
 
 L3-feature requests never reach Step 5. They exited at Step 3.
 
+#### For L2 / L3-spec-gap: author the Decision + change-provenance (graph-native)
+
+A behavior-shape change must record *why*, graph-natively — the same discipline as
+`nacl-sa-feature`, so the "why a year later" history is one chain regardless of
+whether the change came in as a feature or a fix. Phase A authors these into the
+working tree (uncommitted); Phase B commits them as part of the spec-update commit,
+so the 6.SF detector counts them (`Decision` is in the graph-mutation label list)
+and `nacl-sa-validate` L9 is satisfiable. The Decision reuses Step 3/4 output — no
+new analysis:
+
+- `title` ← one line naming the behavior change
+- `context` ← `correct_behavior.current`  ·  `chosen` ← `correct_behavior.expected`
+- `rationale` ← root cause + why `expected` is correct  **(required, non-empty)**
+- `alternatives_considered` ← `["keep current (rejected: <root_cause>)"]`
+- `source` ← the spec-update commit SHA (filled at Phase B commit time)
+- justifies ← every UC from Step 1 Stage 2 (`affected.ucs`)
+
+```cypher
+// mcp__neo4j__write-cypher — author in Phase A (uncommitted), commit in Phase B
+// Params: $decId (DEC-NNN), $decTitle, $decContext, $decChosen, $decRationale,
+//         $decAlts, $specSha, $classification (L2|L3-spec-gap), $affectedUcIds
+MERGE (d:Decision {id: $decId})
+SET d.title = $decTitle, d.context = $decContext, d.chosen = $decChosen,
+    d.rationale = $decRationale, d.alternatives_considered = $decAlts,
+    d.status = 'accepted', d.created_at = coalesce(d.created_at, datetime()),
+    d.created_by = 'nacl-tl-fix', d.source = $specSha, d.level = $classification
+WITH d
+UNWIND $affectedUcIds AS x
+  MATCH (uc:UseCase {id: x})
+  MERGE (d)-[:JUSTIFIES {role:'shapes'}]->(uc)
+RETURN d.id;
+```
+
+Then bump `spec_version` on the changed UCs and stamp staleness on their
+dependent Tasks (so `nacl-tl-plan` re-plans them and the closure gate blocks until
+it does — identical mechanism to `nacl-sa-feature` step 3g):
+
+```cypher
+// mcp__neo4j__write-cypher
+// Params: $affectedUcIds, $reason (e.g. "fixed by DEC-NNN"), $origin (the UC id or DEC-NNN)
+MATCH (uc:UseCase) WHERE uc.id IN $affectedUcIds
+SET uc.spec_version = coalesce(uc.spec_version, 0) + 1, uc.updated_at = datetime()
+WITH collect(uc) AS ucs
+UNWIND ucs AS uc
+  OPTIONAL MATCH (uc)-[:GENERATES]->(t:Task)
+  SET t.review_status = 'stale', t.stale_reason = $reason,
+      t.stale_since = datetime(), t.stale_origin = $origin
+```
+
+> If this fix reverses an earlier decision, also write `(:Decision)-[:SUPERSEDES]->(:Decision)`
+> and set the old one's `status='superseded'` (see `nacl-sa-feature` step 6.2ter).
+> If the fix's own code change in Step 6 fully re-syncs a task (rare — usually
+> planning does), clear that task's flag at Step 7; otherwise leave it for `nacl-tl-plan`.
+
 #### → USER GATE (L2 / L3-spec-gap only) — calibrated: proceed-and-flag by default, block only when genuinely costly
 
 **Presented by the orchestrator, not the diagnostician.** Phase A leaves the doc
@@ -885,7 +950,12 @@ commit). Only after that does code change.
 
 - **L2 / L3-spec-gap.** `docs_changed` is non-empty: the diagnostician left the
   doc/spec/graph changes uncommitted in the working tree. The orchestrator commits
-  them first → a spec-update commit precedes any code-fix commit.
+  them first → a spec-update commit precedes any code-fix commit. The diagnostician
+  also wrote the `:Decision` node and the `spec_version`/staleness stamps (Step 5
+  "author the Decision"); after the spec-update commit lands, backfill the Decision's
+  `source` with that commit SHA (`MATCH (d:Decision {id:$decId}) SET d.source=$sha`)
+  and reference `DEC-NNN` in the spec-update commit's `.tl/changelog.md` line so the
+  6.SF graph-mutation fallback (detection step 3b) recognises it.
 - **L1.** `docs_changed` is empty (docs are current), but Phase A recorded a
   **gap-check attestation** (`gapcheck_attestation` in the fix-plan;
   `phases.spec: gapcheck-no-drift` in `.tl/status.json` + a `.tl/changelog.md`
@@ -1104,6 +1174,8 @@ If any item in 1–4 cannot be answered with a concrete file path and a stated v
 - **Spec-first evidence (if PASS):** L2/L3 → spec-update commit `<SHA> (<message>)`; L1 → gap-check attestation `gapcheck-no-drift` (phases.spec ts `<ISO8601>`, affected docs: [list])
 - **Root cause:** [what was wrong]
 - **Affected UC:** UC-### (or "infrastructure")
+- **Decision:** DEC-NNN — [title] (L2/L3 only; the graph-native "why" — `(:Decision)-[:JUSTIFIES]->(:UseCase)`); "none (L0/L1)" otherwise
+- **Stale (to re-plan):** [N tasks stamped review_status='stale' → `/nacl-tl-plan` clears] or "none"
 - **Docs updated:** [list] or "none (L0/L1)"
 - **Code changed:** [file list]
 - **Tests:** [new test path if Path A] or "existing test transitioned: [path]" or "none (status BLOCKED/UNVERIFIED/NO_INFRA)"
