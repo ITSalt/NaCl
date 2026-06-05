@@ -72,10 +72,18 @@ Commands:
    Stop if the UC is backend-only (`has_ui=false`). If a Screen already exists,
    load its machine (named query `sa_screen_machine`) — the run is a MODIFY.
 2. Propose states, events, transitions, and effects as a transition table plus
-   a Mermaid stateDiagram. For a data-loading screen the canonical minimum is
-   Loading (initial) / Loaded / Empty / Error states, OnLoad / OnLoaded /
-   OnRetry events, four transitions, and one `load` effect calling the UC's
-   endpoint. Stop for confirmation before writing.
+   a Mermaid stateDiagram. Derive the Screen's PascalName from the form/UC
+   noun-phrase (strip `scr-NNN-` prefixes, kebab→PascalCase:
+   `scr-031-voice-recorder` → `VoiceRecorder`). Two canonical archetypes
+   (templates, not a closed list): **data-loading screen** — Loading (initial)
+   / Loaded / Empty / Error states, OnLoaded / OnLoadFailed / OnRetry events,
+   four transitions, one `load` effect on the retry transition calling the
+   UC's endpoint; **process screen** (recorder / wizard / pipeline) — Idle
+   (initial) + one `busy`-kind state per pipeline stage + Completed / Failed,
+   `mutate` effects on the stage transitions that hit the backend, and
+   Failed→Idle on OnRetry legitimately carrying no effect. Effects are 0..n
+   per transition — the validator enforces only that existing load/mutate
+   effects CALL an endpoint. Stop for confirmation before writing.
 3. Write with MERGE on stable ids (`SCR-*`, `SCRST-*`, `SCREV-*`, `SCRTR-*`,
    `SCREF-*`, `ANEV-*`): Screen with `HAS_SCREEN` parent and `RENDERS -> Form`
    (formless screens carry `formless=true`); exactly one `is_initial=true`
@@ -94,7 +102,9 @@ Commands:
 5. Re-check the machine against the L10 rules (determinism: shared
    `(from_state, on_event)` pairs must be all-guarded; reachability from the
    initial state; error states need an escape, user-triggered by convention
-   `OnRetry`). Resolve CRITICAL findings before completing.
+   `OnRetry`). Scope each check to this screen by pinning the
+   `(scr:Screen {id: ...})` anchor (for orphan/parent checks filter by the
+   `-{Screen}-` id infix). Resolve CRITICAL findings before completing.
 
 Do not introduce labels that are absent from the SA schema. Navigation is a
 component pattern unless the project schema explicitly defines another label.

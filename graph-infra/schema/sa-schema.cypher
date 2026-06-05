@@ -352,7 +352,12 @@ CREATE INDEX index_analyticsevent_name
 // ScreenState {
 //   id: String,             // "SCRST-<Screen>-<State>"
 //   name: String,
-//   state_kind: String,     // 'initial' | 'loading' | 'content' | 'empty' | 'error'
+//   state_kind: String,     // 'initial' | 'loading' | 'busy' | 'content' | 'empty' | 'error'
+//                           // 'busy' = a user-initiated operation in progress
+//                           // (recording, uploading, processing) — distinct from
+//                           // 'loading' (fetching data to display). Added after the
+//                           // first real non-CRUD screen (voice recorder) had to
+//                           // flatten three distinct pipeline stages into 'loading'.
 //   is_initial: Boolean,    // exactly ONE per Screen (L10.5a)
 //   terminal: Boolean       // exemption flag for L10.6 (intentional dead-end
 //                           // error state); default false

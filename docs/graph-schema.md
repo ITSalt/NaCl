@@ -107,7 +107,7 @@ System Analysis nodes capture the "how the system is built" level — modules, u
 `priority` values: `MVP`, `Post-MVP`, `Nice-to-have`
 `Decision.status` values: `accepted`, `superseded`, `proposed`
 `Decision.level` values: `L2`, `L3-spec-gap`, `feature`, `architecture`
-`state_kind` values: `initial`, `loading`, `content`, `empty`, `error`
+`state_kind` values: `initial`, `loading`, `busy`, `content`, `empty`, `error` (`busy` = user-initiated operation in progress, vs `loading` = fetching data to display)
 `event_kind` values: `user`, `system`, `lifecycle`
 `effect_kind` values: `load`, `mutate`, `navigate`, `analytics`
 

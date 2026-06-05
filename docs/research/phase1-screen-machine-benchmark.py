@@ -202,7 +202,7 @@ L10 = {
    OPTIONAL MATCH (e3:ScreenEffect)-[:EMITS]->(x3) WHERE NOT x3:AnalyticsEvent
    WITH a, b, count(x3) AS c
    RETURN a + b + c;""",
- "L10.8": """OPTIONAL MATCH (st:ScreenState) WHERE NOT coalesce(st.state_kind,'') IN ['initial','loading','content','empty','error']
+ "L10.8": """OPTIONAL MATCH (st:ScreenState) WHERE NOT coalesce(st.state_kind,'') IN ['initial','loading','busy','content','empty','error']
    WITH count(st) AS a
    OPTIONAL MATCH (ev:ScreenEvent) WHERE NOT coalesce(ev.event_kind,'') IN ['user','system','lifecycle']
    WITH a, count(ev) AS b

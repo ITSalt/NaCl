@@ -877,7 +877,17 @@ Run `sa_screen_machine($screenId)` and render the result as a transition table +
 
 ### Phase 2: Propose the Machine
 
-Propose states, events, transitions, and effects based on the screen archetype. For a **data-loading screen** (list/detail/result) the canonical minimum is:
+**Screen name derivation (deterministic):** the Screen id is `SCR-{PascalName}`.
+Derive PascalName from the screen's purpose noun-phrase (form name or UC name):
+strip `scr-NNN-` / `FORM-` prefixes, convert kebab/snake to PascalCase —
+`scr-031-voice-recorder` → `VoiceRecorder`, `scr-004-result` → `ResultViewer`.
+Never embed the UC number in the name.
+
+Propose states, events, transitions, and effects based on the screen archetype.
+Two canonical archetypes (templates, not a closed list — derive others from the
+UC's ActivitySteps / RuntimeContract when neither fits):
+
+**A. Data-loading screen** (list / detail / result):
 
 | Element | Proposal |
 |---------|----------|
@@ -889,10 +899,23 @@ Propose states, events, transitions, and effects based on the screen archetype. 
 When the screen starts in `Loading`, the initial fetch is fired by the
 implementation on screen entry (the initial state IS the loading state); the
 graph-checkable `CALLS` contract hangs on the retry transition — the machine's
-only re-entry into `Loading`. Model an explicit `Idle` state
-(state_kind=initial) + `OnLoad` (lifecycle) event only when the screen does NOT
-fetch immediately on open; then the load effect moves to the Idle→Loading
-transition.
+only re-entry into `Loading`.
+
+**B. Process screen** (recorder / wizard / pipeline — the screen drives a
+user-initiated operation instead of fetching data on open):
+
+| Element | Proposal |
+|---------|----------|
+| States | `Idle` (state_kind=initial, **is_initial**), one `busy`-kind state per pipeline stage (e.g. `Recording`, `Uploading`, `Transcribing`), `Completed` (content), `Failed` (error) |
+| Events | user events to start/stop, `system` events per stage completion/failure, `OnRetry` (user) |
+| Transitions | Idle→stage₁ on user start; stageₙ→stageₙ₊₁ on stage success; stageₙ→Failed on failure; Failed→Idle on OnRetry; optionally Completed→stage₁ on re-run |
+| Effects | one `mutate` effect per stage transition that hits the backend, each CALLS its endpoint (one provisional endpoint per distinct backend operation) |
+
+Here `Failed→Idle on OnRetry` legitimately carries **no** effect — retry means
+"let the user run the operation again", not "re-fetch". Effects are `0..n` per
+transition: L10 enforces only that *existing* load/mutate effects CALL an
+endpoint; a transition (or a whole machine) without effects is valid. The
+canonical effect placements above are authoring guidance, not validator law.
 
 **Authoring rules (the validator will enforce them as L10):**
 1. Exactly **one** state has `is_initial=true`.
@@ -1105,7 +1128,14 @@ RETURN count(uc) AS ucs_stamped
 
 #### 4.3 Validate the machine (scoped L10)
 
-Run the L10 checks from `nacl-sa-validate` scoped to this screen (L10.1–L10.8; see that skill for the canonical queries). Any CRITICAL finding → present it and return to Phase 2; do not leave a broken machine in the graph.
+Run the L10 checks from `nacl-sa-validate` (canonical queries live there) scoped
+to this screen. **Scope recipe:** in every screen-anchored query replace the
+open anchor `(scr:Screen)` with `(scr:Screen {id: $screenId})`; for the
+non-anchored checks L10.0/L10.1, filter by the id family instead:
+`WHERE n.id = $screenId OR n.id CONTAINS ('-' + $screenName + '-')` (the
+`{Screen}` infix makes every child id of one machine match). Run L10.3 before
+L10.5b. Any CRITICAL finding → present it and return to Phase 2; do not leave a
+broken machine in the graph.
 
 #### 4.4 Report
 

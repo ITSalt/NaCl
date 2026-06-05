@@ -90,10 +90,12 @@ Internal checks:
   (determinism); exactly one `is_initial=true` state per screen and every
   non-initial state is reachable from it; error states have an escape transition
   (exempt via `coalesce(st.terminal,false)=false`; missing user-triggered escape
-  is WARNING); effect edges target correct labels; kind vocabularies
-  (`state_kind`/`event_kind`/`effect_kind`) are canonical. A graph with zero
-  Screen nodes passes L10 cleanly. Label-qualify every query — `HAS_STATE` and
-  `TRIGGERS` names are shared with the BA layer.
+  is WARNING); effect edges target correct labels; kind vocabularies are
+  canonical (`state_kind` ∈ initial|loading|busy|content|empty|error,
+  `event_kind` ∈ user|system|lifecycle, `effect_kind` ∈
+  load|mutate|navigate|analytics). A graph with zero Screen nodes passes L10
+  cleanly. Label-qualify every query — `HAS_STATE` and `TRIGGERS` names are
+  shared with the BA layer.
 
 BA-to-SA checks:
 

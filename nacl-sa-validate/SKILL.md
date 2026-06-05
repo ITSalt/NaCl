@@ -1305,10 +1305,11 @@ RETURN uc.id AS uc_id, scr.id AS screen, eff.id AS effect_id, api.id AS endpoint
 ```cypher
 // L10.8 -- Severity: WARNING
 // state_kind / event_kind / effect_kind outside the canonical vocabularies
+// ('busy' = user-initiated operation in progress, vs 'loading' = data fetch)
 MATCH (st:ScreenState)
-WHERE NOT coalesce(st.state_kind, '') IN ['initial', 'loading', 'content', 'empty', 'error']
+WHERE NOT coalesce(st.state_kind, '') IN ['initial', 'loading', 'busy', 'content', 'empty', 'error']
 RETURN 'ScreenState' AS node_type, st.id AS id, st.state_kind AS kind,
-       'state_kind outside {initial, loading, content, empty, error}' AS problem
+       'state_kind outside {initial, loading, busy, content, empty, error}' AS problem
 UNION ALL
 MATCH (ev:ScreenEvent)
 WHERE NOT coalesce(ev.event_kind, '') IN ['user', 'system', 'lifecycle']
