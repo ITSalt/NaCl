@@ -171,9 +171,14 @@ That snapshot goes stale when its source UC changes. Two graph signals identify
 the stale set precisely — no markdown diffing, no whole-layer nuke:
 
 ```cypher
-// mcp__neo4j__read-cypher — UCs whose spec moved past what their Task was planned from
+// mcp__neo4j__read-cypher — UCs whose spec moved past what their Task was planned from.
+// GUARD planned_from_version IS NOT NULL: a Task with no baseline (project upgraded to
+// Фаза 0 but gap-closure baseline not yet run) is NOT treated as drifted here — that
+// would over-flag every task on day one and reset in-progress work. Such a real change
+// is still caught by the review_status='stale' signal below (set by sa-feature/tl-fix).
 MATCH (uc:UseCase)-[:GENERATES]->(t:Task)
-WHERE coalesce(uc.spec_version, 0) > coalesce(t.planned_from_version, -1)
+WHERE t.planned_from_version IS NOT NULL
+  AND coalesce(uc.spec_version, 0) > t.planned_from_version
 RETURN DISTINCT uc.id AS uc_id, uc.spec_version AS current_version,
        t.planned_from_version AS planned_version, 'spec-drift' AS reason
 UNION
@@ -203,6 +208,21 @@ RETURN DISTINCT uc.id AS uc_id, uc.stale_origin AS origin
 4. Use `MERGE (t:Task {id: $taskId})` (Step 2.4) so re-running is idempotent at the node level: the same `UC###-BE`/`UC###-FE` ids are updated in place, never duplicated.
 5. On each successful regeneration, stamp `planned_from_version` and **clear** the staleness flag (Step 2.4).
 6. If `stale_set ∪ new_set` is empty, report "plan is current — nothing to regenerate" and stop.
+
+**First Фаза-0 plan on an existing project — baseline, don't regenerate.** If Tasks
+exist but none has `planned_from_version` (project just upgraded), do NOT treat
+them as drifted. Baseline them once so future drift is detectable, without
+resetting any in-progress work:
+
+```cypher
+// mcp__neo4j__write-cypher — one-time baseline (idempotent; only touches null ones)
+MATCH (uc:UseCase)-[:GENERATES]->(t:Task)
+WHERE t.planned_from_version IS NULL
+SET t.planned_from_version = coalesce(uc.spec_version, 0)
+```
+
+After baselining, only a real `spec_version` bump (or a `review_status='stale'`
+stamp from `nacl-sa-feature`/`nacl-tl-fix`) marks a task for regeneration.
 
 **`--feature FR-NNN`:** resolve the UC list from the **graph**, not the markdown
 file — read `(fr:FeatureRequest {id:$frId})-[r:INCLUDES_UC]->(uc:UseCase)` and use

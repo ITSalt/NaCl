@@ -21,8 +21,23 @@ guard on `NOT (fr)-[:IMPLEMENTS]->(:Decision)`).
 
 L8 (Staleness Closure) needs **no** backfill: `review_status` is read with
 `coalesce(n.review_status,'current')`, so an un-stamped graph passes cleanly.
-Staleness only accrues going forward, as write-skills stamp it. This runbook is
-therefore about L9 only.
+Staleness only accrues going forward, as write-skills stamp it.
+
+One **one-time baseline** is required for `nacl-tl-plan` idempotency, though: on a
+project upgraded to Фаза 0, no Task carries `planned_from_version`. Without a
+baseline the first incremental `tl-plan` run would either over-regenerate every
+task (if the detector defaulted absent to "drifted") or silence real drift. Set
+the baseline once (idempotent; touches only null tasks, resets nothing):
+
+```cypher
+// mcp__neo4j__write-cypher
+MATCH (uc:UseCase)-[:GENERATES]->(t:Task)
+WHERE t.planned_from_version IS NULL
+SET t.planned_from_version = coalesce(uc.spec_version, 0)
+```
+
+After this, only a real `spec_version` bump or a `review_status='stale'` stamp
+marks a task for regeneration. The rest of this runbook is about L9.
 
 ---
 
