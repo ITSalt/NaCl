@@ -30,10 +30,10 @@ set -uo pipefail
 #   /nacl-tl-verify             → staging_functional_verified (PR2 wiring)
 #   dev-verified.json           → dev_verified (dev-only path; wrapper-written)
 #   budget.json                 → elapsed (wall-clock since started_at)
-#   plan.lock.json (2.13+)      → branch_mode, push_cadence, branch_base_sha,
+#   plan.lock.json (2.14+)      → branch_mode, push_cadence, branch_base_sha,
 #                                 prior_unpushed_commits (defaults: new/per-atom —
-#                                 pre-2.13 artifacts stay valid)
-#   atoms/*.state.json (2.13+)  → block_code (GOAL_BLOCKED_WIP_COLLISION)
+#                                 pre-2.14 artifacts stay valid)
+#   atoms/*.state.json (2.14+)  → block_code (GOAL_BLOCKED_WIP_COLLISION)
 #
 # Result decision (per aliases.md §intake §result_decision_rule):
 #   GOAL_OK             — all success_condition AND clauses satisfied
@@ -147,8 +147,8 @@ DEPLOY_TARGET=$(json_get "$PLAN_FILE" '.deploy_target' "")
 ATOMS_TOTAL=$(json_get "$PLAN_FILE" '.atoms | length' "0")
 FEATURE_ATOMS_TOTAL=$(json_get "$PLAN_FILE" '[.atoms[] | select(.type=="FEATURE_SMALL")] | length' "0")
 
-# 2.13+ batch-mode fields. Pre-2.13 plan.lock.json files lack them — the
-# defaults reproduce the pre-2.13 behavior exactly (new branch, per-atom push).
+# 2.14+ batch-mode fields. Pre-2.13 plan.lock.json files lack them — the
+# defaults reproduce the pre-2.14 behavior exactly (new branch, per-atom push).
 BRANCH_MODE=$(json_get "$PLAN_FILE" '.branch_mode' "new")
 PUSH_CADENCE=$(json_get "$PLAN_FILE" '.push_cadence' "per-atom")
 BRANCH_BASE_SHA=$(json_get "$PLAN_FILE" '.branch_base_sha' "null")
@@ -213,7 +213,7 @@ if [[ -d "$ATOMS_DIR" ]]; then
       ATOMS_FAILED=$((ATOMS_FAILED + 1))
       ATOM_FAILED_ID="$atom_id"
       ATOM_FAILED_ERROR=$(json_get "$state_file" '.error' "unknown")
-      # 2.13+: a failed atom may carry an explicit block_code. The only one
+      # 2.14+: a failed atom may carry an explicit block_code. The only one
       # defined today is GOAL_BLOCKED_WIP_COLLISION (resumable) — it takes
       # precedence over the generic GOAL_BLOCKED_ATOM_FAILED.
       atom_block_code=$(json_get "$state_file" '.block_code' "")
@@ -482,8 +482,8 @@ fi
 
 if [[ "$DEPLOY_TARGET" == "dev-only" ]]; then
   # dev_verified is asserted by /nacl-tl-verify locally; the wrapper records
-  # the outcome to ${RUN_DIR}/dev-verified.json (2.13+). Absent file → n/a
-  # (pre-2.13 runs never wrote it).
+  # the outcome to ${RUN_DIR}/dev-verified.json (2.14+). Absent file → n/a
+  # (pre-2.14 runs never wrote it).
   DEV_VERIFIED=$(json_get "${RUN_DIR}/dev-verified.json" '.dev_verified' "n/a")
 fi
 

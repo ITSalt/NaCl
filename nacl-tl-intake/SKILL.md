@@ -72,7 +72,7 @@ a payment system, and we need to update the deploy docs for the new server"
 | Flag | Description |
 |------|-------------|
 | `--yes` | Auto-confirm HIGH+GRAPH+no-spec-gap+L0/L1 atoms without prompting (see `--yes flag behavior` below). |
-| `--autonomous` | (2.13+) Set ONLY by `/nacl-goal intake` alongside `--yes --emit-state`. Widens the auto-route set per the "Autonomous" column of the Step 2b case table: Template B auto-confirms, Template D auto-routes on the leading guess with a tracked `residual_note`, Template E atoms are collected for ONE consolidated pre-`/goal` batch instead of per-atom prompts. Template C (hard_refuse) is untouched. A human typing `/nacl-tl-intake --yes` is NOT affected — this flag is never implied. |
+| `--autonomous` | (2.14+) Set ONLY by `/nacl-goal intake` alongside `--yes --emit-state`. Widens the auto-route set per the "Autonomous" column of the Step 2b case table: Template B auto-confirms, Template D auto-routes on the leading guess with a tracked `residual_note`, Template E atoms are collected for ONE consolidated pre-`/goal` batch instead of per-atom prompts. Template C (hard_refuse) is untouched. A human typing `/nacl-tl-intake --yes` is NOT affected — this flag is never implied. |
 | `--emit-state <path>` | Write the deterministic routing table as a JSON file (2.10.1+). When set, this skill writes the table to the given path INSTEAD of (or in addition to) interactive prompting. Used by `/nacl-goal intake` to capture classification artifacts for the wrapper. Format: see §`--emit-state` JSON schema below. |
 | `--namespace=<DOMAIN>` | (sa-feature passthrough, optional) Restrict classification to a single domain namespace. |
 
@@ -154,7 +154,7 @@ When an atom carries BOTH an unconditionally-correct defensive part AND a genuin
 
 `null` when the atom has no residual. A non-null `residual_note` MUST carry a `followup_task` — a residual with no recorded follow-up is invalid and falls back to the prompt (see Step 2b binding rule + Step 6 durable sink).
 
-`reason` (2.13+, optional — absent means `spec_gap_residual`):
+`reason` (2.14+, optional — absent means `spec_gap_residual`):
 `medium_confidence_alternative` marks a residual created by the
 `--autonomous` auto-route of a MEDIUM-confidence atom — `summary` then
 records the plausible alternative classification and what would tip the
@@ -460,7 +460,7 @@ Atom #N: "[atom title]"
 - "adjust" / "change" accepts a corrected type from the user; record the manual override as `evidence: USER_OVERRIDE`.
 - For SPEC_GAP atoms where the user chooses FEATURE, record `evidence: USER_OVERRIDE (spec_gap)` so the final summary headline can route through the REROUTED rule (see "Final summary" below).
 
-**`--autonomous` behavior (2.13+; on top of `--yes`, wrapper-only):**
+**`--autonomous` behavior (2.14+; on top of `--yes`, wrapper-only):**
 
 - Template B atoms: auto-confirmed — the body prints as an informational line.
 - Template D atoms: auto-routed on the leading guess. The alternative classification is recorded as `residual_note` with `reason: medium_confidence_alternative` and a `followup_task` (Step 6 durable sink) — an auto-route without the recorded alternative is invalid and falls back to the prompt, exactly like a residual without a follow-up.
@@ -813,7 +813,7 @@ Headline selection rules (first match wins):
 
 **Modifier (applies on top of any headline above):** if M atoms carry an unresolved `residual_note` follow-up, append ` — M open questions pending verification` to the selected headline and list them in the summary block. These are tracked (Backlog `[Open question]` subtasks / `.tl/open-questions.md`), not dropped — the parent card cannot close until they resolve.
 
-**Autonomous-routing modifier (2.13+, `--autonomous` only):** if K atoms were auto-routed on a MEDIUM-confidence leading guess (residual_note reason `medium_confidence_alternative`), additionally append ` — K atoms auto-routed on leading classification (alternatives tracked)`. The confidence call was made autonomously; the audit surface must say so.
+**Autonomous-routing modifier (2.14+, `--autonomous` only):** if K atoms were auto-routed on a MEDIUM-confidence leading guess (residual_note reason `medium_confidence_alternative`), additionally append ` — K atoms auto-routed on leading classification (alternatives tracked)`. The confidence call was made autonomously; the audit surface must say so.
 
 ```
 ===============================================

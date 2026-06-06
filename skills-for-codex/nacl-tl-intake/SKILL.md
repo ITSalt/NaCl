@@ -55,7 +55,7 @@ creating graph or task-tracker artifacts.
   reasoning. All user-shown prompts use plain, observable language — never internal
   tokens (L0–L3, spec_gap, POLICY_CALL, gate names). See the main
   `nacl-tl-intake/SKILL.md` for the decision tree and prompt templates.
-- The source skill's `--autonomous` flag (2.13+) is a wrapper-only contract
+- The source skill's `--autonomous` flag (2.14+) is a wrapper-only contract
   set by `/nacl-goal intake` on the Claude runtime: it auto-confirms the
   L2/L3 launch-sanity check, auto-routes MEDIUM atoms on the leading guess
   with a tracked alternative, and batches LOW-confidence atoms into one

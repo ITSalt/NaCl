@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Regression test: push_cadence=none must reach GOAL_OK without a PR.
 #
-# Hypothesis: pre-2.13 intake.sh unconditionally failed the success
+# Hypothesis: pre-2.14 intake.sh unconditionally failed the success
 # condition on pr_url == null. With push_cadence=none (dev-only batch
 # mode) the run by design ends at verified local commits — no push, no
 # PR, no CI. The decision rule carve-out (aliases.md §intake) must let

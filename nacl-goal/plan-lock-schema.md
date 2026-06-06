@@ -246,11 +246,11 @@ acceptable as long as the invariant holds.
 Atoms execute in topological order of `depends_on`. Cycle → `PLAN_BLOCKED_ATOM_DEPENDENCY_CYCLE`. Tie-break for unrelated atoms: BUG before
 FEATURE_SMALL, then by `id` lexicographically.
 
-### Smart-WIP fields (2.13+; `branch_mode=current` only)
+### Smart-WIP fields (2.14+; `branch_mode=current` only)
 
 - `branch_mode` / `push_cadence`: resolved at Flow step 3, frozen here.
   Pre-2.13 plan.lock.json files lack these keys — readers MUST default
-  them to `"new"` / `"per-atom"` (the pre-2.13 behavior).
+  them to `"new"` / `"per-atom"` (the pre-2.14 behavior).
 - `preexisting_dirty_files`: the `git status --porcelain` path snapshot
   taken at Flow step 3. These files belong to other agents working in the
   shared worktree: the goal run never stages, commits, or reverts them.
@@ -339,7 +339,7 @@ Resume scans `atoms/*.state.json` and continues from the first atom whose
 `state != "verified"`. A `failed` atom is non-resumable on its own — the
 run as a whole becomes `goal_blocked` with `resumable: false`.
 
-Exception (2.13+): a `failed` atom carrying
+Exception (2.14+): a `failed` atom carrying
 `block_code: "GOAL_BLOCKED_WIP_COLLISION"` IS resumable — the wrapper's
 step-9 collision gate (or `/nacl-tl-ship`'s staging-time guard) set it
 because the atom's file set overlapped another agent's uncommitted WIP.
@@ -347,7 +347,7 @@ After the user resolves the overlap, `/nacl-goal resume` re-snapshots
 `preexisting_dirty_files` and re-runs this atom from `pending`.
 `intake.sh` maps this `block_code` to `GOAL_BLOCKED_WIP_COLLISION`
 (precedence over the generic `GOAL_BLOCKED_ATOM_FAILED`). `block_code` is
-absent/null in pre-2.13 artifacts and for every other failure kind.
+absent/null in pre-2.14 artifacts and for every other failure kind.
 
 ---
 
@@ -387,7 +387,7 @@ abc1234567890abcdef...
 
 ---
 
-## `dev-verified.json` (2.13+; dev-only target)
+## `dev-verified.json` (2.14+; dev-only target)
 
 ```json
 {
@@ -400,7 +400,7 @@ abc1234567890abcdef...
 
 Written by the wrapper at Flow step 11 on the dev-only path after the
 local `/nacl-tl-verify` pass. `intake.sh` reads `dev_verified` from here;
-absent file → `n/a` (pre-2.13 runs never wrote it, and GOAL_OK on the
+absent file → `n/a` (pre-2.14 runs never wrote it, and GOAL_OK on the
 dev-only branch of the decision rule was unreachable for them).
 
 Used by:

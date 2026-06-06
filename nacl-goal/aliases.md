@@ -206,7 +206,7 @@ The autonomous goal orchestrator. Ingests free-text + image intent, classifies
 via `/nacl-tl-intake --autonomous --yes --emit-state` into BUG / TASK /
 FEATURE_SMALL atoms (with `depends_on` topological execution), runs them on
 one feature branch producing one PR, drives that PR through CI to a healthy
-staging stand. The `--autonomous` flag (2.13+) widens the auto-route set:
+staging stand. The `--autonomous` flag (2.14+) widens the auto-route set:
 L2/L3 launch-sanity auto-confirms, MEDIUM-confidence atoms route on the
 leading guess with a tracked alternative (envelope gate
 `medium-confidence-routing`), LOW-confidence atoms batch into ONE
@@ -235,7 +235,7 @@ invocation_args (user-facing — NOT passed to check_script)
     --plan-only                            # planning artifacts only
     --strict                               # disable default safe-exception envelope
     --branch=current|new                   # default: current (when on a non-production
-                                           # branch); new = pre-2.13 isolated goal branch
+                                           # branch); new = pre-2.14 isolated goal branch
     --push=deferred|per-atom|none          # default: deferred (branch_mode=current),
                                            # per-atom (branch_mode=new); none requires
                                            # --target=dev-only
@@ -269,7 +269,7 @@ expected_evidence_keys
   - deployed_sha_matches           # true | false | n/a
   - staging_functional_verified    # bool | n/a
   - dev_verified                   # bool | n/a — dev-only path only
-  # --- optional advisory keys (appended 2.13+; absent on pre-2.13 runs) ---
+  # --- optional advisory keys (appended 2.14+; absent on pre-2.14 runs) ---
   - branch_mode                    # current | new
   - push_cadence                   # per-atom | deferred | none
   - prior_commits_count            # int — commits already on the branch ahead of

@@ -166,7 +166,7 @@ Persists delivery progress for resumption:
    git status --porcelain
    ```
    - If uncommitted changes exist → **STOP**: "Uncommitted changes detected. Run /nacl-tl-conductor or commit manually first."
-   - **Goal-context exception (2.13+)**: when `NACL_GOAL_RUN_ID` is set and
+   - **Goal-context exception (2.14+)**: when `NACL_GOAL_RUN_ID` is set and
      `.tl/goal-runs/$NACL_GOAL_RUN_ID/plan.lock.json` carries
      `preexisting_dirty_files[]`, those exact paths are EXPECTED dirt —
      another agent's in-flight work in the shared worktree (Smart WIP).
@@ -235,7 +235,7 @@ Persists delivery progress for resumption:
        --base [base_branch]
      ```
    - If PR exists: note its URL
-   - **Goal-context (2.13+, `NACL_SHIP_PUSH=deferred`)**: this Step-2 push is
+   - **Goal-context (2.14+, `NACL_SHIP_PUSH=deferred`)**: this Step-2 push is
      THE single push of the goal run — per-atom commits stayed local. Read
      the PR body from `.tl/goal-runs/$NACL_GOAL_RUN_ID/pr-body.md` (rendered
      and finalized by the wrapper) instead of the auto-generated git-log

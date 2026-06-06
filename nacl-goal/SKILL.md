@@ -304,12 +304,12 @@ Opt-outs (each disables a slice of the default):
                      (PLAN_BLOCKED_STRICT_REQUIRES_INTERACTIVE_FLOW)
   --branch=current   run on the currently checked-out branch (default when on a
                      non-production branch)
-  --branch=new       pre-2.13 behavior: create feature/goal-<short-hash>; requires
+  --branch=new       pre-2.14 behavior: create feature/goal-<short-hash>; requires
                      a clean worktree (PLAN_BLOCKED_DIRTY_WORKTREE applies)
   --push=deferred    atoms commit locally; single push at DELIVER (default when
                      branch_mode=current)
   --push=per-atom    push after every atom; PR opens on first push (default when
-                     branch_mode=new — pre-2.13 behavior)
+                     branch_mode=new — pre-2.14 behavior)
   --push=none        no push at all; run ends with local commits; ONLY valid with
                      --target=dev-only (with staging it is a usage error rejected
                      at argument parsing, before step 0 — no artifacts written);
@@ -321,7 +321,7 @@ Opt-outs (each disables a slice of the default):
                      run; does NOT close or reuse prior PR in 2.10.1
   --budget=<profile> optional budget override (default Tier M: 200 turns / 3h / 4M tokens)
 
-Backward-compat invariant: `--branch=new` reproduces the pre-2.13 flow
+Backward-compat invariant: `--branch=new` reproduces the pre-2.14 flow
 byte-for-byte (new goal branch, per-atom pushes, dirty-worktree refusal).
 The default changed ONLY for invocations from an existing feature branch.
 ```
@@ -379,7 +379,7 @@ exception envelope see `nacl-goal/envelope.md`. For gate prediction see
        never staged, never committed, never reverted by the goal run.
      overlap resolution happens at step 5 (needs classified atoms);
        hard runtime backstop at step 9 (commit-time collision gate)
-   branch_mode=new: dirty worktree → PLAN_BLOCKED_DIRTY_WORKTREE (pre-2.13 rule)
+   branch_mode=new: dirty worktree → PLAN_BLOCKED_DIRTY_WORKTREE (pre-2.14 rule)
    resolve baseline_command chain (config.yaml → package.json → pyproject → defaults)
      missing → PLAN_BLOCKED_BASELINE_COMMAND_MISSING
    capture regression-baseline.json per regression-schema.md
@@ -399,7 +399,7 @@ exception envelope see `nacl-goal/envelope.md`. For gate prediction see
    atoms[] with: id, type, linked_uc, evidence, confidence, risk_level,
    depends_on, hard_refuse_triggers, trigger_evidence, spec_gap, residual_note,
    skill_path.
-   --autonomous question policy (2.13+; see nacl-tl-intake Step 2b case table):
+   --autonomous question policy (2.14+; see nacl-tl-intake Step 2b case table):
      HIGH L0/L1, HIGH spec-gap-no-hard-refuse → auto-route (as before)
      HIGH L2/L3 launch-sanity (Template B)    → auto-confirmed; informational line
      MEDIUM (Template D)                      → auto-route on leading guess;
@@ -624,13 +624,13 @@ milestone):
 | `NACL_GOAL_RUN_ID` | The current run_id; used by inner skills to tag commits, exception lookups, log entries |
 | `NACL_GOAL_BRANCH` | The goal-run branch name (a fresh `feature/goal-*` branch OR the user's current branch under `branch_mode=current`); ship target |
 | `NACL_SHIP_MODE` | `append` — reuse the goal branch + goal PR (don't open new ones) |
-| `NACL_SHIP_PUSH` | `per-atom` \| `deferred` \| `none` — push cadence for `/nacl-tl-ship` append mode. `per-atom`: push + PR per atom (pre-2.13 behavior, default when absent). `deferred`/`none`: local commit only, no push, no PR calls |
+| `NACL_SHIP_PUSH` | `per-atom` \| `deferred` \| `none` — push cadence for `/nacl-tl-ship` append mode. `per-atom`: push + PR per atom (pre-2.14 behavior, default when absent). `deferred`/`none`: local commit only, no push, no PR calls |
 | `NACL_GOAL_BUDGET_FILE` | Absolute path to budget.json; inner skills append envelope entries |
 
 **Backward compatibility invariant**: when these env vars are absent
 (normal interactive invocation), inner skills behave EXACTLY as they do
 today. With `NACL_SHIP_PUSH` absent, push cadence is `per-atom` (the
-pre-2.13 behavior). The env-var-gated behavior is purely additive.
+pre-2.14 behavior). The env-var-gated behavior is purely additive.
 
 ### `intake` permissions
 
@@ -766,7 +766,7 @@ See `nacl-goal/refusal-catalog.md` for the exact refusal codes these trigger.
   - **PR3**: fixture-project acceptance run, `skills-for-codex/PLAN`
     doc update, memory flip to "shipped".
 - **2.10.2 (`codex-sync`)** — shipped separately from autonomy work.
-- **Unreleased (`current-branch-batch-mode`)** — `branch_mode=current` is
+- **2.14.0 (`current-branch-batch-mode`)** — `branch_mode=current` is
   the new default when invoked from a feature branch: atoms run on the
   user's open branch, commits stay local, one push + one CI run at DELIVER
   (`push_cadence=deferred`). Smart WIP: uncommitted files from concurrent
@@ -774,7 +774,7 @@ See `nacl-goal/refusal-catalog.md` for the exact refusal codes these trigger.
   predicted at LOCK (graph zone vs dirty snapshot) and enforced at commit
   time (`GOAL_BLOCKED_WIP_COLLISION`, resumable). Regression baseline and
   postfix run in isolated throwaway worktrees. `--branch=new` restores the
-  pre-2.13 flow byte-for-byte. New env var `NACL_SHIP_PUSH`.
+  pre-2.14 flow byte-for-byte. New env var `NACL_SHIP_PUSH`.
 - **Deferred** (post current-branch work): FEATURE_HEAVY autonomous
   execution; multi-PR orchestration; project-local exception policy file
   (`.tl/project-exception-policy.yaml`) and project-specific gates;

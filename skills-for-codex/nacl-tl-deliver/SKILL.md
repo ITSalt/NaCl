@@ -116,7 +116,7 @@ production incident.
 - CI, verify, deploy, graph, and tracker failures block or downgrade delivery;
   they cannot be hidden under a successful ship step.
 - The uncommitted-changes pre-check has a goal-context exception in the
-  source (2.13+): paths listed in a goal run's `preexisting_dirty_files`
+  source (2.14+): paths listed in a goal run's `preexisting_dirty_files`
   snapshot are another agent's in-flight work and do not block delivery,
   while any OTHER dirty path still stops. Codex sessions without an active
   goal run keep the plain rule: any uncommitted change stops the pre-check.

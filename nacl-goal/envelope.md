@@ -68,7 +68,7 @@ would predictably hit it.
 | Triggers | `/nacl-tl-intake --emit-state` reports `spec_gap: true` for an atom |
 | Precondition for envelope | **All** of: same `linked_uc` as a routed precedent; same affected component/module; same gate family; no `hard_refuse_triggers` from {`schema_migration`, `public_api_contract`, `auth_or_security`, `billing`}; `risk_level == L1`; `confidence == HIGH`; evidence includes `GRAPH` |
 
-### `medium-confidence-routing` (2.13+)
+### `medium-confidence-routing` (2.14+)
 
 | | |
 |---|---|

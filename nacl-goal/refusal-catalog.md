@@ -176,13 +176,13 @@ user's console. See `feedback-autonomy-default-ux.md`.
 
 | | |
 |---|---|
-| Triggers | (a) `branch_mode=new` (`--branch=new`) AND `git status --porcelain` is non-empty at precheck — the pre-2.13 rule, unchanged for this mode; OR (b) `branch_mode=current` AND the LOCK-time WIP-overlap check (Flow step 5) found uncommitted files inside a classified atom's predicted touch zone AND the consolidated question was declined or the session is non-interactive |
+| Triggers | (a) `branch_mode=new` (`--branch=new`) AND `git status --porcelain` is non-empty at precheck — the pre-2.14 rule, unchanged for this mode; OR (b) `branch_mode=current` AND the LOCK-time WIP-overlap check (Flow step 5) found uncommitted files inside a classified atom's predicted touch zone AND the consolidated question was declined or the session is non-interactive |
 | Message | (a) "`/nacl-goal intake --branch=new` refuses to start with uncommitted changes in the working tree (`<file count>` files modified/added/deleted/untracked). A fresh goal branch would carry your uncommitted work along. Commit, stash, or revert — or drop `--branch=new` to run on the current branch with the Smart-WIP overlap protocol." (b) "`/nacl-goal intake` cannot proceed: uncommitted changes in `<files>` overlap the predicted touch zone of atom `<atom title>`, and the overlap was not resolved. These files look like another agent's in-flight work — the goal run will not stage, commit, or revert them. Commit or revert the overlapping files (or re-run and exclude the atom) and re-run." |
 | Fallback | (a) `git stash -u` OR commit; then re-run. (b) resolve the overlapping files only — non-overlapping WIP can stay uncommitted; then re-run |
 | Logs to runs/ | (a) No. (b) Yes — plan.lock.json with `preexisting_dirty_files` retained for debugging |
 | Reference | `nacl-goal/SKILL.md` Flow steps 3 + 5 (Smart WIP) |
 
-Note (2.13+): a dirty worktree alone NO LONGER refuses in
+Note (2.14+): a dirty worktree alone NO LONGER refuses in
 `branch_mode=current` (the default). Uncommitted files that do not overlap
 any atom's predicted zone are presumed to be another agent's concurrent
 work in the shared worktree: the run proceeds and leaves them strictly
@@ -232,7 +232,7 @@ untouched. The commit-time backstop is `GOAL_BLOCKED_WIP_COLLISION`.
 
 | | |
 |---|---|
-| Triggers | (2.13+, tightened) Fires only for atoms still unresolved AFTER the autonomous question policy ran its course: LOW/HEURISTIC-confidence atoms whose consolidated pre-`/goal` batch question (Flow step 4) was declined or could not be asked (non-interactive session), or classify-step detects contradictory atoms (e.g. one atom implies a fix to UC-X, another implies removing UC-X). MEDIUM-confidence atoms NO LONGER reach this refusal — under `--autonomous` they route on the leading guess with a tracked alternative (envelope gate `medium-confidence-routing`) |
+| Triggers | (2.14+, tightened) Fires only for atoms still unresolved AFTER the autonomous question policy ran its course: LOW/HEURISTIC-confidence atoms whose consolidated pre-`/goal` batch question (Flow step 4) was declined or could not be asked (non-interactive session), or classify-step detects contradictory atoms (e.g. one atom implies a fix to UC-X, another implies removing UC-X). MEDIUM-confidence atoms NO LONGER reach this refusal — under `--autonomous` they route on the leading guess with a tracked alternative (envelope gate `medium-confidence-routing`) |
 | Message | "`/nacl-goal intake` could not classify your goal unambiguously: `<ambiguity reason from intake>`. Possible interpretations:\n\n- `<interpretation 1>`\n- `<interpretation 2>`\n\nRe-run with a more specific goal, OR run `/nacl-tl-intake \"<goal>\"` interactively to resolve the ambiguity step by step, then re-run `/nacl-goal intake \"<resolved goal>\"`." |
 | Fallback | `/nacl-tl-intake "<goal>"` interactively; or rewrite the goal |
 | Logs to runs/ | Yes — `intake.json` retained for inspection |

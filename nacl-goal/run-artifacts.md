@@ -102,7 +102,7 @@ goal_fingerprint = sha256(
 )
 
 branch_segment =
-    ""                                    // branch_mode = new  (pre-2.13
+    ""                                    // branch_mode = new  (pre-2.14
                                           // fingerprints stay byte-identical)
     || "␟" + current_branch_name          // branch_mode = current
 ```
@@ -114,7 +114,7 @@ goal text run on two different feature branches is two different runs
 goal on the SAME branch share a fingerprint and serialize through the
 index flock + re-invocation rules, never interleaving commits. In
 `branch_mode=new` nothing is appended, so every fingerprint computed by a
-pre-2.13 wrapper remains valid.
+pre-2.14 wrapper remains valid.
 
 ### Normalization details
 

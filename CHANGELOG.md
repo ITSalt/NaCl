@@ -4,6 +4,63 @@ All notable changes to NaCl (Natural Agent Control Language) will be documented 
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [2.14.0] — 2026-06-06
+
+`/nacl-goal intake` learns the economics of a real working tree: an open feature
+branch where several fixes accumulate, concurrent agents holding uncommitted files,
+and a CI pipeline expensive enough (~5 minutes per push) that per-atom pushes are
+waste. Two workstreams, both additive — `--branch=new` restores the previous flow
+byte-for-byte.
+
+**Current-branch batch mode (default).** Invoked from a non-production branch, the
+orchestrator now runs ON that branch (`branch_mode=current`) instead of creating
+`feature/goal-<hash>`: atoms commit locally, ONE push and ONE CI run happen at
+DELIVER (`push_cadence=deferred`; also `--push=per-atom|none`). Production branches
+still refuse. The PR body annotates pre-existing branch commits; goal commits stay
+separable via the `Goal-run-id:` trailer.
+
+**Smart WIP.** A dirty worktree no longer refuses the run in current mode —
+uncommitted files are presumed to be another agent's in-flight work and are never
+staged, committed, or reverted. Overlap protection is two-layered: a predicted-zone
+check at LOCK (graph zone vs the `preexisting_dirty_files` snapshot → one
+consolidated pre-`/goal` question on intersection) and a hard commit-time gate
+(`/nacl-tl-ship` refuses to stage snapshot paths; the wrapper backstop emits
+`GOAL_BLOCKED_WIP_COLLISION` — the only *resumable* GOAL_BLOCKED code). The
+regression baseline and postfix now run in throwaway worktrees pinned to fixed SHAs
+(`worktree_isolated` in the capture schema), so concurrent WIP cannot contaminate
+the regression diff. Concurrent *commits* to the run branch remain unsupported —
+the drift checks catch them, by design.
+
+**Autonomous question policy.** `/nacl-tl-intake` gains a wrapper-only
+`--autonomous` flag (a human's `--yes` is unchanged): the L2/L3 "ready to start?"
+check auto-confirms (invoking the orchestrator IS the launch intent); MEDIUM-confidence
+atoms auto-route on the leading guess with the alternative recorded as a tracked
+`residual_note` (new envelope gate `medium-confidence-routing`, audit-logged like
+every other exception) and disclosed in the headline; LOW-confidence atoms batch
+into ONE consolidated pre-`/goal` question. Hard-refuse triggers — billing, auth,
+schema migrations, destructive ops, product decisions — still refuse before `/goal`:
+autonomy widens routing, never swallows the critical questions.
+`PLAN_BLOCKED_AMBIGUOUS_CLASSIFICATION` is correspondingly tightened to fire only
+for LOW/HEURISTIC atoms left unresolved after that batch.
+
+**Wiring.** New env var `NACL_SHIP_PUSH` gates ship's push/PR steps; append-mode
+staging is now mandatorily selective (never `git add -A` in a shared worktree);
+`/nacl-tl-deliver` tolerates exactly the snapshot paths in its pre-check and reads
+the goal-run PR body from `pr-body.md` at the single push. `intake.sh` reads
+`branch_mode`/`push_cadence` with pre-2.14 defaults (old artifacts stay valid),
+drops the PR/CI requirements only for `push_cadence=none` (dev-only), and reads
+`dev_verified` from the new `dev-verified.json` artifact.
+
+**Added.** Four regression tests for the check script: `push=none` reaches GOAL_OK
+without a PR; drift still fires on the user's own branch; a null PR head under
+deferred cadence is "not yet", not "diverged" (and participates normally after the
+push); the WIP-collision block code maps with precedence over the generic atom
+failure. The 2.13.2 TZ test stays green.
+
+GOAL_PROOF wire format: existing evidence keys unchanged; five advisory keys
+appended at the end (`branch_mode`, `push_cadence`, `prior_commits_count`,
+`branch_base_sha`, `worktree_isolated`). No codes renamed or removed.
+
 ## [2.13.2] — 2026-06-06
 
 Hotfix: the `/nacl-goal intake` budget clock measured the host's timezone offset along

@@ -641,7 +641,7 @@ When this skill is invoked under `/nacl-goal intake` (the autonomous goal orches
 | `NACL_GOAL_RUN_ID` | `/nacl-goal intake` | Commit message footer + PR body trailer for traceability |
 | `NACL_GOAL_BRANCH` | `/nacl-goal intake` | Branch to commit/push on (selected by the wrapper) |
 | `NACL_SHIP_MODE` | `/nacl-goal intake` (always `append`) | Triggers append-mode behavior below |
-| `NACL_SHIP_PUSH` | `/nacl-goal intake` (`per-atom` \| `deferred` \| `none`) | Push cadence — gates Steps 4 and 5. Absent ⇒ `per-atom` (pre-2.13 behavior) |
+| `NACL_SHIP_PUSH` | `/nacl-goal intake` (`per-atom` \| `deferred` \| `none`) | Push cadence — gates Steps 4 and 5. Absent ⇒ `per-atom` (pre-2.14 behavior) |
 | `NACL_GOAL_BUDGET_FILE` | `/nacl-goal intake` | Inner-skill envelope appended at end of run |
 
 ### Behavior when `NACL_SHIP_MODE=append` AND `NACL_GOAL_BRANCH` is set
@@ -757,7 +757,7 @@ fi
 
 Failures to write to `budget.json` are silent — this is best-effort observability for `/nacl-goal intake`'s GOAL_PROOF block.
 
-**Invariant**: this entire section is gated on `NACL_SHIP_MODE=append AND NACL_GOAL_BRANCH set AND NACL_SHIP_PUSH ∈ {per-atom (default when absent), deferred, none}`. With `NACL_SHIP_MODE`/`NACL_GOAL_BRANCH` absent, the default behavior in Steps 1–6 above runs unchanged; with `NACL_SHIP_PUSH` absent, append mode pushes per atom exactly as it did pre-2.13. Interactive `/nacl-tl-ship UC028` is unaffected.
+**Invariant**: this entire section is gated on `NACL_SHIP_MODE=append AND NACL_GOAL_BRANCH set AND NACL_SHIP_PUSH ∈ {per-atom (default when absent), deferred, none}`. With `NACL_SHIP_MODE`/`NACL_GOAL_BRANCH` absent, the default behavior in Steps 1–6 above runs unchanged; with `NACL_SHIP_PUSH` absent, append mode pushes per atom exactly as it did pre-2.14. Interactive `/nacl-tl-ship UC028` is unaffected.
 
 ---
 

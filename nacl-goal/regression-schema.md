@@ -220,7 +220,7 @@ because the test ID is no longer in any of the three current sets.)
 
 ---
 
-## Worktree isolation (2.13+)
+## Worktree isolation (2.14+)
 
 In `branch_mode=current` the main checkout is a SHARED workspace: other
 agents may hold uncommitted edits there at any moment, and those edits
