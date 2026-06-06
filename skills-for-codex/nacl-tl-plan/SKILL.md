@@ -174,6 +174,21 @@ if violations:
   error code at least once. No new edges are written (errors carry no TL
   overlay — verification belongs to slices). Null-filter the handled_by
   map-collect (unmatched OPTIONAL yields an all-null map, not []).
+- Consume the resilience layer: when a planned UC has cache policies on its
+  `EXPOSES` surfaces (`(cp:CachePolicy)-[:CACHES]->`) or
+  `(:UseCase)-[:HAS_DEGRADATION]->(:DegradationRule)` rules (authored by
+  `nacl-sa-uc resilience`; read via the `sa_uc_resilience` named query),
+  embed a "Cache & Degradation" section — `task-be.md` gets the cache
+  contract (storage / invalidation kind + ttl seconds or invalidation
+  event / serves_stale / cached endpoints) plus the backend rules (trigger /
+  fallback / verbatim `behavior`: skip_unit, backoff with Retry-After,
+  provider switches), `task-fe.md` gets the degradation handling table
+  (trigger / degraded state / fallback / behavior) plus the client-side
+  caches with their invalidation events, `acceptance.md` gets both halves,
+  `test-spec*.md` covers each rule at least once, and unjoined cached_data
+  rules / uncovered cached-surface errors are listed as L13.8 / L13.7
+  advisories. No new edges are written (the resilience layer carries no TL
+  overlay either). Null-filter both map-collects.
 - Read `ExternalContract` graph nodes and `REQUIRES_EXTERNAL` /
   `DEPENDS_ON_EXTERNAL` edges to drive the External Contracts Gate.
 - Write `.tl/tasks/<TASK_ID>/` files, `.tl/master-plan.md`, `.tl/status.json`,
@@ -239,6 +254,9 @@ if violations:
   `VERIFIED_BY` re-linking on every (re-)plan of a slice-adopting UC.
 - Domain-error consumption: task-file "Domain Errors" section (BE envelope
   contract + FE handling table) on every (re-)plan of a taxonomy-adopting UC.
+- Resilience consumption: task-file "Cache & Degradation" section (BE cache
+  contract + backend rules, FE handling table + client caches) on every
+  (re-)plan of a resilience-adopting UC.
 
 ### Removed Claude Mechanics
 

@@ -648,6 +648,65 @@ the planner, not written into the void):
 No new edges are written by this step (unlike Step 2.5's VERIFIED_BY: errors
 carry no TL overlay — verification belongs to slices).
 
+And fetch the UC's resilience layer, if any (authored by
+`/nacl-sa-uc resilience`) — the `sa_uc_resilience` named query from
+`graph-infra/queries/sa-queries.cypher`:
+
+```cypher
+// Cache policies of the UC's surfaces + its degradation rules (empty
+// cache_policies AND empty rules = UC has not adopted the resilience layer;
+// skip the section). Both map-collects are null-filtered (the Фаза-2 gotcha).
+MATCH (uc:UseCase {id: $ucId})
+OPTIONAL MATCH (uc)-[:HAS_DEGRADATION]->(dr:DegradationRule)
+OPTIONAL MATCH (dr)-[:ON_ERROR]->(err:DomainError)
+OPTIONAL MATCH (dr)-[:DEGRADES_TO]->(st:ScreenState)
+WITH uc, dr,
+     [e IN collect(DISTINCT {id: err.id, code: err.code, retryable: err.retryable})
+      WHERE e.id IS NOT NULL] AS on_errors,
+     collect(DISTINCT st.id) AS degrades_to
+WITH uc,
+     [r IN collect(DISTINCT {id: dr.id, name: dr.name, trigger: dr.trigger_kind,
+                             fallback: dr.fallback_kind, behavior: dr.behavior,
+                             on_errors: on_errors, degrades_to: degrades_to})
+      WHERE r.id IS NOT NULL] AS rules
+OPTIONAL MATCH (uc)-[:EXPOSES]->(api:APIEndpoint)<-[:CACHES]-(cp:CachePolicy)
+WITH uc, rules, cp, collect(DISTINCT api.id) AS cached_endpoints
+WITH uc, rules,
+     [c IN collect(DISTINCT {id: cp.id, name: cp.name, storage: cp.storage_kind,
+                             invalidation: cp.invalidation_kind, ttl: cp.ttl_seconds,
+                             serves_stale: cp.serves_stale, caches: cached_endpoints})
+      WHERE c.id IS NOT NULL] AS cache_policies
+RETURN uc.id AS uc_id, cache_policies, rules
+```
+
+When the resilience layer exists, embed a **"Cache & Degradation"** section
+(same self-sufficiency principle; same consumer lesson — `CACHES` /
+`ON_ERROR` / `DEGRADES_TO` edges must be read by the planner, not written
+into the void):
+
+- `task-be.md` — the **cache contract** of the UC's surfaces: one row per
+  policy — storage / invalidation kind (+ ttl seconds or invalidation
+  event) / serves_stale / cached endpoints. Plus the **backend degradation
+  rules** (no DEGRADES_TO): one row per rule — trigger / fallback kind /
+  the verbatim `behavior` text the implementation must produce (skip_unit,
+  backoff with Retry-After, provider switches live here).
+- `task-fe.md` — the **degradation handling table**: one row per rule with
+  a UI half — trigger / degraded machine state / fallback kind / observable
+  `behavior`. Plus the client-side cache policies (local_storage /
+  indexed_db / cache_api / memory) the FE must implement, with their
+  invalidation events.
+- `acceptance.md` — both halves.
+- `test-spec*.md` test cases should cover each degradation rule at least
+  once (alternate-kind slices typically describe the same recovery —
+  cross-link ids).
+- Unjoined `cached_data` rules (the L13.8 view) and cached surfaces whose
+  retryable/external errors no rule degrades (the L13.7 view) are listed
+  under "resilience gaps (advisory)" so the gap stays visible in the task
+  file.
+
+No new edges are written by this step either (the resilience layer carries
+no TL overlay — verification belongs to slices).
+
 ### Query Result to Task File Mapping
 
 The sa_uc_full_context result maps directly to each task file section:
@@ -745,12 +804,21 @@ sa_uc_full_context result
   |     +---> test-spec*.md: test cases reference the slice ids they exercise
   |
   +-- domain errors (DomainError nodes, when the UC has adopted the taxonomy)
-        props: code, error_kind, http_status, retryable (+ raised_by, handled_by)
+  |     props: code, error_kind, http_status, retryable (+ raised_by, handled_by)
+  |     |
+  |     +---> task-be.md: Domain Errors section (the envelope contract per endpoint)
+  |     +---> task-fe.md: Domain Errors section (handling table: state x error x presentation)
+  |     +---> acceptance.md: Domain Errors table (both halves)
+  |     +---> test-spec*.md: each error code covered at least once
+  |
+  +-- resilience (CachePolicy / DegradationRule nodes, when the UC has adopted the layer)
+        props: storage_kind, invalidation_kind, ttl_seconds, serves_stale;
+               trigger_kind, fallback_kind, behavior (+ on_errors, degrades_to)
         |
-        +---> task-be.md: Domain Errors section (the envelope contract per endpoint)
-        +---> task-fe.md: Domain Errors section (handling table: state x error x presentation)
-        +---> acceptance.md: Domain Errors table (both halves)
-        +---> test-spec*.md: each error code covered at least once
+        +---> task-be.md: Cache & Degradation section (cache contract + backend rules)
+        +---> task-fe.md: Cache & Degradation section (handling table + client caches)
+        +---> acceptance.md: Cache & Degradation table (both halves)
+        +---> test-spec*.md: each degradation rule covered at least once
 ```
 
 ### Task File Directory Structure
