@@ -1578,6 +1578,12 @@ Author (or modify) the **resilience layer** of one UseCase: the cache policies o
 
 #### 1.1 Query UC, its module(s), endpoints, machine, errors, slices, requirements, and existing resilience layer
 
+The inline `uc_resilience_context` query below is the CONTEXT read of this
+phase. The named `sa_uc_resilience` query
+(`graph-infra/queries/sa-queries.cypher`) serves two other moments: loading
+the already-written layer in MODIFY mode, and the Phase-4 read-back that
+feeds the § 4.4 report.
+
 ```cypher
 // uc_resilience_context
 MATCH (uc:UseCase {id: $ucId})
@@ -1613,7 +1619,7 @@ Also read:
 - If the UC has **no Module** → **degradation-only mode** with WARN: the cache catalog is module-owned (`HAS_CACHE` is the required parent — L13.1), so cache authoring is refused (wire the UC into a module first, `/nacl-sa-architect`); UC-parented DegradationRules still work.
 - If `has_ui = false` (backend-only UC) → **backend-resilience mode**: no `DEGRADES_TO` (no screen), rules anchor through `ON_ERROR`; cache policies (server-side storages) and the provisional-endpoint path of § 3.2 work in full — a backend UC with no `EXPOSES` yet is the common case.
 - If `coalesce(uc.has_ui, true) = true` and the UC has **no Screen** → error-triggered rules still work (their `ON_ERROR` anchor suffices); **offline/capability rules must be deferred** with WARN (their only anchor is `DEGRADES_TO` — recommend `/nacl-sa-ui state-machine UC-NNN`, then re-run). If ALL proposed rules are offline/capability-kind → STOP with the same message.
-- If the UC's endpoints carry **no MAY_RAISE** (error taxonomy not adopted) → error-triggered rules cannot anchor; recommend `/nacl-sa-uc errors UC-NNN` first for those, and proceed with cache policies + offline/capability rules (adoption-order tolerance — L13.8 flags unjoined halves as INFO, never blocks).
+- If the UC's endpoints carry **no MAY_RAISE** (error taxonomy not adopted) → error-triggered rules cannot anchor; recommend `/nacl-sa-uc errors UC-NNN` first for those, and proceed with cache policies + offline/capability rules (adoption-order tolerance — L13.8 flags unjoined halves as INFO, never blocks). **Chaining rule:** in an interactive run, recommend and stop at the gate; when the user confirms the detour (or an orchestrating run is sanctioned to chain commands), execute `errors` by its own text, then re-enter resilience Phase 1 with the refreshed context. Never write an error-triggered rule without its ON_ERROR anchor — skipping the detour means skipping those rules this pass.
 - An idempotent re-run whose confirmed proposal changes nothing (no new/removed nodes or edges, no contract-property change) is a **no-op** — report and **skip Phase 4 entirely** (no spec_version bump, no stamp: nothing about the UC's shape changed).
 
 ---
@@ -1624,11 +1630,11 @@ Also read:
 
 **Sources, in priority order:** resilience-bearing Requirements (cache/offline/fallback/degradation wording — the richest source; quote formulations verbatim) → **BA BusinessRules** reached via the `IMPLEMENTED_BY` back-reference (one BA principle → several per-surface rules) → the error taxonomy (errors with `retryable=true` or `error_kind='external'` are natural `ON_ERROR` candidates — the Phase-3 groundwork) → the machine's `error`/`empty` states (degradation targets) → RuntimeContract strings (legacy hints: retry semantics, recovery procedures) → `alternate`/`error`-kind slices.
 
-**CachePolicy contract:** `storage_kind ∈ {memory, local_storage, indexed_db, cache_api, http, server, cdn}`; **`invalidation_kind ∈ {ttl, event, manual, session, never}` — REQUIRED**, this is when the cache stops lying: `ttl` requires `ttl_seconds`, `event` should name the `invalidation_event` ("promo redeemed → invalidateQuotaCache"); `serves_stale` (Boolean) — whether stale data may be shown while revalidating. Real graphs are mostly event/manual-invalidated client caches — never invent a TTL a requirement does not name.
+**CachePolicy contract:** `storage_kind ∈ {memory, local_storage, indexed_db, cache_api, http, server, cdn}` — mapping notes: `server` covers server-side key-value/cache stores (Redis, memcached); `memory` is process-local in-memory (a module-level JS cache, an in-process LRU); **`invalidation_kind ∈ {ttl, event, manual, session, never}` — REQUIRED**, this is when the cache stops lying: `ttl` requires `ttl_seconds`, `event` should name the `invalidation_event` ("promo redeemed → invalidateQuotaCache"); `serves_stale` (Boolean) — whether stale data may be shown while revalidating. **Kind selection for boundary-style invalidation:** a named recurring boundary ("daily reset at 00:00 UTC") is an `event` whose name goes into `invalidation_event` — never convert a boundary into `ttl_seconds` the requirement does not state; `session` is for data scoped to one user session/installation that lives until overwritten by the next session's work (offline restore caches); `manual` is for explicit operator/user-initiated purges only. Real graphs are mostly event/manual-invalidated client caches — never invent a TTL a requirement does not name. **serves_stale principle:** set `true` only where showing stale data is acceptable per the requirement (offline viewing of generated content); set `false` where a stale read causes a wrong decision (quotas, rate limits, permissions).
 
 **DegradationRule contract:** `trigger_kind ∈ {error, offline, capability}` (error — a catalogued domain failure; offline — no network; capability — the browser/platform cannot do it); **`behavior` — REQUIRED**, the observable degraded behavior in plain language («показывается универсальный fallback-контент; пользователь не видит сырую ошибку» — mirrors `slice.then`); `fallback_kind ∈ {cached_data, static_content, alternate_provider, alternate_ui, skip_unit, backoff}`.
 
-**Anchor proposal:** error-triggered rules → `ON_ERROR` to the catalogued errors that fire them (1..n; one fallback rule may fire on several failure modes) + `DEGRADES_TO` where a UI half exists; offline/capability rules → `DEGRADES_TO` to the state representing the degraded experience. The degraded state may be ANY state_kind — degrading INTO a `content` state showing stale cached data is normal (offline restore). Only propose `DEGRADES_TO` for states of THIS UC's screens (same-UC rule, L13.3), and for error-triggered rules only where the **channel rule** holds: the target state's screen calls (via its effects) an endpoint that raises one of the rule's errors — L13.3 enforces exactly this.
+**Anchor proposal:** error-triggered rules → `ON_ERROR` to the catalogued errors that fire them (1..n; one fallback rule may fire on several failure modes) + `DEGRADES_TO` where a UI half exists; offline/capability rules → `DEGRADES_TO` to the state representing the degraded experience. The degraded state may be ANY state_kind — degrading INTO a `content` state showing stale cached data is normal (offline restore). **Target selection:** anchor to the state the user LIVES IN during the degraded experience (for substituted fallback content that is the `content` state), not necessarily the state that HANDLES the error — handling and degraded residence may differ. Only propose `DEGRADES_TO` for states of THIS UC's screens (same-UC rule, L13.3), and for error-triggered rules only where the **channel rule** holds — the rule is SCREEN-scoped, exactly as L12.3: any of the target state's screen's effects, on any of its transitions, CALLS an endpoint that raises one of the rule's errors (the calling effect does not have to lead into the target state) — L13.3 enforces exactly this.
 
 **Present to user:** policy table (id, storage, invalidation [+ttl/event], serves_stale, cached endpoints, source requirement/BA rule) + rule table (id, trigger, fallback, behavior, ON_ERROR errors, DEGRADES_TO states, source) + which retryable/external errors of cached surfaces remain without a degradation story (the future L13.7 view). Ask for confirmation.
 
@@ -1769,7 +1775,7 @@ Run the L13 checks from `nacl-sa-validate` (canonical queries live there) scoped
 #### 4.4 Report
 
 ```
-Resilience layer written: UC-NNN ({uc name}, module {MOD-ID})
+Resilience layer written: UC-NNN ({uc name}, module {MOD-ID[, MOD-ID-2 — multi-module UC]})
 
 Cache policies: {N} ({K} new / {K} updated / {K} shared with other UCs)
   {CACHE-ID}: {storage}, invalidation={kind}[ ttl={s}s | event="{event}"], serves_stale={bool},

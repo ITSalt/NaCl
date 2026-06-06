@@ -190,17 +190,28 @@ Commands:
    offline/capability rules (their only anchor is DEGRADES_TO; STOP if ALL
    proposed rules are such), error-triggered rules proceed on ON_ERROR; no
    MAY_RAISE on the UC's endpoints → recommend `errors` first for
-   error-triggered rules, proceed with policies + offline/capability rules.
+   error-triggered rules, proceed with policies + offline/capability rules
+   (chaining rule: interactive runs recommend and stop; a sanctioned
+   chained run executes `errors` by its own text, then re-enters
+   resilience Phase 1 — never write an error rule without ON_ERROR).
    An idempotent re-run whose proposal changes nothing is a no-op — skip
-   the stamp phase entirely.
+   the stamp phase entirely. The inline context query is the Phase-1 read;
+   the named `sa_uc_resilience` query serves MODIFY-load and the Phase-4
+   read-back.
 2. Propose policies + rules from requirements → BA rules → the error
    taxonomy → the machine's error/empty states → RC hints →
    alternate/error slices. CachePolicy: `CACHE-{PascalName}` (latin, from
    surface + storage; MERGE into the module catalog, never duplicate),
    `storage_kind` ∈ memory|local_storage|indexed_db|cache_api|http|server|
-   cdn, REQUIRED `invalidation_kind` ∈ ttl|event|manual|session|never
-   (`ttl` requires `ttl_seconds`; never invent a TTL no requirement names),
-   optional `serves_stale`. DegradationRule: `DEG-{NNN}-{PascalName}`
+   cdn (`server` = server-side KV/cache stores like Redis; `memory` =
+   process-local), REQUIRED `invalidation_kind` ∈ ttl|event|manual|session|
+   never (`ttl` requires `ttl_seconds`; never invent a TTL no requirement
+   names; a named recurring boundary like "daily UTC reset" is an `event`
+   named in `invalidation_event`; `session` = lives until the next
+   session's work overwrites it; `manual` = explicit purges only),
+   `serves_stale` true only where stale display is acceptable per the
+   requirement — false where a stale read causes a wrong decision (quotas,
+   limits). DegradationRule: `DEG-{NNN}-{PascalName}`
    (UC-number infix), `trigger_kind` ∈ error|offline|capability, REQUIRED
    `behavior` (the observable degraded behavior, mirror of `slice.then`),
    `fallback_kind` ∈ cached_data|static_content|alternate_provider|
@@ -211,9 +222,13 @@ Commands:
    anchor when none exists; one endpoint per distinct backend operation);
    `DegradationRule` with `(:UseCase)-[:HAS_DEGRADATION]->`,
    `ON_ERROR -> DomainError` (1..n; REQUIRED for trigger_kind='error'),
-   `DEGRADES_TO -> ScreenState` only into this UC's own states and, for
-   error-triggered rules, only where the channel rule holds (the target
-   state's screen calls a raising endpoint). Collect every written cp id.
+   `DEGRADES_TO -> ScreenState` only into this UC's own states — anchored
+   to the state the user LIVES IN during the degraded experience (not
+   necessarily the HANDLES state) — and, for error-triggered rules, only
+   where the channel rule holds (SCREEN-scoped, as L12.3: any of the
+   screen's effects on any transition calls a raising endpoint; the
+   calling effect need not lead into the target state). Collect every
+   written cp id.
    MODIFY deletions by explicit id only; never delete a policy other UCs'
    surfaces still rely on — remove only your own CACHES edges.
 4. Bump `spec_version`; stamp staleness DIRECTED (same contract as
