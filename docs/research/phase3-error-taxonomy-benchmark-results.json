@@ -1,0 +1,1357 @@
+{
+  "H0a_clean_graph": {
+    "checks": {
+      "L12.0": 0,
+      "L12.1": 0,
+      "L12.2": 0,
+      "L12.3": 0,
+      "L12.4": 0,
+      "L12.5": 0,
+      "L12.6a": 0,
+      "L12.6b": 0,
+      "L12.7": 0,
+      "L12.8": 0,
+      "L12.9": 0
+    },
+    "pass": true
+  },
+  "H0b_machines_slices_no_errors": {
+    "n_machines": 31,
+    "n_slices": 93,
+    "skipped_no_module": [
+      "UC-039",
+      "UC-040"
+    ],
+    "l12_checks": {
+      "L12.0": 0,
+      "L12.1": 0,
+      "L12.2": 0,
+      "L12.3": 0,
+      "L12.4": 0,
+      "L12.5": 0,
+      "L12.6a": 0,
+      "L12.6b": 0,
+      "L12.7": 0,
+      "L12.8": 0,
+      "L12.9": 0
+    },
+    "full_matrix_zero": true,
+    "pass": true
+  },
+  "H1": {
+    "n_ucs": 29,
+    "rows": [
+      {
+        "uc": "UC-001",
+        "module": "MOD-marketing-module",
+        "errors": [
+          "ERR-BENCH001_NOT_FOUND",
+          "ERR-BENCH001_UPSTREAM_FAILED"
+        ],
+        "has_tasks": false,
+        "l12_intact_zero": true,
+        "old_err_from_uc": 0,
+        "new_err_from_uc": 2,
+        "old_pres_from_uc": 0,
+        "new_pres_from_uc": 2,
+        "old_err_from_api": 0,
+        "new_err_from_api": 2,
+        "old_err_from_da": 0,
+        "new_err_from_da": 2,
+        "new_pres_from_da": 2,
+        "uc_to_err_hops": 2,
+        "uc_to_pres_hops": 3,
+        "api_to_err_hops": 1,
+        "da_to_err_hops": 5,
+        "da_to_pres_hops": 5,
+        "h1_pass": true
+      },
+      {
+        "uc": "UC-002",
+        "module": "MOD-landing-module",
+        "errors": [
+          "ERR-BENCH002_NOT_FOUND",
+          "ERR-BENCH002_UPSTREAM_FAILED"
+        ],
+        "has_tasks": false,
+        "l12_intact_zero": true,
+        "old_err_from_uc": 0,
+        "new_err_from_uc": 2,
+        "old_pres_from_uc": 0,
+        "new_pres_from_uc": 2,
+        "old_err_from_api": 0,
+        "new_err_from_api": 2,
+        "old_err_from_da": 0,
+        "new_err_from_da": 2,
+        "new_pres_from_da": 2,
+        "uc_to_err_hops": 2,
+        "uc_to_pres_hops": 3,
+        "api_to_err_hops": 1,
+        "da_to_err_hops": 5,
+        "da_to_pres_hops": 5,
+        "h1_pass": true
+      },
+      {
+        "uc": "UC-003",
+        "module": "MOD-generation-module",
+        "errors": [
+          "ERR-BENCH003_NOT_FOUND",
+          "ERR-BENCH003_UPSTREAM_FAILED"
+        ],
+        "has_tasks": true,
+        "l12_intact_zero": true,
+        "old_err_from_uc": 0,
+        "new_err_from_uc": 2,
+        "old_pres_from_uc": 0,
+        "new_pres_from_uc": 2,
+        "old_err_from_api": 0,
+        "new_err_from_api": 2,
+        "old_err_from_da": 0,
+        "new_err_from_da": 2,
+        "new_pres_from_da": 2,
+        "uc_to_err_hops": 2,
+        "uc_to_pres_hops": 3,
+        "api_to_err_hops": 1,
+        "da_to_err_hops": 3,
+        "da_to_pres_hops": 4,
+        "h1_pass": true
+      },
+      {
+        "uc": "UC-004",
+        "module": "MOD-generation-module",
+        "errors": [
+          "ERR-BENCH004_NOT_FOUND",
+          "ERR-BENCH004_UPSTREAM_FAILED"
+        ],
+        "has_tasks": true,
+        "l12_intact_zero": true,
+        "old_err_from_uc": 0,
+        "new_err_from_uc": 2,
+        "old_pres_from_uc": 0,
+        "new_pres_from_uc": 2,
+        "old_err_from_api": 0,
+        "new_err_from_api": 2,
+        "old_err_from_da": null,
+        "new_err_from_da": null,
+        "new_pres_from_da": null,
+        "uc_to_err_hops": 2,
+        "uc_to_pres_hops": 3,
+        "api_to_err_hops": 1,
+        "da_to_err_hops": null,
+        "da_to_pres_hops": null,
+        "h1_pass": true
+      },
+      {
+        "uc": "UC-005",
+        "module": "MOD-generation-module",
+        "errors": [
+          "ERR-BENCH005_NOT_FOUND",
+          "ERR-BENCH005_UPSTREAM_FAILED"
+        ],
+        "has_tasks": true,
+        "l12_intact_zero": true,
+        "old_err_from_uc": 0,
+        "new_err_from_uc": 2,
+        "old_pres_from_uc": 0,
+        "new_pres_from_uc": 2,
+        "old_err_from_api": 0,
+        "new_err_from_api": 2,
+        "old_err_from_da": null,
+        "new_err_from_da": null,
+        "new_pres_from_da": null,
+        "uc_to_err_hops": 2,
+        "uc_to_pres_hops": 3,
+        "api_to_err_hops": 1,
+        "da_to_err_hops": null,
+        "da_to_pres_hops": null,
+        "h1_pass": true
+      },
+      {
+        "uc": "UC-006",
+        "module": "MOD-conversion-module",
+        "errors": [
+          "ERR-BENCH006_NOT_FOUND",
+          "ERR-BENCH006_UPSTREAM_FAILED"
+        ],
+        "has_tasks": true,
+        "l12_intact_zero": true,
+        "old_err_from_uc": 0,
+        "new_err_from_uc": 2,
+        "old_pres_from_uc": 0,
+        "new_pres_from_uc": 2,
+        "old_err_from_api": 0,
+        "new_err_from_api": 2,
+        "old_err_from_da": 0,
+        "new_err_from_da": 2,
+        "new_pres_from_da": 2,
+        "uc_to_err_hops": 2,
+        "uc_to_pres_hops": 3,
+        "api_to_err_hops": 1,
+        "da_to_err_hops": 5,
+        "da_to_pres_hops": 5,
+        "h1_pass": true
+      },
+      {
+        "uc": "UC-007",
+        "module": "MOD-conversion-module",
+        "errors": [
+          "ERR-BENCH007_NOT_FOUND",
+          "ERR-BENCH007_UPSTREAM_FAILED"
+        ],
+        "has_tasks": false,
+        "l12_intact_zero": true,
+        "old_err_from_uc": 0,
+        "new_err_from_uc": 2,
+        "old_pres_from_uc": 0,
+        "new_pres_from_uc": 2,
+        "old_err_from_api": 0,
+        "new_err_from_api": 2,
+        "old_err_from_da": 0,
+        "new_err_from_da": 2,
+        "new_pres_from_da": 2,
+        "uc_to_err_hops": 2,
+        "uc_to_pres_hops": 3,
+        "api_to_err_hops": 1,
+        "da_to_err_hops": 3,
+        "da_to_pres_hops": 4,
+        "h1_pass": true
+      },
+      {
+        "uc": "UC-008",
+        "module": "MOD-conversion-module",
+        "errors": [
+          "ERR-BENCH008_NOT_FOUND",
+          "ERR-BENCH008_UPSTREAM_FAILED"
+        ],
+        "has_tasks": false,
+        "l12_intact_zero": true,
+        "old_err_from_uc": 0,
+        "new_err_from_uc": 2,
+        "old_pres_from_uc": 0,
+        "new_pres_from_uc": 2,
+        "old_err_from_api": 0,
+        "new_err_from_api": 2,
+        "old_err_from_da": null,
+        "new_err_from_da": null,
+        "new_pres_from_da": null,
+        "uc_to_err_hops": 2,
+        "uc_to_pres_hops": 3,
+        "api_to_err_hops": 1,
+        "da_to_err_hops": null,
+        "da_to_pres_hops": null,
+        "h1_pass": true
+      },
+      {
+        "uc": "UC-009",
+        "module": "MOD-admin-module",
+        "errors": [
+          "ERR-BENCH009_NOT_FOUND",
+          "ERR-BENCH009_UPSTREAM_FAILED"
+        ],
+        "has_tasks": false,
+        "l12_intact_zero": true,
+        "old_err_from_uc": 0,
+        "new_err_from_uc": 2,
+        "old_pres_from_uc": 0,
+        "new_pres_from_uc": 2,
+        "old_err_from_api": 0,
+        "new_err_from_api": 2,
+        "old_err_from_da": 0,
+        "new_err_from_da": 2,
+        "new_pres_from_da": 2,
+        "uc_to_err_hops": 2,
+        "uc_to_pres_hops": 3,
+        "api_to_err_hops": 1,
+        "da_to_err_hops": 3,
+        "da_to_pres_hops": 4,
+        "h1_pass": true
+      },
+      {
+        "uc": "UC-010",
+        "module": "MOD-admin-module",
+        "errors": [
+          "ERR-BENCH010_NOT_FOUND",
+          "ERR-BENCH010_UPSTREAM_FAILED"
+        ],
+        "has_tasks": false,
+        "l12_intact_zero": true,
+        "old_err_from_uc": 0,
+        "new_err_from_uc": 2,
+        "old_pres_from_uc": 0,
+        "new_pres_from_uc": 2,
+        "old_err_from_api": 0,
+        "new_err_from_api": 2,
+        "old_err_from_da": null,
+        "new_err_from_da": null,
+        "new_pres_from_da": null,
+        "uc_to_err_hops": 2,
+        "uc_to_pres_hops": 3,
+        "api_to_err_hops": 1,
+        "da_to_err_hops": null,
+        "da_to_pres_hops": null,
+        "h1_pass": true
+      },
+      {
+        "uc": "UC-011",
+        "module": "MOD-dashboard-module",
+        "errors": [
+          "ERR-BENCH011_NOT_FOUND",
+          "ERR-BENCH011_UPSTREAM_FAILED"
+        ],
+        "has_tasks": false,
+        "l12_intact_zero": true,
+        "old_err_from_uc": 0,
+        "new_err_from_uc": 2,
+        "old_pres_from_uc": 0,
+        "new_pres_from_uc": 2,
+        "old_err_from_api": 0,
+        "new_err_from_api": 2,
+        "old_err_from_da": 0,
+        "new_err_from_da": 2,
+        "new_pres_from_da": 2,
+        "uc_to_err_hops": 2,
+        "uc_to_pres_hops": 3,
+        "api_to_err_hops": 1,
+        "da_to_err_hops": 5,
+        "da_to_pres_hops": 5,
+        "h1_pass": true
+      },
+      {
+        "uc": "UC-012",
+        "module": "MOD-shared-core",
+        "errors": [
+          "ERR-BENCH012_NOT_FOUND",
+          "ERR-BENCH012_UPSTREAM_FAILED"
+        ],
+        "has_tasks": true,
+        "l12_intact_zero": true,
+        "old_err_from_uc": 0,
+        "new_err_from_uc": 2,
+        "old_pres_from_uc": 0,
+        "new_pres_from_uc": 2,
+        "old_err_from_api": 0,
+        "new_err_from_api": 2,
+        "old_err_from_da": null,
+        "new_err_from_da": null,
+        "new_pres_from_da": null,
+        "uc_to_err_hops": 2,
+        "uc_to_pres_hops": 3,
+        "api_to_err_hops": 1,
+        "da_to_err_hops": null,
+        "da_to_pres_hops": null,
+        "h1_pass": true
+      },
+      {
+        "uc": "UC-013",
+        "module": "MOD-generation-module",
+        "errors": [
+          "ERR-BENCH013_NOT_FOUND",
+          "ERR-BENCH013_UPSTREAM_FAILED"
+        ],
+        "has_tasks": false,
+        "l12_intact_zero": true,
+        "old_err_from_uc": 0,
+        "new_err_from_uc": 2,
+        "old_pres_from_uc": 0,
+        "new_pres_from_uc": 2,
+        "old_err_from_api": 0,
+        "new_err_from_api": 2,
+        "old_err_from_da": 0,
+        "new_err_from_da": 2,
+        "new_pres_from_da": 2,
+        "uc_to_err_hops": 2,
+        "uc_to_pres_hops": 3,
+        "api_to_err_hops": 1,
+        "da_to_err_hops": 5,
+        "da_to_pres_hops": 5,
+        "h1_pass": true
+      },
+      {
+        "uc": "UC-014",
+        "module": "MOD-generation-module",
+        "errors": [
+          "ERR-BENCH014_NOT_FOUND",
+          "ERR-BENCH014_UPSTREAM_FAILED"
+        ],
+        "has_tasks": true,
+        "l12_intact_zero": true,
+        "old_err_from_uc": 0,
+        "new_err_from_uc": 2,
+        "old_pres_from_uc": 0,
+        "new_pres_from_uc": 2,
+        "old_err_from_api": 0,
+        "new_err_from_api": 2,
+        "old_err_from_da": 0,
+        "new_err_from_da": 2,
+        "new_pres_from_da": 2,
+        "uc_to_err_hops": 2,
+        "uc_to_pres_hops": 3,
+        "api_to_err_hops": 1,
+        "da_to_err_hops": 3,
+        "da_to_pres_hops": 4,
+        "h1_pass": true
+      },
+      {
+        "uc": "UC-016",
+        "module": "MOD-admin-module",
+        "errors": [
+          "ERR-BENCH016_NOT_FOUND",
+          "ERR-BENCH016_UPSTREAM_FAILED"
+        ],
+        "has_tasks": false,
+        "l12_intact_zero": true,
+        "old_err_from_uc": 0,
+        "new_err_from_uc": 2,
+        "old_pres_from_uc": 0,
+        "new_pres_from_uc": 2,
+        "old_err_from_api": 0,
+        "new_err_from_api": 2,
+        "old_err_from_da": 0,
+        "new_err_from_da": 2,
+        "new_pres_from_da": 2,
+        "uc_to_err_hops": 2,
+        "uc_to_pres_hops": 3,
+        "api_to_err_hops": 1,
+        "da_to_err_hops": 3,
+        "da_to_pres_hops": 4,
+        "h1_pass": true
+      },
+      {
+        "uc": "UC-020",
+        "module": "MOD-shared-core",
+        "errors": [
+          "ERR-BENCH020_NOT_FOUND",
+          "ERR-BENCH020_UPSTREAM_FAILED"
+        ],
+        "has_tasks": true,
+        "l12_intact_zero": true,
+        "old_err_from_uc": 0,
+        "new_err_from_uc": 2,
+        "old_pres_from_uc": 0,
+        "new_pres_from_uc": 2,
+        "old_err_from_api": 0,
+        "new_err_from_api": 2,
+        "old_err_from_da": 0,
+        "new_err_from_da": 2,
+        "new_pres_from_da": 2,
+        "uc_to_err_hops": 2,
+        "uc_to_pres_hops": 3,
+        "api_to_err_hops": 1,
+        "da_to_err_hops": 3,
+        "da_to_pres_hops": 4,
+        "h1_pass": true
+      },
+      {
+        "uc": "UC-021",
+        "module": "MOD-shared-core",
+        "errors": [
+          "ERR-BENCH021_NOT_FOUND",
+          "ERR-BENCH021_UPSTREAM_FAILED"
+        ],
+        "has_tasks": true,
+        "l12_intact_zero": true,
+        "old_err_from_uc": 0,
+        "new_err_from_uc": 2,
+        "old_pres_from_uc": 0,
+        "new_pres_from_uc": 2,
+        "old_err_from_api": 0,
+        "new_err_from_api": 2,
+        "old_err_from_da": null,
+        "new_err_from_da": null,
+        "new_pres_from_da": null,
+        "uc_to_err_hops": 2,
+        "uc_to_pres_hops": 3,
+        "api_to_err_hops": 1,
+        "da_to_err_hops": null,
+        "da_to_pres_hops": null,
+        "h1_pass": true
+      },
+      {
+        "uc": "UC-022",
+        "module": "MOD-payment-module",
+        "errors": [
+          "ERR-BENCH022_NOT_FOUND",
+          "ERR-BENCH022_UPSTREAM_FAILED"
+        ],
+        "has_tasks": true,
+        "l12_intact_zero": true,
+        "old_err_from_uc": 0,
+        "new_err_from_uc": 2,
+        "old_pres_from_uc": 0,
+        "new_pres_from_uc": 2,
+        "old_err_from_api": 0,
+        "new_err_from_api": 2,
+        "old_err_from_da": 0,
+        "new_err_from_da": 2,
+        "new_pres_from_da": 2,
+        "uc_to_err_hops": 2,
+        "uc_to_pres_hops": 3,
+        "api_to_err_hops": 1,
+        "da_to_err_hops": 5,
+        "da_to_pres_hops": 5,
+        "h1_pass": true
+      },
+      {
+        "uc": "UC-023",
+        "module": "MOD-payment-module",
+        "errors": [
+          "ERR-BENCH023_NOT_FOUND",
+          "ERR-BENCH023_UPSTREAM_FAILED"
+        ],
+        "has_tasks": false,
+        "l12_intact_zero": true,
+        "old_err_from_uc": 0,
+        "new_err_from_uc": 2,
+        "old_pres_from_uc": 0,
+        "new_pres_from_uc": 2,
+        "old_err_from_api": 0,
+        "new_err_from_api": 2,
+        "old_err_from_da": 0,
+        "new_err_from_da": 2,
+        "new_pres_from_da": 2,
+        "uc_to_err_hops": 2,
+        "uc_to_pres_hops": 3,
+        "api_to_err_hops": 1,
+        "da_to_err_hops": 3,
+        "da_to_pres_hops": 4,
+        "h1_pass": true
+      },
+      {
+        "uc": "UC-025",
+        "module": "MOD-shared-core",
+        "errors": [
+          "ERR-BENCH025_NOT_FOUND",
+          "ERR-BENCH025_UPSTREAM_FAILED"
+        ],
+        "has_tasks": true,
+        "l12_intact_zero": true,
+        "old_err_from_uc": 0,
+        "new_err_from_uc": 2,
+        "old_pres_from_uc": 0,
+        "new_pres_from_uc": 2,
+        "old_err_from_api": 0,
+        "new_err_from_api": 2,
+        "old_err_from_da": null,
+        "new_err_from_da": null,
+        "new_pres_from_da": null,
+        "uc_to_err_hops": 2,
+        "uc_to_pres_hops": 3,
+        "api_to_err_hops": 1,
+        "da_to_err_hops": null,
+        "da_to_pres_hops": null,
+        "h1_pass": true
+      },
+      {
+        "uc": "UC-027",
+        "module": "MOD-payment-module",
+        "errors": [
+          "ERR-BENCH027_NOT_FOUND",
+          "ERR-BENCH027_UPSTREAM_FAILED"
+        ],
+        "has_tasks": true,
+        "l12_intact_zero": true,
+        "old_err_from_uc": 0,
+        "new_err_from_uc": 2,
+        "old_pres_from_uc": 0,
+        "new_pres_from_uc": 2,
+        "old_err_from_api": 0,
+        "new_err_from_api": 2,
+        "old_err_from_da": null,
+        "new_err_from_da": null,
+        "new_pres_from_da": null,
+        "uc_to_err_hops": 2,
+        "uc_to_pres_hops": 3,
+        "api_to_err_hops": 1,
+        "da_to_err_hops": null,
+        "da_to_pres_hops": null,
+        "h1_pass": true
+      },
+      {
+        "uc": "UC-029",
+        "module": "MOD-admin-module",
+        "errors": [
+          "ERR-BENCH029_NOT_FOUND",
+          "ERR-BENCH029_UPSTREAM_FAILED"
+        ],
+        "has_tasks": false,
+        "l12_intact_zero": true,
+        "old_err_from_uc": 0,
+        "new_err_from_uc": 2,
+        "old_pres_from_uc": 0,
+        "new_pres_from_uc": 2,
+        "old_err_from_api": 0,
+        "new_err_from_api": 2,
+        "old_err_from_da": null,
+        "new_err_from_da": null,
+        "new_pres_from_da": null,
+        "uc_to_err_hops": 2,
+        "uc_to_pres_hops": 3,
+        "api_to_err_hops": 1,
+        "da_to_err_hops": null,
+        "da_to_pres_hops": null,
+        "h1_pass": true
+      },
+      {
+        "uc": "UC-030",
+        "module": "MOD-memories-module",
+        "errors": [
+          "ERR-BENCH030_NOT_FOUND",
+          "ERR-BENCH030_UPSTREAM_FAILED"
+        ],
+        "has_tasks": true,
+        "l12_intact_zero": true,
+        "old_err_from_uc": 0,
+        "new_err_from_uc": 2,
+        "old_pres_from_uc": 0,
+        "new_pres_from_uc": 2,
+        "old_err_from_api": 0,
+        "new_err_from_api": 2,
+        "old_err_from_da": 0,
+        "new_err_from_da": 2,
+        "new_pres_from_da": 2,
+        "uc_to_err_hops": 2,
+        "uc_to_pres_hops": 3,
+        "api_to_err_hops": 1,
+        "da_to_err_hops": 3,
+        "da_to_pres_hops": 4,
+        "h1_pass": true
+      },
+      {
+        "uc": "UC-031",
+        "module": "MOD-memories-module",
+        "errors": [
+          "ERR-BENCH031_NOT_FOUND",
+          "ERR-BENCH031_UPSTREAM_FAILED"
+        ],
+        "has_tasks": true,
+        "l12_intact_zero": true,
+        "old_err_from_uc": 0,
+        "new_err_from_uc": 2,
+        "old_pres_from_uc": 0,
+        "new_pres_from_uc": 2,
+        "old_err_from_api": 0,
+        "new_err_from_api": 2,
+        "old_err_from_da": 0,
+        "new_err_from_da": 2,
+        "new_pres_from_da": 2,
+        "uc_to_err_hops": 2,
+        "uc_to_pres_hops": 3,
+        "api_to_err_hops": 1,
+        "da_to_err_hops": 3,
+        "da_to_pres_hops": 4,
+        "h1_pass": true
+      },
+      {
+        "uc": "UC-034",
+        "module": "MOD-memories-module",
+        "errors": [
+          "ERR-BENCH034_NOT_FOUND",
+          "ERR-BENCH034_UPSTREAM_FAILED"
+        ],
+        "has_tasks": true,
+        "l12_intact_zero": true,
+        "old_err_from_uc": 0,
+        "new_err_from_uc": 2,
+        "old_pres_from_uc": 0,
+        "new_pres_from_uc": 2,
+        "old_err_from_api": 0,
+        "new_err_from_api": 2,
+        "old_err_from_da": 0,
+        "new_err_from_da": 2,
+        "new_pres_from_da": 2,
+        "uc_to_err_hops": 2,
+        "uc_to_pres_hops": 3,
+        "api_to_err_hops": 1,
+        "da_to_err_hops": 3,
+        "da_to_pres_hops": 4,
+        "h1_pass": true
+      },
+      {
+        "uc": "UC-035",
+        "module": "MOD-payment-module",
+        "errors": [
+          "ERR-BENCH035_NOT_FOUND",
+          "ERR-BENCH035_UPSTREAM_FAILED"
+        ],
+        "has_tasks": false,
+        "l12_intact_zero": true,
+        "old_err_from_uc": 0,
+        "new_err_from_uc": 2,
+        "old_pres_from_uc": 0,
+        "new_pres_from_uc": 2,
+        "old_err_from_api": 0,
+        "new_err_from_api": 2,
+        "old_err_from_da": 0,
+        "new_err_from_da": 2,
+        "new_pres_from_da": 2,
+        "uc_to_err_hops": 2,
+        "uc_to_pres_hops": 3,
+        "api_to_err_hops": 1,
+        "da_to_err_hops": 3,
+        "da_to_pres_hops": 4,
+        "h1_pass": true
+      },
+      {
+        "uc": "UC-036",
+        "module": "MOD-admin-module",
+        "errors": [
+          "ERR-BENCH036_NOT_FOUND",
+          "ERR-BENCH036_UPSTREAM_FAILED"
+        ],
+        "has_tasks": false,
+        "l12_intact_zero": true,
+        "old_err_from_uc": 0,
+        "new_err_from_uc": 2,
+        "old_pres_from_uc": 0,
+        "new_pres_from_uc": 2,
+        "old_err_from_api": 0,
+        "new_err_from_api": 2,
+        "old_err_from_da": 0,
+        "new_err_from_da": 2,
+        "new_pres_from_da": 2,
+        "uc_to_err_hops": 2,
+        "uc_to_pres_hops": 3,
+        "api_to_err_hops": 1,
+        "da_to_err_hops": 5,
+        "da_to_pres_hops": 5,
+        "h1_pass": true
+      },
+      {
+        "uc": "UC-037",
+        "module": "MOD-admin-module",
+        "errors": [
+          "ERR-BENCH037_NOT_FOUND",
+          "ERR-BENCH037_UPSTREAM_FAILED"
+        ],
+        "has_tasks": true,
+        "l12_intact_zero": true,
+        "old_err_from_uc": 0,
+        "new_err_from_uc": 2,
+        "old_pres_from_uc": 0,
+        "new_pres_from_uc": 2,
+        "old_err_from_api": 0,
+        "new_err_from_api": 2,
+        "old_err_from_da": null,
+        "new_err_from_da": null,
+        "new_pres_from_da": null,
+        "uc_to_err_hops": 2,
+        "uc_to_pres_hops": 3,
+        "api_to_err_hops": 1,
+        "da_to_err_hops": null,
+        "da_to_pres_hops": null,
+        "h1_pass": true
+      },
+      {
+        "uc": "UC-038",
+        "module": "MOD-dashboard-module",
+        "errors": [
+          "ERR-BENCH038_NOT_FOUND",
+          "ERR-BENCH038_UPSTREAM_FAILED"
+        ],
+        "has_tasks": true,
+        "l12_intact_zero": true,
+        "old_err_from_uc": 0,
+        "new_err_from_uc": 2,
+        "old_pres_from_uc": 0,
+        "new_pres_from_uc": 2,
+        "old_err_from_api": 0,
+        "new_err_from_api": 2,
+        "old_err_from_da": null,
+        "new_err_from_da": null,
+        "new_pres_from_da": null,
+        "uc_to_err_hops": 2,
+        "uc_to_pres_hops": 3,
+        "api_to_err_hops": 1,
+        "da_to_err_hops": null,
+        "da_to_pres_hops": null,
+        "h1_pass": true
+      }
+    ],
+    "pass": true
+  },
+  "H2": {
+    "n_ucs": 29,
+    "rows": [
+      {
+        "uc": "UC-001",
+        "tasks_flagged": 0,
+        "tasks_expected": 0,
+        "total_flagged": 1,
+        "expected_total": 1,
+        "broad_from_uc_tasks": 45,
+        "broad_from_err_tasks": 40,
+        "h2_pass": true
+      },
+      {
+        "uc": "UC-002",
+        "tasks_flagged": 0,
+        "tasks_expected": 0,
+        "total_flagged": 1,
+        "expected_total": 1,
+        "broad_from_uc_tasks": 45,
+        "broad_from_err_tasks": 44,
+        "h2_pass": true
+      },
+      {
+        "uc": "UC-003",
+        "tasks_flagged": 1,
+        "tasks_expected": 1,
+        "total_flagged": 2,
+        "expected_total": 2,
+        "broad_from_uc_tasks": 45,
+        "broad_from_err_tasks": 44,
+        "h2_pass": true
+      },
+      {
+        "uc": "UC-004",
+        "tasks_flagged": 3,
+        "tasks_expected": 3,
+        "total_flagged": 4,
+        "expected_total": 4,
+        "broad_from_uc_tasks": 45,
+        "broad_from_err_tasks": 44,
+        "h2_pass": true
+      },
+      {
+        "uc": "UC-005",
+        "tasks_flagged": 2,
+        "tasks_expected": 2,
+        "total_flagged": 3,
+        "expected_total": 3,
+        "broad_from_uc_tasks": 45,
+        "broad_from_err_tasks": 44,
+        "h2_pass": true
+      },
+      {
+        "uc": "UC-006",
+        "tasks_flagged": 1,
+        "tasks_expected": 1,
+        "total_flagged": 2,
+        "expected_total": 2,
+        "broad_from_uc_tasks": 45,
+        "broad_from_err_tasks": 42,
+        "h2_pass": true
+      },
+      {
+        "uc": "UC-007",
+        "tasks_flagged": 0,
+        "tasks_expected": 0,
+        "total_flagged": 1,
+        "expected_total": 1,
+        "broad_from_uc_tasks": 45,
+        "broad_from_err_tasks": 42,
+        "h2_pass": true
+      },
+      {
+        "uc": "UC-008",
+        "tasks_flagged": 0,
+        "tasks_expected": 0,
+        "total_flagged": 1,
+        "expected_total": 1,
+        "broad_from_uc_tasks": 45,
+        "broad_from_err_tasks": 42,
+        "h2_pass": true
+      },
+      {
+        "uc": "UC-009",
+        "tasks_flagged": 0,
+        "tasks_expected": 0,
+        "total_flagged": 1,
+        "expected_total": 1,
+        "broad_from_uc_tasks": 45,
+        "broad_from_err_tasks": 41,
+        "h2_pass": true
+      },
+      {
+        "uc": "UC-010",
+        "tasks_flagged": 0,
+        "tasks_expected": 0,
+        "total_flagged": 1,
+        "expected_total": 1,
+        "broad_from_uc_tasks": 45,
+        "broad_from_err_tasks": 41,
+        "h2_pass": true
+      },
+      {
+        "uc": "UC-011",
+        "tasks_flagged": 0,
+        "tasks_expected": 0,
+        "total_flagged": 1,
+        "expected_total": 1,
+        "broad_from_uc_tasks": 45,
+        "broad_from_err_tasks": 45,
+        "h2_pass": true
+      },
+      {
+        "uc": "UC-012",
+        "tasks_flagged": 1,
+        "tasks_expected": 1,
+        "total_flagged": 2,
+        "expected_total": 2,
+        "broad_from_uc_tasks": 45,
+        "broad_from_err_tasks": 45,
+        "h2_pass": true
+      },
+      {
+        "uc": "UC-013",
+        "tasks_flagged": 0,
+        "tasks_expected": 0,
+        "total_flagged": 1,
+        "expected_total": 1,
+        "broad_from_uc_tasks": 45,
+        "broad_from_err_tasks": 44,
+        "h2_pass": true
+      },
+      {
+        "uc": "UC-014",
+        "tasks_flagged": 3,
+        "tasks_expected": 3,
+        "total_flagged": 4,
+        "expected_total": 4,
+        "broad_from_uc_tasks": 45,
+        "broad_from_err_tasks": 44,
+        "h2_pass": true
+      },
+      {
+        "uc": "UC-016",
+        "tasks_flagged": 0,
+        "tasks_expected": 0,
+        "total_flagged": 1,
+        "expected_total": 1,
+        "broad_from_uc_tasks": 41,
+        "broad_from_err_tasks": 41,
+        "h2_pass": true
+      },
+      {
+        "uc": "UC-020",
+        "tasks_flagged": 1,
+        "tasks_expected": 1,
+        "total_flagged": 2,
+        "expected_total": 2,
+        "broad_from_uc_tasks": 45,
+        "broad_from_err_tasks": 45,
+        "h2_pass": true
+      },
+      {
+        "uc": "UC-021",
+        "tasks_flagged": 1,
+        "tasks_expected": 1,
+        "total_flagged": 2,
+        "expected_total": 2,
+        "broad_from_uc_tasks": 45,
+        "broad_from_err_tasks": 45,
+        "h2_pass": true
+      },
+      {
+        "uc": "UC-022",
+        "tasks_flagged": 1,
+        "tasks_expected": 1,
+        "total_flagged": 2,
+        "expected_total": 2,
+        "broad_from_uc_tasks": 45,
+        "broad_from_err_tasks": 44,
+        "h2_pass": true
+      },
+      {
+        "uc": "UC-023",
+        "tasks_flagged": 0,
+        "tasks_expected": 0,
+        "total_flagged": 1,
+        "expected_total": 1,
+        "broad_from_uc_tasks": 45,
+        "broad_from_err_tasks": 44,
+        "h2_pass": true
+      },
+      {
+        "uc": "UC-025",
+        "tasks_flagged": 1,
+        "tasks_expected": 1,
+        "total_flagged": 2,
+        "expected_total": 2,
+        "broad_from_uc_tasks": 45,
+        "broad_from_err_tasks": 45,
+        "h2_pass": true
+      },
+      {
+        "uc": "UC-027",
+        "tasks_flagged": 1,
+        "tasks_expected": 1,
+        "total_flagged": 2,
+        "expected_total": 2,
+        "broad_from_uc_tasks": 45,
+        "broad_from_err_tasks": 44,
+        "h2_pass": true
+      },
+      {
+        "uc": "UC-029",
+        "tasks_flagged": 0,
+        "tasks_expected": 0,
+        "total_flagged": 1,
+        "expected_total": 1,
+        "broad_from_uc_tasks": 45,
+        "broad_from_err_tasks": 41,
+        "h2_pass": true
+      },
+      {
+        "uc": "UC-030",
+        "tasks_flagged": 2,
+        "tasks_expected": 2,
+        "total_flagged": 3,
+        "expected_total": 3,
+        "broad_from_uc_tasks": 45,
+        "broad_from_err_tasks": 45,
+        "h2_pass": true
+      },
+      {
+        "uc": "UC-031",
+        "tasks_flagged": 3,
+        "tasks_expected": 3,
+        "total_flagged": 4,
+        "expected_total": 4,
+        "broad_from_uc_tasks": 45,
+        "broad_from_err_tasks": 45,
+        "h2_pass": true
+      },
+      {
+        "uc": "UC-034",
+        "tasks_flagged": 1,
+        "tasks_expected": 1,
+        "total_flagged": 2,
+        "expected_total": 2,
+        "broad_from_uc_tasks": 45,
+        "broad_from_err_tasks": 45,
+        "h2_pass": true
+      },
+      {
+        "uc": "UC-035",
+        "tasks_flagged": 0,
+        "tasks_expected": 0,
+        "total_flagged": 1,
+        "expected_total": 1,
+        "broad_from_uc_tasks": 45,
+        "broad_from_err_tasks": 44,
+        "h2_pass": true
+      },
+      {
+        "uc": "UC-036",
+        "tasks_flagged": 0,
+        "tasks_expected": 0,
+        "total_flagged": 1,
+        "expected_total": 1,
+        "broad_from_uc_tasks": 45,
+        "broad_from_err_tasks": 41,
+        "h2_pass": true
+      },
+      {
+        "uc": "UC-037",
+        "tasks_flagged": 2,
+        "tasks_expected": 2,
+        "total_flagged": 3,
+        "expected_total": 3,
+        "broad_from_uc_tasks": 45,
+        "broad_from_err_tasks": 41,
+        "h2_pass": true
+      },
+      {
+        "uc": "UC-038",
+        "tasks_flagged": 1,
+        "tasks_expected": 1,
+        "total_flagged": 2,
+        "expected_total": 2,
+        "broad_from_uc_tasks": 45,
+        "broad_from_err_tasks": 45,
+        "h2_pass": true
+      }
+    ],
+    "tight_total": 54,
+    "broad_from_uc_total": 1301,
+    "broad_from_err_total": 1257,
+    "pass": true
+  },
+  "H2_shared": {
+    "uc_invoked": "UC-003",
+    "uc_raiser": "UC-004",
+    "shared_error": "ERR-BENCH003_UPSTREAM_FAILED",
+    "tasks_flagged": 3,
+    "tasks_expected_set": 3,
+    "ucs_flagged": 2,
+    "raiser_uc_origin": "ERR-BENCH003_UPSTREAM_FAILED",
+    "tasks_with_err_origin": 3,
+    "tasks_with_uc_origin": 0,
+    "tasks_a": 1,
+    "exp_a": 1,
+    "exp_b": 3,
+    "pass": true
+  },
+  "H3": {
+    "n_defects": 21,
+    "uc": "UC-006",
+    "foreign_uc": "UC-003",
+    "rows": [
+      {
+        "defect": "orphan-error",
+        "expected": {
+          "L12.0": 1,
+          "L12.1": 1,
+          "L12.2": 1
+        },
+        "fired": {
+          "L12.0": 1,
+          "L12.1": 1,
+          "L12.2": 1
+        },
+        "clean_before": true,
+        "h3_pass": true
+      },
+      {
+        "defect": "orphan-presentation",
+        "expected": {
+          "L12.0": 1,
+          "L12.1": 1,
+          "L12.2": 1
+        },
+        "fired": {
+          "L12.0": 1,
+          "L12.1": 1,
+          "L12.2": 1
+        },
+        "clean_before": true,
+        "h3_pass": true
+      },
+      {
+        "defect": "parentless-error",
+        "expected": {
+          "L12.1": 1
+        },
+        "fired": {
+          "L12.1": 1
+        },
+        "clean_before": true,
+        "h3_pass": true
+      },
+      {
+        "defect": "parentless-presentation",
+        "expected": {
+          "L12.1": 1,
+          "L12.8": 1
+        },
+        "fired": {
+          "L12.1": 1,
+          "L12.8": 1
+        },
+        "clean_before": true,
+        "h3_pass": true
+      },
+      {
+        "defect": "unraisable-error",
+        "expected": {
+          "L12.2": 1,
+          "L12.3": 1
+        },
+        "fired": {
+          "L12.2": 1,
+          "L12.3": 1
+        },
+        "clean_before": true,
+        "h3_pass": true
+      },
+      {
+        "defect": "unshown-presentation",
+        "expected": {
+          "L12.2": 1,
+          "L12.8": 1
+        },
+        "fired": {
+          "L12.2": 1,
+          "L12.8": 1
+        },
+        "clean_before": true,
+        "h3_pass": true
+      },
+      {
+        "defect": "handles-wrong-label",
+        "expected": {
+          "L12.3": 1
+        },
+        "fired": {
+          "L12.3": 1
+        },
+        "clean_before": true,
+        "h3_pass": true
+      },
+      {
+        "defect": "handles-channel-violation",
+        "expected": {
+          "L12.3": 1,
+          "L12.8": 1
+        },
+        "fired": {
+          "L12.3": 1,
+          "L12.8": 1
+        },
+        "clean_before": true,
+        "h3_pass": true
+      },
+      {
+        "defect": "may-raise-wrong-label",
+        "expected": {
+          "L12.4": 1
+        },
+        "fired": {
+          "L12.4": 1
+        },
+        "clean_before": true,
+        "h3_pass": true
+      },
+      {
+        "defect": "presented-as-wrong-label",
+        "expected": {
+          "L12.4": 1
+        },
+        "fired": {
+          "L12.4": 1
+        },
+        "clean_before": true,
+        "h3_pass": true
+      },
+      {
+        "defect": "shows-wrong-label",
+        "expected": {
+          "L12.4": 1
+        },
+        "fired": {
+          "L12.4": 1
+        },
+        "clean_before": true,
+        "h3_pass": true
+      },
+      {
+        "defect": "shows-triangle-break",
+        "expected": {
+          "L12.5": 1
+        },
+        "fired": {
+          "L12.5": 1
+        },
+        "clean_before": true,
+        "h3_pass": true
+      },
+      {
+        "defect": "blank-code",
+        "expected": {
+          "L12.6a": 1
+        },
+        "fired": {
+          "L12.6a": 1
+        },
+        "clean_before": true,
+        "h3_pass": true
+      },
+      {
+        "defect": "blank-message",
+        "expected": {
+          "L12.6a": 1
+        },
+        "fired": {
+          "L12.6a": 1
+        },
+        "clean_before": true,
+        "h3_pass": true
+      },
+      {
+        "defect": "bad-error-kind",
+        "expected": {
+          "L12.6b": 1
+        },
+        "fired": {
+          "L12.6b": 1
+        },
+        "clean_before": true,
+        "h3_pass": true
+      },
+      {
+        "defect": "bad-presentation-kind",
+        "expected": {
+          "L12.6b": 1
+        },
+        "fired": {
+          "L12.6b": 1
+        },
+        "clean_before": true,
+        "h3_pass": true
+      },
+      {
+        "defect": "handling-gap",
+        "expected": {
+          "L12.7": 1
+        },
+        "fired": {
+          "L12.7": 1
+        },
+        "clean_before": true,
+        "h3_pass": true
+      },
+      {
+        "defect": "handled-unpresented",
+        "expected": {
+          "L12.8": 1
+        },
+        "fired": {
+          "L12.8": 1
+        },
+        "clean_before": true,
+        "h3_pass": true
+      },
+      {
+        "defect": "error-slices-unjoined",
+        "expected": {
+          "L12.9": 1,
+          "L12.7": 2,
+          "L12.2": 2
+        },
+        "fired": {
+          "L12.2": 2,
+          "L12.7": 2,
+          "L12.9": 1
+        },
+        "clean_before": true,
+        "h3_pass": true
+      },
+      {
+        "defect": "effect-calls-wrong-label-foreign",
+        "expected": {
+          "L10.7a": 1,
+          "L10.2": 1
+        },
+        "fired": {
+          "L10.2": 1,
+          "L10.7a": 1
+        },
+        "clean_before": true,
+        "h3_pass": true
+      },
+      {
+        "defect": "slice-calls-wrong-label",
+        "expected": {
+          "L11.5": 1
+        },
+        "fired": {
+          "L11.5": 1
+        },
+        "clean_before": true,
+        "h3_pass": true
+      }
+    ],
+    "pass": true
+  },
+  "clone_clean": {
+    "nodes": 1913,
+    "rels": 2693,
+    "errors": 0,
+    "presentations": 0,
+    "slices": 0,
+    "screens": 0,
+    "stale": 0
+  },
+  "overall_pass": true
+}
