@@ -227,6 +227,11 @@ invocation_args (user-facing — NOT passed to check_script)
   opt-out flags:
     --plan-only                            # planning artifacts only
     --strict                               # disable default safe-exception envelope
+    --branch=current|new                   # default: current (when on a non-production
+                                           # branch); new = pre-2.13 isolated goal branch
+    --push=deferred|per-atom|none          # default: deferred (branch_mode=current),
+                                           # per-atom (branch_mode=new); none requires
+                                           # --target=dev-only
     --target=staging|dev-only              # default: staging (auto from config)
     --budget=<profile>                     # optional budget override
     --new-run                              # force fresh run-id on fingerprint match
@@ -240,12 +245,15 @@ expected_evidence_keys
   - feature_atoms_total            # int
   - feature_spec_delta_count       # int — UC/spec edits written for FEATURE atoms
   - feature_atoms_verified         # int — /nacl-tl-verify PASS for FEATURE atoms
-  - branch                         # string — feature/goal-<short-hash>
+  - branch                         # string — feature/goal-<short-hash> OR the user's
+                                   # current branch (branch_mode=current)
   - branch_head_sha                # string — must equal goal_final_sha at deliver
-  - pr_url                         # string | null — one PR per run
-  - pr_head_sha                    # string — must equal goal_final_sha
+  - pr_url                         # string | null — one PR per run; stays null when
+                                   # push_cadence == none
+  - pr_head_sha                    # string — must equal goal_final_sha (n/a when
+                                   # push_cadence == none)
   - goal_final_sha                 # string — frozen after last atom verified
-  - ci_status                      # success | pending | failure
+  - ci_status                      # success | pending | failure | n/a (push_cadence none)
   - no_new_regressions             # bool — mechanical baseline diff
   - regression_check_mode          # stable_ids | best_effort
   - baseline_command               # string — resolved test command (audit)
@@ -254,6 +262,13 @@ expected_evidence_keys
   - deployed_sha_matches           # true | false | n/a
   - staging_functional_verified    # bool | n/a
   - dev_verified                   # bool | n/a — dev-only path only
+  # --- optional advisory keys (appended 2.13+; absent on pre-2.13 runs) ---
+  - branch_mode                    # current | new
+  - push_cadence                   # per-atom | deferred | none
+  - prior_commits_count            # int — commits already on the branch ahead of
+                                   # base_branch when the run started (current mode)
+  - branch_base_sha                # string — merge-base(branch, base_branch) at start
+  - worktree_isolated              # bool — baseline/postfix ran in isolated worktree
 result_decision_rule
   GOAL_OK
     when intake_status == classified
@@ -263,11 +278,12 @@ result_decision_rule
     AND atoms_implemented == atoms_total
     AND feature_spec_delta_count >= feature_atoms_total
     AND feature_atoms_verified == feature_atoms_total
-    AND pr_url != null
     AND branch_head_sha == goal_final_sha
-    AND pr_head_sha == goal_final_sha
-    AND ci_status == success
     AND no_new_regressions == true
+    AND (push_cadence == none            # PR/CI requirements apply only when the
+         OR (pr_url != null              # run actually pushes; with none the run
+             AND pr_head_sha == goal_final_sha   # ends at verified local commits
+             AND ci_status == success))
     AND (
           (deploy_target == staging
            AND deploy_status == healthy
@@ -275,6 +291,8 @@ result_decision_rule
                 OR (deployed_sha_matches == n/a AND staging_functional_verified == true)))
           OR (deploy_target == dev-only AND dev_verified == true AND no_new_regressions == true)
         )
+    # push_cadence == none is only reachable with deploy_target == dev-only
+    # (the flag combination none+staging is rejected at argument parsing)
   GOAL_NOT_OK
     default — atoms still implementing, CI still pending, etc.
   GOAL_BLOCKED

@@ -101,6 +101,19 @@ Resolve built-in aliases from `../../nacl-goal/aliases.md`.
 Deferred 2.10.1 aliases are `stubs-cleanup:<MOD-ID>`, `migrate-canary`, and
 `feature:<FR-NNN>`. Do not report them as 2.10.0-ready aliases.
 
+The `intake` alias (2.10.1+, `../../nacl-goal/checks/intake.sh`) is
+autonomy-by-default and Claude-runtime only; Codex previews it but never
+starts it. When previewing, resolve and surface the branch/push dimensions
+from `../../nacl-goal/aliases.md` §intake: `branch_mode`
+(`current` default on a non-production branch | `new` via `--branch=new`),
+`push_cadence` (`deferred` default in current mode — one push at deliver |
+`per-atom` | `none`), and the Smart-WIP overlap protocol (uncommitted files
+from concurrent agents do not refuse the run; overlap with an atom's
+predicted zone resolves via one consolidated pre-start question). Preserve
+the new codes `GOAL_BLOCKED_WIP_COLLISION` (the only resumable
+GOAL_BLOCKED) and the mode-conditional `PLAN_BLOCKED_DIRTY_WORKTREE`
+triggers exactly as catalogued.
+
 For `fix:<BUG-NNN>`, preserve RED-first and PR-open evidence requirements. L0
 or L1 emergency bugs route to refusal or interactive handling, not the ordinary
 fix loop.

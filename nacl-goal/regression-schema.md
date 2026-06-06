@@ -23,6 +23,8 @@ For the broader artifact contract see `nacl-goal/plan-lock-schema.md`.
   "runner": "vitest|jest|pytest|go|unknown",
   "exit_code": 0,
   "collected_count": 42,
+  "worktree_isolated": true,
+  "captured_at_sha": "<sha the capture ran against>",
   "tests": {
     "passed":  ["<test-id>", "..."],
     "failed":  ["<test-id>", "..."],
@@ -39,10 +41,14 @@ For the broader artifact contract see `nacl-goal/plan-lock-schema.md`.
 - `exit_code`: the runner's process exit code. May be non-zero on red
   baseline runs (which are still recorded; see `BASELINE_RED` semantics).
 - `collected_count`: total tests collected by the runner.
+- `worktree_isolated`: whether the capture ran in a throwaway worktree
+  (see §Worktree isolation). `false` only on the disclosed fallback path.
+- `captured_at_sha`: the commit the capture was pinned to (HEAD-at-start
+  for baseline, `goal_final_sha` for postfix).
 - `tests`: three disjoint sets of test IDs.
 
 The two files (baseline and postfix) share this schema exactly. They
-differ only in `captured_at`.
+differ only in `captured_at` / `captured_at_sha`.
 
 ---
 
@@ -214,12 +220,47 @@ because the test ID is no longer in any of the three current sets.)
 
 ---
 
+## Worktree isolation (2.13+)
+
+In `branch_mode=current` the main checkout is a SHARED workspace: other
+agents may hold uncommitted edits there at any moment, and those edits
+change underneath the run. A baseline or postfix captured in the main
+tree would conflate their in-flight failures with the goal-run's diff.
+
+Both captures therefore run in a throwaway worktree pinned to a SHA:
+
+```bash
+tmp=$(mktemp -d)/goal-regression
+git worktree add --detach "$tmp" <sha>     # step 3: HEAD-at-start
+                                           # step 12: goal_final_sha
+# provision dependencies (in order of preference):
+#   1. symlink heavyweight dep dirs from the main checkout when present
+#      (node_modules, .venv, vendor) — cheap, works for the common case
+#   2. else run the project's install command (npm ci / poetry install ...)
+(cd "$tmp" && <baseline_command>)
+git worktree remove --force "$tmp"
+```
+
+Record `worktree_isolated: true` in the capture JSON. If worktree
+provisioning fails (e.g. native deps that refuse symlinked dirs), fall
+back to running in the main tree, record `worktree_isolated: false`, and
+disclose it in the emitted GOAL_PROOF — degraded, never silent.
+
+Semantics note: the step-3 baseline is **HEAD-at-start of the run's
+branch** — under `branch_mode=current` that already includes the user's
+prior batch commits. Regressions are measured relative to "the branch as
+it was when the goal started", NOT relative to `base_branch`: the goal
+run is only ever blamed for breakage it introduced itself.
+
+---
+
 ## Implementation notes
 
 The wrapper invokes the baseline command twice: once during PRECHECKS
 (step 3), once during POST-DELIVER REGRESSION CHECK (step 12). Both
 invocations use the same resolved command string (recorded in `command`
-field) so the comparison is apples-to-apples.
+field) so the comparison is apples-to-apples. Both run under the worktree
+isolation protocol above.
 
 The wrapper does NOT attempt to re-resolve the command between baseline
 and postfix. If the user modifies `scripts.test` mid-run (rare but

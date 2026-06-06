@@ -166,8 +166,8 @@ user's console. See `feedback-autonomy-default-ux.md`.
 
 | | |
 |---|---|
-| Triggers | The current working tree is checked out on `main`, `master`, or a `release/*` branch |
-| Message | "`/nacl-goal intake` refuses to run from a production branch (`<branch>`). The orchestrator pushes commits to a feature branch and opens a PR — running from `main` would mix in-progress goal-run commits with the production history. Check out a working branch (or just create a new one) and re-run." |
+| Triggers | The current working tree is checked out on `main`, `master`, or a `release/*` branch. Fires regardless of `branch_mode` — `--branch=current` does NOT relax it |
+| Message | "`/nacl-goal intake` refuses to run from a production branch (`<branch>`). The orchestrator commits to a working branch and opens a PR — running from `main` would mix in-progress goal-run commits with the production history. Check out a working branch (or just create a new one) and re-run; from a feature branch the run executes in place by default." |
 | Fallback | `git checkout -b feature/work-area && /nacl-goal intake "<goal>"` |
 | Logs to runs/ | No |
 | Reference | `nacl-goal/SKILL.md` Flow step 3 |
@@ -176,11 +176,17 @@ user's console. See `feedback-autonomy-default-ux.md`.
 
 | | |
 |---|---|
-| Triggers | `git status --porcelain` is non-empty at precheck |
-| Message | "`/nacl-goal intake` refuses to start with uncommitted changes in the working tree (`<file count>` files modified/added/deleted/untracked). The orchestrator captures a regression baseline against the current code and would otherwise conflate your uncommitted work with the goal-run diff. Commit, stash, or revert your changes and re-run." |
-| Fallback | `git stash -u` (includes untracked) OR commit your work; then re-run |
-| Logs to runs/ | No |
-| Reference | `nacl-goal/SKILL.md` Flow step 3 |
+| Triggers | (a) `branch_mode=new` (`--branch=new`) AND `git status --porcelain` is non-empty at precheck — the pre-2.13 rule, unchanged for this mode; OR (b) `branch_mode=current` AND the LOCK-time WIP-overlap check (Flow step 5) found uncommitted files inside a classified atom's predicted touch zone AND the consolidated question was declined or the session is non-interactive |
+| Message | (a) "`/nacl-goal intake --branch=new` refuses to start with uncommitted changes in the working tree (`<file count>` files modified/added/deleted/untracked). A fresh goal branch would carry your uncommitted work along. Commit, stash, or revert — or drop `--branch=new` to run on the current branch with the Smart-WIP overlap protocol." (b) "`/nacl-goal intake` cannot proceed: uncommitted changes in `<files>` overlap the predicted touch zone of atom `<atom title>`, and the overlap was not resolved. These files look like another agent's in-flight work — the goal run will not stage, commit, or revert them. Commit or revert the overlapping files (or re-run and exclude the atom) and re-run." |
+| Fallback | (a) `git stash -u` OR commit; then re-run. (b) resolve the overlapping files only — non-overlapping WIP can stay uncommitted; then re-run |
+| Logs to runs/ | (a) No. (b) Yes — plan.lock.json with `preexisting_dirty_files` retained for debugging |
+| Reference | `nacl-goal/SKILL.md` Flow steps 3 + 5 (Smart WIP) |
+
+Note (2.13+): a dirty worktree alone NO LONGER refuses in
+`branch_mode=current` (the default). Uncommitted files that do not overlap
+any atom's predicted zone are presumed to be another agent's concurrent
+work in the shared worktree: the run proceeds and leaves them strictly
+untouched. The commit-time backstop is `GOAL_BLOCKED_WIP_COLLISION`.
 
 ## PLAN_BLOCKED_BASELINE_RED
 
@@ -384,11 +390,21 @@ user's console. See `feedback-autonomy-default-ux.md`.
 | Logs to runs/ | Yes — `regression-diff.json` written |
 | Reference | `nacl-goal/regression-schema.md` |
 
+## GOAL_BLOCKED_WIP_COLLISION
+
+| | |
+|---|---|
+| Triggers | `branch_mode=current` only. First line of defense: `/nacl-tl-ship` (append mode) detects that the atom's modified-file set intersects `plan.lock.json.preexisting_dirty_files` at staging time and halts WITHOUT committing. Backstop: the wrapper's step-9 post-atom gate finds `git diff --name-only <pre_atom_sha>..HEAD` ∩ `preexisting_dirty_files` non-empty (the commit may have swallowed another agent's uncommitted edits) |
+| Message | "Atom `<atom title>` needed to modify `<files>` — file(s) another agent holds uncommitted changes in. `<Halted before commit | The atom's commit may include both edits — inspect `<sha>`>`. The goal run never auto-resolves this: those edits are not its work to commit or discard. Resolve the overlap (commit or revert the conflicting files), then `/nacl-goal resume` — the run re-snapshots the WIP list and retries this atom." |
+| Fallback | Coordinate with the other agent; commit or revert the overlapping files; `/nacl-goal resume` |
+| Logs to runs/ | Yes — atom state.json `error`, progress.jsonl event; `resumable: true` (the ONLY resumable GOAL_BLOCKED code) |
+| Reference | `nacl-goal/SKILL.md` Flow step 9 (WIP-collision gate); `nacl-tl-ship` §Goal-context append mode |
+
 ## GOAL_BLOCKED_BRANCH_DRIFTED_DURING_DELIVER
 
 | | |
 |---|---|
-| Triggers | PRE-DELIVER (step 10) OR POST-DELIVER (step 11.5) drift check finds `branch_head_sha != goal_final_sha` OR `pr_head_sha != goal_final_sha` |
+| Triggers | PRE-DELIVER (step 10) OR POST-DELIVER (step 11.5) drift check finds `branch_head_sha != goal_final_sha` OR `pr_head_sha != goal_final_sha`. Under `push_cadence=deferred` the `pr_head_sha` comparison applies only at step 11.5 (the PR does not exist before the single push); under `push_cadence=none` it is n/a at both steps |
 | Message | "The goal-run branch (`<branch>`) drifted from the SHA the wrapper froze at deliver time. Frozen `goal_final_sha`: `<sha>`. Current branch HEAD: `<sha>`. Current PR head: `<sha>`. Something (you, another process, a teammate) pushed to the branch during the deliver window. The PR remains as-is; the wrapper cannot safely claim staging delivery for a SHA it didn't verify.\n\nRe-run requires `--new-run` after deciding what to do with the drift." |
 | Fallback | Investigate the drift; reset the branch if appropriate; `/nacl-goal intake --new-run` |
 | Logs to runs/ | Yes |

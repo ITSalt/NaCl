@@ -283,8 +283,18 @@ Default behavior:
   • standard safe-exception envelope is ON (see nacl-goal/envelope.md)
   • target = staging if config.yaml → deploy.staging.url exists,
             otherwise PLAN_BLOCKED_STAGING_REQUIRED_BUT_MISSING
-  • atoms BUG / TASK / FEATURE_SMALL run on a single goal-run branch, one PR
+  • branch_mode = current when invoked from a non-production branch:
+            atoms run ON the branch you are standing on, commits stay local,
+            ONE push at DELIVER (push_cadence = deferred). The preview prints
+            a one-line notice: "Running on your branch <name>; one push at
+            deliver; do not commit to this branch while the run is active."
+            From main/master/release/* the production refusal still fires —
+            create a working branch first.
+  • atoms BUG / TASK / FEATURE_SMALL run on that single branch, one PR
   • atoms FEATURE_HEAVY → PLAN_BLOCKED with planning artifacts (no silent split)
+  • uncommitted changes (another agent's WIP) do NOT refuse the run in
+    branch_mode=current — see Flow step 3 "Smart WIP" for the
+    file-overlap protocol
 
 Opt-outs (each disables a slice of the default):
   --plan-only        write planning artifacts only; no /goal, no branch, no PR,
@@ -292,12 +302,28 @@ Opt-outs (each disables a slice of the default):
   --strict           disable default safe-exception envelope; pre-flight refuses
                      if plan predicts a gate would need envelope auto-authorization
                      (PLAN_BLOCKED_STRICT_REQUIRES_INTERACTIVE_FLOW)
+  --branch=current   run on the currently checked-out branch (default when on a
+                     non-production branch)
+  --branch=new       pre-2.13 behavior: create feature/goal-<short-hash>; requires
+                     a clean worktree (PLAN_BLOCKED_DIRTY_WORKTREE applies)
+  --push=deferred    atoms commit locally; single push at DELIVER (default when
+                     branch_mode=current)
+  --push=per-atom    push after every atom; PR opens on first push (default when
+                     branch_mode=new — pre-2.13 behavior)
+  --push=none        no push at all; run ends with local commits; ONLY valid with
+                     --target=dev-only (with staging it is a usage error rejected
+                     at argument parsing, before step 0 — no artifacts written);
+                     deliver later with /nacl-tl-deliver
   --target=staging   require staging (default)
   --target=dev-only  local verify + PR only; final message MUST NOT claim staging
                      delivery; dev_verified is asserted via local /nacl-tl-verify
   --new-run          force fresh run-id even if goal_fingerprint matches an existing
                      run; does NOT close or reuse prior PR in 2.10.1
   --budget=<profile> optional budget override (default Tier M: 200 turns / 3h / 4M tokens)
+
+Backward-compat invariant: `--branch=new` reproduces the pre-2.13 flow
+byte-for-byte (new goal branch, per-atom pushes, dirty-worktree refusal).
+The default changed ONLY for invocations from an existing feature branch.
 ```
 
 ### `intake` Flow (14 steps)
@@ -339,11 +365,30 @@ exception envelope see `nacl-goal/envelope.md`. For gate prediction see
    else                                                     → PLAN_BLOCKED_STAGING_REQUIRED_BUT_MISSING
 
 3. PRECHECKS  (Tier-C; /goal not yet issued)
-   dirty worktree              → PLAN_BLOCKED_DIRTY_WORKTREE
    on main/master/release/*    → PLAN_BLOCKED_UNSAFE_PRODUCTION_MUTATION
+     (fires regardless of branch_mode; create a working branch first)
+   resolve branch_mode / push_cadence:
+     --branch absent  → branch_mode = current  (we are on a non-production branch)
+     --branch=new     → branch_mode = new
+     push_cadence = --push if given, else deferred (current) / per-atom (new)
+   Smart WIP (branch_mode=current):
+     preexisting_dirty_files[] = paths from `git status --porcelain`
+       (including untracked); recorded in plan.lock.json at step 5
+     non-empty does NOT refuse — uncommitted files are presumed to be
+       another agent's in-flight work in the shared worktree. They are
+       never staged, never committed, never reverted by the goal run.
+     overlap resolution happens at step 5 (needs classified atoms);
+       hard runtime backstop at step 9 (commit-time collision gate)
+   branch_mode=new: dirty worktree → PLAN_BLOCKED_DIRTY_WORKTREE (pre-2.13 rule)
    resolve baseline_command chain (config.yaml → package.json → pyproject → defaults)
      missing → PLAN_BLOCKED_BASELINE_COMMAND_MISSING
    capture regression-baseline.json per regression-schema.md
+     run the baseline in an ISOLATED throwaway worktree pinned to the
+       current HEAD sha (`git worktree add --detach <tmp> HEAD`), so other
+       agents' uncommitted WIP never contaminates the baseline; provision
+       deps per regression-schema.md §Worktree isolation; if provisioning
+       fails, fall back to in-tree run with worktree_isolated: false
+       (disclosed in GOAL_PROOF)
      PLAN_BLOCKED_BASELINE_RED only fires if
        (exit_code != 0 AND collected_count == 0)
        OR (collected_count > 0 AND passed_count == 0)
@@ -375,11 +420,29 @@ exception envelope see `nacl-goal/envelope.md`. For gate prediction see
      Resume reads plan.lock.json and atoms/*.state.json — never re-classifies.
    topological sort atoms by depends_on; cycle → PLAN_BLOCKED_ATOM_DEPENDENCY_CYCLE
    tie-break: BUG before FEATURE_SMALL, then by id lexicographically
-   branch = feature/goal-<short-hash>
-   write plan.lock.json, authorization.json
+   branch = feature/goal-<short-hash>            (branch_mode=new)
+   branch = $(git rev-parse --abbrev-ref HEAD)   (branch_mode=current)
+   branch_mode=current bookkeeping (recorded in plan.lock.json):
+     branch_base_sha        = git merge-base <branch> <base_branch>
+     prior_unpushed_commits = git rev-list --count <base_branch>..HEAD
+     preexisting_dirty_files[] (snapshot from step 3)
+   WIP-overlap check (branch_mode=current, preexisting_dirty_files non-empty):
+     predict each atom's touch zone from the graph (linked UC → Module →
+       workspace directories + api-contracts paths) — coarse, directory-level
+     predicted zone ∩ preexisting_dirty_files == ∅ →
+       print one notice line ("N uncommitted files left untouched — presumed
+       another agent's work") and proceed
+     overlap → ONE consolidated plain-language question (pre-/goal, allowed):
+       per overlapping atom: continue anyway / commit those files into the
+       branch first / exclude the atom from this run
+       non-interactive session or declined → PLAN_BLOCKED_DIRTY_WORKTREE
+       (see refusal-catalog.md — the catalog entry covers both modes)
+   write plan.lock.json (incl. branch_mode, push_cadence), authorization.json
    write atoms/<atom_id>.state.json with state="pending" for each atom
    render initial PR body (per pr-body-template.md) to pr-body.md — WIP, atom table.
-     /nacl-tl-ship will read this file when it opens the PR on the first push.
+     per-atom cadence: /nacl-tl-ship reads this file when it opens the PR on
+       the first push. deferred cadence: /nacl-tl-deliver reads it at the
+       single push. none: no PR in this run.
    index.json state: "planned", resumable: true (flock-protected, atomic rename)
    --plan-only: EXIT here
 
@@ -406,20 +469,34 @@ exception envelope see `nacl-goal/envelope.md`. For gate prediction see
      through budget.json → inner_skill_runs[])
 
 9. EXECUTE ON ONE BRANCH (atom-state-driven; same path for fresh run and resume)
-   git checkout -b feature/goal-<short-hash>   (or fast-forward if RESUMED)
+   branch_mode=new:     git checkout -b feature/goal-<short-hash>
+                        (or fast-forward if RESUMED)
+   branch_mode=current: verify git rev-parse --abbrev-ref HEAD == plan.branch
+                        (FATAL mismatch — the user switched branches between
+                         lock and execute; report and exit, resumable)
    ALWAYS re-export goal env vars at start of this step (resume safe):
      export NACL_GOAL_RUN_ID=<run_id>
-     export NACL_GOAL_BRANCH=feature/goal-<short-hash>
+     export NACL_GOAL_BRANCH=<plan.branch>
      export NACL_SHIP_MODE=append
+     export NACL_SHIP_PUSH=<plan.push_cadence>     # per-atom | deferred | none
      export NACL_GOAL_BUDGET_FILE=<abs path to budget.json>
    for each atom in topological order:
      check budget.json wall-clock; if elapsed >= limit → GOAL_BLOCKED_BUDGET_EXHAUSTED
      skip if atoms/<atom_id>.state.json.state == "verified"
      transition: pending → implementing  (update state.json + progress.jsonl)
+     pre_atom_sha = git rev-parse HEAD
      BUG           → /nacl-tl-fix "<atom.title>" --auto-ship
      TASK          → /nacl-tl-dev <UC>           --auto-ship
      FEATURE_SMALL → /nacl-sa-feature <atom>     --bounded-only
                      followed by /nacl-tl-dev    --auto-ship
+     WIP-collision gate (branch_mode=current, preexisting_dirty_files non-empty):
+       git diff --name-only <pre_atom_sha>..HEAD ∩ preexisting_dirty_files ≠ ∅
+         → the atom's commits touched a file another agent holds uncommitted
+           edits in (the commit may have swallowed their work)
+         → state.state="failed", index.json state: "goal_blocked", resumable: TRUE
+         → GOAL_BLOCKED_WIP_COLLISION (resolve the overlap, then /nacl-goal resume)
+       (first line of defense is /nacl-tl-ship's staging-time check — see
+        nacl-tl-ship §Goal-context append mode; this gate is the backstop)
      on success: state.state="shipped", last_commit_sha=<HEAD>
                  append to budget.json inner_skill_runs[]
      run scoped verify; on PASS: state.state="verified"
@@ -428,38 +505,61 @@ exception envelope see `nacl-goal/envelope.md`. For gate prediction see
                  → GOAL_BLOCKED_ATOM_FAILED
      after each transition: re-render pr-body.md per pr-body-template.md
    The env vars instruct /nacl-tl-ship (PR2) to:
-     • push to existing goal-run branch
-     • create the goal-run PR on first push using pr-body.md; write pr.json
-     • on subsequent pushes: append commits; update pr.json.head_sha; refresh body
-     • do NOT create additional PRs
+     • commit selectively (files this atom changed, NEVER preexisting_dirty_files)
+     • NACL_SHIP_PUSH=per-atom: push to the goal branch; create the goal-run PR
+       on first push using pr-body.md; write pr.json; on subsequent pushes:
+       append commits; update pr.json.head_sha; refresh body; no additional PRs
+     • NACL_SHIP_PUSH=deferred|none: local commit only — no push, no PR calls;
+       the single push happens at DELIVER (deferred) or is left to the user (none)
    without env vars, --auto-ship behaves exactly as today (no silent change).
    after last atom verified:
-     goal_final_sha = HEAD of feature/goal-<hash>
+     goal_final_sha = HEAD of <plan.branch>
      write goal-final-sha.txt
-     render final PR body; refresh pr.json
+     render final PR body; refresh pr.json (per-atom cadence only — otherwise
+       pr.json does not exist yet)
 
 10. PRE-DELIVER DRIFT CHECK
     branch_head_sha = git rev-parse HEAD
-    pr_head_sha     = gh pr view --json headRefOid   (with retry-policy.md)
-    if branch_head_sha != goal_final_sha OR pr_head_sha != goal_final_sha:
-        index.json state: "goal_blocked", resumable: false
-        → GOAL_BLOCKED_BRANCH_DRIFTED_DURING_DELIVER
+    per-atom cadence:
+      pr_head_sha = gh pr view --json headRefOid   (with retry-policy.md)
+      if branch_head_sha != goal_final_sha OR pr_head_sha != goal_final_sha:
+          index.json state: "goal_blocked", resumable: false
+          → GOAL_BLOCKED_BRANCH_DRIFTED_DURING_DELIVER
+    deferred/none cadence:
+      the PR does not exist yet (nothing has been pushed) — check ONLY
+      branch_head_sha == goal_final_sha; the pr_head_sha comparison moves
+      to step 11.5, after the single push opens the PR
+    NOTE (branch_mode=current): concurrent COMMITS to the run branch by
+      other agents during an active run are NOT supported in v1 — this
+      check is exactly what catches them. Concurrent uncommitted WIP is
+      supported (Smart WIP); concurrent commits block the deliver.
 
 11. DELIVER
     deploy_target == staging  → /nacl-tl-deliver
        (gh run watch / staging health curl / functional verify wrapped per retry-policy.md)
+       push_cadence=deferred: deliver's push IS the single push of the run —
+         the PR opens here, reading .tl/goal-runs/<run_id>/pr-body.md
+         (finalized at step 9) as its body; wrapper writes pr.json from the
+         created PR; CI runs ONCE, on the full batch
     deploy_target == dev-only → run baseline_command + /nacl-tl-verify per linked UC locally
-       set dev_verified accordingly; print PR URL
+       set dev_verified accordingly
+       push_cadence=none: do NOT push; print "local commits on <branch> ready;
+         deliver later with /nacl-tl-deliver"; pr_url stays null
+       otherwise print PR URL
        final message MUST NOT claim staging delivery
 
 11.5 POST-DELIVER DRIFT CHECK
     (CI + deliver windows are exactly when a stray push happens — re-check.)
+    push_cadence=none: pr_head_sha is n/a — check only branch_head_sha_now.
     if branch_head_sha_now != goal_final_sha OR pr_head_sha_now != goal_final_sha:
         index.json state: "goal_blocked", resumable: false
         → GOAL_BLOCKED_BRANCH_DRIFTED_DURING_DELIVER
 
 12. POST-DELIVER REGRESSION CHECK (mechanical)
-    re-run baseline_command; capture regression-postfix.json (same schema as baseline)
+    re-run baseline_command in an isolated worktree pinned to goal_final_sha
+      (same protocol as step 3 — other agents' WIP must not contaminate the
+       postfix run; fallback + disclosure rules identical);
+      capture regression-postfix.json (same schema as baseline)
     regressions =
         (failed_now \ failed_baseline)                       # new failures
       ∪ (passed_baseline ∩ failed_now)                       # baseline-pass now failing
@@ -502,13 +602,15 @@ milestone):
 | Variable | Meaning |
 |---|---|
 | `NACL_GOAL_RUN_ID` | The current run_id; used by inner skills to tag commits, exception lookups, log entries |
-| `NACL_GOAL_BRANCH` | The goal-run feature branch name; ship target |
-| `NACL_SHIP_MODE` | `append` — push to existing branch + reuse PR (don't open new ones) |
+| `NACL_GOAL_BRANCH` | The goal-run branch name (a fresh `feature/goal-*` branch OR the user's current branch under `branch_mode=current`); ship target |
+| `NACL_SHIP_MODE` | `append` — reuse the goal branch + goal PR (don't open new ones) |
+| `NACL_SHIP_PUSH` | `per-atom` \| `deferred` \| `none` — push cadence for `/nacl-tl-ship` append mode. `per-atom`: push + PR per atom (pre-2.13 behavior, default when absent). `deferred`/`none`: local commit only, no push, no PR calls |
 | `NACL_GOAL_BUDGET_FILE` | Absolute path to budget.json; inner skills append envelope entries |
 
 **Backward compatibility invariant**: when these env vars are absent
 (normal interactive invocation), inner skills behave EXACTLY as they do
-today. The env-var-gated behavior is purely additive.
+today. With `NACL_SHIP_PUSH` absent, push cadence is `per-atom` (the
+pre-2.13 behavior). The env-var-gated behavior is purely additive.
 
 ### `intake` permissions
 
@@ -525,6 +627,7 @@ hooks-disabled, etc.) and adds NO new permissions. In particular:
 | Block code | `resumable` |
 |---|---|
 | Transient interruption (no terminal state recorded) | true |
+| `GOAL_BLOCKED_WIP_COLLISION` | true |
 | `GOAL_BLOCKED_BRANCH_DRIFTED_DURING_DELIVER` | false |
 | `GOAL_BLOCKED_NEW_REGRESSIONS_DETECTED` | false |
 | `GOAL_BLOCKED_ATOM_FAILED` | false |
@@ -538,6 +641,13 @@ hooks-disabled, etc.) and adds NO new permissions. In particular:
 Resume blindly only when the cause was external (process crash, transient
 network). Anything that touched human-implication territory requires
 explicit `--new-run`.
+
+`GOAL_BLOCKED_WIP_COLLISION` resume protocol: the user resolves the overlap
+(commits or reverts the colliding uncommitted files), then `/nacl-goal resume`.
+On resume the wrapper re-snapshots `preexisting_dirty_files` (logged to
+progress.jsonl as `{"kind":"wip_resnapshotted"}`), updates plan.lock.json,
+and re-runs the failed atom. A `--commit-wip`-style auto-resolution is
+deliberately NOT offered — the colliding files belong to another agent.
 
 ---
 
@@ -636,9 +746,21 @@ See `nacl-goal/refusal-catalog.md` for the exact refusal codes these trigger.
   - **PR3**: fixture-project acceptance run, `skills-for-codex/PLAN`
     doc update, memory flip to "shipped".
 - **2.10.2 (`codex-sync`)** — shipped separately from autonomy work.
-- **2.10.2+** (deferred): FEATURE_HEAVY autonomous execution; multi-PR
-  orchestration; project-local exception policy file
+- **Unreleased (`current-branch-batch-mode`)** — `branch_mode=current` is
+  the new default when invoked from a feature branch: atoms run on the
+  user's open branch, commits stay local, one push + one CI run at DELIVER
+  (`push_cadence=deferred`). Smart WIP: uncommitted files from concurrent
+  agents in a shared worktree no longer refuse the run — file-overlap is
+  predicted at LOCK (graph zone vs dirty snapshot) and enforced at commit
+  time (`GOAL_BLOCKED_WIP_COLLISION`, resumable). Regression baseline and
+  postfix run in isolated throwaway worktrees. `--branch=new` restores the
+  pre-2.13 flow byte-for-byte. New env var `NACL_SHIP_PUSH`.
+- **Deferred** (post current-branch work): FEATURE_HEAVY autonomous
+  execution; multi-PR orchestration; project-local exception policy file
   (`.tl/project-exception-policy.yaml`) and project-specific gates;
   explicit `/nacl-goal status|resume|abort <run_id>` commands;
   `deploy.dev.url` config schema extension; auto-close superseded PRs on
-  `--new-run`; Codex variant of `intake`.
+  `--new-run`; Codex variant of `intake`; wave-parallel atom execution via
+  sub-agents (atoms are strictly sequential in v1); drift-check relaxation
+  to "goal commits are ancestors of HEAD" (support concurrent commits to
+  the run branch by other agents).

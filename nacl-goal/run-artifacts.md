@@ -98,8 +98,23 @@ goal_fingerprint = sha256(
     || canonical_git_remote_url_origin
     || "␟"
     || effective_target                   // "staging" | "dev-only"
+    || branch_segment                     // see below
 )
+
+branch_segment =
+    ""                                    // branch_mode = new  (pre-2.13
+                                          // fingerprints stay byte-identical)
+    || "␟" + current_branch_name          // branch_mode = current
 ```
+
+The `branch_segment` is appended ONLY in `branch_mode=current`: the same
+goal text run on two different feature branches is two different runs
+(different code under the atoms), so they must not dedup into one
+`run_id`. Conversely, two `branch_mode=current` invocations of the same
+goal on the SAME branch share a fingerprint and serialize through the
+index flock + re-invocation rules, never interleaving commits. In
+`branch_mode=new` nothing is appended, so every fingerprint computed by a
+pre-2.13 wrapper remains valid.
 
 ### Normalization details
 
@@ -178,6 +193,7 @@ computes `goal_fingerprint` and consults `index.json` under flock:
 
 | Block code | `resumable` |
 |---|---|
+| `GOAL_BLOCKED_WIP_COLLISION` | true |
 | `GOAL_BLOCKED_BRANCH_DRIFTED_DURING_DELIVER` | false |
 | `GOAL_BLOCKED_NEW_REGRESSIONS_DETECTED` | false |
 | `GOAL_BLOCKED_ATOM_FAILED` | false |
@@ -193,6 +209,16 @@ The principle: resume blindly only when the cause was external (process
 crash, transient network) and not a deterministic refusal that already had
 human implications. Drift, regressions, and atom failures all require human
 eyes before a re-attempt — `--new-run` is the explicit acknowledgment.
+
+`GOAL_BLOCKED_WIP_COLLISION` is the one resumable block code: the user
+resolves the file overlap out-of-band (commits or reverts the colliding
+uncommitted files — they belong to another agent, so the wrapper never
+auto-resolves), then `/nacl-goal resume`. On this resume path the wrapper
+re-snapshots `preexisting_dirty_files` from `git status --porcelain`,
+rewrites the field in plan.lock.json (atomic rename), appends a
+`{"kind":"wip_resnapshotted"}` event to progress.jsonl, and re-runs the
+failed atom. This is the ONLY field of plan.lock.json that may change
+after LOCK.
 
 ---
 

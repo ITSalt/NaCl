@@ -193,7 +193,14 @@ emit-state schema and require corresponding refusal entries here.
   "run_id": "goal-intake-...",
   "goal_fingerprint": "sha256:<hex>",
   "goal": "...",
-  "branch": "feature/goal-<short-hash>",
+  "branch": "feature/goal-<short-hash> OR the user's current branch (branch_mode=current)",
+  "branch_mode": "current|new",
+  "push_cadence": "per-atom|deferred|none",
+  "branch_base_sha": "<sha of merge-base(branch, base_branch) at run start; null in branch_mode=new>",
+  "prior_unpushed_commits": 0,
+  "preexisting_dirty_files": [
+    "relative/path/to/uncommitted-file.ts"
+  ],
   "deploy_target": "staging|dev-only",
   "atoms": [
     {
@@ -237,6 +244,24 @@ acceptable as long as the invariant holds.
 
 Atoms execute in topological order of `depends_on`. Cycle → `PLAN_BLOCKED_ATOM_DEPENDENCY_CYCLE`. Tie-break for unrelated atoms: BUG before
 FEATURE_SMALL, then by `id` lexicographically.
+
+### Smart-WIP fields (2.13+; `branch_mode=current` only)
+
+- `branch_mode` / `push_cadence`: resolved at Flow step 3, frozen here.
+  Pre-2.13 plan.lock.json files lack these keys — readers MUST default
+  them to `"new"` / `"per-atom"` (the pre-2.13 behavior).
+- `preexisting_dirty_files`: the `git status --porcelain` path snapshot
+  taken at Flow step 3. These files belong to other agents working in the
+  shared worktree: the goal run never stages, commits, or reverts them.
+  `/nacl-tl-ship` (append mode) refuses to stage any path in this list;
+  the wrapper's step-9 commit-time gate is the backstop
+  (`GOAL_BLOCKED_WIP_COLLISION`, resumable). On resume after a collision
+  the wrapper re-snapshots this list (progress.jsonl event
+  `wip_resnapshotted`) and rewrites it here atomically.
+- `branch_base_sha` / `prior_unpushed_commits`: audit anchors for the
+  PR-body "Pre-existing commits" section and the GOAL_PROOF advisory keys —
+  they let a reviewer separate the user's prior batch work from goal-run
+  commits. In `branch_mode=new` they are `null` / `0`.
 
 ---
 

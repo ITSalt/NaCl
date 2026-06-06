@@ -39,6 +39,18 @@ can find the artifact directory.
 | `atom-001` | BUG | L1 | UC-804 | `verified` | `abc1234` |
 | `atom-002` | FEATURE_SMALL | L1 | UC-804 | `shipped` | `def5678` |
 
+### Pre-existing commits on this branch
+
+<!-- rendered ONLY when plan.lock.json.branch_mode == "current"
+     AND prior_unpushed_commits > 0; omitted otherwise -->
+
+This run executed on an existing feature branch (`branch_mode: current`).
+`<prior_unpushed_commits>` commit(s) in range
+`<branch_base_sha short>..<first goal-run commit short>` predate the goal
+run and are part of the user's ongoing batch on this branch. Goal-run
+commits carry the `Goal-run-id:` trailer — `git log --grep "Goal-run-id: <run_id>"`
+separates them cleanly.
+
 ### Authorization
 
 - Strict mode: `<true|false>`
