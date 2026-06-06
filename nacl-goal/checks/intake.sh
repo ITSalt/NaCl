@@ -220,7 +220,10 @@ if [[ -f "$BUDGET_FILE" && "$HAVE_JQ" -eq 1 ]]; then
   WALL_CLOCK_LIMIT=$(jq -r '.wall_clock_limit_seconds // 10800' "$BUDGET_FILE" 2>/dev/null)
   if [[ -n "$STARTED_AT" ]]; then
     # Best-effort: GNU date and BSD date have different flags. Try GNU first.
-    started_epoch=$(date -d "$STARTED_AT" +%s 2>/dev/null || date -j -f "%Y-%m-%dT%H:%M:%SZ" "$STARTED_AT" +%s 2>/dev/null || echo "")
+    # -u on both branches: started_at is UTC; without -u BSD date treats the
+    # literal "Z" as text and parses the stamp as LOCAL time, inflating
+    # elapsed by the UTC offset (false GOAL_BUDGET_EXHAUSTED on TZ!=UTC).
+    started_epoch=$(date -u -d "$STARTED_AT" +%s 2>/dev/null || date -j -u -f "%Y-%m-%dT%H:%M:%SZ" "$STARTED_AT" +%s 2>/dev/null || echo "")
     if [[ -n "$started_epoch" ]]; then
       now_epoch=$(date +%s)
       ELAPSED_SECONDS=$((now_epoch - started_epoch))
