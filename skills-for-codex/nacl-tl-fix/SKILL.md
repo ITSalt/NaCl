@@ -109,6 +109,20 @@ duplicate a shared error. Aim the Decision's `JUSTIFIES` at the DomainError
 too. If a shared error's properties changed, extend the staleness stamp to
 the raiser UCs directionally (origin = the ERR id), never the broad closure.
 
+**Cache/degradation policy fixes (L2 / L3-spec-gap).** When the root cause
+is a missing or wrong cache/degradation policy (stale data shown because a
+cache was never invalidated; a reload lost state because offline restore was
+never specified; a provider error surfaced raw because no fallback existed),
+fix the resilience layer in the same spec-update: author/update the
+`CachePolicy` (its `invalidation_kind`/`invalidation_event` is usually the
+broken contract) and/or the `DegradationRule` (its `behavior` is what the
+user should have observed) using the canonical templates from `nacl-sa-uc`
+command `resilience` (MERGE by `CACHE-{PascalName}` / `DEG-{NNN}-{PascalName}`,
+module parent `HAS_CACHE` / UC parent `HAS_DEGRADATION`); never duplicate a
+shared policy. Aim the Decision's `JUSTIFIES` at the policy too. If a shared
+policy's contract properties changed, extend the staleness stamp to the
+consumer UCs directionally (origin = the CACHE id), never the broad closure.
+
 ## Spec-First Prerequisite (Strict-Only) — W10 binding
 
 **L1+ blocked without preceding spec-update commit; override via signed exception only.**

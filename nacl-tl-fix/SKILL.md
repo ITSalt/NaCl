@@ -887,6 +887,27 @@ modified error is shared with other UCs' endpoints, extend the stamp to the
 raiser UCs exactly as `nacl-sa-uc errors` § 4.2 does (directed, origin = the
 ERR id — never the broad closure).
 
+**If the root cause is a missing or wrong cache/degradation policy** (the
+stale-display class: "after promo redemption the header still shows the old
+plan" — the cache was never invalidated; the lost-session class: "reload loses
+the result" — offline restore was never specified; the missing-fallback class:
+"provider error surfaced raw to the user"), the spec gap *is* the resilience
+layer — fix it there, in the same spec-update: author or update the
+`CachePolicy` (its `invalidation_kind`/`invalidation_event` is usually the
+broken contract) and/or the `DegradationRule` (its `behavior` is what the
+user should have observed) using the canonical Cypher templates from
+`nacl-sa-uc` command `resilience` Phase 3 — MERGE by `CACHE-{PascalName}` /
+`DEG-{NNN}-{PascalName}`, module parent `HAS_CACHE` / UC parent
+`HAS_DEGRADATION`, never a duplicate of a shared policy. Aim the Decision at
+the policy too: `MERGE (d)-[:JUSTIFIES {role:'shapes'}]->(cp_or_dr)`
+(CachePolicy and DegradationRule are JUSTIFIES targets since § 3-quinquies).
+Cache-invalidation bugs are a notoriously common production class — this hook
+keeps the resilience layer honest the same way the error hook keeps the
+taxonomy honest. The staleness stamp above already covers the affected UCs;
+if the modified policy is shared (caches other UCs' surfaces), extend the
+stamp to the consumer UCs exactly as `nacl-sa-uc resilience` § 4.2 does
+(directed, origin = the CACHE id — never the broad closure).
+
 #### → USER GATE (L2 / L3-spec-gap only) — calibrated: proceed-and-flag by default, block only when genuinely costly
 
 **Presented by the orchestrator, not the diagnostician.** Phase A leaves the doc
