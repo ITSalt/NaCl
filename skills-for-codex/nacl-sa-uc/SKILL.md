@@ -3,10 +3,12 @@ name: nacl-sa-uc
 description: |
   Create and detail NaCl use cases in the SA graph from BA automation scope:
   registry, activity steps, forms, form fields, mappings, requirements,
-  behavior slices (graph-native Given/When/Then acceptance scenarios), and
-  domain errors (transport-independent error taxonomy).
+  behavior slices (graph-native Given/When/Then acceptance scenarios),
+  domain errors (transport-independent error taxonomy), and resilience
+  (cache policies + degradation rules).
   Use when creating UC stories, detailing a UC, authoring behavior slices,
-  authoring domain errors, listing UCs, or for compatibility with `/nacl-sa-uc`.
+  authoring domain errors, authoring cache/degradation policies, listing UCs,
+  or for compatibility with `/nacl-sa-uc`.
 ---
 
 # NaCl SA UC For Codex
@@ -33,6 +35,10 @@ Commands:
   UC's API surface — a transport-independent, module-scoped taxonomy
   (`DomainError` + `MAY_RAISE`), with screen handling (`HANDLES`) and
   user-facing presentations (`PRESENTED_AS` / `SHOWS`).
+- `resilience <UC-ID>`: author or modify the cache policies of one UC's data
+  surfaces (`CachePolicy` + `CACHES`, module-scoped catalog) and its
+  degradation rules (`DegradationRule` + `ON_ERROR` / `DEGRADES_TO`,
+  UC-scoped).
 - `list`: read-only UC registry view with detail coverage.
 
 `stories` flow:
@@ -165,9 +171,73 @@ Commands:
    WARNING/INFO — report, never block); fix CRITICAL findings before
    completing; report errors, anchors, handling, presentations, stamp counts.
 
+`resilience` flow:
+
+1. Load UC context: module(s) (`CONTAINS_UC` — real graphs contain UCs with
+   TWO modules: ask which catalog owns each NEW policy; existing policies
+   keep their owner), `EXPOSES` endpoints, screen machine, the error
+   taxonomy (errors with `retryable=true` / `error_kind='external'` are
+   natural ON_ERROR candidates), requirements (resilience usually lives
+   there: cache/offline/fallback wording), **BA rules via the
+   `IMPLEMENTED_BY` back-reference** (one BA fallback principle yields
+   several per-surface rules), the RuntimeContract in BOTH formats (hints
+   only), the module's existing cache catalog, the UC's existing rules, and
+   the before-image of contract properties of policies caching this UC's
+   surfaces. Guards: no Module → degradation-only mode (cache authoring
+   refused — the catalog is module-owned); `has_ui=false` →
+   backend-resilience mode (no DEGRADES_TO; policies + ON_ERROR rules +
+   provisional endpoints work in full); UI UC without a Screen → defer
+   offline/capability rules (their only anchor is DEGRADES_TO; STOP if ALL
+   proposed rules are such), error-triggered rules proceed on ON_ERROR; no
+   MAY_RAISE on the UC's endpoints → recommend `errors` first for
+   error-triggered rules, proceed with policies + offline/capability rules.
+   An idempotent re-run whose proposal changes nothing is a no-op — skip
+   the stamp phase entirely.
+2. Propose policies + rules from requirements → BA rules → the error
+   taxonomy → the machine's error/empty states → RC hints →
+   alternate/error slices. CachePolicy: `CACHE-{PascalName}` (latin, from
+   surface + storage; MERGE into the module catalog, never duplicate),
+   `storage_kind` ∈ memory|local_storage|indexed_db|cache_api|http|server|
+   cdn, REQUIRED `invalidation_kind` ∈ ttl|event|manual|session|never
+   (`ttl` requires `ttl_seconds`; never invent a TTL no requirement names),
+   optional `serves_stale`. DegradationRule: `DEG-{NNN}-{PascalName}`
+   (UC-number infix), `trigger_kind` ∈ error|offline|capability, REQUIRED
+   `behavior` (the observable degraded behavior, mirror of `slice.then`),
+   `fallback_kind` ∈ cached_data|static_content|alternate_provider|
+   alternate_ui|skip_unit|backoff. Stop for confirmation.
+3. Write `CachePolicy` (MERGE by id; foreign-module policies never
+   re-parented) with `(:Module)-[:HAS_CACHE]->`; `(cp)-[:CACHES]->(api)`
+   per cached data-origin endpoint (provisional endpoint + `EXPOSES`
+   anchor when none exists; one endpoint per distinct backend operation);
+   `DegradationRule` with `(:UseCase)-[:HAS_DEGRADATION]->`,
+   `ON_ERROR -> DomainError` (1..n; REQUIRED for trigger_kind='error'),
+   `DEGRADES_TO -> ScreenState` only into this UC's own states and, for
+   error-triggered rules, only where the channel rule holds (the target
+   state's screen calls a raising endpoint). Collect every written cp id.
+   MODIFY deletions by explicit id only; never delete a policy other UCs'
+   surfaces still rely on — remove only your own CACHES edges.
+4. Bump `spec_version`; stamp staleness DIRECTED (same contract as
+   `nacl-sa-feature` 3g; `stale_origin` = the UC id). If the run MODIFIED
+   contract properties of a shared policy (caching other UCs' endpoints) —
+   mechanical trigger: one of name/description/storage_kind/
+   invalidation_kind/ttl_seconds/invalidation_event/serves_stale changed vs
+   the before-image; bookkeeping `updated`/`created_*` and added CACHES
+   edges never count — also stamp with the same two-statement 3g shape,
+   `stale_origin` = the policy id: first the tasks of consumers + their
+   `DEPENDS_ON*1..5` dependents, then ONLY the consumer UC nodes themselves
+   — computed directionally via
+   `(cp)-[:CACHES]->(api)<-[:EXPOSES]-(consumer)`, never the broad closure.
+5. Run scoped L13 checks (mixed recipe: `WHERE cp.id IN $cacheIds` for
+   policies — the catalog is not UC-scoped; `dr.id STARTS WITH 'DEG-NNN-'`
+   for rules; the surface-keyed L13.7 prefiltered to the UC's endpoints;
+   L13.6–13.9 are WARNING/INFO — report, never block); fix CRITICAL
+   findings before completing; report policies, rules, anchors, uncovered
+   errors, stamp counts.
+
 Use SA id conventions from the graph or schema: `UC-NNN`, `{UC}-ASNN`,
 `FORM-*`, `{FORM}-FNN`, `RQ-NNN`, `SLC-{NNN}-{PascalName}`,
-`ERR-{UPPER_SNAKE_CODE}`, and `ERRP-{CODE}-{PascalName}`.
+`ERR-{UPPER_SNAKE_CODE}`, `ERRP-{CODE}-{PascalName}`,
+`CACHE-{PascalName}`, and `DEG-{NNN}-{PascalName}`.
 
 ## Graph Contract
 
@@ -185,8 +255,9 @@ and `UseCase -[:HAS_REQUIREMENT]-> Requirement`.
 Canonical writes are `UseCase`, `ActivityStep`, `Form`, `FormField`,
 `Requirement`, `RuntimeContract`, `RuntimeState`, `RuntimeTransition`,
 `RuntimeEvent`, `RuntimeLock`, `IdempotencyKey`, `RecoveryProcedure`,
-`Slice`, `DomainError`, `ErrorPresentation` (plus provisional `APIEndpoint`
-from the slices/errors commands),
+`Slice`, `DomainError`, `ErrorPresentation`, `CachePolicy`,
+`DegradationRule` (plus provisional `APIEndpoint`
+from the slices/errors/resilience commands),
 `CONTAINS_UC`, `AUTOMATES_AS`, `ACTOR`, `DEPENDS_ON`, `HAS_STEP`,
 `USES_FORM`, `HAS_FIELD`, `MAPS_TO`, `HAS_REQUIREMENT`, `IMPLEMENTED_BY`,
 `CONTAINS_RUNTIME_CONTRACT`, `HAS_STATE`, `HAS_INITIAL_STATE`,
@@ -196,7 +267,9 @@ from the slices/errors commands),
 (label-qualify the source — the name is shared with
 `ScreenEffect -> APIEndpoint`), `VERIFIED_BY`, `EXPOSES`
 (provisional-endpoint path only), `HAS_ERROR`, `MAY_RAISE`, `HANDLES`,
-`PRESENTED_AS`, and `SHOWS` (all five error-taxonomy names unshared). Before each write batch, show
+`PRESENTED_AS`, `SHOWS` (all five error-taxonomy names unshared),
+`HAS_CACHE`, `CACHES`, `HAS_DEGRADATION`, `ON_ERROR`, and `DEGRADES_TO`
+(all five resilience names unshared too). Before each write batch, show
 the proposed ids, properties, source BA evidence, and relationship targets;
 after writes, read back with `sa_uc_full_context`, form-domain mapping
 checks, and (when present) the RuntimeContract read-back in
@@ -292,6 +365,9 @@ eight required fields is missing, refuse to advance.
   them to verifying tasks after confirmation.
 - Author module-scoped domain errors with raising endpoints, screen handling,
   and user-facing presentations after confirmation.
+- Author module-scoped cache policies (with cached data surfaces) and
+  UC-scoped degradation rules (with failure-mode / screen-state anchors)
+  after confirmation.
 
 ### Must Not Do
 
@@ -310,6 +386,13 @@ eight required fields is missing, refuse to advance.
   id; delete an error other UCs still raise; write HANDLES without the call
   channel or SHOWS without HANDLES; put the internal code into a
   presentation `message`.
+- Write a CachePolicy with no cached endpoint (CACHES), a blank
+  `invalidation_kind`, a `ttl` kind without `ttl_seconds`, or for a UC with
+  no Module; duplicate a shared policy instead of MERGE by id; delete a
+  policy other UCs' surfaces still rely on. Write a DegradationRule with no
+  anchor (neither ON_ERROR nor DEGRADES_TO), an error-triggered rule
+  without ON_ERROR, a blank `behavior`, a DEGRADES_TO into a foreign UC's
+  state, or an error-rule DEGRADES_TO that violates the channel rule.
 - Stamp staleness via the broad undirected `sa_impact_closure` traversal.
 - Treat markdown files as the SA source of truth.
 - Select or constrain the runtime.
@@ -337,9 +420,12 @@ eight required fields is missing, refuse to advance.
 
 ### Preserved Methodology
 
-- `stories`, `detail`, `slices`, and `list` commands.
+- `stories`, `detail`, `slices`, `errors`, `resilience`, and `list` commands.
 - Behavior slices: anchor invariant (COVERS/CALLS), VERIFIED_BY task rule,
   directed 3g staleness stamp, scoped L11 validation.
+- Resilience: asymmetric ownership (module-scoped cache catalog, UC-scoped
+  degradation rules), anchor invariants, channel/same-UC rules, shared-cache
+  consumer stamp with mechanical before-image trigger, scoped L13 validation.
 - Russian SA artifact language by default.
 - BA automation scope to UseCase registry.
 - Activity, form, field, requirement, actor, and Runtime Contract subgraph

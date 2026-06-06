@@ -5,9 +5,11 @@ effort: high
 description: |
   Реестр Use Cases из BA automation scope + детализация UC (Activity, формы, требования)
   + behavior slices (graph-native сценарии приёмки Given/When/Then)
-  + domain errors (транспортно-независимая таксономия доменных ошибок) через Neo4j граф.
+  + domain errors (транспортно-независимая таксономия доменных ошибок)
+  + resilience (политики кэширования и правила деградации) через Neo4j граф.
   Используй когда пользователь просит: создать use cases из BA, реестр UC, детализировать UC,
   activity diagram, формы UC, behavior slices, сценарии приёмки, доменные ошибки, error taxonomy,
+  политика кэша, кэширование, деградация, fallback, offline, resilience,
   nacl-sa-uc, stories, detail UC, slices, errors.
 ---
 
@@ -31,6 +33,7 @@ You are a Solution Architect agent specialized in Use Case design. You read BA-l
 | `detail` | `<UC-ID>` (e.g. `UC-101`) | Detail a specific UC: activity steps, forms, requirements |
 | `slices` | `<UC-ID>` (e.g. `UC-101`) | Author or modify the behavior slices of a UC (graph-native acceptance scenarios anchored to the screen machine / endpoints / tasks) |
 | `errors` | `<UC-ID>` (e.g. `UC-101`) | Author or modify the domain errors observable through a UC's endpoints (transport-independent taxonomy: DomainError + MAY_RAISE + screen handling + presentations) |
+| `resilience` | `<UC-ID>` (e.g. `UC-101`) | Author or modify the cache policies of a UC's data surfaces and its degradation rules (CachePolicy + CACHES, DegradationRule + ON_ERROR / DEGRADES_TO) |
 | `list` | --- | Show all UCs from graph with detail status |
 
 **Flags:**
@@ -83,6 +86,8 @@ All graph reads/writes use these tools:
 | FormField | {FORM}-F{NN} | FORM-OrderCreate-F01 | Per-form |
 | Requirement | RQ-NNN | RQ-001 | Global sequential |
 | Slice | SLC-{NNN}-{PascalName} | SLC-006-HappyPath | Per-UC, name-based (latin) |
+| CachePolicy | CACHE-{PascalName} | CACHE-ResultMediaIndexedDb | Name-based (latin), module catalog |
+| DegradationRule | DEG-{NNN}-{PascalName} | DEG-006-OfflineRestore | Per-UC, name-based (latin) |
 
 ### Next available ID query
 
@@ -1537,6 +1542,258 @@ Next:
 
 ---
 
+# Command: `resilience`
+
+## Purpose
+
+Author (or modify) the **resilience layer** of one UseCase: the cache policies of its data surfaces and its degradation rules. A `CachePolicy` is a named caching policy for one SERVER data surface — where the data is stored on the consuming side, when the cache stops lying (`invalidation_kind` is the load-bearing contract), whether stale data may be served. A `DegradationRule` is how this UC's experience degrades when a failure mode / offline / missing capability occurs — what the user (or machine caller) observes instead of the full experience (`behavior` is the load-bearing field) and what the system substitutes (`fallback_kind`). Stored graph-natively — `(:Module)-[:HAS_CACHE]->(:CachePolicy)-[:CACHES]->(:APIEndpoint)` and `(:UseCase)-[:HAS_DEGRADATION]->(:DegradationRule)` with `ON_ERROR` / `DEGRADES_TO` anchors — so that a change to the UC, an endpoint, a domain error, or a screen state **reaches the resilience contract through the graph** (impact closure), and `nacl-sa-validate` L13 can statically check ownership, anchoring, the same-UC and channel rules, and contract hygiene.
+
+**Ownership is asymmetric, deliberately.** The cache catalog is **module-scoped** (like the error catalog): real caches are shared infrastructure of a bounded context — one quota cache is invalidated by one UC and read by the header of every screen; one media cache backs several UCs. `CachePolicy` nodes are MERGEd by id: a second UC whose surface the same policy caches adds a `CACHES` edge, never a duplicate node. Degradation rules are **UC-scoped** (like slices): one BA-level fallback principle ("on media error substitute universal fallback content") yields SEVERAL distinct per-experience SA rules — a fallback image is not a provider switch is not a skipped pipeline unit.
+
+**Anchor invariants (the validator enforces them as L13.2, no exemptions):** every CachePolicy `CACHES` ≥1 endpoint (a policy caching no surface is dead vocabulary; provisional endpoints are legal); every DegradationRule carries ≥1 of (`ON_ERROR`, `DEGRADES_TO`) — and `trigger_kind='error'` REQUIRES `ON_ERROR`. **Scope note:** a CachePolicy models caching of server-originated data — purely client-local UI state with no server origin does not deserve a node (the "not a domain error, an implementation detail" rule applied to caches).
+
+**No shared edge names** (second phase in a row): `HAS_CACHE`, `CACHES`, `HAS_DEGRADATION`, `ON_ERROR`, `DEGRADES_TO` are all unshared — no label-qualification hazard.
+
+## Parameters
+
+- `UC-NNN` — the UseCase whose resilience layer is being authored (one UC per invocation).
+
+## Workflow
+
+```
++-----------------+    +-----------------+    +-----------------+    +-----------------+
+| Phase 1         |    | Phase 2         |    | Phase 3         |    | Phase 4         |
+| Read UC context |--->| Propose caches  |--->| Write policies  |--->| Stamp staleness |
+| (module, APIs,  |    | + degradations  |    | + rules to graph|    | + validate L13  |
+|  machine, errors,|   | (from reqs/BA   |    | (MERGE, idem.)  |    | + report        |
+|  reqs, BA rules)|    |  rules/errors)  |    |                 |    |                 |
++-----------------+    +-----------------+    +-----------------+    +-----------------+
+```
+
+**Do not proceed to the next phase without explicit user confirmation.**
+
+---
+
+### Phase 1: Read UC Context
+
+#### 1.1 Query UC, its module(s), endpoints, machine, errors, slices, requirements, and existing resilience layer
+
+```cypher
+// uc_resilience_context
+MATCH (uc:UseCase {id: $ucId})
+OPTIONAL MATCH (m:Module)-[:CONTAINS_UC]->(uc)
+OPTIONAL MATCH (uc)-[:EXPOSES]->(api:APIEndpoint)
+OPTIONAL MATCH (uc)-[:HAS_SCREEN]->(scr:Screen)
+OPTIONAL MATCH (api)-[:MAY_RAISE]->(err:DomainError)
+OPTIONAL MATCH (uc)-[:HAS_REQUIREMENT]->(rq:Requirement)
+OPTIONAL MATCH (uc)-[:HAS_DEGRADATION]->(dr:DegradationRule)
+OPTIONAL MATCH (api)<-[:CACHES]-(cp:CachePolicy)
+RETURN uc.id AS uc_id, uc.name AS uc_name, uc.has_ui AS has_ui,
+       collect(DISTINCT m.id) AS modules,
+       collect(DISTINCT api.id) AS endpoints,
+       collect(DISTINCT scr.id) AS screens,
+       [e IN collect(DISTINCT {id: err.id, kind: err.error_kind, retryable: err.retryable})
+        WHERE e.id IS NOT NULL] AS errors,
+       count(DISTINCT rq) AS requirement_count,
+       collect(DISTINCT dr.id) AS existing_rules,
+       collect(DISTINCT cp.id) AS existing_policies
+```
+
+Also read:
+- **The requirements' text** — resilience usually lives there (real graphs carry explicit "кэширование на клиенте", "Fallback при ошибке", "офлайн: кэширование в LocalStorage" in requirement descriptions).
+- **The BA rules behind those requirements** (a Phase-4 source class — real graphs cite BA rule ids right in the requirement text): `MATCH (uc:UseCase {id: $ucId})-[:HAS_REQUIREMENT]->(rq)<-[:IMPLEMENTED_BY]-(br:BusinessRule) RETURN br.id, br.name, br.formulation`. One BA fallback principle typically yields several per-surface rules.
+- **The module's existing cache catalog** (`MATCH (m)-[:HAS_CACHE]->(cp) RETURN cp` — MODIFY candidates and MERGE targets for shared policies).
+- **The screen machine** (`sa_screen_machine`) and **slices** (`sa_uc_slices` — `alternate`/`error`-kind slices describing recovery and degradation are candidates).
+- **The RuntimeContract in BOTH formats** (current `CONTAINS_RUNTIME_CONTRACT` subgraph AND legacy `HAS_RUNTIME_CONTRACT` flat strings — `retry_semantics` / `recovery_procedure` are hints only; never anchor to RC nodes, never invent structure).
+- For every existing policy that CACHES this UC's endpoints: **keep the before-image of its contract properties** (`name`, `description`, `storage_kind`, `invalidation_kind`, `ttl_seconds`, `invalidation_event`, `serves_stale`) for the Phase-4 shared-stamp trigger.
+
+**Guards:**
+- If the UC does not exist → STOP, report.
+- If the UC has **two or more Modules** (`CONTAINS_UC` ×2 — real graphs contain such UCs) → ask the user which module's catalog owns each NEW CachePolicy; a policy that already exists keeps its current owner (never re-parent). Degradation rules are UC-parented and unaffected.
+- If the UC has **no Module** → **degradation-only mode** with WARN: the cache catalog is module-owned (`HAS_CACHE` is the required parent — L13.1), so cache authoring is refused (wire the UC into a module first, `/nacl-sa-architect`); UC-parented DegradationRules still work.
+- If `has_ui = false` (backend-only UC) → **backend-resilience mode**: no `DEGRADES_TO` (no screen), rules anchor through `ON_ERROR`; cache policies (server-side storages) and the provisional-endpoint path of § 3.2 work in full — a backend UC with no `EXPOSES` yet is the common case.
+- If `coalesce(uc.has_ui, true) = true` and the UC has **no Screen** → error-triggered rules still work (their `ON_ERROR` anchor suffices); **offline/capability rules must be deferred** with WARN (their only anchor is `DEGRADES_TO` — recommend `/nacl-sa-ui state-machine UC-NNN`, then re-run). If ALL proposed rules are offline/capability-kind → STOP with the same message.
+- If the UC's endpoints carry **no MAY_RAISE** (error taxonomy not adopted) → error-triggered rules cannot anchor; recommend `/nacl-sa-uc errors UC-NNN` first for those, and proceed with cache policies + offline/capability rules (adoption-order tolerance — L13.8 flags unjoined halves as INFO, never blocks).
+- An idempotent re-run whose confirmed proposal changes nothing (no new/removed nodes or edges, no contract-property change) is a **no-op** — report and **skip Phase 4 entirely** (no spec_version bump, no stamp: nothing about the UC's shape changed).
+
+---
+
+### Phase 2: Propose the Resilience Layer
+
+**CachePolicy id derivation (deterministic):** `CACHE-{PascalName}` — latin PascalName from the cached surface + storage by the Phase-1 rule (`CACHE-ResultMediaIndexedDb`, `CACHE-QuotaMemory`). Check the module catalog first: if a policy for the same surface+storage already exists, propose MERGE (add your `CACHES` edges), never a duplicate. **DegradationRule id:** `DEG-{NNN}-{PascalName}` where NNN is the UC number (`DEG-006-OfflineRestore`) — the infix enables scoped-L13 filtering.
+
+**Sources, in priority order:** resilience-bearing Requirements (cache/offline/fallback/degradation wording — the richest source; quote formulations verbatim) → **BA BusinessRules** reached via the `IMPLEMENTED_BY` back-reference (one BA principle → several per-surface rules) → the error taxonomy (errors with `retryable=true` or `error_kind='external'` are natural `ON_ERROR` candidates — the Phase-3 groundwork) → the machine's `error`/`empty` states (degradation targets) → RuntimeContract strings (legacy hints: retry semantics, recovery procedures) → `alternate`/`error`-kind slices.
+
+**CachePolicy contract:** `storage_kind ∈ {memory, local_storage, indexed_db, cache_api, http, server, cdn}`; **`invalidation_kind ∈ {ttl, event, manual, session, never}` — REQUIRED**, this is when the cache stops lying: `ttl` requires `ttl_seconds`, `event` should name the `invalidation_event` ("promo redeemed → invalidateQuotaCache"); `serves_stale` (Boolean) — whether stale data may be shown while revalidating. Real graphs are mostly event/manual-invalidated client caches — never invent a TTL a requirement does not name.
+
+**DegradationRule contract:** `trigger_kind ∈ {error, offline, capability}` (error — a catalogued domain failure; offline — no network; capability — the browser/platform cannot do it); **`behavior` — REQUIRED**, the observable degraded behavior in plain language («показывается универсальный fallback-контент; пользователь не видит сырую ошибку» — mirrors `slice.then`); `fallback_kind ∈ {cached_data, static_content, alternate_provider, alternate_ui, skip_unit, backoff}`.
+
+**Anchor proposal:** error-triggered rules → `ON_ERROR` to the catalogued errors that fire them (1..n; one fallback rule may fire on several failure modes) + `DEGRADES_TO` where a UI half exists; offline/capability rules → `DEGRADES_TO` to the state representing the degraded experience. The degraded state may be ANY state_kind — degrading INTO a `content` state showing stale cached data is normal (offline restore). Only propose `DEGRADES_TO` for states of THIS UC's screens (same-UC rule, L13.3), and for error-triggered rules only where the **channel rule** holds: the target state's screen calls (via its effects) an endpoint that raises one of the rule's errors — L13.3 enforces exactly this.
+
+**Present to user:** policy table (id, storage, invalidation [+ttl/event], serves_stale, cached endpoints, source requirement/BA rule) + rule table (id, trigger, fallback, behavior, ON_ERROR errors, DEGRADES_TO states, source) + which retryable/external errors of cached surfaces remain without a degradation story (the future L13.7 view). Ask for confirmation.
+
+---
+
+### Phase 3: Write the Resilience Layer (MERGE, idempotent)
+
+All writes use `MERGE` on stable ids so re-running updates rather than duplicates. **Collect every written/updated `cp.id` into `$cacheIds`** — Phase 4's scoped validation needs the explicit list (cache policies are not UC-scoped). Rule ids need no collection — the `DEG-NNN-` infix scopes them.
+
+#### 3.1 CachePolicy node + module parent
+
+```cypher
+// create_cache_policy
+MATCH (m:Module {id: $moduleId})
+MERGE (cp:CachePolicy {id: $cacheId})       // CACHE-{PascalName}
+SET cp.name = $name,
+    cp.description = $description,
+    cp.storage_kind = $storageKind,          // memory|local_storage|indexed_db|cache_api|http|server|cdn
+    cp.invalidation_kind = $invalidationKind, // REQUIRED: ttl|event|manual|session|never
+    cp.ttl_seconds = $ttlSeconds,            // REQUIRED iff invalidation_kind='ttl'
+    cp.invalidation_event = $invalidationEvent, // recommended for kind='event'
+    cp.serves_stale = $servesStale,          // optional Boolean
+    cp.created_by = 'nacl-sa-uc',
+    cp.created_at = coalesce(cp.created_at, datetime()),
+    cp.updated = datetime()
+MERGE (m)-[:HAS_CACHE]->(cp)
+RETURN cp.id AS cache_policy_id
+```
+
+When the policy already exists in **another** module's catalog (shared cross-module), MERGE by id picks up the existing node; do NOT re-parent it — the first catalog keeps ownership, your endpoints just add CACHES edges.
+
+#### 3.2 CACHES anchors
+
+```cypher
+// link_caches (once per cached endpoint)
+MATCH (cp:CachePolicy {id: $cacheId})
+MATCH (api:APIEndpoint {id: $apiId})
+MERGE (cp)-[:CACHES]->(api)
+RETURN cp.id AS policy, api.id AS caches
+```
+
+**If the APIEndpoint does not exist yet** (UC has no `EXPOSES` — common before `nacl-tl-plan` has run): MERGE a **provisional** endpoint anchored to the UC, exactly as `slices` § 3.3 / `errors` § 3.2 do (`provisional = true` + `(:UseCase)-[:EXPOSES]->`). Same granularity rule: one endpoint per distinct backend operation, never one per policy. The policy anchors to the **data-origin surface**: the endpoint whose data the cache holds (a result cache anchors to the result-read endpoint; a media cache to the media endpoints). Several endpoints per policy are normal. Report every provisional endpoint created.
+
+#### 3.3 DegradationRule node + parent + anchors
+
+```cypher
+// create_degradation_rule
+MATCH (uc:UseCase {id: $ucId})
+MERGE (dr:DegradationRule {id: $ruleId})    // DEG-{NNN}-{PascalName}
+SET dr.name = $name,
+    dr.trigger_kind = $triggerKind,          // error|offline|capability
+    dr.behavior = $behavior,                 // REQUIRED non-blank — the observable degraded behavior
+    dr.fallback_kind = $fallbackKind,        // cached_data|static_content|alternate_provider|alternate_ui|skip_unit|backoff
+    dr.created_by = 'nacl-sa-uc',
+    dr.created_at = coalesce(dr.created_at, datetime()),
+    dr.updated = datetime()
+MERGE (uc)-[:HAS_DEGRADATION]->(dr)
+RETURN dr.id AS rule_id
+```
+
+```cypher
+// link_on_error (1..n per error-triggered rule; REQUIRED for trigger_kind='error')
+MATCH (dr:DegradationRule {id: $ruleId})
+MATCH (err:DomainError {id: $errId})
+MERGE (dr)-[:ON_ERROR]->(err)
+RETURN dr.id AS rule, err.id AS on_error
+```
+
+```cypher
+// link_degrades_to (only same-UC states; for error rules — only where the channel rule holds)
+MATCH (dr:DegradationRule {id: $ruleId})
+MATCH (st:ScreenState {id: $stateId})
+MERGE (dr)-[:DEGRADES_TO]->(st)
+RETURN dr.id AS rule, st.id AS degrades_to
+```
+
+#### 3.4 MODIFY mode: removing policies / rules
+
+`DETACH DELETE` exactly the removed nodes by explicit id — never a label-wide delete. Before deleting a CachePolicy, check for CACHES edges to OTHER UCs' endpoints (`MATCH (cp)-[:CACHES]->(:APIEndpoint)<-[:EXPOSES]-(other:UseCase) WHERE other.id <> $ucId`): if any exist, the policy is shared — remove only the CACHES edges to YOUR endpoints and report; never delete a policy other UCs' surfaces still rely on. DegradationRules are UC-owned — delete freely by id.
+
+---
+
+### Phase 4: Stamp Staleness + Validate + Report
+
+Authoring or changing the resilience layer **changes the UC's shape**: tasks planned before the policies existed do not reflect the cache/degradation contract their code must implement.
+
+#### 4.1 Bump the UC spec version
+
+```cypher
+// bump_spec_version
+MATCH (uc:UseCase {id: $ucId})
+SET uc.spec_version = coalesce(uc.spec_version, 0) + 1
+RETURN uc.id AS uc_id, uc.spec_version AS spec_version
+```
+
+#### 4.2 Stamp staleness — DIRECTED and TIGHT (never the broad closure)
+
+Same directed contract as `nacl-sa-feature` step 3g (the `slices` § 4.2 statements verbatim, with reason `'cache/degradation policies ' + $changeKind + ' for ' + $ucId`, `$changeKind ∈ {'created','modified'}`): the UC's `GENERATES` tasks + tasks of UCs that transitively `DEPENDS_ON` it (`*1..5`) + the changed UC itself; two statements; `count(DISTINCT)`; `stale_origin = $ucId`. **Never stamp via the undirected `sa_impact_closure`** (measured 20–52× false radius).
+
+**Shared-cache extension (the one new stamp semantic, mirrors the shared-error stamp):** if this run **modified contract properties** of a CachePolicy that also caches endpoints of OTHER UCs, those consumer UCs' contracts changed too. The trigger is mechanical, not judgment: compare the Phase-1 before-image — a shared policy counts as modified iff one of `name`, `description`, `storage_kind`, `invalidation_kind`, `ttl_seconds`, `invalidation_event`, `serves_stale` changed value (bookkeeping props `updated`/`created_*` never count — § 3.1 touches `updated` on every MERGE; merely adding your own CACHES edges does not count either — that changes your contract, not theirs). Compute the consumer set directionally and stamp it with the same two-statement 3g shape, with the POLICY as the lineage origin: first the tasks of consumers + their `DEPENDS_ON*1..5` dependents, then **only the consumer UC nodes themselves** (dependent UCs get their tasks stamped, never the UC node — same as the base contract).
+
+```cypher
+// stamp_shared_consumers (1/2) — tasks of consumers + their DEPENDS_ON*1..5 dependents
+MATCH (cp:CachePolicy) WHERE cp.id IN $modifiedSharedCacheIds
+MATCH (consumer:UseCase)-[:EXPOSES]->(:APIEndpoint)<-[:CACHES]-(cp)
+WHERE consumer.id <> $ucId
+WITH collect(DISTINCT consumer) AS consumers, collect(DISTINCT cp.id) AS cacheIds
+UNWIND consumers AS c
+OPTIONAL MATCH (dependent:UseCase)-[:DEPENDS_ON*1..5]->(c)
+WITH cacheIds, collect(DISTINCT c) + [d IN collect(DISTINCT dependent) WHERE d IS NOT NULL] AS affected
+UNWIND affected AS a
+MATCH (a)-[:GENERATES]->(t:Task)
+SET t.review_status = 'stale',
+    t.stale_reason = 'shared cache policy ' + reduce(s='', x IN cacheIds | s + x + ' ') + 'modified via ' + $ucId,
+    t.stale_since = datetime(),
+    t.stale_origin = cacheIds[0]
+RETURN count(DISTINCT t) AS consumer_tasks_stamped
+```
+
+```cypher
+// stamp_shared_consumers (2/2) — only the consumer UCs themselves
+MATCH (cp:CachePolicy) WHERE cp.id IN $modifiedSharedCacheIds
+MATCH (consumer:UseCase)-[:EXPOSES]->(:APIEndpoint)<-[:CACHES]-(cp)
+WHERE consumer.id <> $ucId
+SET consumer.review_status = 'stale',
+    consumer.stale_reason = 'shared cache policy modified via ' + $ucId,
+    consumer.stale_since = datetime(),
+    consumer.stale_origin = cp.id
+RETURN count(DISTINCT consumer) AS consumer_ucs_stamped
+```
+
+Still directed, still tight: the set is exactly the consumers (+ their dependents' tasks), never the broad closure. The flags are cleared by `nacl-tl-plan` when it re-plans each UC. DegradationRules are UC-owned — no shared semantics.
+
+#### 4.3 Validate (scoped L13)
+
+Run the L13 checks from `nacl-sa-validate` (canonical queries live there) scoped to this run. **Scope recipe (mixed):** cache policies are NOT UC-scoped — filter by the explicit id list collected in Phase 3: `WHERE cp.id IN $cacheIds`; degradation rules ARE UC-scoped — filter by the id family: `WHERE dr.id STARTS WITH 'DEG-' + $nnn + '-'` (the UC-number infix, same recipe as SLC). The surface-keyed L13.7 is prefiltered to this UC's endpoints via `EXPOSES`. L13.6–13.9 are WARNING/INFO — report, never block. Any CRITICAL finding → present it and return to Phase 2; do not leave a broken resilience layer in the graph.
+
+#### 4.4 Report
+
+```
+Resilience layer written: UC-NNN ({uc name}, module {MOD-ID})
+
+Cache policies: {N} ({K} new / {K} updated / {K} shared with other UCs)
+  {CACHE-ID}: {storage}, invalidation={kind}[ ttl={s}s | event="{event}"], serves_stale={bool},
+              caches {endpoint ids} [source: REQ-NNN | BRQ-NNN]
+Degradation rules: {N} ({K} error / {K} offline / {K} capability)
+  {DEG-ID}: {trigger} -> {fallback}; behavior: "{behavior}";
+            on {ERR ids} | degrades to {state ids} [source: REQ-NNN | BRQ-NNN | RC]
+Anchors: {N policies} x {M endpoints} CACHES {(+ K provisional APIEndpoint)};
+         {N} ON_ERROR, {M} DEGRADES_TO
+Uncovered (L13.7 view): {retryable/external errors of cached surfaces with no rule | none}
+
+Staleness stamped (directed): {N} tasks + 1 UC (origin: UC-NNN)
+  {+ shared-cache stamp: {M} consumer UCs + {T} tasks (origin: CACHE-X)}
+spec_version: UC-NNN {old} -> {new}
+
+L13 validation (scoped): {PASS | N findings}
+
+Next:
+  - `/nacl-tl-plan` to (re-)plan the UC (clears the stale flags, bakes the resilience contract into task files)
+  - `/nacl-sa-validate internal` for the full gate
+```
+
+---
+
 ## Error Handling
 
 ### Neo4j unavailable
@@ -1579,8 +1836,8 @@ If `detail` finds no DomainEntity realized from related BA entities:
                               # RuntimeContract, RuntimeState, RuntimeTransition,
                               # RuntimeEvent, RuntimeLock, IdempotencyKey,
                               # RecoveryProcedure, Slice, DomainError,
-                              # ErrorPresentation nodes
-                              # (+ provisional APIEndpoint from the slices/errors commands)
+                              # ErrorPresentation, CachePolicy, DegradationRule nodes
+                              # (+ provisional APIEndpoint from the slices/errors/resilience commands)
                               # AUTOMATES_AS, CONTAINS_UC, ACTOR, HAS_STEP, USES_FORM,
                               # HAS_FIELD, MAPS_TO, HAS_REQUIREMENT, IMPLEMENTED_BY,
                               # CONTAINS_RUNTIME_CONTRACT, HAS_STATE,
@@ -1589,7 +1846,9 @@ If `detail` finds no DomainEntity realized from related BA entities:
                               # EMITS_EVENT, RESOLVES_RACE_WITH,
                               # USES_IDEMPOTENCY_KEY, HAS_RECOVERY,
                               # HAS_SLICE, COVERS, CALLS, VERIFIED_BY, EXPOSES,
-                              # HAS_ERROR, MAY_RAISE, HANDLES, PRESENTED_AS, SHOWS edges
+                              # HAS_ERROR, MAY_RAISE, HANDLES, PRESENTED_AS, SHOWS,
+                              # HAS_CACHE, CACHES, HAS_DEGRADATION, ON_ERROR,
+                              # DEGRADES_TO edges
 ```
 
 ### Node types created
@@ -1611,7 +1870,9 @@ If `detail` finds no DomainEntity realized from related BA entities:
 | Slice | id, name, slice_kind, given, when, then, criterion_index, created_by, created_at, updated |
 | DomainError | id, code, name, description, error_kind, http_status, retryable, created_by, created_at, updated |
 | ErrorPresentation | id, message, presentation_kind, recovery_action, created_by, created_at, updated |
-| APIEndpoint (provisional) | id, path, provisional, created_by, created_at — only when the slices/errors commands need an endpoint that does not exist yet |
+| CachePolicy | id, name, description, storage_kind, invalidation_kind, ttl_seconds, invalidation_event, serves_stale, created_by, created_at, updated |
+| DegradationRule | id, name, trigger_kind, behavior, fallback_kind, created_by, created_at, updated |
+| APIEndpoint (provisional) | id, path, provisional, created_by, created_at — only when the slices/errors/resilience commands need an endpoint that does not exist yet |
 
 ### Edge types created
 
@@ -1642,12 +1903,17 @@ If `detail` finds no DomainEntity realized from related BA entities:
 | COVERS | Slice | ScreenState / Transition | --- (slices command) |
 | CALLS | Slice | APIEndpoint | --- (slices command; name shared with ScreenEffect→APIEndpoint — label-qualify the source) |
 | VERIFIED_BY | Slice | Task | --- (slices command; also re-linked by nacl-tl-plan) |
-| EXPOSES | UseCase | APIEndpoint | --- (slices/errors commands, provisional-endpoint path only) |
+| EXPOSES | UseCase | APIEndpoint | --- (slices/errors/resilience commands, provisional-endpoint path only) |
 | HAS_ERROR | Module | DomainError | --- (errors command; required parent — module-scoped catalog) |
 | MAY_RAISE | APIEndpoint | DomainError | --- (errors command; anchor invariant, legal on provisional endpoints) |
 | HANDLES | ScreenState | DomainError | --- (errors command; channel rule — the screen actually calls a raising endpoint) |
 | PRESENTED_AS | DomainError | ErrorPresentation | --- (errors command; required parent) |
 | SHOWS | ScreenState | ErrorPresentation | --- (errors command; triangle closure with HANDLES) |
+| HAS_CACHE | Module | CachePolicy | --- (resilience command; required parent — module-scoped catalog) |
+| CACHES | CachePolicy | APIEndpoint | --- (resilience command; anchor invariant, legal on provisional endpoints) |
+| HAS_DEGRADATION | UseCase | DegradationRule | --- (resilience command; required parent — UC-scoped rules) |
+| ON_ERROR | DegradationRule | DomainError | --- (resilience command; required for trigger_kind='error') |
+| DEGRADES_TO | DegradationRule | ScreenState | --- (resilience command; same-UC rule + channel rule for error-triggered rules) |
 
 ---
 
@@ -1707,6 +1973,21 @@ If `detail` finds no DomainEntity realized from related BA entities:
 - [ ] Staleness stamped DIRECTED, same contract as sa-feature 3g; shared-error property modifications additionally stamp raiser UCs (origin = ERR id) — never via broad sa_impact_closure
 - [ ] Scoped L12 run clean (`WHERE err.id IN $errIds`) — or findings fixed before completing
 - [ ] Report presented (errors, anchors, handling, presentations, stamp counts, next steps)
+
+### Before completing `resilience`
+- [ ] UC context read (module(s), endpoints, machine, errors, slices, requirements, BA rules via IMPLEMENTED_BY back-ref, RC in BOTH formats, existing policies/rules with before-image); guards applied (2+ modules → ask catalog owner; no Module → degradation-only; backend-only → no DEGRADES_TO; UI without machine → defer offline/capability rules; no taxonomy → recommend `errors` first for error rules)
+- [ ] Policies + rules proposed from requirements / BA rules / taxonomy / machine / RC hints / slices and confirmed by user
+- [ ] CachePolicy nodes MERGEd by id (shared policies never duplicated; foreign-module policies never re-parented) with non-blank `invalidation_kind` (+ `ttl_seconds` for ttl); HAS_CACHE parent wired
+- [ ] **Every policy caches ≥1 endpoint: CACHES** — CRITICAL (L13.2); provisional endpoints created with EXPOSES anchor and reported
+- [ ] DegradationRule nodes MERGEd with non-blank `behavior`; HAS_DEGRADATION parent wired
+- [ ] **Every rule has ≥1 anchor (ON_ERROR and/or DEGRADES_TO); error-triggered rules have ON_ERROR** — CRITICAL (L13.2)
+- [ ] DEGRADES_TO only into this UC's own states; for error rules only where the channel rule holds
+- [ ] MODIFY deletions by explicit id only; shared policies caching other UCs' surfaces never deleted
+- [ ] Idempotent no-change re-run = no-op (Phase 4 skipped entirely)
+- [ ] spec_version bumped
+- [ ] Staleness stamped DIRECTED, same contract as sa-feature 3g; shared-cache property modifications additionally stamp consumer UCs (origin = CACHE id, mechanical before-image trigger) — never via broad sa_impact_closure
+- [ ] Scoped L13 run clean (`WHERE cp.id IN $cacheIds` + `DEG-NNN-` infix) — or findings fixed before completing
+- [ ] Report presented (policies, rules, anchors, uncovered errors, stamp counts, next steps)
 
 ### Before completing `list`
 - [ ] All UCs queried with metrics
