@@ -542,7 +542,11 @@ exception envelope see `nacl-goal/envelope.md`. For gate prediction see
          (finalized at step 9) as its body; wrapper writes pr.json from the
          created PR; CI runs ONCE, on the full batch
     deploy_target == dev-only → run baseline_command + /nacl-tl-verify per linked UC locally
-       set dev_verified accordingly
+       set dev_verified accordingly; write dev-verified.json
+         (per plan-lock-schema.md — intake.sh reads it; absent → n/a)
+       push_cadence=deferred: perform the single push + open the goal-run PR
+         here (reading pr-body.md) — dev-only changes the verification
+         claim, not the PR; CI runs once on the batch
        push_cadence=none: do NOT push; print "local commits on <branch> ready;
          deliver later with /nacl-tl-deliver"; pr_url stays null
        otherwise print PR URL

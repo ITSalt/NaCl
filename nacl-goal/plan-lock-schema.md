@@ -321,6 +321,7 @@ inner skills can append to this file directly.
   "last_commit_sha": "<sha>|null",
   "verify_status": "pass|fail|skipped|null",
   "error": "<string>|null",
+  "block_code": "GOAL_BLOCKED_WIP_COLLISION|null",
   "updated_at": "<utc-iso>"
 }
 ```
@@ -336,6 +337,16 @@ implementing → failed     # inner-skill returned a non-shippable status
 Resume scans `atoms/*.state.json` and continues from the first atom whose
 `state != "verified"`. A `failed` atom is non-resumable on its own — the
 run as a whole becomes `goal_blocked` with `resumable: false`.
+
+Exception (2.13+): a `failed` atom carrying
+`block_code: "GOAL_BLOCKED_WIP_COLLISION"` IS resumable — the wrapper's
+step-9 collision gate (or `/nacl-tl-ship`'s staging-time guard) set it
+because the atom's file set overlapped another agent's uncommitted WIP.
+After the user resolves the overlap, `/nacl-goal resume` re-snapshots
+`preexisting_dirty_files` and re-runs this atom from `pending`.
+`intake.sh` maps this `block_code` to `GOAL_BLOCKED_WIP_COLLISION`
+(precedence over the generic `GOAL_BLOCKED_ATOM_FAILED`). `block_code` is
+absent/null in pre-2.13 artifacts and for every other failure kind.
 
 ---
 
@@ -366,12 +377,30 @@ GOAL_PROOF turn.
 
 ## `goal-final-sha.txt`
 
-Plain text file. One line. The HEAD SHA of `feature/goal-<short-hash>` after
+Plain text file. One line. The HEAD SHA of the goal-run branch after
 the last atom is verified and before `/nacl-tl-deliver` starts.
 
 ```
 abc1234567890abcdef...
 ```
+
+---
+
+## `dev-verified.json` (2.13+; dev-only target)
+
+```json
+{
+  "schema_version": 1,
+  "dev_verified": true,
+  "verified_at": "<utc-iso>",
+  "verify_scope": "UC-NNN, UC-MMM"
+}
+```
+
+Written by the wrapper at Flow step 11 on the dev-only path after the
+local `/nacl-tl-verify` pass. `intake.sh` reads `dev_verified` from here;
+absent file → `n/a` (pre-2.13 runs never wrote it, and GOAL_OK on the
+dev-only branch of the decision rule was unreachable for them).
 
 Used by:
 - Step 10 PRE-DELIVER DRIFT CHECK (compare `git rev-parse HEAD` and `gh pr view --json headRefOid`)

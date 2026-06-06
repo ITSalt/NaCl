@@ -166,6 +166,12 @@ Persists delivery progress for resumption:
    git status --porcelain
    ```
    - If uncommitted changes exist → **STOP**: "Uncommitted changes detected. Run /nacl-tl-conductor or commit manually first."
+   - **Goal-context exception (2.13+)**: when `NACL_GOAL_RUN_ID` is set and
+     `.tl/goal-runs/$NACL_GOAL_RUN_ID/plan.lock.json` carries
+     `preexisting_dirty_files[]`, those exact paths are EXPECTED dirt —
+     another agent's in-flight work in the shared worktree (Smart WIP).
+     Tolerate them: they are not staged, not pushed, and do not block
+     delivery. Any uncommitted path NOT in that list still STOPs as above.
 
 3. Check for unpushed commits:
    ```bash
@@ -229,6 +235,14 @@ Persists delivery progress for resumption:
        --base [base_branch]
      ```
    - If PR exists: note its URL
+   - **Goal-context (2.13+, `NACL_SHIP_PUSH=deferred`)**: this Step-2 push is
+     THE single push of the goal run — per-atom commits stayed local. Read
+     the PR body from `.tl/goal-runs/$NACL_GOAL_RUN_ID/pr-body.md` (rendered
+     and finalized by the wrapper) instead of the auto-generated git-log
+     body, so the goal-run PR opens with the full atom table. Title = first
+     line of that file stripped of the leading `## `. After creation the
+     wrapper writes `pr.json` from the result; CI runs once, on the full
+     batch.
 
 3. YouGile: post ship notification to task chat (if configured)
 

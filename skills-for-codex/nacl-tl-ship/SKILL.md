@@ -45,6 +45,14 @@ Shipping mutates git and possibly external trackers. It is confirmation-gated.
   not a replacement for upstream review/verify status.
 - Commit, push, PR creation, tracker updates, graph updates, and deploy handoff
   all require confirmation and read-back evidence.
+- Goal-context append mode (`NACL_SHIP_MODE` / `NACL_GOAL_BRANCH` /
+  `NACL_SHIP_PUSH` env vars) is a Claude-runtime mechanism driven by
+  `/nacl-goal intake`; Codex does not run it. If those env vars are present
+  in a Codex session, ignore them and follow the interactive workflow. Two
+  source rules still carry over as plain git discipline: stage only the
+  files the current work item changed (never `git add -A` in a worktree
+  that may hold someone else's uncommitted files), and never stage a path
+  listed in a goal run's `preexisting_dirty_files` snapshot.
 
 ## Capabilities
 

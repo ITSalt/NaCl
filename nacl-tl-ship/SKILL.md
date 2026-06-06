@@ -634,26 +634,29 @@ With `--feature FR-001`:
 
 ## Goal-context append mode (2.10.1+)
 
-When this skill is invoked under `/nacl-goal intake` (the autonomous goal orchestrator added in 2.10.1), the wrapper exports four env vars that modify Steps 2, 4, and 5 below. **When any of these env vars are absent, the default behavior documented above applies unchanged** — interactive `/nacl-tl-ship` is not affected.
+When this skill is invoked under `/nacl-goal intake` (the autonomous goal orchestrator added in 2.10.1), the wrapper exports five env vars that modify Steps 2, 3, 4, and 5 below. **When any of these env vars are absent, the default behavior documented above applies unchanged** — interactive `/nacl-tl-ship` is not affected.
 
 | Variable | Set by | Used here |
 |---|---|---|
 | `NACL_GOAL_RUN_ID` | `/nacl-goal intake` | Commit message footer + PR body trailer for traceability |
-| `NACL_GOAL_BRANCH` | `/nacl-goal intake` | Branch to push to (pre-created by the wrapper) |
+| `NACL_GOAL_BRANCH` | `/nacl-goal intake` | Branch to commit/push on (selected by the wrapper) |
 | `NACL_SHIP_MODE` | `/nacl-goal intake` (always `append`) | Triggers append-mode behavior below |
+| `NACL_SHIP_PUSH` | `/nacl-goal intake` (`per-atom` \| `deferred` \| `none`) | Push cadence — gates Steps 4 and 5. Absent ⇒ `per-atom` (pre-2.13 behavior) |
 | `NACL_GOAL_BUDGET_FILE` | `/nacl-goal intake` | Inner-skill envelope appended at end of run |
 
 ### Behavior when `NACL_SHIP_MODE=append` AND `NACL_GOAL_BRANCH` is set
 
 **Step 2 (DETERMINE GIT STRATEGY)** — modified branch resolution:
 
-- DO NOT create a new branch. The goal-run branch (`$NACL_GOAL_BRANCH`, conventionally `feature/goal-<short-hash>`) is pre-created by `/nacl-goal intake` Step 5. The current `HEAD` must already be on that branch (verify with `git rev-parse --abbrev-ref HEAD == "$NACL_GOAL_BRANCH"`; if not, FATAL — report the mismatch and exit).
+- DO NOT create a new branch. `$NACL_GOAL_BRANCH` is selected by `/nacl-goal intake` Step 5 — either a wrapper-created `feature/goal-<short-hash>` (`branch_mode=new`) or the user's own feature branch the run executes on (`branch_mode=current`). Do not assume the `feature/goal-*` naming. The current `HEAD` must already be on that branch (verify with `git rev-parse --abbrev-ref HEAD == "$NACL_GOAL_BRANCH"`; if not, FATAL — report the mismatch and exit).
 - The base-branch guard (Step 2.5) is still enforced. The goal-run branch is by definition not `main`/`master`/`release/*`, so the guard passes.
 - This is structurally identical to the existing conductor-driven invocation note above. The goal-run branch is just another pre-created feature branch.
 
-**Step 3 (COMMIT)** — commit message footer addition:
+**Step 3 (COMMIT)** — selective staging + WIP-collision guard + commit message footer:
 
-Append a stable trailer line at the end of the commit message body:
+- Stage ONLY the files this atom's work actually modified (`git add <file>...` — the existing "relevant files" rule, now binding). NEVER `git add -A` in append mode: the worktree may be shared with other agents whose uncommitted files must not ride along.
+- WIP-collision guard: read `preexisting_dirty_files[]` from `.tl/goal-runs/$NACL_GOAL_RUN_ID/plan.lock.json` (absent/empty ⇒ skip the guard). If any file you are about to stage is in that list, HALT WITHOUT COMMITTING and report the collision (file list + atom) — the wrapper surfaces it as `GOAL_BLOCKED_WIP_COLLISION` (resumable). Those edits belong to another agent; committing them would swallow work that is not this atom's to ship.
+- Append a stable trailer line at the end of the commit message body:
 
 ```
 Goal-run-id: <NACL_GOAL_RUN_ID>
@@ -661,9 +664,12 @@ Goal-run-id: <NACL_GOAL_RUN_ID>
 
 This lets `git log --grep="goal-run-id:"` find every commit that belongs to a goal-run. The trailer goes ABOVE the existing `Co-Authored-By:` and `Generated with Claude Code` lines if present.
 
-**Step 4 (PUSH)** — unchanged. Push to `$NACL_GOAL_BRANCH` (which is the current branch).
+**Step 4 (PUSH)** — gated on `NACL_SHIP_PUSH`:
 
-**Step 5 (CREATE MERGE REQUEST / PR)** — append-to-existing-PR semantics:
+- `per-atom` (or var absent): unchanged — push to `$NACL_GOAL_BRANCH` (which is the current branch).
+- `deferred` | `none`: DO NOT push. The commit stays local; the single push happens at `/nacl-tl-deliver` (deferred) or is left entirely to the user (none). Skip every `git push` and every `gh` call in this step.
+
+**Step 5 (CREATE MERGE REQUEST / PR)** — gated on `NACL_SHIP_PUSH`: runs ONLY under `per-atom` (or var absent). Under `deferred`/`none` skip this entire step — nothing has been pushed, the PR does not exist yet, and `pr.json` is written later by the wrapper at DELIVER (deferred) or never (none). Append-to-existing-PR semantics for `per-atom`:
 
 ```bash
 # Check whether a PR already exists for this branch
@@ -751,7 +757,7 @@ fi
 
 Failures to write to `budget.json` are silent — this is best-effort observability for `/nacl-goal intake`'s GOAL_PROOF block.
 
-**Invariant**: this entire section is gated on `NACL_SHIP_MODE=append AND NACL_GOAL_BRANCH set`. With either absent, the default behavior in Steps 1–6 above runs unchanged. Interactive `/nacl-tl-ship UC028` is unaffected.
+**Invariant**: this entire section is gated on `NACL_SHIP_MODE=append AND NACL_GOAL_BRANCH set AND NACL_SHIP_PUSH ∈ {per-atom (default when absent), deferred, none}`. With `NACL_SHIP_MODE`/`NACL_GOAL_BRANCH` absent, the default behavior in Steps 1–6 above runs unchanged; with `NACL_SHIP_PUSH` absent, append mode pushes per atom exactly as it did pre-2.13. Interactive `/nacl-tl-ship UC028` is unaffected.
 
 ---
 

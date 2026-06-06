@@ -112,7 +112,10 @@ from concurrent agents do not refuse the run; overlap with an atom's
 predicted zone resolves via one consolidated pre-start question). Preserve
 the new codes `GOAL_BLOCKED_WIP_COLLISION` (the only resumable
 GOAL_BLOCKED) and the mode-conditional `PLAN_BLOCKED_DIRTY_WORKTREE`
-triggers exactly as catalogued.
+triggers exactly as catalogued. On the dev-only path the wrapper records
+the local verify outcome to `.tl/goal-runs/<run_id>/dev-verified.json`
+(read by `intake.sh`; absent → `n/a`); under `--push=none` the run ends at
+verified local commits with no PR and `ci_status: n/a`.
 
 For `fix:<BUG-NNN>`, preserve RED-first and PR-open evidence requirements. L0
 or L1 emergency bugs route to refusal or interactive handling, not the ordinary

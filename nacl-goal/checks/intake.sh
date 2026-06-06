@@ -28,8 +28,12 @@ set -uo pipefail
 #   curl health_endpoint        → deploy_status
 #   curl version_endpoint (opt) → deployed_sha_matches
 #   /nacl-tl-verify             → staging_functional_verified (PR2 wiring)
-#   /nacl-tl-verify (local)     → dev_verified (dev-only path)
+#   dev-verified.json           → dev_verified (dev-only path; wrapper-written)
 #   budget.json                 → elapsed (wall-clock since started_at)
+#   plan.lock.json (2.13+)      → branch_mode, push_cadence, branch_base_sha,
+#                                 prior_unpushed_commits (defaults: new/per-atom —
+#                                 pre-2.13 artifacts stay valid)
+#   atoms/*.state.json (2.13+)  → block_code (GOAL_BLOCKED_WIP_COLLISION)
 #
 # Result decision (per aliases.md §intake §result_decision_rule):
 #   GOAL_OK             — all success_condition AND clauses satisfied
@@ -143,6 +147,13 @@ DEPLOY_TARGET=$(json_get "$PLAN_FILE" '.deploy_target' "")
 ATOMS_TOTAL=$(json_get "$PLAN_FILE" '.atoms | length' "0")
 FEATURE_ATOMS_TOTAL=$(json_get "$PLAN_FILE" '[.atoms[] | select(.type=="FEATURE_SMALL")] | length' "0")
 
+# 2.13+ batch-mode fields. Pre-2.13 plan.lock.json files lack them — the
+# defaults reproduce the pre-2.13 behavior exactly (new branch, per-atom push).
+BRANCH_MODE=$(json_get "$PLAN_FILE" '.branch_mode' "new")
+PUSH_CADENCE=$(json_get "$PLAN_FILE" '.push_cadence' "per-atom")
+BRANCH_BASE_SHA=$(json_get "$PLAN_FILE" '.branch_base_sha' "null")
+PRIOR_COMMITS_COUNT=$(json_get "$PLAN_FILE" '.prior_unpushed_commits' "0")
+
 INTAKE_STATUS="ambiguous"
 if [[ -f "$INTAKE_FILE" ]]; then
   if [[ "$HAVE_JQ" -eq 1 ]]; then
@@ -177,6 +188,8 @@ FEATURE_SPEC_DELTA_COUNT=0
 UNSUPPORTED_ATOMS_COUNT=0
 ATOM_FAILED_ID=""
 ATOM_FAILED_ERROR=""
+WIP_COLLISION_DETECTED="false"
+WIP_COLLISION_ATOM_ID=""
 
 if [[ -d "$ATOMS_DIR" ]]; then
   for state_file in "$ATOMS_DIR"/*.state.json; do
@@ -200,6 +213,14 @@ if [[ -d "$ATOMS_DIR" ]]; then
       ATOMS_FAILED=$((ATOMS_FAILED + 1))
       ATOM_FAILED_ID="$atom_id"
       ATOM_FAILED_ERROR=$(json_get "$state_file" '.error' "unknown")
+      # 2.13+: a failed atom may carry an explicit block_code. The only one
+      # defined today is GOAL_BLOCKED_WIP_COLLISION (resumable) — it takes
+      # precedence over the generic GOAL_BLOCKED_ATOM_FAILED.
+      atom_block_code=$(json_get "$state_file" '.block_code' "")
+      if [[ "$atom_block_code" == "GOAL_BLOCKED_WIP_COLLISION" ]]; then
+        WIP_COLLISION_DETECTED="true"
+        WIP_COLLISION_ATOM_ID="$atom_id"
+      fi
     fi
   done
 fi
@@ -253,6 +274,8 @@ fi
 PR_URL="null"
 PR_HEAD_SHA="null"
 CI_STATUS="pending"
+# push_cadence=none never pushes and never opens a PR — CI is n/a, not pending.
+[[ "$PUSH_CADENCE" == "none" ]] && CI_STATUS="n/a"
 
 if [[ -f "$PR_FILE" ]]; then
   PR_URL=$(json_get "$PR_FILE" '.url' "null")
@@ -308,6 +331,9 @@ if [[ "$GOAL_FINAL_SHA" != "null" ]]; then
     DRIFT_DETECTED="true"
     DRIFT_REASON="branch_head_sha (${BRANCH_HEAD_SHA}) != goal_final_sha (${GOAL_FINAL_SHA})"
   fi
+  # The "null" guard below is LOAD-BEARING for deferred/none cadence: until
+  # the single push at DELIVER the PR does not exist, PR_HEAD_SHA stays
+  # "null", and a null PR head is NOT drift. Do not "simplify" it away.
   if [[ "$PR_HEAD_SHA" != "null" && "$PR_HEAD_SHA" != "$GOAL_FINAL_SHA" ]]; then
     DRIFT_DETECTED="true"
     DRIFT_REASON="pr_head_sha (${PR_HEAD_SHA}) != goal_final_sha (${GOAL_FINAL_SHA})"
@@ -455,8 +481,10 @@ if [[ "$DEPLOY_TARGET" == "staging" && -f "config.yaml" ]]; then
 fi
 
 if [[ "$DEPLOY_TARGET" == "dev-only" ]]; then
-  # dev_verified is asserted by /nacl-tl-verify locally — PR2 wiring.
-  DEV_VERIFIED="n/a"
+  # dev_verified is asserted by /nacl-tl-verify locally; the wrapper records
+  # the outcome to ${RUN_DIR}/dev-verified.json (2.13+). Absent file → n/a
+  # (pre-2.13 runs never wrote it).
+  DEV_VERIFIED=$(json_get "${RUN_DIR}/dev-verified.json" '.dev_verified' "n/a")
 fi
 
 # ----------------------------------------------------------------------
@@ -476,6 +504,9 @@ elif [[ "$DRIFT_DETECTED" == "true" ]]; then
 elif [[ "$DEPLOYED_SHA_MATCHES" == "false" ]]; then
   RESULT="GOAL_BLOCKED"
   BLOCKING_SUB_REASON="GOAL_BLOCKED_DEPLOYED_SHA_MISMATCH"
+elif [[ "$WIP_COLLISION_DETECTED" == "true" ]]; then
+  RESULT="GOAL_BLOCKED"
+  BLOCKING_SUB_REASON="GOAL_BLOCKED_WIP_COLLISION"
 elif [[ "$ATOMS_FAILED" -gt 0 ]]; then
   RESULT="GOAL_BLOCKED"
   BLOCKING_SUB_REASON="GOAL_BLOCKED_ATOM_FAILED"
@@ -498,10 +529,15 @@ else
   [[ "$ATOMS_IMPLEMENTED" -lt "$ATOMS_TOTAL" || "$ATOMS_TOTAL" -eq 0 ]] && ok="false"
   [[ "$FEATURE_SPEC_DELTA_COUNT" -lt "$FEATURE_ATOMS_TOTAL" ]] && ok="false"
   [[ "$FEATURE_ATOMS_VERIFIED" -ne "$FEATURE_ATOMS_TOTAL" ]] && ok="false"
-  [[ "$PR_URL" == "null" ]] && ok="false"
   [[ "$BRANCH_HEAD_SHA" != "$GOAL_FINAL_SHA" || "$GOAL_FINAL_SHA" == "null" ]] && ok="false"
-  [[ "$PR_HEAD_SHA" != "$GOAL_FINAL_SHA" || "$GOAL_FINAL_SHA" == "null" ]] && ok="false"
-  [[ "$CI_STATUS" != "success" ]] && ok="false"
+  # PR/CI requirements apply only when the run actually pushes. Under
+  # push_cadence=none (dev-only) the run ends at verified local commits —
+  # there is no PR and no CI by design (aliases.md §result_decision_rule).
+  if [[ "$PUSH_CADENCE" != "none" ]]; then
+    [[ "$PR_URL" == "null" ]] && ok="false"
+    [[ "$PR_HEAD_SHA" != "$GOAL_FINAL_SHA" || "$GOAL_FINAL_SHA" == "null" ]] && ok="false"
+    [[ "$CI_STATUS" != "success" ]] && ok="false"
+  fi
   [[ "$NO_NEW_REGRESSIONS" != "true" ]] && ok="false"
   if [[ "$DEPLOY_TARGET" == "staging" ]]; then
     if [[ "$DEPLOY_STATUS" != "healthy" ]]; then
@@ -537,6 +573,7 @@ echo "no_new_regressions: ${NO_NEW_REGRESSIONS} (mode=${REGRESSION_CHECK_MODE})"
 echo "deploy_target: ${DEPLOY_TARGET}"
 echo "deploy_status: ${DEPLOY_STATUS}"
 echo "deployed_sha_matches: ${DEPLOYED_SHA_MATCHES}"
+echo "branch_mode: ${BRANCH_MODE} (push: ${PUSH_CADENCE})"
 echo "elapsed: ${ELAPSED_DISPLAY}"
 
 # ----------------------------------------------------------------------
@@ -567,6 +604,11 @@ evidence=(
   "deployed_sha_matches: ${DEPLOYED_SHA_MATCHES}"
   "staging_functional_verified: ${STAGING_FUNCTIONAL_VERIFIED}"
   "dev_verified: ${DEV_VERIFIED}"
+  "branch_mode: ${BRANCH_MODE}"
+  "push_cadence: ${PUSH_CADENCE}"
+  "prior_commits_count: ${PRIOR_COMMITS_COUNT}"
+  "branch_base_sha: ${BRANCH_BASE_SHA}"
+  "worktree_isolated: $(json_get "$BASELINE_FILE" '.worktree_isolated' "n/a")"
 )
 
 if [[ -n "$BLOCKING_SUB_REASON" ]]; then
@@ -575,6 +617,10 @@ if [[ -n "$BLOCKING_SUB_REASON" ]]; then
   if [[ "$BLOCKING_SUB_REASON" == "GOAL_BLOCKED_ATOM_FAILED" && -n "$ATOM_FAILED_ID" ]]; then
     evidence+=("failed_atom_id: ${ATOM_FAILED_ID}")
     evidence+=("failed_atom_error: ${ATOM_FAILED_ERROR}")
+  fi
+  if [[ "$BLOCKING_SUB_REASON" == "GOAL_BLOCKED_WIP_COLLISION" ]]; then
+    evidence+=("collision_atom_id: ${WIP_COLLISION_ATOM_ID}")
+    evidence+=("resumable: true")
   fi
 fi
 

@@ -115,6 +115,15 @@ production incident.
   state back to verified task evidence.
 - CI, verify, deploy, graph, and tracker failures block or downgrade delivery;
   they cannot be hidden under a successful ship step.
+- The uncommitted-changes pre-check has a goal-context exception in the
+  source (2.13+): paths listed in a goal run's `preexisting_dirty_files`
+  snapshot are another agent's in-flight work and do not block delivery,
+  while any OTHER dirty path still stops. Codex sessions without an active
+  goal run keep the plain rule: any uncommitted change stops the pre-check.
+  Under deferred push cadence the source's Step-2 push is the single push
+  of a goal run and reads the wrapper-rendered PR body
+  (`.tl/goal-runs/<run_id>/pr-body.md`) — preserve that body if the file
+  exists rather than auto-generating one from git log.
 - HEALTH_ONLY evidence (a green `/health` probe) is NOT
   product-readiness evidence on its own. The W3 `PROD_GOLDEN_PATH`
   stage is the product-readiness signal at the release-time gate.
