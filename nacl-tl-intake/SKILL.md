@@ -72,6 +72,7 @@ a payment system, and we need to update the deploy docs for the new server"
 | Flag | Description |
 |------|-------------|
 | `--yes` | Auto-confirm HIGH+GRAPH+no-spec-gap+L0/L1 atoms without prompting (see `--yes flag behavior` below). |
+| `--autonomous` | (2.13+) Set ONLY by `/nacl-goal intake` alongside `--yes --emit-state`. Widens the auto-route set per the "Autonomous" column of the Step 2b case table: Template B auto-confirms, Template D auto-routes on the leading guess with a tracked `residual_note`, Template E atoms are collected for ONE consolidated pre-`/goal` batch instead of per-atom prompts. Template C (hard_refuse) is untouched. A human typing `/nacl-tl-intake --yes` is NOT affected — this flag is never implied. |
 | `--emit-state <path>` | Write the deterministic routing table as a JSON file (2.10.1+). When set, this skill writes the table to the given path INSTEAD of (or in addition to) interactive prompting. Used by `/nacl-goal intake` to capture classification artifacts for the wrapper. Format: see §`--emit-state` JSON schema below. |
 | `--namespace=<DOMAIN>` | (sa-feature passthrough, optional) Restrict classification to a single domain namespace. |
 
@@ -146,11 +147,19 @@ When an atom carries BOTH an unconditionally-correct defensive part AND a genuin
   "working_assumption": "<what the fix proceeds on>",
   "verify_by": "staging|user|null",
   "followup_task": "<YouGile child-task id OR .tl/open-questions.md anchor>",
-  "route": "note|L2-with-flag"
+  "route": "note|L2-with-flag",
+  "reason": "spec_gap_residual|medium_confidence_alternative"
 }
 ```
 
 `null` when the atom has no residual. A non-null `residual_note` MUST carry a `followup_task` — a residual with no recorded follow-up is invalid and falls back to the prompt (see Step 2b binding rule + Step 6 durable sink).
+
+`reason` (2.13+, optional — absent means `spec_gap_residual`):
+`medium_confidence_alternative` marks a residual created by the
+`--autonomous` auto-route of a MEDIUM-confidence atom — `summary` then
+records the plausible alternative classification and what would tip the
+scale, so the user can re-route after the fact. It is a first-class
+tracked follow-up, distinct from a spec-gap residual.
 
 #### `hard_refuse_triggers` closed set
 
@@ -172,7 +181,7 @@ Each trigger MUST also populate `trigger_evidence` with a short verbatim quote f
 
 ### Goal-context env vars (2.10.1+)
 
-When this skill is invoked under `/nacl-goal intake`, the wrapper exports `NACL_GOAL_RUN_ID` (and the other goal env vars). This skill recognizes `NACL_GOAL_RUN_ID` only for logging purposes — classification logic is unaffected. The wrapper itself passes `--yes --emit-state .tl/goal-runs/<run_id>/intake.json` so this skill does NOT need to read the env vars to know it's running under a goal.
+When this skill is invoked under `/nacl-goal intake`, the wrapper exports `NACL_GOAL_RUN_ID` (and the other goal env vars). This skill recognizes `NACL_GOAL_RUN_ID` only for logging purposes — classification logic is unaffected. The wrapper itself passes `--autonomous --yes --emit-state .tl/goal-runs/<run_id>/intake.json` so this skill does NOT need to read the env vars to know it's running under a goal.
 
 **Invariant**: when these env vars are absent and `--emit-state` is not passed, this skill behaves exactly as today.
 
@@ -335,19 +344,19 @@ Resolution:
 2. **Ambiguous residual** → record as `residual_note` and route at **L2-with-flag** (or keep as a tracked NOTE). NEVER L1: `spec_gap: true` *is* doc-staleness, and an L1 attestation would let `/nacl-tl-fix` ship code against a stale spec (its 6.SF gate checks ordering, not staleness — see `nacl-tl-fix` W10). The residual MUST carry a `followup_task` (Step 6 Backlog task / `.tl/open-questions.md`); a residual with no follow-up is invalid and falls back to the prompt.
 3. **Block for a human decision (plain-language Template C) ONLY** when the residual carries a `hard_refuse_trigger` from the closed set — `schema_migration` / `public_api_contract` (external/breaking only — documenting consumer-side input tolerance does NOT count) / `auth_or_security` / `permissions` / `billing` / `destructive_data_operation` / `l2_l3_architecture` / `product_decision_required`. This is the "costly/irreversible" carve-out. Otherwise proceed with the working assumption + the recorded follow-up.
 
-`--yes` and `/nacl-goal` autonomous mode follow these same rules; the only thing that still forces a prompt is an unresolved hard_refuse residual.
+`--yes` and `/nacl-goal` autonomous mode follow these same rules for spec-gap residuals; under `--autonomous` the auto-route additionally extends to MEDIUM-confidence leading-guess routing (with a tracked `residual_note`, reason `medium_confidence_alternative`). In BOTH modes the only thing that still forces a per-atom decision is an unresolved hard_refuse residual (Template C).
 
 **Per-atom confirmation gate (runs after classifying EACH atom — behavior differs by case):**
 
 A generic "Correct? [yes / adjust / skip]" trains the user to rubber-stamp and squanders the confidence label. Pick the gate behavior from the case table below, then fire the matching prompt template (or no prompt at all). **Do NOT proceed to Step 3 (GROUP) until every atom has been confirmed, auto-routed, or skipped.**
 
-| Case | Gate behavior |
-|------|---------------|
-| HIGH + GRAPH, **no spec gap**, classification level **L0/L1** (low blast radius) | **Auto-route, no prompt.** Print the auto-route line (template A) and proceed. |
-| HIGH + GRAPH, **no spec gap**, classification level **L2/L3** (high blast radius) | **Launch-sanity prompt** (template B) — not a classification question, just a "ready to launch?" check. |
-| HIGH + GRAPH, **spec_gap: true** | Apply Step 2b-pre + Step 2b-split. Ship the defensive part with no prompt (template A-note); record the residual as a tracked follow-up. Fire the **plain-language template C** ONLY if the residual carries a hard_refuse_trigger; otherwise proceed on the working assumption. |
-| MEDIUM + GRAPH | **Recommendation prompt** (template D) — leading option + alternatives + reasoning. |
-| LOW / HEURISTIC | **Open-disambiguation prompt** (template E) — present options with equal weight, no forced recommendation. |
+| Case | Gate behavior (interactive / `--yes`) | Autonomous (`--autonomous`, set by `/nacl-goal`) |
+|------|---------------|---------------|
+| HIGH + GRAPH, **no spec gap**, classification level **L0/L1** (low blast radius) | **Auto-route, no prompt.** Print the auto-route line (template A) and proceed. | Same — auto-route (template A). |
+| HIGH + GRAPH, **no spec gap**, classification level **L2/L3** (high blast radius) | **Launch-sanity prompt** (template B) — not a classification question, just a "ready to launch?" check. | **Auto-confirm "start".** Invoking `/nacl-goal intake` IS the launch intent — re-asking duplicates the user's own action. The spec-first work the prompt warned about still happens (downstream skills enforce it). Print template B's body as an informational line, no prompt. |
+| HIGH + GRAPH, **spec_gap: true** | Apply Step 2b-pre + Step 2b-split. Ship the defensive part with no prompt (template A-note); record the residual as a tracked follow-up. Fire the **plain-language template C** ONLY if the residual carries a hard_refuse_trigger; otherwise proceed on the working assumption. | Same — and a hard_refuse residual surfaces as the wrapper's pre-`/goal` `PLAN_BLOCKED_*` refusal rather than an interactive prompt. |
+| MEDIUM + GRAPH | **Recommendation prompt** (template D) — leading option + alternatives + reasoning. | **Auto-route on the leading guess** (template A-note style): record the alternative + what-would-tip-the-scale as `residual_note` (reason `medium_confidence_alternative`, durable sink), disclose in the final-summary headline modifier. Misrouting bug↔task is recoverable — `/nacl-tl-fix`'s spec-first gate still protects the spec; the tracked note lets the user re-route. EXCEPTION: an atom carrying any hard_refuse_trigger never auto-routes (Template C path). |
+| LOW / HEURISTIC | **Open-disambiguation prompt** (template E) — present options with equal weight, no forced recommendation. | **Collect, don't prompt per atom.** All LOW/HEURISTIC atoms are flagged in `--emit-state` output (`classification_metadata.ambiguous: true` + per-atom confidence); the wrapper batches them into ONE consolidated pre-`/goal` question. Non-interactive → the wrapper refuses with `PLAN_BLOCKED_AMBIGUOUS_CLASSIFICATION`. Never auto-route a LOW atom: with the graph unresolved, a feature could silently become a bugfix without a spec. |
 
 #### Template A — auto-route line (no prompt)
 
@@ -450,6 +459,14 @@ Atom #N: "[atom title]"
 - "skip" / "set aside" drops the atom from the execution plan; user must explicitly re-add it later.
 - "adjust" / "change" accepts a corrected type from the user; record the manual override as `evidence: USER_OVERRIDE`.
 - For SPEC_GAP atoms where the user chooses FEATURE, record `evidence: USER_OVERRIDE (spec_gap)` so the final summary headline can route through the REROUTED rule (see "Final summary" below).
+
+**`--autonomous` behavior (2.13+; on top of `--yes`, wrapper-only):**
+
+- Template B atoms: auto-confirmed — the body prints as an informational line.
+- Template D atoms: auto-routed on the leading guess. The alternative classification is recorded as `residual_note` with `reason: medium_confidence_alternative` and a `followup_task` (Step 6 durable sink) — an auto-route without the recorded alternative is invalid and falls back to the prompt, exactly like a residual without a follow-up.
+- Template E atoms: NOT prompted per atom and NOT auto-routed. Flagged in the `--emit-state` output for the wrapper's single consolidated pre-`/goal` batch question; if that batch cannot be asked (non-interactive), the wrapper refuses the run.
+- Template C: unchanged — the ONLY per-atom human decision that survives autonomous mode. Under the wrapper it fires as a pre-`/goal` `PLAN_BLOCKED_*` refusal (billing / auth / schema migration / destructive ops / product decision), never mid-run.
+- Every auto-routed B/D atom is disclosed: in the `--emit-state` JSON (`evidence` unchanged, `residual_note.reason`), in the final-summary headline modifier, and in the goal-run PR body atom table. Autonomy widens routing, never hides it.
 
 #### Step 2c: Fallback -- keyword-based classification (when Neo4j is unavailable)
 
@@ -795,6 +812,8 @@ Headline selection rules (first match wins):
 - All bug atoms `Status: PASS` AND all atoms graph-backed ⇒ `INTAKE TRIAGE COMPLETE (graph-backed)`
 
 **Modifier (applies on top of any headline above):** if M atoms carry an unresolved `residual_note` follow-up, append ` — M open questions pending verification` to the selected headline and list them in the summary block. These are tracked (Backlog `[Open question]` subtasks / `.tl/open-questions.md`), not dropped — the parent card cannot close until they resolve.
+
+**Autonomous-routing modifier (2.13+, `--autonomous` only):** if K atoms were auto-routed on a MEDIUM-confidence leading guess (residual_note reason `medium_confidence_alternative`), additionally append ` — K atoms auto-routed on leading classification (alternatives tracked)`. The confidence call was made autonomously; the audit surface must say so.
 
 ```
 ===============================================

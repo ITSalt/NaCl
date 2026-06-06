@@ -232,7 +232,7 @@ untouched. The commit-time backstop is `GOAL_BLOCKED_WIP_COLLISION`.
 
 | | |
 |---|---|
-| Triggers | `/nacl-tl-intake --emit-state` reports `classification_metadata.ambiguous: true`, or classify-step detects contradictory atoms (e.g. one atom implies a fix to UC-X, another implies removing UC-X) |
+| Triggers | (2.13+, tightened) Fires only for atoms still unresolved AFTER the autonomous question policy ran its course: LOW/HEURISTIC-confidence atoms whose consolidated pre-`/goal` batch question (Flow step 4) was declined or could not be asked (non-interactive session), or classify-step detects contradictory atoms (e.g. one atom implies a fix to UC-X, another implies removing UC-X). MEDIUM-confidence atoms NO LONGER reach this refusal — under `--autonomous` they route on the leading guess with a tracked alternative (envelope gate `medium-confidence-routing`) |
 | Message | "`/nacl-goal intake` could not classify your goal unambiguously: `<ambiguity reason from intake>`. Possible interpretations:\n\n- `<interpretation 1>`\n- `<interpretation 2>`\n\nRe-run with a more specific goal, OR run `/nacl-tl-intake \"<goal>\"` interactively to resolve the ambiguity step by step, then re-run `/nacl-goal intake \"<resolved goal>\"`." |
 | Fallback | `/nacl-tl-intake "<goal>"` interactively; or rewrite the goal |
 | Logs to runs/ | Yes — `intake.json` retained for inspection |

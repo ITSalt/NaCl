@@ -395,9 +395,24 @@ exception envelope see `nacl-goal/envelope.md`. For gate prediction see
      i.e. zero-tests-collected runner error, or all-tests-failing.
    missing gh auth / CI perms  → PLAN_BLOCKED_GH_AUTH_OR_CI_PERMISSION_MISSING
 
-4. CLASSIFY  (/nacl-tl-intake --yes --emit-state .tl/goal-runs/<run_id>/intake.json)
+4. CLASSIFY  (/nacl-tl-intake --autonomous --yes --emit-state .tl/goal-runs/<run_id>/intake.json)
    atoms[] with: id, type, linked_uc, evidence, confidence, risk_level,
-   depends_on, hard_refuse_triggers, trigger_evidence, spec_gap, skill_path.
+   depends_on, hard_refuse_triggers, trigger_evidence, spec_gap, residual_note,
+   skill_path.
+   --autonomous question policy (2.13+; see nacl-tl-intake Step 2b case table):
+     HIGH L0/L1, HIGH spec-gap-no-hard-refuse → auto-route (as before)
+     HIGH L2/L3 launch-sanity (Template B)    → auto-confirmed; informational line
+     MEDIUM (Template D)                      → auto-route on leading guess;
+       alternative tracked as residual_note (reason medium_confidence_alternative);
+       pre-authorized via envelope.md gate `medium-confidence-routing`;
+       NEVER when the atom carries a hard_refuse_trigger
+     LOW / HEURISTIC (Template E)             → ONE consolidated batch question,
+       asked HERE (pre-/goal interaction is allowed): list every unresolved
+       atom with its options; the user answers once and the run proceeds
+       fully autonomously. Non-interactive session or declined →
+       PLAN_BLOCKED_AMBIGUOUS_CLASSIFICATION (as before)
+     hard_refuse (Template C)                 → unchanged: PLAN_BLOCKED_* below —
+       the user's "critical questions" always survive autonomy
    Refuse mapping (per plan-lock-schema.md §hard_refuse_triggers):
      billing | destructive | l2_l3 | product_decision → _FEATURE_REQUIRES_PRODUCT_DECISION
        (or _FEATURE_REQUIRES_HUMAN_PRODUCT_DECISION if FEATURE)
@@ -406,7 +421,8 @@ exception envelope see `nacl-goal/envelope.md`. For gate prediction see
      hotfix_or_release_routing                        → REFUSE (interactive)
    FEATURE_HEAVY without trigger → write planning/feature-plan.md +
      planning/open-decisions.md → PLAN_BLOCKED_FEATURE_REQUIRES_HUMAN_PRODUCT_DECISION
-   ambiguous → PLAN_BLOCKED_AMBIGUOUS_CLASSIFICATION
+   ambiguous AFTER the consolidated batch → PLAN_BLOCKED_AMBIGUOUS_CLASSIFICATION
+     (MEDIUM-confidence atoms no longer reach this refusal — they auto-route)
    PLAN_BLOCKED_PLAN_SPLIT_REQUIRED fires when EITHER:
      (a) atoms touch >1 top-level module AND no dependency path connects the
          atom groups AND total atoms >= 3; OR

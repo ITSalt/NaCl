@@ -203,9 +203,16 @@ tier_c_collisions
 ## intake (2.10.1)
 
 The autonomous goal orchestrator. Ingests free-text + image intent, classifies
-via `/nacl-tl-intake --emit-state` into BUG / TASK / FEATURE_SMALL atoms (with
-`depends_on` topological execution), runs them on one feature branch producing
-one PR, drives that PR through CI to a healthy staging stand.
+via `/nacl-tl-intake --autonomous --yes --emit-state` into BUG / TASK /
+FEATURE_SMALL atoms (with `depends_on` topological execution), runs them on
+one feature branch producing one PR, drives that PR through CI to a healthy
+staging stand. The `--autonomous` flag (2.13+) widens the auto-route set:
+L2/L3 launch-sanity auto-confirms, MEDIUM-confidence atoms route on the
+leading guess with a tracked alternative (envelope gate
+`medium-confidence-routing`), LOW-confidence atoms batch into ONE
+consolidated pre-`/goal` question. Hard-refuse triggers (billing, auth,
+schema migration, destructive ops, product decisions) still refuse before
+`/goal` — autonomy never swallows those.
 
 `intake` is the FIRST alias with `default_mode: autonomous` — it runs without
 `--start`. Opt out via `--plan-only`, `--strict`, or `--target=dev-only`.

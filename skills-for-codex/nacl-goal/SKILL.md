@@ -117,6 +117,16 @@ the local verify outcome to `.tl/goal-runs/<run_id>/dev-verified.json`
 (read by `intake.sh`; absent → `n/a`); under `--push=none` the run ends at
 verified local commits with no PR and `ci_status: n/a`.
 
+Question policy (2.13+): the wrapper invokes
+`/nacl-tl-intake --autonomous --yes --emit-state`. Surface in previews that
+L2/L3 launch-sanity auto-confirms, MEDIUM-confidence atoms auto-route on
+the leading guess (envelope gate `medium-confidence-routing`, audit-logged),
+LOW-confidence atoms produce ONE consolidated pre-start question, and
+hard-refuse triggers (billing / auth / schema migration / destructive ops /
+product decisions) still refuse before `/goal` —
+`PLAN_BLOCKED_AMBIGUOUS_CLASSIFICATION` now fires only for LOW/HEURISTIC
+atoms left unresolved after that batch.
+
 For `fix:<BUG-NNN>`, preserve RED-first and PR-open evidence requirements. L0
 or L1 emergency bugs route to refusal or interactive handling, not the ordinary
 fix loop.

@@ -219,7 +219,8 @@ emit-state schema and require corresponding refusal entries here.
     "user_email": "<git user.email>",
     "issued_at": "<utc-iso>",
     "strict_mode": false,
-    "envelope_gates": ["spec-first-prerequisite", "spec-gap-routing"]
+    "envelope_gates": ["spec-first-prerequisite", "spec-gap-routing",
+                       "medium-confidence-routing"]
   }
 }
 ```

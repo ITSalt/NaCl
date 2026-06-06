@@ -68,6 +68,21 @@ would predictably hit it.
 | Triggers | `/nacl-tl-intake --emit-state` reports `spec_gap: true` for an atom |
 | Precondition for envelope | **All** of: same `linked_uc` as a routed precedent; same affected component/module; same gate family; no `hard_refuse_triggers` from {`schema_migration`, `public_api_contract`, `auth_or_security`, `billing`}; `risk_level == L1`; `confidence == HIGH`; evidence includes `GRAPH` |
 
+### `medium-confidence-routing` (2.13+)
+
+| | |
+|---|---|
+| Inner skill | `nacl-tl-intake --autonomous` Step 2b (Template D auto-route) |
+| Triggers | An atom classifies at `confidence == MEDIUM` with `evidence` including `GRAPH`; instead of the interactive recommendation prompt, the leading guess is routed and the alternative is recorded as `residual_note` (reason `medium_confidence_alternative`) with a tracked follow-up |
+| Precondition for envelope | **All** of: `hard_refuse_triggers` is empty (an atom carrying ANY hard-refuse trigger never auto-routes — Template C / `PLAN_BLOCKED_*` path); `risk_level` ∈ {`L0`, `L1`, `L2`}; `linked_uc` present; `residual_note.followup_task` recorded (an auto-route without the tracked alternative is invalid) |
+
+The user decided at invocation time (autonomy-by-default `intake`); the
+wrapper materializes the exception so the confidence call is audit-logged
+like every other envelope gate — `exceptions.log` + PR-body authorization
+section, never silent. Listed in
+`plan.lock.json.authorization.envelope_gates` when the plan contains at
+least one MEDIUM-confidence atom.
+
 `column-display-undocumented` is **NOT** in the 2.10.1 global envelope. It is
 project-specific in spirit and belongs to the deferred project-local
 exception policy mechanism (planned for 2.10.2+ as
