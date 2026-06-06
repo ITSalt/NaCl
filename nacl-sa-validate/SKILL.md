@@ -4,10 +4,10 @@ model: opus
 effort: high
 description: |
   Validate specification consistency through Neo4j Cypher queries.
-  Internal validation (L1-L12): data consistency, model connectivity, requirement completeness,
+  Internal validation (L1-L13): data consistency, model connectivity, requirement completeness,
   form-domain traceability, UC-form validation, cross-module consistency, FeatureRequest consistency,
   staleness closure, decision provenance, screen state machines, behavior slices,
-  domain error taxonomy (SA-extension connectivity).
+  domain error taxonomy, cache & degradation policies (SA-extension connectivity).
   Cross-validation BA->SA (XL6-XL9): UC coverage, entity coverage, role coverage, rule coverage.
   Use when: validate specification, check consistency, find errors, run checks, quality gate.
 ---
@@ -16,7 +16,7 @@ description: |
 
 **Wrap with:** `/nacl-goal validate:module:<MOD-ID>` (tier S)
 
-This skill is a good fit for autonomous `/goal` loops because all checks are read-only Cypher queries whose results are deterministic: the check script queries the same Neo4j graph and counts zero-row (PASS) vs non-zero-row (FAIL) outcomes for each L1–L12 and XL6–XL9 check. The wrapper composes a completion condition that all enabled checks return zero findings.
+This skill is a good fit for autonomous `/goal` loops because all checks are read-only Cypher queries whose results are deterministic: the check script queries the same Neo4j graph and counts zero-row (PASS) vs non-zero-row (FAIL) outcomes for each L1–L13 and XL6–XL9 check. The wrapper composes a completion condition that all enabled checks return zero findings.
 
 **Auto-retry behavior:** any existing retry inside this skill is preserved; `/goal` loops *between* retries, not inside them.
 
@@ -59,9 +59,9 @@ IMPORTANT: This skill uses ONLY read-cypher. Validation must NEVER write to the 
 
 | Parameter | Values | Description |
 |-----------|--------|-------------|
-| `level` | `internal` | L1-L12: SA-internal consistency checks (incl. L8 staleness, L9 decision provenance, L10 screen state machines, L11 behavior slices, L12 domain error taxonomy) |
+| `level` | `internal` | L1-L13: SA-internal consistency checks (incl. L8 staleness, L9 decision provenance, L10 screen state machines, L11 behavior slices, L12 domain error taxonomy, L13 cache & degradation policies) |
 | | `ba-cross` | XL6-XL9: BA-to-SA cross-layer coverage |
-| | `full` (default) | All levels: L1-L12 + XL6-XL9 |
+| | `full` (default) | All levels: L1-L13 + XL6-XL9 |
 | `--scope` | `intra-uc UC-NNN[,UC-NNN]` | Limit validation to specific UCs and their subgraph (forms, fields, requirements, entities). Used by nacl-sa-feature for incremental validation. |
 | | `intra-module mod-xxx` | Limit validation to a specific module's nodes. |
 
@@ -139,6 +139,11 @@ When `--scope` is provided, all Cypher queries are augmented with a WHERE clause
           |  Error Taxonomy   |            |
           +---------+---------+            |
                     |                      |
+          +---------+---------+            |
+          |  L13: Cache &     |            |
+          |  Degradation      |            |
+          +---------+---------+            |
+                    |                      |
                     +----------+-----------+
                                |
                     +----------+-----------+
@@ -154,7 +159,7 @@ This skill assumes the **canonical SA schema** as defined in `graph-infra/schema
 
 - `/nacl-sa-architect` -- writes `:Module`, `:Component`, edge `(:Module)-[:CONTAINS_UC]->(:UseCase)`, `(:Module)-[:CONTAINS_ENTITY]->(:DomainEntity)`
 - `/nacl-sa-domain` -- writes `:DomainEntity`, `:DomainAttribute`, `:Enumeration`, `:EnumValue` (with `.value` property)
-- `/nacl-sa-uc` -- writes `:UseCase`, `:Requirement`, `:Form`, `:FormField`, `:ActivityStep`; `slices` command writes `:Slice` with edges `HAS_SLICE`, `COVERS`, `CALLS`, `VERIFIED_BY` (see `graph-infra/schema/sa-schema.cypher` § 3-ter; note the `CALLS` name is shared with `ScreenEffect→APIEndpoint` — every L11 query label-qualifies the source as `(sl:Slice)`); `errors` command writes `:DomainError`, `:ErrorPresentation` with edges `HAS_ERROR`, `MAY_RAISE`, `HANDLES`, `PRESENTED_AS`, `SHOWS` (see § 3-quater; all five names are unshared — no label-qualification hazard)
+- `/nacl-sa-uc` -- writes `:UseCase`, `:Requirement`, `:Form`, `:FormField`, `:ActivityStep`; `slices` command writes `:Slice` with edges `HAS_SLICE`, `COVERS`, `CALLS`, `VERIFIED_BY` (see `graph-infra/schema/sa-schema.cypher` § 3-ter; note the `CALLS` name is shared with `ScreenEffect→APIEndpoint` — every L11 query label-qualifies the source as `(sl:Slice)`); `errors` command writes `:DomainError`, `:ErrorPresentation` with edges `HAS_ERROR`, `MAY_RAISE`, `HANDLES`, `PRESENTED_AS`, `SHOWS` (see § 3-quater; all five names are unshared — no label-qualification hazard); `resilience` command writes `:CachePolicy`, `:DegradationRule` with edges `HAS_CACHE`, `CACHES`, `HAS_DEGRADATION`, `ON_ERROR`, `DEGRADES_TO` (see § 3-quinquies; all five names again unshared)
 - `/nacl-sa-roles` -- writes `:SystemRole`
 - `/nacl-sa-ui` -- writes `:Component`, `:FormField`; `state-machine` command writes `:Screen`, `:ScreenState`, `:ScreenEvent`, `:Transition`, `:ScreenEffect`, `:AnalyticsEvent` with edges `HAS_SCREEN`, `RENDERS`, `HAS_STATE`, `HAS_EVENT`, `HAS_TRANSITION`, `FROM_STATE`, `TO_STATE`, `ON_EVENT`, `TRIGGERS`, `CALLS`, `NAVIGATES_TO`, `EMITS` (see `graph-infra/schema/sa-schema.cypher` § 3-bis; note `HAS_STATE`/`TRIGGERS` names are shared with the BA layer — every L10 query is label-qualified)
 - BA->SA handoff edges (canonical names): `AUTOMATES_AS`, `REALIZED_AS`, `IMPLEMENTED_BY`, `MAPPED_TO`, `TYPED_AS`, `SUGGESTS`
@@ -399,7 +404,7 @@ Every detected problem is assigned a severity:
 
 ---
 
-## Validation Levels -- Internal (L1-L12)
+## Validation Levels -- Internal (L1-L13)
 
 ### Level 1: Data Consistency
 
@@ -672,6 +677,11 @@ L12 likewise has **no exemption properties by design**: an unraisable DomainErro
 an exemptible state — a failure mode observable at no API surface is an implementation detail and
 belongs in Requirements / RuntimeContract notes, not in a node; an unshown ErrorPresentation is
 dead text. Deliberate UI silence is modeled as a `silent`-kind presentation, not as an exemption.
+
+L13 likewise has **no exemption properties by design**: a CachePolicy that caches no surface
+(L13.2) is dead vocabulary — a caching intention with no data surface belongs in Requirements,
+not in a node; a DegradationRule with neither an ON_ERROR failure mode nor a DEGRADES_TO state
+is prose change propagation can never reach (the L11.2 argument verbatim).
 
 If executing via HTTP API (curl) instead of MCP tools, copy queries CHARACTER-FOR-CHARACTER
 from the code blocks below. Do NOT simplify, rephrase, or omit WHERE clauses.
@@ -1719,6 +1729,253 @@ RETURN uc.id AS uc_id, sl.id AS slice, st.id AS error_state,
 
 ---
 
+### Level 13: Cache & Degradation Policies (SA-Extension Connectivity)
+
+**Goal:** Every cache/degradation policy written by `nacl-sa-uc resilience` (or `nacl-tl-fix` L2/L3) is structurally sound: no orphaned `CachePolicy`/`DegradationRule` nodes, every policy owned by a Module catalog and caching ≥1 API surface, every rule owned by its UseCase and anchored to a failure mode (`ON_ERROR`) and/or a degraded screen state (`DEGRADES_TO`), the same-UC and channel rules hold for `DEGRADES_TO`, and the load-bearing contract fields (`invalidation_kind`, `behavior`) are non-blank.
+
+A graph with **zero** CachePolicy/DegradationRule nodes passes L13 cleanly (all checks anchor on the two labels or the `HAS_CACHE`/`CACHES`/`HAS_DEGRADATION`/`ON_ERROR`/`DEGRADES_TO` edges) — projects with screen machines, behavior slices, and a full error taxonomy but no cache layer are unaffected: the overlay is opt-in, like L10–L12.
+
+**No shared edge names:** all five L13 edge types are unshared — verified against both schemas, the skill texts, and live-graph relationship types at design time (the second phase in a row; grep hits for `ON_ERROR` are the `VALIDATION_ERROR` substring in prose). Queries below still label-qualify as defense in depth.
+
+**Ownership is asymmetric by design:** the cache catalog is module-scoped shared vocabulary (one quota cache serves screens of many UCs — like `DomainError`), while degradation rules are UC-scoped behavior (one BA-level fallback principle yields several distinct per-experience rules — like `Slice`). `DEGRADES_TO` therefore carries a same-UC rule (mirrors L11.3), and error-triggered rules carry a channel rule (mirrors L12.3).
+
+This level writes nothing.
+
+#### Check 13.0: Orphaned cache/degradation nodes (mirrors L2.1)
+
+```cypher
+// L13.0 -- Severity: CRITICAL
+// CachePolicy / DegradationRule nodes with zero relationships
+MATCH (n)
+WHERE (n:CachePolicy OR n:DegradationRule)
+  AND NOT (n)--()
+RETURN labels(n)[0] AS node_type, n.id AS id,
+       coalesce(n.name, '') AS display_name,
+       'Completely disconnected cache/degradation node (zero relationships)' AS problem
+```
+
+#### Check 13.1: Required parents (mirrors L2.2)
+
+```cypher
+// L13.1 -- Severity: CRITICAL
+// Every CachePolicy must belong to a Module catalog; every DegradationRule
+// must belong to its UseCase
+MATCH (cp:CachePolicy)
+WHERE NOT (:Module)-[:HAS_CACHE]->(cp)
+RETURN 'CachePolicy' AS node_type, cp.id AS id,
+       'CachePolicy has no parent Module (HAS_CACHE)' AS problem
+UNION ALL
+MATCH (dr:DegradationRule)
+WHERE NOT (:UseCase)-[:HAS_DEGRADATION]->(dr)
+RETURN 'DegradationRule' AS node_type, dr.id AS id,
+       'DegradationRule has no parent UseCase (HAS_DEGRADATION)' AS problem
+```
+
+#### Check 13.2: Required anchors
+
+A policy that caches no surface is dead vocabulary (mirrors L12.2 — a caching intention with no data surface belongs in Requirements, not in a node); `CACHES` on provisional endpoints satisfies the anchor. A rule anchored to neither a failure mode nor a screen state is prose change propagation can never reach (the L11.2 argument verbatim). Kind dependency (mirrors the L10.2 kind-required effect targets): `trigger_kind='error'` REQUIRES `ON_ERROR` — offline/capability rules anchor through `DEGRADES_TO`. There is **deliberately no exemption flag** for any half.
+
+```cypher
+// L13.2 -- Severity: CRITICAL
+// Surface-less CachePolicy; anchorless DegradationRule; error rule without ON_ERROR
+MATCH (cp:CachePolicy)
+WHERE NOT (cp)-[:CACHES]->(:APIEndpoint)
+RETURN 'CachePolicy' AS node_type, cp.id AS id,
+       'CachePolicy caches no APIEndpoint (no outgoing CACHES)' AS problem
+UNION ALL
+MATCH (dr:DegradationRule)
+WHERE NOT (dr)-[:ON_ERROR]->(:DomainError)
+  AND NOT (dr)-[:DEGRADES_TO]->(:ScreenState)
+RETURN 'DegradationRule' AS node_type, dr.id AS id,
+       'DegradationRule has neither ON_ERROR nor DEGRADES_TO (anchorless prose)' AS problem
+UNION ALL
+MATCH (dr:DegradationRule)
+WHERE dr.trigger_kind = 'error'
+  AND NOT (dr)-[:ON_ERROR]->(:DomainError)
+RETURN 'DegradationRule' AS node_type, dr.id AS id,
+       'error-triggered DegradationRule has no ON_ERROR (kind-required anchor)' AS problem
+```
+
+#### Check 13.3: DEGRADES_TO reference validity (same-UC + channel rule)
+
+The degraded state must belong to a screen of the rule's **own** UseCase (mirrors L11.3 — degradation rules are UC-scoped behavior). For **error-triggered** rules the target state's screen must actually be exposed to at least one of the rule's failure modes: one of its `ScreenEffect`s `CALLS` an endpoint that `MAY_RAISE` an `ON_ERROR` error (mirrors L12.3 — degrading from an error the screen can never receive is spec fiction). Offline/capability rules carry no channel constraint (offline affects any networked screen).
+
+```cypher
+// L13.3 -- Severity: CRITICAL
+// DEGRADES_TO into a foreign UC's state; error rule degrading without a channel
+MATCH (uc:UseCase)-[:HAS_DEGRADATION]->(dr:DegradationRule)-[:DEGRADES_TO]->(st:ScreenState)
+WHERE NOT EXISTS {
+        MATCH (uc)-[:HAS_SCREEN]->(:Screen)-[:HAS_STATE]->(st)
+      }
+RETURN dr.id AS rule, st.id AS target,
+       'DEGRADES_TO targets a state outside the rule''s own UC (same-UC rule)' AS problem
+UNION ALL
+MATCH (dr:DegradationRule)-[:DEGRADES_TO]->(st:ScreenState)
+MATCH (scr:Screen)-[:HAS_STATE]->(st)
+WHERE dr.trigger_kind = 'error'
+  AND NOT EXISTS {
+        MATCH (dr)-[:ON_ERROR]->(err:DomainError),
+              (scr)-[:HAS_TRANSITION]->(:Transition)-[:TRIGGERS]->(:ScreenEffect)
+              -[:CALLS]->(:APIEndpoint)-[:MAY_RAISE]->(err)
+      }
+RETURN dr.id AS rule, st.id AS target,
+       'error-triggered rule degrades a screen that calls no endpoint raising any of its ON_ERROR errors (channel rule)' AS problem
+```
+
+#### Check 13.4: Edge-target integrity (mirrors L10.7a / L11.5 / L12.4)
+
+```cypher
+// L13.4 -- Severity: CRITICAL
+// HAS_CACHE / CACHES / HAS_DEGRADATION / ON_ERROR / DEGRADES_TO at wrong labels
+MATCH (a)-[:HAS_CACHE]->(b)
+WHERE NOT a:Module OR NOT b:CachePolicy
+RETURN 'HAS_CACHE' AS edge, coalesce(a.id,'?') AS source, coalesce(b.id,'?') AS target,
+       labels(a)[0] + ' -> ' + labels(b)[0] AS labels,
+       'HAS_CACHE must run Module -> CachePolicy' AS problem
+UNION ALL
+MATCH (a)-[:CACHES]->(b)
+WHERE NOT a:CachePolicy OR NOT b:APIEndpoint
+RETURN 'CACHES' AS edge, coalesce(a.id,'?') AS source, coalesce(b.id,'?') AS target,
+       labels(a)[0] + ' -> ' + labels(b)[0] AS labels,
+       'CACHES must run CachePolicy -> APIEndpoint' AS problem
+UNION ALL
+MATCH (a)-[:HAS_DEGRADATION]->(b)
+WHERE NOT a:UseCase OR NOT b:DegradationRule
+RETURN 'HAS_DEGRADATION' AS edge, coalesce(a.id,'?') AS source, coalesce(b.id,'?') AS target,
+       labels(a)[0] + ' -> ' + labels(b)[0] AS labels,
+       'HAS_DEGRADATION must run UseCase -> DegradationRule' AS problem
+UNION ALL
+MATCH (a)-[:ON_ERROR]->(b)
+WHERE NOT a:DegradationRule OR NOT b:DomainError
+RETURN 'ON_ERROR' AS edge, coalesce(a.id,'?') AS source, coalesce(b.id,'?') AS target,
+       labels(a)[0] + ' -> ' + labels(b)[0] AS labels,
+       'ON_ERROR must run DegradationRule -> DomainError' AS problem
+UNION ALL
+MATCH (a)-[:DEGRADES_TO]->(b)
+WHERE NOT a:DegradationRule OR NOT b:ScreenState
+RETURN 'DEGRADES_TO' AS edge, coalesce(a.id,'?') AS source, coalesce(b.id,'?') AS target,
+       labels(a)[0] + ' -> ' + labels(b)[0] AS labels,
+       'DEGRADES_TO must run DegradationRule -> ScreenState' AS problem
+```
+
+#### Check 13.5: Contract hygiene
+
+**13.5a — blank load-bearing contract fields.** Mirrors the L9.3 / L11.6a / L12.6a empty-contract gates: `invalidation_kind` is when the cache stops lying ("forgot when the cache stops lying" — a cache with no invalidation contract is a staleness-bug factory; a `ttl` policy without `ttl_seconds` is the same gap); `behavior` is what the user/caller observes instead of the full experience ("forgot what degrades" — mirrors `slice.then`).
+
+```cypher
+// L13.5a -- Severity: CRITICAL
+// CachePolicy with blank invalidation contract; DegradationRule with blank behavior
+MATCH (cp:CachePolicy)
+WHERE cp.invalidation_kind IS NULL OR trim(cp.invalidation_kind) = ''
+RETURN 'CachePolicy' AS node_type, cp.id AS id,
+       'CachePolicy has no invalidation_kind (the load-bearing cache contract)' AS problem
+UNION ALL
+MATCH (cp:CachePolicy)
+WHERE cp.invalidation_kind = 'ttl' AND cp.ttl_seconds IS NULL
+RETURN 'CachePolicy' AS node_type, cp.id AS id,
+       'ttl-invalidated CachePolicy has no ttl_seconds' AS problem
+UNION ALL
+MATCH (dr:DegradationRule)
+WHERE dr.behavior IS NULL OR trim(dr.behavior) = ''
+RETURN 'DegradationRule' AS node_type, dr.id AS id,
+       'DegradationRule has no observable degraded behavior' AS problem
+```
+
+**13.5b — kind vocabularies** (mirrors L10.8 / L11.6b / L12.6b). The `invalidation_kind` arm excludes blank values — those are already CRITICAL in 13.5a.
+
+```cypher
+// L13.5b -- Severity: WARNING
+// storage_kind / invalidation_kind / trigger_kind / fallback_kind outside the canon
+MATCH (cp:CachePolicy)
+WHERE NOT coalesce(cp.storage_kind, '')
+      IN ['memory', 'local_storage', 'indexed_db', 'cache_api', 'http', 'server', 'cdn']
+RETURN 'CachePolicy' AS node_type, cp.id AS id, cp.storage_kind AS kind,
+       'storage_kind outside {memory, local_storage, indexed_db, cache_api, http, server, cdn}' AS problem
+UNION ALL
+MATCH (cp:CachePolicy)
+WHERE cp.invalidation_kind IS NOT NULL AND trim(cp.invalidation_kind) <> ''
+  AND NOT cp.invalidation_kind IN ['ttl', 'event', 'manual', 'session', 'never']
+RETURN 'CachePolicy' AS node_type, cp.id AS id, cp.invalidation_kind AS kind,
+       'invalidation_kind outside {ttl, event, manual, session, never}' AS problem
+UNION ALL
+MATCH (dr:DegradationRule)
+WHERE NOT coalesce(dr.trigger_kind, '')
+      IN ['error', 'offline', 'capability']
+RETURN 'DegradationRule' AS node_type, dr.id AS id, dr.trigger_kind AS kind,
+       'trigger_kind outside {error, offline, capability}' AS problem
+UNION ALL
+MATCH (dr:DegradationRule)
+WHERE NOT coalesce(dr.fallback_kind, '')
+      IN ['cached_data', 'static_content', 'alternate_provider', 'alternate_ui', 'skip_unit', 'backoff']
+RETURN 'DegradationRule' AS node_type, dr.id AS id, dr.fallback_kind AS kind,
+       'fallback_kind outside {cached_data, static_content, alternate_provider, alternate_ui, skip_unit, backoff}' AS problem
+```
+
+#### Check 13.6: Retryable consistency
+
+The consumer of the Phase-3 `DomainError.retryable` groundwork: a rule that answers a failure with a backoff-retry, when the error itself is catalogued as **not** retryable, is spec fiction ("retrying the unretryable"). Fires only on explicit `retryable=false` — a NULL retryable is unknown, not a finding.
+
+```cypher
+// L13.6 -- Severity: WARNING
+// backoff fallback on an explicitly non-retryable error
+MATCH (dr:DegradationRule)-[:ON_ERROR]->(err:DomainError)
+WHERE dr.fallback_kind = 'backoff' AND err.retryable = false
+RETURN dr.id AS rule, err.id AS error, err.code AS code,
+       'backoff fallback on a non-retryable error (retryable=false) — retrying the unretryable is spec fiction' AS observation
+```
+
+#### Check 13.7: Cached-surface degradation gap
+
+For surfaces that HAVE a cache policy: retryable/external failure modes of those surfaces that no degradation rule answers are exactly the "show stale from cache instead of failing" opportunities the cache was built for. WARNING, not CRITICAL — aspect-split calibration: no self-healing closer exists (closing it requires authoring, `/nacl-sa-uc resilience UC-NNN`), and a CRITICAL gate only manual work can clear is a gate people disable. **Anchored on `CACHES`, deliberately not on the error taxonomy** — a graph with errors but no cache layer stays silent here (vacuous-pass arm 2).
+
+```cypher
+// L13.7 -- Severity: WARNING
+// Cached surfaces whose retryable/external errors no rule degrades
+MATCH (cp:CachePolicy)-[:CACHES]->(api:APIEndpoint)-[:MAY_RAISE]->(err:DomainError)
+WHERE (err.retryable = true OR err.error_kind = 'external')
+  AND NOT EXISTS { MATCH (:DegradationRule)-[:ON_ERROR]->(err) }
+RETURN DISTINCT api.id AS endpoint, err.id AS error, err.code AS code,
+       'Cached surface has a retryable/external failure mode no degradation rule answers (run /nacl-sa-uc resilience UC-NNN for the exposing UC)' AS observation
+```
+
+#### Check 13.8: cached_data fallback not joined to any policy
+
+The cache↔degradation join is deliberately edge-free (it already exists through the endpoint or the screen). A rule that promises cached data as its fallback but meets no CachePolicy through either path means the two halves describe the same resilience story without meeting in the graph. INFO — adoption-order tolerance (rules are often authored before the policies), mirrors L12.9.
+
+```cypher
+// L13.8 -- Severity: INFO
+// cached_data rules that reach no CachePolicy via errors' raisers or the screen's calls
+MATCH (dr:DegradationRule)
+WHERE dr.fallback_kind = 'cached_data'
+  AND NOT EXISTS {
+        MATCH (dr)-[:ON_ERROR]->(:DomainError)<-[:MAY_RAISE]-(:APIEndpoint)<-[:CACHES]-(:CachePolicy)
+      }
+  AND NOT EXISTS {
+        MATCH (dr)-[:DEGRADES_TO]->(:ScreenState)<-[:HAS_STATE]-(:Screen)
+              -[:HAS_TRANSITION]->(:Transition)-[:TRIGGERS]->(:ScreenEffect)
+              -[:CALLS]->(:APIEndpoint)<-[:CACHES]-(:CachePolicy)
+      }
+RETURN dr.id AS rule,
+       'cached_data fallback meets no CachePolicy through its errors'' raisers or its screen''s calls (author the policy, or re-check the fallback kind)' AS observation
+```
+
+#### Check 13.9: Overlapping cache policies
+
+Two policies caching the same endpoint with the same storage are two contradictory invalidation contracts for one surface. Different storages on one endpoint are normal layering (memory over indexed_db) — only same-storage pairs fire.
+
+```cypher
+// L13.9 -- Severity: WARNING
+// Same endpoint, same storage, two policies
+MATCH (cp1:CachePolicy)-[:CACHES]->(api:APIEndpoint)<-[:CACHES]-(cp2:CachePolicy)
+WHERE cp1.id < cp2.id
+  AND coalesce(cp1.storage_kind, '') = coalesce(cp2.storage_kind, '')
+RETURN api.id AS endpoint, cp1.id AS policy_1, cp2.id AS policy_2,
+       coalesce(cp1.storage_kind, '') AS storage_kind,
+       'Two cache policies with the same storage cache the same endpoint — contradictory invalidation contracts' AS observation
+```
+
+---
+
 ## Validation Levels -- Cross-Layer (XL6-XL9)
 
 These checks verify BA-to-SA traceability via handoff edges. They require both BA and SA layers to be populated in Neo4j.
@@ -1972,7 +2229,7 @@ RETURN total_ba, implemented, out_of_scope,
 
 ### Step 2: Execute validation levels
 
-For each enabled level (L1 through L12, XL6 through XL9):
+For each enabled level (L1 through L13, XL6 through XL9):
 
 1. Run ALL Cypher queries for that level using `mcp__neo4j__read-cypher`.
 2. Collect results into a structured list: `{level, check_id, severity, count, details[]}`.
@@ -1982,6 +2239,7 @@ For each enabled level (L1 through L12, XL6 through XL9):
 6. **L10 scope:** in `--scope=intra-uc UC-NNN` runs, restrict L10 to the screens of the scoped UCs by prepending `MATCH (uc:UseCase)-[:HAS_SCREEN]->(scr:Screen) WHERE uc.id IN $ucIds` to each screen-anchored query. Run L10.3 before L10.5b (reachability assumes same-screen wiring, which 10.3 guarantees).
 7. **L11 scope:** in `--scope=intra-uc UC-NNN` runs, restrict L11 to the slices of the scoped UCs by anchoring on `MATCH (uc:UseCase)-[:HAS_SLICE]->(sl:Slice) WHERE uc.id IN $ucIds`; for the non-anchored checks L11.0/L11.1, filter by the id family instead: `WHERE sl.id STARTS WITH 'SLC-' + <NNN> + '-'` (the UC-number infix makes every slice id of one UC match).
 8. **L12 scope:** domain errors are NOT UC-scoped (shared vocabulary, Module parent) — the slice id-infix recipe does not apply. In `--scope=intra-uc UC-NNN` runs, restrict L12 to the errors raisable from the scoped UCs' endpoints: `MATCH (uc:UseCase)-[:EXPOSES]->(:APIEndpoint)-[:MAY_RAISE]->(err:DomainError) WHERE uc.id IN $ucIds` (and their presentations via `PRESENTED_AS`); when invoked from a producer run, prefer the explicit id list the run collected: `WHERE err.id IN $errIds`. The screen-keyed L12.7 and UC-keyed L12.9 carry no `err.id` — scope them by the UCs instead (L12.7 prefiltered to the scoped UCs' screens via `HAS_SCREEN`, L12.9 anchored on the scoped UCs).
+9. **L13 scope (mixed recipe):** cache policies are NOT UC-scoped (shared vocabulary, Module parent) — in `--scope=intra-uc UC-NNN` runs restrict them to the policies caching the scoped UCs' surfaces: `MATCH (uc:UseCase)-[:EXPOSES]->(:APIEndpoint)<-[:CACHES]-(cp:CachePolicy) WHERE uc.id IN $ucIds`; when invoked from a producer run, prefer the explicit id list the run collected: `WHERE cp.id IN $cacheIds`. Degradation rules ARE UC-scoped — filter by the id family: `WHERE dr.id STARTS WITH 'DEG-' + <NNN> + '-'` (the UC-number infix, same recipe as SLC). The surface-keyed L13.7 carries no `cp.id` per row — prefilter it to the scoped UCs' endpoints via `EXPOSES`. L13.6–13.9 are WARNING/INFO — report, never block.
 
 ### Step 3: Aggregate results
 
@@ -2028,6 +2286,7 @@ Generate the following markdown report and output it directly to the user.
 | L10 | Screen State Machines | PASS/WARN/FAIL | N | N | N |
 | L11 | Behavior Slices | PASS/WARN/FAIL | N | N | N |
 | L12 | Domain Error Taxonomy | PASS/WARN/FAIL | N | N | N |
+| L13 | Cache & Degradation Policies | PASS/WARN/FAIL | N | N | N |
 | XL6 | UC Coverage (BA->SA) | PASS/WARN/FAIL/SKIP | N | N | N |
 | XL7 | Entity Coverage (BA->SA) | PASS/WARN/FAIL/SKIP | N | N | N |
 | XL8 | Role Coverage (BA->SA) | PASS/WARN/FAIL/SKIP | N | N | N |
@@ -2143,6 +2402,13 @@ If pre-flight returns zero nodes:
 - edges: HAS_ERROR, MAY_RAISE, HANDLES, PRESENTED_AS, SHOWS (all unshared names)
 - node properties: code, error_kind, http_status, message, presentation_kind
 - no exemption properties (by design)
+
+# Cache & degradation policies (L13):
+- CachePolicy, DegradationRule (nodes)
+- edges: HAS_CACHE, CACHES, HAS_DEGRADATION, ON_ERROR, DEGRADES_TO (all unshared names)
+- node properties: storage_kind, invalidation_kind, ttl_seconds, serves_stale,
+  trigger_kind, behavior, fallback_kind (+ DomainError.retryable for L13.6/13.7)
+- no exemption properties (by design)
 ```
 
 ### Writes
@@ -2242,6 +2508,15 @@ Before completing, verify:
 - [ ] SHOWS triangle closed (no state shows a presentation of an unhandled error)
 - [ ] No blank DomainError.code or ErrorPresentation.message; kind vocabularies canonical
 - [ ] Handling gaps (WARNING) and unpresented handled errors (WARNING) reviewed; unjoined error slices reviewed (INFO)
+
+### L13: Cache & Degradation Policies
+- [ ] No orphaned CachePolicy/DegradationRule nodes
+- [ ] Every CachePolicy has its parent Module (HAS_CACHE); every DegradationRule its parent UseCase (HAS_DEGRADATION)
+- [ ] Every CachePolicy caches ≥1 APIEndpoint (CACHES); every DegradationRule has ≥1 anchor (ON_ERROR and/or DEGRADES_TO); error-triggered rules have ON_ERROR
+- [ ] DEGRADES_TO targets belong to the rule's own UC; error-triggered rules satisfy the channel rule (the degraded screen actually calls a raising endpoint)
+- [ ] HAS_CACHE / CACHES / HAS_DEGRADATION / ON_ERROR / DEGRADES_TO edges target correct labels
+- [ ] No blank invalidation_kind or behavior; ttl policies carry ttl_seconds; kind vocabularies canonical
+- [ ] Retryable consistency reviewed (WARNING); cached-surface degradation gaps reviewed (WARNING); unjoined cached_data rules reviewed (INFO); overlapping policies reviewed (WARNING)
 
 ### XL6: UC Coverage (ba-cross / full only)
 - [ ] All automated WorkflowSteps have AUTOMATES_AS -> UseCase
@@ -2375,4 +2650,4 @@ RETURN labels(a) AS source_labels, labels(b) AS target_labels, count(r) AS remai
 /nacl-sa-validate full
 ```
 
-Step 0a should now PASS the drift check, and L1-L11 / XL6-XL9 will execute against the canonical labels.
+Step 0a should now PASS the drift check, and L1-L13 / XL6-XL9 will execute against the canonical labels.

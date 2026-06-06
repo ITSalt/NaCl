@@ -3,8 +3,9 @@ name: nacl-sa-validate
 description: |
   Validate NaCl SA graph consistency, connectivity, requirements, form-domain
   traceability, UC-form coverage, cross-module rules, feature requests, staleness
-  closure, decision provenance, screen state machines, behavior slices, and
-  BA-to-SA coverage. Use when checking SA quality or says `/nacl-sa-validate`.
+  closure, decision provenance, screen state machines, behavior slices, domain
+  error taxonomy, cache & degradation policies, and BA-to-SA coverage. Use when
+  checking SA quality or says `/nacl-sa-validate`.
 ---
 
 # NaCl SA Validate For Codex
@@ -135,6 +136,39 @@ Internal checks:
   handle no catalogued error are INFO. A graph with zero DomainError nodes
   passes L12 cleanly. All five edge names are unshared (no label-qualification
   hazard, unlike L10/L11).
+- L13 cache & degradation policies (SA-extension connectivity): no orphaned
+  `CachePolicy`/`DegradationRule` nodes; every CachePolicy has its parent
+  `(:Module)-[:HAS_CACHE]->` (the cache catalog is module-scoped shared
+  vocabulary, like the error catalog) and ≥1 outgoing
+  `(cp)-[:CACHES]->(:APIEndpoint)` (no exemption flag by design: a policy
+  caching no surface is dead vocabulary; provisional endpoints satisfy the
+  anchor); every DegradationRule has its parent
+  `(:UseCase)-[:HAS_DEGRADATION]->` (rules are UC-scoped behavior, like
+  slices — deliberately asymmetric to the module-scoped catalog) and ≥1
+  anchor — `ON_ERROR -> DomainError` and/or `DEGRADES_TO -> ScreenState`
+  (no exemption; an anchorless rule is unreachable prose); error-triggered
+  rules (`trigger_kind='error'`) REQUIRE `ON_ERROR`; `DEGRADES_TO` targets a
+  state of a screen of the rule's OWN UC (same-UC rule), and for
+  error-triggered rules the target's screen must actually call (via
+  `ScreenEffect-CALLS`) an endpoint that MAY_RAISE one of the rule's
+  ON_ERROR errors (channel rule); HAS_CACHE / CACHES / HAS_DEGRADATION /
+  ON_ERROR / DEGRADES_TO targets carry correct labels; no blank
+  `invalidation_kind` (the load-bearing cache contract — when the cache
+  stops lying), no `ttl`-kind policy without `ttl_seconds`, no blank
+  `behavior` (the observable degraded behavior, mirror of `slice.then`) —
+  all CRITICAL; `storage_kind` ∈ memory|local_storage|indexed_db|cache_api|
+  http|server|cdn, `invalidation_kind` ∈ ttl|event|manual|session|never,
+  `trigger_kind` ∈ error|offline|capability, `fallback_kind` ∈ cached_data|
+  static_content|alternate_provider|alternate_ui|skip_unit|backoff
+  (WARNING); a backoff fallback on an explicitly `retryable=false` error is
+  WARNING (retryable consistency — the consumer of the Phase-3 groundwork);
+  cached surfaces whose retryable/external errors no rule degrades are
+  WARNING (anchored on CACHES, so error-only graphs stay silent);
+  `cached_data` rules that meet no CachePolicy through their errors' raisers
+  or their screen's calls are INFO; two same-storage policies on one
+  endpoint are WARNING. A graph with zero CachePolicy/DegradationRule nodes
+  passes L13 cleanly. All five edge names are unshared (second phase in a
+  row).
 
 BA-to-SA checks:
 
@@ -229,7 +263,7 @@ as `val_orphaned_form_fields`, `val_uc_without_requirements`,
 
 - Read-only validation boundary.
 - Pre-flight graph and schema checks.
-- Internal SA levels L1 through L12 (L8 staleness closure, L9 decision provenance, L10 screen state machines, L11 behavior slices, L12 domain error taxonomy).
+- Internal SA levels L1 through L13 (L8 staleness closure, L9 decision provenance, L10 screen state machines, L11 behavior slices, L12 domain error taxonomy, L13 cache & degradation policies).
 - BA-to-SA coverage levels XL6 through XL9.
 - Exemption-property handling for validation filters.
 
