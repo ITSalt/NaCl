@@ -268,8 +268,11 @@ results["H0"] = {"checks": h0, "pass": all(v == 0 for v in h0.values())}
 ucs = []
 out = run("""MATCH (uc:UseCase)-[:USES_FORM]->(f:Form)
 WHERE coalesce(uc.has_ui, true) = true
-WITH uc.id AS ucId, head(collect(f.id)) AS formId
+WITH uc.id AS ucId, min(f.id) AS formId
 RETURN ucId + '|' + formId ORDER BY ucId;""")
+# min(f.id), not head(collect(f.id)): multi-form UCs must pick the same form on
+# every clone instance — collect() order follows storage order and is not stable
+# across re-clones, which breaks byte-for-byte reproducibility of this report.
 for line in out.splitlines():
     s = line.strip().strip('"')
     if s.startswith("UC-"):
@@ -350,5 +353,11 @@ results["H3"] = {"n_defects": len(h3_rows), "rows": h3_rows,
 
 # ---- leave the clone clean ----
 full_reset()
+results["clone_clean"] = {
+    "nodes": scalar("MATCH (n) RETURN count(n);"),
+    "rels": scalar("MATCH ()-[r]->() RETURN count(r);"),
+    "screens": scalar("MATCH (s:Screen) RETURN count(s);"),
+    "stale": scalar("MATCH (n) WHERE coalesce(n.review_status,'current')='stale' RETURN count(n);"),
+}
 results["overall_pass"] = all(results[h]["pass"] for h in ("H0", "H1", "H2", "H3"))
 print(json.dumps(results, indent=2, ensure_ascii=False))

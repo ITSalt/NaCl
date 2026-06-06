@@ -20,7 +20,7 @@
     "rows": [
       {
         "uc": "UC-001",
-        "form": "FORM-scr-010-promo-modal",
+        "form": "FORM-scr-001-landing",
         "screen": "SCR-Scr001",
         "old_from_uc": 0,
         "new_from_uc": 13,
@@ -228,14 +228,14 @@
       },
       {
         "uc": "UC-021",
-        "form": "FORM-scr-021-vk-callback",
+        "form": "FORM-scr-020-auth",
         "screen": "SCR-Scr021",
         "old_from_uc": 0,
         "new_from_uc": 13,
         "old_from_api": 0,
         "new_from_api": 13,
-        "old_from_da": null,
-        "new_from_da": null,
+        "old_from_da": 0,
+        "new_from_da": 13,
         "pre_machine_old_from_uc": 0,
         "h1_pass": true
       },
@@ -843,6 +843,12 @@
       }
     ],
     "pass": true
+  },
+  "clone_clean": {
+    "nodes": 1913,
+    "rels": 2693,
+    "screens": 0,
+    "stale": 0
   },
   "overall_pass": true
 }
