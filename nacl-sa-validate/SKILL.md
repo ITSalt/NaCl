@@ -284,10 +284,15 @@ Once Step 0a has confirmed the graph is canonical, render a two-section node-cou
 
 ```cypher
 // Step 0b: canonical SA-layer node counts
+// (keep in sync with the Schema Reference above: every label a producer skill
+//  writes and every L-level anchors on belongs here — L10 added Screen*, L11
+//  Slice, L12 DomainError/ErrorPresentation, L13 CachePolicy/DegradationRule,
+//  L8/L9 Decision. A future L14+ MUST extend this list in the same commit.)
 UNWIND ['Module','UseCase','DomainEntity','DomainAttribute','Enumeration','EnumValue',
         'Form','FormField','Requirement','SystemRole','Component','ActivityStep',
         'FeatureRequest','Screen','ScreenState','ScreenEvent','Transition',
-        'ScreenEffect','AnalyticsEvent','Slice'] AS labelName
+        'ScreenEffect','AnalyticsEvent','Slice','Decision','APIEndpoint',
+        'DomainError','ErrorPresentation','CachePolicy','DegradationRule'] AS labelName
 CALL {
   WITH labelName
   MATCH (n) WHERE labelName IN labels(n)
@@ -299,20 +304,31 @@ ORDER BY labelName
 
 ```cypher
 // Step 0b (cont.): non-canonical labels still present in graph
+// The NOT IN list = canonical SA labels + known neighbor-layer labels that are
+// legitimate on a shared graph and must NOT be reported as drift:
+//   BA family  — BusinessProcess..DataFlow, EntityState, GlossaryTerm, SystemContext
+//   TL family  — Task, Wave, IntakeItem (written by tl-plan / tl-intake)
+//   legacy SA  — RuntimeContract (flat-format runtime contracts)
+// `cnt > 0` filters constraint-registered label tokens with zero nodes — those
+// are schema residue, not findings.
 CALL db.labels() YIELD label
 WITH label
 WHERE NOT label IN
    ['Module','UseCase','DomainEntity','DomainAttribute','Enumeration','EnumValue',
     'Form','FormField','Requirement','SystemRole','Component','ActivityStep',
     'FeatureRequest','Screen','ScreenState','ScreenEvent','Transition','ScreenEffect',
-    'AnalyticsEvent','Slice','BusinessProcess','WorkflowStep','BusinessEntity','BusinessRole',
+    'AnalyticsEvent','Slice','Decision','APIEndpoint','DomainError','ErrorPresentation',
+    'CachePolicy','DegradationRule','BusinessProcess','WorkflowStep','BusinessEntity','BusinessRole',
     'BusinessRule','EntityAttribute','ProcessGroup','Term','Glossary','Stakeholder',
-    'ExternalEntity','Document','DataFlow']
+    'ExternalEntity','Document','DataFlow','EntityState','GlossaryTerm','SystemContext',
+    'Task','Wave','IntakeItem','RuntimeContract']
 CALL {
   WITH label
   MATCH (n) WHERE label IN labels(n)
   RETURN count(n) AS cnt
 }
+WITH label, cnt
+WHERE cnt > 0
 RETURN label, cnt AS count
 ORDER BY label
 ```

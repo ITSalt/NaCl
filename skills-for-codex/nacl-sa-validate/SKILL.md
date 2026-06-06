@@ -41,9 +41,15 @@ Levels:
 Pre-flight:
 
 1. Verify graph read tooling.
-2. Count canonical SA nodes and report whether the graph has data.
+2. Count canonical SA nodes and report whether the graph has data. The
+   canonical set includes the SA-extension labels: `Decision`, the screen-machine
+   labels, `Slice`, `DomainError`/`ErrorPresentation`, `CachePolicy`/`DegradationRule`,
+   and `APIEndpoint`; a future L14+ level must extend this set in the same change.
 3. Detect schema drift by comparing labels and relationship types with the SA
-   schema when introspection is available.
+   schema when introspection is available. Known neighbor-layer labels
+   (BA family incl. `EntityState`/`GlossaryTerm`/`SystemContext`; TL family
+   `Task`/`Wave`/`IntakeItem`; legacy `RuntimeContract`) and zero-count
+   constraint-registered label tokens are NOT drift findings.
 4. Check BA layer availability before BA-to-SA levels.
 5. Audit exemption properties used by deeper checks: `has_ui`, `system_only`,
    `shared`, `internal`, and `field_category`.
