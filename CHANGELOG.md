@@ -4,6 +4,30 @@ All notable changes to NaCl (Natural Agent Control Language) will be documented 
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [2.13.2] — 2026-06-06
+
+Hotfix: the `/nacl-goal intake` budget clock measured the host's timezone offset along
+with the wall-clock. `nacl-goal/checks/intake.sh` parses `budget.json` `started_at`
+(UTC ISO-8601, `Z` suffix) through a GNU/BSD `date` fallback chain; the BSD branch
+lacked `-u`, so macOS `date` treated the literal `Z` as text and parsed the UTC stamp
+as **local time**. On any TZ east of UTC, elapsed is inflated by exactly the UTC
+offset — +180m on `Europe/Moscow` — tripping the Tier-M wall-clock limit (10800 s):
+a live run with ~26 minutes of real elapsed reported `elapsed: 205m` and stopped with
+a false `GOAL_BUDGET_EXHAUSTED` / `wall_clock`.
+
+**Fixed.** `-u` on both branches of the chain. The BSD branch now parses the stamp as
+UTC (the actual bug); the GNU branch is semantically unchanged for `Z`-suffixed stamps
+(verified: identical epochs with and without `-u` under `TZ=Europe/Moscow` on GNU
+date) and merely stops depending on host locale. The fallback ordering is preserved —
+BSD `date` still rejects `-u -d`.
+
+**Added.** `nacl-goal/checks/tests/test-intake-budget-tz.sh` — cross-platform
+regression test (RED on the un-fixed script: `elapsed=206m`, `GOAL_BUDGET_EXHAUSTED`
+under `TZ=Europe/Moscow`; GREEN after the fix: `elapsed=26m` on both
+`TZ=Europe/Moscow` and `TZ=UTC`, verified on macOS BSD date and Linux GNU date).
+
+The GOAL_PROOF wire format is untouched — only the epoch computation changed.
+
 ## [2.13.1] — 2026-06-03
 
 Patch release: the refusal surface of `/nacl-goal` now obeys the same plain-language rule
