@@ -222,6 +222,17 @@ ORDER BY uc.id;
 //   namespace sharing. Deepest legit probe: DomainAttribute → FormField →
 //   Form → Screen → ScreenState → HANDLES → DomainError → PRESENTED_AS →
 //   ErrorPresentation = 6 hops, exactly the *1..6 ceiling.
+//   Phase 4 (cache & degradation) appended: HAS_CACHE, CACHES,
+//   HAS_DEGRADATION, ON_ERROR, DEGRADES_TO (downstream) and HAS_CACHE,
+//   HAS_DEGRADATION (upstream — the two parent edges, mirroring
+//   HAS_ERROR/PRESENTED_AS; CACHES/ON_ERROR/DEGRADES_TO answer "what depends
+//   on this", so they stay downstream-only). All five names are again NEW
+//   (verified free in both schemas, skill texts, and db.relationshipTypes()
+//   of a live graph — grep hits for ON_ERROR are the VALIDATION_ERROR
+//   substring in prose). Min-hop notes: DA → DomainEntity → Module →
+//   HAS_CACHE → CachePolicy = 3 hops (the catalog-parent shortcut, same
+//   effect as Module-HAS_ERROR); DA → … → ScreenState ← DEGRADES_TO ←
+//   DegradationRule = 5 hops — ceiling untouched.
 // ---------------------------------------------------------------------------
 MATCH (changed {id: $changedNodeId})
 MATCH path = (changed)
@@ -231,7 +242,8 @@ MATCH path = (changed)
        |HAS_SCREEN|RENDERS|HAS_STATE|HAS_EVENT|HAS_TRANSITION|FROM_STATE
        |TO_STATE|ON_EVENT|TRIGGERS|CALLS|NAVIGATES_TO|EMITS
        |HAS_SLICE|COVERS|VERIFIED_BY
-       |HAS_ERROR|MAY_RAISE|HANDLES|PRESENTED_AS|SHOWS*1..6]
+       |HAS_ERROR|MAY_RAISE|HANDLES|PRESENTED_AS|SHOWS
+       |HAS_CACHE|CACHES|HAS_DEGRADATION|ON_ERROR|DEGRADES_TO*1..6]
       -(dep)
 WHERE dep <> changed
 WITH dep AS node, min(length(path)) AS hops
@@ -245,7 +257,8 @@ MATCH (changed {id: $changedNodeId})
 MATCH up = (origin)
       -[:AUTOMATES_AS|REALIZED_AS|IMPLEMENTED_BY|MAPPED_TO|TYPED_AS|SUGGESTS
        |HAS_REQUIREMENT|INCLUDES_UC|RAISES_REQUIREMENT|CONTAINS_UC|CONTAINS_ENTITY
-       |IMPLEMENTS|JUSTIFIES|HAS_SCREEN|HAS_SLICE|HAS_ERROR|PRESENTED_AS*1..5]
+       |IMPLEMENTS|JUSTIFIES|HAS_SCREEN|HAS_SLICE|HAS_ERROR|PRESENTED_AS
+       |HAS_CACHE|HAS_DEGRADATION*1..5]
       ->(changed)
 WHERE origin <> changed
 WITH origin AS node, min(length(up)) AS hops
@@ -384,3 +397,42 @@ RETURN err.id AS error, err.code AS code, err.error_kind AS kind,
                                presentation_kind: p.presentation_kind})
         WHERE h.state IS NOT NULL] AS handled_by
 ORDER BY error;
+
+
+// ---------------------------------------------------------------------------
+// Query: sa_uc_resilience
+// Params: $ucId — UseCase.id (e.g. "UC-006")
+// Description: The cache & degradation contract of one UseCase — every
+//   CachePolicy that CACHES the data surfaces this UC EXPOSES (with storage,
+//   invalidation, ttl, serves_stale), and every DegradationRule the UC owns
+//   (with its trigger, fallback, observable degraded behavior, ON_ERROR
+//   failure modes incl. their retryable flag, and DEGRADES_TO states).
+//   One row per UC: enough to render the BE cache-contract table and the FE
+//   degradation-handling table, or to eyeball L13 by hand. Cache policies
+//   are listed through the UC's own endpoints because that is what its task
+//   files need — the catalog itself is module-scoped shared vocabulary.
+//   All map-collects are null-filtered (the Фаза-2 gotcha: a bare map-collect
+//   over an unmatched OPTIONAL emits one all-null map instead of []); scalar
+//   collects skip nulls natively.
+// ---------------------------------------------------------------------------
+MATCH (uc:UseCase {id: $ucId})
+OPTIONAL MATCH (uc)-[:HAS_DEGRADATION]->(dr:DegradationRule)
+OPTIONAL MATCH (dr)-[:ON_ERROR]->(err:DomainError)
+OPTIONAL MATCH (dr)-[:DEGRADES_TO]->(st:ScreenState)
+WITH uc, dr,
+     [e IN collect(DISTINCT {id: err.id, code: err.code, retryable: err.retryable})
+      WHERE e.id IS NOT NULL] AS on_errors,
+     collect(DISTINCT st.id) AS degrades_to
+WITH uc,
+     [r IN collect(DISTINCT {id: dr.id, name: dr.name, trigger: dr.trigger_kind,
+                             fallback: dr.fallback_kind, behavior: dr.behavior,
+                             on_errors: on_errors, degrades_to: degrades_to})
+      WHERE r.id IS NOT NULL] AS rules
+OPTIONAL MATCH (uc)-[:EXPOSES]->(api:APIEndpoint)<-[:CACHES]-(cp:CachePolicy)
+WITH uc, rules, cp, collect(DISTINCT api.id) AS cached_endpoints
+WITH uc, rules,
+     [c IN collect(DISTINCT {id: cp.id, name: cp.name, storage: cp.storage_kind,
+                             invalidation: cp.invalidation_kind, ttl: cp.ttl_seconds,
+                             serves_stale: cp.serves_stale, caches: cached_endpoints})
+      WHERE c.id IS NOT NULL] AS cache_policies
+RETURN uc.id AS uc_id, cache_policies, rules;

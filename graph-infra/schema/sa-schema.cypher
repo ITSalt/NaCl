@@ -81,6 +81,12 @@ CREATE CONSTRAINT constraint_domainerror_id
 CREATE CONSTRAINT constraint_errorpresentation_id
   FOR (n:ErrorPresentation) REQUIRE n.id IS UNIQUE;
 
+CREATE CONSTRAINT constraint_cachepolicy_id
+  FOR (n:CachePolicy) REQUIRE n.id IS UNIQUE;
+
+CREATE CONSTRAINT constraint_degradationrule_id
+  FOR (n:DegradationRule) REQUIRE n.id IS UNIQUE;
+
 
 // ---------------------------------------------------------------------------
 // 2. INDEXES (name lookup for each label + module index on DomainEntity)
@@ -171,6 +177,18 @@ CREATE INDEX index_domainerror_kind
 CREATE INDEX index_errorpresentation_kind
   FOR (n:ErrorPresentation) ON (n.presentation_kind);
 
+CREATE INDEX index_cachepolicy_name
+  FOR (n:CachePolicy) ON (n.name);
+
+CREATE INDEX index_cachepolicy_invalidation
+  FOR (n:CachePolicy) ON (n.invalidation_kind);
+
+CREATE INDEX index_degradationrule_name
+  FOR (n:DegradationRule) ON (n.name);
+
+CREATE INDEX index_degradationrule_trigger
+  FOR (n:DegradationRule) ON (n.trigger_kind);
+
 
 // ---------------------------------------------------------------------------
 // 3. SA-INTERNAL RELATIONSHIP TYPES (documentation)
@@ -243,7 +261,7 @@ CREATE INDEX index_errorpresentation_kind
 // (:Decision)-[:JUSTIFIES {role: String}]->(target)
 //   A decision shaped an artifact. target ∈ {UseCase, DomainEntity, Module,
 //   Requirement, Form, Component, Enumeration, APIEndpoint, Screen, Slice,
-//   DomainError} (CachePolicy joins later with no schema change).
+//   DomainError, CachePolicy, DegradationRule}.
 //   role ∈ {'creates','shapes','constrains'}; default 'shapes'.
 //
 // (:Decision)-[:SUPERSEDES]->(:Decision)
@@ -559,6 +577,134 @@ CREATE INDEX index_errorpresentation_kind
 //                              // | 'fullscreen' | 'silent' (L12.6b)
 //   recovery_action: String,   // optional: 'retry' | 'back' | 'support' | 'none'
 //   created_by: String,     // "nacl-sa-uc"
+//   created_at: DateTime
+// }
+
+
+// ---------------------------------------------------------------------------
+// 3-quinquies. CACHE & DEGRADATION POLICIES (owned by nacl-sa-uc resilience)
+// ---------------------------------------------------------------------------
+// A CachePolicy is a named caching policy for one SERVER data surface: where
+// the data is stored on the consuming side (storage_kind), when the cache
+// stops lying (invalidation_kind — the load-bearing contract field), and
+// whether stale data may be served while revalidating. A DegradationRule is
+// how one UseCase's experience degrades when a failure mode / offline /
+// missing capability occurs: what the user (or machine caller) observes
+// instead of the full experience (`behavior` — the load-bearing field), and
+// what the system substitutes (fallback_kind). Adoption is opt-in: a graph
+// with zero CachePolicy/DegradationRule nodes passes L13 vacuously, exactly
+// as zero Screens pass L10, zero Slices pass L11, zero errors pass L12.
+//
+// OWNERSHIP IS DELIBERATELY ASYMMETRIC:
+//   - CachePolicy is MODULE-scoped (like DomainError): real caches are shared
+//     infrastructure of a bounded context — one quota cache is invalidated by
+//     one UC and read by the header of every screen; one media cache backs
+//     several UCs. MERGE by id shares the node across UCs.
+//   - DegradationRule is UC-scoped (like Slice): one BA-level fallback
+//     principle yields SEVERAL distinct per-experience SA rules (a fallback
+//     image is not a provider switch is not a skipped pipeline unit), and
+//     DEGRADES_TO targets a state of the UC's own screen machine.
+//
+// SCOPE NOTE: a CachePolicy models the caching of server-originated data
+// (its CACHES target is the data-origin endpoint, provisional included).
+// Purely client-local UI state with no server origin does not deserve a
+// node — mirrors the "not a domain error, an implementation detail" rule.
+//
+// ANCHOR INVARIANTS (L13.2, deliberately NO exemption flags):
+//   - every CachePolicy carries ≥1 outgoing CACHES: a policy that caches no
+//     surface is dead vocabulary (mirrors L12.2). Several endpoints per
+//     policy are normal (a media cache caches all media surfaces).
+//   - every DegradationRule carries ≥1 of (ON_ERROR, DEGRADES_TO): a rule
+//     anchored to neither a failure mode nor a screen state is prose that
+//     change propagation can never reach (mirrors L11.2). Kind dependency:
+//     trigger_kind='error' REQUIRES ON_ERROR (mirrors the L10.2 kind-required
+//     effect targets); offline/capability rules anchor through DEGRADES_TO.
+//
+// NAMESPACE NOTE: all five edge-type names below are unshared — verified
+// against both schemas, the skill texts, and db.relationshipTypes() of a
+// live graph at design time (the grep hits for ON_ERROR are the substring
+// of VALIDATION_ERROR in prose, not an edge type). Second phase in a row
+// with no namespace sharing.
+//
+// (:Module)-[:HAS_CACHE]->(:CachePolicy)
+//   REQUIRED parent. The cache catalog is module-scoped shared vocabulary
+//   (L13.1). Like HAS_ERROR, this catalog edge is both a traversal shortcut
+//   and a broad-walk fan-out — accepted because the broad closure is
+//   display-only (the staleness stamp is the tight directed query).
+//
+// (:CachePolicy)-[:CACHES]->(:APIEndpoint)
+//   Cross-layer anchor: the policy caches the data this endpoint serves.
+//   Provisional endpoints (provisional=true + EXPOSES anchor, the § 3-bis
+//   path) are legal — real graphs may have no concrete APIEndpoint nodes
+//   before nacl-tl-plan runs.
+//
+// (:UseCase)-[:HAS_DEGRADATION]->(:DegradationRule)
+//   REQUIRED parent. Every DegradationRule belongs to exactly one UseCase
+//   (L13.1).
+//
+// (:DegradationRule)-[:ON_ERROR]->(:DomainError)
+//   The failure mode that fires the rule (the Phase-3 attach point). 1..n
+//   per error-triggered rule (one fallback rule may fire on timeout OR
+//   api-error OR invalid-result). REQUIRED when trigger_kind='error'.
+//
+// (:DegradationRule)-[:DEGRADES_TO]->(:ScreenState)
+//   The degraded experience (the Phase-1 attach point). Target may be any
+//   state_kind — degrading INTO a content state showing stale cached data
+//   is normal (offline restore), typical targets are error/empty/content.
+//   SAME-UC RULE (L13.3, mirrors L11.3): the target belongs to a screen of
+//   the rule's OWN UseCase. CHANNEL RULE for error-triggered rules (L13.3,
+//   mirrors L12.3): the target state's screen must actually call (via
+//   ScreenEffect-CALLS) an endpoint that MAY_RAISE at least one of the
+//   rule's ON_ERROR errors — degrading from an error the screen can never
+//   receive is spec fiction. No channel constraint for offline/capability
+//   rules (offline affects any networked screen).
+//
+// There is deliberately NO CachePolicy<->DegradationRule edge (mirrors the
+// Phase-3 "no Slice->DomainError edge" decision): the join already exists
+// through the endpoint (rule-ON_ERROR->err<-MAY_RAISE-api<-CACHES-policy)
+// or the screen (rule-DEGRADES_TO->st<-HAS_STATE-scr-...-CALLS->api<-CACHES).
+// L13.8 (INFO) flags fallback_kind='cached_data' rules that meet no policy.
+//
+// --- CachePolicy properties (documented) ---
+// CachePolicy {
+//   id: String,             // "CACHE-{PascalName}" (CACHE-QuotaMemory,
+//                           // CACHE-ResultMediaIndexedDb); latin PascalName
+//                           // by the Phase-1 derivation rule
+//   name: String,
+//   description: String,
+//   storage_kind: String,   // 'memory' | 'local_storage' | 'indexed_db'
+//                           // | 'cache_api' | 'http' | 'server' | 'cdn' (L13.5b)
+//   invalidation_kind: String, // REQUIRED non-blank (L13.5a) — the load-bearing
+//                              // contract: when the cache stops lying. One of
+//                              // 'ttl' | 'event' | 'manual' | 'session' | 'never'
+//                              // (L13.5b). Mirrors the rationale→then→code/message
+//                              // chain: "forgot when the cache stops lying".
+//   ttl_seconds: Int,       // REQUIRED iff invalidation_kind='ttl' (L13.5a);
+//                           // meaningless otherwise
+//   invalidation_event: String, // recommended for kind='event': what event
+//                               // invalidates ("promo redeemed -> invalidateQuotaCache")
+//   serves_stale: Boolean,  // optional: stale data may be shown while
+//                           // revalidating (stale-while-revalidate)
+//   created_by: String,     // "nacl-sa-uc" | "nacl-tl-fix"
+//   created_at: DateTime
+// }
+// DegradationRule {
+//   id: String,             // "DEG-{NNN}-{PascalName}" — NNN is the UC number
+//                           // (DEG-006-OfflineRestore); the infix enables the
+//                           // scoped-L13 filter dr.id STARTS WITH 'DEG-NNN-'
+//                           // (same recipe as SLC)
+//   name: String,
+//   trigger_kind: String,   // 'error' (a catalogued domain failure) | 'offline'
+//                           // (no network) | 'capability' (browser/platform
+//                           // cannot do it) (L13.5b)
+//   behavior: String,       // REQUIRED non-blank (L13.5a) — the OBSERVABLE
+//                           // degraded behavior: what the user/caller sees
+//                           // instead of the full experience (mirrors
+//                           // slice.then / presentation.message)
+//   fallback_kind: String,  // 'cached_data' | 'static_content'
+//                           // | 'alternate_provider' | 'alternate_ui'
+//                           // | 'skip_unit' | 'backoff' (L13.5b)
+//   created_by: String,     // "nacl-sa-uc" | "nacl-tl-fix"
 //   created_at: DateTime
 // }
 

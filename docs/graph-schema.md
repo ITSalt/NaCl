@@ -106,6 +106,8 @@ System Analysis nodes capture the "how the system is built" level — modules, u
 | `Slice` | A behavior slice — graph-native acceptance scenario (Given/When/Then), below the UC, above the Task (owned by `nacl-sa-uc slices`) | `id`, `name`, `slice_kind`, `given`, `when`, `then`, `criterion_index` |
 | `DomainError` | A transport-independent domain error — named, catalogued failure mode observable at an API surface; module-scoped shared vocabulary (owned by `nacl-sa-uc errors`) | `id`, `code`, `name`, `error_kind`, `http_status`, `retryable` |
 | `ErrorPresentation` | One user-facing presentation of a `DomainError` (user-language message + kind) | `id`, `message`, `presentation_kind`, `recovery_action` |
+| `CachePolicy` | A caching policy for one server data surface — storage, invalidation contract, staleness tolerance; module-scoped shared vocabulary (owned by `nacl-sa-uc resilience`) | `id`, `name`, `storage_kind`, `invalidation_kind`, `ttl_seconds`, `invalidation_event`, `serves_stale` |
+| `DegradationRule` | How one UC's experience degrades on failure / offline / missing capability — trigger, observable degraded behavior, fallback (owned by `nacl-sa-uc resilience`) | `id`, `name`, `trigger_kind`, `behavior`, `fallback_kind` |
 
 `priority` values: `MVP`, `Post-MVP`, `Nice-to-have`
 `Decision.status` values: `accepted`, `superseded`, `proposed`
@@ -116,6 +118,10 @@ System Analysis nodes capture the "how the system is built" level — modules, u
 `slice_kind` values: `happy`, `alternate`, `error`, `edge` (`then` is required non-blank — a slice with no observable outcome is unverifiable)
 `error_kind` values: `validation`, `not_found`, `conflict`, `permission`, `rate_limit`, `external`, `internal` (`code` is required non-blank — the join key to the API envelope; `http_status` is only a projection hint)
 `presentation_kind` values: `toast`, `banner`, `inline`, `modal`, `fullscreen`, `silent` (`message` is required non-blank, user-language, never the internal code; for `silent` it documents the observable absence)
+`storage_kind` values: `memory`, `local_storage`, `indexed_db`, `cache_api`, `http`, `server`, `cdn`
+`invalidation_kind` values: `ttl`, `event`, `manual`, `session`, `never` (required non-blank — the load-bearing cache contract: when the cache stops lying; `ttl_seconds` is required iff kind is `ttl`)
+`trigger_kind` values: `error`, `offline`, `capability` (`behavior` is required non-blank — the observable degraded behavior, mirror of `slice.then`)
+`fallback_kind` values: `cached_data`, `static_content`, `alternate_provider`, `alternate_ui`, `skip_unit`, `backoff`
 
 **Change-tracking properties.** `UseCase.spec_version` (Int) is bumped by any SA writer that changes a UC's shape and compared against `Task.planned_from_version` (Int) for idempotent re-planning. Any snapshot-bearing node (`Task`, `UseCase`, `Form`, `Requirement`) may carry `review_status` (`current`|`stale`), `stale_reason`, `stale_since`, `stale_origin` — set by write-skills after an upstream change, read with `coalesce(n.review_status,'current')` (no backfill needed). See `graph-infra/schema/sa-schema.cypher`.
 
@@ -162,6 +168,11 @@ System Analysis nodes capture the "how the system is built" level — modules, u
 | `HANDLES` | `ScreenState` → `DomainError` | Being in the state is the handling of the error; legal iff the state's screen actually calls a raising endpoint (channel rule — deliberately no same-UC rule) |
 | `PRESENTED_AS` | `DomainError` → `ErrorPresentation` | Required parent of every presentation |
 | `SHOWS` | `ScreenState` → `ErrorPresentation` | Triangle closure: the state shows this presentation; requires `HANDLES` on the presentation's parent error |
+| `HAS_CACHE` | `Module` → `CachePolicy` | Required parent: the cache catalog is module-scoped shared vocabulary |
+| `CACHES` | `CachePolicy` → `APIEndpoint` | The policy caches the data this endpoint serves; every policy needs ≥1 (anchor invariant, no exemption); legal on provisional endpoints |
+| `HAS_DEGRADATION` | `UseCase` → `DegradationRule` | Required parent of every degradation rule (UC-scoped, deliberately asymmetric to the module-scoped cache catalog) |
+| `ON_ERROR` | `DegradationRule` → `DomainError` | The failure mode that fires the rule; required when `trigger_kind='error'`; 1..n per rule. Every rule needs ≥1 anchor: ON_ERROR and/or DEGRADES_TO |
+| `DEGRADES_TO` | `DegradationRule` → `ScreenState` | The degraded experience; target belongs to a screen of the rule's own UC; for error-triggered rules the target's screen must actually call a raising endpoint (channel rule) |
 
 ### Constraints and Indexes
 

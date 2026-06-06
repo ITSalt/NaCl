@@ -379,6 +379,8 @@ The NaCl Analyst Tool discovers projects through a per-user registry at `~/.nacl
 | Behavior Slice | SLC-{NNN}-{PascalName} | SLC-006-HappyPath | Per-UC, name-based (latin) |
 | Domain Error | ERR-{UPPER_SNAKE_CODE} | ERR-PROMO_NOT_FOUND | Code-based (latin) |
 | Error Presentation | ERRP-{CODE}-{PascalName} | ERRP-PROMO_NOT_FOUND-Inline | Per-error, kind/context-based |
+| Cache Policy | CACHE-{PascalName} | CACHE-ResultMediaIndexedDb | Name-based (latin) |
+| Degradation Rule | DEG-{NNN}-{PascalName} | DEG-006-OfflineRestore | Per-UC, name-based (latin) |
 
 > **Screen state machine ids (`SCR-*` family)** belong to the SA screen state
 > machine written by `nacl-sa-ui state-machine` (labels `:Screen`,
@@ -409,6 +411,19 @@ The NaCl Analyst Tool discovers projects through a per-user registry at `~/.nacl
 > derives from the presentation kind/context by the same latin-PascalName rule
 > as Screen states. See `graph-infra/schema/sa-schema.cypher` § 3-quater and
 > the `sa_uc_errors` named query.
+
+> **Cache Policy (`CACHE-{PascalName}`)** is the caching policy of one server
+> data surface (label `:CachePolicy`), written by `nacl-sa-uc resilience` (and
+> by `nacl-tl-fix` when an L2/L3 fix uncovers a missing cache/invalidation
+> policy). `{PascalName}` derives from the cached surface + storage by the
+> latin-PascalName rule (`CACHE-ResultMediaIndexedDb`, `CACHE-QuotaMemory`).
+> The catalog is module-scoped (`(:Module)-[:HAS_CACHE]->`): real caches are
+> shared infrastructure of a bounded context — MERGE by id, never duplicate
+> per UC. **Degradation Rule (`DEG-{NNN}-{PascalName}`)** is one UC's
+> degradation behavior (label `:DegradationRule`); `{NNN}` is the parent UC
+> number — the infix enables scoped filtering by `STARTS WITH 'DEG-NNN-'`,
+> exactly like `SLC`. See `graph-infra/schema/sa-schema.cypher` § 3-quinquies
+> and the `sa_uc_resilience` named query.
 
 > **Decision (`DEC-NNN`)** is the graph-native provenance record (label `:Decision`).
 > Written by `nacl-sa-feature` (feature changes), `nacl-tl-fix` (L2/L3 fixes), and

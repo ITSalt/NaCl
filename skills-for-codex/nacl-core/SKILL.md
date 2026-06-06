@@ -79,6 +79,15 @@ change-tracking ids:
   never duplicate per UC. `ERRP-{CODE}-{PascalName}` — `:ErrorPresentation`
   node (one user-facing presentation; PascalName from the presentation
   kind/context). See `sa-schema.cypher` § 3-quater and `sa_uc_errors`.
+- `CACHE-{PascalName}` — `:CachePolicy` node (caching policy of one server
+  data surface, written by `nacl-sa-uc resilience`; also by `nacl-tl-fix`
+  when an L2/L3 fix uncovers a missing cache/invalidation policy). PascalName
+  from the cached surface + storage (`CACHE-ResultMediaIndexedDb`).
+  Module-scoped shared vocabulary (`(:Module)-[:HAS_CACHE]->`): MERGE by id,
+  never duplicate per UC. `DEG-{NNN}-{PascalName}` — `:DegradationRule` node
+  (one UC's degradation behavior); `{NNN}` is the parent UC number — the
+  infix enables `STARTS WITH 'DEG-NNN-'` scoping, exactly like `SLC`. See
+  `sa-schema.cypher` § 3-quinquies and `sa_uc_resilience`.
 
 If these files are unavailable, report:
 
