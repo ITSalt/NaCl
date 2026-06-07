@@ -4,6 +4,70 @@ All notable changes to NaCl (Natural Agent Control Language) will be documented 
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [2.15.0] — 2026-06-07
+
+The connected spec graph: change propagation + decision provenance as the
+foundation, four new specification layers on top — each born with the
+connectivity invariant (required parent edge, required cross-layer anchor,
+impact-closure allow-list registration, its own validator level), so a node
+structurally cannot be orphaned. 12 new node types, ~28 edge types, validator
+levels L8–L13 (~40 checks). Everything additive and strictly opt-in: vacuous
+pass is a benchmarked property, not a hope.
+
+**Phase 0 — change propagation + provenance (L8, L9).** `sa_impact_closure`
+traversal + hybrid staleness: write-skills stamp a directed, TIGHT
+`review_status` (affected UCs' tasks + `DEPENDS_ON`-dependents); the broad
+undirected walk is exploration-only — measured over-flagging 20×→49×→51×→52×→52×
+(saturating) across the roadmap. Graph-native `:Decision` provenance
+(`JUSTIFIES`/`SUPERSEDES`/`IMPLEMENTS`) written by `nacl-sa-feature` and
+`nacl-tl-fix`; idempotent `nacl-tl-plan` (`spec_version` vs
+`planned_from_version`); `stale-downstream` release condition; reproducible L9
+gap-closure runbook for legacy graphs.
+
+**Phase 1 — screen state machines (L10).** `Screen`/`ScreenState`/`ScreenEvent`/
+reified `Transition`/`ScreenEffect`/`AnalyticsEvent`; determinism, QPP
+reachability, retry-guarantee, effect→endpoint integrity. Producer
+`/nacl-sa-ui state-machine` (two archetypes, MERGE-idempotent, directed stamp).
+
+**Phase 2 — behavior slices (L11).** Graph-native Given/When/Then `Slice`
+(`then` REQUIRED non-blank) with a hard anchor invariant (≥1 of
+`COVERS→ScreenState|Transition`, `CALLS→APIEndpoint`; no exemption flag).
+Self-healing verification-closure gate: `nacl-tl-plan` MERGEs `VERIFIED_BY` and
+bakes a "Behavior Slices" section into task files.
+
+**Phase 3 — domain error taxonomy (L12).** `DomainError` (Module-level shared
+vocabulary; `code` = envelope join key; requirement-named statuses
+verbatim-authoritative) + `ErrorPresentation` (user-language `message`;
+deliberate silence = `silent` presentation). `HANDLES` channel rule. Gate
+calibration baked in: a gate with no self-healing closer must not be CRITICAL
+(L12.7 handling gap is WARNING). Producers `/nacl-sa-uc errors` + `nacl-tl-fix`
+hook; "Domain Errors" task-file section.
+
+**Phase 4 — cache & degradation (L13).** `CachePolicy` (Module catalog;
+`invalidation_kind` REQUIRED — "when the cache stops lying"; `serves_stale`
+principle) + `DegradationRule` (UC scope; `behavior` REQUIRED — the observable
+degraded experience; anchors `ON_ERROR`/`DEGRADES_TO` — the state the user
+lives in). L13.6 retryable-consistency is the first consumer of Phase-3
+groundwork. Producers `/nacl-sa-uc resilience` (adoption-order chaining:
+errors first) + `nacl-tl-fix` hook; "Cache & Degradation" task-file section.
+
+**Proof.** Per phase: graph benchmark on an isolated clone of a real project
+graph (falsifiable H0–H3; defect-injection 8/8, 14/14, 21/21, 27/27, zero
+cross-talk) + independent skill-level run with a blind verifier. The finished
+roadmap passed an external expert audit, itself verified claim-by-claim with
+live replays — all four phase harnesses byte-identical to committed reference
+results. Lab reports + harnesses + reference JSONs in `docs/research/`;
+five-article series (RU). Transparency: the phase-4 harness `.py` shipped one
+release early inside the 2.14.0 release commit (concurrent process in a shared
+checkout); content verified byte-for-byte by the replay.
+
+**Upgrade path.** `docs/upgrade-graph-extensions.md` (RU) — orchestration
+instruction for a clean-context agent: one mandatory source-of-truth question
+(code vs user answers), business-behavior questions only, opt-in gap list,
+dependency-ordered skill runs, final code-vs-spec reconciliation. On adoption
+set the `planned_from_version` baseline once, or the first `tl-plan` over-flags
+everything.
+
 ## [2.14.0] — 2026-06-06
 
 `/nacl-goal intake` learns the economics of a real working tree: an open feature
