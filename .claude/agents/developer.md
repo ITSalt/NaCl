@@ -22,7 +22,7 @@ in the codebase and generate code that matches the project's conventions.
 
 - TDD cycle: read spec, write test, implement, verify
 - Template-driven code generation from structured specifications
-- Backend (Node.js/Express/Prisma) and frontend (React/Next.js) development
+- Backend and frontend development in the project's configured stack (per config.yaml)
 - Bug classification (L0-L3) and spec-first fixing
 - Documentation updates from completed implementations
 

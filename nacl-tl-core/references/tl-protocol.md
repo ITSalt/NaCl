@@ -8,6 +8,8 @@
 3. **Идемпотентности** -- повторный запуск при тех же входных данных даёт тот же результат
 4. **Разделения BE/FE** -- backend и frontend разрабатываются параллельно с чёткими контрактами
 
+**Stack profile note:** стек проекта задаёт `config.yaml` → `modules.<m>.stack` — NaCl не предписывает технологии. Конкретные файловые глобы (`src/**/*.tsx`, `package.json`, `next.config.js`) и упоминания инструментов в `reads:`/`writes:` ниже — примеры для Node/TS-профиля; для другой экосистемы агенты работают с её эквивалентами.
+
 ---
 
 ## Диаграмма статусов задач
@@ -226,7 +228,7 @@ trigger: /nacl-tl-dev-be
 context_mode: forked
 description: >
   Backend-разработка по методологии TDD (RED -> GREEN -> REFACTOR).
-  Работает с Node.js/TypeScript, Express/Fastify, PostgreSQL.
+  Работает со стеком проекта по config.yaml (пример профиля: Node.js/TypeScript, Express/Fastify, PostgreSQL).
   Флаг --continue читает review-be.md для доработки по замечаниям.
 
 reads:
@@ -292,8 +294,8 @@ agent: nacl-tl-dev-fe
 trigger: /nacl-tl-dev-fe
 context_mode: forked
 description: >
-  Frontend-разработка по методологии TDD с React Testing Library (RTL).
-  Работает с React/Next.js, TypeScript, RTL + user-event.
+  Frontend-разработка по методологии TDD.
+  Работает со стеком проекта по config.yaml (пример профиля: React/Next.js, TypeScript, RTL + user-event).
   Флаг --continue читает review-fe.md для доработки по замечаниям.
 
 reads:
@@ -345,9 +347,9 @@ RED Phase:
 GREEN Phase:
   1. Прочитать impl-brief.md (секция UI Implementation)
   2. Написать минимальный компонент, проходящий тесты
-  3. Использовать React Hook Form + Zod для форм
-  4. MSW для мокирования API
-  5. Запустить тесты -- убедиться что PASS
+  3. Формы и мокирование API -- по конвенциям стека проекта
+     (Node/TS-профиль: React Hook Form + Zod, MSW)
+  4. Запустить тесты -- убедиться что PASS
 
 REFACTOR Phase:
   1. Извлечь кастомные хуки (useFormState, useFetchData)

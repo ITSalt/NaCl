@@ -67,7 +67,20 @@ Ask the user:
 #### For an existing project (--from)
 
 1. Read existing CLAUDE.md (if present) — **do not overwrite, augment**
-2. Detect stack: package.json, requirements.txt, go.mod, etc.
+2. Detect stack from manifest files (ordered probe; record only what is actually found):
+
+   | Ecosystem | Manifest files |
+   |-----------|---------------|
+   | Node.js | `package.json` (+ `package-lock.json` / `pnpm-lock.yaml` / `yarn.lock` for the package manager) |
+   | Python | `pyproject.toml`, `requirements.txt`, `Pipfile` |
+   | Go | `go.mod` |
+   | Rust | `Cargo.toml` |
+   | JVM | `pom.xml`, `build.gradle(.kts)` |
+   | .NET | `*.csproj`, `*.sln` |
+   | PHP | `composer.json` |
+   | Ruby | `Gemfile` |
+
+   If detection is ambiguous or finds nothing → ASK the user. **Never fill `{{TECH_STACK}}` or `modules.*.stack` from a built-in default** — NaCl does not prescribe a technology stack.
 3. Detect structure:
    - Does docs/ exist? → SA artifacts created
    - Does .tl/ exist? → TL workflow configured
@@ -728,7 +741,7 @@ CLAUDE.md: [created / updated / no changes needed]
 config.yaml: [created / N fields auto-detected]
   Auto-detected:
     project.name: "My Project"
-    project.stack: "Next.js 14 + Fastify + PostgreSQL 17"
+    project.stack: "<detected from manifest files, or user-provided>"
     modules.frontend.path: "frontend"
     modules.backend.path: "backend"
     ci_platform: "github-actions"  (or empty if no .github/workflows/ found)

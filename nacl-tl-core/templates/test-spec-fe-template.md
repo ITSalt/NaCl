@@ -10,9 +10,13 @@ Example: `.tl/tasks/UC001/test-spec-fe.md`
 
 ## Purpose
 
-Defines all frontend test cases for the task. The development agent uses this file during the RED phase of TDD to write failing tests BEFORE implementation. Contains component tests, hook tests, form tests, integration tests, accessibility tests, and edge cases. Uses React Testing Library (RTL) + user-event for component testing and MSW for API mocking.
+Defines all frontend test cases for the task. The development agent uses this file during the RED phase of TDD to write failing tests BEFORE implementation. Contains component tests, hook tests, form tests, integration tests, accessibility tests, and edge cases.
 
 For backend test specification, see the paired file `test-spec.md`.
+
+## Stack Profile Note
+
+The examples below use Vitest + React Testing Library + user-event + MSW (the React/Next.js reference profile). NaCl does not prescribe these tools: fill `test_framework` / `test_library` / `mock_server` from the project's declared FE stack (`config.yaml` → `modules.<fe-module>.stack`) and substitute that ecosystem's test runner, DOM-testing, and API-mocking tools. The test-case *categories* (CT, HT, FT, IT, AT, EC) are stack-agnostic.
 
 ## Created By
 
@@ -32,9 +36,9 @@ source_uc: {{path_to_source_uc}}
 status: pending
 created: {{YYYY-MM-DD}}
 updated: {{YYYY-MM-DD}}
-test_framework: vitest
-test_library: "@testing-library/react + @testing-library/user-event"
-mock_server: msw
+test_framework: {{from project FE stack, e.g. vitest}}
+test_library: {{from project FE stack, e.g. "@testing-library/react + @testing-library/user-event"}}
+mock_server: {{from project FE stack, e.g. msw}}
 tags: [tests, fe, {{module}}, {{task_id}}]
 ---
 

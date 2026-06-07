@@ -4,6 +4,41 @@ All notable changes to NaCl (Natural Agent Control Language) will be documented 
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased]
+
+**Tech-stack de-prescription.** NaCl is technology-agnostic; the project's
+stack lives in `config.yaml → modules.*` (stack/build_cmd/test_cmd), never in
+a framework default. A real project had recorded a decision overriding
+"Node 22.x — the nacl-init template default" + PM2 — versions and tools the
+framework never intended to prescribe.
+
+- Deploy templates (`deploy-backend.yml`, `deploy-frontend.yml`): `node-version: '22'`
+  → `${NODE_VERSION}` placeholder; framed as a Node/npm reference profile; PM2
+  marked as an example process manager.
+- `docker-compose-dev-template.yml`: `postgres:16` / `redis:7` →
+  `${POSTGRES_VERSION}` / `${REDIS_VERSION}`; services framed as examples.
+- Reference docs (`code-style`, `frontend-rules`, `fe-code-style`,
+  `fe-review-checklist`, `review-checklist` incl. Codex copy, `dev-environment`,
+  `tl-protocol`): explicit "Stack profile: Node/TS" applicability headers;
+  "MUST follow" → SHOULD for Node/TS projects. Concrete React/RTL/Zod/Tailwind
+  guidance retained in full under the profile label.
+- `nacl-tl-dev-fe` / `nacl-tl-dev-be`: FE stack table replaced with a
+  config.yaml pointer; DISCOVER RUNNER now resolves
+  `config.yaml → modules.<m>.test_cmd` first, then ecosystem-native discovery
+  (Node: `package.json scripts.test`), then NO_INFRA. The honest-TDD rule
+  "run exactly the discovered command, never invent a runner" is unchanged.
+- `impl-brief-fe` / `test-spec-fe` templates: stack-profile notes;
+  `architecture_type` and test tooling are project-chosen values.
+- `config-yaml-template.yaml` (root + Codex): module examples no longer name
+  npm/Next.js/Fastify as filled-in values — placeholder shape with multi-stack
+  hints.
+- `nacl-init`: multi-ecosystem manifest detection table (Node/Python/Go/Rust/
+  JVM/.NET/PHP/Ruby); "never fill stack from a built-in default" rule; example
+  output stack neutralized.
+- New CI gate `scripts/check-version-pins.sh` (escape hatch `# version-pin-ok`)
+  wired into `lint-skills.yml`; graph-infra compose files (NaCl's own stack)
+  are out of scope.
+
 ## [2.16.0] — 2026-06-07
 
 The framework stops outsourcing its own homework. Two workstreams: intake

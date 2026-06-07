@@ -1,5 +1,9 @@
 # Code Review Checklist for Node.js/TypeScript
 
+## Applicability — Stack Profile: Node.js / TypeScript
+
+This checklist is a **reference profile** for projects whose stack (per `config.yaml` → `modules.<name>.stack`) is Node.js/TypeScript. It is not a framework-wide mandate: NaCl does not prescribe a technology stack. For a different ecosystem (Python, Go, ...), apply the underlying review principles and adapt the concrete checks. The single source of truth for a project's stack is `config.yaml`, never this profile.
+
 ## Overview
 
 This checklist provides a systematic approach to code review for Node.js and TypeScript projects. Consistent code reviews improve code quality, share knowledge across the team, and catch defects early.
