@@ -20,7 +20,8 @@ The SA layer runs as a 10-phase pipeline, orchestrated by `nacl-sa-full`. Each p
 | 4 | `nacl-sa-uc stories` | UseCase with user_story, acceptance_criteria, priority (MVP/Post-MVP/Nice-to-have); AUTOMATES_AS edges from BA |
 | 5 | `nacl-sa-uc detail` (per Primary UC, sequential) | ActivityStep, Form, FormField, Requirement (type=functional); MAPS_TO edges |
 | 6 | `nacl-sa-ui` | Component nodes, USED_IN edges; form-domain mapping verification |
-| 7 | `nacl-sa-validate` | ValidationReport (layer='SA'); L1-L6 + XL6-XL9 checks |
+| 6b | `nacl-sa-ui state-machine` + `nacl-sa-uc slices/errors/resilience` (optional) | Connected-spec extension layers: Screen/ScreenState/ScreenEvent/Transition/ScreenEffect, Slice, DomainError/ErrorPresentation, CachePolicy/DegradationRule |
+| 7 | `nacl-sa-validate` | ValidationReport (layer='SA'); L1-L13 + XL6-XL9 checks |
 | 8 | `nacl-sa-finalize` | FinalizationReport, ADR nodes (type='adr'); statistics, readiness |
 | 9 | `nacl-publish docmost` (optional) | Markdown pages in Docmost wiki |
 | 10 | `nacl-tl-plan` (optional) | Task files in `.tl/tasks/` for dev agents |
@@ -29,13 +30,21 @@ The SA layer runs as a 10-phase pipeline, orchestrated by `nacl-sa-full`. Each p
 
 Between phases, the orchestrator presents a brief summary and waits for user confirmation before proceeding. This gives the analyst a chance to review intermediate results and correct course without rerunning the entire pipeline.
 
+**Phase 6b is optional and opt-in.** It adopts the connected-spec extension layers (2.15+) in strict dependency order: screen state machines for UI use cases first, then behavior slices (they anchor into the machines), then domain errors, then cache & degradation policies (error-triggered rules anchor into the errors). Skipping is valid -- the corresponding validation levels (L10-L13) pass vacuously -- but the skip is recorded so the vacuous pass is a documented choice rather than an accident.
+
 **Phases 9 and 10 are optional.** Phase 9 (`nacl-publish docmost`) publishes the specification as Markdown pages to a Docmost wiki, making it accessible to stakeholders who do not interact with Neo4j directly. Phase 10 (`nacl-tl-plan`) bridges SA and TL by reading the finalized graph and generating task files in `.tl/tasks/` -- one per UC, with paired BE+FE subtasks and execution waves. Both phases can be skipped if the team prefers manual handoff or uses a different planning tool.
 
 ---
 
-## Graph Schema: 12 Node Types
+## Graph Schema: 12 Core Node Types
 
-The SA layer introduces 12 node types into the Neo4j graph. Every node has a deterministic ID format, making it possible to reference nodes by convention rather than lookup. This is a deliberate design choice: when a development agent needs to find the form for creating an order, it can construct the ID `FORM-OrderCreate` directly instead of running a search query. Deterministic IDs also make Cypher queries shorter and merge operations idempotent.
+The SA layer introduces 12 core node types into the Neo4j graph. The
+connected-spec extension layers (2.15+, authored in Phase 6b) add 12 more --
+Decision, Screen, ScreenState, ScreenEvent, Transition, ScreenEffect,
+AnalyticsEvent, Slice, DomainError, ErrorPresentation, CachePolicy,
+DegradationRule -- with the same deterministic-ID discipline (`SCR-*`,
+`SCRST-*`, `SLC-*`, `ERR-*`, `CACHE-*`, `DEG-*`, `DEC-*`; canonical formats in
+`graph-infra/schema/sa-schema.cypher`). Every node has a deterministic ID format, making it possible to reference nodes by convention rather than lookup. This is a deliberate design choice: when a development agent needs to find the form for creating an order, it can construct the ID `FORM-OrderCreate` directly instead of running a search query. Deterministic IDs also make Cypher queries shorter and merge operations idempotent.
 
 ```
 Module            mod-{name}          (e.g., mod-orders)
@@ -217,11 +226,11 @@ The FeatureRequest artifact contains a structured manifest: which modules are af
 
 ---
 
-## SA Validation (L1-L6 + XL6-XL9)
+## SA Validation (L1-L13 + XL6-XL9)
 
 The `nacl-sa-validate` skill runs read-only Cypher queries against the graph to detect inconsistencies. Validation is split into two categories: internal checks (within the SA layer) and cross-layer checks (between SA and BA).
 
-### Internal checks (L1-L6)
+### Internal checks (L1-L13)
 
 | Level | Check | Purpose |
 |-------|-------|---------|
@@ -231,6 +240,17 @@ The `nacl-sa-validate` skill runs read-only Cypher queries against the graph to 
 | L4 | Every data FormField has MAPS_TO edge | Form-domain traceability -- no orphaned data fields |
 | L5 | Every Primary UC has detail_status='complete' | UC completeness -- no half-detailed use cases |
 | L6 | Inter-module DEPENDS_ON is acyclic | Cross-module consistency -- no circular dependencies |
+| L7 | FR markdown <-> FeatureRequest node parity, INCLUDES_UC integrity | FeatureRequest consistency -- no features the graph cannot see |
+| L8 | Every stale node (review_status='stale') is reviewed and re-planned | Staleness closure -- spec changes cannot silently re-enter development |
+| L9 | Active FRs IMPLEMENTS a Decision; Decisions justify artifacts, carry rationale | Decision provenance -- "why" is a query, not git archaeology |
+| L10 | Screen machines: determinism, reachability, one initial state, effect-target integrity | Deterministic UI contract per screen |
+| L11 | Slices anchor via COVERS/CALLS, VERIFIED_BY a Task once planned, non-blank `then` | Behavior slices -- acceptance scenarios wired to machine and tasks |
+| L12 | Errors raisable (MAY_RAISE) and presented; channel rule on HANDLES; SHOWS triangle | Domain error taxonomy -- every failure mode reachable and shown |
+| L13 | Cache policies anchored (CACHES), degradation rules triggered and observable | Cache & degradation -- resilience as checked specification |
+
+L10-L13 validate the opt-in extension layers authored in Phase 6b: a graph
+with zero nodes of a layer's labels passes that level vacuously (the full
+per-check catalog lives in [Validation](validation.md)).
 
 ### Cross-layer checks (XL6-XL9)
 
@@ -257,6 +277,8 @@ The `nacl-sa-finalize` skill computes a readiness score from four metrics:
 - **Entity Readiness**: `(entities_with_attributes / total_entities) * 100%` -- what fraction of domain entities have at least one attribute defined.
 - **Form Coverage**: `(UCs_with_forms / total_UCs) * 100%` -- what fraction of use cases have associated forms.
 - **Overall readiness** is the weighted average. When it reaches 90% or higher, the specification is considered ready for development, and the orchestrator can proceed to `nacl-tl-plan`.
+
+The extension layers (screen machines, slices, errors, resilience, decision provenance) are reported **adoption-aware**: a layer with zero nodes graph-wide shows as "not adopted" and is excluded from the overall average -- absence of an opt-in layer is a choice, not a readiness gap. Partial adoption uses the normal percentage scale.
 
 Finalization also generates ADR (Architecture Decision Record) nodes for any significant decisions made during the SA process -- technology choices, rejected alternatives, trade-offs. These ADRs travel with the graph and are available to development agents as context.
 
