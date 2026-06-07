@@ -4,6 +4,61 @@ All notable changes to NaCl (Natural Agent Control Language) will be documented 
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [2.16.0] — 2026-06-07
+
+The framework stops outsourcing its own homework. Two workstreams: intake
+hypothesis verification becomes mandatory before any question reaches the
+user, and the contour around the 2.15 validators — goal contract, finalizer,
+orchestrators, public docs — finally speaks the validators' own L1–L13
+language.
+
+**Intake self-diagnosis (PROBE).** `nacl-tl-intake` Step 2a.5: every atom the
+graph alone did not resolve gets 2–3 falsifiable hypotheses verified with
+bounded read-only probes (code grep/read, ≤1 read-only DB query, git log;
+6-call budget; never writes). New `CODE` evidence tier. Confidence is a
+deterministic rubric lookup over the verdict pattern — never a model-invented
+number — with thresholds in `config.yaml → intake.*` (per-key fallback;
+seeded by `nacl-init`, add-only Migration check G for existing projects).
+≥0.9 routes as HIGH/CODE; 0.7–0.9 auto-routes on the leading hypothesis with
+a tracked alternative; only sub-threshold atoms may ask, and the question
+must carry the diagnosis (Template E rewritten). The
+`medium-confidence-routing` envelope gate now accepts code-anchored no-UC
+atoms (`diagnosis.evidence_refs` non-empty). Hard-refuse triggers are
+score-independent. Rationale: `docs/adr/002-intake-scoring-rubric.md`;
+canonical rubric: `nacl-tl-core/references/intake-scoring.md`.
+
+**Mid-run re-type.** `/nacl-tl-fix`'s L3-feature exit is a reclassification
+signal, not a failure: FEATURE_SMALL self-heals within the same goal-run
+(state machine gains the one sanctioned backward transition
+`implementing → pending`); FEATURE_HEAVY degrades the atom to the new
+terminal state `unsupported` and the run continues to GOAL_NOT_OK (was:
+GOAL_BLOCKED_ATOM_FAILED). `checks/intake.sh` counts atoms by live state.
+
+**Validation contour (post-2.15 audit).** The validators were complete; the
+contour was not. The `validate` goal alias declared GOAL_OK on
+`l1..l7_pass` — now requires `l1..l13_pass`. `nacl-sa-finalize` gains
+zero-safe `sa_statistics_extensions` + `sa_extension_adoption` named queries
+and adoption-aware readiness ("not adopted" ≠ 0%; FR-backfill candidates
+surfaced). `nacl-sa-full` gains optional Phase 6b — screen machines → slices
+→ errors → resilience, dependency-ordered, verify-before-bulk, resume-aware,
+explicit recorded skip. `nacl-tl-plan` embeds a "Screen State Machine"
+section into `task-fe.md` via the new `sa_uc_screen_machine` named query.
+Stale "L1-L6"/mislabeled-XL spans fixed across nacl-sa-validate (its own
+empty-BA fallback), nacl-core, nacl-migrate, nacl-migrate-sa,
+nacl-tl-reconcile, the claude-md-template, and reference docs.
+
+**Docs.** `docs/methodology/{validation,sa-layer,overview,graph-philosophy}`
+(EN+RU) now carry the full L1–L13 catalog: narrative L7–L13 descriptions,
+opt-in/vacuous-pass semantics, no-exemptions-by-design rationale for
+L11–L13, Phase 6b, and adoption-aware readiness.
+
+**Verification.** New Cypher queries executed verbatim against live project
+graphs (zero-safe + real counts; screen-machine query verified on a
+disposable clone incl. the null-filter edge case). Intake: five
+deterministic harness tests green on the merged tree; codex-sync gate
+VERIFIED across all 12 touched skills. Live PROBE replay on a real project
+is a tracked follow-up.
+
 ## [2.15.0] — 2026-06-07
 
 The connected spec graph: change propagation + decision provenance as the
