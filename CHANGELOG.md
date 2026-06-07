@@ -4,7 +4,7 @@ All notable changes to NaCl (Natural Agent Control Language) will be documented 
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [Unreleased]
+## [2.17.0] — 2026-06-07
 
 **Tech-stack de-prescription.** NaCl is technology-agnostic; the project's
 stack lives in `config.yaml → modules.*` (stack/build_cmd/test_cmd), never in

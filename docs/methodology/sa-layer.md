@@ -189,7 +189,7 @@ RETURN ff.id, ff.name, labels(ff)
 
 This eliminates the "find all references" problem that plagues document-based specifications.
 
-**Code generation.** Development agents (`nacl-tl-dev-be`, `nacl-tl-dev-fe`) read the form-domain mapping to generate correct DTOs, validation schemas, API endpoints, and React form components. The mapping is not documentation -- it is the source of truth that drives code.
+**Code generation.** Development agents (`nacl-tl-dev-be`, `nacl-tl-dev-fe`) read the form-domain mapping to generate correct DTOs, validation schemas, API endpoints, and UI form components in the project's stack. The mapping is not documentation -- it is the source of truth that drives code.
 
 Validation check L4 enforces the mapping: every FormField with a data-carrying field_type (text, textarea, number, date, select, multiselect, checkbox, file) MUST have a MAPS_TO edge. Button and table fields are exempt. No orphaned data fields are allowed.
 

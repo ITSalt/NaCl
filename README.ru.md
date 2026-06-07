@@ -58,7 +58,7 @@
 | Claude Code или Codex | Среда выполнения скиллов |
 | [Docker](https://www.docker.com/) | Neo4j (граф) |
 | [git](https://git-scm.com/) | Управление версиями |
-| Node.js 18+ | Для фронтенд-разработки |
+| Node.js 18+ | Опциональные CLI-инструменты NaCl |
 
 ### Опционально
 
