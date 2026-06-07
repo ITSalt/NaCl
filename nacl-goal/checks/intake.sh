@@ -14,9 +14,11 @@ set -uo pipefail
 # evaluator cannot see exit codes.
 #
 # Truth sources (mapped to evidence keys per nacl-goal/aliases.md §intake):
-#   plan.lock.json              → atoms_total, feature_atoms_total, branch, deploy_target
+#   plan.lock.json              → atoms_total, feature_atoms_total (frozen part), branch, deploy_target
 #   atoms/*.state.json          → atoms_implemented (count of state==verified),
-#                                 feature_atoms_verified
+#                                 feature_atoms_verified, unsupported_atoms_count
+#                                 (state==unsupported), retyped_to (live type
+#                                 override for mid-run re-typed atoms)
 #   intake.json                 → intake_status, dependency_graph_valid (sort already run)
 #   goal-final-sha.txt          → goal_final_sha
 #   git rev-parse HEAD          → branch_head_sha
@@ -145,6 +147,8 @@ POSTFIX_FILE="${RUN_DIR}/regression-postfix.json"
 BRANCH=$(json_get "$PLAN_FILE" '.branch' "")
 DEPLOY_TARGET=$(json_get "$PLAN_FILE" '.deploy_target' "")
 ATOMS_TOTAL=$(json_get "$PLAN_FILE" '.atoms | length' "0")
+# Frozen plan count; atoms re-typed to FEATURE_SMALL mid-run are added after
+# the atoms/*.state.json loop below (live type wins — see aliases.md §intake).
 FEATURE_ATOMS_TOTAL=$(json_get "$PLAN_FILE" '[.atoms[] | select(.type=="FEATURE_SMALL")] | length' "0")
 
 # 2.14+ batch-mode fields. Pre-2.13 plan.lock.json files lack them — the
@@ -191,24 +195,43 @@ ATOM_FAILED_ERROR=""
 WIP_COLLISION_DETECTED="false"
 WIP_COLLISION_ATOM_ID=""
 
+RETYPED_FEATURE_SMALL_COUNT=0
+
 if [[ -d "$ATOMS_DIR" ]]; then
   for state_file in "$ATOMS_DIR"/*.state.json; do
     [[ -f "$state_file" ]] || continue
     state=$(json_get "$state_file" '.state' "pending")
     atom_id=$(json_get "$state_file" '.atom_id' "")
+    # intake-self-diagnosis+: live type honors a mid-run re-type. retyped_to
+    # (FEATURE_SMALL|FEATURE_HEAVY) overrides the frozen plan.lock.json type;
+    # absent/null in pre-re-type artifacts.
+    retyped_to=$(json_get "$state_file" '.retyped_to' "")
+    [[ "$retyped_to" == "null" ]] && retyped_to=""
+    if [[ "$retyped_to" == "FEATURE_SMALL" ]]; then
+      RETYPED_FEATURE_SMALL_COUNT=$((RETYPED_FEATURE_SMALL_COUNT + 1))
+    fi
     if [[ "$state" == "verified" ]]; then
       ATOMS_IMPLEMENTED=$((ATOMS_IMPLEMENTED + 1))
-      # Is this a FEATURE atom?
+      # Is this a FEATURE atom? (live type: retyped_to wins over plan type)
+      a_type=""
       if [[ -f "$PLAN_FILE" && "$HAVE_JQ" -eq 1 ]]; then
         a_type=$(jq -r --arg id "$atom_id" '.atoms[] | select(.id==$id) | .type' "$PLAN_FILE" 2>/dev/null)
-        if [[ "$a_type" == "FEATURE_SMALL" ]]; then
-          FEATURE_ATOMS_VERIFIED=$((FEATURE_ATOMS_VERIFIED + 1))
-          # A verified FEATURE_SMALL atom implies its spec delta exists.
-          # The /nacl-sa-feature --bounded-only step would have failed
-          # otherwise. PR2 may refine this with a dedicated artifact.
-          FEATURE_SPEC_DELTA_COUNT=$((FEATURE_SPEC_DELTA_COUNT + 1))
-        fi
       fi
+      [[ -n "$retyped_to" ]] && a_type="$retyped_to"
+      if [[ "$a_type" == "FEATURE_SMALL" ]]; then
+        FEATURE_ATOMS_VERIFIED=$((FEATURE_ATOMS_VERIFIED + 1))
+        # A verified FEATURE_SMALL atom implies its spec delta exists.
+        # The /nacl-sa-feature --bounded-only step would have failed
+        # otherwise. PR2 may refine this with a dedicated artifact.
+        FEATURE_SPEC_DELTA_COUNT=$((FEATURE_SPEC_DELTA_COUNT + 1))
+      fi
+    elif [[ "$state" == "unsupported" ]]; then
+      # intake-self-diagnosis+: /nacl-tl-fix proved the BUG atom is a
+      # FEATURE_HEAVY (L3-feature exit) — correctly classified out of scope,
+      # NOT a failure. The run continues; GOAL_OK is impossible (the
+      # success_condition requires unsupported_atoms_count == 0) but the
+      # result stays GOAL_NOT_OK, never GOAL_BLOCKED for this alone.
+      UNSUPPORTED_ATOMS_COUNT=$((UNSUPPORTED_ATOMS_COUNT + 1))
     elif [[ "$state" == "failed" ]]; then
       ATOMS_FAILED=$((ATOMS_FAILED + 1))
       ATOM_FAILED_ID="$atom_id"
@@ -226,8 +249,13 @@ if [[ -d "$ATOMS_DIR" ]]; then
 fi
 
 # unsupported_atoms_count: classify-step refuses on HEAVY/triggers before
-# writing plan.lock.json; if we got here, none made it into the plan.
-UNSUPPORTED_ATOMS_COUNT=0
+# writing plan.lock.json, so none enter the plan typed FEATURE_HEAVY — but a
+# BUG atom can be re-typed to FEATURE_HEAVY mid-run (state == "unsupported",
+# counted in the loop above).
+
+# Atoms re-typed to FEATURE_SMALL mid-run count toward the FEATURE totals
+# (their plan.lock.json type is still BUG; the live type wins).
+FEATURE_ATOMS_TOTAL=$((FEATURE_ATOMS_TOTAL + RETYPED_FEATURE_SMALL_COUNT))
 
 # ----------------------------------------------------------------------
 # 3. Budget — elapsed wall-clock since started_at

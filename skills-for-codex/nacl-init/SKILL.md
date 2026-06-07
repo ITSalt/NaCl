@@ -67,6 +67,14 @@ not call the runner without explicit non-dry-run confirmation.
 Do not create repo-local skill wrappers. Skill installation and discovery live
 at the user level through symlinks to `skills-for-codex/`.
 
+Intake scoring seeding (source Migration check G parity): new `config.yaml`
+files inherit the `intake:` self-diagnosis scoring block from the template
+(`route_threshold`, `high_confidence`, `scores.*` — semantics in
+`../nacl-tl-core/references/intake-scoring.md`); on an existing project the
+runner appends the block with built-in defaults ONLY when no `intake:`
+section exists — user-tuned values are never overwritten. Report in the final
+summary whether intake scoring was seeded or already present.
+
 ## Capabilities
 
 ### May Do

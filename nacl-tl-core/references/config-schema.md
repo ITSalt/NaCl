@@ -307,3 +307,40 @@ deploy:
 - **Where read:** `nacl-tl-deliver` Step 4b run-smoke step. Each
   path is curl'd against the booted entrypoint; non-2xx →
   `BLOCKED (clean-checkout-smoke-failed)`.
+
+## `intake.*` (self-diagnosis scoring)
+
+**Introduced in:** intake-self-diagnosis (post-2.15).
+**Owners:** `nacl-tl-intake` Step 2a.5 PROBE; consumed by `/nacl-goal intake`.
+
+### Specification
+
+```yaml
+intake:
+  route_threshold: 0.7        # score >= this -> auto-route on the leading hypothesis
+  high_confidence: 0.9        # score >= this -> HIGH confidence (no tracked alternative)
+  scores:                     # rubric row values (verdict pattern -> score)
+    leader_confirmed_all_refuted: 0.95
+    leader_confirmed_some_inconclusive: 0.8
+    leader_indirect_all_refuted: 0.75
+    leader_indirect_inconclusive: 0.55
+    contradictory: 0.4
+    all_inconclusive: 0.2
+```
+
+- **Type:** floats in `(0, 1]`.
+- **Default (when field absent):** every key falls back independently to
+  the built-in defaults above — canonical home:
+  `nacl-tl-core/references/intake-scoring.md` (rubric semantics, resolution
+  order, worked examples, tuning guidance).
+- **Sanity clamp:** values outside `(0, 1]` or
+  `route_threshold > high_confidence` → warn + use defaults for the
+  offending key(s); a broken config must not silently disable the
+  question gate.
+- **Where read:** `nacl-tl-intake` Step 2a.5 (PROBE scoring) and Step 2b
+  case table; `/nacl-goal intake` inherits the values via the emitted
+  `diagnosis.score` / `diagnosis.threshold_used` (it does not re-read
+  config).
+- **Effect:** controls only intake routing and the question gate.
+  Hard-refuse triggers (billing, auth, schema migration, destructive ops,
+  product decisions) are score-independent and never auto-route.

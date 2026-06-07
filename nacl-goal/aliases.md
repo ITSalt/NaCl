@@ -215,12 +215,19 @@ via `/nacl-tl-intake --autonomous --yes --emit-state` into BUG / TASK /
 FEATURE_SMALL atoms (with `depends_on` topological execution), runs them on
 one feature branch producing one PR, drives that PR through CI to a healthy
 staging stand. The `--autonomous` flag (2.14+) widens the auto-route set:
-L2/L3 launch-sanity auto-confirms, MEDIUM-confidence atoms route on the
-leading guess with a tracked alternative (envelope gate
-`medium-confidence-routing`), LOW-confidence atoms batch into ONE
-consolidated pre-`/goal` question. Hard-refuse triggers (billing, auth,
-schema migration, destructive ops, product decisions) still refuse before
-`/goal` — autonomy never swallows those.
+L2/L3 launch-sanity auto-confirms, probe-scored atoms (intake Step 2a.5
+self-diagnosis — hypotheses verified against the actual code/DB, rubric
+score per `nacl-tl-core/references/intake-scoring.md`) route on the leading
+hypothesis with a tracked alternative when `score >= route_threshold`
+(envelope gate `medium-confidence-routing`); only sub-threshold atoms batch
+into ONE consolidated pre-`/goal` question — and that question carries the
+diagnosis (what was checked, per-hypothesis results, blocking fact).
+Hard-refuse triggers (billing, auth, schema migration, destructive ops,
+product decisions) still refuse before `/goal` — autonomy never swallows
+those, and a probe never clears them. Mid-run, a BUG atom that `/nacl-tl-fix`
+proves to be a feature (L3-feature exit) is re-typed instead of failed:
+FEATURE_SMALL self-heals in-run; FEATURE_HEAVY degrades the atom to
+`unsupported` and the run continues.
 
 `intake` is the FIRST alias with `default_mode: autonomous` — it runs without
 `--start`. Opt out via `--plan-only`, `--strict`, or `--target=dev-only`.
@@ -254,9 +261,15 @@ expected_evidence_keys
   - intake_status                  # classified | ambiguous | refused
   - plan_locked                    # bool
   - dependency_graph_valid         # bool — topological sort succeeded
-  - unsupported_atoms_count        # int — FEATURE_HEAVY or hard-refused atoms
+  - unsupported_atoms_count        # int — FEATURE_HEAVY or hard-refused atoms,
+                                   # incl. atoms re-typed to FEATURE_HEAVY mid-run
+                                   # via the tl-fix L3-feature exit (state.json
+                                   # state == unsupported); read from live
+                                   # atoms/*.state.json, not frozen plan.lock.json
   - atoms_total                    # int
   - atoms_implemented              # int — per-atom state.json == verified
+                                   # (re-typed FEATURE_SMALL atoms count by their
+                                   # live type from state.json)
   - feature_atoms_total            # int
   - feature_spec_delta_count       # int — UC/spec edits written for FEATURE atoms
   - feature_atoms_verified         # int — /nacl-tl-verify PASS for FEATURE atoms

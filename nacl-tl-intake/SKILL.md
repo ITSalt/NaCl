@@ -72,7 +72,7 @@ a payment system, and we need to update the deploy docs for the new server"
 | Flag | Description |
 |------|-------------|
 | `--yes` | Auto-confirm HIGH+GRAPH+no-spec-gap+L0/L1 atoms without prompting (see `--yes flag behavior` below). |
-| `--autonomous` | (2.14+) Set ONLY by `/nacl-goal intake` alongside `--yes --emit-state`. Widens the auto-route set per the "Autonomous" column of the Step 2b case table: Template B auto-confirms, Template D auto-routes on the leading guess with a tracked `residual_note`, Template E atoms are collected for ONE consolidated pre-`/goal` batch instead of per-atom prompts. Template C (hard_refuse) is untouched. A human typing `/nacl-tl-intake --yes` is NOT affected — this flag is never implied. |
+| `--autonomous` | (2.14+) Set ONLY by `/nacl-goal intake` alongside `--yes --emit-state`. Widens the auto-route set per the "Autonomous" column of the Step 2b case table: Template B auto-confirms, probe-scored atoms (Step 2a.5) auto-route on the leading hypothesis when `score >= intake.route_threshold` (tracked `residual_note` below `high_confidence`), and only sub-threshold atoms are collected for ONE consolidated pre-`/goal` batch instead of per-atom prompts. Template C (hard_refuse) is untouched. A human typing `/nacl-tl-intake --yes` is NOT affected — this flag is never implied. |
 | `--emit-state <path>` | Write the deterministic routing table as a JSON file (2.10.1+). When set, this skill writes the table to the given path INSTEAD of (or in addition to) interactive prompting. Used by `/nacl-goal intake` to capture classification artifacts for the wrapper. Format: see §`--emit-state` JSON schema below. |
 | `--namespace=<DOMAIN>` | (sa-feature passthrough, optional) Restrict classification to a single domain namespace. |
 
@@ -89,7 +89,7 @@ When `--emit-state <path>` is set, this skill writes a JSON file at `<path>` wit
       "type": "BUG|TASK|FEATURE_SMALL|FEATURE_HEAVY",
       "title": "<one-line atom summary>",
       "linked_uc": "UC-NNN|TECH-NNN|null",
-      "evidence": ["GRAPH", "HEURISTIC", "USER_OVERRIDE"],
+      "evidence": ["GRAPH", "CODE", "HEURISTIC", "USER_OVERRIDE"],
       "confidence": "HIGH|MEDIUM|LOW",
       "risk_level": "L0|L1|L2|L3",
       "depends_on": ["atom-<...>"],
@@ -97,6 +97,7 @@ When `--emit-state <path>` is set, this skill writes a JSON file at `<path>` wit
       "trigger_evidence": "<short quote from goal text justifying each trigger>",
       "spec_gap": false,
       "residual_note": null,
+      "diagnosis": null,
       "skill_path": "nacl-tl-fix|nacl-tl-dev|nacl-sa-feature -> nacl-tl-dev"
     }
   ],
@@ -160,6 +161,35 @@ When an atom carries BOTH an unconditionally-correct defensive part AND a genuin
 records the plausible alternative classification and what would tip the
 scale, so the user can re-route after the fact. It is a first-class
 tracked follow-up, distinct from a spec-gap residual.
+
+#### `diagnosis` (Step 2a.5 PROBE output)
+
+Written for every atom the graph alone did not resolve (see Step 2a.5).
+`null` when the probe did not run (HIGH+GRAPH atoms). Readers MUST tolerate
+its absence (pre-probe artifacts).
+
+```json
+"diagnosis": {
+  "hypotheses": [
+    { "id": "H_bug", "statement": "<falsifiable statement>", "verdict": "confirmed|refuted|inconclusive" }
+  ],
+  "checks": [
+    { "kind": "grep|read|db|git", "target": "<path or query>", "result": "<one line>" }
+  ],
+  "score": 0.95,
+  "threshold_used": 0.7,
+  "leaning": "BUG|FEATURE|TASK|null",
+  "blocking_fact": "<plain-language fact preventing a confident call>|null",
+  "evidence_refs": ["<file:line | query summary | sha>"]
+}
+```
+
+`score` is rubric-derived (deterministic lookup on the verdict pattern —
+`nacl-tl-core/references/intake-scoring.md`), never free-form.
+`threshold_used` freezes the `intake.route_threshold` in effect so the
+wrapper and audit tooling interpret the routing without re-reading
+`config.yaml`. When the probe confirms a single hypothesis, add `CODE` to
+the atom's `evidence` — it means "verified against the actual codebase/DB".
 
 #### `hard_refuse_triggers` closed set
 
@@ -228,8 +258,16 @@ Read `config.yaml` at project root. If not found, YouGile features are disabled.
 | YouGile column IDs | config.yaml -> yougile.columns.* |
 | YouGile sticker IDs | config.yaml -> yougile.stickers.* |
 | YouGile API key | .mcp.json (MCP server env) |
+| Probe routing threshold | config.yaml -> intake.route_threshold; absent -> default 0.7 |
+| Probe high-confidence threshold | config.yaml -> intake.high_confidence; absent -> default 0.9 |
+| Probe rubric scores | config.yaml -> intake.scores.*; each key falls back independently to the defaults in `nacl-tl-core/references/intake-scoring.md` |
 
 If config.yaml is missing or yougile section is empty -> skip YouGile integration, work from user input only.
+
+**Sanity clamp for `intake.*`:** a value outside `(0, 1]`, or
+`route_threshold > high_confidence`, is a broken config — warn the user and
+use the built-in defaults for the offending key(s). A broken config must not
+silently disable the question gate.
 
 ---
 
@@ -275,6 +313,92 @@ ORDER BY uc.id
 
 Run one query per atom. Use the atom's core concept as `$keywords` (e.g., "image format", "share button", "deploy docs").
 
+#### Step 2a.5: PROBE — verify competing hypotheses before any question
+
+**Trigger.** Run this step for every atom that Step 2a left inconclusive:
+
+- no matching UC found (would land MEDIUM in the Step 2b tree), OR
+- UC matched only at `detail_status = draft | stub` (MEDIUM), OR
+- Neo4j unavailable (would land LOW / HEURISTIC).
+
+Skip it for atoms a detailed/approved UC already settled (HIGH+GRAPH) and for
+the aspects an explicit USER_OVERRIDE already answered (Step 2b-pre's
+recognizer scan still runs first; the probe covers only what the input did
+not resolve).
+
+**Why.** This skill has read access to the code, the DB, and the graph.
+"The graph didn't resolve it" is not grounds to ask the user — it is grounds
+to investigate. The question gate fires only after the probe has run and
+genuinely failed to produce a confident call, and the question then carries
+the diagnosis.
+
+**Procedure (per atom):**
+
+1. **FORMULATE** 2–3 falsifiable hypotheses. Canonical bug-vs-feature pair:
+   - `H_bug` — the mechanism EXISTS in code (route / handler / table /
+     component / enum transition present) but mishandles or loses the record
+     on a path that is supposed to work.
+   - `H_feature` — the mechanism is ABSENT: nothing in the codebase
+     implements the behavior at all.
+
+   Add atom-specific hypotheses where the wording suggests them (e.g.
+   `H_data` — the record is present in the DB but a query filter hides it).
+
+2. **CHECK** each hypothesis with bounded read-only probes. Closed list:
+   - Grep/Glob the codebase for the mechanism; Read the 1–3 most relevant
+     files the search surfaces.
+   - ONE read-only DB query via a configured project MCP (SELECT-only, or
+     `read-cypher` for graph-stored data) — best-effort: if no DB MCP is in
+     scope, degrade to code-only probes (never blocks the step).
+   - `git log` / `git show` (read-only) to date the mechanism if relevant.
+
+   **Budget: max 6 tool calls + 1 DB query per atom.** On budget exhaustion
+   stop probing and score what you have — deep diagnosis is `/nacl-tl-fix`
+   Phase A's job, not intake's. Never write anything during a probe.
+
+3. **RECORD** a verdict per hypothesis — `confirmed` (direct positive
+   evidence) / `refuted` (direct negative evidence) / `inconclusive` — each
+   with a one-line `evidence_ref` (file:line, query result summary, or sha).
+
+4. **SCORE** the leading hypothesis via the deterministic rubric in
+   `nacl-tl-core/references/intake-scoring.md` (lookup on the verdict
+   pattern — the number is derived, never invented; defaults below,
+   each overridable via `config.yaml -> intake.scores.*`):
+
+   | Verdict pattern | score |
+   |---|---|
+   | leader confirmed, ALL alternatives refuted | 0.95 |
+   | leader confirmed, ≥1 alternative inconclusive (none confirmed) | 0.8 |
+   | leader supported indirectly, all alternatives refuted | 0.75 |
+   | leader supported indirectly, alternatives inconclusive | 0.55 |
+   | ≥2 hypotheses confirmed (contradiction) | 0.4 |
+   | all inconclusive / budget exhausted | 0.2 |
+
+5. **DERIVE** the classification (thresholds from Configuration Resolution;
+   defaults in brackets):
+   - `score >= high_confidence [0.9]` → that type, confidence **HIGH**, add
+     `CODE` to `evidence`. The atom now follows the HIGH rows of the Step 2b
+     case table (auto-route / launch-sanity), exactly like a graph-backed one.
+   - `route_threshold [0.7] <= score < high_confidence [0.9]` → confidence
+     **MEDIUM**, add `CODE` to `evidence`, set `diagnosis.leaning`. Routing
+     per the MEDIUM row of the case table (auto-route on the leader under
+     `--autonomous`, with the alternative + `blocking_fact` recorded as a
+     tracked `residual_note`, reason `medium_confidence_alternative`).
+   - `score < route_threshold [0.7]` → keep the Step 2a confidence
+     (MEDIUM, or LOW when Neo4j was down). This — and ONLY this — is the
+     path that reaches the question gate (Template E), and the question MUST
+     carry the diagnosis.
+   - Hard-refuse triggers are evaluated independently and are NEVER cleared
+     by a probe: no score auto-routes an atom carrying one (Template C /
+     `PLAN_BLOCKED_*` path is untouched).
+
+6. **WRITE** the `diagnosis` object onto the atom (schema in §`--emit-state`)
+   — including `score` and `threshold_used` — for the emitted state file and
+   for Step 2d's plain-language presentation.
+
+The probe uses only read-only tools (Grep/Glob/Read/Bash); the DB probe is
+best-effort and skipped when no DB MCP is reachable from the agent context.
+
 #### Step 2b: Classify based on graph results — then require per-atom confirmation
 
 Apply this decision tree to each atom, using the query results:
@@ -300,9 +424,13 @@ Did sa_find_uc_by_keywords return matching UCs?
   +-- YES, matching UC found with detail_status = 'draft' or 'stub':
   |     The behavior is partially specified.
   |       -> Likely FEATURE  (confidence: MEDIUM, evidence: GRAPH)
+  |          (Step 2a.5 PROBE has run — its score may have upgraded this
+  |           to HIGH or MEDIUM with CODE evidence; use the post-probe values)
   |
   +-- NO matching UC found:
-  |     The behavior is NOT specified.
+  |     The behavior is NOT specified IN THE GRAPH — but Step 2a.5 PROBE has
+  |     checked the code/DB. Use the post-probe confidence/evidence; the
+  |     phrasing heuristics below apply only when the probe stayed sub-threshold:
   |       -> "X doesn't work" phrasing: BUG  (confidence: MEDIUM, evidence: GRAPH)
   |       -> "Add X" / "I want X": FEATURE  (confidence: MEDIUM, evidence: GRAPH)
   |       -> Infrastructure/docs/process: TASK  (confidence: MEDIUM, evidence: GRAPH)
@@ -310,6 +438,8 @@ Did sa_find_uc_by_keywords return matching UCs?
   +-- Neo4j UNAVAILABLE (connection error):
         Fall back to keyword-based classification (Step 2c)
         All atoms get confidence: LOW, evidence: HEURISTIC
+        (Step 2a.5 PROBE still runs — grep/read/DB probes need no graph;
+         a confirmed single hypothesis upgrades the atom via CODE evidence)
 ```
 
 **SPEC_GAP detection heuristics** (any one sufficient to set `spec_gap: true`):
@@ -344,7 +474,7 @@ Resolution:
 2. **Ambiguous residual** → record as `residual_note` and route at **L2-with-flag** (or keep as a tracked NOTE). NEVER L1: `spec_gap: true` *is* doc-staleness, and an L1 attestation would let `/nacl-tl-fix` ship code against a stale spec (its 6.SF gate checks ordering, not staleness — see `nacl-tl-fix` W10). The residual MUST carry a `followup_task` (Step 6 Backlog task / `.tl/open-questions.md`); a residual with no follow-up is invalid and falls back to the prompt.
 3. **Block for a human decision (plain-language Template C) ONLY** when the residual carries a `hard_refuse_trigger` from the closed set — `schema_migration` / `public_api_contract` (external/breaking only — documenting consumer-side input tolerance does NOT count) / `auth_or_security` / `permissions` / `billing` / `destructive_data_operation` / `l2_l3_architecture` / `product_decision_required`. This is the "costly/irreversible" carve-out. Otherwise proceed with the working assumption + the recorded follow-up.
 
-`--yes` and `/nacl-goal` autonomous mode follow these same rules for spec-gap residuals; under `--autonomous` the auto-route additionally extends to MEDIUM-confidence leading-guess routing (with a tracked `residual_note`, reason `medium_confidence_alternative`). In BOTH modes the only thing that still forces a per-atom decision is an unresolved hard_refuse residual (Template C).
+`--yes` and `/nacl-goal` autonomous mode follow these same rules for spec-gap residuals; under `--autonomous` the auto-route additionally extends to probe-scored leading-hypothesis routing (Step 2a.5: `score >= route_threshold`, with a tracked `residual_note`, reason `medium_confidence_alternative`, below `high_confidence`). In BOTH modes the only thing that still forces a per-atom decision is an unresolved hard_refuse residual (Template C).
 
 **Per-atom confirmation gate (runs after classifying EACH atom — behavior differs by case):**
 
@@ -353,10 +483,11 @@ A generic "Correct? [yes / adjust / skip]" trains the user to rubber-stamp and s
 | Case | Gate behavior (interactive / `--yes`) | Autonomous (`--autonomous`, set by `/nacl-goal`) |
 |------|---------------|---------------|
 | HIGH + GRAPH, **no spec gap**, classification level **L0/L1** (low blast radius) | **Auto-route, no prompt.** Print the auto-route line (template A) and proceed. | Same — auto-route (template A). |
-| HIGH + GRAPH, **no spec gap**, classification level **L2/L3** (high blast radius) | **Launch-sanity prompt** (template B) — not a classification question, just a "ready to launch?" check. | **Auto-confirm "start".** Invoking `/nacl-goal intake` IS the launch intent — re-asking duplicates the user's own action. The spec-first work the prompt warned about still happens (downstream skills enforce it). Print template B's body as an informational line, no prompt. |
+| HIGH + **CODE** (probe `score >= high_confidence`), no spec gap, **L0/L1** | **Auto-route, no prompt** (template A, "verified against the code"). | Same — auto-route (template A). |
+| HIGH (+GRAPH or +CODE), **no spec gap**, classification level **L2/L3** (high blast radius) | **Launch-sanity prompt** (template B) — not a classification question, just a "ready to launch?" check. | **Auto-confirm "start".** Invoking `/nacl-goal intake` IS the launch intent — re-asking duplicates the user's own action. The spec-first work the prompt warned about still happens (downstream skills enforce it). Print template B's body as an informational line, no prompt. |
 | HIGH + GRAPH, **spec_gap: true** | Apply Step 2b-pre + Step 2b-split. Ship the defensive part with no prompt (template A-note); record the residual as a tracked follow-up. Fire the **plain-language template C** ONLY if the residual carries a hard_refuse_trigger; otherwise proceed on the working assumption. | Same — and a hard_refuse residual surfaces as the wrapper's pre-`/goal` `PLAN_BLOCKED_*` refusal rather than an interactive prompt. |
-| MEDIUM + GRAPH | **Recommendation prompt** (template D) — leading option + alternatives + reasoning. | **Auto-route on the leading guess** (template A-note style): record the alternative + what-would-tip-the-scale as `residual_note` (reason `medium_confidence_alternative`, durable sink), disclose in the final-summary headline modifier. Misrouting bug↔task is recoverable — `/nacl-tl-fix`'s spec-first gate still protects the spec; the tracked note lets the user re-route. EXCEPTION: an atom carrying any hard_refuse_trigger never auto-routes (Template C path). |
-| LOW / HEURISTIC | **Open-disambiguation prompt** (template E) — present options with equal weight, no forced recommendation. | **Collect, don't prompt per atom.** All LOW/HEURISTIC atoms are flagged in `--emit-state` output (`classification_metadata.ambiguous: true` + per-atom confidence); the wrapper batches them into ONE consolidated pre-`/goal` question. Non-interactive → the wrapper refuses with `PLAN_BLOCKED_AMBIGUOUS_CLASSIFICATION`. Never auto-route a LOW atom: with the graph unresolved, a feature could silently become a bugfix without a spec. |
+| MEDIUM with probe leaning (`route_threshold <= score < high_confidence`) | **Recommendation prompt** (template D) — leading option + alternatives, filled from the diagnosis. | **Auto-route on the leading hypothesis** (template A-note style): record the alternative + `blocking_fact` + what-would-tip-the-scale as `residual_note` (reason `medium_confidence_alternative`, durable sink), disclose in the final-summary headline modifier. Misrouting bug↔feature is recoverable — `/nacl-tl-fix`'s gap-check self-corrects via its L3-feature exit, and the spec-first gate still protects the spec; the tracked note lets the user re-route. EXCEPTION: an atom carrying any hard_refuse_trigger never auto-routes (Template C path). |
+| Sub-threshold (probe ran, `score < route_threshold`) — MEDIUM or LOW/HEURISTIC | **Diagnosed-disambiguation prompt** (template E) — what was checked, per-hypothesis results, leaning if any, the blocking fact, then the options. | **Collect, don't prompt per atom.** All sub-threshold atoms are flagged in `--emit-state` output (`classification_metadata.ambiguous: true` + per-atom confidence + `diagnosis`); the wrapper batches them into ONE consolidated pre-`/goal` question that carries each atom's diagnosis. Non-interactive → the wrapper refuses with `PLAN_BLOCKED_AMBIGUOUS_CLASSIFICATION`. Never auto-route a sub-threshold atom: neither the graph nor the probe resolved it — a feature could silently become a bugfix without a spec. |
 
 #### Template A — auto-route line (no prompt)
 
@@ -420,42 +551,58 @@ Atom #N: "[atom title]"
 
 #### Template D — recommendation prompt (MEDIUM confidence)
 
+When the atom has a `diagnosis` (Step 2a.5 ran), fill `Why` from the leading
+hypothesis's `evidence_ref` and `Could also be` from the alternative +
+`blocking_fact` — never from graph heuristics alone.
+
 ```
 Atom #N: "[atom title]"
-  Best guess: [TYPE]  (fairly confident, based on the project graph)
-  Why: [one sentence — why this is the leading call]
-  Could also be: [other plausible TYPE(s) and what would tip the scale]
+  Best guess: [TYPE]  (fairly confident — checked the code/DB before guessing)
+  Why: [one sentence — the leading hypothesis's evidence, in plain words]
+  Could also be: [alternative TYPE — and the fact that keeps it alive]
 
   Correct? [yes / change to <other type> / set aside]
 ```
 
-#### Template E — open-disambiguation prompt (LOW / HEURISTIC)
+#### Template E — diagnosed disambiguation (probe ran but stayed sub-threshold)
+
+Fires ONLY after Step 2a.5 PROBE. Never ask without showing the work: the
+user sees what was checked, the per-hypothesis results, the leaning (if any),
+and the single blocking fact. Plain language — no internal tokens. Rendered
+in the user's language at runtime; canonical shape:
 
 ```
 Atom #N: "[atom title]"
-  I'm not sure how to classify this (the project graph didn't resolve it).
-  Could be a bug, a new feature, or a task.
-  What I see: [why the graph didn't resolve, what wording leans each way]
+  I investigated before asking:
+    - Checked: [what — e.g. "the session-save mechanism in code and the row in the DB"].
+    - Hypothesis 1 (bug: mechanism exists but loses the record): [result + evidence in plain words].
+    - Hypothesis 2 (feature: persistence not built yet):          [result + evidence in plain words].
+  [if a leaning exists] I lean toward [TYPE] because [evidence_ref in plain words].
+  What stops me deciding: [blocking_fact].
 
-  Pick one — no recommendation:
+  Your call:
     1. Bug      -> fix it
     2. Feature  -> design it as new functionality
     3. Task     -> infra / docs / process work
     4. Set aside
 ```
 
+(Russian register example for the body lines: «Я проверил, прежде чем
+спрашивать: … Гипотеза 1 (баг: механизм есть, но теряет запись): …
+Склоняюсь к [ТИП], потому что … Мешает принять решение: …».)
+
 **`--yes` flag behavior:**
 
 - `--yes` auto-confirms (i.e. fires Template A / A-note without prompting) ONLY when ALL of the following hold for the atom:
   - `confidence: HIGH`
-  - `evidence: GRAPH` (matched UC `detail_status = detailed | approved`)
+  - `evidence: GRAPH` (matched UC `detail_status = detailed | approved`) **or** `evidence: CODE` (Step 2a.5 probe `score >= high_confidence`)
   - `spec_gap: false`, OR `spec_gap: true` whose residual is resolved by Step 2b-pre / 2b-split with NO hard_refuse_trigger (ships via Template A-note + tracked follow-up)
   - classification level: `L0` or `L1` (low blast radius — per `nacl-tl-core/references/fix-classification-rules.md`)
 - `--yes` does NOT bypass the prompt for:
   - SPEC_GAP atoms whose residual carries a hard_refuse_trigger — plain-language decision required (template C)
   - L2/L3 atoms — launch-sanity check required (template B)
   - MEDIUM confidence atoms (template D)
-  - LOW / HEURISTIC atoms (template E)
+  - sub-threshold atoms — probe ran, `score < route_threshold` (template E)
 - "skip" / "set aside" drops the atom from the execution plan; user must explicitly re-add it later.
 - "adjust" / "change" accepts a corrected type from the user; record the manual override as `evidence: USER_OVERRIDE`.
 - For SPEC_GAP atoms where the user chooses FEATURE, record `evidence: USER_OVERRIDE (spec_gap)` so the final summary headline can route through the REROUTED rule (see "Final summary" below).
@@ -463,14 +610,18 @@ Atom #N: "[atom title]"
 **`--autonomous` behavior (2.14+; on top of `--yes`, wrapper-only):**
 
 - Template B atoms: auto-confirmed — the body prints as an informational line.
-- Template D atoms: auto-routed on the leading guess. The alternative classification is recorded as `residual_note` with `reason: medium_confidence_alternative` and a `followup_task` (Step 6 durable sink) — an auto-route without the recorded alternative is invalid and falls back to the prompt, exactly like a residual without a follow-up.
-- Template E atoms: NOT prompted per atom and NOT auto-routed. Flagged in the `--emit-state` output for the wrapper's single consolidated pre-`/goal` batch question; if that batch cannot be asked (non-interactive), the wrapper refuses the run.
-- Template C: unchanged — the ONLY per-atom human decision that survives autonomous mode. Under the wrapper it fires as a pre-`/goal` `PLAN_BLOCKED_*` refusal (billing / auth / schema migration / destructive ops / product decision), never mid-run.
-- Every auto-routed B/D atom is disclosed: in the `--emit-state` JSON (`evidence` unchanged, `residual_note.reason`), in the final-summary headline modifier, and in the goal-run PR body atom table. Autonomy widens routing, never hides it.
+- Template D atoms (probe `route_threshold <= score < high_confidence`): auto-routed on the leading hypothesis. The alternative classification + `blocking_fact` is recorded as `residual_note` with `reason: medium_confidence_alternative` and a `followup_task` (Step 6 durable sink) — an auto-route without the recorded alternative is invalid and falls back to the prompt, exactly like a residual without a follow-up.
+- Template E atoms (probe ran, `score < route_threshold`): NOT prompted per atom and NOT auto-routed. Flagged in the `--emit-state` output — with their `diagnosis` — for the wrapper's single consolidated pre-`/goal` batch question (the batch shows each atom's checks, verdicts, leaning, and blocking fact); if that batch cannot be asked (non-interactive), the wrapper refuses the run.
+- Template C: unchanged — the ONLY per-atom human decision that survives autonomous mode. Under the wrapper it fires as a pre-`/goal` `PLAN_BLOCKED_*` refusal (billing / auth / schema migration / destructive ops / product decision), never mid-run. A probe never clears a hard_refuse trigger.
+- Every auto-routed B/D atom is disclosed: in the `--emit-state` JSON (`evidence` unchanged, `residual_note.reason`, `diagnosis`), in the final-summary headline modifier, and in the goal-run PR body atom table. Autonomy widens routing, never hides it.
 
 #### Step 2c: Fallback -- keyword-based classification (when Neo4j is unavailable)
 
-If Neo4j connection fails, use the same heuristic rules as nacl-tl-intake:
+If Neo4j connection fails, use the same heuristic rules as nacl-tl-intake.
+Step 2a.5 PROBE still runs for every atom — grep/read/DB probes do not need
+the graph. A probe that confirms a single hypothesis upgrades the atom from
+HEURISTIC to CODE evidence (LOW → HIGH/MEDIUM per the score); the keyword
+heuristics below decide only what the probe left sub-threshold:
 
 ```
 Is it unintended behavior that violates existing spec or breaks functionality?
@@ -483,14 +634,15 @@ Is it infrastructure, documentation, research, or process work?
   -> YES: TASK (route to /nacl-tl-dev or manual)
 
 Is it unclear?
-  -> ASK the user for clarification
+  -> ASK the user — through Template E, carrying the probe diagnosis
+     (never a bare "which is it?" question)
 ```
 
 **Disambiguation rules (fallback only):**
 - "X doesn't work" -> likely BUG
 - "Add X" / "I want X" -> likely FEATURE
 - "Update docs for X" / "Migrate to X" -> likely TASK
-- "X should work differently" -> could be BUG or FEATURE -- ask user
+- "X should work differently" -> could be BUG or FEATURE -- probe first; ask via Template E only if still sub-threshold
 
 #### Step 2d: Present classification evidence
 
@@ -499,8 +651,10 @@ For each atom, show the user WHY it was classified as it was — in **plain lang
 ```
 #1 "Image format selection" -> FEATURE
     Graph: No matching UC found for "image format"
+    Checked the code too: no format parameter anywhere in the generation
+    pipeline — this isn't built yet, it's genuinely new.
     Why: new behaviour, not described in the spec yet
-    (fairly confident — the graph didn't fully resolve it)
+    (confident — verified against the code)
 
 #2 "Share button doesn't work" -> BUG
     Graph: UC-012 "Share Content" (already specified)
@@ -919,11 +1073,11 @@ If the user provides >10 items:
 
 If `mcp__neo4j__read-cypher` fails on the first query:
 1. Log warning: "Neo4j unavailable, falling back to keyword-based classification"
-2. Use Step 2c (fallback) for ALL atoms; mark every atom `evidence: HEURISTIC`
-3. Per-atom confirmation gate still runs as Template E (LOW confidence, HEURISTIC evidence — `--yes` does NOT bypass; no forced recommendation)
+2. Run Step 2a.5 PROBE for ALL atoms (it needs no graph), then Step 2c for what stays sub-threshold; probe-resolved atoms carry `evidence: CODE`, the rest `evidence: HEURISTIC`
+3. Per-atom confirmation gate runs per the case table on the post-probe values; sub-threshold atoms fire Template E with the diagnosis (`--yes` does NOT bypass; no forced recommendation)
 4. Route features to `/nacl-sa-feature` anyway (it has its own fallback handling)
-5. Final report headline: `INTAKE TRIAGE APPLIED — UNVERIFIED (heuristic-backed)`
-6. Graph unavailability does NOT block triage, but the result is always UNVERIFIED
+5. Final report headline: `INTAKE TRIAGE APPLIED — UNVERIFIED (heuristic-backed)` — unless every atom resolved with CODE evidence, in which case the standard headline applies
+6. Graph unavailability does NOT block triage; heuristic-only results are always UNVERIFIED
 
 ### Ambiguous graph match
 

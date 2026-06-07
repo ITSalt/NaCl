@@ -233,6 +233,54 @@ Record: `project.name="<name>" added to config.yaml`.
 
 ---
 
+#### Migration check G — missing `intake:` scoring block in `config.yaml`
+
+```bash
+# Does config.yaml exist and lack the intake: section?
+[ -f config.yaml ] && ! grep -q '^intake:' config.yaml 2>/dev/null
+```
+
+If true, append the intake self-diagnosis scoring block with the built-in
+defaults (used by `nacl-tl-intake` Step 2a.5 PROBE; semantics:
+`nacl-tl-core/references/intake-scoring.md`). Append at the end of the file,
+preserving all existing content and comments:
+
+```bash
+python3 - config.yaml <<'EOF'
+import sys
+path = sys.argv[1]
+text = open(path).read()
+block = """
+# Intake self-diagnosis scoring
+# Used by: nacl-tl-intake Step 2a.5 PROBE (hypothesis verification before any
+# routing question) and /nacl-goal intake. Tune per project; when a key is
+# absent, skills use the built-in defaults.
+# Semantics, rubric and tuning guidance: nacl-tl-core/references/intake-scoring.md
+intake:
+  route_threshold: 0.7        # score >= this -> auto-route on the leading hypothesis
+  high_confidence: 0.9        # score >= this -> HIGH confidence (no tracked alternative)
+  scores:                     # rubric row values (verdict pattern -> score)
+    leader_confirmed_all_refuted: 0.95
+    leader_confirmed_some_inconclusive: 0.8
+    leader_indirect_all_refuted: 0.75
+    leader_indirect_inconclusive: 0.55
+    contradictory: 0.4
+    all_inconclusive: 0.2
+"""
+if not text.endswith("\n"):
+    text += "\n"
+open(path, 'w').write(text + block)
+EOF
+```
+
+This check is **add-only**: it never runs when an `intake:` section already
+exists, so user-tuned values are never overwritten (same rule as Step 2b
+"fill empty fields only").
+
+Record: `intake scoring defaults added to config.yaml`.
+
+---
+
 #### Migration summary output
 
 After all checks have run:
@@ -686,6 +734,10 @@ config.yaml: [created / N fields auto-detected]
     ci_platform: "github-actions"  (or empty if no .github/workflows/ found)
     docmost.spaces.sa.space_id: "019cd479-..."  (from .docmost-sync.json)
     ...
+
+  Intake scoring: [defaults seeded / already present (kept as-is)]
+    (intake.route_threshold / intake.high_confidence / intake.scores.* —
+     tunable; see nacl-tl-core/references/intake-scoring.md)
 
   Needs manual input:
     yougile.*: not configured (no YouGile MCP found)

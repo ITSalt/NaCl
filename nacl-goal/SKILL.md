@@ -398,21 +398,36 @@ exception envelope see `nacl-goal/envelope.md`. For gate prediction see
 4. CLASSIFY  (/nacl-tl-intake --autonomous --yes --emit-state .tl/goal-runs/<run_id>/intake.json)
    atoms[] with: id, type, linked_uc, evidence, confidence, risk_level,
    depends_on, hard_refuse_triggers, trigger_evidence, spec_gap, residual_note,
-   skill_path.
-   --autonomous question policy (2.14+; see nacl-tl-intake Step 2b case table):
+   diagnosis, skill_path.
+   Intake now SELF-DIAGNOSES before this policy applies (Step 2a.5 PROBE):
+   for every atom the graph alone did not resolve it verifies the competing
+   hypotheses against the actual code/DB (bounded read-only probes) and
+   derives a rubric score (nacl-tl-core/references/intake-scoring.md;
+   thresholds from the project's config.yaml -> intake.*, frozen into
+   diagnosis.threshold_used). "The graph didn't resolve it" alone never
+   reaches the user anymore.
+   --autonomous question policy (2.14+, probe-scored; see nacl-tl-intake
+   Step 2b case table):
      HIGH L0/L1, HIGH spec-gap-no-hard-refuse → auto-route (as before)
+     HIGH + CODE (probe score >= high_confidence [0.9]) → auto-route
+       (as HIGH+GRAPH; "verified against the code")
      HIGH L2/L3 launch-sanity (Template B)    → auto-confirmed; informational line
-     MEDIUM (Template D)                      → auto-route on leading guess;
-       alternative tracked as residual_note (reason medium_confidence_alternative);
+     MEDIUM with probe leaning (route_threshold [0.7] <= score <
+       high_confidence [0.9]) (Template D)    → auto-route on the leading
+       hypothesis; alternative + blocking_fact tracked as residual_note
+       (reason medium_confidence_alternative);
        pre-authorized via envelope.md gate `medium-confidence-routing`;
        NEVER when the atom carries a hard_refuse_trigger
-     LOW / HEURISTIC (Template E)             → ONE consolidated batch question,
+     Sub-threshold (probe ran, score < route_threshold) (Template E)
+                                              → ONE consolidated batch question,
        asked HERE (pre-/goal interaction is allowed): list every unresolved
-       atom with its options; the user answers once and the run proceeds
+       atom WITH its diagnosis (what was checked, per-hypothesis results,
+       leaning, blocking fact); the user answers once and the run proceeds
        fully autonomously. Non-interactive session or declined →
        PLAN_BLOCKED_AMBIGUOUS_CLASSIFICATION (as before)
      hard_refuse (Template C)                 → unchanged: PLAN_BLOCKED_* below —
-       the user's "critical questions" always survive autonomy
+       the user's "critical questions" always survive autonomy; a probe
+       never clears a hard_refuse_trigger
    Refuse mapping (per plan-lock-schema.md §hard_refuse_triggers):
      billing | destructive | l2_l3 | product_decision → _FEATURE_REQUIRES_PRODUCT_DECISION
        (or _FEATURE_REQUIRES_HUMAN_PRODUCT_DECISION if FEATURE)
@@ -421,8 +436,9 @@ exception envelope see `nacl-goal/envelope.md`. For gate prediction see
      hotfix_or_release_routing                        → REFUSE (interactive)
    FEATURE_HEAVY without trigger → write planning/feature-plan.md +
      planning/open-decisions.md → PLAN_BLOCKED_FEATURE_REQUIRES_HUMAN_PRODUCT_DECISION
-   ambiguous AFTER the consolidated batch → PLAN_BLOCKED_AMBIGUOUS_CLASSIFICATION
-     (MEDIUM-confidence atoms no longer reach this refusal — they auto-route)
+   ambiguous AFTER the probe AND the consolidated batch → PLAN_BLOCKED_AMBIGUOUS_CLASSIFICATION
+     (MEDIUM-confidence atoms no longer reach this refusal — they auto-route;
+      sub-threshold atoms reach it only with their diagnosis attached)
    PLAN_BLOCKED_PLAN_SPLIT_REQUIRED fires when EITHER:
      (a) atoms touch >1 top-level module AND no dependency path connects the
          atom groups AND total atoms >= 3; OR
@@ -498,13 +514,36 @@ exception envelope see `nacl-goal/envelope.md`. For gate prediction see
      export NACL_GOAL_BUDGET_FILE=<abs path to budget.json>
    for each atom in topological order:
      check budget.json wall-clock; if elapsed >= limit → GOAL_BLOCKED_BUDGET_EXHAUSTED
-     skip if atoms/<atom_id>.state.json.state == "verified"
+     skip if atoms/<atom_id>.state.json.state == "verified" or "unsupported"
      transition: pending → implementing  (update state.json + progress.jsonl)
      pre_atom_sha = git rev-parse HEAD
      BUG           → /nacl-tl-fix "<atom.title>" --auto-ship
      TASK          → /nacl-tl-dev <UC>           --auto-ship
      FEATURE_SMALL → /nacl-sa-feature <atom>     --bounded-only
                      followed by /nacl-tl-dev    --auto-ship
+     RE-TYPE handler (BUG atoms; before the generic failure branch):
+       if /nacl-tl-fix exits with exit_reason == "L3-feature" (its Phase A
+       gap-check proved the code path does not exist — the atom is a feature
+       that arrived typed as a bug), this is a RE-CLASSIFICATION SIGNAL, not
+       a failure. The routing report is identical to a manual run; GOAL
+       reconsiders its own routing decision:
+         re-type the atom in place via the FEATURE size rule
+           (nacl-tl-intake §FEATURE size class; atom.id stays frozen):
+         FEATURE_SMALL (bounded, routing report names no hard_refuse trigger):
+           state back to "pending" under the new type (the only sanctioned
+           backward transition), retyped_to=FEATURE_SMALL, progress.jsonl
+           event {"kind":"atom_retyped","from":"BUG","to":"FEATURE_SMALL"};
+           re-enter the loop for this atom: /nacl-sa-feature --bounded-only
+           then /nacl-tl-dev --auto-ship, SAME run, SAME branch
+         FEATURE_HEAVY (routing report names a hard_refuse trigger, or
+           unbounded): state="unsupported", retyped_to=FEATURE_HEAVY;
+           write planning/feature-plan.md + planning/open-decisions.md for
+           this atom; progress.jsonl event atom_retyped; DO NOT abort —
+           continue the remaining atoms. Counts toward
+           unsupported_atoms_count → final result is at best GOAL_NOT_OK
+           (never a false GOAL_OK, never GOAL_BLOCKED for this alone)
+       this re-type is the runtime backstop for any bug-vs-feature miscall
+       the intake probe did not catch; it never fires a /goal-halting block
      WIP-collision gate (branch_mode=current, preexisting_dirty_files non-empty):
        git diff --name-only <pre_atom_sha>..HEAD ∩ preexisting_dirty_files ≠ ∅
          → the atom's commits touched a file another agent holds uncommitted
@@ -528,7 +567,8 @@ exception envelope see `nacl-goal/envelope.md`. For gate prediction see
      • NACL_SHIP_PUSH=deferred|none: local commit only — no push, no PR calls;
        the single push happens at DELIVER (deferred) or is left to the user (none)
    without env vars, --auto-ship behaves exactly as today (no silent change).
-   after last atom verified:
+   after last atom reaches a terminal state (verified; or unsupported via re-type —
+   an unsupported atom does not block the rest of the run):
      goal_final_sha = HEAD of <plan.branch>
      write goal-final-sha.txt
      render final PR body; refresh pr.json (per-atom cadence only — otherwise

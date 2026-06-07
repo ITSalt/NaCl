@@ -330,6 +330,17 @@ For each affected area:
   environment issue, or ambiguous acceptance criteria;
 - fix level: L0/L1/L2/L3.
 
+**Not-a-bug exit (source L3-feature parity).** If the gap-check shows that
+resolving the request would require creating a new HTTP route, DB
+column/table, graph entity, FE page/top-level component, or an enum
+transition the state machine does not allow — this is a feature that arrived
+via the wrong skill, NOT a fix. Do not implement it and do not create docs or
+graph nodes for it: print a plain-language routing report (what would have to
+be created, the recommended feature-specification workflow) and stop. When
+this skill was invoked by a goal orchestrator (goal-run context), the same
+exit and report serve as a re-classification signal for the orchestrator —
+identical behavior, different consumer.
+
 For L2/L3, prepare the documentation change plan. The user gate is calibrated to
 avoid needless blocking: ship any unconditionally-correct defensive part
 (guard/clamp/graceful-degrade, touching no external contract) WITHOUT sign-off, and
