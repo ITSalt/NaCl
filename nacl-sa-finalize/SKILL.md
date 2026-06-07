@@ -135,6 +135,32 @@ RETURN count(uc) AS total,
        count(CASE WHEN uc.detail_status = 'complete' THEN 1 END) AS detailed_ucs;
 ```
 
+### Connected-spec extension counts (2.15+)
+
+#### Query: `sa_statistics_extensions`
+
+Source: `graph-infra/queries/sa-queries.cypher`
+
+```cypher
+RETURN
+  COUNT { (n:Decision) }          AS decisions,
+  COUNT { (n:Screen) }            AS screens,
+  COUNT { (n:ScreenState) }       AS screen_states,
+  COUNT { (n:ScreenEvent) }       AS screen_events,
+  COUNT { (n:Transition) }        AS screen_transitions,
+  COUNT { (n:ScreenEffect) }      AS screen_effects,
+  COUNT { (n:AnalyticsEvent) }    AS analytics_events,
+  COUNT { (n:Slice) }             AS slices,
+  COUNT { (n:DomainError) }       AS domain_errors,
+  COUNT { (n:ErrorPresentation) } AS error_presentations,
+  COUNT { (n:CachePolicy) }       AS cache_policies,
+  COUNT { (n:DegradationRule) }   AS degradation_rules;
+```
+
+These layers are **opt-in** (vacuous PASS in `/nacl-sa-validate` L10-L13 when
+empty). All-zero counts for a layer mean "not adopted", not "incomplete" —
+report them as such, do not treat zero as a readiness failure.
+
 ### Output format
 
 Present to user as a table:
@@ -157,7 +183,15 @@ Present to user as a table:
 | Components         | {N}   |
 | ADRs               | {N}   |
 | Open Questions     | {N}   |
+| Decisions          | {N}   |
+| Screens            | {N} ({N} states, {N} transitions) |
+| Behavior Slices    | {N}   |
+| Domain Errors      | {N} ({N} presentations) |
+| Cache Policies     | {N}   |
+| Degradation Rules  | {N}   |
 ```
+
+Extension rows with zero counts are rendered as `— (not adopted)` instead of `0`.
 
 For mode `module`, scope all queries with:
 ```cypher
@@ -509,6 +543,34 @@ RETURN m.id AS module_id, m.name AS module_name,
        CASE WHEN total_ucs > 0 THEN round(100.0 * ucs_with_reqs / total_ucs) ELSE 0 END AS req_coverage_pct;
 ```
 
+Extension-layer adoption (2.15+) — query `sa_extension_adoption` from
+`graph-infra/queries/sa-queries.cypher` (three independent parts, run each):
+```cypher
+MATCH (uc:UseCase)
+RETURN count(uc) AS total_ucs,
+       count(CASE WHEN coalesce(uc.has_ui, false) THEN 1 END) AS ui_ucs,
+       count(CASE WHEN EXISTS { (uc)-[:HAS_SCREEN]->(:Screen) } THEN 1 END) AS ucs_with_screens,
+       count(CASE WHEN EXISTS { (uc)-[:HAS_SLICE]->(:Slice) } THEN 1 END) AS ucs_with_slices,
+       count(CASE WHEN EXISTS { (uc)-[:HAS_DEGRADATION]->(:DegradationRule) } THEN 1 END) AS ucs_with_degradation;
+```
+```cypher
+MATCH (m:Module)
+RETURN count(m) AS total_modules,
+       count(CASE WHEN EXISTS { (m)-[:HAS_ERROR]->(:DomainError) } THEN 1 END) AS modules_with_errors,
+       count(CASE WHEN EXISTS { (m)-[:HAS_CACHE]->(:CachePolicy) } THEN 1 END) AS modules_with_cache;
+```
+```cypher
+MATCH (fr:FeatureRequest)
+RETURN count(fr) AS total_frs,
+       count(CASE WHEN EXISTS { (fr)-[:IMPLEMENTS]->(:Decision) } THEN 1 END) AS frs_with_decision,
+       count(CASE WHEN coalesce(fr.decision_exempt, false) THEN 1 END) AS frs_exempt;
+```
+
+FR-backfill candidates = `total_frs - frs_with_decision - frs_exempt` — when
+non-zero, point the user at the FR-backfill runbook
+(`nacl-tl-core/references/provenance-gap-closure.md`).
+```
+
 ### Output format
 
 ```
@@ -531,6 +593,11 @@ RETURN m.id AS module_id, m.name AS module_name,
 | Forms              | {status}    | {N}%     | {done}/{total} UCs       |
 | Requirements       | {status}    | {N}%     | {done}/{total} UCs       |
 | BA Traceability    | {status}    | {N}%     | coverage stats           |
+| Screen Machines    | {status}    | {N}%     | {N}/{N} UI-UCs (or "not adopted") |
+| Behavior Slices    | {status}    | {N}%     | {N}/{N} UCs (or "not adopted")    |
+| Error Taxonomy     | {status}    | {N}%     | {N}/{N} modules (or "not adopted") |
+| Resilience         | {status}    | —        | {N} policies, {N} rules (or "not adopted") |
+| Decision Provenance| {status}    | —        | {N} decisions; {N} FR-backfill candidates |
 
 ### Ready for Implementation?
 
@@ -543,6 +610,13 @@ Status mapping:
 - >= 90%: "Complete"
 - >= 50%: "In Progress"
 - < 50%: "Needs Work"
+
+Extension-layer rows (Screen Machines, Behavior Slices, Error Taxonomy,
+Resilience, Decision Provenance) are **adoption-aware**: when the layer has
+zero nodes graph-wide, render status "Not Adopted" and exclude the row from
+any overall-readiness average — these layers are opt-in (2.15+), absence is
+a choice, not a gap. Partial adoption (some UCs/modules covered, others not)
+uses the normal percentage mapping.
 
 ---
 

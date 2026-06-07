@@ -168,14 +168,37 @@ Contract:
   component properties, repaired `MAPS_TO` edges when confirmed, or a
   graph-ready change plan.
 - Downstream consumer: validation and publication.
-- Gate: review UI structure before Phase 7.
+- Gate: review UI structure before Phase 6b.
+
+### Phase 6b: Connected-Spec Extensions (Optional)
+
+Offer adoption of the connected-spec extension layers with one gate for the
+whole phase. Skipping is valid; record the skip so the vacuous pass of the
+extension checks in Phase 7 is a documented choice.
+
+Launch order is fixed by layer dependencies: screen state machines for UI use
+cases first, then behavior slices, then domain errors, then resilience
+(cache and degradation) — slices anchor into machines, error-triggered
+degradation anchors into errors.
+
+Contract:
+
+- Inputs: detailed use cases and confirmed UI structure.
+- Expected output: `Screen`/`ScreenState`/`ScreenEvent`/`Transition`/`ScreenEffect`,
+  `Slice`, `DomainError`/`ErrorPresentation`, `CachePolicy`/`DegradationRule`
+  records or a graph-ready change plan — or an explicit recorded skip.
+- Downstream consumer: validation, finalization statistics, and TL planning
+  (task-file embedding).
+- Gate: after the first use case of each layer, run that layer's scoped
+  validation before processing the remaining use cases.
 
 ### Phase 7: Validation
 
 Run available SA validation procedures against the graph or graph-ready plan.
 Check module completeness, use case completeness, domain binding, role coverage,
-requirement binding, disconnected records, and BA-to-SA cross-checks when BA
-graph context exists.
+requirement binding, disconnected records, the connected-spec extension layers
+when adopted (staleness, decision provenance, screen machines, slices, errors,
+resilience), and BA-to-SA cross-checks when BA graph context exists.
 
 Report each check with the closed vocabulary. Critical findings require a user
 decision before fixes are applied or the workflow advances.

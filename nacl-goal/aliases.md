@@ -133,13 +133,21 @@ expected_evidence_keys
   - l5_pass                      # bool — L5 (UC-form validation)
   - l6_pass                      # bool — L6 (cross-module consistency)
   - l7_pass                      # bool — L7 (FeatureRequest consistency)
+  - l8_pass                      # bool — L8 (staleness closure)
+  - l9_pass                      # bool — L9 (decision provenance)
+  - l10_pass                     # bool — L10 (screen state machines)
+  - l11_pass                     # bool — L11 (behavior slices)
+  - l12_pass                     # bool — L12 (domain error taxonomy)
+  - l13_pass                     # bool — L13 (cache & degradation)
+                                 # L10-L13 are opt-in layers: zero nodes of
+                                 # the layer's labels = vacuous PASS (true)
   - xl_pass                      # bool — XL6-XL9 (BA→SA cross-validation)
                                  # only when MOD-ID has BA layer
   - failing_validators           # list of failing validator IDs
   - last_run_at                  # ISO-8601
 result_decision_rule
   GOAL_OK
-    when l1_pass..l7_pass all true
+    when l1_pass..l13_pass all true
     AND (xl_pass == true OR xl_pass == "not_applicable")
   GOAL_NOT_OK
     default

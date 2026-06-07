@@ -130,7 +130,7 @@ Skills that only *read* terminal status (`nacl-tl-release`, `nacl-tl-deploy`, `n
 | nacl-sa-roles | Role model + permissions |
 | nacl-sa-uc | UC registry + detailing |
 | nacl-sa-ui | UI architecture |
-| nacl-sa-validate | L1-L6 + XL6-XL9 validation |
+| nacl-sa-validate | L1-L13 + XL6-XL9 validation |
 | nacl-sa-feature | Incremental feature specification |
 | nacl-sa-finalize | Statistics, ADR, readiness |
 | nacl-sa-full | Full SA orchestrator (10 phases) |

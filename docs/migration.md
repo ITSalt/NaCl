@@ -108,7 +108,7 @@ phase. No phase executes without explicit approval.
 | **C** | Migrate BA Markdown → Neo4j via `/nacl-migrate-ba` |
 | **D** | Validate BA graph via `/nacl-ba-validate` (expects L1–L8 = 0 errors) |
 | **E** | Migrate SA Markdown → Neo4j + cross-layer handoff edges via `/nacl-migrate-sa` |
-| **F** | Validate SA graph via `/nacl-sa-validate` (expects L1–L6 = 0 errors) |
+| **F** | Validate SA graph via `/nacl-sa-validate` (expects L1–L13 = 0 CRITICAL; L10–L13 pass vacuously until extension layers are adopted) |
 | **G** | Drift diagnostic via `/nacl-tl-diagnose` — surfaces code drift; does not block |
 | **H** | Render diff: regenerates Markdown from the graph and diffs against original docs |
 | **I** | Write `MIGRATION-REPORT.md` at project root — counts, validation results, warnings |

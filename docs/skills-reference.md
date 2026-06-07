@@ -60,7 +60,7 @@ System analysis skills that produce technical specifications as Neo4j graph stru
 | `nacl-sa-ui` | UI architecture through Neo4j: navigation, components, form-domain mapping verification. | `/nacl-sa-ui verify` | Subcommands: `verify`, `components`, `navigation`, `full` |
 | `nacl-sa-feature` | Incremental feature specification via Neo4j. Impact analysis through Cypher traversal, selective SA skill invocation, FeatureRequest artifact. | `/nacl-sa-feature "Add payment support"` | — |
 | `nacl-sa-flags` | Audit and backfill SA validation exemption properties such as `has_ui`, `system_only`, `shared`, `internal`, and `field_category`. | `/nacl-sa-flags` | — |
-| `nacl-sa-validate` | Validate specification consistency through Cypher queries. Internal (L1-L6) and cross-validation BA to SA (XL6-XL9). | `/nacl-sa-validate` | Modes: `internal`, `ba-cross`; `--scope` |
+| `nacl-sa-validate` | Validate specification consistency through Cypher queries. Internal (L1-L13, incl. the 2.15+ extension layers: staleness, provenance, screens, slices, errors, resilience) and cross-validation BA to SA (XL6-XL9). | `/nacl-sa-validate` | Modes: `internal`, `ba-cross`; `--scope` |
 | `nacl-sa-finalize` | Finalize specification via Neo4j: statistics, glossary, ADR, traceability matrix, readiness assessment. | `/nacl-sa-finalize` | Modes: `full`, `module`, `stats-only` |
 
 ---

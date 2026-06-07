@@ -580,6 +580,53 @@ RETURN collect(DISTINCT en) AS enumerations,
        collect(DISTINCT ev) AS enum_values
 ```
 
+And fetch the UC's screen state machines, if any (authored by
+`/nacl-sa-ui state-machine`) — the `sa_uc_screen_machine` named query from
+`graph-infra/queries/sa-queries.cypher`:
+
+```cypher
+// Screen state machines of the UC (empty result = UC has not adopted the
+// layer; skip the section). One row per transition; effects are
+// null-filtered: a bare map-collect over an unmatched OPTIONAL yields
+// [{effect:NULL,…}] instead of [] for transitions without effects.
+MATCH (uc:UseCase {id: $ucId})-[:HAS_SCREEN]->(scr:Screen)
+OPTIONAL MATCH (scr)-[:RENDERS]->(f:Form)
+OPTIONAL MATCH (scr)-[:HAS_TRANSITION]->(tr:Transition)
+OPTIONAL MATCH (tr)-[:FROM_STATE]->(fromSt:ScreenState)
+OPTIONAL MATCH (tr)-[:TO_STATE]->(toSt:ScreenState)
+OPTIONAL MATCH (tr)-[:ON_EVENT]->(ev:ScreenEvent)
+OPTIONAL MATCH (tr)-[:TRIGGERS]->(eff:ScreenEffect)
+OPTIONAL MATCH (eff)-[:CALLS]->(api:APIEndpoint)
+OPTIONAL MATCH (eff)-[:NAVIGATES_TO]->(navScr:Screen)
+OPTIONAL MATCH (eff)-[:EMITS]->(anev:AnalyticsEvent)
+RETURN scr.id AS screen, scr.route AS route, f.id AS renders_form,
+       tr.id AS transition,
+       fromSt.name AS from_state, fromSt.state_kind AS from_kind,
+       ev.name AS on_event, ev.event_kind AS event_kind, tr.guard AS guard,
+       toSt.name AS to_state, toSt.state_kind AS to_kind,
+       [e IN collect(DISTINCT {
+          effect: eff.id, kind: eff.effect_kind,
+          target: coalesce(api.id, navScr.id, anev.id)
+        }) WHERE e.effect IS NOT NULL] AS effects
+ORDER BY screen, transition
+```
+
+When machines exist, embed a **"Screen State Machine"** section into
+`task-fe.md` (self-sufficiency: dev agents never query the graph): per screen —
+its route and rendered form, then one transition table row per
+`from_state × event [guard] → to_state` with the effects and their targets
+(load/mutate → endpoint, navigate → screen, analytics → event). This is the
+deterministic UI contract the FE implementation must reproduce — every state
+the code can be in and every edge out of it. `task-be.md` does not carry the
+machine (its view of the same surface is the endpoint list it already gets);
+`acceptance.md` needs no separate machine section — the Behavior Slices table
+below references machine elements via `covers` ids. `test-spec-fe.md` test
+cases should exercise each transition at least once (slice-covered transitions
+typically already are — cross-link ids).
+
+No new edges are written by this step (the machine layer carries no TL
+overlay — verification belongs to slices).
+
 And fetch the UC's behavior slices, if any (authored by `/nacl-sa-uc slices`) —
 use the `sa_uc_slices` named query from `graph-infra/queries/sa-queries.cypher`:
 
@@ -794,6 +841,12 @@ sa_uc_full_context result
   |     +---> api-contract.md: Shared Types (enum definitions)
   |     +---> task-fe.md: Dropdown/select options
   |     +---> task-be.md: Enum validation
+  |
+  +-- screens (Screen/ScreenState/ScreenEvent/Transition/ScreenEffect, when the UC has adopted the machine layer)
+  |     props: route, renders_form; state_kind, event_kind, guard, effect_kind (+ effect targets)
+  |     |
+  |     +---> task-fe.md: Screen State Machine section (transition table per screen)
+  |     +---> test-spec-fe.md: each transition exercised at least once (cross-link slice ids)
   |
   +-- slices (Slice nodes, when the UC has adopted them)
   |     props: id, name, slice_kind, given, when, then (+ covers, calls)

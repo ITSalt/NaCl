@@ -153,6 +153,18 @@ if violations:
 - Resolve `--feature FR-NNN` scope from the graph (`(:FeatureRequest)-[:INCLUDES_UC]->`,
   with `kind` splitting new vs modified), falling back to the markdown file only
   if the FR node is absent.
+- Consume screen state machines: when a planned UC has
+  `(:UseCase)-[:HAS_SCREEN]->(:Screen)` machines (authored by
+  `nacl-sa-ui state-machine`; read via the `sa_uc_screen_machine` named
+  query), embed a "Screen State Machine" section into `task-fe.md` — per
+  screen: route and rendered form, then one transition row per
+  `from_state × event [guard] → to_state` with effects and their targets
+  (load/mutate → endpoint, navigate → screen, analytics → event). The machine
+  is the deterministic UI contract; `task-be.md` does not carry it,
+  `acceptance.md` references machine elements through slice `covers` ids, and
+  `test-spec-fe.md` exercises each transition at least once. No new edges are
+  written (the machine layer carries no TL overlay). Null-filter the effects
+  map-collect (unmatched OPTIONAL yields an all-null map, not []).
 - Consume behavior slices: when a planned UC has `(:UseCase)-[:HAS_SLICE]->(:Slice)`
   nodes (authored by `nacl-sa-uc slices`), (a) embed a "Behavior Slices" section
   (kind, Given/When/Then, covered machine elements, called endpoints) into

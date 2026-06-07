@@ -185,7 +185,11 @@ Verify after:
 
 ### Phase F — Validate SA
 
-Delegate: **`/nacl-sa-validate`**. Expect L1–L6 = 0 errors; XL1–XL5 cross-validation clean if BA present.
+Delegate: **`/nacl-sa-validate`**. Expect L1–L13 = 0 CRITICAL; XL6–XL9 cross-validation clean if BA present.
+
+A freshly migrated graph has no connected-spec extension nodes (Screens,
+Slices, DomainErrors, CachePolicies — 2.15+), so L10–L13 pass vacuously.
+To adopt those layers afterwards, follow `docs/upgrade-graph-extensions.md`.
 
 ### Phase G — Drift diagnostic
 
@@ -215,7 +219,7 @@ Write `MIGRATION-REPORT.md` at project root. Include:
 
 - Timestamps and adapter used
 - Per-layer source file counts → IR counts → Neo4j counts (must all match)
-- Validation results (BA L1–L8, SA L1–L6, cross-layer XL1–XL5)
+- Validation results (BA L1–L8 + XL1–XL5, SA L1–L13 + XL6–XL9)
 - Cross-layer edge counts
 - Drift summary
 - Render-diff summary
