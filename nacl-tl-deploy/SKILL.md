@@ -309,6 +309,8 @@ GitHub Actions uses workflow files in `.github/workflows/`. Templates are in `na
 
 These are created during project setup by `/nacl-tl-dev TECH-001` (infrastructure task) or by `/nacl-init`.
 
+The templates are a Node/npm reference profile with unpinned versions. Before first use, fill `${NODE_VERSION}` (and any image versions) from the project's own toolchain — `config.yaml` → `modules.<m>.stack` or the detected runtime — and replace ecosystem-specific steps if the project is not Node. NaCl never supplies a default version.
+
 ---
 
 ## References

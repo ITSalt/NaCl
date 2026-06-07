@@ -1,5 +1,9 @@
 # Frontend Code Style Guide: React/Next.js + TypeScript
 
+## Применимость — Stack profile: Node.js / TypeScript (React/Next.js)
+
+Этот документ — **reference-профиль** для проектов, чей стек (по `config.yaml` → `modules.<name>.stack`) — React/Next.js + TypeScript. Это не общефреймворковый мандат: NaCl не предписывает технологический стек. Для другой FE-экосистемы применяй базовые принципы, адаптируя конкретные инструменты. Источник истины о стеке проекта — `config.yaml`, а не этот профиль.
+
 ## Overview
 
 Этот документ определяет конвенции кода для фронтенд-проектов на React/Next.js и TypeScript в рамках TL workflow. Дополняет основной [code-style.md](./code-style.md), который покрывает бэкенд Node.js/TypeScript. Общие правила TypeScript (strict mode, именование переменных, async-паттерны, обработка ошибок) наследуются из основного гайда. Здесь описана React-специфика.

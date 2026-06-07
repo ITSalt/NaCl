@@ -80,6 +80,16 @@ jobs:
           # discipline".
           sh scripts/check-branch-literals.sh
 
+      - name: Check for framework-default version pins
+        run: |
+          # Flag pinned technology versions (node-version, image tags) in
+          # project-facing infra templates. NaCl is technology-agnostic —
+          # versions are the project's decision (config.yaml / detected
+          # toolchain), never a framework default. Graph-stack compose files
+          # (NaCl's own infra) are out of scope. Escape hatch is a trailing
+          # `# version-pin-ok` comment.
+          sh scripts/check-version-pins.sh
+
       - name: Check root/Codex skill sync
         run: |
           sh skills-for-codex/scripts/check-root-codex-sync.sh \

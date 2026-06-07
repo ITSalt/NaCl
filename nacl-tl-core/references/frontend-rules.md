@@ -1,10 +1,14 @@
 # Правила Frontend-разработки: React/Next.js + TypeScript
 
+## Применимость — Stack profile: Node.js / TypeScript (React/Next.js)
+
+Этот документ — **reference-профиль** для проектов, чей стек (по `config.yaml` → `modules.<name>.stack`) — React/Next.js + TypeScript. Это не общефреймворковый мандат: NaCl не предписывает технологический стек. Для другой FE-экосистемы (Vue, Svelte, ...) применяй базовые принципы, адаптируя конкретные инструменты. Источник истины о стеке проекта — `config.yaml`, а не этот профиль.
+
 ## Общие принципы
 
 Этот документ определяет стандарты и правила для frontend-разработки в рамках TL skill suite. Все компоненты, хуки и утилиты следуют этим правилам. Агент `nacl-tl-dev-fe` использует этот документ как руководство при реализации FE-задач.
 
-**Стек:** React 18+, Next.js 14+ (App Router), TypeScript 5+, React Testing Library, Zod, React Hook Form, Zustand/React Query.
+**Стек профиля:** React 18+, Next.js 14+ (App Router), TypeScript 5+, React Testing Library, Zod, React Hook Form, Zustand/React Query.
 
 ---
 

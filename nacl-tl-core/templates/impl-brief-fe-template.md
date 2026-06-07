@@ -10,9 +10,13 @@ Example: `.tl/tasks/UC001/impl-brief-fe.md`
 
 ## Purpose
 
-Provides frontend implementation guidance for the development agent. Contains HOW to implement the task on the frontend: component architecture, file locations, Next.js App Router patterns, API integration hooks, state management, styling approach, and TDD order. This file bridges the gap between WHAT (task-fe.md) and testing (test-spec-fe.md).
+Provides frontend implementation guidance for the development agent. Contains HOW to implement the task on the frontend: component architecture, file locations, routing patterns, API integration hooks, state management, styling approach, and TDD order. This file bridges the gap between WHAT (task-fe.md) and testing (test-spec-fe.md).
 
 For backend implementation brief, see the paired file `impl-brief.md`.
+
+## Stack Profile Note
+
+The default sections below assume the React/Next.js FE reference profile (App Router, TanStack Query, Zustand, React Hook Form + Zod, Tailwind). NaCl does not prescribe this stack: `architecture_type` and the concrete sections must match the project's declared FE stack (`config.yaml` → `modules.<fe-module>.stack`). For a different FE stack, replace the profile-specific sections with that ecosystem's equivalents — the *structure* (files-to-create, integration points, TDD order, checklist) is stack-agnostic.
 
 ## Created By
 
@@ -32,7 +36,7 @@ source_uc: {{path_to_source_uc}}
 status: pending
 created: {{YYYY-MM-DD}}
 updated: {{YYYY-MM-DD}}
-architecture_type: next-app-router
+architecture_type: {{fe_architecture, e.g. next-app-router — set from the project's FE stack}}
 tags: [implementation, fe, {{module}}, {{task_id}}]
 ---
 
@@ -565,9 +569,11 @@ npx next build
 
 ## Architecture Types Reference
 
+The value is chosen per project from its declared FE stack (`config.yaml` → `modules.<fe-module>.stack`) — there is no framework-wide default. Add a row for your project's architecture if it is not listed.
+
 | Type | Description | Use Case |
 |------|-------------|----------|
-| `next-app-router` | Next.js 14+ App Router (Server/Client Components) | Default for all FE tasks |
+| `next-app-router` | Next.js 14+ App Router (Server/Client Components) | Projects on the React/Next.js profile |
 
 ## Status Values Reference
 

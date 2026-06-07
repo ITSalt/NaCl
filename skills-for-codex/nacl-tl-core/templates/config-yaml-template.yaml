@@ -22,22 +22,25 @@ vps:
     deploy_user: ""
 
 # Modules (what gets built, tested, and deployed)
+# stack/build_cmd/test_cmd are YOUR project's choices — NaCl does not
+# prescribe a technology stack. Skills read test_cmd as the source of truth
+# for running tests (nacl-tl-dev-* DISCOVER RUNNER).
 modules:
-  # Example for a fullstack project:
+  # Example shape for a fullstack project (fill with your stack's values):
   # frontend:
   #   path: "frontend"
-  #   stack: "Next.js"
+  #   stack: "<your FE framework, e.g. Next.js / Vue / SvelteKit>"
   #   port: 3000
-  #   build_cmd: "npm run build"
-  #   test_cmd: "npm test"
+  #   build_cmd: "<your build command>"
+  #   test_cmd: "<your test command>"
   #   git_strategy: "direct"       # "direct" or "feature-branch"
   #   git_base_branch: "main"
   # backend:
   #   path: "backend"
-  #   stack: "Fastify"
+  #   stack: "<your BE framework, e.g. Fastify / Django / Spring>"
   #   port: 3001
-  #   build_cmd: "npm run build"
-  #   test_cmd: "npm test"
+  #   build_cmd: "<your build command>"
+  #   test_cmd: "<your test command>"
   #   git_strategy: "direct"
   #   git_base_branch: "main"
 

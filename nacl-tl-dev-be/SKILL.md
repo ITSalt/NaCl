@@ -14,7 +14,7 @@ description: |
 
 **Inputs this skill consumes:**
 - UC task-be.md spec
-- BE workspace `package.json` `scripts.test`
+- BE test command: `config.yaml` → `modules.<be-module>.test_cmd`, or ecosystem-native discovery (Node: BE workspace `package.json` `scripts.test`)
 - API contract (api-contract*.md or shared types)
 
 **Outputs this skill produces:**
@@ -80,9 +80,9 @@ Step N.6 — STATUS-AWARE OUTPUT
 
 ## Scope Boundaries
 
-**IN SCOPE (backend):** API controllers and routes, services (business logic), repositories (data access), DTOs and validation (Zod schemas), database migrations, shared types (`src/shared/types/`), unit and integration tests, error handling middleware.
+**IN SCOPE (backend):** API controllers and routes, services (business logic), repositories (data access), DTOs and validation schemas, database migrations, shared types, unit and integration tests, error handling middleware. *(Node/TS profile examples: Zod schemas, `src/shared/types/`.)*
 
-**OUT OF SCOPE (do NOT implement):** React components/pages/layouts, frontend hooks (`useXxx`), CSS/styling, frontend forms or UI state, browser-specific code, MSW handlers (that is nacl-tl-dev-fe territory).
+**OUT OF SCOPE (do NOT implement):** UI components/pages/layouts, frontend hooks, CSS/styling, frontend forms or UI state, browser-specific code, test API-mocking handlers (that is nacl-tl-dev-fe territory).
 
 ## Pre-Development Checks
 
@@ -144,19 +144,24 @@ Set backend phase status to `in_progress`:
 
 #### Step 3.0 — DISCOVER RUNNER
 
-Locate the BE workspace's `package.json` (the nearest `package.json` walking up from the files you will create). Read `scripts.test`. Run **exactly that command** at every subsequent test step. Do NOT substitute another runner — do not invent `npx vitest`, `npx jest`, etc., even if `npm test` looks unfamiliar.
+Resolve the BE test command in this order — run **exactly** the first command found at every subsequent test step. Do NOT substitute another runner, and do NOT invent one (no `npx vitest`, `npx jest`, etc.), even if the discovered command looks unfamiliar.
 
-If `scripts.test` is missing or `package.json` does not exist → record `NO_INFRA` and halt:
+1. `config.yaml` → `modules.<be-module>.test_cmd` — the project's declared test command.
+2. Ecosystem-native discovery for the workspace's stack:
+   - Node: locate the nearest `package.json` walking up from the files you will create; read `scripts.test`.
+   - Other ecosystems plug in here (e.g. Python → the project's documented pytest invocation, Go → `go test ./...` if that is the project's documented command). Use the project's documented command, never a guess.
+3. If neither yields a command → record `NO_INFRA` and halt:
 
 ```
 DEV-BE APPLIED — NO_INFRA
-scripts.test not found in BE workspace package.json. Test verification is not possible.
-Recommend: open a TECH task to set up a test runner for the BE workspace.
+No test command found via config.yaml modules.<m>.test_cmd or ecosystem-native discovery.
+Test verification is not possible.
+Recommend: set modules.<m>.test_cmd in config.yaml, or open a TECH task to set up a test runner for the BE workspace.
 ```
 
 #### Step 3.1 — CAPTURE BASELINE
 
-Run `scripts.test` once **before writing any test file**. Capture and store:
+Run the discovered test command once **before writing any test file**. Capture and store:
 - The exact set of failing tests (file name + test name) → `baseline_failures`
 - Total tests collected, total passing, total failing
 - Whether the runner started cleanly (exit code, stderr)
@@ -215,7 +220,7 @@ git commit -m "test(UC###): add failing backend tests for [feature]"
 
 #### Step 4.2 — VERIFY GREEN + COMPARE
 
-Run `scripts.test` once more (same command as Step 3.1). Compute the delta against baseline:
+Run the discovered test command once more (same command as Step 3.1). Compute the delta against baseline:
 
 | Result | Condition | Status |
 |--------|-----------|--------|
@@ -239,7 +244,7 @@ git commit -m "feat(UC###): implement [feature] backend"
 3. Strengthen error handling
 4. Run tests after EACH change
 
-**Refactoring Checklist:** Tests still pass, no duplication, clear naming, single responsibility, proper error handling (custom exceptions, error codes), TypeScript strict mode passes, no ESLint warnings, DTO validation complete (Zod), proper HTTP status codes.
+**Refactoring Checklist:** Tests still pass, no duplication, clear naming, single responsibility, proper error handling (custom exceptions, error codes), type checks pass per the project's toolchain, no linter warnings, DTO validation complete, proper HTTP status codes. *(Node/TS profile: TypeScript strict mode, ESLint, Zod.)*
 
 **Commit REFACTOR:**
 
@@ -558,7 +563,7 @@ Files:
   Modified: N files (+XX/-YY lines)
 
 Tests:
-  Runner:           [exact scripts.test command actually run, or "none — NO_INFRA"]
+  Runner:           [exact test command actually run, or "none — NO_INFRA"]
   Baseline:         [N tests collected, K failing] or "skipped (RUNNER_BROKEN)"
   Regression test:  [repo-relative path of test written by /nacl-tl-regression-test
                      mode=feature-dev | "none — UNVERIFIED" | "n/a — NO_INFRA"]
@@ -635,7 +640,7 @@ This skill never writes test files in `--continue`; the fix sub-agent owns that 
 **Before Starting:** Task files exist (task-be.md, test-spec.md, impl-brief.md), api-contract.md present, phase status pending/in_progress, no blockers, dependencies resolved.
 
 **RED Phase:**
-- [ ] Step 3.0 — DISCOVER RUNNER: scripts.test found in BE workspace package.json
+- [ ] Step 3.0 — DISCOVER RUNNER: test command resolved (config.yaml test_cmd, or ecosystem-native discovery)
 - [ ] Step 3.1 — CAPTURE BASELINE: suite run before writing any test; baseline.txt stored
 - [ ] Step 3.2 — All test cases from test-spec.md written
 - [ ] Step 3.3 — VERIFY RED: new tests appear in failure set; no previously-passing test flipped

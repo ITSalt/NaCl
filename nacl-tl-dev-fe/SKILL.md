@@ -3,8 +3,8 @@ name: nacl-tl-dev-fe
 model: sonnet
 effort: medium
 description: |
-  Frontend TDD development from task specifications using React/Next.js.
-  Use when: develop frontend, implement UI, create React components,
+  Frontend TDD development from task specifications.
+  Use when: develop frontend, implement UI, create UI components,
   build pages, write frontend code for UC, or the user says "/nacl-tl-dev-fe UC###".
   Note: For backend tasks use /nacl-tl-dev-be, for TECH tasks use /nacl-tl-dev.
 ---
@@ -15,7 +15,7 @@ description: |
 
 **Inputs this skill consumes:**
 - UC task-fe.md spec
-- FE workspace `package.json` `scripts.test`
+- FE test command: `config.yaml` → `modules.<fe-module>.test_cmd`, or ecosystem-native discovery (Node: FE workspace `package.json` `scripts.test`)
 - Shared types (from BE workspace)
 - API contract
 
@@ -65,22 +65,13 @@ Step N.6 — STATUS-AWARE OUTPUT
 
 ## FE Technology Stack
 
-| Layer | Technology |
-|-------|-----------|
-| Framework | React 18+ / Next.js 14+ (App Router) |
-| Language | TypeScript 5+ (strict mode) |
-| Data fetching | TanStack Query (React Query) |
-| Client state | Zustand |
-| Forms | React Hook Form + Zod |
-| Styling | Tailwind CSS |
-| Testing | Vitest + React Testing Library + user-event |
-| API mocking | MSW (Mock Service Worker) |
+The FE stack is whatever `config.yaml` → `modules.<fe-module>.stack` declares — NaCl does not prescribe one. When that stack is React/Next.js, follow `nacl-tl-core/references/frontend-rules.md` and `fe-code-style.md` (the Node/TS FE reference profile). The concrete tooling examples in this skill (RTL, MSW, Zod, TanStack Query) illustrate that profile; for a different FE stack, use that ecosystem's equivalents for component testing, API mocking, validation, and data fetching.
 
 ## Scope Boundaries
 
-**IN SCOPE (frontend):** React components and pages, Next.js App Router routes and layouts, custom hooks (`useXxx`), forms with validation (React Hook Form + Zod), API client functions and TanStack Query hooks, Zustand stores (client state), Tailwind CSS styling, RTL component/hook/form/integration tests, MSW handlers for test API mocking, loading/error/empty states, accessibility (ARIA, keyboard navigation).
+**IN SCOPE (frontend):** UI components and pages, client-side routes and layouts, custom hooks, forms with validation, API client functions and data-fetching hooks, client-state stores, styling, component/hook/form/integration tests, API-mocking handlers for tests, loading/error/empty states, accessibility (ARIA, keyboard navigation). *(React/Next.js profile examples: App Router routes, React Hook Form + Zod forms, TanStack Query hooks, Zustand stores, Tailwind styling, RTL tests, MSW handlers.)*
 
-**OUT OF SCOPE (do NOT implement):** API controllers or routes (Express/Fastify), services (business logic), repositories (data access), database migrations or schema, Docker configuration, backend DTOs or validation, backend tests (`*.integration.test.ts` for BE), error handling middleware (server-side).
+**OUT OF SCOPE (do NOT implement):** API controllers or routes (server-side), services (business logic), repositories (data access), database migrations or schema, Docker configuration, backend DTOs or validation, backend tests, error handling middleware (server-side).
 
 ## Flags
 
@@ -178,19 +169,24 @@ Set frontend phase status to `in_progress`:
 
 #### Step 3.0 — DISCOVER RUNNER
 
-Locate the FE workspace's `package.json` (the nearest `package.json` walking up from the files you will create). Read `scripts.test`. Run **exactly that command** at every subsequent test step. Do NOT substitute another runner.
+Resolve the FE test command in this order — run **exactly** the first command found at every subsequent test step. Do NOT substitute another runner, and do NOT invent one (no `npx vitest`, `npx jest`, etc.), even if the discovered command looks unfamiliar.
 
-If `scripts.test` is missing or `package.json` does not exist → record `NO_INFRA` and halt:
+1. `config.yaml` → `modules.<fe-module>.test_cmd` — the project's declared test command.
+2. Ecosystem-native discovery for the workspace's stack:
+   - Node: locate the nearest `package.json` walking up from the files you will create; read `scripts.test`.
+   - Other ecosystems plug in here (e.g. Python → the project's documented pytest invocation, Go → `go test ./...` if that is the project's documented command). Use the project's documented command, never a guess.
+3. If neither yields a command → record `NO_INFRA` and halt:
 
 ```
 DEV-FE APPLIED — NO_INFRA
-scripts.test not found in FE workspace package.json. Test verification is not possible.
-Recommend: open a TECH task to set up a test runner for the FE workspace.
+No test command found via config.yaml modules.<m>.test_cmd or ecosystem-native discovery.
+Test verification is not possible.
+Recommend: set modules.<m>.test_cmd in config.yaml, or open a TECH task to set up a test runner for the FE workspace.
 ```
 
 #### Step 3.1 — CAPTURE BASELINE
 
-Run `scripts.test` once **before writing any test file**. Capture and store:
+Run the discovered test command once **before writing any test file**. Capture and store:
 - The exact set of failing tests (file name + test name) → `baseline_failures`
 - Total tests collected, total passing, total failing
 - Whether the runner started cleanly (exit code, stderr)
@@ -271,11 +267,11 @@ git commit -m "test(UC###): add failing frontend tests for [feature]"
 8. Pages        -> src/app/           (Next.js App Router pages and layouts)
 ```
 
-**GREEN Phase Rules:** Implement just enough to pass. No premature optimization. Keep it simple. Follow the API contract exactly for request/response shapes. Use TanStack Query for all server state. Use Tailwind CSS for all styling.
+**GREEN Phase Rules:** Implement just enough to pass. No premature optimization. Keep it simple. Follow the API contract exactly for request/response shapes. Use the project's established data-fetching and styling conventions (React/Next.js profile: TanStack Query for server state, Tailwind CSS for styling).
 
 #### Step 4.2 — VERIFY GREEN + COMPARE
 
-Run `scripts.test` once more (same command as Step 3.1). Compute the delta against baseline:
+Run the discovered test command once more (same command as Step 3.1). Compute the delta against baseline:
 
 | Result | Condition | Status |
 |--------|-----------|--------|
@@ -608,7 +604,7 @@ Files:
   Modified: N files (+XX/-YY lines)
 
 Tests:
-  Runner:           [exact scripts.test command actually run, or "none — NO_INFRA"]
+  Runner:           [exact test command actually run, or "none — NO_INFRA"]
   Baseline:         [N tests collected, K failing] or "skipped (RUNNER_BROKEN)"
   Regression test:  [repo-relative path of test written by /nacl-tl-regression-test
                      mode=feature-dev | "none — UNVERIFIED" | "n/a — NO_INFRA"]
@@ -693,7 +689,7 @@ This skill never writes test files in `--continue`; the fix sub-agent owns that 
 **Before Starting:** Task files exist (task-fe.md, test-spec-fe.md, impl-brief-fe.md), api-contract.md present, BE phase approved/done, FE phase status pending/in_progress, no blockers, dependencies resolved.
 
 **RED Phase:**
-- [ ] Step 3.0 — DISCOVER RUNNER: scripts.test found in FE workspace package.json
+- [ ] Step 3.0 — DISCOVER RUNNER: test command resolved (config.yaml test_cmd, or ecosystem-native discovery)
 - [ ] Step 3.1 — CAPTURE BASELINE: suite run before writing any test; baseline.txt stored
 - [ ] Step 3.2 — MSW handlers created for all API endpoints
 - [ ] Step 3.2 — Test fixtures typed and created
@@ -701,18 +697,18 @@ This skill never writes test files in `--continue`; the fix sub-agent owns that 
 - [ ] Step 3.3 — VERIFY RED: new tests appear in failure set; no previously-passing test flipped
 - [ ] Step 3.3 — Committed with `test(UC###):` prefix
 
-**GREEN Phase:**
+**GREEN Phase** (data-fetching/validation/routing items per the project's FE stack; React/Next.js profile shown):
 - [ ] Types match api-contract.md
 - [ ] API client functions created
-- [ ] TanStack Query hooks implemented
-- [ ] Zod schemas for forms
-- [ ] React components render correctly
-- [ ] Pages use App Router conventions
+- [ ] Data-fetching hooks implemented (profile: TanStack Query)
+- [ ] Form validation schemas (profile: Zod)
+- [ ] UI components render correctly
+- [ ] Pages follow the project's routing conventions (profile: App Router)
 - [ ] Step 4.2 — VERIFY GREEN + COMPARE: delta computed against baseline; status determined
 - [ ] All tests pass (PASS or BLOCKED with rationale)
 - [ ] Committed with `feat(UC###):` prefix
 
-**REFACTOR Phase:** Components < 150 lines, props < 5 per component, custom hooks extracted where needed, Tailwind classes organized, accessibility attributes present, TypeScript strict passes, no ESLint warnings, tests still pass, committed with `refactor(UC###):` prefix.
+**REFACTOR Phase:** Components < 150 lines, props < 5 per component, custom hooks extracted where needed, styling organized, accessibility attributes present, type checks pass per the project's toolchain, no linter warnings, tests still pass, committed with `refactor(UC###):` prefix. *(Node/TS profile: Tailwind, TypeScript strict, ESLint.)*
 
 **After Completion:** result-fe.md created (includes status headline and baseline diff), status.json phases.fe set to ready_for_review, changelog.md updated with status headline.
 

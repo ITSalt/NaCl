@@ -1,6 +1,13 @@
 # Backend deployment workflow
 # Triggers: push to main (production) or feature/* (staging)
 # Template from claude-skills — customize for your project
+#
+# STACK PROFILE: this file is a Node.js/npm reference profile, NOT a NaCl
+# mandate. The framework does not prescribe a runtime, package manager, or
+# process manager. If your backend is not Node, replace the setup-node /
+# npm ci / npm test / npm run build steps with your ecosystem's equivalents.
+# Fill ${NODE_VERSION} (and any other versions) from the project's own
+# toolchain (config.yaml → modules.<m>.stack) — never inherit a framework default.
 
 name: Deploy Backend
 
@@ -28,7 +35,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '${NODE_VERSION}'  # set your project's Node version (from config.yaml / .nvmrc); pin explicitly # version-pin-ok
           cache: 'npm'
           cache-dependency-path: 'backend/package-lock.json'
 
@@ -53,6 +60,8 @@ jobs:
             --exclude='.env' \
             backend/ ${{ secrets.VPS_USER }}@${{ env.VPS_IP }}:/app/backend/
 
+      # Process manager shown is PM2 as one example; substitute systemd, Docker,
+      # or your project's runner. NaCl does not mandate a process manager.
       - name: Install + Build + Migrate + Restart on server
         run: |
           ssh ${{ secrets.VPS_USER }}@${{ env.VPS_IP }} << 'EOF'

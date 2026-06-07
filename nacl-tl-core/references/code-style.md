@@ -1,8 +1,12 @@
 # Code Style Guide for Node.js/TypeScript
 
+## Applicability — Stack Profile: Node.js / TypeScript
+
+This document is a **reference profile** for projects whose stack (per `config.yaml` → `modules.<name>.stack`) is Node.js/TypeScript. It is not a framework-wide mandate: NaCl does not prescribe a technology stack. For a different ecosystem (Python, Go, ...), apply the underlying principles — clarity, small functions, typed boundaries, tests-first — and adapt the concrete tooling. The single source of truth for a project's stack is `config.yaml`, never this profile.
+
 ## Overview
 
-This document defines the code style conventions for Node.js and TypeScript projects within the TL workflow. Consistent code style improves readability, reduces cognitive load, and enables effective code review. All code produced by TL skills MUST follow these conventions.
+This document defines the code style conventions for Node.js and TypeScript projects within the TL workflow. Consistent code style improves readability, reduces cognitive load, and enables effective code review. Code in a Node/TS project SHOULD follow these conventions.
 
 ## Key Principle: Clarity Over Cleverness
 

@@ -3,6 +3,10 @@
 > Справочный документ для навыка Team Lead (Claude Code).
 > Описывает стандартный подход к конфигурации локального окружения.
 
+## Применимость — Stack profile
+
+Философия «Docker для инфраструктуры, нативный запуск для приложений» — общая. Конкретные сервисы, образы, команды и порты ниже — **примеры для Node/TS-профиля** (NestJS/Next.js/PostgreSQL/Redis/MinIO), а не мандат NaCl. Состав инфраструктуры и команды запуска определяет проект (`config.yaml` → `modules.*`); для другой экосистемы подставляй её эквиваленты. Версии образов выбирает проект — фреймворк дефолтов не задаёт.
+
 ---
 
 ## 1. Философия
@@ -18,12 +22,12 @@
 
 ---
 
-## 2. Инфраструктура в Docker Compose
+## 2. Инфраструктура в Docker Compose (пример состава)
 
-| Компонент | Образ | Порт | Назначение |
-|-----------|-------|------|------------|
-| PostgreSQL | `postgres:16-alpine` | 5432 | Основная БД |
-| Redis | `redis:7-alpine` | 6379 | Кэш и очереди |
+| Компонент | Образ (версию выбирает проект) | Порт | Назначение |
+|-----------|-------------------------------|------|------------|
+| PostgreSQL | `postgres:<ver>-alpine` | 5432 | Основная БД |
+| Redis | `redis:<ver>-alpine` | 6379 | Кэш и очереди |
 | MinIO | `minio/minio` | 9000 / 9001 | S3-совместимое хранилище |
 | pgAdmin | `dpage/pgadmin4` | 5050 | UI для PostgreSQL (опц.) |
 | Mailhog | `mailhog/mailhog` | 8025 / 1025 | Mock email сервер (опц.) |
@@ -98,7 +102,7 @@ networks:
 
 ---
 
-## 4. Backend (Node.js / NestJS) -- нативный запуск
+## 4. Backend -- нативный запуск (пример: Node.js / NestJS)
 
 ```bash
 # Terminal 1: Backend
@@ -128,7 +132,7 @@ npm run dev    # или npm run start:dev для NestJS
 
 ---
 
-## 5. Frontend (Next.js) -- нативный запуск
+## 5. Frontend -- нативный запуск (пример: Next.js)
 
 ```bash
 # Terminal 2: Frontend
@@ -240,14 +244,14 @@ echo "All services are healthy."
 
 ## 10. TECH-задачи при инициализации
 
-Навык `nacl-tl-plan` при инициализации проекта должен создать следующие TECH-задачи:
+Навык `nacl-tl-plan` при инициализации проекта должен создать следующие TECH-задачи (состав и стек — по `config.yaml`; в скобках примеры Node/TS-профиля):
 
 | ID | Название | Описание |
 |----|----------|----------|
-| TECH-001 | Создать docker-compose.dev.yml | Конфигурация PostgreSQL, Redis, MinIO с healthchecks, volumes, networks |
-| TECH-002 | Настроить BE dev server | NestJS scaffold, `.env`, health endpoint `/health`, debugger config |
-| TECH-003 | Настроить FE dev server | Next.js scaffold, `.env.local`, API client, proxy config |
-| TECH-004 | Настроить миграции БД | Начальная schema, seed data, скрипты `migration:run` / `migration:generate` |
+| TECH-001 | Создать docker-compose.dev.yml | Конфигурация выбранной проектом инфраструктуры (пример: PostgreSQL, Redis, MinIO) с healthchecks, volumes, networks |
+| TECH-002 | Настроить BE dev server | Scaffold по выбранному стеку (пример: NestJS), `.env`, health endpoint `/health`, debugger config |
+| TECH-003 | Настроить FE dev server | Scaffold по выбранному стеку (пример: Next.js), env-файл, API client, proxy config |
+| TECH-004 | Настроить миграции БД | Начальная schema, seed data, скрипты миграций по конвенциям выбранного стека |
 
 Эти задачи являются prerequisite для всех остальных задач проекта и должны быть выполнены в первую очередь.
 

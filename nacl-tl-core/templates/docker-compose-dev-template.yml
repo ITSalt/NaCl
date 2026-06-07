@@ -17,6 +17,13 @@
 # Environment variables are loaded from .env file.
 # Copy .env.example to .env and fill in project-specific values.
 #
+# STACK PROFILE: the services below (PostgreSQL, Redis, MinIO, ...) are
+# EXAMPLES of common infrastructure, not a NaCl mandate. Include only what
+# config.yaml / the project actually needs; delete the rest. NaCl does not
+# require any specific datastore. Set image versions (${POSTGRES_VERSION},
+# ${REDIS_VERSION}) from the project's own decision — never inherit a
+# framework default.
+#
 # =============================================================================
 
 services:
@@ -25,7 +32,7 @@ services:
   # PostgreSQL -- primary database
   # ---------------------------------------------------------------------------
   db:
-    image: postgres:16-alpine
+    image: postgres:${POSTGRES_VERSION}-alpine  # set your DB version in .env; do not inherit a default # version-pin-ok
     container_name: {{project_name}}-db
     restart: unless-stopped
     ports:
@@ -58,7 +65,7 @@ services:
   # Redis -- caching, sessions, queues
   # ---------------------------------------------------------------------------
   redis:
-    image: redis:7-alpine
+    image: redis:${REDIS_VERSION}-alpine  # set your Redis version in .env; do not inherit a default # version-pin-ok
     container_name: {{project_name}}-redis
     restart: unless-stopped
     ports:
@@ -170,7 +177,7 @@ services:
   # Uncomment to enable. Management UI at http://localhost:15672
   # ---------------------------------------------------------------------------
   # rabbitmq:
-  #   image: rabbitmq:3-management-alpine
+  #   image: rabbitmq:3-management-alpine  # version-pin-ok
   #   container_name: {{project_name}}-rabbitmq
   #   restart: unless-stopped
   #   ports:
@@ -228,6 +235,7 @@ networks:
 # PROJECT_NAME={{project_name}}
 #
 # # --- PostgreSQL ---
+# POSTGRES_VERSION=        # your project's choice, e.g. the current stable major
 # DB_USER=postgres
 # DB_PASSWORD=postgres
 # DB_NAME={{project_name}}_dev
@@ -235,6 +243,7 @@ networks:
 # DATABASE_URL=postgresql://postgres:postgres@localhost:5432/{{project_name}}_dev
 #
 # # --- Redis ---
+# REDIS_VERSION=           # your project's choice
 # REDIS_PORT=6379
 # REDIS_URL=redis://localhost:6379
 #
