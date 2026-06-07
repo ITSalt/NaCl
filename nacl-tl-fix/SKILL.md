@@ -688,6 +688,8 @@ For each affected UC/area:
 
 After printing this, **exit**. Do not announce Step 4. Do not ask the user for permission to proceed. The user's reply with the routing report is sufficient — they will invoke `/nacl-sa-feature` themselves in a fresh session.
 
+**Goal-run context (intake-self-diagnosis+):** under `NACL_GOAL_RUN_ID`, the identical routing report + `exit_reason: "L3-feature"` is consumed by the `/nacl-goal` orchestrator as a re-type signal (Flow step 9 RE-TYPE handler): the atom is re-classified in place instead of being treated as a failure. This skill's behavior does not change — same diagnosis, same report, same exit; only the consumer differs.
+
 **Escape hatch (rare):** If the user truly wants to handle a small spec gap inline and Step 3 mis-classified, they can re-invoke with `/nacl-tl-fix --treat-as-l3-spec-gap "<description>"`. This bypasses the L3-feature exit and treats the request as `L3-spec-gap` (inline minor spec is permitted). Without this flag, L3-feature always exits. (Flag renamed in W4-blocking-release from its legacy name — which contained the literal token scrubbed by the W4 grep acceptance check — to `--treat-as-l3-spec-gap`. Behavior unchanged.)
 
 При необходимости воспроизвести баг в браузере или на сервере:

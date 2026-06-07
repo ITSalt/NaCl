@@ -405,7 +405,9 @@ If fewer than 10 docs were reconciled in total, cover all of them.
 
 If the project has BA artifacts (docs/01-business-processes/ etc.), try to run `/nacl-ba-validate --scope=cross`.
 
-- **If available:** Check SA→BA cross-validation (XL6-XL9).
+- **If available:** Check BA→SA cross-validation (XL1-XL5). The SA-side
+  cross-checks (XL6-XL9) and the SA-internal levels L1-L13 are already
+  covered by the sa-validate run in 4.1.
 - **If not available:** Skip and note in report.
 
 #### 4.4 Build + Test

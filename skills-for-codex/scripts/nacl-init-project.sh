@@ -162,6 +162,32 @@ if re.search(r"(?m)^project:\s*$", text):
 elif "project:" not in text:
     text = f'project:\n  id: "{project_id}"\n  name: "{project_name}"\n\n' + text
     changed = True
+# Add-only: seed intake self-diagnosis scoring defaults when the section is
+# absent (mirror of nacl-init Migration check G). Never touches an existing
+# intake: section, so user-tuned values are preserved.
+if not re.search(r"(?m)^intake:\s*$", text) and not re.search(r"(?m)^intake:\s", text):
+    intake_block = (
+        "\n"
+        "# Intake self-diagnosis scoring\n"
+        "# Used by: nacl-tl-intake Step 2a.5 PROBE (hypothesis verification before any\n"
+        "# routing question) and /nacl-goal intake. Tune per project; when a key is\n"
+        "# absent, skills use the built-in defaults.\n"
+        "# Semantics, rubric and tuning guidance: nacl-tl-core/references/intake-scoring.md\n"
+        "intake:\n"
+        "  route_threshold: 0.7        # score >= this -> auto-route on the leading hypothesis\n"
+        "  high_confidence: 0.9        # score >= this -> HIGH confidence (no tracked alternative)\n"
+        "  scores:                     # rubric row values (verdict pattern -> score)\n"
+        "    leader_confirmed_all_refuted: 0.95\n"
+        "    leader_confirmed_some_inconclusive: 0.8\n"
+        "    leader_indirect_all_refuted: 0.75\n"
+        "    leader_indirect_inconclusive: 0.55\n"
+        "    contradictory: 0.4\n"
+        "    all_inconclusive: 0.2\n"
+    )
+    if not text.endswith("\n"):
+        text += "\n"
+    text += intake_block
+    changed = True
 if changed:
     open(path, "w", encoding="utf-8").write(text)
     print("UPDATED config.yaml")

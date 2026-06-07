@@ -25,6 +25,7 @@ Running `/nacl-init` on a project that was already initialised is safe and idemp
 | `graph-infra/boards/` directory does not exist | Creates it |
 | `config.yaml` exists but has no `project.id` field | Injects a slugified id derived from the project name |
 | `config.yaml` exists but has no `project.name` field | Injects the human-readable name from the skill argument |
+| `config.yaml` exists but has no `intake:` section | Appends the intake self-diagnosis scoring block with built-in defaults (add-only — an existing `intake:` section is never touched). See § `intake` below |
 
 If any migration was performed, the skill prints a single summary line (e.g., `Migrated existing project: removed legacy excalidraw services (2 containers stopped), created graph-infra/boards/.`). For a fresh project with nothing to migrate, no output is produced.
 
@@ -195,6 +196,41 @@ SSH access for VPS diagnostics. Used by `nacl-tl-deploy` when a health check fai
 
 ---
 
+### `intake` (optional — self-diagnosis scoring)
+
+Tuning knobs for `nacl-tl-intake` Step 2a.5 PROBE — the hypothesis-verification
+stage that runs before any classification question. When the project graph
+alone does not resolve an atom (bug vs feature vs task), intake formulates
+falsifiable hypotheses, verifies them against the actual code/DB with bounded
+read-only probes, and derives a deterministic rubric score. The score decides
+whether the atom auto-routes on the leading hypothesis or the user is asked a
+question that carries the diagnosis.
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `route_threshold` | float (0,1] | no | `0.7` | Score at or above this → auto-route on the leading hypothesis. Below → the (batched) question fires, carrying the diagnosis |
+| `high_confidence` | float (0,1] | no | `0.9` | Score at or above this → HIGH confidence (`CODE` evidence) — routes like a graph-backed atom, no tracked alternative needed. Between the two thresholds → auto-route WITH the alternative recorded as a tracked follow-up |
+| `scores.*` | float (0,1] | no | see reference | Rubric row values (verdict pattern → score). Keys: `leader_confirmed_all_refuted` (0.95), `leader_confirmed_some_inconclusive` (0.8), `leader_indirect_all_refuted` (0.75), `leader_indirect_inconclusive` (0.55), `contradictory` (0.4), `all_inconclusive` (0.2) |
+
+Every key falls back **independently** to the built-in defaults — overriding
+one score does not require restating the others. Values outside `(0, 1]` or
+`route_threshold > high_confidence` are a broken config: skills warn and use
+defaults for the offending keys (a broken config must not silently disable
+the question gate). Hard-refuse triggers (billing, auth, schema migration,
+destructive ops, product decisions) are score-independent and never
+auto-route.
+
+Raise `route_threshold` (e.g. `0.85`) where a misrouted atom is expensive —
+more questions, fewer autonomous calls. Lower it (e.g. `0.55`) on prototypes
+where `/nacl-tl-fix`'s gap-check backstop makes misrouting cheap.
+
+Seeded by `/nacl-init` (template for new projects; add-only injection on
+existing ones — user-tuned values are never overwritten). Semantics, rubric
+and worked examples: `nacl-tl-core/references/intake-scoring.md`. Design
+rationale: `docs/adr/002-intake-scoring-rubric.md`.
+
+---
+
 ## How Skills Resolve Config
 
 Skills use the following priority order when looking up values:
@@ -209,6 +245,7 @@ Skills use the following priority order when looking up values:
 | Module path | `modules.[name].path` > auto-detect from `package.json` |
 | Deploy method | `deploy.staging.method` > `deploy.method` > fallback `github-actions` |
 | Health endpoint | `deploy.[env].health_endpoint` > fallback `/api/health` |
+| Intake scoring | `intake.route_threshold` / `intake.high_confidence` / `intake.scores.*` > per-key fallback to `nacl-tl-core/references/intake-scoring.md` defaults |
 
 If `config.yaml` is missing entirely, all fields fall back to their defaults. Skills that require `graph.*` (BA/SA layer) or `deploy.*` (deploy monitoring) will report an error when those sections are absent — there is no sensible default for a database URL or server address.
 

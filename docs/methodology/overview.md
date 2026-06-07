@@ -75,7 +75,7 @@ With markdown files, you would grep through every UC spec hoping the entity name
 
 - **Cross-layer traceability.** Trace a FormField back through its Form, to the UseCase, through the AUTOMATES_AS edge to the WorkflowStep, and up to the BusinessProcess. Every link is an edge in the graph.
 
-- **Consistency validation.** Cypher queries detect orphaned nodes (a DomainEntity with no module), missing relationships (a UseCase with no actor), and coverage gaps (a BusinessProcess with no workflow). NaCl includes 17+ validation checks across BA and SA layers.
+- **Consistency validation.** Cypher queries detect orphaned nodes (a DomainEntity with no module), missing relationships (a UseCase with no actor), and coverage gaps (a BusinessProcess with no workflow). NaCl includes 30 validation levels (70+ Cypher checks) across BA, SA, and cross-layer scopes.
 
 **Schema definition.** The graph schema is defined in three files under `graph-infra/schema/`:
 
@@ -157,7 +157,7 @@ This methodology section contains six documents. Here is how they connect:
 
 - **[Handoff](handoff.md)** -- How layers connect via cross-layer edges: `AUTOMATES_AS` (BA workflow step to SA use case), `REALIZED_AS` (BA entity to SA domain entity), `MAPPED_TO` (BA role to SA system role), `GENERATES` (SA use case to TL task). Coverage statistics and gap detection.
 
-- **[Validation](validation.md)** -- The full catalog of validation checks: 8 internal BA checks (L1-L8), 6 internal SA checks (L1-L6), and 9 cross-layer checks (XL1-XL9). Each check is a Cypher query with a clear pass/fail criterion.
+- **[Validation](validation.md)** -- The full catalog of validation checks: 8 internal BA levels (L1-L8), 13 internal SA levels (L1-L13, including the connected-spec extension layers: staleness, decision provenance, screen machines, slices, errors, resilience), and 9 cross-layer checks (XL1-XL9). Each check is a Cypher query with a clear pass/fail criterion.
 
 - **[Graph-First Philosophy](graph-philosophy.md)** -- The conceptual foundation: why a property graph, why not a relational database, why not markdown with frontmatter, and how the graph model aligns with the way AI agents consume and produce structured data.
 

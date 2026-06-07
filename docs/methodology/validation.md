@@ -4,7 +4,7 @@
 
 # Validation Framework: Keeping the Graph Honest
 
-NaCl stores all BA and SA specifications as nodes and edges in a Neo4j graph. A graph with 25+ node types and 30+ edge types accumulates structural debt the same way a codebase accumulates technical debt -- quietly, incrementally, and dangerously. The validation framework is the countermeasure: 17+ Cypher queries that detect inconsistencies, gaps, and broken traceability before they propagate downstream.
+NaCl stores all BA and SA specifications as nodes and edges in a Neo4j graph. A graph with 35+ node types and 60+ edge types accumulates structural debt the same way a codebase accumulates technical debt -- quietly, incrementally, and dangerously. The validation framework is the countermeasure: 30 validation levels -- 8 BA-internal (L1-L8), 13 SA-internal (L1-L13), 9 cross-layer (XL1-XL9) -- comprising 70+ Cypher checks that detect inconsistencies, gaps, and broken traceability before they propagate downstream.
 
 ---
 
@@ -58,9 +58,11 @@ Run by `nacl-ba-validate`. All checks are read-only -- they never modify the gra
 
 ---
 
-## SA Internal Validation (L1-L6)
+## SA Internal Validation (L1-L13)
 
-Run by `nacl-sa-validate`. Read-only, like the BA checks.
+Run by `nacl-sa-validate`. Read-only, like the BA checks. L1-L7 cover the
+core specification; L8-L13 cover change propagation and the connected-spec
+extension layers introduced in 2.15.
 
 **L1: Data Consistency.** All nodes have required properties filled. No orphaned nodes (nodes with no parent in the hierarchy). No duplicate IDs within any node type. Duplicate IDs break referential integrity -- every Cypher match returns ambiguous results. CRITICAL.
 
@@ -80,6 +82,22 @@ RETURN ff.id, ff.name, ff.type
 **L5: UC-Form Validation.** Every Primary UC (priority "MVP") with `detail_status: "complete"` has at least one Form. Every Form links to at least one UseCase via USES_FORM. Catches formless UCs (complete but missing UI specification) and orphaned forms (created but never linked to a UC). WARNING.
 
 **L6: Cross-Module Consistency.** Three sub-checks: (1) inter-module DEPENDS_ON edges must be acyclic -- circular dependencies make build ordering impossible (CRITICAL); (2) shared entities have clear ownership via exactly one CONTAINS_ENTITY edge (WARNING); (3) data flow is consistent -- dependencies between modules should be justified by concrete data references (WARNING).
+
+**L7: FeatureRequest Consistency.** Every FR-NNN markdown file must have a matching FeatureRequest node, and every FeatureRequest node must include at least one UseCase via INCLUDES_UC (or carry an explicit exemption). INCLUDES_UC edges must carry a known `kind`, referenced UseCases must exist, FR ids must not be reused across node labels, and duplicate FR-NNN files on disk are flagged. Feature requests are the unit of incremental specification -- a dangling FR node or an unanchored markdown file is a feature whose scope the graph cannot see. CRITICAL.
+
+**L8: Staleness Closure.** When a specification change propagates through the graph (`nacl-sa-feature`, `nacl-tl-fix`), affected UseCases, Tasks, Forms, and Requirements receive `review_status: "stale"` with the origin and reason recorded. L8 is the gate that refuses to let stale nodes silently re-enter development: every stale node must be reviewed and re-planned via `nacl-tl-plan` -- the only sanctioned way a node leaves `stale` -- before the graph is considered consistent again. CRITICAL.
+
+**L9: Decision Provenance.** Every active FeatureRequest must anchor the decision that resolved it via IMPLEMENTS to a Decision node, unless grandfathered with `decision_exempt: true` (surfaced separately as INFO). Decisions must justify at least one artifact via JUSTIFIES, carry a non-blank `rationale`, and superseded decisions must be marked as such. This turns "why was this built this way" from git archaeology into a single Cypher query. CRITICAL, with supersession hygiene as WARNING.
+
+**L10: Screen State Machines.** The deterministic UI contract. Every Screen belongs to a UseCase (HAS_SCREEN) and renders a Form (unless `formless`); states, events, and reified transitions belong to their screen; every Transition has exactly one FROM_STATE, TO_STATE, and ON_EVENT within the same screen; no two unguarded transitions share a (state, event) pair -- determinism; exactly one initial state exists and every state is reachable from it; error states have an escape transition (unless `terminal`); effects target the right node type (load/mutate -> APIEndpoint, navigate -> Screen, analytics -> AnalyticsEvent). Mostly CRITICAL; kind-vocabulary checks are WARNING.
+
+**L11: Behavior Slices.** Graph-native Given/When/Then acceptance scenarios. Every Slice belongs to a UseCase (HAS_SLICE) and must anchor into the screen machine (COVERS -> ScreenState/Transition within its own UC) and/or into the API surface (CALLS -> APIEndpoint) -- no exemption exists by design: behavior text with no graph anchor belongs in acceptance-criteria prose, not in a node. Once the UC has generated Tasks, every slice must be verified by one (VERIFIED_BY; re-planning self-heals this edge). The `then` outcome must be non-blank. Machine elements not covered by any slice are WARNING; a sliced UC without a happy-path slice is INFO. CRITICAL core.
+
+**L12: Domain Error Taxonomy.** Transport-independent failure modes. Every DomainError belongs to a Module catalog (HAS_ERROR), is raisable by at least one endpoint (MAY_RAISE), and carries a non-blank `code` -- the join key to the API envelope. Every ErrorPresentation belongs to an error (PRESENTED_AS), is shown by some state (SHOWS), and carries a non-blank user-facing `message`. The channel rule constrains HANDLES: a state may only handle errors its screen can actually receive through its effect calls; the SHOWS triangle closes only over handled errors. Raisable-but-unhandled errors on screens that call the raising endpoint are WARNING (the handling-completeness gap). CRITICAL core.
+
+**L13: Cache & Degradation Policies.** Resilience as specification. Every CachePolicy belongs to a Module (HAS_CACHE), caches at least one endpoint (CACHES), and carries a complete invalidation contract (`invalidation_kind`; `ttl_seconds` when TTL-based). Every DegradationRule belongs to a UseCase (HAS_DEGRADATION), names its trigger and a non-blank observable `behavior`, anchors error-triggered rules to DomainErrors (ON_ERROR), and degrades into states of its own UC reachable through the error channel. Consistency checks flag backoff against non-retryable errors and overlapping policies on the same endpoint and storage; the cached-surface gap -- retryable/external errors on cached endpoints with no degradation answer -- is WARNING. CRITICAL core.
+
+L10-L13 validate the **connected-spec extension layers** (2.15+), which are opt-in per project: a graph with zero nodes of a layer's labels passes that level vacuously -- zero findings, not skipped checks. Adoption is ordered by dependency (machines before slices, errors before resilience; `nacl-sa-full` Phase 6b automates the sequence). Exemptions are deliberately scarce: L10 recognizes `formless` screens and `terminal` states, L9 recognizes grandfathered feature requests -- L11, L12, and L13 have no exemption properties at all, because an anchorless slice, an unraisable error, or a policy that caches nothing is dead vocabulary, not an edge case.
 
 ---
 
@@ -124,7 +142,7 @@ Validation integrates into the pipeline at four gates.
 
 **1. Before BA handoff** (Phase 8 of nacl-ba-full). Run L1-L8 against the BA graph. Any CRITICAL error blocks Phase 9 (handoff). The orchestrator presents the validation report to the user, listing every finding with its severity, check ID, and the specific node IDs that failed. The typical fix workflow: read the report, navigate to the flagged nodes using the provided IDs, add missing properties or edges, then re-run validation. WARNINGs and INFOs are presented but do not block -- the analyst can address them now or defer.
 
-**2. After SA completion** (Phase 7 of nacl-sa-full). Run L1-L6 (internal SA consistency) + XL6-XL9 (reverse cross-layer traceability). CRITICAL errors in L1-L6 block finalization. The SA analyst must resolve structural issues -- duplicate IDs, circular module dependencies, FormFields without domain mappings -- before the specification can be finalized. XL6-XL9 findings are presented as advisory; the analyst reviews them and either creates the missing BA traceability or documents the technical justification for SA-only artifacts.
+**2. After SA completion** (Phase 7 of nacl-sa-full). Run L1-L13 (internal SA consistency) + XL6-XL9 (reverse cross-layer traceability). CRITICAL errors in L1-L13 block finalization. The SA analyst must resolve structural issues -- duplicate IDs, circular module dependencies, FormFields without domain mappings, anchorless slices, unraisable errors -- before the specification can be finalized. L10-L13 pass vacuously when the project has not adopted the extension layers; the explicit skip recorded by nacl-sa-full Phase 6b makes that vacuous pass a documented choice. XL6-XL9 findings are presented as advisory; the analyst reviews them and either creates the missing BA traceability or documents the technical justification for SA-only artifacts.
 
 **3. Cross-layer check** (post-SA). Run XL1-XL5 from the BA side after SA data exists. This verifies bidirectional coverage: every automatable BA step has a corresponding UseCase, every business entity has a domain model counterpart, every business rule has a system requirement. This gate runs separately from Gate 1 because XL1-XL5 require SA data that does not exist during the BA phase. Can be triggered manually at any time for incremental verification as the SA layer grows.
 

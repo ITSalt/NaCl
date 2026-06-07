@@ -48,7 +48,7 @@ RETURN uc.id, uc.name, f.name, ff.name
 
 The result is an exact list of affected use cases, forms, and fields. No false positives from string matching in comments. No missed dependencies from alternative phrasings. The graph encodes semantic relationships, not textual co-occurrence, so the answer is both complete and precise.
 
-**Automatic validation.** The 17+ validation checks (L1-L8 for BA internal consistency, L1-L6 for SA internal consistency, XL1-XL9 for cross-layer integrity) are Cypher queries that run in seconds. They detect orphaned nodes -- a DomainEntity with no module, a UseCase with no actor, a FormField that maps to a nonexistent DomainAttribute. In a file-based system, each of these checks would require a custom parser for the specific file format, and the parsers would break every time someone reformatted a heading or changed a table structure.
+**Automatic validation.** The 30 validation levels (L1-L8 for BA internal consistency, L1-L13 for SA internal consistency, XL1-XL9 for cross-layer integrity -- 70+ Cypher checks in total) are Cypher queries that run in seconds. They detect orphaned nodes -- a DomainEntity with no module, a UseCase with no actor, a FormField that maps to a nonexistent DomainAttribute. In a file-based system, each of these checks would require a custom parser for the specific file format, and the parsers would break every time someone reformatted a heading or changed a table structure.
 
 **Cross-layer traceability.** From a UI form field, traverse all the way back to the business process that required it:
 

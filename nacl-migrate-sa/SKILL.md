@@ -334,7 +334,7 @@ The following are currently 0 because the adapter does not extract them:
 Adding any of these is a per-adapter enhancement. Non-blocker for migration.
 
 ## Next steps
-- Run `/nacl-sa-validate` (L1-L6 + XL6-XL9 cross-validation)
+- Run `/nacl-sa-validate` (L1-L13 + XL6-XL9 cross-validation; L10-L13 pass vacuously until the project adopts the 2.15+ extension layers — see `docs/upgrade-graph-extensions.md`)
 - Run `/nacl-tl-diagnose` for code-docs drift analysis
 ```
 

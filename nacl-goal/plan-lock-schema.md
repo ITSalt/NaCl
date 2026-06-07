@@ -146,13 +146,32 @@ and treats the file as authoritative.
       "type": "BUG|TASK|FEATURE_SMALL|FEATURE_HEAVY",
       "title": "...",
       "linked_uc": "UC-NNN|TECH-NNN|null",
-      "evidence": ["GRAPH", "HEURISTIC", "USER_OVERRIDE"],
+      "evidence": ["GRAPH", "CODE", "HEURISTIC", "USER_OVERRIDE"],
       "confidence": "HIGH|MEDIUM|LOW",
       "risk_level": "L0|L1|L2|L3",
       "depends_on": ["atom-<...>"],
       "hard_refuse_triggers": ["billing"],
       "trigger_evidence": "Goal mentions Stripe billing for API key tiers",
       "spec_gap": false,
+      "residual_note": {
+        "reason": "spec_gap_residual|medium_confidence_alternative",
+        "summary": "...",
+        "working_assumption": "...",
+        "followup_task": "<YouGile subtask id | .tl/open-questions.md anchor>"
+      },
+      "diagnosis": {
+        "hypotheses": [
+          { "id": "H_bug", "statement": "...", "verdict": "confirmed|refuted|inconclusive" }
+        ],
+        "checks": [
+          { "kind": "grep|read|db|git", "target": "<path or query>", "result": "<one line>" }
+        ],
+        "score": 0.95,
+        "threshold_used": 0.7,
+        "leaning": "BUG|FEATURE|TASK|null",
+        "blocking_fact": "<plain-language fact preventing a confident call>|null",
+        "evidence_refs": ["<file:line | query summary | sha>"]
+      },
       "skill_path": "nacl-tl-fix|nacl-tl-dev|nacl-sa-feature -> nacl-tl-dev"
     }
   ],
@@ -164,6 +183,18 @@ and treats the file as authoritative.
   }
 }
 ```
+
+### `diagnosis` object (2.16+, optional)
+
+Written by `nacl-tl-intake` Step 2a.5 PROBE for atoms the graph alone did not
+resolve. `null` / absent when the probe did not run (HIGH+GRAPH atoms) and in
+pre-2.16 artifacts — readers MUST tolerate its absence. `score` is
+rubric-derived (see `nacl-tl-core/references/intake-scoring.md`), never
+free-form; `threshold_used` freezes the `intake.route_threshold` that was in
+effect, so audit tooling interprets the routing without re-reading
+`config.yaml`. `CODE` in `evidence` means "verified against the actual
+codebase/DB by the probe". All of this (plus `residual_note`) is **additive
+and optional → NOT a `schema_version` bump** (see Stability above).
 
 ### Closed `hard_refuse_triggers` set
 
@@ -318,7 +349,8 @@ inner skills can append to this file directly.
 {
   "schema_version": 1,
   "atom_id": "atom-...",
-  "state": "pending|implementing|shipped|verified|failed",
+  "state": "pending|implementing|shipped|verified|failed|unsupported",
+  "retyped_to": "FEATURE_SMALL|FEATURE_HEAVY|null",
   "last_commit_sha": "<sha>|null",
   "verify_status": "pass|fail|skipped|null",
   "error": "<string>|null",
@@ -333,11 +365,27 @@ State transitions (one direction only, per atom):
 pending → implementing → shipped → verified
                                  → failed
 implementing → failed     # inner-skill returned a non-shippable status
+implementing → pending      # re-type (2.16+): /nacl-tl-fix exited with
+                            # exit_reason "L3-feature" and the FEATURE size
+                            # rule yields FEATURE_SMALL — atom re-enters the
+                            # loop under the new type (retyped_to recorded;
+                            # the only sanctioned backward transition)
+implementing → unsupported  # re-type (2.16+): same exit, but FEATURE_HEAVY —
+                            # terminal advisory state: correctly classified
+                            # out of scope, NOT a failure; run continues
 ```
+
+`retyped_to` (2.16+, optional): set on both re-type transitions. The atom
+`id` stays frozen (assignment-once invariant); only `type` in the live state,
+`retyped_to`, and `state` mutate. Readers of pre-2.16 artifacts MUST tolerate
+the absent key. Additive → NOT a `schema_version` bump.
 
 Resume scans `atoms/*.state.json` and continues from the first atom whose
 `state != "verified"`. A `failed` atom is non-resumable on its own — the
-run as a whole becomes `goal_blocked` with `resumable: false`.
+run as a whole becomes `goal_blocked` with `resumable: false`. An
+`unsupported` atom does NOT block the run: remaining atoms execute, the atom
+counts toward `unsupported_atoms_count`, and the final result is at best
+`GOAL_NOT_OK` (never a false `GOAL_OK`).
 
 Exception (2.14+): a `failed` atom carrying
 `block_code: "GOAL_BLOCKED_WIP_COLLISION"` IS resumable — the wrapper's

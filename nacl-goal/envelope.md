@@ -68,13 +68,13 @@ would predictably hit it.
 | Triggers | `/nacl-tl-intake --emit-state` reports `spec_gap: true` for an atom |
 | Precondition for envelope | **All** of: same `linked_uc` as a routed precedent; same affected component/module; same gate family; no `hard_refuse_triggers` from {`schema_migration`, `public_api_contract`, `auth_or_security`, `billing`}; `risk_level == L1`; `confidence == HIGH`; evidence includes `GRAPH` |
 
-### `medium-confidence-routing` (2.14+)
+### `medium-confidence-routing` (2.14+; probe-scored since intake-self-diagnosis)
 
 | | |
 |---|---|
 | Inner skill | `nacl-tl-intake --autonomous` Step 2b (Template D auto-route) |
-| Triggers | An atom classifies at `confidence == MEDIUM` with `evidence` including `GRAPH`; instead of the interactive recommendation prompt, the leading guess is routed and the alternative is recorded as `residual_note` (reason `medium_confidence_alternative`) with a tracked follow-up |
-| Precondition for envelope | **All** of: `hard_refuse_triggers` is empty (an atom carrying ANY hard-refuse trigger never auto-routes — Template C / `PLAN_BLOCKED_*` path); `risk_level` ∈ {`L0`, `L1`, `L2`}; `linked_uc` present; `residual_note.followup_task` recorded (an auto-route without the tracked alternative is invalid) |
+| Triggers | An atom classifies at `confidence == MEDIUM` with `evidence` including `GRAPH`, **or** an atom whose Step 2a.5 PROBE scored `route_threshold <= diagnosis.score < high_confidence` (evidence includes `CODE`); instead of the interactive recommendation prompt, the leading hypothesis is routed and the alternative (+ `blocking_fact`) is recorded as `residual_note` (reason `medium_confidence_alternative`) with a tracked follow-up |
+| Precondition for envelope | **All** of: `hard_refuse_triggers` is empty (an atom carrying ANY hard-refuse trigger never auto-routes — Template C / `PLAN_BLOCKED_*` path); `risk_level` ∈ {`L0`, `L1`, `L2`}; `linked_uc` present **OR** `diagnosis.evidence_refs` non-empty (code-anchored — a no-UC atom qualifies when the probe anchored the call in the actual codebase); `residual_note.followup_task` recorded (an auto-route without the tracked alternative is invalid) |
 
 The user decided at invocation time (autonomy-by-default `intake`); the
 wrapper materializes the exception so the confidence call is audit-logged

@@ -82,13 +82,25 @@ Each phase is executed via a **Task agent** (sub-agent with separate context ---
 |              |    |              |    |  navigation) |
 +--------------+    +--------------+    +--------------+
                                                |
+                                               v
+                                        +--------------+
+                                        | Phase 6b     |
+                                        | connected-   |
+                                        | spec ext.    |
+                                        | (optional:   |
+                                        |  screens ->  |
+                                        |  slices ->   |
+                                        |  errors ->   |
+                                        |  resilience) |
+                                        +--------------+
+                                               |
       +----------------------------------------+
       v
 +--------------+    +--------------+    +--------------+
 | Phase 7      |    | Phase 8      |    | Phase 9      |
 | nacl-sa-    |    | nacl-sa-    |    | nacl-publish|
 | validate     |--->| finalize     |--->| docmost      |
-| (L1-L6 +     |    | (statistics, |    | (optional)   |
+| (L1-L13 +    |    | (statistics, |    | (optional)   |
 |  XL6-XL9)   |    |  ADR,        |    |              |
 |              |    |  readiness)  |    |              |
 +--------------+    +--------------+    +--------------+
@@ -153,18 +165,29 @@ OPTIONAL MATCH (c:Component)
 WITH phase1, phase2, phase3, phase4, phase5,
      count(c) > 0 AS phase6
 
+// Phase 6b: connected-spec extensions adopted? (optional phase, 2.15+)
+OPTIONAL MATCH (ext)
+WHERE ext:Screen OR ext:Slice OR ext:DomainError OR ext:CachePolicy OR ext:DegradationRule
+WITH phase1, phase2, phase3, phase4, phase5, phase6,
+     count(ext) > 0 AS phase6b
+
 // Phase 7: SA ValidationReport exists?
 OPTIONAL MATCH (vr:ValidationReport {layer: 'SA'})
-WITH phase1, phase2, phase3, phase4, phase5, phase6,
+WITH phase1, phase2, phase3, phase4, phase5, phase6, phase6b,
      count(vr) > 0 AS phase7
 
 // Phase 8: SA FinalizationReport exists?
 OPTIONAL MATCH (fr:FinalizationReport {layer: 'SA'})
-WITH phase1, phase2, phase3, phase4, phase5, phase6, phase7,
+WITH phase1, phase2, phase3, phase4, phase5, phase6, phase6b, phase7,
      count(fr) > 0 AS phase8
 
-RETURN phase1, phase2, phase3, phase4, phase5, phase6, phase7, phase8
+RETURN phase1, phase2, phase3, phase4, phase5, phase6, phase6b, phase7, phase8
 ```
+
+**Phase 6b is optional:** `phase6b = false` with later phases `true` means the
+project declined the extension layers — do not treat it as "interrupted here".
+Only offer Phase 6b on resume when it is `false` AND Phase 7 has not run yet
+(or the user explicitly asks to adopt the layers).
 
 **Resume logic:**
 
@@ -373,7 +396,70 @@ Options:
 - `Component` (comp-NNN)
 - Relationships: `USED_IN` (Component->Form)
 
-**Transition:** After user confirms UI architecture -> Phase 7
+**Transition:** After user confirms UI architecture -> Phase 6b
+
+---
+
+### Phase 6b: Connected-spec Extensions (optional) -> `/nacl-sa-ui state-machine` + `/nacl-sa-uc slices|errors|resilience`
+
+**Goal:** Adopt the 2.15+ extension layers — screen state machines (L10),
+behavior slices (L11), domain error taxonomy (L12), cache & degradation
+policies (L13) — while the SA context from Phases 5-6 is still fresh.
+
+**Gate (one for the whole phase):** Offer adoption with a single confirmation.
+Default is adopt; opting out skips straight to Phase 7 and records
+`extensions: skipped` in progress — the L10-L13 vacuous pass in Phase 7 must
+be a documented choice, not an accident.
+
+**Launch order is hard** (dependencies per `docs/upgrade-graph-extensions.md`):
+
+1. **Screen machines** — for every UC with `coalesce(uc.has_ui, true) = true`:
+
+   ```
+   Launch Task agent: /nacl-sa-ui state-machine UC-{NNN}
+   ```
+
+   Slices of UI UCs anchor via `COVERS` into ScreenState/Transition — machines
+   must exist before slices.
+
+2. **Behavior slices** — per UC (UI UCs after their machine; backend-only UCs
+   anchor via `CALLS`):
+
+   ```
+   Launch Task agent: /nacl-sa-uc slices UC-{NNN}
+   ```
+
+3. **Domain errors** — per UC (module error catalogs are created here):
+
+   ```
+   Launch Task agent: /nacl-sa-uc errors UC-{NNN}
+   ```
+
+   Error-triggered degradation rules anchor via `ON_ERROR` into DomainError —
+   errors must exist before resilience.
+
+4. **Resilience** — per UC:
+
+   ```
+   Launch Task agent: /nacl-sa-uc resilience UC-{NNN}
+   ```
+
+Each launch is a separate Task agent (same context-budget rule as the other
+phases). Steps run strictly in the order above; within a step, UCs run
+sequentially.
+
+**Verify-before-bulk:** after the first UC of each step, run a scoped
+`/nacl-sa-validate` of the touched level (L10 after the first machine, L11
+after the first slices run, L12 after errors, L13 after resilience) and show
+the user the result; 0 CRITICAL before queueing the remaining UCs.
+
+**Graph nodes created:**
+- `Screen`, `ScreenState`, `ScreenEvent`, `Transition`, `ScreenEffect`, `AnalyticsEvent` (SCR-*, SCRST-*, SCREV-*, SCRTR-*, SCREF-*, ANEV-*)
+- `Slice` (SLC-NNN-*)
+- `DomainError`, `ErrorPresentation` (ERR-*, ERRP-*)
+- `CachePolicy`, `DegradationRule` (CACHE-*, DEG-NNN-*)
+
+**Transition:** After all four steps (or an explicit skip) -> Phase 7
 
 ---
 
@@ -382,13 +468,22 @@ Options:
 **Launch:** `Launch Task agent: /nacl-sa-validate full`
 
 **What it does:**
-- SA internal consistency checks (L1-L6):
-  - L1: Module completeness (all modules have UCs and entities)
-  - L2: UC completeness (all Primary UCs detailed with steps, forms, requirements)
-  - L3: Domain binding (all FormFields map to DomainAttributes)
-  - L4: Role coverage (all UCs have actors, all entities have permissions)
-  - L5: Requirement binding (all UCs have requirements)
-  - L6: Disconnected nodes (orphan detection)
+- SA internal consistency checks (L1-L13):
+  - L1: Data consistency (ids, names, types, duplicates)
+  - L2: Model connectivity (orphans, module assignment, floating attributes)
+  - L3: Requirement completeness (UCs have requirements, steps, actors)
+  - L4: Form-domain traceability (FormField MAPS_TO DomainAttribute)
+  - L5: UC-form validation (USES_FORM coverage, empty forms)
+  - L6: Cross-module consistency (shared entities, circular UC deps)
+  - L7: FeatureRequest consistency (FR nodes vs markdown, INCLUDES_UC)
+  - L8: Staleness closure (review_status on stale nodes)
+  - L9: Decision provenance (FR IMPLEMENTS Decision, rationale present)
+  - L10: Screen state machines (determinism, reachability, effect integrity)
+  - L11: Behavior slices (anchors, verification closure, observable outcomes)
+  - L12: Domain error taxonomy (raisability, handling, presentation closure)
+  - L13: Cache & degradation policies (anchors, channel rules, consistency)
+  - L8-L13 cover the connected-spec extension layers (2.15+); layers the
+    project has not adopted pass vacuously (zero nodes = zero findings)
 - SA<->BA cross-validation (XL6-XL9, if BA layer exists):
   - XL6: WorkflowStep AUTOMATES_AS UseCase coverage
   - XL7: BusinessEntity REALIZED_AS DomainEntity coverage
@@ -488,6 +583,7 @@ After each phase, show progress to the user:
 - [x] Phase 4:  UC Stories (nacl-sa-uc stories)  --- {Q} UCs registered
 - [ ] Phase 5:  UC Detail (nacl-sa-uc detail)     <- next
 - [ ] Phase 6:  UI (nacl-sa-ui)
+- [ ] Phase 6b: Extensions (sa-ui state-machine, sa-uc slices/errors/resilience) (optional)
 - [ ] Phase 7:  Validate (nacl-sa-validate)
 - [ ] Phase 8:  Finalize (nacl-sa-finalize)
 - [ ] Phase 9:  Publish (nacl-publish)            (optional)
@@ -602,6 +698,7 @@ calls:
   - Phase 4:  nacl-sa-uc stories (Task agent)
   - Phase 5:  nacl-sa-uc detail  (Task agent, per Primary UC)
   - Phase 6:  nacl-sa-ui         (Task agent)
+  - Phase 6b: nacl-sa-ui state-machine + nacl-sa-uc slices/errors/resilience (Task agents, optional)
   - Phase 7:  nacl-sa-validate   (Task agent)
   - Phase 8:  nacl-sa-finalize   (Task agent)
   - Phase 9:  nacl-publish       (Task agent, optional)
@@ -624,6 +721,7 @@ calls:
 - [ ] Phase 4: nacl-sa-uc stories completed and confirmed
 - [ ] Phase 5: nacl-sa-uc detail completed for all Primary UCs (minimum)
 - [ ] Phase 6: nacl-sa-ui completed and confirmed
+- [ ] Phase 6b: connected-spec extensions adopted in dependency order (or explicitly skipped, recorded)
 - [ ] Phase 7: nacl-sa-validate passed (0 critical errors)
 - [ ] Phase 8: nacl-sa-finalize completed
 - [ ] Phase 9: nacl-publish executed (if user confirmed)

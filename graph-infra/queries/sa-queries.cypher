@@ -97,6 +97,55 @@ RETURN modules, ucs, entities, attributes, forms, fields, roles, requirements, c
 
 
 // ---------------------------------------------------------------------------
+// Query: sa_statistics_extensions
+// Description: Aggregate counts for the connected-spec extension layers (2.15+):
+//              decision provenance (L8-L9), screen state machines (L10),
+//              behavior slices (L11), domain error taxonomy (L12),
+//              cache & degradation policies (L13). COUNT {} subqueries are
+//              zero-safe: a graph that has not adopted a layer returns 0
+//              for its labels, never an empty result.
+// ---------------------------------------------------------------------------
+RETURN
+  COUNT { (n:Decision) }          AS decisions,
+  COUNT { (n:Screen) }            AS screens,
+  COUNT { (n:ScreenState) }       AS screen_states,
+  COUNT { (n:ScreenEvent) }       AS screen_events,
+  COUNT { (n:Transition) }        AS screen_transitions,
+  COUNT { (n:ScreenEffect) }      AS screen_effects,
+  COUNT { (n:AnalyticsEvent) }    AS analytics_events,
+  COUNT { (n:Slice) }             AS slices,
+  COUNT { (n:DomainError) }       AS domain_errors,
+  COUNT { (n:ErrorPresentation) } AS error_presentations,
+  COUNT { (n:CachePolicy) }       AS cache_policies,
+  COUNT { (n:DegradationRule) }   AS degradation_rules;
+
+
+// ---------------------------------------------------------------------------
+// Query: sa_extension_adoption
+// Description: Adoption-aware coverage of the opt-in extension layers (2.15+)
+//              for readiness assessment. Three independent zero-safe parts:
+//              UC-scoped layers (screens, slices, degradation), module-scoped
+//              catalogs (errors, cache), FR decision provenance.
+// ---------------------------------------------------------------------------
+MATCH (uc:UseCase)
+RETURN count(uc) AS total_ucs,
+       count(CASE WHEN coalesce(uc.has_ui, false) THEN 1 END) AS ui_ucs,
+       count(CASE WHEN EXISTS { (uc)-[:HAS_SCREEN]->(:Screen) } THEN 1 END) AS ucs_with_screens,
+       count(CASE WHEN EXISTS { (uc)-[:HAS_SLICE]->(:Slice) } THEN 1 END) AS ucs_with_slices,
+       count(CASE WHEN EXISTS { (uc)-[:HAS_DEGRADATION]->(:DegradationRule) } THEN 1 END) AS ucs_with_degradation;
+
+MATCH (m:Module)
+RETURN count(m) AS total_modules,
+       count(CASE WHEN EXISTS { (m)-[:HAS_ERROR]->(:DomainError) } THEN 1 END) AS modules_with_errors,
+       count(CASE WHEN EXISTS { (m)-[:HAS_CACHE]->(:CachePolicy) } THEN 1 END) AS modules_with_cache;
+
+MATCH (fr:FeatureRequest)
+RETURN count(fr) AS total_frs,
+       count(CASE WHEN EXISTS { (fr)-[:IMPLEMENTS]->(:Decision) } THEN 1 END) AS frs_with_decision,
+       count(CASE WHEN coalesce(fr.decision_exempt, false) THEN 1 END) AS frs_exempt;
+
+
+// ---------------------------------------------------------------------------
 // Query: sa_glossary_extract
 // Description: Extract unique terms from entity, enumeration, and role names
 //              for glossary generation.
@@ -342,6 +391,43 @@ RETURN scr.id AS screen, uc.id AS use_case, f.id AS renders_form,
          target: coalesce(api.id, navScr.id, anev.id)
        }) AS effects
 ORDER BY transition;
+
+
+// ---------------------------------------------------------------------------
+// Query: sa_uc_screen_machine
+// Params: $ucId — UseCase.id (e.g. "UC-006")
+// Description: UC-scoped sibling of sa_screen_machine — the deterministic
+//   state machines of every screen this UseCase HAS_SCREEN, one row per
+//   transition: screen + route + rendered form, from/to states with their
+//   state_kind, the event with its event_kind, the guard, and the effects
+//   with their cross-layer targets (load/mutate → APIEndpoint, navigate →
+//   Screen, analytics → AnalyticsEvent). Empty result = the UC has not
+//   adopted the screen-machine layer (nacl-tl-plan skips the task-fe.md
+//   section). Label-qualified everywhere (HAS_STATE/TRIGGERS names are
+//   shared with the BA layer). The effects map-collect is null-filtered
+//   (the Фаза-2 gotcha: a bare map-collect over an unmatched OPTIONAL emits
+//   one all-null map instead of []).
+// ---------------------------------------------------------------------------
+MATCH (uc:UseCase {id: $ucId})-[:HAS_SCREEN]->(scr:Screen)
+OPTIONAL MATCH (scr)-[:RENDERS]->(f:Form)
+OPTIONAL MATCH (scr)-[:HAS_TRANSITION]->(tr:Transition)
+OPTIONAL MATCH (tr)-[:FROM_STATE]->(fromSt:ScreenState)
+OPTIONAL MATCH (tr)-[:TO_STATE]->(toSt:ScreenState)
+OPTIONAL MATCH (tr)-[:ON_EVENT]->(ev:ScreenEvent)
+OPTIONAL MATCH (tr)-[:TRIGGERS]->(eff:ScreenEffect)
+OPTIONAL MATCH (eff)-[:CALLS]->(api:APIEndpoint)
+OPTIONAL MATCH (eff)-[:NAVIGATES_TO]->(navScr:Screen)
+OPTIONAL MATCH (eff)-[:EMITS]->(anev:AnalyticsEvent)
+RETURN scr.id AS screen, scr.route AS route, f.id AS renders_form,
+       tr.id AS transition,
+       fromSt.name AS from_state, fromSt.state_kind AS from_kind,
+       ev.name AS on_event, ev.event_kind AS event_kind, tr.guard AS guard,
+       toSt.name AS to_state, toSt.state_kind AS to_kind,
+       [e IN collect(DISTINCT {
+          effect: eff.id, kind: eff.effect_kind,
+          target: coalesce(api.id, navScr.id, anev.id)
+        }) WHERE e.effect IS NOT NULL] AS effects
+ORDER BY screen, transition;
 
 
 // ---------------------------------------------------------------------------

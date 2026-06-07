@@ -61,7 +61,7 @@ THEN write code that conforms to that behavior.
 | Domain Model | /nacl-sa-domain | Entities, relationships, statuses, business rules |
 | Architecture | /nacl-sa-architect | Modules, bounded contexts, NFR |
 | Interfaces | /nacl-sa-ui | Navigation, components, layout |
-| SA validation | /nacl-sa-validate | Specification validation (L1-L6, XL6-XL9) |
+| SA validation | /nacl-sa-validate | Specification validation (L1-L13, XL6-XL9) |
 | Development plan | /nacl-tl-plan | Tasks, waves, dependencies, api-contracts |
 | Full dev cycle | /nacl-tl-full | Autonomous orchestration BE+FE+review+QA |
 | Backend development | /nacl-tl-dev-be UC### | TDD backend |

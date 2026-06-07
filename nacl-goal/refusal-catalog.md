@@ -232,8 +232,8 @@ untouched. The commit-time backstop is `GOAL_BLOCKED_WIP_COLLISION`.
 
 | | |
 |---|---|
-| Triggers | (2.14+, tightened) Fires only for atoms still unresolved AFTER the autonomous question policy ran its course: LOW/HEURISTIC-confidence atoms whose consolidated pre-`/goal` batch question (Flow step 4) was declined or could not be asked (non-interactive session), or classify-step detects contradictory atoms (e.g. one atom implies a fix to UC-X, another implies removing UC-X). MEDIUM-confidence atoms NO LONGER reach this refusal — under `--autonomous` they route on the leading guess with a tracked alternative (envelope gate `medium-confidence-routing`) |
-| Message | "`/nacl-goal intake` could not classify your goal unambiguously: `<ambiguity reason from intake>`. Possible interpretations:\n\n- `<interpretation 1>`\n- `<interpretation 2>`\n\nRe-run with a more specific goal, OR run `/nacl-tl-intake \"<goal>\"` interactively to resolve the ambiguity step by step, then re-run `/nacl-goal intake \"<resolved goal>\"`." |
+| Triggers | (tightened again with intake-self-diagnosis) Fires only for atoms still unresolved AFTER BOTH the Step 2a.5 PROBE self-diagnosis AND the autonomous question policy ran their course: sub-threshold atoms (probe ran, `diagnosis.score < route_threshold`) whose consolidated pre-`/goal` batch question (Flow step 4) was declined or could not be asked (non-interactive session), or classify-step detects contradictory atoms (e.g. one atom implies a fix to UC-X, another implies removing UC-X). MEDIUM-confidence atoms NO LONGER reach this refusal — under `--autonomous` they route on the leading hypothesis with a tracked alternative (envelope gate `medium-confidence-routing`). An atom may NOT land here merely because "the graph didn't resolve it" — the probe must have run (or been impossible) first |
+| Message | "`/nacl-goal intake` could not classify your goal unambiguously: `<ambiguity reason from intake>`. What I checked before giving up: `<per-atom diagnosis summary — checks, per-hypothesis results, blocking fact>`. Possible interpretations (after code/DB probing):\n\n- `<interpretation 1>`\n- `<interpretation 2>`\n\nRe-run with a more specific goal, OR run `/nacl-tl-intake \"<goal>\"` interactively to resolve the ambiguity step by step, then re-run `/nacl-goal intake \"<resolved goal>\"`." |
 | Fallback | `/nacl-tl-intake "<goal>"` interactively; or rewrite the goal |
 | Logs to runs/ | Yes — `intake.json` retained for inspection |
 | Reference | `nacl-goal/SKILL.md` Flow step 4 |
@@ -334,7 +334,7 @@ untouched. The commit-time backstop is `GOAL_BLOCKED_WIP_COLLISION`.
 
 | | |
 |---|---|
-| Triggers | Inner skill (`/nacl-tl-fix`, `/nacl-tl-dev`, `/nacl-sa-feature --bounded-only`) returned a non-shippable status while implementing an atom |
+| Triggers | Inner skill (`/nacl-tl-fix`, `/nacl-tl-dev`, `/nacl-sa-feature --bounded-only`) returned a non-shippable status while implementing an atom. EXCEPTION (intake-self-diagnosis+): `/nacl-tl-fix` exiting with `exit_reason: "L3-feature"` does NOT land here — it is a re-classification signal handled by the Flow step 9 RE-TYPE handler (FEATURE_SMALL self-heals in-run; FEATURE_HEAVY → atom state `unsupported`, run continues) |
 | Message | "Atom `<atom_id>` failed during implementation: `<error from state.json>`. The goal-run is halted; the branch and any verified atoms remain. Inspect `<state.json path>` for the inner skill's exit detail. Re-run requires `--new-run` after manual investigation." |
 | Fallback | Investigate the atom failure; either fix manually and re-run with `--new-run`, OR adjust the goal and re-run with `--new-run` |
 | Logs to runs/ | Yes; `state.json.state = "failed"` |

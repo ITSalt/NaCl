@@ -362,7 +362,7 @@ ORDER BY label
 
 **If the result is empty:**
 - `level=ba-cross` --> STOP, report that BA layer is not populated. User must run `/nacl-ba-import-doc` or `/nacl-ba-from-board` first.
-- `level=full` --> Run only L1-L11 (internal), skip XL6-XL9 with a WARNING in the report.
+- `level=full` --> Run only L1-L13 (internal), skip XL6-XL9 with a WARNING in the report.
 
 ### Step 0d: Verify exemption properties are populated
 

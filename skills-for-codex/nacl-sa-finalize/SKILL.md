@@ -43,8 +43,15 @@ that affect readiness.
 
 Finalization is read-only unless the user explicitly confirms decision-record
 writes. Run or emulate the named reads `sa_statistics_summary`,
-`sa_glossary_extract`, `sa_readiness_assessment`, `sa_module_overview`, and the
+`sa_statistics_extensions`, `sa_extension_adoption`, `sa_glossary_extract`,
+`sa_readiness_assessment`, `sa_module_overview`, and the
 handoff traceability and coverage queries when graph tooling is available.
+
+The extension layers (decisions, screen machines, slices, errors, resilience)
+are opt-in: all-zero counts mean "not adopted", reported as such and excluded
+from overall-readiness averages — never treated as a readiness failure.
+Non-zero FR-backfill candidates (FRs with neither an IMPLEMENTS decision nor
+`decision_exempt`) route to the provenance-gap-closure runbook.
 
 Statistics and readiness must come from graph reads, not generated markdown. If
 BA graph data is missing, report BA-to-SA traceability as

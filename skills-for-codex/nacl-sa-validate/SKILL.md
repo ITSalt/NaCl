@@ -50,7 +50,9 @@ Pre-flight:
    (BA family incl. `EntityState`/`GlossaryTerm`/`SystemContext`; TL family
    `Task`/`Wave`/`IntakeItem`; legacy `RuntimeContract`) and zero-count
    constraint-registered label tokens are NOT drift findings.
-4. Check BA layer availability before BA-to-SA levels.
+4. Check BA layer availability before BA-to-SA levels. When `full` is
+   requested but the BA layer is empty, run the complete internal set
+   (L1-L13) and skip the BA-to-SA cross-checks with a warning in the report.
 5. Audit exemption properties used by deeper checks: `has_ui`, `system_only`,
    `shared`, `internal`, and `field_category`.
 

@@ -263,7 +263,7 @@ See [nacl-core/lang-directive.md](../nacl-core/lang-directive.md) for full resol
 | Invocation | Description |
 |-----------|-------------|
 | `/nacl-sa-validate` | Full validation (all levels, default) |
-| `/nacl-sa-validate internal` | L1-L6 SA-internal consistency checks only |
+| `/nacl-sa-validate internal` | L1-L13 SA-internal consistency checks only |
 | `/nacl-sa-validate ba-cross` | XL6-XL9 BA-to-SA cross-layer coverage only |
 | `/nacl-sa-validate --scope intra-uc UC-NNN[,UC-NNN]` | Limit to specific UCs |
 | `/nacl-sa-validate --scope intra-module mod-xxx` | Limit to specific module |

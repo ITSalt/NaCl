@@ -164,3 +164,19 @@ graph:
   excalidraw_room_port: 3581     # Excalidraw WebSocket collaboration port
   container_prefix: ""           # Docker container name prefix (auto: project name if empty)
   boards_dir: "graph-infra/boards"  # Board files directory (relative to project root)
+
+# Intake self-diagnosis scoring
+# Used by: nacl-tl-intake Step 2a.5 PROBE (hypothesis verification before any
+# routing question) and /nacl-goal intake. Tune per project; when a key is
+# absent, skills use the built-in defaults.
+# Semantics, rubric and tuning guidance: nacl-tl-core/references/intake-scoring.md
+intake:
+  route_threshold: 0.7        # score >= this -> auto-route on the leading hypothesis
+  high_confidence: 0.9        # score >= this -> HIGH confidence (no tracked alternative)
+  scores:                     # rubric row values (verdict pattern -> score)
+    leader_confirmed_all_refuted: 0.95
+    leader_confirmed_some_inconclusive: 0.8
+    leader_indirect_all_refuted: 0.75
+    leader_indirect_inconclusive: 0.55
+    contradictory: 0.4
+    all_inconclusive: 0.2

@@ -24,6 +24,7 @@ so they can see the predicted refusal before committing to a strict run.
 | `nacl-sa-feature` → `nacl-tl-dev` | atom typed `FEATURE_SMALL`; intake reports `spec_gap: false`; same UC + module + gate-family as a routed precedent in last 30d; `risk_level == L1`; `confidence == HIGH`; evidence includes `GRAPH`; no hard-refuse triggers | `spec-gap-routing` |
 | `nacl-sa-feature` → `nacl-tl-dev` | atom typed `FEATURE_SMALL`; intake reports `spec_gap: true` AND none of the spec-gap-routing preconditions hold | `spec-first-prerequisite` (plus possibly hard-refuse depending on triggers) |
 | `nacl-sa-feature` → `nacl-tl-dev` | atom typed `FEATURE_HEAVY` | NOT applicable — classification step refuses with `PLAN_BLOCKED_FEATURE_REQUIRES_HUMAN_PRODUCT_DECISION` before this lookup runs |
+| any (`nacl-tl-fix` / `nacl-tl-dev` / `nacl-sa-feature` → `nacl-tl-dev`) | `confidence == MEDIUM` AND (evidence includes `GRAPH`, OR evidence includes `CODE` with `route_threshold <= diagnosis.score < high_confidence`) AND `hard_refuse_triggers == []` AND `risk_level` ∈ {L0, L1, L2} | `medium-confidence-routing` |
 
 `hard_refuse_triggers` are the closed set from `plan-lock-schema.md`:
 `schema_migration`, `public_api_contract`, `auth_or_security`, `permissions`,
