@@ -501,21 +501,15 @@ After merge to main, the CI/CD pipeline triggers (per `deploy.production.trigger
 
 **3a. Wait for CI:**
 
+The CI wait is delegated to the single-authority helper — it selects the run, watches
+it under the timeout, and classifies the outcome (constants `--timeout` / `--no-run-grace`
+documented in-script; pinned by `scripts/wait-for-ci.test.sh`):
 ```bash
-# Find the CI run triggered by the merge
-gh run list --branch {main_branch} --limit 5 --json databaseId,status,conclusion,createdAt
+bash nacl-tl-release/scripts/wait-for-ci.sh watch --branch {main_branch} --since "$merge_iso" \
+  --timeout "${ci_timeout:-600}"
+# exit 0 + CI_OK | NO_CI (no .github/workflows → warn) | NO_RUN (none within grace → warn & continue)
+# exit 1 + CI_FAILED → do NOT proceed to tagging; surface the failure block below
 ```
-
-Find the most recent run created after the merge. Watch it:
-```bash
-gh run watch {run_id} --exit-status
-```
-
-Timeout: `deploy.production.ci_timeout` (default 600 seconds / 10 minutes).
-
-If no CI run found within 30 seconds → check if CI is configured:
-- If no `.github/workflows/` → skip CI wait, warn "No CI pipeline detected"
-- If CI exists but no run → retry for 60s, then warn and continue
 
 If CI **FAILS**:
 ```bash
@@ -536,11 +530,13 @@ Do NOT proceed to tagging.
 
 **3b. Health check (if `deploy.production.url` configured):**
 
-Wait 15 seconds for deployment propagation, then:
+The health probe is delegated (propagation wait, retry count, and interval are documented
+in-script; pinned by `scripts/health-check.test.sh`):
 ```bash
-curl -sf "{production_url}{health_endpoint}" --max-time 10
+bash nacl-tl-release/scripts/health-check.sh --url "{production_url}{health_endpoint}"
+# exit 0 HEALTH_OK | exit 1 HEALTH_FAILED → surface the HALT block below
 ```
-Retry 3 times with 10-second intervals.
+Remember: a green probe is HEALTH_ONLY evidence, never product-readiness (Step 5 gate).
 
 If health check fails — **HALT** (strict; no inline operator
 override; W4-blocking-release):

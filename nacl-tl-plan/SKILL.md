@@ -393,15 +393,26 @@ covering every violation by `(uc_id, contract_id)` tuple.
 
 ## Phase 2: Wave Planning
 
-### Step 2.1: Topological sort
+### Step 2.1: Compute the wave plan (deterministic)
 
-Using the `depends_on` data from Step 1.3, sort UCs by:
+Do not assign waves by hand — a missed `depends_on` edge silently produces an
+FE-before-its-dependency wave. Feed the `depends_on` / `priority` data from Step 1.3
+(plus the Step 2.3 TECH ids) to the single-authority planner; use its output to drive
+Step 2.4. It returns `{ waves, tasks:[{task_id,type,uc,wave,priority}], task_deps:[{from,to}] }`
+and exits non-zero on a dependency cycle or an undefined dependency.
 
-1. **Dependency order** -- a UC that depends on another UC must come after it
-2. **Priority** -- among independent UCs, higher priority comes first
-3. **Module grouping** -- UCs in the same module stay close when possible
+```bash
+node nacl-tl-plan/scripts/wave-plan.mjs '{"tech":["TECH-001","TECH-002"],"ucs":[{"id":"UC001","module":"auth","priority":"high","depends_on":[]},{"id":"UC002","depends_on":["UC001"]}]}'
+```
 
-### Step 2.2: Wave assignment rules
+`ucs[].tasks` defaults to `["BE","FE"]`; pass `["BE"]` for a backend-only UC.
+
+### Step 2.2: Wave assignment rules (what the planner implements)
+
+The table documents the planner's contract; the script is the authority (scheme:
+`depth(uc)` = the DEPENDS_ON topological level; TECH → wave 0; `UC###-BE` → wave
+`1 + 2·depth`; `UC###-FE` → BE wave + 1). Equivalence and these invariants are pinned
+by `scripts/wave-plan.test.mjs`.
 
 | Rule | Description |
 |------|-------------|
@@ -410,8 +421,8 @@ Using the `depends_on` data from Step 1.3, sort UCs by:
 | **Dependency chain** | If UC-B depends on UC-A, then UC-B-BE wave > UC-A-BE wave |
 | **Parallel independent** | UCs with no mutual dependencies can be in the same wave |
 | **api-contract first** | `api-contract.md` is created during planning, so available to FE by default |
-| **SYNC after pair** | `nacl-tl-sync` runs when both BE and FE for a UC are approved |
-| **QA in final waves** | E2E tests run after sync is complete |
+| **SYNC after pair** | `nacl-tl-sync` runs when both BE and FE for a UC are approved (a task PHASE, not a wave) |
+| **QA in final waves** | E2E tests run after sync is complete (a task PHASE, not a wave) |
 
 ### Step 2.3: Standard TECH tasks
 

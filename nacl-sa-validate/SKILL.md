@@ -418,6 +418,20 @@ Every detected problem is assigned a severity:
 | **WARNING** | Inconsistency that should be fixed but is not blocking | 5+ WARNINGs --> overall WARN |
 | **INFO** | Observation, optional improvement | Does not affect overall status |
 
+**Computing the overall status is delegated** — do not roll up ~40 check results by
+hand (miscounting "5+ WARNING" or missing one CRITICAL silently changes the gate
+verdict). Collect every finding as `{check, severity, flags?}` and pass them to the
+single-authority classifier; emit its `overall` token verbatim. It also re-applies the
+property-based exemption filters (L4.1/L5.1/L6.1/L9.1/L10.2/L10.6/XL8.2) as a
+defense-in-depth net, so a finding whose Cypher omitted its `coalesce(...)` filter is
+still dropped before it can flip the gate. Equivalence pinned by
+`scripts/classify-findings.test.mjs`.
+
+```bash
+node nacl-sa-validate/scripts/classify-findings.mjs '{"findings":[{"check":"L1.1","severity":"CRITICAL"},{"check":"L4.1","severity":"CRITICAL","flags":{"field_category":"display"}}]}'
+# stdout: full JSON (findings + counts + overall); stderr: the bare overall token
+```
+
 ---
 
 ## Validation Levels -- Internal (L1-L13)

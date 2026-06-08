@@ -1,0 +1,3 @@
+Source root: feat/skill-tools-pilot (BA id formatting extracted into nacl-ba-sync/scripts/nacl-ids.mjs; id queries now return the raw nextNum)
+Intentional divergence: The Codex variant is a condensed behavioural version that does not reproduce the per-type BA id-generation Cypher (the `right('0…' + toString(n), w)` formatting idiom for GPR/BP/OBJ/ROL/WorkflowStep). The new bundled helper `scripts/nacl-ids.mjs` (the root-side single authority for that format, pinned by `scripts/nacl-ids.test.mjs`) is not part of the Codex distribution, so the root delegation has no Codex counterpart to mirror.
+Next review: next NaCl release that touches nacl-ba-sync

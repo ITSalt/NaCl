@@ -1,0 +1,3 @@
+Source root: feat/skill-tools-pilot (Phase-2 wave assignment extracted into nacl-tl-plan/scripts/wave-plan.mjs as the single authority)
+Intentional divergence: The Codex variant describes wave planning at the principle level ("build an execution wave plan from dependencies and priorities"; "wave planning by dependencies and priority") and intentionally does not reproduce the procedural numbering scheme (`depth`, `1 + 2·depth`, BE/FE wave formula). The new bundled helper `scripts/wave-plan.mjs` (the root-side single authority, equivalence-pinned by `scripts/wave-plan.test.mjs`) is not part of the Codex distribution, so the root delegation has no Codex counterpart to mirror.
+Next review: next NaCl release that touches nacl-tl-plan

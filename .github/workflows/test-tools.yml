@@ -1,0 +1,56 @@
+name: Test Skill Tools
+
+# Runs the equivalence-pin tests for deterministic skill tools (the scripts that
+# replace inline procedural prose). Node `.mjs` tools use `node --test`; bash tools
+# use a self-asserting `*.test.sh` plus a `bash -n` syntax check. This job also
+# retro-covers nacl-tl-verify-code/scripts/classify-status.test.mjs, which existed
+# before any CI ran Node tests.
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '**/scripts/*.mjs'
+      - '**/scripts/*.sh'
+      - '.github/workflows/test-tools.yml'
+  push:
+    branches: [main]
+    paths:
+      - '**/scripts/*.mjs'
+      - '**/scripts/*.sh'
+      - '.github/workflows/test-tools.yml'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Node tool tests (node --test)
+        shell: bash
+        run: |
+          tests=$(git ls-files '*/scripts/*.test.mjs')
+          if [ -z "$tests" ]; then
+            echo "No Node tool tests found."
+          else
+            echo "Running Node test file(s):"; echo "$tests" | sed 's/^/  /'
+            # paths in this repo contain no spaces; intentional word-split
+            node --test $tests
+          fi
+
+      - name: Bash tool tests + syntax check
+        shell: bash
+        run: |
+          failed=0
+          for t in $(git ls-files '*/scripts/*.test.sh'); do
+            echo "== run $t =="
+            bash "$t" || failed=1
+          done
+          for s in $(git ls-files '*/scripts/*.sh'); do
+            bash -n "$s" || { echo "SYNTAX FAIL: $s"; failed=1; }
+          done
+          exit "$failed"

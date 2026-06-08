@@ -1,0 +1,3 @@
+Source root: feat/skill-tools-pilot (overall-status rollup + property-based exemption net extracted into nacl-sa-validate/scripts/classify-findings.mjs)
+Intentional divergence: The Codex variant lists the checks and their per-check exemption flags at the principle level and instructs to "report check counts, findings grouped by severity" without reproducing the procedural overall-status rollup ("any CRITICAL → FAIL; 5+ WARNING → WARN"). The new bundled helper `scripts/classify-findings.mjs` (the root-side single authority for the rollup, equivalence-pinned by `scripts/classify-findings.test.mjs`) is not part of the Codex distribution, so the root delegation has no Codex counterpart to mirror.
+Next review: next NaCl release that touches nacl-sa-validate

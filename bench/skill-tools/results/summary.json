@@ -1,0 +1,102 @@
+{
+  "base": "main",
+  "runs": 20,
+  "h1": [
+    {
+      "tool": "ship/branch.sh",
+      "invocation": "bash branch.sh …",
+      "runs": 20,
+      "distinct_outputs": 1,
+      "deterministic": true,
+      "output_chars": 26,
+      "output_tok_est": 7
+    },
+    {
+      "tool": "ship/branch.sh",
+      "invocation": "bash branch.sh …",
+      "runs": 20,
+      "distinct_outputs": 1,
+      "deterministic": true,
+      "output_chars": 51,
+      "output_tok_est": 13
+    },
+    {
+      "tool": "plan/wave-plan.mjs",
+      "invocation": "node wave-plan.mjs …",
+      "runs": 20,
+      "distinct_outputs": 1,
+      "deterministic": true,
+      "output_chars": 1309,
+      "output_tok_est": 327
+    },
+    {
+      "tool": "sa-validate/classify-findings.mjs",
+      "invocation": "node classify-findings.mjs …",
+      "runs": 20,
+      "distinct_outputs": 1,
+      "deterministic": true,
+      "output_chars": 465,
+      "output_tok_est": 116
+    },
+    {
+      "tool": "ba-sync/nacl-ids.mjs",
+      "invocation": "node nacl-ids.mjs …",
+      "runs": 20,
+      "distinct_outputs": 1,
+      "deterministic": true,
+      "output_chars": 10,
+      "output_tok_est": 3
+    },
+    {
+      "tool": "release/wait-for-ci.sh",
+      "invocation": "bash wait-for-ci.sh …",
+      "runs": 20,
+      "distinct_outputs": 1,
+      "deterministic": true,
+      "output_chars": 9,
+      "output_tok_est": 2
+    }
+  ],
+  "h2": [
+    {
+      "file": "nacl-tl-ship/SKILL.md",
+      "removed_inline_chars": 482,
+      "removed_tok_est": 121,
+      "added_invocation_chars": 572,
+      "added_tok_est": 143,
+      "net_chars": 90
+    },
+    {
+      "file": "nacl-tl-plan/SKILL.md",
+      "removed_inline_chars": 490,
+      "removed_tok_est": 123,
+      "added_invocation_chars": 1280,
+      "added_tok_est": 320,
+      "net_chars": 790
+    },
+    {
+      "file": "nacl-sa-validate/SKILL.md",
+      "removed_inline_chars": 0,
+      "removed_tok_est": 0,
+      "added_invocation_chars": 869,
+      "added_tok_est": 217,
+      "net_chars": 869
+    },
+    {
+      "file": "nacl-tl-release/SKILL.md",
+      "removed_inline_chars": 660,
+      "removed_tok_est": 165,
+      "added_invocation_chars": 934,
+      "added_tok_est": 234,
+      "net_chars": 274
+    },
+    {
+      "file": "nacl-ba-sync/SKILL.md",
+      "removed_inline_chars": 994,
+      "removed_tok_est": 249,
+      "added_invocation_chars": 1389,
+      "added_tok_est": 347,
+      "net_chars": 395
+    }
+  ]
+}

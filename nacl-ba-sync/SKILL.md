@@ -172,11 +172,15 @@ If the user chooses to create a new one, ask for the name, then generate the ID 
 
 ```cypher
 MATCH (gpr:ProcessGroup)
-WITH coalesce(max(toInteger(replace(gpr.id, 'GPR-', ''))), 0) + 1 AS nextNum
-RETURN 'GPR-' + right('00' + toString(nextNum), 2) AS nextId
+RETURN coalesce(max(toInteger(replace(gpr.id, 'GPR-', ''))), 0) + 1 AS nextNum
 ```
 
-If no ProcessGroup nodes exist, the result is `GPR-01`.
+Format the id with the single-authority formatter — it centralises the prefix/width rule
+that was duplicated (as the `right('0…' + toString(n), w)` idiom) across every BA id query;
+pinned by `scripts/nacl-ids.test.mjs`:
+```bash
+node nacl-ba-sync/scripts/nacl-ids.mjs process-group "$nextNum"   # → GPR-01 when nextNum=1
+```
 
 **Create the ProcessGroup node** via `mcp__neo4j__write-cypher`:
 
@@ -222,11 +226,13 @@ If the user chooses to create a new one, ask for the name, then generate the ID 
 
 ```cypher
 MATCH (bp:BusinessProcess)
-WITH coalesce(max(toInteger(replace(bp.id, 'BP-', ''))), 0) + 1 AS nextNum
-RETURN 'BP-' + right('000' + toString(nextNum), 3) AS nextId
+RETURN coalesce(max(toInteger(replace(bp.id, 'BP-', ''))), 0) + 1 AS nextNum
 ```
 
-If no BusinessProcess nodes exist, the result is `BP-001`.
+Format via the single-authority formatter (see GPR note above):
+```bash
+node nacl-ba-sync/scripts/nacl-ids.mjs business-process "$nextNum"   # → BP-001 when nextNum=1
+```
 
 **Create the BusinessProcess node and link to ProcessGroup** via `mcp__neo4j__write-cypher`:
 
@@ -269,11 +275,13 @@ For each element, determine the node type from `customData.nodeType` and execute
 
 ```cypher
 MATCH (bp:BusinessProcess {id: $bpId})-[:HAS_STEP]->(ws:WorkflowStep)
-WITH coalesce(max(toInteger(replace(replace(ws.id, $bpId + '-S', ''), '', ''))), 0) + 1 AS nextNum
-RETURN $bpId + '-S' + right('00' + toString(nextNum), 2) AS nextId
+RETURN coalesce(max(toInteger(replace(ws.id, $bpId + '-S', ''))), 0) + 1 AS nextNum
 ```
 
-If no steps exist for this process, the result is `{BP-NNN}-S01`.
+Format via the single-authority formatter — pass the parent `$bpId` (see GPR note above):
+```bash
+node nacl-ba-sync/scripts/nacl-ids.mjs workflow-step "$nextNum" "$bpId"   # → BP-001-S01 when nextNum=1
+```
 
 **b) Resolve display text:**
 
@@ -354,11 +362,13 @@ RETURN ws.id AS id
 
 ```cypher
 MATCH (e:BusinessEntity)
-WITH coalesce(max(toInteger(replace(e.id, 'OBJ-', ''))), 0) + 1 AS nextNum
-RETURN 'OBJ-' + right('000' + toString(nextNum), 3) AS nextId
+RETURN coalesce(max(toInteger(replace(e.id, 'OBJ-', ''))), 0) + 1 AS nextNum
 ```
 
-If no BusinessEntity nodes exist, the result is `OBJ-001`.
+Format via the single-authority formatter (see GPR note above):
+```bash
+node nacl-ba-sync/scripts/nacl-ids.mjs entity "$nextNum"   # → OBJ-001 when nextNum=1
+```
 
 **b) Resolve display text:** Look up `labelMap[element.id]` for the entity name.
 
@@ -395,11 +405,13 @@ RETURN be.id AS id
 
 ```cypher
 MATCH (r:BusinessRole)
-WITH coalesce(max(toInteger(replace(r.id, 'ROL-', ''))), 0) + 1 AS nextNum
-RETURN 'ROL-' + right('00' + toString(nextNum), 2) AS nextId
+RETURN coalesce(max(toInteger(replace(r.id, 'ROL-', ''))), 0) + 1 AS nextNum
 ```
 
-If no BusinessRole nodes exist, the result is `ROL-01`.
+Format via the single-authority formatter (see GPR note above):
+```bash
+node nacl-ba-sync/scripts/nacl-ids.mjs role "$nextNum"   # → ROL-01 when nextNum=1
+```
 
 **b) Resolve display text:** Look up `labelMap[element.id]` for the role full name.
 
