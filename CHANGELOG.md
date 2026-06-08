@@ -4,6 +4,73 @@ All notable changes to NaCl (Natural Agent Control Language) will be documented 
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [2.18.0] — 2026-06-08
+
+**Multi-PR orchestration: the `conduct` alias.** A `/nacl-goal` should be able
+to drive a *heterogeneous* goal — several unrelated changes across different
+modules — to completion, the way `nacl-tl-conductor` does for graph-resident
+work: cluster the work, wave-order it, and ship each piece on its own PR,
+iterating per cluster until green. Until now the only autonomous orchestrator
+was `intake`, which is unitary by design (one intent → one branch → one PR) and
+*refuses* a heterogeneous goal with `PLAN_BLOCKED_PLAN_SPLIT_REQUIRED`. That
+refusal was the signpost for a feature that didn't exist yet. 2.18.0 ships it as
+the long-deferred "multi-PR orchestration" roadmap item — a new sibling alias,
+`conduct`, that turns that exact split into the designed behavior.
+
+`intake` is byte-unchanged. Multi-PR is never a silent default; you only get it
+when you name `conduct`. The two refuse into each other so neither silently does
+the other's job (`intake`→`conduct` on a heterogeneous goal; `conduct`→`intake`
+via `PLAN_BLOCKED_SINGLE_CLUSTER_USE_INTAKE` on a homogeneous one). The owner's
+"goal-run is unitary" principle holds — scoped to `intake`, with `conduct` as the
+explicit opt-in.
+
+- **New alias `conduct`** (`nacl-goal/aliases.md`): autonomy-by-default, Tier L.
+  Partitions classified atoms into module-aligned **clusters** (the inverse of
+  `intake`'s split detector), builds a cluster DAG, and ships each cluster on its
+  own `feature/goal-<hash>-<cluster_id>` branch — cut from a shared
+  `integration/goal-<hash>` branch — as its own PR, wave-ordered by cross-cluster
+  `depends_on`.
+- **Graph-less wave runner.** `conduct` borrows `nacl-tl-conductor`'s SEMANTICS
+  (waves, per-item lifecycle, max-3 retry, partial-completion handling) WITHOUT
+  the Neo4j dependency: it clusters atoms itself and drives the existing inner
+  skills per cluster through the same `NACL_GOAL_*` env-var integration `intake`
+  uses — so it runs on projects with no SA graph.
+- **Bounded per-cluster E2E loop.** When a cluster's acceptance is UI-bearing,
+  `conduct` loops `/nacl-tl-qa` (auto-scenario from `acceptance.md`) → fix →
+  re-test for CRITICAL / MAJOR-in-main-flow bugs, capped at 3 iterations; MINOR
+  bugs are deferred (filed, never blocking). No unbounded iteration — the cap
+  plus stop-and-ask is deliberate.
+- **Siblings don't abort.** A cluster failure is carried as
+  `GOAL_BLOCKED_CLUSTER_*` (atom/CI/staging/SHA/QA/drift); dependents become
+  `skipped_blocked_dependency`, independents keep going. A drained mixed wave
+  lands `GOAL_BLOCKED_PARTIAL_WAVE` — selectively resumable via
+  `/nacl-goal resume --clusters=<ids>`, which re-runs only the blocked clusters
+  and leaves the already-green PRs untouched.
+- **New check script** `nacl-goal/checks/conduct.sh` — scans `clusters/*/`,
+  aggregates per-cluster state, emits the cluster-aware GOAL_PROOF; `GOAL_OK` is
+  unreachable while any cluster is blocked/skipped/unsupported (nothing dropped
+  silently). Three fixture tests cover GOAL_OK, PARTIAL_WAVE, and the
+  not-yet-drained → GOAL_NOT_OK distinction.
+- **Inner-skill integration.** `nacl-tl-ship` recognizes the additive
+  `NACL_GOAL_CLUSTER_ID` (redirects the per-PR artifact base to a per-cluster
+  subdir — one PR per cluster — and commits to the per-cluster branch, never
+  switching); `nacl-tl-qa` documents the bounded loop under `conduct`. Both are
+  backward-compatible: absent the env var, behavior is identical to before.
+- **Contracts & docs.** `refusal-catalog.md` (split-scope note + 3 PLAN_BLOCKED
+  + 8 GOAL_BLOCKED conduct codes), `plan-lock-schema.md` (additive `clusters[]`),
+  `pr-body-template.md`, `run-artifacts.md`, `regression-schema.md`,
+  `envelope.md`, three goal guides, and the Codex mirrors for `nacl-goal`,
+  `nacl-tl-ship`, `nacl-tl-qa` (codex-sync gate VERIFIED).
+- **Permissions.** N × `gh pr create` and the wrapper-level merge of a verified
+  cluster branch INTO the non-protected integration branch are permitted; merges
+  into `main`/`master`/`release/*` remain refused (`REFUSE_PRODUCTION_MUTATION`).
+- **Validation status (honest).** Ships as v1 with the contract + check script +
+  inner-skill integration, fixture-tested and CI-gate-clean. v1 is SEQUENTIAL
+  (`--max-parallel=1`); cluster PRs target the base branch. The live
+  multi-cluster acceptance run against a real heterogeneous project, concurrent
+  cluster execution (`--max-parallel>1`), and best-effort graph Task-status
+  writes are the next milestones — see the version note in `nacl-goal/SKILL.md`.
+
 ## [2.17.0] — 2026-06-07
 
 **Tech-stack de-prescription.** NaCl is technology-agnostic; the project's
