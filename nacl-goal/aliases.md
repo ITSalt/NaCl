@@ -214,7 +214,11 @@ The autonomous goal orchestrator. Ingests free-text + image intent, classifies
 via `/nacl-tl-intake --autonomous --yes --emit-state` into BUG / TASK /
 FEATURE_SMALL atoms (with `depends_on` topological execution), runs them on
 one feature branch producing one PR, drives that PR through CI to a healthy
-staging stand. The `--autonomous` flag (2.14+) widens the auto-route set:
+staging stand. `intake` is UNITARY by design — one intent, one branch, one PR —
+and refuses a goal that would need splitting across modules
+(`PLAN_BLOCKED_PLAN_SPLIT_REQUIRED`). For a heterogeneous goal that legitimately
+spans several unrelated modules, use the sibling `conduct` alias instead: it
+materializes that split as per-module clusters, each shipping its own PR (see below). The `--autonomous` flag (2.14+) widens the auto-route set:
 L2/L3 launch-sanity auto-confirms, probe-scored atoms (intake Step 2a.5
 self-diagnosis — hypotheses verified against the actual code/DB, rubric
 score per `nacl-tl-core/references/intake-scoring.md`) route on the leading
@@ -351,6 +355,151 @@ see `refusal-catalog.md` for full entries):
   strict pre-flight, privacy precheck, fingerprint dedup.
 - Runtime block codes (`GOAL_BLOCKED_*`): emitted during the autonomous loop
   via the check script's `result: GOAL_BLOCKED` + an evidence sub-reason.
+
+---
+
+## conduct (2.18.0)
+
+The multi-cluster orchestrator — sibling of `intake`, for goals that legitimately
+span several unrelated modules. Where `intake` is unitary (one intent → one branch →
+one PR) and REFUSES a heterogeneous goal with `PLAN_BLOCKED_PLAN_SPLIT_REQUIRED`,
+`conduct` is the explicit opt-in that materializes that same split as **clusters**:
+each cluster ships on its own branch as its own PR, wave-ordered by cross-cluster
+dependencies. It borrows the SEMANTICS of `/nacl-tl-conductor` (waves, per-item
+lifecycle, max-3 retry, partial-completion handling) WITHOUT its Neo4j dependency —
+the wrapper clusters the classified atoms itself (reusing `/nacl-tl-intake`'s
+GROUP/SPLIT criteria, the exact inverse of the split detector) and drives the
+EXISTING inner skills (`/nacl-tl-fix`, `/nacl-tl-dev*`, `/nacl-tl-qa`,
+`/nacl-tl-ship`, `/nacl-tl-deliver`) once per cluster through the same `NACL_GOAL_*`
+env-var integration `intake` uses.
+
+**Decision rule for the user — one coherent change to one area → `intake`; several
+unrelated changes across different modules → `conduct`.** The two refuse into each
+other: `intake` refuses a heterogeneous goal and points at `conduct`; `conduct`
+refuses a homogeneous goal (`PLAN_BLOCKED_SINGLE_CLUSTER_USE_INTAKE`) and points at
+`intake`. `conduct --single-pr` forces unitary `intake` behavior from this entry point.
+
+Per cluster, when the cluster's acceptance is UI-bearing, `conduct` runs a BOUNDED
+E2E loop: `/nacl-tl-qa` (auto-generates the scenario from acceptance.md) → on a
+CRITICAL / MAJOR-in-main-flow bug, route to `/nacl-tl-{dev-be,dev-fe,fix} --continue`
+and re-run, up to `max_iterations` (3); MINOR bugs are deferred (filed, not blocking)
+and never consume the iteration budget. A cluster that fails does NOT abort its
+siblings: dependents become `skipped_blocked_dependency`, independents keep going, and
+the run lands `GOAL_BLOCKED_PARTIAL_WAVE` — selectively resumable via
+`/nacl-goal resume --clusters=<blocked_ids>` (the already-green PRs are never touched).
+
+See SKILL.md §`conduct` alias UX, §`conduct` Flow.
+
+```
+alias_name              conduct
+tier                    L
+default_mode            autonomous
+check_script            nacl-goal/checks/conduct.sh
+check_script_args_schema
+  required:
+    --run-id <goal-run-id>           # script reads ONLY .tl/goal-runs/<run_id>/
+                                     # (incl. clusters/<cluster_id>/ subdirs)
+invocation_args (user-facing — NOT passed to check_script)
+  positional: <goal: free-text string>     # may include image refs
+  opt-out / tuning flags:
+    --plan-only                            # cluster plan + per-cluster atom plans only;
+                                           # no branches, no PRs
+    --strict                               # disable default safe-exception envelope
+    --target=staging|dev-only              # default: staging (auto from config)
+    --budget=<profile>                     # optional budget override (default Tier L)
+    --new-run                              # force fresh run-id on fingerprint match
+    --max-parallel=<N>                     # clusters run concurrently per wave;
+                                           # v1 ships sequential (default 1)
+    --clusters=<id,...>                    # run/resume only a subset of locked clusters
+    --single-pr                            # DEGRADE to intake semantics (refuse to split)
+  NOTE: conduct does NOT expose --branch=current. Per-cluster isolation needs
+    per-cluster branches off a controlled integration branch; conduct always operates
+    in a branch_mode=new-like posture rooted at integration/goal-<short-hash>.
+expected_evidence_keys
+  - intake_status                  # classified | ambiguous | refused
+  - plan_locked                    # bool
+  - cluster_dag_valid              # bool — topological sort over the cluster DAG succeeded
+  - clusters_total                 # int
+  - clusters_shipped               # int — PR open AND cluster CI success
+  - clusters_deployed              # int — deploy_status healthy (or dev_verified)
+  - clusters_blocked               # int — clusters in a GOAL_BLOCKED_CLUSTER_* state
+  - clusters_skipped               # int — skipped_blocked_dependency
+  - clusters_unsupported           # int — all-atoms-unsupported clusters (FEATURE_HEAVY etc.)
+  - prs_opened                     # JSON list[string] — one PR URL per shipped cluster
+                                   # (ordered by wave, then cluster_id)
+  - per_cluster_status             # JSON list[{cluster_id, wave, state, pr_url, ci_status,
+                                   #            deploy_status, qa_aggregate,
+                                   #            atoms_verified, atoms_total}]
+  - atoms_total                    # int — across all clusters
+  - atoms_implemented              # int — state==verified across all clusters
+  - unsupported_atoms_count        # int — across all clusters
+  - no_new_regressions             # bool — run-level postfix diff vs the single
+                                   # integration baseline (catches cross-cluster regressions)
+  - regression_check_mode          # stable_ids | best_effort
+  - baseline_command               # string — resolved test command (audit)
+  - deploy_target                  # staging | dev-only | none
+  - integration_branch             # string — integration/goal-<short-hash>
+  - integration_base_sha           # string — base_branch HEAD when the run started
+  - dev_verified                   # bool | n/a — dev-only path (all clusters locally verified)
+result_decision_rule
+  GOAL_OK
+    when intake_status == classified
+    AND plan_locked == true
+    AND cluster_dag_valid == true
+    AND unsupported_atoms_count == 0
+    AND clusters_skipped == 0
+    AND clusters_blocked == 0
+    AND atoms_implemented == atoms_total
+    AND no_new_regressions == true
+    AND for EVERY cluster c in per_cluster_status:
+          c.state == "deployed"
+          AND c.qa_aggregate == VERIFIED          # minor-deferred bugs still count VERIFIED
+          AND (deploy_target == staging
+                 ? (c.ci_status == success AND c.pr_url != null AND c.deploy_status == healthy)
+                 : (deploy_target == dev-only ? c.dev_verified == true : true))
+    # GOAL_OK is UNREACHABLE while any cluster is blocked, skipped, or unsupported —
+    # a deferred cluster is accounted in clusters_blocked/_skipped/_unsupported, never
+    # silently dropped, so the run lands GOAL_NOT_OK or GOAL_BLOCKED instead.
+  GOAL_NOT_OK
+    default — clusters still implementing, CI pending, QA iterating, etc.
+  GOAL_BLOCKED
+    when probe-stop-signals.sh emitted any blocker (when wired)
+    OR a wave drained leaving >=1 cluster blocked/skipped while >=1 shipped green,
+       and no sibling can still progress → GOAL_BLOCKED_PARTIAL_WAVE (selectively resumable)
+    OR any run-level GOAL_BLOCKED_* (GOAL_BLOCKED_INTEGRATION_DRIFTED, run-level
+       regression via GOAL_BLOCKED_NEW_REGRESSIONS_DETECTED, cluster DAG cycle)
+  GOAL_BUDGET_EXHAUSTED
+    when turns_so_far >= 1200
+    OR elapsed >= 16h
+    OR observed_tokens >= 20_000_000   # token accounting is best-effort; only wall-clock enforceable
+tier_c_collisions
+  - REFUSE_HUMAN_GATE_BA_SA_HANDOFF
+      if any atom in any cluster requires BA-layer changes (pre-run /nacl-ba-handoff)
+  - REFUSE_HUMAN_GATE_SA_PHASE_CONFIRMATION
+      if any atom implies SA-phase confirmation (escalate to interactive /nacl-sa-full)
+  - REFUSE_HOTFIX_JUDGMENT
+      if any atom has hard_refuse_triggers including "hotfix_or_release_routing"
+  - REFUSE_PRODUCTION_MUTATION
+      if the working tree is on main/master/release/* (precheck refuses pre-/goal with
+      PLAN_BLOCKED_UNSAFE_PRODUCTION_MUTATION; the integration branch is cut FROM a
+      non-production checkout)
+```
+
+Additional conduct-specific refusals (NOT covered by existing codes; see
+`refusal-catalog.md` for full entries):
+
+- Pre-`/goal` (`PLAN_BLOCKED_*`): `PLAN_BLOCKED_SINGLE_CLUSTER_USE_INTAKE` (the goal was
+  homogeneous — one cluster — so `intake` is the cheaper, unitary tool),
+  `PLAN_BLOCKED_CLUSTER_DAG_CYCLE` (cycle in cross-cluster dependencies),
+  `PLAN_BLOCKED_INCOMPATIBLE_CLUSTER_TARGETS` (the residual b/c/d cases of the old split
+  criterion: incompatible release targets, mixed feature/hotfix routing, mutually
+  exclusive hard-refuse policies). `PLAN_BLOCKED_PLAN_SPLIT_REQUIRED` does NOT fire under
+  `conduct` — the multi-module partition IS the cluster set, which is the alias's reason
+  to exist.
+- Runtime (`GOAL_BLOCKED_CLUSTER_*`): per-cluster failures (`_ATOM_FAILED`, `_CI_FAILED`,
+  `_STAGING_UNHEALTHY`, `_DEPLOYED_SHA_MISMATCH`, `_QA_UNRESOLVED`, `_BRANCH_DRIFTED`) that
+  do NOT abort sibling clusters; the run-level terminal aggregate `GOAL_BLOCKED_PARTIAL_WAVE`;
+  and `GOAL_BLOCKED_INTEGRATION_DRIFTED` (the shared integration branch moved unexpectedly).
 
 ---
 

@@ -242,11 +242,17 @@ untouched. The commit-time backstop is `GOAL_BLOCKED_WIP_COLLISION`.
 
 | | |
 |---|---|
-| Triggers | Classify-step detects a plan that would require multiple PRs to ship safely. Concrete criteria: atoms touch >1 top-level module AND no dependency path connects the groups AND total atoms ≥3; OR atoms require incompatible release targets; OR atoms mix normal feature-branch with hotfix/release routing; OR atoms imply mutually exclusive hard-refuse policies. |
-| Message | "`/nacl-goal intake` would need to split this goal across multiple PRs to ship safely (reason: `<which criterion>`). One goal-run produces one PR; multi-PR orchestration is out of scope in 2.10.1. Either split the goal into separate `/nacl-goal intake` invocations yourself, OR run `/nacl-tl-intake \"<goal>\"` interactively to decide the breakdown.\n\nOffending atom set: `<list>`." |
-| Fallback | Split the goal manually and run each piece separately, OR `/nacl-tl-intake` interactively |
+| Triggers | **`intake` only.** Classify-step detects a plan that would require multiple PRs to ship safely. Concrete criteria: atoms touch >1 top-level module AND no dependency path connects the groups AND total atoms ≥3; OR atoms require incompatible release targets; OR atoms mix normal feature-branch with hotfix/release routing; OR atoms imply mutually exclusive hard-refuse policies. |
+| Message | "`/nacl-goal intake` would need to split this goal across multiple PRs to ship safely (reason: `<which criterion>`). `intake` is unitary — one goal-run produces one PR. Two ways forward:\n\n1. Run `/nacl-goal conduct \"<goal>\"` to ship this as separate per-module PRs (one PR per cluster, wave-ordered).\n2. Split the goal into separate `/nacl-goal intake` invocations yourself, OR run `/nacl-tl-intake \"<goal>\"` interactively to decide the breakdown.\n\nOffending atom set: `<list>`." |
+| Fallback | `/nacl-goal conduct "<goal>"` (per-module PRs), OR split manually, OR `/nacl-tl-intake` interactively |
 | Logs to runs/ | Yes — `intake.json` and `plan.lock.json` retained |
 | Reference | `nacl-goal/SKILL.md` Flow step 4 §PLAN_SPLIT_REQUIRED criterion |
+
+**Scope note.** This code is SCOPED TO `intake`. Under the `conduct` orchestrator the
+multi-module partition is NOT a refusal — it is materialized as clusters (one PR per
+cluster). `conduct` keeps only the genuine cross-cutting blockers from criteria
+(b)/(c)/(d) above, surfaced as `PLAN_BLOCKED_INCOMPATIBLE_CLUSTER_TARGETS` (see the
+conduct block-code section below).
 
 ## PLAN_BLOCKED_ATOM_DEPENDENCY_CYCLE
 
@@ -419,6 +425,136 @@ untouched. The commit-time backstop is `GOAL_BLOCKED_WIP_COLLISION`.
 | Fallback | Investigate the deploy pipeline; redeploy if needed; `/nacl-goal intake --new-run` |
 | Logs to runs/ | Yes |
 | Reference | `nacl-goal/SKILL.md` Flow step 13 |
+
+---
+
+# /nacl-goal conduct-alias block codes (2.18.0)
+
+The `conduct` alias (multi-cluster orchestrator) adds these codes. They are SCOPED TO
+`conduct` — none apply to `intake`, `wave`, `fix`, `validate`, or `reopened-drain`.
+`conduct` ALSO inherits the universal `REFUSE_*` codes and the run-level intake codes
+that are orchestrator-agnostic (`PLAN_BLOCKED_GOAL_ARTIFACTS_NOT_GITIGNORED`,
+`PLAN_BLOCKED_UNSAFE_PRODUCTION_MUTATION`, `PLAN_BLOCKED_BASELINE_*`,
+`PLAN_BLOCKED_STAGING_REQUIRED_BUT_MISSING`, `GOAL_BLOCKED_NEW_REGRESSIONS_DETECTED`,
+`GOAL_BLOCKED_BUDGET_EXHAUSTED`).
+
+The defining property of the per-cluster `GOAL_BLOCKED_CLUSTER_*` codes: a single
+cluster's failure does NOT abort its siblings. While any sibling can still progress, a
+cluster failure is carried as cluster `state: blocked` and the run-level result stays
+`GOAL_NOT_OK`. Only once a wave has drained leaving a mix of green and non-green clusters
+does the check script emit run-level `GOAL_BLOCKED` with sub-reason
+`GOAL_BLOCKED_PARTIAL_WAVE`. Clusters depending on a blocked cluster become
+`skipped_blocked_dependency` (never silently dropped).
+
+## PLAN_BLOCKED_SINGLE_CLUSTER_USE_INTAKE
+
+| | |
+|---|---|
+| Triggers | `conduct` classification produced exactly ONE cluster — the goal was homogeneous after all (single module / one dependency-connected group). |
+| Message | "`/nacl-goal conduct` is for goals that span several unrelated modules, but this goal resolved to a single coherent change. Use the unitary orchestrator instead — it is cheaper and produces one clean PR:\n\n```\n/nacl-goal intake \"<goal>\"\n```" |
+| Fallback | `/nacl-goal intake "<goal>"` |
+| Logs to runs/ | Yes — `intake.json` and `plan.lock.json` retained for inspection |
+| Reference | `nacl-goal/aliases.md` §conduct; `nacl-goal/SKILL.md` Flow §conduct CLUSTER step |
+
+## PLAN_BLOCKED_CLUSTER_DAG_CYCLE
+
+| | |
+|---|---|
+| Triggers | Topological sort over the cluster DAG (cross-cluster `depends_on` edges) detects a cycle. Distinct from the atom-level `PLAN_BLOCKED_ATOM_DEPENDENCY_CYCLE` — here cluster A depends on cluster B which depends back on cluster A. |
+| Message | "`/nacl-goal conduct` found a circular dependency between clusters: `<cluster-A> → <cluster-B> → <cluster-A>`. Wave ordering is impossible. Re-run with `--plan-only` to inspect the cluster plan, OR run `/nacl-tl-intake` interactively to break the cycle (usually a mis-attributed cross-module dependency)." |
+| Fallback | `/nacl-goal conduct "<goal>" --plan-only` to inspect; or `/nacl-tl-intake` interactively |
+| Logs to runs/ | Yes — `plan.lock.json` (partial) retained |
+| Reference | `nacl-goal/SKILL.md` Flow §conduct LOCK step |
+
+## PLAN_BLOCKED_INCOMPATIBLE_CLUSTER_TARGETS
+
+| | |
+|---|---|
+| Triggers | The residual (b)/(c)/(d) cases of the old `PLAN_BLOCKED_PLAN_SPLIT_REQUIRED` criterion that clustering CANNOT reconcile: clusters require incompatible release targets; OR mix normal feature-branch with hotfix/release routing; OR imply mutually exclusive hard-refuse policies. These are genuine cross-cutting blockers, not module splits. |
+| Message | "`/nacl-goal conduct` can split this goal into per-module PRs, but the clusters cannot ship in one coordinated run because: `<which criterion>`. This needs a human decision about release routing. Run the conflicting piece interactively (`/nacl-tl-hotfix` for the hotfix-routed part, or split the incompatible targets into separate runs), then re-run `conduct` on the remainder." |
+| Fallback | Resolve the routing conflict interactively, then re-run `conduct` on the compatible remainder |
+| Logs to runs/ | Yes — `intake.json` and `plan.lock.json` retained |
+| Reference | `nacl-goal/aliases.md` §conduct; `refusal-catalog.md` §PLAN_BLOCKED_PLAN_SPLIT_REQUIRED scope note |
+
+## GOAL_BLOCKED_CLUSTER_ATOM_FAILED
+
+| | |
+|---|---|
+| Triggers | An inner skill returned a non-shippable status while implementing an atom in this cluster. Carried as cluster `state: blocked, block_code: GOAL_BLOCKED_CLUSTER_ATOM_FAILED`. Sibling clusters continue; clusters depending on this one become `skipped_blocked_dependency`. |
+| Message | "Cluster `<cluster_id>` (`<module>`) failed: atom `<atom_id>` could not be implemented (`<error>`). Its sibling clusters continued; clusters that depend on it were skipped. The run will land in a partial state — see `GOAL_BLOCKED_PARTIAL_WAVE`. Investigate `<state.json path>`, then `/nacl-goal resume --clusters=<cluster_id>`." |
+| Fallback | Investigate the atom failure; fix; `/nacl-goal resume --clusters=<cluster_id>` |
+| Logs to runs/ | Yes — `clusters/<cluster_id>/atoms/<atom>.state.json` `state="failed"` |
+| Reference | `nacl-goal/SKILL.md` Flow §conduct per-cluster EXECUTE |
+
+## GOAL_BLOCKED_CLUSTER_CI_FAILED
+
+| | |
+|---|---|
+| Triggers | This cluster's PR CI returned `failure`. Carried as cluster `state: blocked`. Siblings continue; dependents skipped. |
+| Message | "CI failed for cluster `<cluster_id>`'s PR (`<pr_url>`). Other clusters' PRs are unaffected. Fix CI on that cluster's branch, then `/nacl-goal resume --clusters=<cluster_id>`." |
+| Fallback | Inspect the failing CI run; fix on the cluster branch; `/nacl-goal resume --clusters=<cluster_id>` |
+| Logs to runs/ | Yes |
+| Reference | `nacl-goal/SKILL.md` Flow §conduct per-cluster DELIVER |
+
+## GOAL_BLOCKED_CLUSTER_STAGING_UNHEALTHY
+
+| | |
+|---|---|
+| Triggers | After this cluster's deploy, the staging health check did not return 200 across retries (or the stand was unreachable — the bounded QA loop's `NO_INFRA`). Carried as cluster `state: blocked`. Siblings continue. |
+| Message | "Cluster `<cluster_id>` deployed but staging health at `<url>` did not return 200 after retries. Other clusters are unaffected. Diagnose the stand, then `/nacl-goal resume --clusters=<cluster_id>`." |
+| Fallback | Diagnose staging health; `/nacl-goal resume --clusters=<cluster_id>` |
+| Logs to runs/ | Yes |
+| Reference | `nacl-goal/SKILL.md` Flow §conduct per-cluster DELIVER |
+
+## GOAL_BLOCKED_CLUSTER_DEPLOYED_SHA_MISMATCH
+
+| | |
+|---|---|
+| Triggers | This cluster's `version_endpoint` SHA does not equal its `cluster_final_sha` (stale build or wrong artifact promoted). Carried as cluster `state: blocked`. Siblings continue. |
+| Message | "Cluster `<cluster_id>` staging is healthy but the deployed SHA (`<sha>`) is not the cluster's PR head (`<cluster_final_sha>`). The wrapper will not claim delivery for a SHA it didn't verify. Investigate the deploy pipeline, then `/nacl-goal resume --clusters=<cluster_id>`." |
+| Fallback | Fix the deploy pipeline; `/nacl-goal resume --clusters=<cluster_id>` |
+| Logs to runs/ | Yes |
+| Reference | `nacl-goal/SKILL.md` Flow §conduct per-cluster DELIVER |
+
+## GOAL_BLOCKED_CLUSTER_QA_UNRESOLVED
+
+| | |
+|---|---|
+| Triggers | The cluster's BOUNDED E2E loop hit `qa.max_iterations` (3) with a CRITICAL / MAJOR-in-main-flow bug still red. MINOR bugs never reach this — they are deferred. Carried as cluster `state: blocked`. Siblings continue. |
+| Message | "Cluster `<cluster_id>` still has a `<severity>` bug after `<N>` fix-and-retest iterations: `<bug summary>`. The bounded QA budget for this cluster is exhausted — continuing would risk an unbounded fix loop. Other clusters are unaffected. Investigate, then `/nacl-goal resume --clusters=<cluster_id>`. Deferred minor bugs (not blocking): `<list>`." |
+| Fallback | Investigate the QA failure manually; fix; `/nacl-goal resume --clusters=<cluster_id>` |
+| Logs to runs/ | Yes — `clusters/<cluster_id>/` qa state + `deferred_minor_bugs[]` |
+| Reference | `nacl-goal/SKILL.md` Flow §conduct per-cluster QA loop |
+
+## GOAL_BLOCKED_CLUSTER_BRANCH_DRIFTED
+
+| | |
+|---|---|
+| Triggers | Per-cluster pre/post-deliver drift: the cluster branch HEAD ≠ `cluster_final_sha` (someone pushed to the cluster branch during its deliver window). Carried as cluster `state: blocked`. Siblings continue. |
+| Message | "Cluster `<cluster_id>`'s branch drifted from the SHA frozen at deliver (frozen `<sha>`, now `<sha>`). The wrapper cannot claim delivery for an unverified SHA. Other clusters are unaffected. Investigate, then `/nacl-goal resume --clusters=<cluster_id>`." |
+| Fallback | Investigate the drift; reset the cluster branch if appropriate; `/nacl-goal resume --clusters=<cluster_id>` |
+| Logs to runs/ | Yes |
+| Reference | `nacl-goal/SKILL.md` Flow §conduct per-cluster DRIFT |
+
+## GOAL_BLOCKED_PARTIAL_WAVE
+
+| | |
+|---|---|
+| Triggers | **Run-level terminal aggregate.** A wave drained leaving ≥1 cluster blocked/skipped/unsupported while ≥1 cluster shipped green. The honest "partial multi-PR delivery" state: some PRs are open and green, others need attention. |
+| Message | "`/nacl-goal conduct` delivered `<N>` of `<M>` clusters: `<green list with PR URLs>`. Blocked / skipped: `<list with per-cluster block codes>`. The green PRs are real and untouched. Fix the blocked clusters and resume ONLY them — the shipped clusters and their PRs are left exactly as they are:\n\n```\n/nacl-goal resume --clusters=<blocked_ids>\n```" |
+| Fallback | `/nacl-goal resume --clusters=<blocked_ids>` (re-runs only the named clusters against the existing integration branch) |
+| Logs to runs/ | Yes — `state: goal_blocked, resumable: partial` |
+| Reference | `nacl-goal/SKILL.md` §conduct Resumable state table |
+
+## GOAL_BLOCKED_INTEGRATION_DRIFTED
+
+| | |
+|---|---|
+| Triggers | The shared integration branch (`integration/goal-<hash>`) HEAD moved unexpectedly between waves — a stray commit/merge made the base no longer trustworthy. Run-level (analogue of intake's `GOAL_BLOCKED_BRANCH_DRIFTED_DURING_DELIVER`). Aborts remaining waves. |
+| Message | "The integration branch (`<integration_branch>`) drifted unexpectedly between waves. Later clusters cut their branches from this base, so the wrapper cannot trust further waves. Already-shipped cluster PRs are intact. Investigate what wrote to `<integration_branch>`, then re-run with `--new-run`." |
+| Fallback | Investigate the integration-branch drift; `/nacl-goal conduct "<goal>" --new-run` |
+| Logs to runs/ | Yes — `state: goal_blocked, resumable: false` |
+| Reference | `nacl-goal/SKILL.md` Flow §conduct wave barrier |
 
 ---
 

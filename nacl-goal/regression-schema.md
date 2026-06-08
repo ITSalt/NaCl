@@ -99,6 +99,20 @@ Note: `(now.passed - baseline.passed)` (newly-passing tests) are NOT
 regressions — those are often the regression tests the fix itself added.
 The diff intentionally ignores them.
 
+### conduct: one baseline, per-cluster postfix (2.18.0)
+
+`conduct` captures the `regression-baseline.json` exactly ONCE, at
+`integration_base_sha` (the base-branch HEAD when the run started) — the same
+PRECHECKS step as `intake`. Each cluster then writes its own
+`clusters/<cluster_id>/regression-postfix.json` after its deliver and diffs it
+against that SINGLE run-root baseline. This is deliberate: diffing every cluster
+against the common pre-run baseline means a test that cluster A breaks is detected
+even if cluster B's wave runs later, and a cluster that re-greens a test another
+cluster broke is visible too. `conduct.sh` aggregates the per-cluster postfixes;
+any cluster with a non-empty regression set lands the run in
+`GOAL_BLOCKED_NEW_REGRESSIONS_DETECTED` (run-level). The baseline/postfix worktree
+isolation rules below apply unchanged per cluster.
+
 ---
 
 ## Per-runner test-ID extractors

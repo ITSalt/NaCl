@@ -46,13 +46,16 @@ Shipping mutates git and possibly external trackers. It is confirmation-gated.
 - Commit, push, PR creation, tracker updates, graph updates, and deploy handoff
   all require confirmation and read-back evidence.
 - Goal-context append mode (`NACL_SHIP_MODE` / `NACL_GOAL_BRANCH` /
-  `NACL_SHIP_PUSH` env vars) is a Claude-runtime mechanism driven by
-  `/nacl-goal intake`; Codex does not run it. If those env vars are present
-  in a Codex session, ignore them and follow the interactive workflow. Two
-  source rules still carry over as plain git discipline: stage only the
-  files the current work item changed (never `git add -A` in a worktree
-  that may hold someone else's uncommitted files), and never stage a path
-  listed in a goal run's `preexisting_dirty_files` snapshot.
+  `NACL_SHIP_PUSH` / `NACL_GOAL_CLUSTER_ID` env vars) is a Claude-runtime
+  mechanism driven by `/nacl-goal intake` and `/nacl-goal conduct`; Codex does
+  not run it. If those env vars are present in a Codex session, ignore them and
+  follow the interactive workflow. `NACL_GOAL_CLUSTER_ID` (conduct, 2.18.0) only
+  redirects the per-PR artifact base to a per-cluster subdir
+  (`.tl/goal-runs/<run_id>/clusters/<cluster_id>/`) so each cluster keeps its own
+  PR — it changes no git discipline. Two source rules still carry over as plain
+  git discipline: stage only the files the current work item changed (never
+  `git add -A` in a worktree that may hold someone else's uncommitted files), and
+  never stage a path listed in a goal run's `preexisting_dirty_files` snapshot.
 
 ## Capabilities
 

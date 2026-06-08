@@ -112,6 +112,20 @@ Tier S. Re-runs all seven NaCl validators (L1–L7 plus BA-SA cross-validation i
 
 Tier M. Drains all items from the Reopened column of the current project board. Routes each item to `nacl-tl-fix`. Refuses any item tagged emergency or hotfix. Check script: `nacl-goal/checks/reopened-drain.sh`.
 
+## The autonomous orchestrators — `intake` (2.10.1) and `conduct` (2.18.0)
+
+Two aliases are autonomy-by-default (they issue `/goal` without `--start`, opting out via `--plan-only`):
+
+### `intake` — single-PR
+
+Tier M. `/nacl-goal intake "<free-text goal>"`. Classifies a free-text/image goal into BUG/TASK/FEATURE_SMALL atoms, runs them on ONE branch producing ONE PR, drives it through CI to a healthy staging stand. Unitary by design — refuses a goal that would need splitting across modules with `PLAN_BLOCKED_PLAN_SPLIT_REQUIRED`. Check script: `nacl-goal/checks/intake.sh`.
+
+### `conduct` — multi-cluster, one PR per cluster
+
+Tier L. `/nacl-goal conduct "<free-text goal>"`. For HETEROGENEOUS goals that span several unrelated modules. Partitions the classified atoms into module-aligned **clusters** (the inverse of `intake`'s split detector); each cluster runs an `intake`-scale lifecycle on its own branch (cut from a shared `integration/goal-<hash>` branch) and opens its own PR, wave-ordered by cross-cluster dependencies. Per cluster, a bounded `/nacl-tl-qa` E2E loop (max 3 iterations; CRITICAL/MAJOR iterate, MINOR defer). A cluster failure does not abort siblings; a drained mixed wave lands `GOAL_BLOCKED_PARTIAL_WAVE`, selectively resumable. Check script: `nacl-goal/checks/conduct.sh`.
+
+**Which one?** *One coherent change to one area → `intake`. Several unrelated changes across different modules → `conduct`.* If you'd review it as one PR, use `intake`; if it should be several independent PRs, use `conduct`. They refuse into each other so neither silently does the other's job (`intake`→`conduct` on a heterogeneous goal; `conduct`→`intake` via `PLAN_BLOCKED_SINGLE_CLUSTER_USE_INTAKE` on a homogeneous one). `conduct --single-pr` forces unitary behavior.
+
 Full alias contracts are in [../../nacl-goal/aliases.md](../../nacl-goal/aliases.md).
 
 ---
@@ -159,6 +173,9 @@ On `--start`, a `goal_in_progress` marker is written to the graph. On `/nacl-ini
 ```
 /nacl-goal resume               # re-runs check; if not GOAL_OK, re-issues /goal
                                 # with same alias and remaining budget
+/nacl-goal resume --clusters=<ids>   # conduct only: re-runs ONLY the named blocked
+                                # clusters after GOAL_BLOCKED_PARTIAL_WAVE; already-shipped
+                                # clusters and their open PRs are left untouched
 /nacl-goal abort <run_id>       # clears marker, writes exit_reason=crashed
                                 # to the run file
 ```

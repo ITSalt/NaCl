@@ -697,6 +697,17 @@ Headline vocabulary (use these exact labels):
 | MAJOR | Core function broken, app does not crash | FAIL -- if in main flow |
 | MINOR | Cosmetic defects, no functional impact | PASS -- recorded as note |
 
+**Under `/nacl-goal conduct` (2.18.0) this severity table gates a BOUNDED loop.**
+This skill's own behavior is UNCHANGED — the bounding lives in the orchestrator,
+not here. For context: when `conduct` runs this skill as a cluster's E2E gate, it
+loops `nacl-tl-qa` → fix → re-test ONLY for CRITICAL and MAJOR-in-main-flow bugs
+(routing to `/nacl-tl-{dev-be,dev-fe,fix} --continue`), capped at 3 iterations per
+cluster; on exhaustion the cluster is blocked
+(`GOAL_BLOCKED_CLUSTER_QA_UNRESOLVED`) without aborting sibling clusters. MINOR
+bugs are deferred (filed, surfaced, never iterated on) so a cosmetic defect cannot
+consume the cluster's iteration budget. The loop runs BETWEEN `nacl-tl-qa`
+invocations, never inside this skill. See `nacl-goal/SKILL.md` §conduct Flow.
+
 ### N/A Criteria
 
 Criteria not verifiable through the browser (DB transactions, code coverage, SQL performance, internal logging) are marked N/A with explanation. They do not affect the verdict.

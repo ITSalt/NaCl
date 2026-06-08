@@ -34,10 +34,23 @@ Stability:
     ├── exceptions.log                  # JSONL audit trail
     ├── atoms/
     │   └── <atom_id>.state.json        # per-atom state machine record
-    └── planning/                       # populated only for FEATURE_HEAVY blocks
-        ├── feature-plan.md
-        └── open-decisions.md
+    ├── planning/                       # populated only for FEATURE_HEAVY blocks
+    │   ├── feature-plan.md
+    │   └── open-decisions.md
+    └── clusters/                       # conduct only (orchestrator="conduct")
+        └── <cluster_id>/               # one subdir per cluster, mirrors the run-root layout
+            ├── pr.json                 # this cluster's PR (one PR per cluster)
+            ├── pr-body.md
+            ├── cluster-final-sha.txt   # frozen after this cluster's last atom verified
+            ├── regression-postfix.json # diffed against the SINGLE run-root baseline
+            └── atoms/
+                └── <atom_id>.state.json
 ```
+
+Under `conduct`, `regression-baseline.json` stays at the run root (a single
+baseline captured at `integration_base_sha`); each cluster writes its own
+`regression-postfix.json` and diffs against that one baseline, so a regression
+introduced by any cluster is caught regardless of which cluster's wave it lands in.
 
 Wrapper-authored exception YAMLs live OUTSIDE this directory at
 `.tl/exceptions/goal-runs/<run_id>/EXC-goal-<gate>.yaml` so they share the
@@ -76,6 +89,13 @@ step 14:
   not-yet-executed, transient CI/staging disconnects)
 - `false` for drift, regressions, atom failures, product-decision blocks,
   deployed-SHA mismatches, and all `plan_blocked` states
+- `"partial"` (conduct only) for `GOAL_BLOCKED_PARTIAL_WAVE` — `resume
+  --clusters=<ids>` re-runs only the blocked clusters
+
+conduct runs add an optional `clusters_summary` array to their index entry for
+fast resume — `[{cluster_id, wave, state, pr_url}]`, a denormalized snapshot of
+`plan.lock.json.clusters[]`. It is advisory (the authoritative state is
+`plan.lock.json` + `clusters/<id>/`); absent on `intake` runs.
 
 ### Write protocol
 
@@ -294,6 +314,68 @@ FEATURE_SMALL, then by `id` lexicographically.
   PR-body "Pre-existing commits" section and the GOAL_PROOF advisory keys —
   they let a reviewer separate the user's prior batch work from goal-run
   commits. In `branch_mode=new` they are `null` / `0`.
+
+### conduct fields (2.18.0; `orchestrator="conduct"` only)
+
+These are ADDITIVE — no `schema_version` bump. When `orchestrator` is absent or
+`"intake"`, readers treat the file as a single-PR `intake` lock and the
+`clusters` array does not exist (full backward compatibility; `conduct.sh` and
+`intake.sh` self-select on `orchestrator`).
+
+```json
+{
+  "orchestrator": "conduct",
+  "integration_branch": "integration/goal-<short-hash>",
+  "integration_base_sha": "<git rev-parse base_branch at run start>",
+  "cluster_dag_valid": true,
+  "integration_drift": false,
+  "clusters": [
+    {
+      "cluster_id": "cl-<short_sha256(module + sorted_atom_ids)[:8]>",
+      "module": "auth | billing | <inferred-zone>",
+      "branch": "feature/goal-<short-hash>-<cluster_id>",
+      "branch_base_sha": "<integration HEAD when this cluster was cut>",
+      "wave": 0,
+      "depends_on_clusters": ["cl-..."],
+      "push_cadence": "deferred",
+      "atoms": ["atom-...", "atom-..."],
+      "state": "pending|implementing|verified|shipped|ci_passed|deployed|blocked|skipped_blocked_dependency|unsupported",
+      "block_code": null,
+      "pr_url": null,
+      "ci_status": "pending|success|failure|n/a",
+      "deploy_status": "n/a|healthy|degraded|failed",
+      "cluster_final_sha": null,
+      "qa": {
+        "required": true,
+        "max_iterations": 3,
+        "iterations": 0,
+        "aggregate_status": "NOT_RUN|VERIFIED|PARTIALLY_VERIFIED|UNVERIFIED|FAILED|BLOCKED",
+        "deferred_minor_bugs": []
+      }
+    }
+  ]
+}
+```
+
+Field rules:
+- `cluster_id` is assigned once at the conduct LOCK step and is immutable for the
+  run (same invariant as `atom.id`).
+- `integration_branch` is cut from `base_branch` (resolved from `config.yaml`,
+  never a hardcoded `main`/`master`); the wrapper NEVER commits code to it — it
+  only merges verified cluster branches into it between waves so a later wave's
+  branches are cut from a base that already contains their dependencies.
+- `state == "deployed"` is the per-cluster terminal-green state; the run reaches
+  `GOAL_OK` only when EVERY cluster is `deployed` and green (see `aliases.md`
+  §conduct result_decision_rule). `blocked` / `skipped_blocked_dependency` /
+  `unsupported` are terminal-non-green and force `GOAL_BLOCKED_PARTIAL_WAVE` once
+  the wave drains.
+- `qa.required == false` (no UI-bearing atom) → the cluster passes the QA gate
+  trivially; the wrapper records `aggregate_status: "VERIFIED"` (or `conduct.sh`
+  normalizes `NOT_RUN` to VERIFIED for the green test). `deferred_minor_bugs[]`
+  holds MINOR-severity QA findings that were filed but did not consume the
+  bounded iteration budget.
+- `integration_drift: true` is set by the wrapper's wave barrier when the
+  integration branch HEAD moved unexpectedly → `GOAL_BLOCKED_INTEGRATION_DRIFTED`.
 
 ---
 

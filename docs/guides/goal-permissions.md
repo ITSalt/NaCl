@@ -52,6 +52,18 @@ These actions are permitted within `/nacl-goal` sessions. All other actions not 
 
 ---
 
+## `conduct` specific rules (2.18.0)
+
+The `conduct` multi-cluster orchestrator inherits the full universal denylist and adds NO new permissions. It does, however, exercise the per-alias allowlist N times — once per cluster — plus one wrapper-level working-branch merge:
+
+- **PERMIT** N × `gh pr create` — one PR per cluster (still create-only; `gh pr merge` stays on the universal denylist).
+- **PERMIT** N × `git checkout -b feature/goal-<hash>-<cluster_id> integration/goal-<hash>` — the wrapper cuts each cluster branch; `/nacl-tl-ship` only ever commits to the branch it is handed (it never switches branches).
+- **PERMIT** wrapper-level `git merge <verified-cluster-branch>` INTO `integration/goal-<hash>` — a merge into a NON-protected working branch, so a later wave's branches are cut from a base that contains their dependencies.
+- **DENY** (universal, unchanged) any `git merge` / `gh pr merge` into `main`/`master`/`release/*` — `REFUSE_PRODUCTION_MUTATION`. The integration branch itself is cut FROM a non-production checkout; running `conduct` from a production branch refuses pre-`/goal` with `PLAN_BLOCKED_UNSAFE_PRODUCTION_MUTATION`.
+- Cluster PRs are OPENED, never merged, by the run; the user (or `nacl-tl-release`) merges them afterward.
+
+---
+
 ## `migrate-canary` specific rules
 
 The `migrate-canary` alias (2.10.1) has additional restrictions beyond the universal denylist:

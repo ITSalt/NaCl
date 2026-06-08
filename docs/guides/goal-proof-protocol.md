@@ -65,6 +65,19 @@ END_GOAL_PROOF
 - `GOAL_BUDGET_EXHAUSTED` — the soft budget (turns, wall clock, or
   observed token target) tripped. Evaluator must treat as success-exit.
 
+#### Evidence values may be JSON-inline (conduct, 2.18.0)
+
+Most aliases emit scalar evidence values. The `conduct` alias additionally emits
+two LIST-valued keys — `prs_opened` (one PR URL per shipped cluster) and
+`per_cluster_status` (a record per cluster: `cluster_id`, `wave`, `state`,
+`pr_url`, `ci_status`, `deploy_status`, `qa_aggregate`, `atoms_verified`,
+`atoms_total`). These are emitted as compact JSON on a single `  - key: <json>`
+line, preserving the one-line-per-key wire format. The transcript-only evaluator
+does not parse them; it only checks `result == GOAL_OK`. They exist so a human
+reviewing the transcript can see exactly which clusters shipped and which are
+blocked. `conduct`'s `GOAL_BLOCKED_PARTIAL_WAVE` carries `resumable: partial` in
+evidence (the only alias that does).
+
 ## How the evaluator is instructed
 
 The completion condition the wrapper composes ends with this exact

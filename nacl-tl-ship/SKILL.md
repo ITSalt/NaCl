@@ -634,15 +634,16 @@ With `--feature FR-001`:
 
 ## Goal-context append mode (2.10.1+)
 
-When this skill is invoked under `/nacl-goal intake` (the autonomous goal orchestrator added in 2.10.1), the wrapper exports five env vars that modify Steps 2, 3, 4, and 5 below. **When any of these env vars are absent, the default behavior documented above applies unchanged** — interactive `/nacl-tl-ship` is not affected.
+When this skill is invoked under `/nacl-goal intake` or `/nacl-goal conduct` (the autonomous goal orchestrators added in 2.10.1 / 2.18.0), the wrapper exports the env vars below that modify Steps 2, 3, 4, and 5. **When any of these env vars are absent, the default behavior documented above applies unchanged** — interactive `/nacl-tl-ship` is not affected.
 
 | Variable | Set by | Used here |
 |---|---|---|
-| `NACL_GOAL_RUN_ID` | `/nacl-goal intake` | Commit message footer + PR body trailer for traceability |
-| `NACL_GOAL_BRANCH` | `/nacl-goal intake` | Branch to commit/push on (selected by the wrapper) |
-| `NACL_SHIP_MODE` | `/nacl-goal intake` (always `append`) | Triggers append-mode behavior below |
-| `NACL_SHIP_PUSH` | `/nacl-goal intake` (`per-atom` \| `deferred` \| `none`) | Push cadence — gates Steps 4 and 5. Absent ⇒ `per-atom` (pre-2.14 behavior) |
-| `NACL_GOAL_BUDGET_FILE` | `/nacl-goal intake` | Inner-skill envelope appended at end of run |
+| `NACL_GOAL_RUN_ID` | `/nacl-goal intake`/`conduct` | Commit message footer + PR body trailer for traceability |
+| `NACL_GOAL_BRANCH` | `/nacl-goal intake`/`conduct` | Branch to commit/push on (selected by the wrapper; under `conduct` it is the per-cluster `feature/goal-<hash>-<cluster_id>` branch) |
+| `NACL_SHIP_MODE` | `/nacl-goal intake`/`conduct` (always `append`) | Triggers append-mode behavior below |
+| `NACL_SHIP_PUSH` | `/nacl-goal intake`/`conduct` (`per-atom` \| `deferred` \| `none`) | Push cadence — gates Steps 4 and 5. Absent ⇒ `per-atom` (pre-2.14 behavior) |
+| `NACL_GOAL_BUDGET_FILE` | `/nacl-goal intake`/`conduct` | Inner-skill envelope appended at end of run |
+| `NACL_GOAL_CLUSTER_ID` | `/nacl-goal conduct` only | Redirects the per-PR artifact base to a per-cluster subdir (one PR per cluster). Absent (intake / interactive) ⇒ artifacts live at the run root, exactly as before. See §conduct below |
 
 ### Behavior when `NACL_SHIP_MODE=append` AND `NACL_GOAL_BRANCH` is set
 
@@ -755,9 +756,43 @@ if [ -n "$NACL_GOAL_BUDGET_FILE" ] && [ -f "$NACL_GOAL_BUDGET_FILE" ]; then
 fi
 ```
 
-Failures to write to `budget.json` are silent — this is best-effort observability for `/nacl-goal intake`'s GOAL_PROOF block.
+Failures to write to `budget.json` are silent — this is best-effort observability for the orchestrator's GOAL_PROOF block.
 
-**Invariant**: this entire section is gated on `NACL_SHIP_MODE=append AND NACL_GOAL_BRANCH set AND NACL_SHIP_PUSH ∈ {per-atom (default when absent), deferred, none}`. With `NACL_SHIP_MODE`/`NACL_GOAL_BRANCH` absent, the default behavior in Steps 1–6 above runs unchanged; with `NACL_SHIP_PUSH` absent, append mode pushes per atom exactly as it did pre-2.14. Interactive `/nacl-tl-ship UC028` is unaffected.
+### conduct: per-cluster artifacts (`NACL_GOAL_CLUSTER_ID` set — 2.18.0)
+
+Under `/nacl-goal conduct` there is ONE PR per cluster. The only change to the
+append-mode behavior above is the artifact base directory: when
+`NACL_GOAL_CLUSTER_ID` is set, derive
+
+```
+goal_artifact_dir=".tl/goal-runs/$NACL_GOAL_RUN_ID/clusters/$NACL_GOAL_CLUSTER_ID"
+```
+
+and read/write `pr.json` and `pr-body.md` under `$goal_artifact_dir` instead of
+the run root (`.tl/goal-runs/$NACL_GOAL_RUN_ID/`). When `NACL_GOAL_CLUSTER_ID` is
+absent (intake / interactive), `goal_artifact_dir` IS the run root — so the Step 5
+paths above are exactly the same. Everything else is unchanged:
+
+- `$NACL_GOAL_BRANCH` is already the per-cluster `feature/goal-<hash>-<cluster_id>`
+  branch (the wrapper cut it and checked it out); ship commits to it and NEVER
+  switches branches — the same `git rev-parse --abbrev-ref HEAD == "$NACL_GOAL_BRANCH"`
+  FATAL check applies.
+- `gh pr list --head "$NACL_GOAL_BRANCH"` naturally scopes to this cluster's PR
+  (one branch ↔ one PR), so the append-vs-create logic is per-cluster with no
+  other change.
+- Each cluster PR targets the base branch (`base_branch` from `config.yaml`), v1.
+- Commit/PR trailer carries the cluster id alongside the run id for traceability:
+
+  ```
+  Goal-run-id: <NACL_GOAL_RUN_ID> cluster: <NACL_GOAL_CLUSTER_ID>
+  ```
+
+The wrapper (`/nacl-goal conduct`) never asks ship to merge cluster branches into
+the integration branch — that wrapper-level merge happens outside ship. Ship's
+"never switch branches" / base-branch guard is unchanged and still forbids any
+commit to `main`/`master`/`release/*`.
+
+**Invariant**: this entire section is gated on `NACL_SHIP_MODE=append AND NACL_GOAL_BRANCH set AND NACL_SHIP_PUSH ∈ {per-atom (default when absent), deferred, none}`. With `NACL_SHIP_MODE`/`NACL_GOAL_BRANCH` absent, the default behavior in Steps 1–6 above runs unchanged; with `NACL_SHIP_PUSH` absent, append mode pushes per atom exactly as it did pre-2.14; with `NACL_GOAL_CLUSTER_ID` absent, artifacts resolve to the run root exactly as in 2.10.1. Interactive `/nacl-tl-ship UC028` is unaffected.
 
 ---
 

@@ -43,6 +43,16 @@ glob to scan **both**:
 Until PR2 ships, wrapper exceptions are written but not yet honored by inner
 skills. PR1 establishes the contract only.
 
+**conduct (2.18.0):** the namespace is keyed on `run_id`, NOT on cluster — a
+conduct run materializes its exception YAMLs once at
+`.tl/exceptions/goal-runs/<run_id>/`, covering every cluster's atoms in the same
+run. The auto-enabled gate set and the hard-refuse list below are identical to
+`intake` and are evaluated across ALL clusters' atoms at the conduct strict
+pre-flight (a hard-refuse trigger on any atom in any cluster refuses the whole run
+before `/goal`, exactly as for `intake`). No per-cluster exception sub-namespace
+exists; the per-run namespace is sufficient because cluster branches share one
+goal-run identity.
+
 ---
 
 ## Auto-enabled gates (closed, global)

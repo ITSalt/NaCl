@@ -150,6 +150,12 @@ mark any other stage as `NOT_RUN`. It is NOT a bulk QA bypass.
   screenshot, log, or trace available from the tooling.
 - Acceptance criteria that are not exercised must be listed as unverified.
 - Tracker, graph, and report writes require confirmation and read-back.
+- Under `/nacl-goal conduct` (2.18.0, Claude-runtime only) this skill is the
+  per-cluster E2E gate inside a BOUNDED loop: CRITICAL / MAJOR-in-main-flow bugs
+  drive up to 3 fix-and-retest iterations per cluster, MINOR bugs are deferred.
+  The bounding lives in the `conduct` orchestrator, not in this skill — the QA
+  behavior and severity vocabulary are unchanged. Codex previews this but does not
+  run the loop.
 
 ## Capabilities
 

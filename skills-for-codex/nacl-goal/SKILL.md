@@ -2,7 +2,9 @@
 name: nacl-goal
 description: |
   Prepare and validate NaCl `/goal` aliases, GOAL_PROOF checks, structured
-  refusals, and preview output for compatibility with `/nacl-goal`.
+  refusals, and preview output for compatibility with `/nacl-goal`. Covers the
+  autonomy-by-default `intake` (single-PR) and `conduct` (multi-cluster, one PR
+  per cluster) orchestrators — Codex previews both but never starts them.
 ---
 
 # NaCl Goal Compatibility For Codex
@@ -137,6 +139,31 @@ that `/nacl-tl-fix` proves to be a feature (`exit_reason: L3-feature`) is
 re-typed, not failed: FEATURE_SMALL re-enters the same run; FEATURE_HEAVY
 marks the atom `unsupported` (counts toward `unsupported_atoms_count`) and
 the run continues.
+
+The `conduct` alias (2.18.0+, `../../nacl-goal/checks/conduct.sh`) is the
+multi-cluster sibling of `intake` — autonomy-by-default, Claude-runtime only;
+Codex previews it but never starts it. It is for HETEROGENEOUS goals that span
+several unrelated modules: where `intake` is unitary and refuses such a goal with
+`PLAN_BLOCKED_PLAN_SPLIT_REQUIRED`, `conduct` materializes that split as
+module-aligned CLUSTERS, each shipping its OWN branch and PR, wave-ordered by
+cross-cluster dependencies. When previewing, resolve from
+`../../nacl-goal/aliases.md` §conduct: tier L, the per-cluster evidence keys
+(`clusters_total/shipped/deployed/blocked/skipped`, `prs_opened[]`,
+`per_cluster_status[]`), and the flags `--max-parallel` (v1 sequential, default 1),
+`--clusters=` (selective resume), `--single-pr` (degrade to intake). Branches are
+cut from a shared `integration/goal-<hash>` branch (never committed to as code;
+never `main`/`master`/`release/*`). Preserve the conduct-scoped codes exactly:
+`PLAN_BLOCKED_SINGLE_CLUSTER_USE_INTAKE`, `PLAN_BLOCKED_CLUSTER_DAG_CYCLE`,
+`PLAN_BLOCKED_INCOMPATIBLE_CLUSTER_TARGETS`, the `GOAL_BLOCKED_CLUSTER_*` family
+(per-cluster failures that do NOT abort siblings), `GOAL_BLOCKED_PARTIAL_WAVE`
+(the only `resumable: partial` state — `resume --clusters=<ids>` re-runs only the
+blocked clusters, leaving green PRs untouched), and `GOAL_BLOCKED_INTEGRATION_DRIFTED`.
+Surface the user's decision rule: one coherent change to one area → `intake`;
+several unrelated changes across modules → `conduct`. The two refuse into each
+other (`intake`→`conduct` on a heterogeneous goal; `conduct`→`intake` on a
+homogeneous one). The bounded per-cluster QA loop (`/nacl-tl-qa`, max 3 iterations;
+CRITICAL/MAJOR iterate, MINOR defer) is Claude-runtime behavior — preview it but
+do not execute it.
 
 For `fix:<BUG-NNN>`, preserve RED-first and PR-open evidence requirements. L0
 or L1 emergency bugs route to refusal or interactive handling, not the ordinary

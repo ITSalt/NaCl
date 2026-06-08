@@ -8,7 +8,9 @@ description: |
   transcript-only evaluator can actually verify. Two UX modes coexist:
   preview-by-default for the 2.10.0 aliases (wave / fix / validate /
   reopened-drain); autonomy-by-default for the 2.10.1 `intake` orchestrator
-  alias (free-text/image goal → classified atoms → one PR → CI → staging).
+  alias (free-text/image goal → classified atoms → one PR → CI → staging) and
+  the 2.18.0 `conduct` multi-cluster orchestrator (heterogeneous goal → clusters
+  → one PR per cluster, wave-ordered).
   Use when: running a long NaCl loop autonomously, or the user says "/nacl-goal".
 ---
 
@@ -17,8 +19,8 @@ description: |
 **Inputs this skill consumes:**
 
 - `<alias>` — required positional. One of the named aliases from `nacl-goal/aliases.md`
-  (`wave:<N>`, `fix:<BUG-NNN>`, `validate:<MOD-ID>`, `reopened-drain`, `intake`, `custom`),
-  or the special invocations `resume` and `abort <run_id>`.
+  (`wave:<N>`, `fix:<BUG-NNN>`, `validate:<MOD-ID>`, `reopened-drain`, `intake`, `conduct`,
+  `custom`), or the special invocations `resume` and `abort <run_id>`.
 - `--start` — optional flag. Without it the **preview-mode aliases** (`wave`, `fix`,
   `validate`, `reopened-drain`, `custom`) run in preview/dry-run mode only. The
   `intake` alias has the inverse default: autonomy ON, with `--plan-only` as the
@@ -162,6 +164,12 @@ nacl-goal/checks/stubs-cleanup.sh    <MOD-ID>                   # deferred
 nacl-goal/checks/migrate-canary.sh                              # deferred
 nacl-goal/checks/feature.sh          <FR-NNN>                   # deferred
 nacl-goal/checks/probe-stop-signals.sh   (invoked each turn)    # deferred
+```
+
+Check script shipped in 2.18.0 (`conduct` multi-cluster orchestrator):
+
+```
+nacl-goal/checks/conduct.sh          --run-id <goal-run-id>     # ✅ scans clusters/*/
 ```
 
 Every check script:
@@ -711,11 +719,173 @@ deliberately NOT offered — the colliding files belong to another agent.
 
 ---
 
+## `conduct` alias (2.18.0 — multi-cluster orchestrator)
+
+`conduct` is the sibling of `intake` for HETEROGENEOUS goals — work that
+legitimately spans several unrelated modules. `intake` is unitary (one intent →
+one branch → one PR) and REFUSES such a goal with
+`PLAN_BLOCKED_PLAN_SPLIT_REQUIRED`. `conduct` is the explicit opt-in that takes
+that exact split and ships it: each module-aligned **cluster** runs an
+`intake`-scale lifecycle on its own branch and opens its own PR, wave-ordered by
+cross-cluster dependencies.
+
+**Unitary-rule reconciliation** ([[feedback-goal-run-is-unitary]]): `intake` is
+unchanged — one goal-run still produces one PR, and multi-PR is NEVER a silent
+default. You only get multiple PRs when you explicitly type `conduct`. The two
+refuse into each other: `intake` refuses a heterogeneous goal and points at
+`conduct`; `conduct` refuses a homogeneous goal
+(`PLAN_BLOCKED_SINGLE_CLUSTER_USE_INTAKE`) and points at `intake`. The user's
+one-line decision rule: **one coherent change to one area → `intake`; several
+unrelated changes across different modules → `conduct`.**
+
+`conduct` borrows the SEMANTICS of `/nacl-tl-conductor` (waves, per-item
+lifecycle, max-3 retry, partial-completion handling) WITHOUT its Neo4j
+dependency. The wrapper clusters the classified atoms itself and drives the
+EXISTING inner skills per cluster through the same `NACL_GOAL_*` env-var
+integration `intake` uses — no new inner-skill contracts beyond the additive
+`NACL_GOAL_CLUSTER_ID`.
+
+### `conduct` UX
+
+```
+/nacl-goal conduct "<free-text heterogeneous goal>"     # autonomous, default
+
+Opt-out / tuning flags:
+  --plan-only        cluster plan + per-cluster atom plans only; no branches, no PRs
+  --strict           disable default safe-exception envelope (per-cluster pre-flight)
+  --target=staging|dev-only       default: staging (auto from config)
+  --budget=<profile> optional budget override (default Tier L: 1200 turns / 16h / 20M tokens)
+  --new-run          force fresh run-id on goal_fingerprint match
+  --max-parallel=<N> clusters run concurrently within a wave; v1 ships SEQUENTIAL (default 1)
+  --clusters=<id,..> run/resume only a subset of the locked cluster set
+  --single-pr        DEGRADE to intake semantics (refuse to split; behave as /nacl-goal intake)
+
+NOTE: conduct does NOT expose --branch=current. Per-cluster isolation needs
+  per-cluster branches off a controlled integration branch, so conduct always
+  operates in a branch_mode=new-like posture rooted at integration/goal-<short-hash>.
+  From main/master/release/* the production refusal still fires — create a
+  working branch first (the integration branch is cut FROM a non-production checkout).
+```
+
+### `conduct` Flow (cluster-wave variant of the `intake` Flow)
+
+Steps **0–4** are IDENTICAL to the `intake` Flow (privacy precheck, INIT_RUN,
+RESOLVE_TARGET, PRECHECKS incl. the single regression baseline at the
+integration base SHA, CLASSIFY via `/nacl-tl-intake --autonomous --emit-state`)
+— see §`intake` Flow. The deltas begin at the cluster layer:
+
+```
+4b. CLUSTER  (conduct-only; runs after CLASSIFY)
+    partition atoms into clusters: a cluster = a maximal set of atoms that
+      (a) share a top-level module/workspace OR (b) are connected by a
+      depends_on path. This is the inverse of the PLAN_SPLIT_REQUIRED detector.
+      module attribution: linked_uc → Module from the graph if present, else
+      /nacl-tl-intake's touch-zone inference (the Smart-WIP directory predictor).
+    exactly 1 cluster        → PLAN_BLOCKED_SINGLE_CLUSTER_USE_INTAKE (use intake)
+    residual b/c/d conflicts → PLAN_BLOCKED_INCOMPATIBLE_CLUSTER_TARGETS
+    build the cluster DAG (edges = cross-cluster depends_on); topological sort
+      → cycle = PLAN_BLOCKED_CLUSTER_DAG_CYCLE
+    cluster_id = cl-<short_sha256(module + sorted_atom_ids)[:8]>   (immutable)
+
+5'. LOCK PLAN  (conduct variant)
+    integration_branch     = integration/goal-<short-hash>  (cut from base_branch;
+                             the wrapper NEVER commits code to it)
+    integration_base_sha   = git rev-parse <base_branch>    (base from config.yaml,
+                             never a hardcoded main/master)
+    write plan.lock.json with orchestrator="conduct", integration_branch,
+      integration_base_sha, cluster_dag_valid, clusters[] (each: cluster_id,
+      module, branch=feature/goal-<hash>-<cluster_id>, wave, depends_on_clusters,
+      atoms[], push_cadence=deferred, state="pending", qa{required, max_iterations:3})
+    mkdir clusters/<cluster_id>/{atoms/} per cluster; render per-cluster pr-body.md
+    --plan-only: EXIT here
+
+6'-8'. STRICT PRE-FLIGHT / ENVELOPE / ISSUE /goal — as intake, evaluated across
+    ALL clusters' atoms (the exception envelope namespace is per-run).
+
+9'. EXECUTE BY WAVE  (the core conduct loop; v1 sequential)
+    for each wave W in topological order:
+      for each cluster C in wave W (sequential in v1; --max-parallel>1 deferred):
+        git checkout -b C.branch integration/goal-<hash>   (wrapper cuts the branch;
+          /nacl-tl-ship only ever commits to the branch it is handed — never switches)
+        export NACL_GOAL_BRANCH=C.branch ; export NACL_GOAL_CLUSTER_ID=C.cluster_id
+          (+ the standard NACL_GOAL_* vars; ship artifacts under clusters/<id>/)
+        run the intake per-atom EXECUTE→DRIFT→DELIVER→DRIFT→REGRESSION loop
+          (steps 9–12) FOR THIS CLUSTER's atoms only, writing to clusters/<id>/.
+          per-cluster regression postfix diffs against the SINGLE integration
+          baseline captured at step 3 (catches cross-cluster regressions).
+        BOUNDED E2E loop (when C.qa.required): /nacl-tl-qa (auto-scenario from
+          acceptance.md) → CRITICAL / MAJOR-in-main-flow → route to
+          /nacl-tl-{dev-be,dev-fe,fix} --continue and re-run, up to
+          qa.max_iterations (3) → on exhaustion: C.state=blocked,
+          block_code=GOAL_BLOCKED_CLUSTER_QA_UNRESOLVED. MINOR → defer
+          (clusters/<id>/ deferred_minor_bugs[]; never consumes the budget).
+        on cluster green (all atoms verified, CI success, deploy healthy, QA
+          VERIFIED): C.state=deployed; MERGE C.branch INTO integration/goal-<hash>
+          (a merge into a NON-protected working branch — permitted; merges into
+          main/master/release/* remain REFUSE_PRODUCTION_MUTATION) so the next
+          wave cuts its branches from a base that already contains C.
+        on cluster failure (atom/CI/staging/sha/qa/drift): C.state=blocked with
+          the matching GOAL_BLOCKED_CLUSTER_* code; SIBLINGS CONTINUE; clusters
+          whose depends_on includes C become state=skipped_blocked_dependency.
+      wave barrier: re-verify integration HEAD; unexpected move →
+        GOAL_BLOCKED_INTEGRATION_DRIFTED (abort remaining waves).
+
+13'-14'. OBSERVE & TERMINAL  (conduct.sh --run-id <run_id>)
+    conduct.sh scans clusters/*/ and aggregates; emits GOAL_PROOF (alias: conduct;
+    tier: L). Terminal states:
+      GOAL_OK            — every cluster deployed+green; no blocked/skipped/unsupported
+      GOAL_BLOCKED_PARTIAL_WAVE — a wave drained with a mix of green and non-green
+                           clusters; index.json state goal_blocked, resumable: partial
+      GOAL_BLOCKED_*     — run-level (integration drift, run-level regression)
+```
+
+### `conduct` cluster env var (additive to the `intake` integration)
+
+| Variable | Meaning |
+|---|---|
+| `NACL_GOAL_CLUSTER_ID` | The current cluster's `cluster_id`. `/nacl-tl-ship` (append mode) reads `pr.json` / `pr-body.md` from `.tl/goal-runs/<run_id>/clusters/<cluster_id>/` instead of the run root, so each cluster maintains its OWN PR. Absent (normal `intake` / interactive use) → ship reads the run-root artifacts exactly as before. Purely additive — backward compatible. |
+
+`NACL_GOAL_BRANCH` under `conduct` is a per-cluster `feature/goal-<hash>-<cluster_id>`
+branch; everything else in the `intake` env-var table applies per cluster.
+
+### `conduct` permissions
+
+`conduct` inherits the full `/nacl-goal` denylist and adds NO new permissions:
+
+- N × `gh pr create` (one PR per cluster) is permitted (not a production mutation).
+- Wrapper-level `git merge` of a verified cluster branch INTO the
+  `integration/goal-<hash>` working branch is permitted (non-protected target).
+- `git merge` / `gh pr merge` into `main`/`master`/`release/*` is NOT permitted —
+  `REFUSE_PRODUCTION_MUTATION` fires. Cluster PRs are OPENED, never merged, by the run.
+- Staging deploy per cluster via `/nacl-tl-deliver`'s existing pipeline is permitted.
+
+### `conduct` Resumable state table (additions to the `intake` table)
+
+| Block code | `resumable` |
+|---|---|
+| `GOAL_BLOCKED_CLUSTER_ATOM_FAILED` | false (per-cluster; resume that cluster with `--clusters=`) |
+| `GOAL_BLOCKED_CLUSTER_CI_FAILED` | false (per-cluster) |
+| `GOAL_BLOCKED_CLUSTER_STAGING_UNHEALTHY` | false (per-cluster) |
+| `GOAL_BLOCKED_CLUSTER_DEPLOYED_SHA_MISMATCH` | false (per-cluster) |
+| `GOAL_BLOCKED_CLUSTER_QA_UNRESOLVED` | false (per-cluster) |
+| `GOAL_BLOCKED_CLUSTER_BRANCH_DRIFTED` | false (per-cluster) |
+| `GOAL_BLOCKED_PARTIAL_WAVE` | **partial** — `/nacl-goal resume --clusters=<blocked_ids>` re-runs ONLY the named blocked clusters against the existing integration branch; already-green clusters and their open PRs are left untouched |
+| `GOAL_BLOCKED_INTEGRATION_DRIFTED` | false (the shared base is no longer trustworthy; `--new-run`) |
+
+`GOAL_BLOCKED_PARTIAL_WAVE` selective-resume is the multi-PR analogue of `intake`'s
+WIP-collision resume: the green PRs are preserved; only the broken clusters retry.
+This mirrors `nacl-tl-conductor`'s partial-completion gate ("ship what's done" vs
+"fix the rest").
+
+---
+
 ## resume / abort
 
 ```
 /nacl-goal resume               # re-run check; if not GOAL_OK, re-issue /goal
                                 # with same alias and remaining budget (2.10.1)
+/nacl-goal resume --clusters=<ids>   # conduct: re-run only the named blocked
+                                # clusters; green clusters + their PRs untouched (2.18.0)
 /nacl-goal abort <run_id>       # clear marker, write exit_reason=crashed (2.10.1)
 ```
 
@@ -747,6 +917,7 @@ Enforced from 2.10.1. In 2.10.0 no run file is written.
 | `nacl-goal/regression-schema.md` | Shared baseline/postfix JSON schema; per-runner test-ID extractor table (pytest/jest/vitest/go/unknown); best-effort fallback disclosure rule (2.10.1) |
 | `nacl-goal/pr-body-template.md` | Goal-run PR body template rendered from plan.lock.json; footer invariant for traceability (2.10.1) |
 | `nacl-goal/checks/intake.sh` | `intake` check script; arg schema `--run-id <id>`; reads run artifacts and emits GOAL_PROOF (2.10.1) |
+| `nacl-goal/checks/conduct.sh` | `conduct` check script; arg schema `--run-id <id>`; scans `clusters/*/` subdirs, aggregates per-cluster state, emits cluster-aware GOAL_PROOF (2.18.0) |
 | `docs/guides/goal-command.md` | Overview, when to use, invocation examples, resume/abort |
 | `docs/guides/goal-proof-protocol.md` | GOAL_PROOF wire format schema, field reference, examples |
 | `docs/guides/goal-run-schema.md` | .tl/goal-runs/ YAML schema reference (2.10.0 aliases). For 2.10.1 `intake` artifacts see `nacl-goal/plan-lock-schema.md`. |
@@ -815,12 +986,34 @@ See `nacl-goal/refusal-catalog.md` for the exact refusal codes these trigger.
   time (`GOAL_BLOCKED_WIP_COLLISION`, resumable). Regression baseline and
   postfix run in isolated throwaway worktrees. `--branch=new` restores the
   pre-2.14 flow byte-for-byte. New env var `NACL_SHIP_PUSH`.
+- **2.18.0 (`multi-PR-conduct`)** — the `conduct` multi-cluster orchestrator
+  ships (the former "multi-PR orchestration" Deferred item). A heterogeneous
+  free-text goal is classified, then partitioned into module-aligned CLUSTERS
+  (the inverse of `intake`'s `PLAN_BLOCKED_PLAN_SPLIT_REQUIRED` detector); each
+  cluster runs an `intake`-scale lifecycle on its OWN branch (cut off a shared
+  `integration/goal-<hash>` branch) and opens its OWN PR, wave-ordered by
+  cross-cluster `depends_on`. Borrows `nacl-tl-conductor` semantics (waves,
+  per-item lifecycle, max-3 retry, partial-completion handling) WITHOUT the
+  Neo4j dependency — graph-less, driving the existing inner skills per cluster
+  through the same `NACL_GOAL_*` env-var integration `intake` uses (plus the
+  additive `NACL_GOAL_CLUSTER_ID`). Per-cluster BOUNDED E2E loop via
+  `/nacl-tl-qa` (max-3; CRITICAL/MAJOR iterate, MINOR defer). A cluster failure
+  does not abort siblings (`GOAL_BLOCKED_CLUSTER_*`); a drained mixed wave lands
+  `GOAL_BLOCKED_PARTIAL_WAVE`, selectively resumable via
+  `/nacl-goal resume --clusters=`. `intake` stays unchanged and unitary —
+  `conduct` is the explicit opt-in for heterogeneous goals (see
+  [[feedback-goal-run-is-unitary]]: one intent = one PR remains the `intake`
+  default; multi-PR is never silent, only the named `conduct` alias). New check
+  script `nacl-goal/checks/conduct.sh`. v1 ships SEQUENTIAL clusters
+  (`--max-parallel=1`); cluster PRs target the base branch.
 - **Deferred** (post current-branch work): FEATURE_HEAVY autonomous
-  execution; multi-PR orchestration; project-local exception policy file
+  execution; project-local exception policy file
   (`.tl/project-exception-policy.yaml`) and project-specific gates;
   explicit `/nacl-goal status|resume|abort <run_id>` commands;
   `deploy.dev.url` config schema extension; auto-close superseded PRs on
-  `--new-run`; Codex variant of `intake`; wave-parallel atom execution via
-  sub-agents (atoms are strictly sequential in v1); drift-check relaxation
-  to "goal commits are ancestors of HEAD" (support concurrent commits to
-  the run branch by other agents).
+  `--new-run`; Codex variant of `intake`/`conduct`; wave-parallel atom execution
+  via sub-agents (atoms are strictly sequential in v1); `conduct` concurrent
+  cluster execution (`--max-parallel>1`); `conduct` best-effort graph Task-status
+  writes for graph-backed projects; drift-check relaxation to "goal commits are
+  ancestors of HEAD" (support concurrent commits to the run branch by other
+  agents).

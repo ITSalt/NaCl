@@ -273,6 +273,32 @@ takes the resume path:
 A resume that finds all atoms `verified` and `goal-final-sha.txt` present
 jumps straight to deliver / observation.
 
+### conduct resume (2.18.0; `orchestrator="conduct"`)
+
+A conduct run is resumed per CLUSTER, not per atom:
+
+1. Read `plan.lock.json`; the `clusters[]` array carries each cluster's
+   immutable `cluster_id`, `wave`, `state`, and `branch`.
+2. **Selective resume** — `/nacl-goal resume --clusters=<id,...>` re-runs ONLY
+   the named clusters (the ones that ended `state: blocked` /
+   `skipped_blocked_dependency`). Clusters already in `state: deployed` and their
+   OPEN PRs are left strictly untouched — this is the multi-PR analogue of the
+   intake WIP-collision resume. Without `--clusters=`, resume re-runs every
+   non-`deployed` cluster in wave order.
+3. The integration branch (`integration/goal-<hash>`) already contains every
+   previously-`deployed` cluster's merge, so a resumed dependent cluster still
+   cuts its branch from a base that has its dependencies. The wrapper re-verifies
+   integration HEAD before resuming; an unexpected move →
+   `GOAL_BLOCKED_INTEGRATION_DRIFTED` (non-resumable; `--new-run`).
+4. Per resumed cluster, re-export `NACL_GOAL_BRANCH=<cluster.branch>` and
+   `NACL_GOAL_CLUSTER_ID=<cluster_id>` (ship artifacts under `clusters/<id>/`),
+   then take the standard per-atom resume path above WITHIN that cluster.
+
+`GOAL_BLOCKED_PARTIAL_WAVE` is the only `resumable: "partial"` state; the
+per-cluster `GOAL_BLOCKED_CLUSTER_*` codes are individually non-resumable
+(the cluster needs human investigation), but they are reachable for retry through
+the run-level `--clusters=` selective resume once the underlying cause is fixed.
+
 ---
 
 ## Cleanup
