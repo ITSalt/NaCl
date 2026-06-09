@@ -15,6 +15,9 @@
 // Source of truth: the Severity table (Report threshold column) and the
 // "Exemption-property reference" table in SKILL.md. Pinned by classify-findings.test.mjs.
 
+import { realpathSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+
 const WARN_THRESHOLD = 5; // "5+ WARNINGs → overall WARN" (Severity table)
 const coalesce = (v, d) => (v === undefined || v === null ? d : v);
 
@@ -63,7 +66,8 @@ export function classifyFindings(input) {
 
 // CLI: `node classify-findings.mjs '<json>'` or `… | node classify-findings.mjs`.
 // Prints the full JSON to stdout and the bare overall token to stderr (for `… 2>&1 | tail`).
-if (import.meta.url === `file://${process.argv[1]}`) {
+// Symlink-safe main check (skills invoke via the ~/.claude/skills symlink).
+if (process.argv[1] && realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const fromArg = process.argv[2];
   const read = fromArg
     ? Promise.resolve(fromArg)

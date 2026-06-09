@@ -44,6 +44,9 @@
  * }} i
  * @returns {{ result: string, reason: string }}
  */
+import { realpathSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+
 export function classifyStatus(i) {
   if (i.staticFail) {
     return { result: 'FAIL', reason: 'static analysis found incorrect behaviour (CODE_DRIFT / runtime error)' };
@@ -78,7 +81,9 @@ export function classifyStatus(i) {
 
 // CLI: `node classify-status.mjs '<json-inputs>'` → prints the canonical token (and reason on stderr).
 // Lets the skill invoke it deterministically instead of re-deriving the precedence in prose.
-if (import.meta.url === `file://${process.argv[1]}`) {
+// Symlink-safe main check (skills invoke via the ~/.claude/skills symlink — argv[1] is the
+// symlink, import.meta.url is the realpath, so compare both as realpaths).
+if (process.argv[1] && realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const raw = process.argv[2];
   if (!raw) {
     process.stderr.write('usage: node classify-status.mjs \'{"staticFail":false,...}\'\n');

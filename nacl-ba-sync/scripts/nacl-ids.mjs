@@ -15,6 +15,9 @@
 // when n has more digits than `width`, the HIGH digits are truncated (right('00100',2)
 // → '00'). This is the documented historical behaviour; reproduced, not "fixed".
 
+import { realpathSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+
 const KINDS = {
   'process-group':   { prefix: 'GPR-', width: 2 },
   'business-process':{ prefix: 'BP-',  width: 3 },
@@ -48,7 +51,8 @@ export function naclId(kind, n, parentId) {
 }
 
 // CLI
-if (import.meta.url === `file://${process.argv[1]}`) {
+// Symlink-safe main check (skills invoke via the ~/.claude/skills symlink).
+if (process.argv[1] && realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const [kind, nRaw, parentId] = process.argv.slice(2);
   if (!kind || nRaw === undefined) {
     process.stderr.write('usage: nacl-ids.mjs <kind> <next_int> [parentId]\n');

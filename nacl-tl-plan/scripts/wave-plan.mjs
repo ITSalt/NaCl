@@ -20,6 +20,9 @@
 //   Priority does not move a UC between waves (independents share a wave regardless);
 //   it only orders tasks WITHIN a wave: high > medium > low, then id.
 
+import { realpathSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+
 const PRIORITY_RANK = { high: 0, medium: 1, low: 2 };
 
 /**
@@ -110,7 +113,9 @@ export function planWaves(input) {
 }
 
 // CLI: `node wave-plan.mjs '<json>'` or `… | node wave-plan.mjs`. Prints the plan as JSON.
-if (import.meta.url === `file://${process.argv[1]}`) {
+// runMain handles invocation through a symlink (how skills call it): import.meta.url is
+// the realpath, argv[1] is the symlink — compare both as realpaths.
+if (process.argv[1] && realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const fromArg = process.argv[2];
   const read = fromArg
     ? Promise.resolve(fromArg)
