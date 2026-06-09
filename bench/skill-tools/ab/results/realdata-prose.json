@@ -1,0 +1,431 @@
+{
+  "scenarios": [
+    {
+      "id": "A-real-full",
+      "oracle": {
+        "overall": "FAIL",
+        "critical": 9,
+        "warning": 9,
+        "exempted": []
+      }
+    },
+    {
+      "id": "B-crit-resolved",
+      "oracle": {
+        "overall": "WARN",
+        "critical": 0,
+        "warning": 9,
+        "exempted": []
+      }
+    },
+    {
+      "id": "C-derived-boundary",
+      "oracle": {
+        "overall": "PASS",
+        "critical": 0,
+        "warning": 4,
+        "exempted": [
+          "L6.1"
+        ]
+      }
+    }
+  ],
+  "rows": [
+    {
+      "model": "haiku",
+      "scenario": "A-real-full",
+      "i": 0,
+      "parsed": true,
+      "overall_ok": true,
+      "crit_ok": true,
+      "warn_ok": true,
+      "exempt_ok": true,
+      "answer": "FAIL|C9|W9|ex[]"
+    },
+    {
+      "model": "haiku",
+      "scenario": "A-real-full",
+      "i": 1,
+      "parsed": true,
+      "overall_ok": true,
+      "crit_ok": true,
+      "warn_ok": true,
+      "exempt_ok": true,
+      "answer": "FAIL|C9|W9|ex[]"
+    },
+    {
+      "model": "haiku",
+      "scenario": "A-real-full",
+      "i": 2,
+      "parsed": true,
+      "overall_ok": true,
+      "crit_ok": true,
+      "warn_ok": true,
+      "exempt_ok": true,
+      "answer": "FAIL|C9|W9|ex[]"
+    },
+    {
+      "model": "haiku",
+      "scenario": "A-real-full",
+      "i": 3,
+      "parsed": true,
+      "overall_ok": true,
+      "crit_ok": true,
+      "warn_ok": true,
+      "exempt_ok": true,
+      "answer": "FAIL|C9|W9|ex[]"
+    },
+    {
+      "model": "haiku",
+      "scenario": "A-real-full",
+      "i": 4,
+      "parsed": true,
+      "overall_ok": true,
+      "crit_ok": true,
+      "warn_ok": true,
+      "exempt_ok": true,
+      "answer": "FAIL|C9|W9|ex[]"
+    },
+    {
+      "model": "haiku",
+      "scenario": "A-real-full",
+      "i": 5,
+      "parsed": true,
+      "overall_ok": true,
+      "crit_ok": true,
+      "warn_ok": true,
+      "exempt_ok": true,
+      "answer": "FAIL|C9|W9|ex[]"
+    },
+    {
+      "model": "haiku",
+      "scenario": "B-crit-resolved",
+      "i": 0,
+      "parsed": true,
+      "overall_ok": true,
+      "crit_ok": true,
+      "warn_ok": true,
+      "exempt_ok": true,
+      "answer": "WARN|C0|W9|ex[]"
+    },
+    {
+      "model": "haiku",
+      "scenario": "B-crit-resolved",
+      "i": 1,
+      "parsed": true,
+      "overall_ok": true,
+      "crit_ok": true,
+      "warn_ok": true,
+      "exempt_ok": true,
+      "answer": "WARN|C0|W9|ex[]"
+    },
+    {
+      "model": "haiku",
+      "scenario": "B-crit-resolved",
+      "i": 2,
+      "parsed": true,
+      "overall_ok": true,
+      "crit_ok": true,
+      "warn_ok": true,
+      "exempt_ok": true,
+      "answer": "WARN|C0|W9|ex[]"
+    },
+    {
+      "model": "haiku",
+      "scenario": "B-crit-resolved",
+      "i": 3,
+      "parsed": true,
+      "overall_ok": true,
+      "crit_ok": true,
+      "warn_ok": true,
+      "exempt_ok": true,
+      "answer": "WARN|C0|W9|ex[]"
+    },
+    {
+      "model": "haiku",
+      "scenario": "B-crit-resolved",
+      "i": 4,
+      "parsed": true,
+      "overall_ok": true,
+      "crit_ok": true,
+      "warn_ok": true,
+      "exempt_ok": true,
+      "answer": "WARN|C0|W9|ex[]"
+    },
+    {
+      "model": "haiku",
+      "scenario": "B-crit-resolved",
+      "i": 5,
+      "parsed": true,
+      "overall_ok": true,
+      "crit_ok": true,
+      "warn_ok": true,
+      "exempt_ok": true,
+      "answer": "WARN|C0|W9|ex[]"
+    },
+    {
+      "model": "haiku",
+      "scenario": "C-derived-boundary",
+      "i": 0,
+      "parsed": true,
+      "overall_ok": true,
+      "crit_ok": true,
+      "warn_ok": true,
+      "exempt_ok": true,
+      "answer": "PASS|C0|W4|ex[L6.1]"
+    },
+    {
+      "model": "haiku",
+      "scenario": "C-derived-boundary",
+      "i": 1,
+      "parsed": true,
+      "overall_ok": true,
+      "crit_ok": true,
+      "warn_ok": true,
+      "exempt_ok": true,
+      "answer": "PASS|C0|W4|ex[L6.1]"
+    },
+    {
+      "model": "haiku",
+      "scenario": "C-derived-boundary",
+      "i": 2,
+      "parsed": true,
+      "overall_ok": true,
+      "crit_ok": true,
+      "warn_ok": true,
+      "exempt_ok": true,
+      "answer": "PASS|C0|W4|ex[L6.1]"
+    },
+    {
+      "model": "haiku",
+      "scenario": "C-derived-boundary",
+      "i": 3,
+      "parsed": true,
+      "overall_ok": true,
+      "crit_ok": true,
+      "warn_ok": true,
+      "exempt_ok": true,
+      "answer": "PASS|C0|W4|ex[L6.1]"
+    },
+    {
+      "model": "haiku",
+      "scenario": "C-derived-boundary",
+      "i": 4,
+      "parsed": true,
+      "overall_ok": true,
+      "crit_ok": true,
+      "warn_ok": true,
+      "exempt_ok": true,
+      "answer": "PASS|C0|W4|ex[L6.1]"
+    },
+    {
+      "model": "haiku",
+      "scenario": "C-derived-boundary",
+      "i": 5,
+      "parsed": true,
+      "overall_ok": true,
+      "crit_ok": true,
+      "warn_ok": true,
+      "exempt_ok": true,
+      "answer": "PASS|C0|W4|ex[L6.1]"
+    },
+    {
+      "model": "opus",
+      "scenario": "A-real-full",
+      "i": 0,
+      "parsed": true,
+      "overall_ok": true,
+      "crit_ok": true,
+      "warn_ok": true,
+      "exempt_ok": true,
+      "answer": "FAIL|C9|W9|ex[]"
+    },
+    {
+      "model": "opus",
+      "scenario": "A-real-full",
+      "i": 1,
+      "parsed": true,
+      "overall_ok": true,
+      "crit_ok": true,
+      "warn_ok": true,
+      "exempt_ok": true,
+      "answer": "FAIL|C9|W9|ex[]"
+    },
+    {
+      "model": "opus",
+      "scenario": "A-real-full",
+      "i": 2,
+      "parsed": true,
+      "overall_ok": true,
+      "crit_ok": true,
+      "warn_ok": true,
+      "exempt_ok": true,
+      "answer": "FAIL|C9|W9|ex[]"
+    },
+    {
+      "model": "opus",
+      "scenario": "A-real-full",
+      "i": 3,
+      "parsed": true,
+      "overall_ok": true,
+      "crit_ok": true,
+      "warn_ok": true,
+      "exempt_ok": true,
+      "answer": "FAIL|C9|W9|ex[]"
+    },
+    {
+      "model": "opus",
+      "scenario": "A-real-full",
+      "i": 4,
+      "parsed": true,
+      "overall_ok": true,
+      "crit_ok": true,
+      "warn_ok": true,
+      "exempt_ok": true,
+      "answer": "FAIL|C9|W9|ex[]"
+    },
+    {
+      "model": "opus",
+      "scenario": "A-real-full",
+      "i": 5,
+      "parsed": true,
+      "overall_ok": true,
+      "crit_ok": true,
+      "warn_ok": true,
+      "exempt_ok": true,
+      "answer": "FAIL|C9|W9|ex[]"
+    },
+    {
+      "model": "opus",
+      "scenario": "B-crit-resolved",
+      "i": 0,
+      "parsed": true,
+      "overall_ok": true,
+      "crit_ok": true,
+      "warn_ok": true,
+      "exempt_ok": true,
+      "answer": "WARN|C0|W9|ex[]"
+    },
+    {
+      "model": "opus",
+      "scenario": "B-crit-resolved",
+      "i": 1,
+      "parsed": true,
+      "overall_ok": true,
+      "crit_ok": true,
+      "warn_ok": true,
+      "exempt_ok": true,
+      "answer": "WARN|C0|W9|ex[]"
+    },
+    {
+      "model": "opus",
+      "scenario": "B-crit-resolved",
+      "i": 2,
+      "parsed": true,
+      "overall_ok": true,
+      "crit_ok": true,
+      "warn_ok": true,
+      "exempt_ok": true,
+      "answer": "WARN|C0|W9|ex[]"
+    },
+    {
+      "model": "opus",
+      "scenario": "B-crit-resolved",
+      "i": 3,
+      "parsed": true,
+      "overall_ok": true,
+      "crit_ok": true,
+      "warn_ok": true,
+      "exempt_ok": true,
+      "answer": "WARN|C0|W9|ex[]"
+    },
+    {
+      "model": "opus",
+      "scenario": "B-crit-resolved",
+      "i": 4,
+      "parsed": true,
+      "overall_ok": true,
+      "crit_ok": true,
+      "warn_ok": true,
+      "exempt_ok": true,
+      "answer": "WARN|C0|W9|ex[]"
+    },
+    {
+      "model": "opus",
+      "scenario": "B-crit-resolved",
+      "i": 5,
+      "parsed": true,
+      "overall_ok": true,
+      "crit_ok": true,
+      "warn_ok": true,
+      "exempt_ok": true,
+      "answer": "WARN|C0|W9|ex[]"
+    },
+    {
+      "model": "opus",
+      "scenario": "C-derived-boundary",
+      "i": 0,
+      "parsed": true,
+      "overall_ok": true,
+      "crit_ok": true,
+      "warn_ok": true,
+      "exempt_ok": true,
+      "answer": "PASS|C0|W4|ex[L6.1]"
+    },
+    {
+      "model": "opus",
+      "scenario": "C-derived-boundary",
+      "i": 1,
+      "parsed": true,
+      "overall_ok": true,
+      "crit_ok": true,
+      "warn_ok": true,
+      "exempt_ok": true,
+      "answer": "PASS|C0|W4|ex[L6.1]"
+    },
+    {
+      "model": "opus",
+      "scenario": "C-derived-boundary",
+      "i": 2,
+      "parsed": true,
+      "overall_ok": true,
+      "crit_ok": true,
+      "warn_ok": true,
+      "exempt_ok": true,
+      "answer": "PASS|C0|W4|ex[L6.1]"
+    },
+    {
+      "model": "opus",
+      "scenario": "C-derived-boundary",
+      "i": 3,
+      "parsed": true,
+      "overall_ok": true,
+      "crit_ok": true,
+      "warn_ok": true,
+      "exempt_ok": true,
+      "answer": "PASS|C0|W4|ex[L6.1]"
+    },
+    {
+      "model": "opus",
+      "scenario": "C-derived-boundary",
+      "i": 4,
+      "parsed": true,
+      "overall_ok": true,
+      "crit_ok": true,
+      "warn_ok": true,
+      "exempt_ok": true,
+      "answer": "PASS|C0|W4|ex[L6.1]"
+    },
+    {
+      "model": "opus",
+      "scenario": "C-derived-boundary",
+      "i": 5,
+      "parsed": true,
+      "overall_ok": true,
+      "crit_ok": true,
+      "warn_ok": true,
+      "exempt_ok": true,
+      "answer": "PASS|C0|W4|ex[L6.1]"
+    }
+  ]
+}

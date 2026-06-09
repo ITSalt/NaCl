@@ -1,0 +1,82 @@
+{
+  "findings": [
+    {
+      "check": "L1.2",
+      "severity": "CRITICAL"
+    },
+    {
+      "check": "L2.1",
+      "severity": "CRITICAL"
+    },
+    {
+      "check": "L2.5",
+      "severity": "CRITICAL"
+    },
+    {
+      "check": "L3.5",
+      "severity": "CRITICAL"
+    },
+    {
+      "check": "L4.1",
+      "severity": "CRITICAL",
+      "flags": {
+        "field_category": null
+      }
+    },
+    {
+      "check": "L5.3",
+      "severity": "CRITICAL"
+    },
+    {
+      "check": "L6.2",
+      "severity": "CRITICAL"
+    },
+    {
+      "check": "L8.1",
+      "severity": "CRITICAL"
+    },
+    {
+      "check": "L9.2",
+      "severity": "CRITICAL"
+    },
+    {
+      "check": "L2.3",
+      "severity": "WARNING"
+    },
+    {
+      "check": "L3.3",
+      "severity": "WARNING"
+    },
+    {
+      "check": "L3.4",
+      "severity": "WARNING"
+    },
+    {
+      "check": "L3.6",
+      "severity": "WARNING"
+    },
+    {
+      "check": "L5.4",
+      "severity": "WARNING"
+    },
+    {
+      "check": "L6.1",
+      "severity": "WARNING",
+      "flags": {
+        "shared": false
+      }
+    },
+    {
+      "check": "L7.3",
+      "severity": "WARNING"
+    },
+    {
+      "check": "L13.9",
+      "severity": "WARNING"
+    },
+    {
+      "check": "XL6.2",
+      "severity": "WARNING"
+    }
+  ]
+}

@@ -1,0 +1,150 @@
+{
+  "variant": "faithful",
+  "scenarios": [
+    {
+      "id": "C-derived-boundary",
+      "oracle": {
+        "overall": "PASS",
+        "critical": 0,
+        "warning": 4,
+        "exempted": [
+          "L6.1"
+        ]
+      }
+    }
+  ],
+  "rows": [
+    {
+      "model": "haiku",
+      "scenario": "C-derived-boundary",
+      "i": 0,
+      "parsed": true,
+      "overall_ok": true,
+      "crit_ok": true,
+      "warn_ok": true,
+      "exempt_ok": true,
+      "answer": "PASS|C0|W4|ex[L6.1]"
+    },
+    {
+      "model": "haiku",
+      "scenario": "C-derived-boundary",
+      "i": 1,
+      "parsed": true,
+      "overall_ok": false,
+      "crit_ok": true,
+      "warn_ok": false,
+      "exempt_ok": false,
+      "answer": "WARN|C0|W5|ex[]"
+    },
+    {
+      "model": "haiku",
+      "scenario": "C-derived-boundary",
+      "i": 2,
+      "parsed": true,
+      "overall_ok": true,
+      "crit_ok": true,
+      "warn_ok": true,
+      "exempt_ok": true,
+      "answer": "PASS|C0|W4|ex[L6.1]"
+    },
+    {
+      "model": "haiku",
+      "scenario": "C-derived-boundary",
+      "i": 3,
+      "parsed": true,
+      "overall_ok": true,
+      "crit_ok": true,
+      "warn_ok": true,
+      "exempt_ok": true,
+      "answer": "PASS|C0|W4|ex[L6.1]"
+    },
+    {
+      "model": "haiku",
+      "scenario": "C-derived-boundary",
+      "i": 4,
+      "parsed": true,
+      "overall_ok": true,
+      "crit_ok": true,
+      "warn_ok": true,
+      "exempt_ok": true,
+      "answer": "PASS|C0|W4|ex[L6.1]"
+    },
+    {
+      "model": "haiku",
+      "scenario": "C-derived-boundary",
+      "i": 5,
+      "parsed": true,
+      "overall_ok": true,
+      "crit_ok": true,
+      "warn_ok": true,
+      "exempt_ok": true,
+      "answer": "PASS|C0|W4|ex[L6.1]"
+    },
+    {
+      "model": "opus",
+      "scenario": "C-derived-boundary",
+      "i": 0,
+      "parsed": true,
+      "overall_ok": true,
+      "crit_ok": true,
+      "warn_ok": true,
+      "exempt_ok": true,
+      "answer": "PASS|C0|W4|ex[L6.1]"
+    },
+    {
+      "model": "opus",
+      "scenario": "C-derived-boundary",
+      "i": 1,
+      "parsed": true,
+      "overall_ok": true,
+      "crit_ok": true,
+      "warn_ok": true,
+      "exempt_ok": true,
+      "answer": "PASS|C0|W4|ex[L6.1]"
+    },
+    {
+      "model": "opus",
+      "scenario": "C-derived-boundary",
+      "i": 2,
+      "parsed": true,
+      "overall_ok": true,
+      "crit_ok": true,
+      "warn_ok": true,
+      "exempt_ok": true,
+      "answer": "PASS|C0|W4|ex[L6.1]"
+    },
+    {
+      "model": "opus",
+      "scenario": "C-derived-boundary",
+      "i": 3,
+      "parsed": true,
+      "overall_ok": true,
+      "crit_ok": true,
+      "warn_ok": true,
+      "exempt_ok": true,
+      "answer": "PASS|C0|W4|ex[L6.1]"
+    },
+    {
+      "model": "opus",
+      "scenario": "C-derived-boundary",
+      "i": 4,
+      "parsed": true,
+      "overall_ok": true,
+      "crit_ok": true,
+      "warn_ok": true,
+      "exempt_ok": true,
+      "answer": "PASS|C0|W4|ex[L6.1]"
+    },
+    {
+      "model": "opus",
+      "scenario": "C-derived-boundary",
+      "i": 5,
+      "parsed": true,
+      "overall_ok": true,
+      "crit_ok": true,
+      "warn_ok": true,
+      "exempt_ok": true,
+      "answer": "PASS|C0|W4|ex[L6.1]"
+    }
+  ]
+}
