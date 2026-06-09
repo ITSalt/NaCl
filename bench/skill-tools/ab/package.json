@@ -1,0 +1,10 @@
+{
+  "name": "nacl-skill-tools-ab",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Comparative A/B harness for the skill-tools pilot (prose vs tool), paced via itsalt-pinch.",
+  "dependencies": {
+    "itsalt-pinch": "^0.1.3"
+  }
+}

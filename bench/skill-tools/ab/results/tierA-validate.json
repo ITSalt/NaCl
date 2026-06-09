@@ -1,0 +1,64 @@
+{
+  "groundTruth": {
+    "slug": "fix-cast-lectureid-handle-404-urgent-see-pr-42-for",
+    "findings": "WARN"
+  },
+  "summary": [
+    {
+      "model": "haiku",
+      "tool": "slug",
+      "arm": "new",
+      "n": 3,
+      "distinct_outputs": 1,
+      "correct": 3,
+      "correct_pct": 100,
+      "exec_fails": 0,
+      "mean_out_tok": 233,
+      "total_cost_usd": 0.0478
+    }
+  ],
+  "rows": [
+    {
+      "model": "haiku",
+      "tool": "slug",
+      "arm": "new",
+      "i": 0,
+      "exitCode": 0,
+      "outTok": 232,
+      "inTok": 18,
+      "cost": 0.019934600000000004,
+      "jsonOk": true,
+      "norm": "fix-cast-lectureid-handle-404-urgent-see-pr-42-for",
+      "correct": true,
+      "durationMs": 8781.289125
+    },
+    {
+      "model": "haiku",
+      "tool": "slug",
+      "arm": "new",
+      "i": 1,
+      "exitCode": 0,
+      "outTok": 233,
+      "inTok": 18,
+      "cost": 0.007857800000000002,
+      "jsonOk": true,
+      "norm": "fix-cast-lectureid-handle-404-urgent-see-pr-42-for",
+      "correct": true,
+      "durationMs": 9676.023291000005
+    },
+    {
+      "model": "haiku",
+      "tool": "slug",
+      "arm": "new",
+      "i": 2,
+      "exitCode": 0,
+      "outTok": 235,
+      "inTok": 18,
+      "cost": 0.01996145,
+      "jsonOk": true,
+      "norm": "fix-cast-lectureid-handle-404-urgent-see-pr-42-for",
+      "correct": true,
+      "durationMs": 9781.748
+    }
+  ]
+}
