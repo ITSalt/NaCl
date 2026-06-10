@@ -424,11 +424,10 @@ verdict). Collect every finding as `{check, severity, flags?}` and pass them to 
 single-authority classifier; emit its `overall` token verbatim. It also re-applies the
 property-based exemption filters (L4.1/L5.1/L6.1/L9.1/L10.2/L10.6/XL8.2) as a
 defense-in-depth net, so a finding whose Cypher omitted its `coalesce(...)` filter is
-still dropped before it can flip the gate. Equivalence pinned by
-`scripts/classify-findings.test.mjs`.
+still dropped before it can flip the gate. Equivalence pinned by .
 
 ```bash
-node nacl-sa-validate/scripts/classify-findings.mjs '{"findings":[{"check":"L1.1","severity":"CRITICAL"},{"check":"L4.1","severity":"CRITICAL","flags":{"field_category":"display"}}]}'
+node nacl-core/scripts/classify-findings.mjs '{"findings":[{"check":"L1.1","severity":"CRITICAL"},{"check":"L4.1","severity":"CRITICAL","flags":{"field_category":"display"}}]}'
 # stdout: full JSON (findings + counts + overall); stderr: the bare overall token
 ```
 

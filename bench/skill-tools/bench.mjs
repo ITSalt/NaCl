@@ -26,12 +26,12 @@ const est = (chars) => Math.round(chars / 4); // chars/4 token proxy (label: est
 
 // --- H1: determinism matrix (pure invocations only; side-effecting health-check excluded) ---
 const MATRIX = [
-  { tool: 'ship/branch.sh',          run: ['bash', ['nacl-tl-ship/scripts/branch.sh', 'slug', 'fix: Add Lecture Breadcrumb!!']] },
-  { tool: 'ship/branch.sh',          run: ['bash', ['nacl-tl-ship/scripts/branch.sh', 'guard', 'feature/x', 'main', 'feature-branch']] },
+  { tool: 'ship/branch.sh',          run: ['bash', ['nacl-core/scripts/branch.sh', 'slug', 'fix: Add Lecture Breadcrumb!!']] },
+  { tool: 'ship/branch.sh',          run: ['bash', ['nacl-core/scripts/branch.sh', 'guard', 'feature/x', 'main', 'feature-branch']] },
   { tool: 'plan/wave-plan.mjs',      run: ['node', ['nacl-tl-plan/scripts/wave-plan.mjs', '{"tech":["TECH-001"],"ucs":[{"id":"UC001","priority":"high","depends_on":[]},{"id":"UC002","depends_on":["UC001"]},{"id":"UC003","depends_on":["UC001"]}]}']] },
-  { tool: 'sa-validate/classify-findings.mjs', run: ['node', ['nacl-sa-validate/scripts/classify-findings.mjs', '{"findings":[{"check":"L1.1","severity":"CRITICAL"},{"check":"L4.1","severity":"CRITICAL","flags":{"field_category":"display"}},{"check":"L2.1","severity":"WARNING"}]}']] },
-  { tool: 'ba-sync/nacl-ids.mjs',    run: ['node', ['nacl-ba-sync/scripts/nacl-ids.mjs', 'workflow-step', '7', 'BP-001']] },
-  { tool: 'release/wait-for-ci.sh',  run: ['bash', ['nacl-tl-release/scripts/wait-for-ci.sh', 'classify', 'completed', 'failure']] },
+  { tool: 'sa-validate/classify-findings.mjs', run: ['node', ['nacl-core/scripts/classify-findings.mjs', '{"findings":[{"check":"L1.1","severity":"CRITICAL"},{"check":"L4.1","severity":"CRITICAL","flags":{"field_category":"display"}},{"check":"L2.1","severity":"WARNING"}]}']] },
+  { tool: 'ba-sync/nacl-ids.mjs',    run: ['node', ['nacl-core/scripts/nacl-ids.mjs', 'workflow-step', '7', 'BP-001']] },
+  { tool: 'release/wait-for-ci.sh',  run: ['bash', ['nacl-core/scripts/wait-for-ci.sh', 'classify', 'completed', 'failure']] },
 ];
 
 const h1 = [];

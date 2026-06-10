@@ -10,7 +10,7 @@ import { Pacer } from 'itsalt-pinch';
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join, resolve } from 'node:path';
-import { classifyFindings } from '../../../nacl-sa-validate/scripts/classify-findings.mjs';
+import { classifyFindings } from '../../../nacl-core/scripts/classify-findings.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO = resolve(HERE, '..', '..', '..');

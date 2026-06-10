@@ -21,17 +21,22 @@ import { fileURLToPath } from 'node:url';
 const WARN_THRESHOLD = 5; // "5+ WARNINGs → overall WARN" (Severity table)
 const coalesce = (v, d) => (v === undefined || v === null ? d : v);
 
-// Property-based exemption predicates, keyed by check id. A finding from one of these
-// checks is exempt when its node's flags satisfy the predicate — mirrors the verbatim
-// `coalesce(...)` WHERE filter. Checks not listed here have no property exemption.
+// Property-based exemption predicates, keyed by LAYER then check id. A finding is exempt
+// when its node's flags satisfy the predicate — mirrors the verbatim `coalesce(...)` WHERE
+// filter. LAYER matters: nacl-ba-validate reuses check ids L4.1/L5.1/L6.1 for entirely
+// different (BA-layer) checks that have NO exemptions — so the SA rules must NOT apply to
+// them. Default layer is 'sa' (back-compat). 'ba' has no exemption rules.
 const EXEMPTION_RULES = {
-  'L4.1':  { reason: 'display/action field (field_category != input)', test: (f) => coalesce(f.field_category, 'input') !== 'input' },
-  'L5.1':  { reason: 'backend-only UC (has_ui = false)',               test: (f) => coalesce(f.has_ui, true) === false },
-  'L6.1':  { reason: 'intentionally shared entity (shared = true)',    test: (f) => coalesce(f.shared, false) === true },
-  'L9.1':  { reason: 'grandfathered FR (decision_exempt = true)',      test: (f) => coalesce(f.decision_exempt, false) === true },
-  'L10.2': { reason: 'formless screen (formless = true)',              test: (f) => coalesce(f.formless, false) === true },
-  'L10.6': { reason: 'terminal state (terminal = true)',               test: (f) => coalesce(f.terminal, false) === true },
-  'XL8.2': { reason: 'infrastructure-only role (system_only = true)',  test: (f) => coalesce(f.system_only, false) === true },
+  sa: {
+    'L4.1':  { reason: 'display/action field (field_category != input)', test: (f) => coalesce(f.field_category, 'input') !== 'input' },
+    'L5.1':  { reason: 'backend-only UC (has_ui = false)',               test: (f) => coalesce(f.has_ui, true) === false },
+    'L6.1':  { reason: 'intentionally shared entity (shared = true)',    test: (f) => coalesce(f.shared, false) === true },
+    'L9.1':  { reason: 'grandfathered FR (decision_exempt = true)',      test: (f) => coalesce(f.decision_exempt, false) === true },
+    'L10.2': { reason: 'formless screen (formless = true)',              test: (f) => coalesce(f.formless, false) === true },
+    'L10.6': { reason: 'terminal state (terminal = true)',               test: (f) => coalesce(f.terminal, false) === true },
+    'XL8.2': { reason: 'infrastructure-only role (system_only = true)',  test: (f) => coalesce(f.system_only, false) === true },
+  },
+  ba: {}, // BA-layer L1-L8 / XL1-XL5 have no property exemptions
 };
 
 const SEVERITIES = new Set(['CRITICAL', 'WARNING', 'INFO']);
@@ -44,11 +49,14 @@ const SEVERITIES = new Set(['CRITICAL', 'WARNING', 'INFO']);
  */
 export function classifyFindings(input) {
   const raw = Array.isArray(input?.findings) ? input.findings : [];
+  const layer = input?.layer ?? 'sa';
+  const rules = EXEMPTION_RULES[layer];
+  if (!rules) throw new Error(`unknown layer "${layer}" (expected sa|ba)`);
   const counts = { critical: 0, warning: 0, info: 0, exempt: 0 };
   const findings = raw.map((f) => {
     const severity = String(f.severity || '').toUpperCase();
     if (!SEVERITIES.has(severity)) throw new Error(`unknown severity "${f.severity}" on check ${f.check}`);
-    const rule = EXEMPTION_RULES[f.check];
+    const rule = rules[f.check];
     const exempt = rule ? rule.test(f.flags ?? {}) : false;
     const out = { check: f.check, severity, exempt };
     if (exempt) {

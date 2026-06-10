@@ -58,10 +58,10 @@ Equivalence to the documented behavior is pinned per tool (run in CI via
 
 ```bash
 node --test nacl-tl-plan/scripts/wave-plan.test.mjs \
-            nacl-sa-validate/scripts/classify-findings.test.mjs \
-            nacl-ba-sync/scripts/nacl-ids.test.mjs \
+            nacl-core/scripts/classify-findings.test.mjs \
+            nacl-core/scripts/nacl-ids.test.mjs \
             nacl-tl-verify-code/scripts/classify-status.test.mjs
-bash nacl-tl-ship/scripts/branch.test.sh
-bash nacl-tl-release/scripts/wait-for-ci.test.sh
-bash nacl-tl-release/scripts/health-check.test.sh
+bash nacl-core/scripts/branch.test.sh
+bash nacl-core/scripts/wait-for-ci.test.sh
+bash nacl-core/scripts/health-check.test.sh
 ```

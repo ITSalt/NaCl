@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Equivalence pins for branch.sh. Run: bash nacl-tl-ship/scripts/branch.test.sh
+# Equivalence pins for branch.sh. Run: bash nacl-core/scripts/branch.test.sh
 # Every case maps an input to the exact slug / exit-code the inline SKILL.md logic
 # produced. A green run means the script reproduces the documented behaviour.
 

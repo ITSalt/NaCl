@@ -505,7 +505,7 @@ The CI wait is delegated to the single-authority helper — it selects the run, 
 it under the timeout, and classifies the outcome (constants `--timeout` / `--no-run-grace`
 documented in-script; pinned by `scripts/wait-for-ci.test.sh`):
 ```bash
-bash nacl-tl-release/scripts/wait-for-ci.sh watch --branch {main_branch} --since "$merge_iso" \
+bash nacl-core/scripts/wait-for-ci.sh watch --branch {main_branch} --since "$merge_iso" \
   --timeout "${ci_timeout:-600}"
 # exit 0 + CI_OK | NO_CI (no .github/workflows → warn) | NO_RUN (none within grace → warn & continue)
 # exit 1 + CI_FAILED → do NOT proceed to tagging; surface the failure block below
@@ -533,7 +533,7 @@ Do NOT proceed to tagging.
 The health probe is delegated (propagation wait, retry count, and interval are documented
 in-script; pinned by `scripts/health-check.test.sh`):
 ```bash
-bash nacl-tl-release/scripts/health-check.sh --url "{production_url}{health_endpoint}"
+bash nacl-core/scripts/health-check.sh --url "{production_url}{health_endpoint}"
 # exit 0 HEALTH_OK | exit 1 HEALTH_FAILED → surface the HALT block below
 ```
 Remember: a green probe is HEALTH_ONLY evidence, never product-readiness (Step 5 gate).

@@ -18,8 +18,8 @@ const REPO = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 
 const TOOLS = [
   { path: 'nacl-tl-plan/scripts/wave-plan.mjs', args: ['{"ucs":[{"id":"UC001","depends_on":[]}]}'], expect: 'UC001-BE' },
-  { path: 'nacl-sa-validate/scripts/classify-findings.mjs', args: ['{"findings":[{"check":"L1.1","severity":"CRITICAL"}]}'], expect: '"overall": "FAIL"' },
-  { path: 'nacl-ba-sync/scripts/nacl-ids.mjs', args: ['workflow-step', '1', 'BP-001'], expect: 'BP-001-S01' },
+  { path: 'nacl-core/scripts/classify-findings.mjs', args: ['{"findings":[{"check":"L1.1","severity":"CRITICAL"}]}'], expect: '"overall": "FAIL"' },
+  { path: 'nacl-core/scripts/nacl-ids.mjs', args: ['workflow-step', '1', 'BP-001'], expect: 'BP-001-S01' },
   { path: 'nacl-tl-verify-code/scripts/classify-status.mjs',
     args: ['{"staticFail":false,"scriptsTestMissing":false,"emptyTestStubs":false,"runnerCouldNotExecute":false,"testsCollected":42,"baselineResolved":true,"newFailures":0,"postfixFailures":0,"coverageGap":false,"uiChanges":false}'],
     expect: 'PASS' },

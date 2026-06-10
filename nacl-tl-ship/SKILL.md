@@ -203,9 +203,9 @@ a mismatch is expected and must not halt the ship.
 | Auto-composed message | `feature/[slug]` | Auto: `"fix: cast lectureId"` → `feature/fix-cast-lectureid` |
 
 Slugification — `branch.sh slug` is the single authority (reproduces the historical
-`tr | sed | cut` pipeline; equivalence pinned by `scripts/branch.test.sh`):
+`tr | sed | cut` pipeline; equivalence pinned by `nacl-core/scripts/branch.test.sh`):
 ```bash
-slug=$(bash nacl-tl-ship/scripts/branch.sh slug "$message")
+slug=$(bash nacl-core/scripts/branch.sh slug "$message")
 git checkout -b "feature/${slug}" "$base_branch"
 ```
 
@@ -215,12 +215,12 @@ If you cannot derive a branch name — ask the user. Do NOT fall back to base_br
 ### Step 2.5: BASE-BRANCH GUARD (mandatory)
 
 Run this BEFORE every `git commit`. Non-negotiable. The guard logic is the single
-authority in `nacl-tl-ship/scripts/branch.sh` (equivalence pinned by `scripts/branch.test.sh`):
+authority in `nacl-core/scripts/branch.sh` (equivalence pinned by `nacl-core/scripts/branch.test.sh`):
 exit 1 prints `FATAL …` and blocks the commit, exit 0 prints `GUARD OK …`.
 
 ```bash
 # base_branch and strategy were read from config.yaml in Step 1
-bash nacl-tl-ship/scripts/branch.sh guard "$(git rev-parse --abbrev-ref HEAD)" "$base_branch" "$strategy"
+bash nacl-core/scripts/branch.sh guard "$(git rev-parse --abbrev-ref HEAD)" "$base_branch" "$strategy"
 ```
 
 If FATAL → go back to Step 2, create the branch. Do NOT skip or override this check.

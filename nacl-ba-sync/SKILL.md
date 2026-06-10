@@ -177,9 +177,9 @@ RETURN coalesce(max(toInteger(replace(gpr.id, 'GPR-', ''))), 0) + 1 AS nextNum
 
 Format the id with the single-authority formatter — it centralises the prefix/width rule
 that was duplicated (as the `right('0…' + toString(n), w)` idiom) across every BA id query;
-pinned by `scripts/nacl-ids.test.mjs`:
+pinned by `nacl-core/scripts/nacl-ids.test.mjs`:
 ```bash
-node nacl-ba-sync/scripts/nacl-ids.mjs process-group "$nextNum"   # → GPR-01 when nextNum=1
+node nacl-core/scripts/nacl-ids.mjs process-group "$nextNum"   # → GPR-01 when nextNum=1
 ```
 
 **Create the ProcessGroup node** via `mcp__neo4j__write-cypher`:
@@ -231,7 +231,7 @@ RETURN coalesce(max(toInteger(replace(bp.id, 'BP-', ''))), 0) + 1 AS nextNum
 
 Format via the single-authority formatter (see GPR note above):
 ```bash
-node nacl-ba-sync/scripts/nacl-ids.mjs business-process "$nextNum"   # → BP-001 when nextNum=1
+node nacl-core/scripts/nacl-ids.mjs business-process "$nextNum"   # → BP-001 when nextNum=1
 ```
 
 **Create the BusinessProcess node and link to ProcessGroup** via `mcp__neo4j__write-cypher`:
@@ -280,7 +280,7 @@ RETURN coalesce(max(toInteger(replace(ws.id, $bpId + '-S', ''))), 0) + 1 AS next
 
 Format via the single-authority formatter — pass the parent `$bpId` (see GPR note above):
 ```bash
-node nacl-ba-sync/scripts/nacl-ids.mjs workflow-step "$nextNum" "$bpId"   # → BP-001-S01 when nextNum=1
+node nacl-core/scripts/nacl-ids.mjs workflow-step "$nextNum" "$bpId"   # → BP-001-S01 when nextNum=1
 ```
 
 **b) Resolve display text:**
@@ -367,7 +367,7 @@ RETURN coalesce(max(toInteger(replace(e.id, 'OBJ-', ''))), 0) + 1 AS nextNum
 
 Format via the single-authority formatter (see GPR note above):
 ```bash
-node nacl-ba-sync/scripts/nacl-ids.mjs entity "$nextNum"   # → OBJ-001 when nextNum=1
+node nacl-core/scripts/nacl-ids.mjs entity "$nextNum"   # → OBJ-001 when nextNum=1
 ```
 
 **b) Resolve display text:** Look up `labelMap[element.id]` for the entity name.
@@ -410,7 +410,7 @@ RETURN coalesce(max(toInteger(replace(r.id, 'ROL-', ''))), 0) + 1 AS nextNum
 
 Format via the single-authority formatter (see GPR note above):
 ```bash
-node nacl-ba-sync/scripts/nacl-ids.mjs role "$nextNum"   # → ROL-01 when nextNum=1
+node nacl-core/scripts/nacl-ids.mjs role "$nextNum"   # → ROL-01 when nextNum=1
 ```
 
 **b) Resolve display text:** Look up `labelMap[element.id]` for the role full name.

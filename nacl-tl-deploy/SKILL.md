@@ -167,30 +167,19 @@ Detect CI/CD platform from the project:
    | Not found in graph | HALT unconditionally: `DEPLOY HALTED — UNVERIFIED (upstream status unknown)`. The previous "Warn and proceed (backward-compat)" path is removed. The operator must populate the Task node (via the appropriate dev / fix / verify skill) and re-run; there is no override that promotes unknown to verified. |
 
 1. Read `config.yaml → deploy` for target environment config
-2. Check CI/CD pipeline status:
+2. Find and watch the deploy pipeline via the single-authority helper (run selection,
+   watch, and outcome classification — shared with release/deliver; pinned by
+   `nacl-core/scripts/wait-for-ci.test.sh`):
    ```bash
-   gh run list --limit 5 --json status,conclusion,headBranch,createdAt
+   bash nacl-core/scripts/wait-for-ci.sh watch --branch {target_branch} --timeout "${ci_timeout:-600}"
+   # exit 0 → CI_OK | NO_CI (no `.github/workflows`) | NO_RUN ("no deployment in progress")
+   # exit 1 → CI_FAILED (the failed-log tail is already printed)
    ```
-3. Find the most recent pipeline/workflow run for the target branch
-4. If no run found → report "no deployment in progress"
 
-### Step 2: MONITOR PIPELINE
+### Step 2: ON CI FAILURE
 
-Watch the CI/CD pipeline until completion:
-
-```bash
-gh run watch [run-id] --exit-status
-```
-
-Report progress:
-- "Pipeline started: build step..."
-- "Running tests..."
-- "Deploying to server..."
-- "Pipeline complete"
-
-If pipeline fails:
-- Read logs: `gh run view [run-id] --log-failed`
-- Report failure reason to user
+If `wait-for-ci.sh` exited non-zero (CI_FAILED):
+- Report the failure reason (the tool already printed `gh run view --log-failed | tail -50`).
 - Suggest: "Fix the issue, then re-push with /nacl-tl-ship"
 - If YouGile → move task to Reopened with failure details
 

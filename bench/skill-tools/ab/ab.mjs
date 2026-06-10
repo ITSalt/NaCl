@@ -16,7 +16,7 @@ import { writeFileSync, mkdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join, resolve } from 'node:path';
 import { planWaves } from '../../../nacl-tl-plan/scripts/wave-plan.mjs';
-import { classifyFindings } from '../../../nacl-sa-validate/scripts/classify-findings.mjs';
+import { classifyFindings } from '../../../nacl-core/scripts/classify-findings.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO = resolve(HERE, '..', '..', '..');
@@ -51,7 +51,7 @@ const FINDINGS_INPUT = {
   ],
 };
 
-const slugTruth = execFileSync('bash', [P('nacl-tl-ship/scripts/branch.sh'), 'slug', SLUG_MSG], { encoding: 'utf8' }).trim();
+const slugTruth = execFileSync('bash', [P('nacl-core/scripts/branch.sh'), 'slug', SLUG_MSG], { encoding: 'utf8' }).trim();
 const waveTruth = planWaves(WAVE_INPUT);
 const findingsTruth = classifyFindings(FINDINGS_INPUT).overall; // 'WARN'
 
@@ -94,7 +94,7 @@ const CASES = {
 Message: "${SLUG_MSG}"
 Output ONLY the resulting slug on a single line. No quotes, no code, no explanation.`,
     newPrompt: `Use the Bash tool to run EXACTLY this command, then output ONLY its stdout (the slug) on a single line, nothing else:
-bash ${P('nacl-tl-ship/scripts/branch.sh')} slug "${SLUG_MSG}"`,
+bash ${P('nacl-core/scripts/branch.sh')} slug "${SLUG_MSG}"`,
     normalize: (txt) => (txt.trim().split('\n').find((l) => l.trim()) || '').trim().replace(/^["'`]|["'`]$/g, ''),
     correct: (norm) => norm === slugTruth,
   },
@@ -116,7 +116,7 @@ Then output ONLY a JSON object mapping each task_id (from the "tasks" array) to 
     truth: findingsTruth,
     oldPrompt: `${SEVERITY_RULES}\n\nFindings:\n${JSON.stringify(FINDINGS_INPUT.findings, null, 0)}\n\nOutput ONLY one word: PASS, WARN, or FAIL.`,
     newPrompt: `Use the Bash tool to run EXACTLY this command, then output ONLY the value of the "overall" field from its JSON stdout (one word: PASS, WARN, or FAIL):
-node ${P('nacl-sa-validate/scripts/classify-findings.mjs')} '${JSON.stringify(FINDINGS_INPUT)}'`,
+node ${P('nacl-core/scripts/classify-findings.mjs')} '${JSON.stringify(FINDINGS_INPUT)}'`,
     normalize: (txt) => (txt.toUpperCase().match(/\b(PASS|WARN|FAIL)\b/) || [])[1] || null,
     correct: (norm) => norm === findingsTruth,
   },

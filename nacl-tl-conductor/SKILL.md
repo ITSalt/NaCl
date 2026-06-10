@@ -236,9 +236,10 @@ RETURN fr.id AS feature_id, fr.title AS feature_title,
 
 ### Phase 1: BRANCH
 
-1. Determine branch name:
+1. Determine branch name (slugify the title via the single-authority formatter — same
+   lowercase/hyphens/≤50 rule as `/nacl-tl-ship`, pinned by `nacl-core/scripts/branch.test.sh`):
    - If `--branch`: use as-is
-   - If `--feature FR-001`: `feature/FR-001-[slugified-title]`
+   - If `--feature FR-001`: `feature/FR-001-$(bash nacl-core/scripts/branch.sh slug "<title>")`
    - If `--items`: `feature/intake-YYYY-MM-DD`
 2. Resolve base branch from config
 3. Create branch:

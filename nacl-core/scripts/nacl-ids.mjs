@@ -1,19 +1,17 @@
-// Deterministic BA-layer ID formatter for nacl-ba-sync.
+// Deterministic BA-layer ID formatter — the single authority for ALL skills that mint BA
+// ids (nacl-ba-sync, nacl-ba-process, nacl-ba-entities, nacl-ba-roles).
 //
-// Why this exists: five node types each format their next id by hand with the Cypher
-// `right(prefix + toString(n), width)` idiom (GPR-01, BP-001, OBJ-001, ROL-01,
-// {BP}-S01). Re-typing the prefix/width per type each sync is a padding-bug source that
-// silently corrupts ids graph-wide. This module is the single authority: the skill still
-// reads `next_int` from the graph via MCP (max(...)+1), then asks this script for the
-// formatted id. Pinned by nacl-ids.test.mjs.
+// Why this exists: each node type formatted its next id by hand — and the skills DISAGREED:
+// nacl-ba-process/-entities/-roles used `apoc.text.lpad(toString(n), width, '0')` (canonical
+// left-pad) while nacl-ba-sync used `right('0…'+toString(n), width)` (truncates high digits
+// at n≥10^width: right('00100',2) → '00'). Same node type, two formats. This module ends
+// the divergence with one canonical left-pad. Each skill still reads `next_int` from the
+// graph via MCP (max(...)+1), then asks this script for the formatted id. Pinned by
+// nacl-ids.test.mjs.
 //
 //   nacl-ids.mjs <kind> <next_int> [parentId]
 //   kinds: process-group|GPR (w2) · business-process|BP (w3) · entity|OBJ (w3)
 //          role|ROL (w2) · workflow-step|STEP (w2, needs parentId e.g. BP-001)
-//
-// NOTE: `padN` reproduces Cypher `right(zeros+str, width)` EXACTLY, including its quirk —
-// when n has more digits than `width`, the HIGH digits are truncated (right('00100',2)
-// → '00'). This is the documented historical behaviour; reproduced, not "fixed".
 
 import { realpathSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -27,9 +25,9 @@ const KINDS = {
 };
 const ALIASES = { GPR: 'process-group', BP: 'business-process', OBJ: 'entity', ROL: 'role', STEP: 'workflow-step', WS: 'workflow-step' };
 
-// right(zeros(width) + String(n), width)
+// canonical left-pad — equals apoc.text.lpad(toString(n), width, '0'); never truncates.
 function padN(n, width) {
-  return ('0'.repeat(width) + String(n)).slice(-width);
+  return String(n).padStart(width, '0');
 }
 
 /**

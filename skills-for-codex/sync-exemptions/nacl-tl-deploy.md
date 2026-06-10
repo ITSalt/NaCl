@@ -1,3 +1,3 @@
-Source root: chore/de-prescribe-tech-stack (tech de-prescription: CI/CD template section now instructs filling ${NODE_VERSION}/image versions from the project's toolchain instead of inheriting a framework default)
-Intentional divergence: The Codex variant is a condensed, delegating version that does not reproduce the "CI/CD Pipeline Templates" section describing nacl-tl-core/templates/deploy-*.yml, so the root-side guidance addition has no Codex counterpart to mirror.
+Source root: feat/skill-tools-shared-core (Step-2 CI watch delegated to nacl-core/scripts/wait-for-ci.sh); earlier: chore/de-prescribe-tech-stack (CI/CD template de-prescription)
+Intentional divergence: The Codex variant is a condensed, delegating version that reproduces neither (a) the "CI/CD Pipeline Templates" section describing nacl-tl-core/templates/deploy-*.yml nor (b) the Step-2 `gh run watch` mechanics now owned by the shared helper nacl-core/scripts/wait-for-ci.sh (pinned by nacl-core/scripts/wait-for-ci.test.sh). Neither is part of the Codex distribution, so the root-side additions have no Codex counterpart to mirror.
 Next review: next NaCl release that touches nacl-tl-deploy

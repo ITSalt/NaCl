@@ -432,9 +432,17 @@ The NaCl Analyst Tool discovers projects through a per-user registry at `~/.nacl
 > check and the planner's requirement queries. See `graph-infra/schema/sa-schema.cypher`
 > § Decision properties and the `sa_decisions_for_node` / `sa_timeline_of_why` queries.
 
+**Canonical ID format (single authority).** Padding is `apoc.text.lpad(toString(n), width, '0')`
+— a true left-pad that never truncates. The JS authority is `nacl-core/scripts/nacl-ids.mjs`
+(`node nacl-core/scripts/nacl-ids.mjs <kind> <next_int> [parentId]`), pinned by
+`nacl-core/scripts/nacl-ids.test.mjs`; use it when formatting an id OUTSIDE Cypher. In-Cypher,
+use `apoc.text.lpad` (identical output). **Never** use `right('0…'+toString(n), width)` — it
+truncates the high digits at n≥10^width (`right('00100',2)` → `'00'`), the bug that once made
+`nacl-ba-sync` diverge from `nacl-ba-process/-entities/-roles`.
+
 To get next available ID:
 ```cypher
-// Example: next BusinessProcess ID
+// Example: next BusinessProcess ID — canonical lpad form (== nacl-ids.mjs)
 MATCH (bp:BusinessProcess)
 WITH max(toInteger(replace(bp.id, 'BP-', ''))) AS maxNum
 RETURN 'BP-' + apoc.text.lpad(toString(coalesce(maxNum, 0) + 1), 3, '0') AS nextId

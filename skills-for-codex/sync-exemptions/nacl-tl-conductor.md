@@ -1,0 +1,3 @@
+Source root: feat/skill-tools-shared-core (branch-name slugify delegated to nacl-core/scripts/branch.sh)
+Intentional divergence: The Codex variant describes batch/branch orchestration at the principle level and does not reproduce the `branch.sh slug` invocation the root uses to slugify a feature title into the branch name. The shared helper nacl-core/scripts/branch.sh (single-authority slug + base-branch guard, pinned by nacl-core/scripts/branch.test.sh) is not part of the Codex distribution, so the root delegation has no Codex counterpart to mirror.
+Next review: next NaCl release that touches nacl-tl-conductor

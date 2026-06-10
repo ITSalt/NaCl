@@ -1,4 +1,4 @@
-// Pins for nacl-ids.mjs. Run: node --test nacl-ba-sync/scripts/nacl-ids.test.mjs
+// Pins for nacl-ids.mjs. Run: node --test nacl-core/scripts/nacl-ids.test.mjs
 // Each case reproduces the documented "If no … nodes exist, the result is X" examples
 // and the Cypher right()-padding (including its truncation quirk).
 
@@ -30,10 +30,10 @@ test('aliases match canonical names', () => {
   assert.equal(naclId('STEP', 2, 'BP-001'), 'BP-001-S02');
 });
 
-test('Cypher right() truncation quirk is reproduced (not fixed)', () => {
-  // right('00100', 2) === '00'; right('0001000', 3) === '000'
-  assert.equal(naclId('process-group', 100), 'GPR-00');
-  assert.equal(naclId('business-process', 1000), 'BP-000');
+test('canonical left-pad — no truncation beyond width (matches apoc.text.lpad)', () => {
+  // the ba-process/-entities/-roles behaviour; ends the divergence with ba-sync's old right()
+  assert.equal(naclId('process-group', 100), 'GPR-100');
+  assert.equal(naclId('business-process', 1000), 'BP-1000');
 });
 
 test('workflow-step requires a parentId', () => {

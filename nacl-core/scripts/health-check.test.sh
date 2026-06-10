@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Pins for health-check.sh. Run: bash nacl-tl-release/scripts/health-check.test.sh
+# Pins for health-check.sh. Run: bash nacl-core/scripts/health-check.test.sh
 # Stubs `curl` on PATH; uses --propagation 0 --interval 0 to avoid real sleeps.
 
 set -uo pipefail

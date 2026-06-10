@@ -144,14 +144,17 @@ No stash needed. Record the commit hash to cherry-pick.
 **Scenario 3 (from scratch):**
 No stash needed. The fix will be written on the hotfix branch.
 
-**All scenarios — create hotfix branch from fresh `{main_branch}`:**
+**All scenarios — create hotfix branch from fresh `{main_branch}`:** the slug comes from the
+single-authority formatter (same lowercase/hyphens/≤50 rule as `/nacl-tl-ship`; pinned by
+`nacl-core/scripts/branch.test.sh`). (Hotfix branches from `{main_branch}` by design — the
+base-branch GUARD does not apply here.)
 ```bash
 git checkout {main_branch}
 git pull origin {main_branch}
-git checkout -b hotfix/{slug}
+slug=$(bash nacl-core/scripts/branch.sh slug "$description")
+git checkout -b "hotfix/${slug}"
 ```
 
-Branch naming: `hotfix/` + slugified description (lowercase, hyphens, max 50 chars).
 Example: `hotfix/cast-lectureid-uuid-generation-query`
 
 ### Step 3: APPLY FIX -- announce: "Step 3: APPLY FIX"

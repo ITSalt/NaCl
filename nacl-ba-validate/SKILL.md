@@ -157,6 +157,18 @@ Every detected problem is assigned a severity:
 | **WARNING** | Inconsistency that should be fixed but is not blocking | 5+ WARNINGs --> overall WARN |
 | **INFO** | Observation, optional improvement | Does not affect overall status |
 
+**Computing the overall status is delegated** — do not roll up the L1-L8 / XL1-XL5 results
+by hand. Collect every finding as `{check, severity}` and pass them to the single-authority
+classifier with **`layer: "ba"`** (the BA layer has no exemptions; the `ba` layer ensures the
+SA exemption rules for `L4.1`/`L5.1`/`L6.1` — which are *different* checks here — never fire).
+Emit its `overall` token verbatim. Same authority as `nacl-sa-validate`, pinned by
+`nacl-core/scripts/classify-findings.test.mjs`.
+
+```bash
+node nacl-core/scripts/classify-findings.mjs '{"layer":"ba","findings":[{"check":"L1.1","severity":"CRITICAL"},{"check":"L2.2","severity":"WARNING"}]}'
+# stdout: full JSON (findings + counts + overall); stderr: the bare overall token
+```
+
 ---
 
 ## Validation Levels -- Internal (L1-L8)

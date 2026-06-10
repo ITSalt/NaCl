@@ -254,20 +254,14 @@ Persists delivery progress for resumption:
 
 ### Step 3: WAIT FOR CI
 
-1. Identify the CI run triggered by our push:
+1. Wait for the push-triggered CI via the single-authority helper (run selection + watch +
+   outcome classification; constants documented in-script; shared with release/deploy;
+   pinned by `nacl-core/scripts/wait-for-ci.test.sh`):
    ```bash
-   gh run list --branch [branch] --limit 5 --json databaseId,status,conclusion,name,createdAt
-   ```
-   - Find the most recent run created after our push
-   - If no run found within 30s → check if CI is configured (`.github/workflows/`)
-   - If no CI configured → skip this step, proceed to verify
-
-2. Monitor CI pipeline:
-   ```bash
-   gh run watch [run_id] --exit-status
-   ```
-   - Timeout: 10 minutes (configurable via `deploy.ci_timeout`)
-   - Poll interval: 15 seconds
+   bash nacl-core/scripts/wait-for-ci.sh watch --branch [branch] --since "$push_iso" \
+     --timeout "${ci_timeout:-600}"
+   # exit 0 → CI_OK | NO_CI (no `.github/workflows` → skip, proceed to verify) | NO_RUN (warn & proceed)
+   # exit 1 → CI_FAILED (failed-log tail already printed) — handle as item 4 below
 
 3. If CI PASSES:
    - Update delivery-status.json: `ci.status = "done"`, record run URL, duration
@@ -594,15 +588,13 @@ no inline opt-out.
      signed exception (`affected_gates: [missing-prod-golden-path]`
      plus an explicit staging-url carve-out) or emergency mode.
 
-2. Wait for deployment propagation (15 seconds)
-
-3. Health check with retries:
+2. Health probe via the single-authority helper (propagation wait + retry count + interval
+   documented in-script; shared with release; pinned by `nacl-core/scripts/health-check.test.sh`):
    ```bash
-   curl -sf "[url][health]" --max-time 10
+   bash nacl-core/scripts/health-check.sh --url "[url][health]"
    ```
-   - Retry 3 times with 10s intervals.
-   - If 200 OK → deployment healthy. Continue.
-   - If still failing after 3 retries → **HALT**:
+   - exit 0 `HEALTH_OK` → deployment healthy. Continue.
+   - exit 1 `HEALTH_FAILED` (after the 3 retries) → **HALT**:
      ```
      DELIVER HALTED — UNVERIFIED (health failed)
      Staging health endpoint did not return 200 OK after 3 retries.

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Pins for wait-for-ci.sh. Run: bash nacl-tl-release/scripts/wait-for-ci.test.sh
+# Pins for wait-for-ci.sh. Run: bash nacl-core/scripts/wait-for-ci.test.sh
 # Covers the pure subcommands (select, classify) exhaustively and smoke-tests the
 # `watch` orchestrator with a stubbed `gh` on PATH.
 

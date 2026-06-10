@@ -1,0 +1,3 @@
+Source root: feat/skill-tools-shared-core (BA overall-status rollup delegated to nacl-core/scripts/classify-findings.mjs with layer:"ba")
+Intentional divergence: The Codex variant lists the BA-layer L1-L8 / XL1-XL5 checks at the principle level and does not reproduce the procedural overall-status rollup ("any CRITICAL → FAIL; 5+ WARNING → WARN"). The shared helper nacl-core/scripts/classify-findings.mjs is layer-aware — `layer:"ba"` applies no exemption rules, so the SA rules for L4.1/L5.1/L6.1 never collide with BA's same-named-but-different checks (pinned by nacl-core/scripts/classify-findings.test.mjs). It is not part of the Codex distribution, so the root delegation has no Codex counterpart to mirror.
+Next review: next NaCl release that touches nacl-ba-validate

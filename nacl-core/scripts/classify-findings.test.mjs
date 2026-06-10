@@ -1,4 +1,4 @@
-// Pins for classify-findings.mjs. Run: node --test nacl-sa-validate/scripts/classify-findings.test.mjs
+// Pins for classify-findings.mjs. Run: node --test nacl-core/scripts/classify-findings.test.mjs
 // Each case maps a finding set to the exact overall token / exemption decision the
 // SKILL.md Severity table + exemption-property table prescribe.
 
@@ -76,4 +76,20 @@ test('determinism: same input → byte-identical', () => {
 
 test('unknown severity throws', () => {
   assert.throws(() => classifyFindings({ findings: [{ check: 'L1.1', severity: 'BLOCKER' }] }), /unknown severity/);
+});
+
+test('layer=ba: SA exemption ids (L4.1/L5.1/L6.1) do NOT apply — no collision', () => {
+  // BA's L4.1 is a different check with no exemption; even with SA-shaped flags it must count.
+  const r = classifyFindings({ layer: 'ba', findings: [
+    { check: 'L4.1', severity: 'CRITICAL', flags: { field_category: 'display' } },
+    { check: 'L6.1', severity: 'CRITICAL', flags: { shared: true } },
+  ] });
+  assert.equal(r.counts.exempt, 0);
+  assert.equal(r.counts.critical, 2);
+  assert.equal(r.overall, 'FAIL');
+});
+
+test('layer defaults to sa (back-compat) and unknown layer throws', () => {
+  assert.equal(classifyFindings({ findings: [{ check: 'L4.1', severity: 'CRITICAL', flags: { field_category: 'display' } }] }).overall, 'PASS');
+  assert.throws(() => classifyFindings({ layer: 'xx', findings: [] }), /unknown layer/);
 });
