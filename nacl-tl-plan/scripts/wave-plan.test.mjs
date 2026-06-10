@@ -4,7 +4,7 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { planWaves } from './wave-plan.mjs';
+import { planWaves, assignWaves, run } from './wave-plan.mjs';
 
 // Realistic shape: 2 TECH + a diamond (UC004 ⟵ UC002,UC003 ⟵ UC001) across two
 // modules, plus a backend-only independent UC005. Mirrors a Step-1.3 query result.
@@ -99,4 +99,72 @@ test('cycle detection throws', () => {
 
 test('undefined dependency throws', () => {
   assert.throws(() => planWaves({ ucs: [{ id: 'A', depends_on: ['GHOST'] }] }), /not defined/);
+});
+
+// ---------- plan mode: waveStart offset ----------
+test('plan: waveStart shifts every wave (incremental from-scratch)', () => {
+  const base = planWaves(FIXTURE);
+  const shifted = planWaves({ ...FIXTURE, waveStart: 30 });
+  for (const t of base.tasks) {
+    const s = shifted.tasks.find((x) => x.task_id === t.task_id);
+    assert.equal(s.wave, t.wave + 30, `${t.task_id} should shift by 30`);
+  }
+});
+
+// ---------- assign mode: explicit task DAG (incremental / --feature / custom) ----------
+// FR-041-shaped DAG (real family-cinema feature): waveStart 30, custom task ids/kinds.
+const FR041 = {
+  waveStart: 30,
+  tasks: [
+    { id: 'W1-T1', kind: 'BE', uc: 'UC-044', depends_on: [] },
+    { id: 'W1-T2', kind: 'BE', uc: 'UC-043/045', depends_on: [] },
+    { id: 'W2-T1', kind: 'BE', uc: 'UC-044', depends_on: ['W1-T1'] },
+    { id: 'W3-T1', kind: 'BE', uc: 'UC-043', depends_on: ['W2-T1', 'W1-T2'] },
+    { id: 'W3-T2', kind: 'BE', uc: 'UC-046', depends_on: ['W2-T1'] },
+    { id: 'W4-T1', kind: 'FE', uc: 'UC-044', depends_on: ['W2-T1'] },
+    { id: 'W5-T2', kind: 'FE', uc: 'UC-043', depends_on: ['W3-T1', 'W1-T2'] },
+  ],
+};
+const waveOfA = (p, id) => p.tasks.find((t) => t.task_id === id)?.wave;
+
+test('assign: waves start at waveStart and respect the explicit DAG', () => {
+  const p = assignWaves(FR041);
+  assert.equal(waveOfA(p, 'W1-T1'), 30); // level 0
+  assert.equal(waveOfA(p, 'W1-T2'), 30); // level 0
+  assert.equal(waveOfA(p, 'W2-T1'), 31); // depends W1-T1
+  assert.equal(waveOfA(p, 'W3-T1'), 32); // depends W2-T1 (31) + W1-T2 (30)
+  assert.equal(waveOfA(p, 'W3-T2'), 32); // depends W2-T1
+  assert.equal(waveOfA(p, 'W5-T2'), 33); // depends W3-T1 (32)
+});
+
+test('assign: no task lands before any of its dependencies', () => {
+  const p = assignWaves(FR041);
+  for (const d of p.task_deps) {
+    assert.ok(waveOfA(p, d.from) > waveOfA(p, d.to), `${d.from} must be after ${d.to}`);
+  }
+});
+
+test('assign: implied BE→FE edge when two tasks share the exact same uc', () => {
+  // FE has no explicit dep, but shares uc 'UC-9' with a BE → must come after it.
+  const p = assignWaves({ waveStart: 0, tasks: [
+    { id: 'be', kind: 'BE', uc: 'UC-9', depends_on: [] },
+    { id: 'fe', kind: 'FE', uc: 'UC-9', depends_on: [] },
+  ] });
+  assert.ok(waveOfA(p, 'fe') > waveOfA(p, 'be'), 'FE must follow same-uc BE even without an explicit edge');
+});
+
+test('assign: cycle and undefined-dependency throw', () => {
+  assert.throws(() => assignWaves({ tasks: [
+    { id: 'a', depends_on: ['b'] }, { id: 'b', depends_on: ['a'] },
+  ] }), /cycle/);
+  assert.throws(() => assignWaves({ tasks: [{ id: 'a', depends_on: ['ghost'] }] }), /not defined/);
+});
+
+test('assign: determinism — same input → byte-identical', () => {
+  assert.equal(JSON.stringify(assignWaves(FR041)), JSON.stringify(assignWaves(structuredClone(FR041))));
+});
+
+test('run() auto-routes: tasks→assign, ucs→plan', () => {
+  assert.equal(run(FR041).mode, 'assign');
+  assert.equal(run(FIXTURE).mode, 'plan');
 });

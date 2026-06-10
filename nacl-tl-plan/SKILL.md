@@ -244,6 +244,12 @@ RETURN uc.id AS uc_id, r.kind AS kind
 ORDER BY uc.id
 ```
 
+> **Wave numbers for the regenerated/new tasks are NOT assigned by hand.** Once you have
+> decided the feature's task list and dependency edges, hand them to the deterministic
+> planner in **`assign` mode** with `waveStart = max(existing Wave.number) + 1` (Step 2.1).
+> The tool returns the global wave per task; feed those into Step 2.4. This is the path a
+> mature project almost always takes — keep it on the tool, not on reasoning.
+
 ### Step 1.6: External Contracts Gate (W6)
 
 **Purpose.** For every UC in planning scope, refuse to generate a task when
@@ -393,19 +399,35 @@ covering every violation by `(uc_id, contract_id)` tuple.
 
 ## Phase 2: Wave Planning
 
-### Step 2.1: Compute the wave plan (deterministic)
+### Step 2.1: Compute the wave plan (deterministic — both planning paths)
 
-Do not assign waves by hand — a missed `depends_on` edge silently produces an
-FE-before-its-dependency wave. Feed the `depends_on` / `priority` data from Step 1.3
-(plus the Step 2.3 TECH ids) to the single-authority planner; use its output to drive
-Step 2.4. It returns `{ waves, tasks:[{task_id,type,uc,wave,priority}], task_deps:[{from,to}] }`
-and exits non-zero on a dependency cycle or an undefined dependency.
+Do not assign waves by hand — a missed dependency edge silently produces an
+FE-before-its-dependency wave (verified: on a real `--feature` run an agent re-derived
+waves by reasoning and never called the tool). The planner has **two modes**; both return
+`{ mode, waves, tasks:[{task_id,type,uc,wave}], task_deps }` and exit non-zero on a
+dependency cycle or an undefined dependency. Use the returned `wave` per task in Step 2.4 —
+never renumber by hand. Pinned by `scripts/wave-plan.test.mjs`.
 
+**From-scratch (`plan`)** — full Phase-0/`--overwrite` plan. Feed UCs from Step 1.3 + the
+Step 2.3 TECH ids; tasks are the `UC###-BE`/`UC###-FE` pairs, waves start at 0 (TECH):
 ```bash
-node nacl-tl-plan/scripts/wave-plan.mjs '{"tech":["TECH-001","TECH-002"],"ucs":[{"id":"UC001","module":"auth","priority":"high","depends_on":[]},{"id":"UC002","depends_on":["UC001"]}]}'
+node nacl-tl-plan/scripts/wave-plan.mjs '{"tech":["TECH-001","TECH-002"],"ucs":[{"id":"UC001","priority":"high","depends_on":[]},{"id":"UC002","depends_on":["UC001"]}]}'
 ```
-
 `ucs[].tasks` defaults to `["BE","FE"]`; pass `["BE"]` for a backend-only UC.
+
+**Incremental / `--feature` (`assign`)** — the common path on a mature project. YOU decide
+the task list and its dependency edges (the creative part); the tool owns only the wave
+NUMBERS, offset onto the existing sequence. First read the current top wave from the graph,
+then pass the explicit task DAG with `waveStart`:
+```bash
+# waveStart via MCP:  MATCH (w:Wave) RETURN coalesce(max(w.number),-1)+1 AS wave_start
+node nacl-tl-plan/scripts/wave-plan.mjs assign '{"waveStart":30,"tasks":[
+  {"id":"W1-T1","kind":"BE","uc":"UC-044","depends_on":[]},
+  {"id":"W2-T1","kind":"BE","uc":"UC-044","depends_on":["W1-T1"]},
+  {"id":"W4-T1","kind":"FE","uc":"UC-044","depends_on":["W2-T1"]}]}'
+```
+`wave(task) = waveStart + topological-level`; a same-`uc` BE→FE edge is added implicitly as
+a safety net. (Auto-routes: a payload with `tasks` → `assign`, with `ucs` → `plan`.)
 
 ### Step 2.2: Wave assignment rules (what the planner implements)
 
