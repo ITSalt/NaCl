@@ -508,11 +508,12 @@ CREATE (uc)-[:USES_FORM]->(f);
 // ---------------------------------------------------------------------------
 // Requirements
 // ---------------------------------------------------------------------------
-CREATE (rq1:Requirement {id: "RQ-001", description: "Минимальная сумма заказа 1000 руб", priority: "High", req_type: "business"})
-CREATE (rq2:Requirement {id: "RQ-002", description: "Автоматический расчёт суммы позиции", priority: "Medium", req_type: "business"})
-CREATE (rq3:Requirement {id: "RQ-003", description: "Проверка наличия товара при добавлении в заказ", priority: "High", req_type: "business"})
-CREATE (rq4:Requirement {id: "RQ-004", description: "Авторизация подтверждения заказа менеджером", priority: "High", req_type: "security"})
-CREATE (rq5:Requirement {id: "RQ-005", description: "Уникальность номера заказа", priority: "High", req_type: "integrity"});
+// rq_type is the canonical class / anchor_kind (was req_type:business/security/integrity).
+CREATE (rq1:Requirement {id: "RQ-001", description: "Минимальная сумма заказа 1000 руб", priority: "High", rq_type: "validation"})
+CREATE (rq2:Requirement {id: "RQ-002", description: "Автоматический расчёт суммы позиции", priority: "Medium", rq_type: "behavioral"})
+CREATE (rq3:Requirement {id: "RQ-003", description: "Проверка наличия товара при добавлении в заказ", priority: "High", rq_type: "behavioral"})
+CREATE (rq4:Requirement {id: "RQ-004", description: "Авторизация подтверждения заказа менеджером", priority: "High", rq_type: "behavioral"})
+CREATE (rq5:Requirement {id: "RQ-005", description: "Уникальность номера заказа", priority: "High", rq_type: "behavioral"});
 
 // ---------------------------------------------------------------------------
 // UseCase → Requirement edges
@@ -525,6 +526,22 @@ CREATE (uc)-[:HAS_REQUIREMENT]->(rq5);
 
 MATCH (uc:UseCase {id: "UC-102"}), (rq4:Requirement {id: "RQ-004"})
 CREATE (uc)-[:HAS_REQUIREMENT]->(rq4);
+
+// ---------------------------------------------------------------------------
+// Requirement → implementer anchors (REALIZED_BY) — each must-anchor requirement
+// points at the step/field/form that realizes it (validator L3.7). validation →
+// FormField; behavioral/functional → ActivityStep. Keeps the seed graph L3.7-clean.
+// ---------------------------------------------------------------------------
+MATCH (rq:Requirement {id: "RQ-001"}), (ff:FormField {id: "FF-OC-04"})
+CREATE (rq)-[:REALIZED_BY {provenance: "authored", anchor_kind: "validation"}]->(ff);
+MATCH (rq:Requirement {id: "RQ-002"}), (s:ActivityStep {id: "UC-101-AS03"})
+CREATE (rq)-[:REALIZED_BY {provenance: "authored", anchor_kind: "behavioral"}]->(s);
+MATCH (rq:Requirement {id: "RQ-003"}), (s:ActivityStep {id: "UC-101-AS03"})
+CREATE (rq)-[:REALIZED_BY {provenance: "authored", anchor_kind: "behavioral"}]->(s);
+MATCH (rq:Requirement {id: "RQ-004"}), (s:ActivityStep {id: "UC-102-AS03"})
+CREATE (rq)-[:REALIZED_BY {provenance: "authored", anchor_kind: "behavioral"}]->(s);
+MATCH (rq:Requirement {id: "RQ-005"}), (s:ActivityStep {id: "UC-101-AS04"})
+CREATE (rq)-[:REALIZED_BY {provenance: "authored", anchor_kind: "behavioral"}]->(s);
 
 // ---------------------------------------------------------------------------
 // SystemRoles

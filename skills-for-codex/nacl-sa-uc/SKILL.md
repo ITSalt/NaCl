@@ -63,8 +63,14 @@ Commands:
    `DomainAttribute`; display and action fields must be categorized explicitly.
    Stop before writing `Form`, `FormField`, `USES_FORM`, `HAS_FIELD`, and
    `MAPS_TO`.
-5. Propose requirements derived from BA rules, validation needs, and behavior.
-   Stop before writing `Requirement`, `HAS_REQUIREMENT`, and `IMPLEMENTED_BY`.
+5. Propose requirements derived from BA rules, validation needs, and behavior,
+   and for each name the artifact that realizes it (the anchor): `behavioral`/
+   `functional` -> an `ActivityStep`, `validation` -> a `FormField`, `interface`
+   -> a `Form`/`Screen`. The anchor is already in hand from the activity/form
+   phases — capture it at proposal time. Stop before writing `Requirement`,
+   `HAS_REQUIREMENT`, `REALIZED_BY` (the anchor edge; `rq_type` is canonical and
+   equals `anchor_kind`), and `IMPLEMENTED_BY`. A BRQ-sourced requirement anchors
+   to the UC's enforcing System step, never back to the BA WorkflowStep.
 6. **Runtime Contract phase (Phase 4.5).** Run the decision tree from
    `nacl-sa-uc/references/runtime-contract.cypher` § 7 against the UC. If the
    UC has queue / workflow / long-running / async-provider / recoverable
@@ -265,7 +271,10 @@ ranges, and roles must be read before proposing ids or actors.
 `detail` must preserve the BA-to-SA chain:
 `WorkflowStep -[:AUTOMATES_AS]-> UseCase -[:USES_FORM]-> Form -[:HAS_FIELD]-> FormField -[:MAPS_TO]-> DomainAttribute`.
 BA rules become requirements through `BusinessRule -[:IMPLEMENTED_BY]-> Requirement`
-and `UseCase -[:HAS_REQUIREMENT]-> Requirement`.
+and `UseCase -[:HAS_REQUIREMENT]-> Requirement`. Every functional/validation/
+behavioral/interface requirement must also be anchored to its implementer via
+`Requirement -[:REALIZED_BY {provenance, anchor_kind}]-> (ActivityStep|FormField|Form|Screen)`
+(validator L3.7, CRITICAL); only NFR/reserved classes and `anchor_exempt=true` nodes are exempt.
 
 Canonical writes are `UseCase`, `ActivityStep`, `Form`, `FormField`,
 `Requirement`, `RuntimeContract`, `RuntimeState`, `RuntimeTransition`,
@@ -274,7 +283,7 @@ Canonical writes are `UseCase`, `ActivityStep`, `Form`, `FormField`,
 `DegradationRule` (plus provisional `APIEndpoint`
 from the slices/errors/resilience commands),
 `CONTAINS_UC`, `AUTOMATES_AS`, `ACTOR`, `DEPENDS_ON`, `HAS_STEP`,
-`USES_FORM`, `HAS_FIELD`, `MAPS_TO`, `HAS_REQUIREMENT`, `IMPLEMENTED_BY`,
+`USES_FORM`, `HAS_FIELD`, `MAPS_TO`, `HAS_REQUIREMENT`, `REALIZED_BY`, `IMPLEMENTED_BY`,
 `CONTAINS_RUNTIME_CONTRACT`, `HAS_STATE`, `HAS_INITIAL_STATE`,
 `HAS_TERMINAL_STATE`, `HAS_TRANSITION`, `FROM_STATE`, `TO_STATE`,
 `ACQUIRES_LOCK`, `EMITS_EVENT`, `RESOLVES_RACE_WITH`,

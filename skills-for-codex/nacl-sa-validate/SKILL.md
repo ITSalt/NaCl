@@ -54,7 +54,7 @@ Pre-flight:
    requested but the BA layer is empty, run the complete internal set
    (L1-L13) and skip the BA-to-SA cross-checks with a warning in the report.
 5. Audit exemption properties used by deeper checks: `has_ui`, `system_only`,
-   `shared`, `internal`, and `field_category`.
+   `shared`, `internal`, `field_category`, and `anchor_exempt` (L3.7).
 
 Internal checks:
 
@@ -63,7 +63,14 @@ Internal checks:
 - L2 connectivity: modules contain use cases and entities, entities have
   attributes, enums connect to attributes, and core edges are present.
 - L3 requirements: use cases have requirements, requirements are typed and
-  linked, and BA rules mapped to requirements are not orphaned.
+  linked, and BA rules mapped to requirements are not orphaned. L3.7 (CRITICAL):
+  every must-anchor requirement (class functional|validation|behavioral|interface,
+  read as `coalesce(rq.rq_type,rq.req_type,rq.type,'unknown')` — real graphs store the
+  class in any of the three) has a `REALIZED_BY` edge to the step/field/form that
+  implements it — `functional`/`behavioral` -> `ActivityStep`, `validation` ->
+  `FormField`, `interface` -> `Form`|`Screen`; the overloaded reserved `type` values
+  (nfr|adr|question|assumption) and nodes flagged `anchor_exempt=true` are exempt. L3.7b (WARNING) cross-checks the target label against the class; L3.8
+  (WARNING, opt-in once any REALIZED_BY exists) flags System steps no requirement realizes.
 - L4 form-domain traceability: input fields have `MAPS_TO`, attributes used by
   forms exist, and internal attributes are exempt only when flagged.
 - L5 UC-form validation: UI use cases have forms, user steps reference forms

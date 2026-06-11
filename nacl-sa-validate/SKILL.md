@@ -422,7 +422,7 @@ Every detected problem is assigned a severity:
 hand (miscounting "5+ WARNING" or missing one CRITICAL silently changes the gate
 verdict). Collect every finding as `{check, severity, flags?}` and pass them to the
 single-authority classifier; emit its `overall` token verbatim. It also re-applies the
-property-based exemption filters (L4.1/L5.1/L6.1/L9.1/L10.2/L10.6/XL8.2) as a
+property-based exemption filters (L3.7/L4.1/L5.1/L6.1/L9.1/L10.2/L10.6/XL8.2) as a
 defense-in-depth net, so a finding whose Cypher omitted its `coalesce(...)` filter is
 still dropped before it can flip the gate. Equivalence pinned by .
 
@@ -595,7 +595,9 @@ RETURN ff.id AS field_id, ff.name AS field_name,
 
 ### Level 3: Requirement Completeness
 
-**Goal:** Every UseCase must have requirements; every requirement must be reachable.
+**Goal:** Every UseCase must have requirements; every requirement must be reachable; and
+every functional/validation/behavioral/interface requirement must be anchored to the
+step/field/form that realizes it (`REALIZED_BY`) — NFRs and reserved classes are exempt.
 
 #### Check 3.1: UseCases without any requirements
 
@@ -677,16 +679,86 @@ RETURN uc.id AS uc_id, s.id AS step_id, s.actor AS actor_value,
        'Non-canonical actor value (renderer expects User|System exactly)' AS problem
 ```
 
+#### Check 3.7: Requirement not anchored to its implementer (REALIZED_BY)
+
+The **outgoing-anchor invariant** for requirements. A requirement reachable only from
+its UseCase (`HAS_REQUIREMENT`) floats above the artifacts that realize it, so change
+propagation and coverage gates cannot reach the step or field that breaks it — the whole
+premise of a *connected* spec graph. Mirrors the no-anchorless-node family (Slice L11.2,
+DomainError L12.2), but unlike those it has an exemption: NFRs and reserved classes are
+free-floating by design, and the rare genuinely-unanchorable functional requirement
+carries `anchor_exempt=true`.
+
+The requirement **class** is read with a normalization that tolerates every legacy
+discriminator spelling — `rq_type` is canonical, but real graphs also store the class in
+`req_type` (seed/domain) or in the overloaded `type` (`type:'functional'`): so the read is
+`coalesce(rq.rq_type, rq.req_type, rq.type, 'unknown')`. Because `type` is overloaded, the
+reserved values it also carries — `nfr`, `adr`/`question` (read by `nacl-sa-finalize`),
+`assumption` — must be filtered out explicitly; they are never must-anchor.
+
+```cypher
+// L3.7 -- Severity: CRITICAL
+// Must-anchor requirement (functional/validation/behavioral/interface) with no
+// REALIZED_BY edge to the step/field/form that implements it.
+MATCH (rq:Requirement)
+WITH rq, coalesce(rq.rq_type, rq.req_type, rq.type, 'unknown') AS cls
+WHERE cls IN ['functional','validation','behavioral','interface']
+  AND NOT coalesce(rq.type, '') IN ['nfr','adr','question','assumption']  -- REQUIRED FILTER: reserved type values
+  AND coalesce(rq.anchor_exempt, false) = false                          -- REQUIRED FILTER: durable escape valve
+  AND NOT (rq)-[:REALIZED_BY]->()
+RETURN rq.id AS req_id, cls AS req_class,
+       coalesce(rq.description, rq.name, '') AS description,
+       'Requirement not anchored to its implementer (no REALIZED_BY step/field/form)' AS problem
+```
+
+#### Check 3.7b: REALIZED_BY target label disagrees with requirement class
+
+Catches mis-anchoring — e.g. a `validation` requirement pointed at a whole `Form`
+instead of the `FormField` it constrains. The contract: `functional`/`behavioral` →
+`ActivityStep`; `validation` → `FormField`; `interface` → `Form` or `Screen`.
+
+```cypher
+// L3.7b -- Severity: WARNING
+MATCH (rq:Requirement)-[rel:REALIZED_BY]->(t)
+WITH rq, rel, t, coalesce(rq.rq_type, rq.req_type, rq.type, 'unknown') AS cls
+WHERE (cls IN ['functional','behavioral'] AND NOT t:ActivityStep)
+   OR (cls = 'validation'                  AND NOT t:FormField)
+   OR (cls = 'interface'                   AND NOT (t:Form OR t:Screen))
+RETURN rq.id AS req_id, cls AS req_class, labels(t) AS target_labels,
+       coalesce(rel.anchor_kind, '') AS anchor_kind,
+       'REALIZED_BY target label disagrees with requirement class' AS problem
+```
+
+#### Check 3.8: Reverse coverage — System step with no realizing requirement (opt-in)
+
+The other direction: a `System`-actor `ActivityStep` (where business logic and rules
+live) that no requirement realizes. Surfaced **only once the project has opted into
+REALIZED_BY at all** (the `EXISTS {...}` arm), so un-anchored graphs pass vacuously —
+the same opt-in shape as the cache-layer arm in L13. Closing it requires authoring, so
+it never escalates to CRITICAL.
+
+```cypher
+// L3.8 -- Severity: WARNING
+MATCH (uc:UseCase)-[:HAS_STEP]->(s:ActivityStep)
+WHERE s.actor = 'System'
+  AND EXISTS { (:Requirement)-[:REALIZED_BY]->(:ActivityStep) }  -- opt-in: only after anchoring started
+  AND NOT (:Requirement)-[:REALIZED_BY]->(s)
+RETURN uc.id AS uc_id, s.id AS step_id,
+       coalesce(s.description, '') AS step,
+       'System ActivityStep has no realizing requirement (reverse-coverage gap)' AS problem
+```
+
 ---
 
 ### CRITICAL: Mandatory Exemption Filters
 
-Checks L4–L6 and XL8 contain WHERE filters that exempt nodes with specific properties.
-These filters MUST be included verbatim in every query — omitting them causes false positives
-that cannot be fixed by any SA skill (the data is correct, the query is wrong).
+Checks L3.7, L4–L6, L9, L10 and XL8 contain WHERE filters that exempt nodes with specific
+properties. These filters MUST be included verbatim in every query — omitting them causes
+false positives that cannot be fixed by any SA skill (the data is correct, the query is wrong).
 
 | Check | Mandatory filter | Purpose |
 |-------|-----------------|---------|
+| L3.7 | `AND NOT coalesce(rq.type,'') IN ['nfr','adr','question','assumption'] AND coalesce(rq.anchor_exempt,false) = false` | Exempt NFR/reserved `type` values and durably-flagged unanchorable requirements from the REALIZED_BY anchor gate (class read as `coalesce(rq.rq_type, rq.req_type, rq.type, 'unknown')`) |
 | L4.1 | `AND coalesce(ff.field_category, 'input') = 'input'` | Exempt display/action fields from MAPS_TO requirement |
 | L5.1 | `AND coalesce(uc.has_ui, true) = true` | Exempt backend-only UCs from form requirement |
 | L5.4 | `WHERE mapped_fields = 0 AND input_fields > 0` | Exempt forms with only display/action fields |
@@ -1031,7 +1103,7 @@ Used by `nacl-sa-feature` Phase 4 after a change, to confirm the just-modified n
 // Params: $changedNodeId — the node that was just changed.
 // Only the dependents of $changedNodeId that are still stale.
 MATCH (changed {id: $changedNodeId})
-MATCH (changed)-[:HAS_ATTRIBUTE|MAPS_TO|HAS_FIELD|USES_FORM|HAS_STEP|HAS_REQUIREMENT
+MATCH (changed)-[:HAS_ATTRIBUTE|MAPS_TO|HAS_FIELD|USES_FORM|HAS_STEP|HAS_REQUIREMENT|REALIZED_BY
        |ACTOR|CONTAINS_UC|CONTAINS_ENTITY|GENERATES|INCLUDES_UC
        |EXPOSES|IMPLEMENTS|DEPENDS_ON*1..6]-(dep)
 WHERE coalesce(dep.review_status, 'current') = 'stale'

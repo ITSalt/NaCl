@@ -40,7 +40,9 @@ existing architecture.
    required field list and worked examples (kie.ai, TUS).
 7. NFRs and constraints: propose `Requirement` nodes for NFRs, assumptions, and
    architecture decisions; connect them to modules when applicable. Stop for
-   explicit confirmation before graph writes.
+   explicit confirmation before graph writes. NFRs (`type='nfr'`) are exempt from
+   the `REALIZED_BY` implementer-anchor gate (validator L3.7) by design — they stay
+   free-floating or Module-linked; do not anchor them to steps/fields/forms.
 8. Verification: read back modules, dependencies, external contracts, NFRs, and
    BA handoff coverage. Report with the closed verification vocabulary.
 

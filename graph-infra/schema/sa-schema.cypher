@@ -209,6 +209,30 @@ CREATE INDEX index_degradationrule_trigger
 // (:UseCase)-[:HAS_REQUIREMENT]->(:Requirement)
 //   Use case is governed by a requirement.
 //
+// (:Requirement)-[:REALIZED_BY {provenance: String, anchor_kind: String}]->(target)
+//   The artifact that realizes this requirement — the missing OUTGOING anchor that
+//   makes a requirement reachable from what implements it (the spec graph's whole
+//   premise; mirrors the no-anchorless-node family: Slice-[:COVERS]->, Decision-
+//   [:JUSTIFIES]->). Without it a requirement floats at UC level and change
+//   propagation / coverage gates cannot reach the step or field that breaks it.
+//   target ∈ {ActivityStep, FormField, Form, Screen}, keyed by anchor_kind:
+//     'functional' / 'behavioral'  -> ActivityStep  (the UC step it governs)
+//     'validation'                 -> FormField     (the field it constrains)
+//     'interface'                  -> Form, or Screen for formless screens
+//   anchor_kind equals the requirement's normalized class for anchored requirements;
+//   the target label MUST agree (validator L3.7b cross-checks the two).
+//   provenance ∈ {'authored','backfill'}; 'authored' = written live by nacl-sa-uc
+//     Phase 4 (anchor in hand from Phase 2/3), 'backfill' = re-derived by the
+//     per-project upgrade runbook (keeps machine-made edges queryable/revertable).
+//   Many-valued: a requirement realized by N steps is N edges of this one type.
+//   EXEMPT (no edge required, by design): NFRs and reserved classes — a Requirement
+//     whose class (read as coalesce(rq.rq_type, rq.req_type, rq.type, 'unknown')) is
+//     'nfr', or whose overloaded type ∈ {'nfr','adr','question','assumption'}, which may
+//     stay Module-linked only. The rare genuinely-unanchorable functional requirement
+//     carries Requirement.anchor_exempt = true (a durable per-node flag, set by skill,
+//     read with coalesce(rq.anchor_exempt,false)) so the L3.7 CRITICAL gate stays
+//     clearable without disabling it. Validator L3.7 enforces all of the above.
+//
 // (:UseCase)-[:DEPENDS_ON]->(:UseCase)
 //   Use case depends on another use case.
 //

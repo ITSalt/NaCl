@@ -47,8 +47,22 @@ test('L4.1 input field (default) is NOT exempt', () => {
   assert.equal(r.overall, 'FAIL');
 });
 
+test('L3.7 unanchored requirement: anchor_exempt clears it, default counts as FAIL', () => {
+  // CRITICAL by default (must-anchor requirement with no REALIZED_BY).
+  const dangling = classifyFindings({ findings: [{ check: 'L3.7', severity: 'CRITICAL', flags: {} }] });
+  assert.equal(dangling.findings[0].exempt, false);
+  assert.equal(dangling.overall, 'FAIL');
+  // The durable per-node escape valve must actually clear it in the gate verdict.
+  const exempted = classifyFindings({ findings: [{ check: 'L3.7', severity: 'CRITICAL', flags: { anchor_exempt: true } }] });
+  assert.equal(exempted.findings[0].exempt, true);
+  assert.equal(exempted.counts.critical, 0);
+  assert.equal(exempted.overall, 'PASS');
+});
+
 test('exemption predicates per check', () => {
   const ex = (check, flags) => classifyFindings({ findings: [{ check, severity: 'CRITICAL', flags }] }).findings[0].exempt;
+  assert.equal(ex('L3.7', { anchor_exempt: true }), true);
+  assert.equal(ex('L3.7', {}), false);                 // default anchor_exempt=false → not exempt
   assert.equal(ex('L5.1', { has_ui: false }), true);
   assert.equal(ex('L5.1', { has_ui: true }), false);
   assert.equal(ex('L5.1', {}), false);                 // default has_ui=true → not exempt

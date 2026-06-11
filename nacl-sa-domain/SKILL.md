@@ -815,13 +815,29 @@ If Requirement nodes need to be created, use:
 MERGE (rq:Requirement {id: $id})
 SET rq.description = $description,
     rq.priority = $priority,
-    rq.req_type = $reqType
+    rq.rq_type = $reqType          // canonical class (was req_type; validator reads coalesce(rq_type, req_type, type))
 ```
 
 ```cypher
 // handoff_rule_to_requirement
 MATCH (brq:BusinessRule {id: $ruleId}), (rq:Requirement {id: $reqId})
 MERGE (brq)-[:IMPLEMENTED_BY]->(rq)
+```
+
+**Anchor the requirement to its implementer (`REALIZED_BY`).** A functional/validation/
+behavioral/interface requirement must be anchored to the step/field/form that realizes it
+or validator **L3.7** fails. If the constrained `FormField` (or governing `Form`) already
+exists, anchor now; if the UC has not been detailed yet, leave it — `nacl-sa-uc detail`
+adds the anchor when it creates the steps and fields. NFRs (`rq_type` not set or class
+`nfr`) are exempt.
+
+```cypher
+// anchor_requirement (when the implementing field/form already exists)
+MATCH (rq:Requirement {id: $reqId})
+MATCH (anchor {id: $anchorId})
+WHERE $anchorLabel IN labels(anchor)        -- FormField | Form | ActivityStep | Screen
+MERGE (rq)-[rel:REALIZED_BY]->(anchor)
+SET   rel.provenance = 'authored', rel.anchor_kind = $reqType
 ```
 
 ---

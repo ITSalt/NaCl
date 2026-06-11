@@ -4,6 +4,52 @@ All notable changes to NaCl (Natural Agent Control Language) will be documented 
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [2.21.0] — 2026-06-11
+
+**Requirements stop floating: each one is anchored, in the graph, to the step / field /
+form that realizes it.** A `Requirement` was connected only to its `UseCase`/`Module`
+(`HAS_REQUIREMENT`) with **no outgoing edge** to its implementer — so a requirement
+floating at UC level could not be reached by change-propagation or covered by a gate, the
+one thing that mustn't be true of a *connected* spec graph. The tell was one layer down:
+the BA layer already binds every rule to the step that enforces it
+(`BusinessRule -[:APPLIES_AT_STEP]-> WorkflowStep`, enforced by `nacl-ba-validate`). The
+SA `Requirement` simply never got the same discipline. This release copies that proven,
+in-repo pattern downward — SA-only; the BA side is unchanged.
+
+### Added
+- **`Requirement -[:REALIZED_BY {provenance, anchor_kind}]-> (ActivityStep|FormField|Form|Screen)`** —
+  one polymorphic implementer-anchor edge (same shape as `Decision-[:JUSTIFIES]->`,
+  `Slice-[:COVERS]->`), keyed by class: `functional`/`behavioral` → `ActivityStep`,
+  `validation` → `FormField`, `interface` → `Form` (or `Screen` for formless). Documented
+  in `graph-infra/schema/sa-schema.cypher`; exercised in `seed-data.cypher`.
+- **Validator `L3.7` (CRITICAL)** — a functional/validation/behavioral/interface requirement
+  with no `REALIZED_BY` fails the spec. `L3.7b` (WARNING) cross-checks the target label
+  against the class; `L3.8` (WARNING, opt-in) flags System steps no requirement realizes.
+  NFRs and reserved `type` values (`nfr`/`adr`/`question`/`assumption`) are exempt by design;
+  a durable `anchor_exempt=true` flag clears the rare genuinely-unanchorable requirement.
+- **`docs/runbooks/requirement-anchoring-upgrade.md`** — a self-contained, agent-runnable,
+  idempotent per-project runbook that brings an existing graph up to format: backup →
+  normalize the discriminator → re-derive anchors with high/low confidence (high auto-written
+  with `provenance:'backfill'`, low surfaced for human resolution — never silently guessed) →
+  flag legitimate exemptions → verify → rollback by `provenance` filter. Pointer added from
+  `docs/upgrade-graph-extensions.md`.
+
+### Changed
+- **`nacl-sa-uc` Phase 4** now persists the anchor it already computed (a confirmable
+  **Anchor** column in the proposal table) — `REALIZED_BY` written alongside `HAS_REQUIREMENT`.
+  Near-zero new authoring burden: it stops discarding information already in hand.
+- **`nacl-core/scripts/classify-findings.mjs`** — `L3.7`'s `anchor_exempt` exemption
+  registered in `EXEMPTION_RULES.sa` and pinned by `.test.mjs` (without it the escape-valve
+  flag would be silently ignored in the deterministic gate verdict).
+- **Discriminator normalization** — the requirement class is now read as
+  `coalesce(rq.rq_type, rq.req_type, rq.type, 'unknown')` (real graphs store it in the
+  overloaded `type:'functional'`, not just `rq_type`); new writes converge on canonical
+  `rq_type` (`nacl-sa-domain`, `seed-data`). `REALIZED_BY` added to the L8.2 scoped
+  staleness closure (bounded). `nacl-sa-architect` notes the NFR exemption.
+- Additive only: no `nacl-render` / `nacl-tl-plan` / `nacl-sa-finalize` / `nacl-ba-handoff`
+  query changes; legacy `req_type`/`type` properties stay readable for one release.
+  Codex mirrors updated for all four edited skills.
+
 ## [2.20.0] — 2026-06-11
 
 **The release gate stops halting correctly-recorded fixes.** A NaCl-built project

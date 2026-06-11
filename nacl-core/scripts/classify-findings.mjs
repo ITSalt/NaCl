@@ -28,6 +28,7 @@ const coalesce = (v, d) => (v === undefined || v === null ? d : v);
 // them. Default layer is 'sa' (back-compat). 'ba' has no exemption rules.
 const EXEMPTION_RULES = {
   sa: {
+    'L3.7':  { reason: 'requirement legitimately unanchorable (anchor_exempt = true)', test: (f) => coalesce(f.anchor_exempt, false) === true },
     'L4.1':  { reason: 'display/action field (field_category != input)', test: (f) => coalesce(f.field_category, 'input') !== 'input' },
     'L5.1':  { reason: 'backend-only UC (has_ui = false)',               test: (f) => coalesce(f.has_ui, true) === false },
     'L6.1':  { reason: 'intentionally shared entity (shared = true)',    test: (f) => coalesce(f.shared, false) === true },

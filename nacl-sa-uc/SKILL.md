@@ -667,18 +667,28 @@ Sources for requirements:
 2. **Validation rules** --- derived from form fields and domain constraints
 3. **Behavioral rules** --- derived from activity step logic
 
+Each source already names the artifact the requirement comes from — the BRQ's enforcing
+step, the constrained field, the governing form. That artifact is the requirement's
+**anchor** (`REALIZED_BY`, written in 4.4). Capture it now in the table while it is in
+hand; don't reconstruct it later. `rq_type` is the canonical class and the `anchor_kind`:
+`behavioral`/`functional` → an `ActivityStep`, `validation` → a `FormField`, `interface`
+→ a `Form` (or `Screen`). (System-wide NFRs are authored in `nacl-sa-architect`, not here,
+and stay free-floating.)
+
 **Present to user:**
 
 ```
 Proposed Requirements for {UC-ID}:
 
-| # | RQ ID | Source | Description |
-|---|-------|--------|-------------|
-| 1 | RQ-{NNN} | BRQ-001 | {derived from BA rule} |
-| 2 | RQ-{NNN} | Validation | {field validation rule} |
-| 3 | RQ-{NNN} | Behavior | {behavioral requirement} |
+| # | RQ ID | Source | Type | Description | Anchor (implementer) |
+|---|-------|--------|------|-------------|----------------------|
+| 1 | RQ-{NNN} | BRQ-001 | behavioral | {derived from BA rule} | UC-101-AS03 (ActivityStep) |
+| 2 | RQ-{NNN} | Validation | validation | {field validation rule} | FORM-OrderCreate-F01 (FormField) |
+| 3 | RQ-{NNN} | Behavior | interface | {form-level requirement} | FORM-OrderCreate (Form) |
 
-Confirm or modify?
+Confirm or modify? Each requirement must name the step / field / form that realizes it —
+the Anchor column is prefilled from this UC's steps and forms (4.4 lookups); correct any
+mismatch. A requirement realized by several steps lists each.
 ```
 
 #### 4.2 Create Requirement nodes
@@ -707,7 +717,50 @@ MERGE (uc)-[:HAS_REQUIREMENT]->(rq)
 RETURN uc.id AS uc_id, rq.id AS rq_id
 ```
 
-#### 4.4 Create IMPLEMENTED_BY edges (BA Rule to Requirement)
+#### 4.4 Create REALIZED_BY edges (requirement to its implementer)
+
+Every requirement authored here is functional/validation/behavioral/interface, so each
+**must** be anchored to the artifact that realizes it — otherwise it floats at UC level
+and validator **L3.7 (CRITICAL)** fails. The anchor id is already in hand: Phase 2 created
+the `ActivityStep`s, Phase 3 the `Form`/`FormField`s. Write one edge per (requirement,
+anchor) using the confirmed Anchor column from 4.1:
+
+```cypher
+MATCH (rq:Requirement {id: $rqId})
+MATCH (anchor {id: $anchorId})
+WHERE $anchorLabel IN labels(anchor)        -- guard: ActivityStep | FormField | Form | Screen
+MERGE (rq)-[rel:REALIZED_BY]->(anchor)
+SET   rel.provenance  = 'authored',
+      rel.anchor_kind = $rqType             -- equals the requirement class
+RETURN rq.id AS rq_id, anchor.id AS anchor_id, $anchorLabel AS anchor_label
+```
+
+Parameters per requirement (anchor target chosen by class):
+- `behavioral` / `functional` → `$anchorLabel='ActivityStep'`, `$anchorId` = the step whose logic it governs (e.g. `UC-101-AS03`)
+- `validation` → `$anchorLabel='FormField'`, `$anchorId` = the constrained field (e.g. `FORM-OrderCreate-F01`)
+- `interface` → `$anchorLabel='Form'` (or `'Screen'` for a formless screen), `$anchorId` = the governed form
+- A **BRQ-sourced** requirement anchors to this UC's enforcing `System`-actor `ActivityStep` — **not** back to the BA `WorkflowStep`. The rule lineage is already carried by `IMPLEMENTED_BY` (4.5) + `rq.source='BRQ-xxx'`; `REALIZED_BY` is an SA-internal edge and must not cross into the BA layer.
+
+A requirement realized by multiple steps gets one `REALIZED_BY` edge per step.
+
+Anchor-candidate lookups (run before 4.1 to prefill the Anchor column):
+
+```cypher
+-- validation / interface candidates: this UC's forms and their fields
+MATCH (uc:UseCase {id: $ucId})-[:USES_FORM]->(f:Form)
+OPTIONAL MATCH (f)-[:HAS_FIELD]->(ff:FormField)
+RETURN f.id AS form_id, f.name AS form_name, ff.id AS field_id, ff.name AS field_name
+```
+
+```cypher
+-- behavioral / functional candidates: this UC's System-actor steps (where rules are enforced)
+MATCH (uc:UseCase {id: $ucId})-[:HAS_STEP]->(s:ActivityStep)
+WHERE s.actor = 'System'
+RETURN s.id AS step_id, s.order AS step_order, s.description AS step
+ORDER BY s.order
+```
+
+#### 4.5 Create IMPLEMENTED_BY edges (BA Rule to Requirement)
 
 When a requirement is derived from a BA business rule:
 
@@ -1845,7 +1898,7 @@ If `detail` finds no DomainEntity realized from related BA entities:
                               # ErrorPresentation, CachePolicy, DegradationRule nodes
                               # (+ provisional APIEndpoint from the slices/errors/resilience commands)
                               # AUTOMATES_AS, CONTAINS_UC, ACTOR, HAS_STEP, USES_FORM,
-                              # HAS_FIELD, MAPS_TO, HAS_REQUIREMENT, IMPLEMENTED_BY,
+                              # HAS_FIELD, MAPS_TO, HAS_REQUIREMENT, REALIZED_BY, IMPLEMENTED_BY,
                               # CONTAINS_RUNTIME_CONTRACT, HAS_STATE,
                               # HAS_INITIAL_STATE, HAS_TERMINAL_STATE,
                               # HAS_TRANSITION, FROM_STATE, TO_STATE, ACQUIRES_LOCK,
@@ -1892,6 +1945,7 @@ If `detail` finds no DomainEntity realized from related BA entities:
 | HAS_FIELD | Form | FormField | --- |
 | MAPS_TO | FormField | DomainAttribute | --- |
 | HAS_REQUIREMENT | UseCase | Requirement | --- |
+| REALIZED_BY | Requirement | ActivityStep / FormField / Form / Screen | provenance ('authored'), anchor_kind (= rq_type) — the requirement's implementer anchor (L3.7) |
 | IMPLEMENTED_BY | BusinessRule | Requirement | --- |
 | CONTAINS_RUNTIME_CONTRACT | UseCase | RuntimeContract | --- |
 | HAS_STATE | RuntimeContract | RuntimeState | --- |
@@ -1944,8 +1998,9 @@ If `detail` finds no DomainEntity realized from related BA entities:
 - [ ] FormField nodes created, HAS_FIELD edges created
 - [ ] **MAPS_TO edges created for all Data fields** (CRITICAL)
 - [ ] MAPS_TO completeness validated (no orphaned Data fields)
-- [ ] Requirements derived from BA rules + validation + behavior
+- [ ] Requirements derived from BA rules + validation + behavior, each with a confirmed anchor (step/field/form)
 - [ ] Requirement nodes created, HAS_REQUIREMENT edges created
+- [ ] **REALIZED_BY edges created — every functional/validation/behavioral/interface requirement anchored to its implementer** (CRITICAL — validator L3.7)
 - [ ] IMPLEMENTED_BY edges created (BusinessRule -> Requirement)
 - [ ] **Runtime Contract decision tree run** (Phase 4.5)
 - [ ] If mandatory: **RuntimeContract subgraph authored with all eight required fields** (state machine, txn boundary per transition, lock strategy per transition, emitted events with lifecycle, retry semantics, cancel-while-X race resolution, recovery procedure, idempotency key strategy) — CRITICAL
