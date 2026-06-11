@@ -4,6 +4,49 @@ All notable changes to NaCl (Natural Agent Control Language) will be documented 
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [2.19.0] — 2026-06-11
+
+**Deterministic logic out of skill prose, into tested shared tools.** The June 2026
+Agent-Skills methodology is explicit: *scripts for deterministic operations, natural
+language only for judgment calls.* NaCl already had one such tool (`classify-status.mjs`);
+2.19.0 generalizes it. Five deterministic decisions that previously lived as prose the
+agent re-derived every run — branch slug + base-branch guard, wave assignment, the
+validation severity rollup, the CI-watch / health-check loops, and BA id formatting — are
+now single-authority scripts, equivalence-pinned by tests, consolidated in `nacl-core/`,
+and called by **every** consumer. Measured on 240 paced `claude -p` calls: the prose path
+varies and errs (by-hand wave assignment 5–20% correct; the validation rollup 40% on Opus
+at a boundary), while the tool is byte-identical and correct every run — confirmed on a
+live `family-cinema` run.
+
+### Added
+- **`nacl-core/scripts/`** — shared single-authority tools, each pinned by a co-located test:
+  `branch.sh` (slug + base-branch guard), `classify-findings.mjs` (layer-aware severity
+  rollup + exemptions), `nacl-ids.mjs` (canonical BA id formatter), `wait-for-ci.sh`,
+  `health-check.sh`.
+- **`nacl-tl-plan/scripts/wave-plan.mjs`** — deterministic wave planner with two modes:
+  `plan` (from-scratch) and `assign` (incremental `--feature`, `waveStart` offset onto an
+  existing wave sequence).
+- **`.github/workflows/test-tools.yml`** — `node --test` + bash tool tests in CI;
+  retro-covers the previously CI-uncovered `classify-status.test.mjs`.
+- **`bench/skill-tools/`** — reproducible pinch-paced A/B harness, `VERIFICATION-PLAYBOOK.md`
+  (how to confirm a tool is accurate *and* better than prose on your own project), Tier-A
+  findings, and a real-data verification against a live `nacl-sa-validate` run.
+
+### Changed
+- Wired every consumer to the shared tools: `nacl-tl-ship` (slug + guard), `nacl-tl-plan`
+  (waves, both modes), `nacl-sa-validate` (rollup), `nacl-ba-validate` (rollup, `layer:"ba"`),
+  `nacl-ba-sync` (ids), `nacl-tl-release` / `nacl-tl-deploy` / `nacl-tl-deliver` (CI watch +
+  health probe), `nacl-tl-hotfix` / `nacl-tl-conductor` (slug).
+- **`nacl-ids`**: `right()`-truncate → canonical left-pad (`padStart` == `apoc.text.lpad`),
+  ending the `nacl-ba-sync` ↔ `nacl-ba-process/-entities/-roles` divergence at n≥10^width.
+- **`classify-findings`**: layer-aware (`sa` | `ba`) so SA's `L4.1/L5.1/L6.1` exemptions
+  never collide with BA-validate's same-named-but-different checks.
+
+### Fixed
+- `.mjs` CLI tools now run when invoked through the `~/.claude/skills` symlink (realpath
+  main-check). They were silently producing **no output** on real projects (skills install
+  as symlinks); also fixes the pre-existing `classify-status.mjs`.
+
 ## [2.18.0] — 2026-06-08
 
 **Multi-PR orchestration: the `conduct` alias.** A `/nacl-goal` should be able
