@@ -1,13 +1,13 @@
 {
   "project": "NaCl Analyst Tool",
   "created": "2026-05-07T00:00:00Z",
-  "updated": "2026-05-27T00:00:00Z",
+  "updated": "2026-06-11T15:11:40.143Z",
   "source": "nacl-tl-plan",
   "feature_request": "FR-002",
   "summary": {
-    "total_uc": 3,
-    "total_tech": 0,
-    "pending": 0,
+    "total_uc": 6,
+    "total_tech": 1,
+    "pending": 4,
     "in_progress": 0,
     "ready_for_review": 0,
     "approved": 0,
@@ -15,8 +15,8 @@
     "blocked": 0
   },
   "waves": {
-    "total": 4,
-    "current": 4
+    "total": 7,
+    "current": 5
   },
   "tasks": [
     {
@@ -30,11 +30,17 @@
       "wave": 1,
       "priority": "high",
       "phases": {
-        "be": { "status": "done" },
-        "review-be": { "status": "done" }
+        "be": {
+          "status": "done"
+        },
+        "review-be": {
+          "status": "done"
+        }
       },
       "blockers": [],
-      "blocks": ["UC-003-FE"]
+      "blocks": [
+        "UC-003-FE"
+      ]
     },
     {
       "id": "UC-008-BE",
@@ -47,11 +53,17 @@
       "wave": 1,
       "priority": "high",
       "phases": {
-        "be": { "status": "done" },
-        "review-be": { "status": "done" }
+        "be": {
+          "status": "done"
+        },
+        "review-be": {
+          "status": "done"
+        }
       },
       "blockers": [],
-      "blocks": ["UC-008-FE"]
+      "blocks": [
+        "UC-008-FE"
+      ]
     },
     {
       "id": "UC-003-FE",
@@ -64,9 +76,13 @@
       "wave": 2,
       "priority": "low",
       "phases": {
-        "fe": { "status": "done" }
+        "fe": {
+          "status": "done"
+        }
       },
-      "blockers": ["UC-003-BE"],
+      "blockers": [
+        "UC-003-BE"
+      ],
       "blocks": []
     },
     {
@@ -80,12 +96,22 @@
       "wave": 2,
       "priority": "high",
       "phases": {
-        "fe": { "status": "done" },
-        "sync": { "status": "done" },
-        "review-fe": { "status": "done" },
-        "qa": { "status": "done" }
+        "fe": {
+          "status": "done"
+        },
+        "sync": {
+          "status": "done"
+        },
+        "review-fe": {
+          "status": "done"
+        },
+        "qa": {
+          "status": "done"
+        }
       },
-      "blockers": ["UC-008-BE"],
+      "blockers": [
+        "UC-008-BE"
+      ],
       "blocks": []
     },
     {
@@ -100,11 +126,17 @@
       "priority": "high",
       "verification_evidence": "test-GREEN:analyst-tool/server/src/routes/boards-ws.regression.test.ts",
       "phases": {
-        "be": { "status": "done" },
-        "review-be": { "status": "done" }
+        "be": {
+          "status": "done"
+        },
+        "review-be": {
+          "status": "done"
+        }
       },
       "blockers": [],
-      "blocks": ["UC-020-FE"]
+      "blocks": [
+        "UC-020-FE"
+      ]
     },
     {
       "id": "UC-020-FE",
@@ -118,12 +150,123 @@
       "priority": "high",
       "verification_evidence": "test-GREEN:analyst-tool/e2e/specs/08-live-update.spec.ts",
       "phases": {
-        "fe": { "status": "done" },
-        "sync": { "status": "done" },
-        "review-fe": { "status": "done" },
-        "qa": { "status": "done" }
+        "fe": {
+          "status": "done"
+        },
+        "sync": {
+          "status": "done"
+        },
+        "review-fe": {
+          "status": "done"
+        },
+        "qa": {
+          "status": "done"
+        }
       },
-      "blockers": ["UC-020-BE"],
+      "blockers": [
+        "UC-020-BE"
+      ],
+      "blocks": []
+    },
+    {
+      "id": "TECH-AUDIT",
+      "title": "Schema-vs-renderer coverage audit",
+      "type": "tech",
+      "status": "pending",
+      "wave": 5,
+      "priority": "high",
+      "blockers": [],
+      "blocks": [
+        "UC-023-BE"
+      ]
+    },
+    {
+      "id": "UC-021",
+      "title": "Render requirements on activity diagram",
+      "type": "uc",
+      "phases": {
+        "be": {
+          "status": "pending"
+        },
+        "fe": {
+          "status": "n/a"
+        },
+        "sync": {
+          "status": "n/a"
+        },
+        "review-be": {
+          "status": "pending"
+        },
+        "review-fe": {
+          "status": "n/a"
+        },
+        "qa": {
+          "status": "pending"
+        }
+      },
+      "wave": 5,
+      "priority": "high",
+      "blockers": [],
+      "blocks": []
+    },
+    {
+      "id": "UC-022",
+      "title": "Interface-model board",
+      "type": "uc",
+      "phases": {
+        "be": {
+          "status": "pending"
+        },
+        "fe": {
+          "status": "pending"
+        },
+        "sync": {
+          "status": "pending"
+        },
+        "review-be": {
+          "status": "pending"
+        },
+        "review-fe": {
+          "status": "pending"
+        },
+        "qa": {
+          "status": "pending"
+        }
+      },
+      "wave": 5,
+      "priority": "high",
+      "blockers": [],
+      "blocks": []
+    },
+    {
+      "id": "UC-023",
+      "title": "State-machine + code-contract boards",
+      "type": "uc",
+      "phases": {
+        "be": {
+          "status": "pending"
+        },
+        "fe": {
+          "status": "pending"
+        },
+        "sync": {
+          "status": "pending"
+        },
+        "review-be": {
+          "status": "pending"
+        },
+        "review-fe": {
+          "status": "pending"
+        },
+        "qa": {
+          "status": "pending"
+        }
+      },
+      "wave": 6,
+      "priority": "medium",
+      "blockers": [
+        "TECH-AUDIT"
+      ],
       "blocks": []
     }
   ]

@@ -195,6 +195,188 @@ export const ids = {
   depLabel: (fromId: string, toId: string): string => `text-dep-${fromId}-${toId}`,
 
   // ---------------------------------------------------------------------------
+  // activity — requirement cards (UC-021)
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Requirement card rect.
+   * ucId hyphens are stripped for the namespace prefix.
+   * Example: ucId="UC-021", rqId="RQ-F-001" → "req-UC021-RQ-F-001"
+   */
+  activityReqCard: (ucId: string, rqId: string): string => {
+    const ucCompact = ucId.replace(/-/g, '');
+    return `req-${ucCompact}-${rqId}`;
+  },
+
+  /**
+   * Header text bound inside a requirement card.
+   * Example: ucId="UC-021", rqId="RQ-F-001" → "text-req-header-UC021-RQ-F-001"
+   */
+  activityReqHeaderText: (ucId: string, rqId: string): string => {
+    const ucCompact = ucId.replace(/-/g, '');
+    return `text-req-header-${ucCompact}-${rqId}`;
+  },
+
+  /**
+   * Body text bound inside a requirement card.
+   * Example: ucId="UC-021", rqId="RQ-F-001" → "text-req-body-UC021-RQ-F-001"
+   */
+  activityReqBodyText: (ucId: string, rqId: string): string => {
+    const ucCompact = ucId.replace(/-/g, '');
+    return `text-req-body-${ucCompact}-${rqId}`;
+  },
+
+  /**
+   * Arrow from a requirement card to a realized activity step.
+   * Example: ucId="UC-021", rqId="RQ-F-001", stepId="AS-021-01"
+   *   → "arrow-req-UC021-RQ-F-001-AS-021-01"
+   */
+  activityReqArrow: (ucId: string, rqId: string, stepId: string): string => {
+    const ucCompact = ucId.replace(/-/g, '');
+    return `arrow-req-${ucCompact}-${rqId}-${stepId}`;
+  },
+
+  // ---------------------------------------------------------------------------
+  // interface-model (UC-022)
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Interface card rect (Form/Screen).
+   * Example: id="FRM-001" → "iface-FRM-001"
+   */
+  ifaceCard: (nodeId: string): string => `iface-${nodeId}`,
+
+  /**
+   * Header text bound inside an interface card.
+   * Example: id="FRM-001" → "text-iface-header-FRM-001"
+   */
+  ifaceHeaderText: (nodeId: string): string => `text-iface-header-${nodeId}`,
+
+  /**
+   * Field-row text inside the interface card.
+   * Example: nodeId="FRM-001", fieldIdx=0 → "text-iface-field-FRM-001-0"
+   */
+  ifaceFieldText: (nodeId: string, fieldIdx: number): string =>
+    `text-iface-field-${nodeId}-${fieldIdx}`,
+
+  /**
+   * Domain-entity compact card rendered on the interface-model board.
+   * Prefixed with "iface-de-" to avoid clashing with domain-model ids.
+   */
+  ifaceDeCard: (entityId: string): string => `iface-de-${entityId}`,
+
+  /**
+   * Header text of an inline domain-entity card.
+   */
+  ifaceDeHeaderText: (entityId: string): string => `text-iface-de-header-${entityId}`,
+
+  /**
+   * MAPS_TO arrow from a Form/Screen card to a domain-entity card.
+   * Deduplicated: only one arrow per (formId, entityId) pair.
+   */
+  ifaceMapsToArrow: (formId: string, entityId: string): string =>
+    `arrow-iface-mapsto-${formId}-${entityId}`,
+
+  /**
+   * Requirement card rect on the interface-model board.
+   * Example: rqId="RQ-I-001" → "iface-req-RQ-I-001"
+   */
+  ifaceReqCard: (rqId: string): string => `iface-req-${rqId}`,
+
+  /**
+   * Header text inside a requirement card on the interface-model board.
+   */
+  ifaceReqHeaderText: (rqId: string): string => `text-iface-req-header-${rqId}`,
+
+  /**
+   * Body text inside a requirement card on the interface-model board.
+   */
+  ifaceReqBodyText: (rqId: string): string => `text-iface-req-body-${rqId}`,
+
+  /**
+   * Arrow from a requirement card to the Form/Screen/FormField card it is
+   * REALIZED_BY on the interface-model board.
+   */
+  ifaceReqArrow: (rqId: string, targetId: string): string =>
+    `arrow-iface-req-${rqId}-${targetId}`,
+
+  // ---------------------------------------------------------------------------
+  // state-machine (UC-023)
+  // ---------------------------------------------------------------------------
+
+  /**
+   * State node rectangle.
+   * Example: rootId="SCR-Home", stateId="ST-idle" → "sm-state-SCR-Home-ST-idle"
+   */
+  smStateRect: (rootId: string, stateId: string): string => `sm-state-${rootId}-${stateId}`,
+
+  /**
+   * Text bound inside a state rect.
+   */
+  smStateText: (rootId: string, stateId: string): string => `text-sm-state-${rootId}-${stateId}`,
+
+  /**
+   * Start marker (filled circle) for initial state.
+   */
+  smStartMarker: (rootId: string): string => `sm-start-${rootId}`,
+
+  /**
+   * Arrow from start marker to initial state.
+   */
+  smStartArrow: (rootId: string): string => `sm-start-arrow-${rootId}`,
+
+  /**
+   * Transition arrow between two states.
+   */
+  smTransitionArrow: (rootId: string, trId: string): string => `sm-tr-${rootId}-${trId}`,
+
+  /**
+   * Label text bound inside a transition arrow.
+   */
+  smTransitionLabel: (rootId: string, trId: string): string => `text-sm-tr-${rootId}-${trId}`,
+
+  // ---------------------------------------------------------------------------
+  // code-contract (UC-023)
+  // ---------------------------------------------------------------------------
+
+  /**
+   * APIEndpoint or ExternalContract card rectangle.
+   * Prefixed "cc-" to avoid clashing with other board ids.
+   */
+  ccCard: (nodeId: string): string => `cc-${nodeId}`,
+
+  /**
+   * Header text inside a code-contract card.
+   */
+  ccHeaderText: (nodeId: string): string => `text-cc-header-${nodeId}`,
+
+  /**
+   * Method+path row text inside an APIEndpoint card.
+   */
+  ccMethodText: (nodeId: string): string => `text-cc-method-${nodeId}`,
+
+  /**
+   * DTO row text inside an APIEndpoint card (req or res).
+   */
+  ccDtoText: (nodeId: string, slot: 'req' | 'res'): string => `text-cc-dto-${nodeId}-${slot}`,
+
+  /**
+   * Domain entity card on the code-contract board.
+   */
+  ccDeCard: (entityId: string): string => `cc-de-${entityId}`,
+
+  /**
+   * Header text inside a domain entity card on the code-contract board.
+   */
+  ccDeHeaderText: (entityId: string): string => `text-cc-de-header-${entityId}`,
+
+  /**
+   * CONSUMES or PRODUCES arrow from contract card to domain entity card.
+   */
+  ccRelArrow: (fromId: string, toId: string, rel: 'consumes' | 'produces'): string =>
+    `arrow-cc-${rel}-${fromId}-${toId}`,
+
+  // ---------------------------------------------------------------------------
   // Generic helper — text element id for any container
   // ---------------------------------------------------------------------------
 

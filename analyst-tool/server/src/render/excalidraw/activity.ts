@@ -48,6 +48,30 @@ const STEP_SPACING_Y   = 100;
 const START_Y          = 80;
 
 // ---------------------------------------------------------------------------
+// Layout constants for requirement cards
+// ---------------------------------------------------------------------------
+
+/** Gap between the rightmost swimlane and the requirement column. */
+const REQ_COLUMN_GAP    = 60;
+/** Width of a requirement card. */
+const REQ_CARD_WIDTH    = 240;
+/** Minimum height of a requirement card. */
+const REQ_CARD_MIN_H    = 80;
+/** Vertical spacing between consecutive requirement cards. */
+const REQ_CARD_SPACING  = 20;
+/** Height of the stereotype header text area inside a card. */
+const REQ_HEADER_H      = 28;
+
+/**
+ * Colour legend for requirement cards (fill, stroke) by rq_type.
+ * Only functional and behavioral are drawn; all others are excluded.
+ */
+const REQ_TYPE_COLORS: Record<string, { fill: string; stroke: string }> = {
+  functional: { fill: '#fff8e1', stroke: '#f57f17' },
+  behavioral: { fill: '#e8f5e9', stroke: '#2e7d32' },
+};
+
+// ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
@@ -70,6 +94,14 @@ interface StepRecord {
    */
   actor: string | null;
   step_number: number;
+}
+
+interface RequirementRecord {
+  rq_id: string;
+  rq_type: string;
+  description: string;
+  /** Step ids that realize this requirement (already a list from collect()). */
+  realized_steps: string[];
 }
 
 // ---------------------------------------------------------------------------
@@ -157,8 +189,24 @@ RETURN uc.id AS uc_id, uc.name AS uc_name,
 ORDER BY as_step.step_number
 `;
 
+/**
+ * Second query: fetch functional/behavioral requirements anchored to steps of
+ * this UC via REALIZED_BY. Returns one row per requirement with the list of
+ * realized step ids aggregated by collect(DISTINCT …).
+ *
+ * The WHERE filter mirrors the Cypher in task-be.md verbatim.
+ */
+const REQUIREMENT_QUERY = `
+MATCH (uc:UseCase {id: $ucId})-[:HAS_REQUIREMENT]->(rq:Requirement)
+OPTIONAL MATCH (rq)-[rel:REALIZED_BY]->(s:ActivityStep)<-[:HAS_STEP]-(uc)
+WHERE coalesce(rq.rq_type, rq.req_type, rq.type,'') IN ['functional','behavioral']
+RETURN rq.id AS rq_id, coalesce(rq.rq_type,rq.req_type,rq.type,'functional') AS rq_type,
+       rq.description AS description, collect(DISTINCT s.id) AS realized_steps
+ORDER BY rq.id
+`;
+
 // ---------------------------------------------------------------------------
-// Fetch helper
+// Fetch helpers
 // ---------------------------------------------------------------------------
 
 async function fetchSteps(driver: Driver, ucId: string): Promise<StepRecord[]> {
@@ -186,12 +234,41 @@ async function fetchSteps(driver: Driver, ucId: string): Promise<StepRecord[]> {
   }
 }
 
+async function fetchRequirements(driver: Driver, ucId: string): Promise<RequirementRecord[]> {
+  const session = driver.session({ defaultAccessMode: neo4j.session.READ });
+  try {
+    const result = await session.run(REQUIREMENT_QUERY, { ucId });
+    const ALLOWED_TYPES = new Set(['functional', 'behavioral']);
+    return result.records
+      .map((r) => {
+        const rqType = toStr(r.get('rq_type')) ?? 'functional';
+        const realizedRaw = r.get('realized_steps');
+        // collect() returns a list; each item may be a string or null
+        const realizedSteps: string[] = Array.isArray(realizedRaw)
+          ? (realizedRaw as unknown[]).map((v) => toStr(v)).filter((v): v is string => v !== null && v.length > 0)
+          : [];
+        return {
+          rq_id: toStr(r.get('rq_id')) ?? '',
+          rq_type: rqType,
+          description: toStr(r.get('description')) ?? '',
+          realized_steps: realizedSteps,
+        };
+      })
+      .filter((rq) => rq.rq_id.length > 0 && ALLOWED_TYPES.has(rq.rq_type));
+  } finally {
+    await session.close();
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Renderer
 // ---------------------------------------------------------------------------
 
 export async function renderActivity(driver: Driver, ucId: string): Promise<ExcalidrawScene> {
-  const steps = await fetchSteps(driver, ucId);
+  const [steps, requirements] = await Promise.all([
+    fetchSteps(driver, ucId),
+    fetchRequirements(driver, ucId),
+  ]);
 
   // Sort by step_number
   steps.sort((a, b) => a.step_number - b.step_number);
@@ -504,6 +581,154 @@ export async function renderActivity(driver: Driver, ucId: string): Promise<Exca
     arrowElements.push(arrow);
   }
 
+  // --- Requirement cards (UC-021) ---
+  // Render functional/behavioral requirements anchored to steps via REALIZED_BY.
+  // Cards go in a column to the right of the swimlanes; stable order by rq_id.
+  // Vacuous: when requirements is empty, these arrays stay empty → byte-identical output.
+
+  const reqCardElements: AnyElement[] = [];
+  const reqArrowElements: AnyElement[] = [];
+
+  if (requirements.length > 0) {
+    // X position of the requirement column: right edge of swimlanes + gap
+    const swimlaneRightEdge = allNullActor
+      ? SWIMLANE_WIDTH
+      : SWIMLANE_WIDTH * 2 + SWIMLANE_GAP;
+    const reqColumnX = swimlaneRightEdge + REQ_COLUMN_GAP;
+
+    // Start y aligned with the first step (if any) or the swimlane header bottom
+    const firstStepY = layoutSteps.length > 0
+      ? (layoutSteps[0]!.stepY)
+      : SWIMLANE_HEADER + START_Y;
+
+    let reqCurrentY = firstStepY;
+
+    // Sort requirements by rq_id for stable ordering (query already ORDER BY rq.id,
+    // but we enforce stability in-process to guard against driver differences).
+    const sortedReqs = [...requirements].sort((a, b) => a.rq_id.localeCompare(b.rq_id));
+
+    for (const rq of sortedReqs) {
+      const colors = REQ_TYPE_COLORS[rq.rq_type] ?? { fill: '#fce4ec', stroke: '#c62828' };
+      const groupId = `group-req-${rq.rq_id}`;
+      const cardId = semIds.activityReqCard(ucId, rq.rq_id);
+      const headerTextId = semIds.activityReqHeaderText(ucId, rq.rq_id);
+      const bodyTextId   = semIds.activityReqBodyText(ucId, rq.rq_id);
+
+      // Header text: «requirement» + rq_type + rq.id
+      const headerText = `«requirement» ${rq.rq_type} ${rq.rq_id}`;
+
+      // Body text: wrapped description
+      const { wrapped: wrappedDesc, lineCount: descLines } = wrapText(rq.description || '(no description)', 30);
+
+      // Card height: header + body lines
+      const TEXT_LINE_PX = 20;
+      const TEXT_VPAD = 8;
+      const bodyH = descLines * TEXT_LINE_PX + TEXT_VPAD;
+      const cardH = Math.max(REQ_CARD_MIN_H, REQ_HEADER_H + bodyH + TEXT_VPAD);
+
+      const cardRect = makeRect({
+        logicalId: `${ucId}::req::${rq.rq_id}`,
+        id: cardId,
+        x: reqColumnX,
+        y: reqCurrentY,
+        width: REQ_CARD_WIDTH,
+        height: cardH,
+        backgroundColor: colors.fill,
+        strokeColor: colors.stroke,
+        strokeStyle: 'solid',
+        strokeWidth: 2,
+        roughness: 0,
+        opacity: 100,
+        groupIds: [groupId],
+        customData: {
+          nodeId: rq.rq_id,
+          nodeType: 'Requirement',
+          stereotype: rq.rq_type,
+          synced: true,
+        },
+      });
+      registry.set(cardId, cardRect.boundElements);
+
+      // Register text bindings on card
+      cardRect.boundElements.push({ id: headerTextId, type: 'text' });
+      cardRect.boundElements.push({ id: bodyTextId,   type: 'text' });
+      reqCardElements.push(cardRect);
+
+      // Header text element
+      reqCardElements.push(makeText({
+        logicalId: `${ucId}::req-header::${rq.rq_id}`,
+        id: headerTextId,
+        x: reqColumnX + 8,
+        y: reqCurrentY + 4,
+        width: REQ_CARD_WIDTH - 16,
+        height: REQ_HEADER_H - 4,
+        text: headerText,
+        fontSize: 11,
+        strokeColor: colors.stroke,
+        strokeWidth: 1,
+        textAlign: 'left',
+        verticalAlign: 'middle',
+        containerId: cardId,
+        groupIds: [groupId],
+      }));
+
+      // Body text element
+      reqCardElements.push(makeText({
+        logicalId: `${ucId}::req-body::${rq.rq_id}`,
+        id: bodyTextId,
+        x: reqColumnX + 8,
+        y: reqCurrentY + REQ_HEADER_H + 4,
+        width: REQ_CARD_WIDTH - 16,
+        height: bodyH,
+        text: wrappedDesc,
+        originalText: rq.description || '(no description)',
+        fontSize: 12,
+        strokeColor: '#1e1e1e',
+        strokeWidth: 1,
+        textAlign: 'left',
+        verticalAlign: 'top',
+        containerId: cardId,
+        groupIds: [groupId],
+      }));
+
+      // Arrows from this card to each realized step
+      for (const stepId of rq.realized_steps) {
+        const stepShapeId = semIds.activityStep(stepId);
+        const arrowId = semIds.activityReqArrow(ucId, rq.rq_id, stepId);
+
+        // Find the layout step to compute arrow endpoint positions
+        const layoutStep = layoutSteps.find((ls) => ls.step.step_id === stepId);
+        const startX = reqColumnX;  // left edge of req card → pointing towards steps
+        const startY = reqCurrentY + Math.round(cardH / 2);
+        const endX   = layoutStep
+          ? layoutStep.stepX + STEP_WIDTH
+          : (allNullActor ? SWIMLANE_WIDTH : SWIMLANE_WIDTH * 2 + SWIMLANE_GAP);
+        const endY   = layoutStep
+          ? layoutStep.stepY + Math.round(layoutStep.rectH / 2)
+          : startY;
+
+        const arrow = makeArrow({
+          logicalId: `${ucId}::req-arrow::${rq.rq_id}::${stepId}`,
+          id: arrowId,
+          startX,
+          startY,
+          endX,
+          endY,
+          startShapeId: cardId,
+          endShapeId: stepShapeId,
+          strokeColor: colors.stroke,
+          strokeStyle: 'dashed',
+          strokeWidth: 1,
+          groupIds: [],   // per spec: arrows are NOT in groupIds
+          registry,
+        });
+        reqArrowElements.push(arrow);
+      }
+
+      reqCurrentY += cardH + REQ_CARD_SPACING;
+    }
+  }
+
   // Title text — centered above the swimlanes. Mirrors ba-process pattern.
   // When uc_name is empty/missing, emit "(ucId)" — id-only form (per spec decision).
   const uc_name = steps[0]?.uc_name ?? '';
@@ -528,13 +753,16 @@ export async function renderActivity(driver: Driver, ucId: string): Promise<Exca
   // 2. Swimlane header rects + header texts
   // 3. Step shapes + step texts
   // 4. Arrows
-  // 5. Warnings (free text above the diagram)
-  // 6. Title text (topmost — drawn last)
+  // 5. Requirement cards + requirement arrows (if any)
+  // 6. Warnings (free text above the diagram)
+  // 7. Title text (topmost — drawn last)
   const elements: AnyElement[] = [
     ...bgRects,
     ...headerElements,
     ...stepElements,
     ...arrowElements,
+    ...reqCardElements,
+    ...reqArrowElements,
     ...warningElements,
     titleText,
   ];

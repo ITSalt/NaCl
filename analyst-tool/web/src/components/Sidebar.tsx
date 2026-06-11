@@ -8,6 +8,9 @@ import RegenConfirmDialog from './RegenConfirmDialog.js';
 const GROUP_ORDER = [
   'Domain Model',
   'Context Map',
+  'Interface Model',
+  'State Machines',
+  'Code Contract',
   'Activities (UC)',
   'Processes (BP)',
   'Imports',

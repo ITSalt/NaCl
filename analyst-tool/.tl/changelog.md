@@ -1,5 +1,12 @@
 # Changelog
 
+## [PLAN] 2026-06-11 nacl-tl-plan --feature FR-003: diagram coverage
+
+- Planned FR-003 (requirements on activity diagrams, interface-model board, new-schema state-machine/contract boards) from the Neo4j SA layer (bolt 3608).
+- Generated 6 tasks: TECH-AUDIT + UC-021-BE + UC-022-BE/FE + UC-023-BE/FE across waves 5–7.
+- Wave/Task nodes + IN_WAVE/GENERATES/DEPENDS_ON edges written to the graph; External Contracts Gate PASS.
+- Source: FR-003 (3 UseCases, 14 ActivitySteps, 14 REALIZED_BY-anchored Requirements, 1 Decision DEC-001).
+
 ## [2026-05-27] nacl-tl-fix: ba-process renderer — empty step blocks + fc-neo4j down
 
 - **Level:** L0 + L1

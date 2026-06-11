@@ -146,3 +146,42 @@ Start with Wave 3: `UC-020-BE`.
 Run: `/nacl-tl-dev-be UC-020-BE` (regression test first, per FR-002 anchor).
 
 Run: `/nacl-tl-status` to see progress.
+
+---
+
+# Master Plan — NaCl Analyst Tool (FR-003 slice)
+
+**Generated:** 2026-06-11
+**Source:** Neo4j graph (nacl-tl-plan --feature FR-003, bolt 3608 — tool spec graph)
+**Feature Request:** FR-003 — Diagram coverage (requirements, interface models, new-schema entities)
+**Scope:** Incremental — UC-021, UC-022, UC-023 (NEW, M-RENDERERS). FR-001/FR-002 complete.
+
+## Execution Waves
+
+| Wave | Task | Title | Agent | Depends On |
+|------|------|-------|-------|------------|
+| 5 | TECH-AUDIT | Schema-vs-renderer coverage audit (read-only) | nacl-tl-dev | — |
+| 5 | UC-021-BE | Render requirements on activity diagram | nacl-tl-dev-be | — |
+| 5 | UC-022-BE | Interface-model board renderer | nacl-tl-dev-be | — |
+| 6 | UC-022-FE | Interface-model board in web navigator | nacl-tl-dev-fe | UC-022-BE |
+| 6 | UC-023-BE | State-machine + code-contract renderers | nacl-tl-dev-be | TECH-AUDIT |
+| 7 | UC-023-FE | State-machine/contract boards in web navigator | nacl-tl-dev-fe | UC-023-BE |
+
+External Contracts Gate (W6): PASS — no UC references an ExternalContract.
+
+## Critical Path
+
+```
+TECH-AUDIT → UC-023-BE → UC-023-FE
+```
+
+## Verification note
+
+UC-021/UC-022 need `REALIZED_BY` data to verify. Phase 4 runs on **family-cinema** after its graph is
+upgraded via `NaCl/docs/runbooks/requirement-anchoring-upgrade.md` (Phase 0 of the porcupine plan).
+
+## Next Task
+
+Start with Wave 5 (parallel): `TECH-AUDIT`, `UC-021-BE`, `UC-022-BE`.
+
+Run: `/nacl-tl-full --feature FR-003` to orchestrate the waves, or `/nacl-tl-dev-be UC-021-BE` for one task.

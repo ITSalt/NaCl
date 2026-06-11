@@ -3,6 +3,9 @@ export type BoardKind =
   | 'context-map'
   | 'activity'
   | 'process'
+  | 'interface-model'
+  | 'state-machine'
+  | 'code-contract'
   | 'import'
   | 'other';
 
@@ -29,6 +32,34 @@ export function classifyBoard(basename: string): BoardClassification {
       relatedId: null,
       displayName: 'Context Map',
       group: 'Context Map',
+    };
+  }
+
+  if (basename === 'interface-model') {
+    return {
+      kind: 'interface-model',
+      relatedId: null,
+      displayName: 'Interface Model',
+      group: 'Interface Model',
+    };
+  }
+
+  if (basename === 'code-contract') {
+    return {
+      kind: 'code-contract',
+      relatedId: null,
+      displayName: 'Code Contract',
+      group: 'Code Contract',
+    };
+  }
+
+  const stateMachineMatch = /^state-machine-(.+)$/.exec(basename);
+  if (stateMachineMatch) {
+    return {
+      kind: 'state-machine',
+      relatedId: stateMachineMatch[1],
+      displayName: stateMachineMatch[1],
+      group: 'State Machines',
     };
   }
 

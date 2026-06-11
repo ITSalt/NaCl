@@ -11,10 +11,20 @@ import { renderDomainModel } from './excalidraw/domain-model.js';
 import { renderContextMap } from './excalidraw/context-map.js';
 import { renderActivity } from './excalidraw/activity.js';
 import { renderBaProcess } from './excalidraw/ba-process.js';
+import { renderInterfaceModel } from './excalidraw/interface-model.js';
+import { renderStateMachine } from './excalidraw/state-machine.js';
+import { renderCodeContract } from './excalidraw/code-contract.js';
 
 export type { ExcalidrawScene };
 
-export type RenderKind = 'domain-model' | 'context-map' | 'activity' | 'process';
+export type RenderKind =
+  | 'domain-model'
+  | 'context-map'
+  | 'activity'
+  | 'process'
+  | 'interface-model'
+  | 'state-machine'
+  | 'code-contract';
 
 /**
  * Render an Excalidraw scene from the project's Neo4j graph.
@@ -54,6 +64,22 @@ export async function renderBoard(
       }
       return renderBaProcess(driver, relatedId);
     }
+
+    case 'interface-model':
+      return renderInterfaceModel(driver, relatedId);
+
+    case 'state-machine': {
+      if (!relatedId) {
+        throw Object.assign(
+          new Error('state-machine board requires relatedId (RuntimeContract or Screen id)'),
+          { statusCode: 400, code: 'missing_related_id' },
+        );
+      }
+      return renderStateMachine(driver, relatedId);
+    }
+
+    case 'code-contract':
+      return renderCodeContract(driver, relatedId);
 
     default:
       throw Object.assign(

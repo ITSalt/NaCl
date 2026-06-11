@@ -9,7 +9,7 @@ export type BoardMeta = {
   contentHashAtLastSync: string | null;
 };
 
-export type BoardKind = 'domain-model' | 'context-map' | 'activity' | 'process' | 'import' | 'other';
+export type BoardKind = 'domain-model' | 'context-map' | 'activity' | 'process' | 'interface-model' | 'state-machine' | 'code-contract' | 'import' | 'other';
 export type SyncStatus = 'synced' | 'dirty' | 'never-synced';
 
 export type BoardListItem = {

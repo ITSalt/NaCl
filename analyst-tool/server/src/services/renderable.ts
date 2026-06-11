@@ -19,7 +19,14 @@ import type { Driver } from 'neo4j-driver';
 // Public types
 // ---------------------------------------------------------------------------
 
-export type RenderableBoardKind = 'domain-model' | 'context-map' | 'activity' | 'process';
+export type RenderableBoardKind =
+  | 'domain-model'
+  | 'context-map'
+  | 'activity'
+  | 'process'
+  | 'interface-model'
+  | 'state-machine'
+  | 'code-contract';
 
 export interface RenderableBoard {
   /** Canonical filename without .excalidraw extension. */
@@ -135,6 +142,68 @@ export async function discoverRenderable(driver: Driver): Promise<RenderableBoar
         kind: 'process',
         relatedId: bpId,
         reason: `BusinessProcess ${bpId}`,
+      });
+    }
+
+    // ── interface-model ───────────────────────────────────────────────────────
+    // Available iff the graph has at least one Form or Screen node.
+    const formScreenCount = await countQuery(
+      driver,
+      'MATCH (n) WHERE n:Form OR n:Screen RETURN count(n) AS c',
+    );
+    if (formScreenCount > 0) {
+      results.push({
+        board: 'interface-model',
+        kind: 'interface-model',
+        relatedId: null,
+        reason: `${formScreenCount} :Form/:Screen node${formScreenCount !== 1 ? 's' : ''}`,
+      });
+    }
+
+    // ── state-machine-<id> ────────────────────────────────────────────────────
+    // One board per RuntimeContract (Runtime* family) + one per Screen with states (Screen* family).
+    const rcIds = await idQuery(
+      driver,
+      'MATCH (rc:RuntimeContract) RETURN rc.id AS id ORDER BY rc.id',
+    );
+    for (const rcId of rcIds) {
+      results.push({
+        board: `state-machine-${rcId}`,
+        kind: 'state-machine',
+        relatedId: rcId,
+        reason: `RuntimeContract ${rcId}`,
+      });
+    }
+
+    const screenWithStateIds = await idQuery(
+      driver,
+      'MATCH (scr:Screen) WHERE EXISTS { (scr)-[:HAS_STATE]->(:ScreenState) } RETURN scr.id AS id ORDER BY scr.id',
+    );
+    for (const scrId of screenWithStateIds) {
+      results.push({
+        board: `state-machine-${scrId}`,
+        kind: 'state-machine',
+        relatedId: scrId,
+        reason: `Screen ${scrId}`,
+      });
+    }
+
+    // ── code-contract ─────────────────────────────────────────────────────────
+    // Available iff the graph has at least one APIEndpoint or ExternalContract.
+    const apiCount = await countQuery(
+      driver,
+      'MATCH (n:APIEndpoint) RETURN count(n) AS c',
+    );
+    const extCount = await countQuery(
+      driver,
+      'MATCH (n:ExternalContract) RETURN count(n) AS c',
+    );
+    if (apiCount + extCount > 0) {
+      results.push({
+        board: 'code-contract',
+        kind: 'code-contract',
+        relatedId: null,
+        reason: `${apiCount} :APIEndpoint + ${extCount} :ExternalContract node${(apiCount + extCount) !== 1 ? 's' : ''}`,
       });
     }
   } catch {
