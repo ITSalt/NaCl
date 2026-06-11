@@ -4,6 +4,46 @@ All notable changes to NaCl (Natural Agent Control Language) will be documented 
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [2.20.0] — 2026-06-11
+
+**The release gate stops halting correctly-recorded fixes.** A NaCl-built project
+(`family-cinema`) refused *every* release with `RELEASE HALTED — MISSING TASK NODE`: the
+0.13.0-hardened pre-merge gate ran `MATCH (t:Task) WHERE t.id IN [<UC list>]` for *every*
+PR and halted if no Task node existed — assuming every PR is a planned feature. But the
+bug-fix path deliberately records a fix as a `Decision` node (`DEC-NNN`), not a Task, and
+L0/L1 code-only fixes record no graph node at all. So a fix shipped exactly as designed
+(`/nacl-tl-fix` → `/nacl-tl-ship`) could never pass. The gate is now **type-aware** — it
+verifies the artifact each PR type actually produces — while still halting genuine
+unrecorded spec drift.
+
+### Added
+- **`nacl-core/scripts/classify-pr-merge.mjs`** (+ `.test.mjs`) — pure single-authority
+  per-PR pre-merge gate classifier. `feat:` → Task-node check; `fix:` → Decision-node
+  (L2/L3-spec-gap) or code-only `Fix-level` marker (L0/L1). Verdicts `MERGE`/`USER_GATE`/
+  `HALT` with a graph-proof string. Pinned by tests; run in CI by `test-tools.yml`.
+- **`Fix-level:` / `Fix-decision:` commit trailer** — `nacl-tl-fix` Phase B stamps the fix
+  level + Decision id(s) on the code-fix commit (squash-safe; surfaced in the Step 8
+  report). The deterministic PR→graph link the release gate reads.
+- **`tests/fixtures/release-fix-gate/`** — five-PR replay fixture (materialized
+  `expected-outcome.json`) built from the real bundled `family-cinema` PR #55, asserted by
+  the classifier test.
+
+### Changed
+- **`nacl-tl-release` Step 2** — the pre-merge gate is type-aware (1a feature / 1b fix). The
+  feature Task-node path (incl. its `MISSING TASK NODE` halt) is unchanged; fix PRs are
+  verified by their Decision node / `Fix-level` marker. New merge-plan "Graph proof" column
+  (`Task done` · `Decision DEC-NNN accepted` · `code-only (L<n>)`). For L0/L1 fix PRs only,
+  a bounded `.tl/status.json` `gapcheck-no-drift` corroboration (calibrated exception to the
+  0.13.0 no-JSON-fallback rule; never a halt on its own).
+- **`nacl-tl-ship` Step 3** — propagates the `Fix-level:`/`Fix-decision:` trailer when ship
+  authors a fix commit (`--auto-ship`/manual).
+
+### Fixed
+- A `fix:` PR is **no longer halted for lacking a Task node** — the bug-fix path records a
+  `Decision`, not a Task. Fixes shipped via `/nacl-tl-fix` → `/nacl-tl-ship` now release;
+  genuine unrecorded spec drift (a behavior-changing fix with no accepted Decision) still
+  halts as `RELEASE HALTED — UNRECORDED SPEC DRIFT`.
+
 ## [2.19.0] — 2026-06-11
 
 **Deterministic logic out of skill prose, into tested shared tools.** The June 2026
