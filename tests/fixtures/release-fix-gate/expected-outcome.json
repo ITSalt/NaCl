@@ -1,0 +1,13 @@
+{
+  "$schema": "release-fix-gate-outcome-v1",
+  "_purpose": "Materialized expected verdicts of the nacl-tl-release Step 2 type-aware pre-merge gate (classify-pr-merge.mjs) run against prs.json. Replayed and asserted by nacl-core/scripts/classify-pr-merge.test.mjs.",
+  "skill": "nacl-tl-release",
+  "step": "Step 2 — Pre-merge graph-proof gate (1a feature / 1b fix)",
+  "prs": [
+    { "_pr": "A", "verdict": "MERGE", "detail": null, "proof": "Task done" },
+    { "_pr": "B", "verdict": "MERGE", "detail": null, "proof": "Decision DEC-045 accepted" },
+    { "_pr": "C", "verdict": "MERGE", "detail": null, "proof": "code-only (L1) (status.json: gapcheck-no-drift confirmed)" },
+    { "_pr": "D", "verdict": "HALT", "detail": "UNRECORDED_SPEC_DRIFT", "proof": "Decision(s) not accepted/missing: DEC-091" },
+    { "_pr": "E", "verdict": "MERGE", "detail": null, "proof": "Decision DEC-092, DEC-093 accepted" }
+  ]
+}

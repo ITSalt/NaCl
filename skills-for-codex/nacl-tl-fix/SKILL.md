@@ -98,6 +98,13 @@ Tasks so `nacl-tl-plan` re-plans them. `Decision` is in the spec-update label
 list, so this satisfies the spec-first gate; `nacl-sa-validate` L9 enforces it.
 L0/L1 fixes record no Decision (no new "why").
 
+**Fix-traceability trailer (all levels).** Phase B appends `Fix-level: <L0|L1|L2|L3-spec-gap>`
+and `Fix-decision: <DEC-NNN[, ...]|none>` to the code-fix commit body (above any
+`Co-Authored-By:`). These are the deterministic link `/nacl-tl-release`'s type-aware pre-merge
+gate reads to verify a `fix:` PR by its Decision node (L2/L3) or code-only `Fix-level` marker
+(L0/L1) — never a Task node, which the fix path does not create. Squash-safe (lives in the
+commit/PR body).
+
 **Domain-error branch fixes (L2 / L3-spec-gap).** When the root cause is a
 missing or wrong domain-error branch (an endpoint returned the wrong envelope
 because the spec never named the error), fix the taxonomy in the same

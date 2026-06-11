@@ -257,6 +257,19 @@ If FATAL → go back to Step 2, create the branch. Do NOT skip or override this 
 
    Co-Authored-By: Claude <noreply@anthropic.com>
    ```
+   **Fix-traceability trailer (when this ship authors a fix commit).** If the work being
+   committed is a fix produced by `/nacl-tl-fix` — the message starts `fix:` and the latest
+   `.tl/changelog.md` entry (or a handed-off Step 8 report) carries a `Level:` and `Decision:`
+   line — append to the commit body, ABOVE `Co-Authored-By:` (same placement as the
+   `Goal-run-id:` trailer):
+   ```
+   Fix-level: <L0|L1|L2|L3-spec-gap>
+   Fix-decision: <DEC-NNN[, ...]|none>
+   ```
+   This is the deterministic link `/nacl-tl-release`'s type-aware pre-merge gate reads to verify
+   a fix PR by its **Decision node** instead of a Task node. Normally `/nacl-tl-fix` Phase B
+   already wrote it on the code-fix commit; this covers only the case where ship authors the
+   commit (`--auto-ship` / uncommitted changes). Omit both lines for a feature / non-fix commit.
 3. Commit:
    ```bash
    git commit -m "$(cat <<'EOF'

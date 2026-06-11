@@ -358,11 +358,12 @@ the gates, and does NOT extend over multiple invocations.
      Step 3. (For `project_kind: standard`, `git.strategy == "direct"`
      itself is a configuration error and the prelude refuses with
      workflow detail `direct-strategy-on-standard-project`.)
-   - **DO NOT** skip the UC status gate. The gate at the top of Step 2
-     (graph query, status branching, REGRESSION exclusion, MISSING TASK
-     NODE halt) MUST run in every mode (P1 / 0.14.0 contract). The
-     direct-strategy carve-out changes which artifacts are produced,
-     not whether the gate runs.
+   - **DO NOT** skip the pre-merge graph-proof gate. The type-aware gate at
+     the top of Step 2 (feature PRs → Task-node check + MISSING TASK NODE
+     halt; fix PRs → Decision/level check + UNRECORDED SPEC DRIFT halt;
+     status branching; REGRESSION exclusion) MUST run in every mode (P1 /
+     0.14.0 contract). The direct-strategy carve-out changes which
+     artifacts are produced, not whether the gate runs.
    - Run the gate over the candidate UC list collected in Step 1, or
      — if direct-mode bypasses Step 1 entirely — over the UCs
      associated with commits since the last tag (`gh pr list --state
@@ -409,35 +410,72 @@ Write initial `.tl/release-status.json` with discovered PRs.
 
 ### Step 2: MERGE TO MAIN (USER GATE)
 
-**Pre-merge UC status gate (runs BEFORE presenting merge plan):**
+**Pre-merge graph-proof gate (runs BEFORE presenting merge plan):**
 
-For each PR in the release candidate list:
-1. Identify the underlying UC(s) and query the graph — **graph only, no JSON fallback**:
+The gate is **type-aware**: a feature PR proves it shipped a planned UC via its **Task node**;
+a fix PR proves it via the **Decision node** `nacl-tl-fix` records (L2/L3-spec-gap) or a
+code-only **`Fix-level`** marker (L0/L1) — *not* a Task node, which the bug-fix path correctly
+never creates. The per-PR verdict is computed by the single-authority classifier
+`nacl-core/scripts/classify-pr-merge.mjs` (pure, never opens Neo4j, pinned by
+`classify-pr-merge.test.mjs`); this skill gathers the graph rows + trailers and feeds them in,
+so the verdict is reproducible:
+```bash
+node nacl-core/scripts/classify-pr-merge.mjs '<pr-json>'   # or a JSON array of PRs
+# → { "verdict": "MERGE" | "USER_GATE" | "HALT", "detail": <code|null>, "proof": "<graph proof>" }
+```
+
+For each PR in the release candidate list, FIRST classify the PR by its conventional-commit
+title prefix (read once: `gh pr view <N> --json title,body,commits`):
+- `feat:`/`feature:` — or any non-`fix:` prefix **without** a `Fix-level:` trailer → **FEATURE PR** → 1a.
+- `fix:` — or any PR carrying a `Fix-level:` trailer → **FIX PR** → 1b.
+
+**1a. FEATURE PR — Task-node check (unchanged: graph only, no JSON fallback).**
+Identify the underlying UC(s) and query the graph:
    ```cypher
    MATCH (t:Task)
    WHERE t.id IN [<UC list>]
    RETURN t.id, t.status, t.verification_evidence
    ```
-   **If a Task node is missing (the query returns no row for a UC):**
-   - **HALT immediately.**
-   - Print:
-     ```
-     RELEASE HALTED — MISSING TASK NODE
-     UC### has no Task node in the graph. The graph may be out of sync.
-     Run /nacl-tl-diagnose to reconcile before retrying the release.
-     ```
-   - Do NOT fall back to `.tl/status.json`. Do NOT proceed.
-2. Branch on UC status:
+Feed `{prefix:"feat", taskNodeMissing:<query returned no row>, taskStatus:<t.status>}`. Verdicts:
 
-   | UC status | Merge action |
-   |-----------|-------------|
-   | done (PASS) | Include in merge plan normally |
-   | verified-pending (UNVERIFIED) | HALT: "PR #N has UC### with UNVERIFIED dev status. Merge without verification? [yes/no] Default: no". If user confirms → include with warning. If not → exclude from merge plan; report RELEASE HALTED — UNVERIFIED |
-   | blocked | Same user gate as UNVERIFIED |
-   | failed / REGRESSION | DO NOT include; report: "PR #N excluded — REGRESSION in UC###"; flag RELEASE INCOMPLETE — REGRESSION |
-   | Not found (after node-missing HALT above was skipped via prior user confirmation) | Must not reach here — HALT was mandatory. This row exists only for documentation clarity. |
+   | Classifier result | Merge action |
+   |-------------------|-------------|
+   | `HALT / MISSING_TASK_NODE` (no row) | **HALT immediately.** Print `RELEASE HALTED — MISSING TASK NODE` / "UC### has no Task node in the graph. The graph may be out of sync. Run /nacl-tl-diagnose to reconcile before retrying the release." Do NOT fall back to `.tl/status.json`. Do NOT proceed. |
+   | `MERGE` (done) | Include in merge plan normally |
+   | `USER_GATE` (verified-pending / blocked) | HALT: "PR #N has UC### with UNVERIFIED/blocked dev status. Merge without verification? [yes/no] Default: no". If user confirms → include with warning. If not → exclude; report RELEASE HALTED — UNVERIFIED |
+   | `HALT / REGRESSION` (failed / regression) | DO NOT include; report "PR #N excluded — REGRESSION in UC###"; flag RELEASE INCOMPLETE — REGRESSION |
 
-Present the merge plan (including UC status column):
+**1b. FIX PR — Decision / level check (verify the artifact the fix produced, NOT a Task node).**
+Read the fix linkage from the PR trailers (commit bodies + PR body — written by `nacl-tl-fix`
+Step 8 / `nacl-tl-ship`):
+```
+Fix-level:    L0 | L1 | L2 | L3-spec-gap        (one or more — bundled PRs carry several; strictest governs)
+Fix-decision: DEC-NNN[, DEC-NNN ...] | none      (none for L0/L1, which author no Decision)
+```
+For each spec-changing level (`L2`/`L3-spec-gap`), query the named Decisions:
+   ```cypher
+   MATCH (d:Decision) WHERE d.id IN [<Fix-decision ids>] RETURN d.id, d.status
+   ```
+Feed `{prefix:"fix", fixLevels:[…], fixDecisions:[…], decisions:[…rows],
+gapcheckNoDrift:<status.json phases.spec.kind=="gapcheck-no-drift">,
+specUpdateCommitPresent:<a spec-update commit is in the PR>, sourceMatchedDecisions:[…]}`. Verdicts:
+
+   | Classifier result | Merge action |
+   |-------------------|-------------|
+   | `MERGE` (proof `Decision DEC-NNN accepted`) | Spec-changing fix, every named Decision present & `status='accepted'`. Include normally. |
+   | `HALT / UNRECORDED_SPEC_DRIFT` | A named Decision is missing or not accepted (or no trailer + a spec-update commit + no Decision). Print: `RELEASE HALTED — UNRECORDED SPEC DRIFT` / "PR #N (fix:) changes behavior but no accepted Decision node backs it. Expected Fix-decision DEC-NNN with status='accepted'. Run /nacl-tl-fix to record the Decision, or /nacl-tl-diagnose to reconcile." Do NOT proceed. |
+   | `MERGE` (proof `code-only (L<n>)`) | Code-only fix (`Fix-level: L0\|L1`, `Fix-decision: none`). The `Fix-level` trailer is the "no spec drift" proof (`nacl-tl-fix` enforced 6.SF before the code commit). **Bounded status.json corroboration** — a calibrated exception to the 0.13.0 no-JSON-fallback rule, scoped STRICTLY to L0/L1 fix PRs: if `.tl/status.json` has `phases.spec.kind == "gapcheck-no-drift"` (read defensively — the slot may be a string OR an object) the proof notes it; its **absence is NOT a HALT** (the trailer is authoritative; `phases.spec` is a single per-run-overwritten slot, unreliable for bundled PRs). |
+   | `HALT / FIX_PROOF_INCONSISTENT` | Inconsistent producer output: a spec-changing level with `Fix-decision: none`, or a code-only level that names a Decision. Surface and stop. |
+
+> **A FIX PR is NEVER halted merely for lacking a Task node** — the bug-fix path records a
+> `Decision`, not a `Task` (`nacl-tl-fix/SKILL.md` § "author the Decision + change-provenance").
+> The Task-node HALT (1a) applies to feature PRs only. PRs with **no `Fix-level:` trailer**
+> (older fixes predating trailer support) fall back to SHA-match
+> (`MATCH (d:Decision) WHERE d.source IN [<PR commit SHAs>]`) inside the classifier.
+
+Present the merge plan. Each PR shows a **Graph proof** line — the classifier's `proof`
+string — which differs by PR type: `Task <status>` for features, `Decision <DEC> accepted`
+for L2/L3 fixes, `code-only (L<n>)` for L0/L1 fixes:
 
 ```
 ===============================================
@@ -448,17 +486,26 @@ PRs to merge into {main_branch}:
 
   #42  feat: UC-028 Funnel event tracking     (feature/UC028)
        CI: passed | Reviews: 1 approved | Conflicts: none
-       UC status: PASS (graph: done)
+       Graph proof (feature): Task done (PASS)
 
   #45  feat: UC-029 Scene prompt display       (feature/UC029)
        CI: passed | Reviews: 1 approved | Conflicts: none
-       UC status: UNVERIFIED (graph: verified-pending) — USER GATE REQUIRED
+       Graph proof (feature): Task verified-pending (UNVERIFIED) — USER GATE REQUIRED
+
+  #51  fix: roll session→error on memories pipeline failure (fix/memories-rollback)
+       CI: passed | Reviews: 1 approved | Conflicts: none
+       Graph proof (fix, L2): Decision DEC-045 accepted
+
+  #52  fix: null-guard on header avatar          (fix/avatar-null)
+       CI: passed | Reviews: 1 approved | Conflicts: none
+       Graph proof (fix, L1): code-only (status.json: gapcheck-no-drift confirmed)
 
 Merge method: squash (from config.yaml)
 Target: {main_branch}
 
 Proceed with merge? [yes/no]
 (UNVERIFIED PRs require separate confirmation before merging)
+(Fix PRs are verified via Decision/level proof, not Task status.)
 ===============================================
 ```
 
@@ -856,7 +903,8 @@ On start, if `.tl/release-status.json` exists:
 | Upstream `tl-sync` verdict is UNVERIFIED | `RELEASE HALTED — UNVERIFIED (upstream-sync-unverified)` — refuse VERIFIED. (W2.) |
 | Upstream `tl-qa` aggregate is UNVERIFIED | `RELEASE HALTED — UNVERIFIED (upstream-qa-unverified)` — refuse VERIFIED. (W3.) |
 | PROD_GOLDEN_PATH evidence missing on a UC where the W3 matrix marks it mandatory | `RELEASE HALTED — UNVERIFIED (missing-prod-golden-path)` — refuse VERIFIED. HEALTH_ONLY is NOT a substitute. |
-| Task node missing in graph (Step 2) | RELEASE HALTED — MISSING TASK NODE. Run /nacl-tl-diagnose. Do NOT fall back to status.json. |
+| Feature PR: Task node missing in graph (Step 2 / 1a) | RELEASE HALTED — MISSING TASK NODE. Run /nacl-tl-diagnose. Do NOT fall back to status.json. |
+| Fix PR: spec-changing fix with no accepted Decision (Step 2 / 1b) | RELEASE HALTED — UNRECORDED SPEC DRIFT. Run /nacl-tl-fix to record the Decision, or /nacl-tl-diagnose. (A fix PR is never halted for lacking a Task node.) |
 | PR merged but UC was UNVERIFIED | Halt BEFORE merge. Ask user: "UC### is UNVERIFIED — merge to main without test coverage? [yes/no] Default: no". Never auto-merge UNVERIFIED. If user answers yes, merge proceeds with override note. |
 | Any UC has REGRESSION status | RELEASE INCOMPLETE — REGRESSION. Do NOT merge, do NOT tag. |
 | `NACL_EMERGENCY=1` + companion env vars set | Emergency mode: every Strict-Only gate refusal prints a banner, the run advances, the terminal Status: carries `(emergency-bypass)` suffix (NEVER VERIFIED), event recorded in `.tl/emergencies/`. See `nacl-tl-core/references/emergency-mode.md`. |
@@ -976,7 +1024,10 @@ upstream verdict tokens (`upstream-sync-unverified`,
   RELEASE HALTED — UNVERIFIED
     — operator declined an UNVERIFIED-UC user gate at Step 2.
   RELEASE HALTED — MISSING TASK NODE
-    — Step 2 graph query found a UC with no Task node.
+    — Step 2 / 1a feature-PR graph query found a UC with no Task node.
+  RELEASE HALTED — UNRECORDED SPEC DRIFT
+    — Step 2 / 1b fix PR changes behavior but no accepted Decision node
+      backs it (and no L0/L1 code-only Fix-level marker explains it).
   RELEASE INCOMPLETE — REGRESSION
     — any UC has REGRESSION status.
 

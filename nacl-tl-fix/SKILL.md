@@ -1254,6 +1254,7 @@ Invocation source: review (--from-review)        ← include this line ONLY when
 Root cause: [what caused it]
 Level: L0/L1/L2/L3
 Status: <PASS | BLOCKED | UNVERIFIED | NO_INFRA | RUNNER_BROKEN | REGRESSION>
+Fix-decision: DEC-NNN[, DEC-NNN ...] | none      ← Decision(s) authored in Step 5 (none for L0/L1); mirrors the commit trailer
 
 Docs updated:
   [file list or "— (L0/L1, docs are current)"]
@@ -1365,6 +1366,30 @@ These env vars are also what makes the spec-first exception lookup pick up wrapp
 so the `Goal-run-id:` commit-body line is written by Phase B (this skill).
 
 **Invariant**: when these env vars are not in the environment, this skill behaves exactly as today. The goal-context behavior is purely additive. Interactive `/nacl-tl-fix` invocations are not affected.
+
+---
+
+### Fix-traceability trailer (all levels — 2.20.0+)
+
+Phase B appends two trailer lines to the **body of the code-fix commit** (Step 6f — the one
+commit every fix level produces), directly ABOVE any `Goal-run-id:` / `Co-Authored-By:` lines:
+
+```
+Fix-level: <L0 | L1 | L2 | L3-spec-gap>
+Fix-decision: <DEC-NNN[, DEC-NNN ...] | none>
+```
+
+- `Fix-level` is the Step 3 classification; `Fix-decision` lists every Decision authored in
+  Step 5 — `none` for L0/L1, which author no Decision. Both are already computed (Step 8 report
+  `Level:`/`Fix-decision:`; the Step 7.6 changelog `Decision:` block) — this only surfaces them
+  as a machine-readable trailer.
+- These are the deterministic PR→graph link that `/nacl-tl-release`'s type-aware pre-merge gate
+  reads: a `fix:` PR is verified by its **Decision node** (L2/L3-spec-gap) or its **`Fix-level`
+  code-only marker** (L0/L1), **not** by a Task node — the bug-fix path never creates one. The
+  trailer is squash-safe (it lives in the commit/PR body, unlike per-commit SHAs).
+- When `--auto-ship` hands off to `/nacl-tl-ship`, the same trailer is propagated (ship reads
+  `Level:`/`Decision:` from the Step 8 report / latest `.tl/changelog.md` entry). The trailer is
+  purely additive — interactive fixes that never reach release carry it harmlessly.
 
 ---
 

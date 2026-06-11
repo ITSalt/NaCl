@@ -1,0 +1,52 @@
+[
+  {
+    "_pr": "A",
+    "_title": "feat: UC-040 retry dashboard",
+    "_note": "Feature PR, planned via nacl-tl-plan → Task node present and done. Regression guard: the feature path must be unchanged.",
+    "prefix": "feat",
+    "taskStatus": "done",
+    "taskNodeMissing": false
+  },
+  {
+    "_pr": "B",
+    "_title": "fix(UC-032/033): roll session→error on memories pipeline failure (DEC-045)",
+    "_note": "The real Family Cinema PR #55 shape: a bundled fix whose spec-changing part (session rollback, L2) carries DEC-045, plus two code-only L1 parts (OTP resend, video proxy). No Task node — the fix path never makes one. This is the exact PR the OLD gate halted with MISSING TASK NODE; it must now MERGE.",
+    "prefix": "fix",
+    "fixLevels": ["L2", "L1", "L1"],
+    "fixDecisions": ["DEC-045"],
+    "decisions": [{ "id": "DEC-045", "status": "accepted" }],
+    "taskNodeMissing": true
+  },
+  {
+    "_pr": "C",
+    "_title": "fix: OTP resend button reappears after cooldown",
+    "_note": "Code-only L1 fix — no spec drift, no Decision. The Fix-level: L1 trailer is the proof; status.json corroborates with gapcheck-no-drift. Must MERGE, never HALT.",
+    "prefix": "fix",
+    "fixLevels": ["L1"],
+    "fixDecisions": ["none"],
+    "gapcheckNoDrift": true
+  },
+  {
+    "_pr": "D",
+    "_title": "fix: surface 409 TASK_NOT_RESTARTABLE on restart",
+    "_note": "Spec-changing fix (L2) that CLAIMS Decision DEC-091, but the graph has no such accepted node — genuine unrecorded drift. The safety property must NOT regress: this still HALTs.",
+    "prefix": "fix",
+    "fixLevels": ["L2"],
+    "fixDecisions": ["DEC-091"],
+    "decisions": [],
+    "specUpdateCommitPresent": true
+  },
+  {
+    "_pr": "E",
+    "_title": "fix: dashboard error cards + retry endpoint",
+    "_note": "Bundled spec-changing fix with two Decisions, both accepted. Pins multi-Decision verification → MERGE. (Flip either DEC to missing and it must HALT — asserted inline in classify-pr-merge.test.mjs case E.)",
+    "prefix": "fix",
+    "fixLevels": ["L2", "L2"],
+    "fixDecisions": ["DEC-092", "DEC-093"],
+    "decisions": [
+      { "id": "DEC-092", "status": "accepted" },
+      { "id": "DEC-093", "status": "accepted" }
+    ],
+    "taskNodeMissing": true
+  }
+]
