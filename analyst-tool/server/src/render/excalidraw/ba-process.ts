@@ -113,7 +113,7 @@ RETURN bp.id AS bp_id, bp.name AS bp_name,
        collect(DISTINCT {doc_id: doc_r.id, doc_name: doc_r.name, relation: "READS"}) +
        collect(DISTINCT {doc_id: doc_p.id, doc_name: doc_p.name, relation: "PRODUCES"}) +
        collect(DISTINCT {doc_id: doc_m.id, doc_name: doc_m.name, relation: "MODIFIES"}) AS documents
-ORDER BY ws.step_number
+ORDER BY step_number
 `;
 
 // ---------------------------------------------------------------------------
@@ -269,9 +269,11 @@ export async function renderBaProcess(driver: Driver, bpId: string): Promise<Exc
     const stepId = semIds.baStep(bpId, step.step_id);
     const stepTextId = semIds.baStepText(bpId, step.step_id);
 
-    // Each step + its document annotations are one group. Arrows are NOT in
-    // the group — they auto-track via boundElements, and adding them to the
-    // group would double-translate them on drag.
+    // The step shape + its bound label are one group. Each document annotation
+    // is its OWN group (see docGroup below) so a step and its documents can be
+    // selected and moved independently — they stay visually linked via the
+    // dashed arrow. Arrows are NOT in any group — they auto-track via
+    // boundElements, and adding them to a group would double-translate them on drag.
     const stepGroup = [`group-bp-step-${bpId}-${step.step_id}`];
 
     // Color by stereotype
@@ -322,6 +324,9 @@ export async function renderBaProcess(driver: Driver, bpId: string): Promise<Exc
       const doc = validDocs[di]!;
       const docId = semIds.baDoc(bpId, step.step_id, di);
       const docTextId = semIds.baDocText(bpId, step.step_id, di);
+      // Each document annotation is its own group (rect + its bound label), so it
+      // can be moved independently of the step it annotates.
+      const docGroup = [`group-bp-doc-${bpId}-${step.step_id}-${di}`];
       const docX = stepX + Math.round((STEP_WIDTH - DOC_WIDTH) / 2);
       const docY = stepY + STEP_HEIGHT + DOC_OFFSET_Y + di * (DOC_HEIGHT + 10);
 
@@ -336,7 +341,7 @@ export async function renderBaProcess(driver: Driver, bpId: string): Promise<Exc
         strokeColor: '#6a1b9a',
         strokeWidth: 2,
         roughness: 0,
-        groupIds: stepGroup,
+        groupIds: docGroup,
         customData: doc.doc_id ? { nodeId: doc.doc_id, nodeType: 'BusinessEntity', confidence: 'high', synced: true } : undefined,
       });
       registry.set(docId, docRect.boundElements);
@@ -357,7 +362,7 @@ export async function renderBaProcess(driver: Driver, bpId: string): Promise<Exc
         textAlign: 'center',
         verticalAlign: 'middle',
         containerId: docId,
-        groupIds: stepGroup,
+        groupIds: docGroup,
       }));
 
       // Dashed arrow from step bottom to doc top
