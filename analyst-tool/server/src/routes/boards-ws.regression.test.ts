@@ -30,7 +30,7 @@ import { createRequire } from 'node:module';
 // ---------------------------------------------------------------------------
 const require = createRequire(import.meta.url);
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const WS = require('ws') as typeof import('ws');
+const WS = require('ws') as typeof import('ws').WebSocket;
 
 import type { StopFn } from '../services/fs-watcher.js';
 

@@ -1,6 +1,6 @@
 import { readFile, writeFile, rename, stat, readdir } from 'node:fs/promises';
 import type { Dirent } from 'node:fs';
-import { join, resolve, basename } from 'node:path';
+import { join, resolve, basename, sep } from 'node:path';
 import { getConfig } from '../config.js';
 import { classifyBoard, type BoardKind } from './board-classifier.js';
 import { readMeta, writeMeta, computeBoardHash, type BoardMeta } from './meta.js';
@@ -44,7 +44,7 @@ function assertSafePath(boardsDir: string, boardName: string): string {
     throw Object.assign(new Error(`Invalid board name: ${boardName}`), { statusCode: 400 });
   }
   const resolved = resolve(boardsDir, `${boardName}.excalidraw`);
-  if (!resolved.startsWith(resolve(boardsDir) + '/') && resolved !== resolve(boardsDir)) {
+  if (!resolved.startsWith(resolve(boardsDir) + sep) && resolved !== resolve(boardsDir)) {
     throw Object.assign(new Error('Path traversal detected'), { statusCode: 400 });
   }
   return resolved;

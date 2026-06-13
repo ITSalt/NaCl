@@ -1,5 +1,5 @@
 import { readFile, writeFile, rename, stat, readdir, mkdir } from 'node:fs/promises';
-import { join, resolve } from 'node:path';
+import { join, resolve, sep } from 'node:path';
 import { config } from '../config.js';
 import { writeBoard, type ExcalidrawScene } from './boards.js';
 
@@ -34,7 +34,7 @@ function assertSafeTimestamp(ts: string): void {
 function snapshotPath(board: string, timestamp: string): string {
   const dir = snapshotsDir();
   const resolved = resolve(dir, `${board}-${timestamp}.json`);
-  if (!resolved.startsWith(resolve(dir) + '/') && resolved !== resolve(dir)) {
+  if (!resolved.startsWith(resolve(dir) + sep) && resolved !== resolve(dir)) {
     throw Object.assign(new Error('Path traversal detected'), { statusCode: 400 });
   }
   return resolved;

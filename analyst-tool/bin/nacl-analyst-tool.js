@@ -4,7 +4,7 @@
 
 import { parseArgs } from 'node:util';
 import { createRequire } from 'node:module';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { join, dirname } from 'node:path';
 import { execSync } from 'node:child_process';
 import { openBrowser } from './open-browser.js';
@@ -113,7 +113,7 @@ const serverPath = join(__dirname, '..', 'server', 'dist', 'index.js');
 
 let startServer;
 try {
-  const serverModule = await import(serverPath);
+  const serverModule = await import(pathToFileURL(serverPath).href);
   startServer = serverModule.startServer;
   if (typeof startServer !== 'function') {
     throw new Error('startServer is not a function — rebuild the server with `npm run build --workspace=server`');

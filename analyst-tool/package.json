@@ -23,7 +23,7 @@
     "dev": "concurrently --kill-others --names server,web \"npm run dev --workspace=server\" \"npm run dev --workspace=web\"",
     "build": "npm run build --workspace=server && npm run build --workspace=web",
     "start": "npm run start --workspace=server",
-    "prepare": "npm run build 2>/dev/null || true",
+    "prepare": "node scripts/prepare.js",
     "lint": "npm run lint --workspace=server && npm run lint --workspace=web",
     "typecheck": "npm run typecheck --workspace=server && npm run typecheck --workspace=web",
     "test": "npm run test --workspace=server",

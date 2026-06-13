@@ -10,7 +10,7 @@
 import { randomBytes } from 'node:crypto';
 import { existsSync } from 'node:fs';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
-import { resolve, dirname } from 'node:path';
+import { resolve, dirname, sep } from 'node:path';
 import type { TaskResult } from 'itsalt-pinch';
 import { classifyBoard } from './board-classifier.js';
 import { computeBoardHash, writeMeta } from './meta.js';
@@ -77,7 +77,7 @@ function boardFilePath(boardName: string): string {
   const boardsDir = resolve(getConfig().boardsDir);
   const filePath  = resolve(boardsDir, `${boardName}.excalidraw`);
   // Path-traversal guard
-  if (!filePath.startsWith(boardsDir + '/') && filePath !== boardsDir) {
+  if (!filePath.startsWith(boardsDir + sep) && filePath !== boardsDir) {
     throw Object.assign(
       new Error('Path traversal detected'),
       { statusCode: 400, code: 'path_traversal' },

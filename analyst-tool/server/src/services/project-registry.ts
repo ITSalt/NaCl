@@ -113,7 +113,9 @@ export async function loadRegistry(): Promise<ProjectRegistry> {
 
   let parsed: unknown;
   try {
-    parsed = JSON.parse(raw);
+    // Strip a leading UTF-8 BOM. Windows editors and PowerShell (Out-File /
+    // Set-Content without `-Encoding utf8`) prepend one, which breaks JSON.parse.
+    parsed = JSON.parse(raw.replace(/^﻿/, ''));
   } catch (err) {
     throw new Error(`Malformed JSON in registry at ${filePath}: ${String(err)}`);
   }
