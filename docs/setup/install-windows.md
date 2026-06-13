@@ -113,6 +113,34 @@ cd $HOME\NaCl\yougile-setup; npm install; npm run build
 
 See [Graph Setup](graph-setup.md) for Docker + Neo4j + Excalidraw configuration.
 
+### Neo4j MCP on Windows
+
+`/nacl-init` (graph step) sets this up for you — no manual steps and **no `neo4j-mcp`
+npm package required**. On native Windows it runs `nacl-tl-core\scripts\setup-graph.ps1`,
+which:
+
+- downloads the **official** `neo4j-mcp` binary directly from GitHub and extracts it with
+  `Expand-Archive` to `%USERPROFILE%\.neo4j-mcp-bin\neo4j-mcp.exe` (no download-on-start,
+  no `unzip` dependency);
+- writes `.mcp.json` pointing **directly at that binary** (the npm launcher prints a banner
+  to STDOUT that corrupts the stdio JSON-RPC stream, so it is not used);
+- writes `.env` / `.mcp.json` / schema as **UTF-8 without a BOM** (`cypher-shell` rejects a
+  BOM on line 1);
+- starts Docker, loads the schema, and refuses to report success unless a hard gate passes.
+
+**Acceptance test** — after `/nacl-init` with graph enabled, with **no further action**:
+
+1. `docker ps` shows `<prefix>-neo4j` as **healthy**.
+2. `SHOW CONSTRAINTS` returns the expected constraint count (the setup script verifies this
+   automatically against the loaded schema).
+3. The resolved `neo4j-mcp.exe` answers an `initialize` + `tools/list` JSON-RPC handshake
+   (the setup script runs this as gate 3).
+4. After restarting Claude Code, `/mcp` shows `neo4j` **connected on the first try**.
+
+If setup fails it prints `NACL_GRAPH_RESULT: status=FAILED` with the failing check — it never
+reports a half-configured graph as ready. The graph step is idempotent, so re-run `/nacl-init`
+after addressing the cause.
+
 ## Next Steps
 
 - [Graph Setup](graph-setup.md) — Neo4j + Excalidraw

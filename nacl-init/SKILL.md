@@ -476,9 +476,17 @@ If yes → execute steps below.
 
 #### 2c.1 Auto-detect available ports
 
-Scan for running Docker containers to find used Neo4j ports:
+Scan for running Docker containers to find used Neo4j ports.
+
+macOS / Linux / WSL2 (bash):
 ```bash
 docker ps --format '{{.Ports}}' 2>/dev/null | grep -oE '[0-9]+->7687' | grep -oE '^[0-9]+'
+```
+
+Native Windows (PowerShell — no `grep`):
+```powershell
+docker ps --format '{{.Ports}}' | Select-String -Pattern '(\d+)->7687' -AllMatches |
+  ForEach-Object { $_.Matches } | ForEach-Object { $_.Groups[1].Value }
 ```
 
 Find the highest Bolt port in use (default baseline: 3587). Propose the next block with +10 offset:
@@ -508,129 +516,113 @@ graph:
 
 Where `{project_name_slug}` is the project name lowercased, spaces→hyphens, special chars removed.
 
-#### 2c.3 Copy graph infrastructure files
+#### 2c.3 Run the graph setup (cross-platform, deterministic)
 
-Copy from claude-skills templates to the target project:
+> **Do NOT hand-roll this in shell.** Initialization happens on Windows, macOS, and
+> Linux. The whole of "copy infra → resolve the MCP binary → write `.env`/`.mcp.json`
+> → start Docker → load schema → verify" is performed by a single committed, tested
+> script **per OS**. Improvising bash here is what previously broke native Windows:
+> the npm `neo4j-mcp` launcher downloads-on-start (> the 30 s MCP connect timeout) and
+> prints a banner to STDOUT that corrupts the stdio JSON-RPC stream; `cp` fell through
+> to a Write that added a UTF-8 BOM `cypher-shell` rejects; and a half-run could look
+> complete. The scripts remove all of that.
 
+**What each script guarantees (so you know what "done" means):**
+- Copies `graph-docker-compose.yml` + `schema/*.cypher` + `queries/*.cypher` into
+  `graph-infra/` **byte-for-byte** (the committed `.cypher` files have no BOM — never
+  re-serialize them).
+- Resolves the **official** `neo4j-mcp` binary to a stable path
+  (`~/.neo4j-mcp-bin/neo4j-mcp[.exe]`) via a direct GitHub release download + native
+  extract (`Expand-Archive` / `tar`), then writes `.mcp.json` pointing **directly at that
+  binary** — no npm launcher, so no download-on-start and no STDOUT banner. Sets
+  `NEO4J_TELEMETRY=false`. Merges into any existing `.mcp.json` without clobbering other
+  servers.
+- Writes `.env` / `.env.example` / `.mcp.json` as **UTF-8 without BOM**. (`.env` carries
+  `COMPOSE_PROJECT_NAME={prefix}-graph` so each project's stack is uniquely named —
+  otherwise `docker compose --remove-orphans` in one project would cull another's
+  containers and volumes.)
+- `docker compose up`, waits for the container to report **healthy**, loads the schema
+  via `docker cp` + `cypher-shell --file` (no stdin `<` redirect — PowerShell 5.1 lacks it).
+- Runs the hard verification gate (2c.4) and prints a `NACL_GRAPH_RESULT:` line.
+
+First resolve the skills repo root, then dispatch to the matching script.
+
+macOS / Linux / WSL2 (bash):
 ```bash
-# Resolve skills repo root (cross-platform: macOS, Linux, WSL2)
-SKILLS_DIR="$(cd -P "$HOME/.claude/skills/nacl-init" 2>/dev/null && cd .. && pwd)"
-
-# Create directories
-mkdir -p graph-infra/schema graph-infra/queries graph-infra/boards
-
-# Docker Compose template
-cp "$SKILLS_DIR/nacl-tl-core/templates/graph-docker-compose.yml" graph-infra/docker-compose.yml
-
-# Schema files
-cp "$SKILLS_DIR/graph-infra/schema/ba-schema.cypher" graph-infra/schema/
-cp "$SKILLS_DIR/graph-infra/schema/sa-schema.cypher" graph-infra/schema/
-cp "$SKILLS_DIR/graph-infra/schema/tl-schema.cypher" graph-infra/schema/
-
-# Query library
-cp "$SKILLS_DIR/graph-infra/queries/"*.cypher graph-infra/queries/
+REPO_ROOT="$(cd -P "$HOME/.claude/skills/nacl-init" 2>/dev/null && cd .. && pwd)"
+sh "$REPO_ROOT/nacl-tl-core/scripts/setup-graph.sh" \
+  --project-root "$(pwd)" --skills-dir "$REPO_ROOT" \
+  --prefix "{project_name_slug}" \
+  --bolt-port {bolt_port} --http-port {http_port} \
+  --password "{neo4j_password}"
 ```
 
-#### 2c.4 Generate .env from config.yaml
-
-**Why `COMPOSE_PROJECT_NAME` is required:** Docker Compose derives the project name from the containing folder name when no explicit name is provided. Every project's `graph-infra/` folder has the same folder name, so without this variable all stacks share the same project name — any `docker compose up --remove-orphans` in one project would cull containers from every other. Without this, running `docker compose up --remove-orphans` in one project's `graph-infra/` would silently cull containers and named volumes of every other project that shared the default Compose project name. Setting `COMPOSE_PROJECT_NAME` explicitly makes the project name unique and stable regardless of where the folder lives on disk.
-
-Write `graph-infra/.env`:
-```
-COMPOSE_PROJECT_NAME={container_prefix}-graph
-CONTAINER_PREFIX={container_prefix}
-NEO4J_PASSWORD={neo4j_password}
-NEO4J_HTTP_PORT={neo4j_http_port}
-NEO4J_BOLT_PORT={neo4j_bolt_port}
-```
-
-Also create `graph-infra/.env.example` with same content.
-
-#### 2c.5 Generate .mcp.json
-
-Write `.mcp.json` at project root:
-```json
-{
-  "mcpServers": {
-    "neo4j": {
-      "type": "stdio",
-      "command": "neo4j-mcp",
-      "args": [],
-      "env": {
-        "NEO4J_URI": "bolt://localhost:{neo4j_bolt_port}",
-        "NEO4J_USERNAME": "neo4j",
-        "NEO4J_PASSWORD": "{neo4j_password}",
-        "NEO4J_DATABASE": "neo4j"
-      }
-    }
-  }
-}
+Native Windows (PowerShell):
+```powershell
+# nacl-init is a symlink/junction into the repo; resolve its physical parent = repo root.
+$link   = Join-Path $env:USERPROFILE ".claude\skills\nacl-init"
+$target = (Get-Item $link).Target | Select-Object -First 1
+if (-not $target) { $target = (Get-Item $link).FullName }
+$RepoRoot = Split-Path $target -Parent
+& powershell -ExecutionPolicy Bypass -File "$RepoRoot\nacl-tl-core\scripts\setup-graph.ps1" `
+  -ProjectRoot (Get-Location).Path -SkillsDir $RepoRoot `
+  -Prefix "{project_name_slug}" `
+  -BoltPort {bolt_port} -HttpPort {http_port} `
+  -Password "{neo4j_password}"
 ```
 
-If `.mcp.json` already exists (other MCP servers configured), merge the `neo4j` entry into the existing `mcpServers` object.
+#### 2c.4 Read the result and report (HARD GATE — no soft fallback)
 
-#### 2c.6 Start Docker and load schema automatically
-
-```bash
-# Start the Docker stack
-docker compose -f graph-infra/docker-compose.yml up -d
+The script ends with a machine-parseable block; read the `status=` field:
+```
+NACL_GRAPH_RESULT: status=READY|FAILED
+  binary=<path> health=<status> constraints_expected=<n> constraints_actual=<n> handshake=ok|fail failed_check=<name|none>
 ```
 
-Wait for Neo4j to be healthy (healthcheck: 10s interval, 30s start period):
-```bash
-# Wait for Neo4j to accept connections (max 60 seconds)
-for i in $(seq 1 12); do
-  docker exec {container_prefix}-neo4j cypher-shell -u neo4j -p {neo4j_password} "RETURN 1" 2>/dev/null && break
-  sleep 5
-done
-```
+`status=READY` is emitted ONLY when **all three** gate checks passed:
+1. container health == `healthy`,
+2. `SHOW CONSTRAINTS` count == the count computed dynamically from the loaded schema
+   files (do not hardcode — it changes as the schema evolves),
+3. a one-shot `initialize` + `tools/list` JSON-RPC handshake against the resolved binary
+   returned a valid response.
 
-Then load all three schema files automatically via `docker exec`.
-
-**Important:** Schema files contain multi-line statements (split across 2-3 lines).
-Use `cypher-shell --file` to let cypher-shell handle parsing natively:
-
-```bash
-for f in graph-infra/schema/ba-schema.cypher graph-infra/schema/sa-schema.cypher graph-infra/schema/tl-schema.cypher; do
-  docker exec -i {container_prefix}-neo4j cypher-shell -u neo4j -p {neo4j_password} < "$f" 2>&1 | grep -v '^$'
-done
-```
-
-This pipes the entire file into cypher-shell via stdin (`-i` flag + `<` redirect).
-cypher-shell handles comments, multi-line statements, and semicolons natively — no shell parsing needed.
-
-Verify schema loaded:
-```bash
-docker exec {container_prefix}-neo4j cypher-shell -u neo4j -p {neo4j_password} "SHOW CONSTRAINTS" 2>/dev/null | head -5
-```
-
-If verification returns constraints → schema is loaded. If Docker or cypher-shell fails, fall back to manual instructions in the report.
-
-#### 2c.7 Report
-
+**If `status=READY`** → print the success report:
 ```
 ## Graph Infrastructure Ready
 
 Neo4j Browser: http://localhost:{http_port}
   (login: bolt://localhost:{bolt_port}, neo4j / {password})
-Containers:    {container_prefix}-neo4j
+Container:     {container_prefix}-neo4j
+MCP binary:    {binary path from result}
 
-Docker:  started ✓
-Schema:  loaded ✓ (ba + sa + tl)
+Docker:    healthy ✓
+Schema:    loaded ✓ ({constraints_actual}/{constraints_expected} constraints)
+Handshake: ok ✓
 
 ### MCP config:
-  .mcp.json created — restart Claude Code to connect to this project's Neo4j
+  .mcp.json created (points directly at the official neo4j-mcp binary)
+  — restart Claude Code to connect to this project's Neo4j
 
 ### Next:
   /nacl-ba-from-board new {project_name}
 ```
 
-If schema loading failed, show fallback instructions:
+**If `status=FAILED` (or the script exits non-zero)** → DO NOT print "Ready". Fail loud,
+naming `failed_check` and the remediation. Do not invent a "looks done" summary.
 ```
-Schema: FAILED — load manually:
-  Open http://localhost:{http_port}
-  Connection: bolt://localhost:{bolt_port}, neo4j / {password}
-  Execute each statement from graph-infra/schema/*.cypher one at a time
+## Graph Infrastructure FAILED — not usable yet
+
+Failed check: {failed_check}
+  resolve-binary    → no network / GitHub unreachable, or unsupported OS/arch.
+                      Check connectivity; the binary installs to ~/.neo4j-mcp-bin/.
+  docker-up         → Docker not running, or the bolt/http port is taken. Pick new ports.
+  container-health  → container never became healthy. `docker logs {container_prefix}-neo4j`.
+  schema-copy       → `docker cp` failed; container not running.
+  constraints-count → schema did not fully load (got {constraints_actual} of {constraints_expected}).
+                      `docker logs {container_prefix}-neo4j`; re-run after fixing.
+  handshake         → binary could not speak MCP/connect to bolt. Verify NEO4J_* env and port.
+
+Re-run /nacl-init (graph step is idempotent) after addressing the cause.
 ```
 
 ---

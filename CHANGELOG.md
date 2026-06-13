@@ -4,6 +4,54 @@ All notable changes to NaCl (Natural Agent Control Language) will be documented 
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [2.22.0] — 2026-06-13
+
+**`/nacl-init` graph setup now works the same on Windows, macOS, and Linux — and fails
+loud instead of looking done.** A first real run on native Windows (PowerShell 5.1, no
+WSL2) produced the config files but the Neo4j MCP server never connected. Every reported
+symptom had one root cause: Step 2c was written entirely in bash (`cp`, `command -v`,
+`for i in $(seq …)`, `docker exec -i … < file`, `grep -oE`), so on a non-POSIX shell it
+fell through and the agent improvised — producing a launcher that downloads-on-start past
+the 30 s MCP timeout and prints a banner to STDOUT (which corrupts the stdio JSON-RPC
+stream on *every* OS), schema `.cypher` files re-serialized with a UTF-8 BOM that
+`cypher-shell` rejects on line 1, and a "fallback instructions" branch that let a half-run
+report success. This release replaces the improvised shell with one committed, tested
+script per OS.
+
+### Added
+- **`nacl-tl-core/scripts/setup-graph.ps1` (Windows PowerShell 5.1+) and
+  `setup-graph.sh` (POSIX: macOS/Linux/WSL2)** — same contract, each performing Step
+  2c.3–2c.6 deterministically: copy infra byte-for-byte → resolve the **official**
+  `neo4j-mcp` binary via direct GitHub-release download + native extract
+  (`Expand-Archive` / `tar`) to `~/.neo4j-mcp-bin/` → write `.env`/`.mcp.json` as UTF-8
+  **without BOM**, pointing `.mcp.json` **directly at the resolved binary** (no npm
+  launcher → no download-on-start, no STDOUT banner; `NEO4J_TELEMETRY=false`) → `docker
+  compose up`, wait healthy, load schema via `docker cp` + `cypher-shell --file`. The
+  scripts emit a machine-parseable `NACL_GRAPH_RESULT:` line and exit non-zero on failure.
+- **A hard 3-part verification gate** before "Graph Infrastructure Ready": container
+  health == `healthy` **AND** `SHOW CONSTRAINTS` count == the count computed *dynamically*
+  from the loaded schema files **AND** a one-shot `initialize` + `tools/list` JSON-RPC
+  handshake against the resolved binary succeeds.
+
+### Changed
+- **`nacl-init` Step 2c** is now thin: OS-aware port detection, OS dispatch to the
+  matching `setup-graph` script, then a report driven by the script's result — success
+  printed only on `status=READY`. The old inline bash heredocs (copy / `.env` / `.mcp.json`
+  / docker-up / stdin-redirect schema load) are gone.
+- **`.mcp.json` template** points at the resolved binary path instead of the bare
+  `neo4j-mcp` launcher command, and sets `NEO4J_TELEMETRY=false`. Existing `.mcp.json`
+  files are merged, never clobbered (other MCP servers preserved).
+- **`docs/setup/install-windows.md` / `.ru.md`** document the Neo4j-MCP-on-Windows flow
+  and a 4-step acceptance test; no `neo4j-mcp` npm package is required.
+
+### Fixed
+- **Soft fallback removed.** The branch that printed manual instructions and continued is
+  gone: on any gate failure the skill prints a loud `FAILED` report naming the failing
+  check and remediation, and never reports a half-configured graph as ready.
+- **Idempotent re-run.** Schema load is no longer fatal on a re-run's benign "constraint
+  already exists" — the constraint-count gate is the authoritative verdict, so re-running
+  `/nacl-init` converges instead of erroring.
+
 ## [2.21.0] — 2026-06-11
 
 **Requirements stop floating: each one is anchored, in the graph, to the step / field /
