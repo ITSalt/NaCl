@@ -5,7 +5,9 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "predev": "node scripts/copy-excalidraw-assets.mjs",
     "dev": "vite",
+    "prebuild": "node scripts/copy-excalidraw-assets.mjs",
     "build": "tsc && vite build",
     "preview": "vite preview",
     "lint": "eslint src --ext .ts,.tsx",

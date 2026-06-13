@@ -4,6 +4,13 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>NaCl Analyst Tool</title>
+    <!--
+      Serve Excalidraw fonts/assets from our own origin (see public/excalidraw-assets,
+      populated by scripts/copy-excalidraw-assets.mjs). Without this Excalidraw fetches
+      them from unpkg.com, which browser Tracking Prevention blocks — leaving all text
+      invisible. Must run before the app bundle so Excalidraw reads it at font-load time.
+    -->
+    <script>window.EXCALIDRAW_ASSET_PATH = "/";</script>
   </head>
   <body>
     <div id="root"></div>

@@ -311,7 +311,12 @@ export function makeText(opts: {
     text: opts.text,
     originalText: opts.originalText ?? opts.text,
     fontSize,
-    fontFamily: opts.fontFamily ?? 1,
+    // Default to 2 (Normal / Helvetica) — a system font that needs no web-font
+    // download. fontFamily 1 (Virgil) and 3 (Cascadia) are web fonts loaded from
+    // EXCALIDRAW_ASSET_PATH; if that fetch is slow or blocked, container-bound
+    // text stays invisible (FOIT). Normal always renders, so all boards are
+    // legible regardless of font availability.
+    fontFamily: opts.fontFamily ?? 2,
     textAlign: opts.textAlign ?? 'left',
     verticalAlign: opts.verticalAlign ?? 'top',
     containerId: opts.containerId ?? null,

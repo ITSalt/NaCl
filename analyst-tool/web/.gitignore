@@ -1,0 +1,4 @@
+# Excalidraw runtime assets copied from node_modules by
+# scripts/copy-excalidraw-assets.mjs on predev/prebuild. Generated, not source.
+public/excalidraw-assets/
+public/excalidraw-assets-dev/

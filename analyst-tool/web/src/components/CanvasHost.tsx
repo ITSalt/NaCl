@@ -88,6 +88,9 @@ export default function CanvasHost() {
   const clearPendingHighlight = useStore((s) => s.clearPendingHighlight);
 
   const excalidrawApiRef = useRef<ExcalidrawImperativeAPI | null>(null);
+  // Flipped once Excalidraw hands us its imperative API, so font-refresh effect
+  // can depend on API availability instead of racing the mount callback.
+  const [apiReady, setApiReady] = useState(false);
 
   // Transient highlight — element id currently being highlighted (yellow box, ~3s)
   const [highlightElementId, setHighlightElementId] = useState<string | null>(null);
@@ -184,6 +187,50 @@ export default function CanvasHost() {
     lastSavedHashRef.current = sceneSignature(elements, appState, files);
   }, [current, sceneSignature]);
 
+  // Force Excalidraw to re-render bound text once web fonts finish loading.
+  //
+  // Excalidraw measures and caches each element's drawn shape (ShapeCache,
+  // keyed by element identity) at first paint. When a board is loaded via
+  // initialData before its fonts are ready, container-bound text is cached with
+  // fallback metrics and stays INVISIBLE until something invalidates the cache —
+  // which is why text only appears after the user toggles a property in the
+  // panel. See excalidraw#637 / excalidraw#8228.
+  //
+  // Fix: after the fonts settle, re-issue the scene with fresh element
+  // references (shallow clones). New identities miss the ShapeCache, so every
+  // element — including bound text — is re-drawn with the now-loaded font.
+  // versionNonce is unchanged, so the onChange content-guard suppresses any
+  // phantom save.
+  useEffect(() => {
+    if (!apiReady || !current) return;
+    let cancelled = false;
+
+    const forceFontRerender = () => {
+      if (cancelled) return;
+      const api = excalidrawApiRef.current;
+      if (!api) return;
+      const refreshed = api.getSceneElements().map((e) => ({ ...e }));
+      api.updateScene({ elements: refreshed as unknown as ExcalidrawElement[] });
+    };
+
+    const fonts = (document as unknown as { fonts?: FontFaceSet }).fonts;
+    if (fonts?.ready) {
+      void fonts.ready.then(forceFontRerender);
+    } else {
+      // No FontFaceSet API — re-render on next frame as a best-effort fallback.
+      requestAnimationFrame(forceFontRerender);
+    }
+    // Belt-and-suspenders: fonts.ready may resolve before Excalidraw has even
+    // registered its faces (nothing pending yet). Catch the later load too.
+    const onLoadingDone = () => forceFontRerender();
+    fonts?.addEventListener?.('loadingdone', onLoadingDone);
+
+    return () => {
+      cancelled = true;
+      fonts?.removeEventListener?.('loadingdone', onLoadingDone);
+    };
+  }, [apiReady, current, currentRevision, reloadKey]);
+
   // Handle pending highlight: scroll to element + set transient highlight id
   useEffect(() => {
     if (!pendingHighlightElementId) return;
@@ -273,7 +320,7 @@ export default function CanvasHost() {
       <BoardChangedBanner />
       <Excalidraw
         key={`${selectedBoard}:${currentRevision}:${reloadKey}`}
-        excalidrawAPI={(api) => { excalidrawApiRef.current = api; }}
+        excalidrawAPI={(api) => { excalidrawApiRef.current = api; setApiReady(true); }}
         initialData={{
           elements: displayElements,
           appState: current.scene.appState,
