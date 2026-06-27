@@ -32,7 +32,7 @@ $sideDir  = Join-Path $naclHome "sidecar"
 New-Item -ItemType Directory -Force -Path $sideDir | Out-Null
 $launcher = Join-Path $sideDir "$ProjectScope.cmd"
 
-$cmd = "ghostunnel client --listen `"localhost:$SidecarPort`" --target `"$VpsHost`:$GatewayPort`" --cert `"$Cert`" --key `"$Key`" --cacert `"$CaCert`" --keepalive 10s"
+$cmd = "ghostunnel client --listen `"localhost:$SidecarPort`" --target `"$VpsHost`:$GatewayPort`" --cert `"$Cert`" --key `"$Key`" --cacert `"$CaCert`" --connect-timeout 10s"
 Set-Content -Path $launcher -Value "@echo off`r`n$cmd" -Encoding ASCII
 [Console]::Error.WriteLine("Sidecar launcher written: $launcher")
 [Console]::Error.WriteLine("  local bolt socket: bolt://localhost:$SidecarPort  ->  mTLS  ->  $VpsHost`:$GatewayPort")

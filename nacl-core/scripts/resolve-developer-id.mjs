@@ -81,6 +81,11 @@ function readMachineRaw() {
       for (const p of ['/etc/machine-id', '/var/lib/dbus/machine-id']) {
         try { const v = readFileSync(p, 'utf8').trim(); if (v) return v; } catch { /* next */ }
       }
+    } else if (process.platform === 'win32') {
+      const out = execFileSync('reg', ['query', 'HKLM\\SOFTWARE\\Microsoft\\Cryptography', '/v', 'MachineGuid'],
+        { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
+      const m = out.match(/MachineGuid\s+REG_SZ\s+([0-9a-fA-F-]+)/);
+      if (m) return m[1];
     }
   } catch { /* fall through */ }
   return os.hostname();
