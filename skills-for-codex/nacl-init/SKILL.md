@@ -75,6 +75,29 @@ runner appends the block with built-in defaults ONLY when no `intake:`
 section exists — user-tuned values are never overwritten. Report in the final
 summary whether intake scoring was seeded or already present.
 
+## Graph Mode (local | create | connect)
+
+A project's graph is either LOCAL (a per-project Docker Neo4j) or REMOTE (a shared Neo4j on a
+VPS used by several developers). Resolve the mode deterministically before touching graph infra:
+
+```sh
+node <NaCl checkout>/nacl-tl-core/scripts/resolve-graph-mode.mjs --project-root "<root>" [--scale create|connect]
+# → NACL_GRAPH_MODE: mode=local|create|connect
+```
+
+- `local` (default; absent `graph.mode` ⇒ local) — existing behaviour, unchanged.
+- `create` — provision a NEW shared project against an already-provisioned VPS graph
+  (`graph-infra/vps/provision-vps.sh`); runs `nacl-tl-core/scripts/create-remote.sh`
+  (idempotent `(:Project)` marker seed, NO local Docker).
+- `connect` — JOIN an existing shared project; runs `nacl-tl-core/scripts/connect-remote.sh`
+  (read-only verify gate, NO Docker, NO schema, NO graph writes). A committed `graph.mode: remote`
+  auto-routes a teammate here — they must NOT re-initialise from scratch.
+
+Remote access uses a personal mTLS client certificate (the revocable "API key") via a local
+tunnel (`graph-infra/scripts/install-sidecar.sh`); `.mcp.json` stays on `bolt://localhost:<port>`.
+The registry merge is the tested `nacl-tl-core/scripts/register-project.mjs` tool. See
+`../../docs/runbooks/provision-shared-graph-vps.md` and `connect-to-existing-remote-project.md`.
+
 ## Capabilities
 
 ### May Do

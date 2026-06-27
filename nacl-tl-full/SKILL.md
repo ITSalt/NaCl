@@ -934,6 +934,24 @@ If Neo4j was unavailable during any part of the execution (e.g., write attempts 
 
 Skipping this step and resuming directly risks the orchestrator reading stale JSON and advancing phases that the graph still shows as incomplete or failed.
 
+### Remote mode (multi-user shared graph)
+
+Everything above is **local mode** (`config.yaml` `graph.mode` absent or `local`) — unchanged.
+When `graph.mode: remote` (one shared graph on a VPS, several developers), the dual-write fence
+changes per `nacl-tl-core/references/remote-mode-coordination.md`:
+
+- **Graph is the sole source of truth.** A successful Neo4j write is sufficient to advance; the
+  `.tl/status.json` write becomes a best-effort LOCAL cache (it is per-clone and diverges across
+  developers — never authoritative, never a coordination signal).
+- **Resume reads the graph only** (not `status.json`); there is no stale-cache fallback — if the
+  graph is unreachable, HALT.
+- **Claim before working.** Before starting a Task, acquire its claim-lock with
+  `node nacl-core/scripts/claim-task.mjs claim --task <id> --dev "$NACL_DEVELOPER_ID"` (run the
+  emitted Cypher via `mcp__neo4j__write-cypher`); if the returned `owner` ≠ you, the task is held —
+  pick another. Resolve `NACL_DEVELOPER_ID` as: `config.yaml` `developer.id` → `git config
+  user.email` → `$USER@hostname`.
+- **Stamp provenance** (`updated_by`/`updated_at`) on phase-advance writes.
+
 ---
 
 ## Retry Policy

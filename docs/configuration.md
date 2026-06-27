@@ -138,7 +138,14 @@ Defines frontend and backend modules. Each module key is arbitrary — common na
 
 ### `graph` (required for BA/SA skills)
 
-Connection settings for the Neo4j container. Only needed if you use `nacl-ba-*` or `nacl-sa-*` skills.
+Connection settings for Neo4j. Only needed if you use `nacl-ba-*` or `nacl-sa-*` skills.
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `mode` | string | no | `local` | `local` (per-project Docker Neo4j on this machine) or `remote` (shared Neo4j on a VPS). **Absent ⇒ `local`** (backward compatible). |
+| `boards_dir` | string | no | `graph-infra/boards` | Directory where Excalidraw board files are stored. Each `.excalidraw` file may have a `<basename>.meta.json` sidecar managed by `nacl-render` and `nacl-ba-sync` — format defined in `nacl-core/SKILL.md` § "Board Meta Sidecar". |
+
+**Local-mode fields** (`mode: local`):
 
 | Field | Type | Required | Default | Description |
 |---|---|---|---|---|
@@ -146,7 +153,41 @@ Connection settings for the Neo4j container. Only needed if you use `nacl-ba-*` 
 | `neo4j_http_port` | integer | yes | — | HTTP browser port (e.g. `3574`) |
 | `neo4j_password` | string | yes | — | Neo4j password |
 | `container_prefix` | string | no | — | Docker container name prefix (e.g. `my-project` → container `my-project-neo4j`) |
-| `boards_dir` | string | no | `graph-infra/boards` | Directory where Excalidraw board files are stored. Each `.excalidraw` file may have a `<basename>.meta.json` sidecar managed by `nacl-render` and `nacl-ba-sync` — format defined in `nacl-core/SKILL.md` § "Board Meta Sidecar". |
+
+**Remote-mode fields** (`mode: remote`):
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `neo4j_uri` | string | yes | — | Bolt URI the MCP server connects to. In remote mode this is the **local sidecar socket** (e.g. `bolt://localhost:3700`); the mTLS tunnel carries traffic to the VPS. |
+| `neo4j_username` | string | no | `neo4j` | DB username (Community = single shared user). |
+| `neo4j_database` | string | no | `neo4j` | Database name. |
+| `project_scope` | string | yes | — | Logical project id inside the shared graph; matches the `(:Project {id})` marker node. |
+| `remote.host` | string | yes | — | VPS hostname (e.g. `graph.example.com`). |
+| `remote.gateway_port` | integer | yes | — | Public mTLS gateway port on the VPS. |
+| `remote.sidecar_port` | integer | yes | — | Local port the ghostunnel client listens on (must match `neo4j_uri`). |
+| `remote.client_cert` / `client_key` / `ca_cert` | string | yes | — | Paths to the developer's personal client certificate (the revocable "API key"), key, and CA. |
+| `remote.tls` | bool | no | `true` | Whether the gateway link uses TLS (it must). |
+
+#### Graph mode: local vs remote
+
+By default every project runs **local** — `/nacl-init` provisions a per-project Neo4j Docker
+container, exactly as before. Nothing about existing projects changes; an absent `mode` key is
+read as `local`.
+
+A project becomes **remote** (one shared Neo4j on a VPS, used concurrently by developers in
+different locations) only deliberately — either the first developer runs `/nacl-init --scale=create`
+to provision the shared graph, or a teammate runs `/nacl-init --scale=connect` to join it. Because
+the non-secret endpoint fields are committed to `config.yaml`, a teammate who simply clones the repo
+and re-runs `/nacl-init` is **auto-routed into connect-mode** (no Docker, no schema seed) by the
+committed `mode: remote`.
+
+**Security model (remote):** access is gated by a personal **mTLS client certificate** per developer
+(the revocable "API key"), terminated at a gateway in front of Neo4j; the MCP server still connects to
+`bolt://localhost:<sidecar_port>` through a local tunnel, so skills are unchanged. See
+`docs/runbooks/provision-shared-graph-vps.md` and `docs/runbooks/connect-to-existing-remote-project.md`.
+
+**Secrets are never committed.** `neo4j_password` lives in env (`NEO4J_PASSWORD`) or a gitignored
+`.env`; in remote mode `.mcp.json` is gitignored too (it would otherwise expose the shared password).
 
 ---
 

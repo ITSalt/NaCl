@@ -4,6 +4,56 @@ All notable changes to NaCl (Natural Agent Control Language) will be documented 
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased] — multi-user shared graph
+
+**A project's spec graph can now live on a VPS and be shared by several developers over the public
+internet — while local-only projects are completely unchanged.** Until now every project ran its own
+local Neo4j Docker container (`bolt://localhost:<port>`), one per machine, with state moved between
+people only by a one-shot encrypted handover. This release adds an opt-in `mode: remote`: one shared
+Neo4j on a VPS, reached through a per-developer mTLS tunnel, with the connection abstraction kept
+where it already was — skills talk to the graph only through the `neo4j` MCP server, so the MCP
+keeps pointing at `bolt://localhost:<sidecar_port>` and **no skill changes are needed for
+connectivity**. Access is gated by a personal client certificate (a revocable "API key"); the only
+edition needed is Neo4j Community.
+
+### Added
+- **Config schema:** `graph.mode` (`local` | `remote`, absent ⇒ `local`, fully backward compatible)
+  plus a `graph.remote` endpoint block (host, gateway/sidecar ports, cert paths). Documented in
+  `docs/configuration.md`.
+- **Deterministic client tools** (each with a `*.test.*` pin, run by `test-tools.yml`):
+  `resolve-graph-mode.mjs` (routes `local|create|connect`), `register-project.mjs` (extracts the old
+  inline Step 2d registry merge, mirrors `project-registry.ts`), `write-mcp-config.mjs` (merges the
+  `neo4j` MCP server, removing setup-graph's `python3` dependency), `write-graph-config.mjs`
+  (`graph:` block patcher), `mcp-cypher.mjs` (client-side Cypher over the MCP stdio binary — no
+  docker/cypher-shell), and `nacl-core/scripts/claim-task.mjs` (atomic task claim-lock Cypher).
+- **Remote provisioners:** `connect-remote.sh/.ps1` (JOIN an existing shared project — no Docker, no
+  schema, read-only verify gate with a `project-exists` guard that fails loud) and
+  `create-remote.sh/.ps1` (provision a new shared project — idempotent `(:Project)` marker seed).
+- **VPS automation (turnkey, ghostunnel mTLS):** `graph-infra/vps/provision-vps.sh` + a private CA
+  (`lib-ca.sh`) + `issue-client-cert.sh` / `revoke-client-cert.sh`, and the
+  `graph-docker-compose.vps.yml` overlay (Neo4j on loopback, public access only via the mTLS
+  gateway). One CA signs both the gateway and every client cert — no Let's Encrypt required.
+- **Client tunnel:** `graph-infra/scripts/install-sidecar.sh/.ps1` (ghostunnel client → local
+  `bolt://localhost:<port>`).
+- **Migration:** `graph-infra/scripts/migrate-to-remote.sh` — local → cloud, wrapping the existing
+  handover export/import, idempotent and fail-loud with rollback at every gate.
+- **Docs:** runbooks `provision-shared-graph-vps.md`, `connect-to-existing-remote-project.md`,
+  `migrate-local-graph-to-vps.md`; coordination spec `nacl-tl-core/references/remote-mode-coordination.md`.
+
+### Changed
+- **`/nacl-init` is now a thin orchestrator for the graph step:** Step 2c resolves the mode and
+  dispatches to `setup-graph` (local) / `create-remote` / `connect-remote`, reading a
+  `NACL_GRAPH_RESULT:` gate; Step 2d's ~85 lines of inline registry bash became a call to
+  `register-project.mjs`. Codex mirror updated in lockstep.
+- **Coordination in remote mode** (spec `remote-mode-coordination.md` + the five TL skills wired,
+  root + codex mirrors): the graph is the sole source of truth and `.tl/status.json` degrades to a
+  per-clone local cache; `tl-full` is graph-authoritative and claims a task before working it;
+  `tl-next` claims before recommending and disables the stale fallback (HALT if the graph is down);
+  `tl-status` reads the graph only and shows a `claimed_by` column; `tl-ship` reads the graph `Task`
+  node (not the cache) and releases the claim on a successful push; `tl-diagnose` treats
+  status.json-vs-graph divergence as expected/benign. Writes stamp `developer_id` provenance. Local
+  mode is unchanged throughout.
+
 ## [2.22.0] — 2026-06-13
 
 **`/nacl-init` graph setup now works the same on Windows, macOS, and Linux — and fails

@@ -194,6 +194,14 @@ If graph write cannot be completed, do not advance the phase. Report `BLOCKED` w
 phase, and reason. If graph and file state diverge, report `UNVERIFIED` until
 diagnostics reconcile the state.
 
+**Remote mode (multi-user shared graph):** the above is local mode (`config.yaml` `graph.mode`
+absent or `local`). When `graph.mode: remote`, the graph is the SOLE source of truth and
+`.tl/status.json` is a best-effort per-clone cache: a successful graph write advances the phase;
+resume reads the graph only (no stale-cache fallback — HALT if the graph is unreachable). Before
+working a task, acquire its claim-lock (`nacl-core/scripts/claim-task.mjs claim`), and stamp
+`updated_by`/`updated_at` provenance on phase writes. See
+`../../nacl-tl-core/references/remote-mode-coordination.md`.
+
 ### Phase 4: Final Validation
 
 Before final reporting, verify every scoped task reached a terminal outcome in

@@ -50,6 +50,11 @@ Diagnose and recommend next actions. Do not implement fixes in this skill.
   note oldest `stale_since`. A non-empty result means an upstream change whose
   dependents were never re-synced (`/nacl-tl-plan` clears them); mark the probe
   unavailable if Neo4j is unreachable.
+- Remote mode (`config.yaml` `graph.mode: remote`, shared graph): the graph is canonical and
+  `.tl/status.json` is a per-clone cache, so status.json-vs-graph divergence is EXPECTED and benign
+  (other developers' machines) — report it informationally, not as drift to reconcile. Keep weight on
+  `stale_nodes`, which are real drift in either mode. See
+  `../../nacl-tl-core/references/remote-mode-coordination.md`.
 - Produce a structured diagnostic report.
 - Recommend follow-up skills or manual investigation.
 
