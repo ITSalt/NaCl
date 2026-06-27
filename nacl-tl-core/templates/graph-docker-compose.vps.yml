@@ -4,13 +4,18 @@
 # exposing a graph to the internet safely:
 #   * Neo4j publishes NO host ports — it is only reachable on the internal docker network.
 #   * A ghostunnel "gateway" service owns the single public port and terminates mTLS:
-#     it accepts ONLY client certificates signed by our private CA (and not in the CRL),
-#     then forwards plaintext bolt to neo4j inside the network.
+#     it accepts ONLY client certificates whose CN is on the managed allow-list below
+#     (and which are signed by our private CA), then forwards plaintext bolt to neo4j.
 #   * The DB password is project-unique and injected from .env (never the shared dev default).
+#
+# Revocation model: ghostunnel (>=1.x) has no CRL flag, so access is an explicit CN allow-list.
+# provision/issue/revoke-client-cert.sh manage <state>/<scope>/allowed-cns and re-render the
+# `--allow-cn` lines between the managed markers below, then restart the gateway. Revoking a
+# developer = drop their CN + restart (instant, no password rotation, others unaffected).
 #
 # One stack per project (CONTAINER_PREFIX) — Community Edition is one DB per instance, so
 # project isolation = one container per project (mirrors the existing per-project model).
-# Generated/managed by provision-vps.sh. Certs live in ./certs (ca.crt, server.crt/key, crl.pem).
+# Generated/managed by provision-vps.sh. Certs live in ./certs (ca.crt, server.crt/key).
 name: ${COMPOSE_PROJECT_NAME:-${CONTAINER_PREFIX:-graph}-graph}
 
 services:
@@ -55,12 +60,16 @@ services:
       - "server"
       - "--listen=0.0.0.0:7687"
       - "--target=neo4j:7687"
+      # ghostunnel >=1.x refuses non-localhost targets unless told the hop is trusted; here the
+      # gateway→neo4j hop is plaintext bolt INSIDE the private docker bridge (graph-net), never public.
+      - "--unsafe-target"
       - "--cert=/certs/server.crt"
       - "--key=/certs/server.key"
       - "--cacert=/certs/ca.crt"          # trust anchor for verifying CLIENT certs
-      - "--allow-all"                      # any client cert signed by our CA (revocation via CRL below)
-      - "--crl=/certs/crl.pem"             # revoked client serials; reloaded on gateway restart
-      - "--keepalive=10s"
+      # >>> NACL allow-cn (managed) — generated from <state>/<scope>/allowed-cns by provision/issue/revoke
+      - "--allow-cn=__none__"
+      # <<< NACL allow-cn (managed)
+      - "--connect-timeout=10s"
     volumes:
       - ./certs:/certs:ro
     networks:

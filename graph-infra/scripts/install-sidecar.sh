@@ -62,7 +62,7 @@ exec ghostunnel client \\
   --listen "localhost:$SIDECAR_PORT" \\
   --target "$HOST:$GW_PORT" \\
   --cert "$CERT" --key "$KEY" --cacert "$CACERT" \\
-  --keepalive 10s
+  --connect-timeout 10s
 EOF
 chmod +x "$LAUNCHER"
 echo "Sidecar launcher written: $LAUNCHER" >&2

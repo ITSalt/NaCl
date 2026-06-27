@@ -73,6 +73,11 @@ EOF
 chmod 600 "$GRAPH_DIR/.env"
 cp "$SKILLS_DIR/nacl-tl-core/templates/graph-docker-compose.vps.yml" "$GRAPH_DIR/docker-compose.yml" || fail copy-compose
 
+# seed the gateway CN allow-list with the first developer and render `--allow-cn` lines into the
+# compose copy (ghostunnel has no CRL — access is an explicit allow-list managed by issue/revoke).
+allowlist_add "$GRAPH_DIR" "$FIRST_DEV"
+render_gateway_allowlist "$GRAPH_DIR" || fail render-allowlist
+
 CONTAINER="$PREFIX-neo4j"
 ( cd "$GRAPH_DIR" && $DC up -d ) || fail compose-up
 

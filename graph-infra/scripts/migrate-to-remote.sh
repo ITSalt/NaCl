@@ -42,6 +42,12 @@ for v in PROJECT_ROOT SKILLS_DIR VPS_SSH SCOPE VPS_PREFIX URI HOST; do
   eval "val=\$$v"; [ -n "$val" ] || { echo "Missing required argument (--$(echo "$v" | tr 'A-Z_' 'a-z-'))" >&2; exit 2; }
 done
 
+# Ephemeral transport passphrase for the encrypted handover artifact. handover-export (local) and
+# handover-import (on the VPS) both read NACL_HANDOVER_PASSPHRASE; they prompt interactively if it
+# is unset, which would hang this non-interactive orchestration. Generate one and thread it to both.
+HANDOVER_PASSPHRASE="${NACL_HANDOVER_PASSPHRASE:-$(openssl rand -hex 24)}"
+export NACL_HANDOVER_PASSPHRASE="$HANDOVER_PASSPHRASE"
+
 GRAPH_INFRA="$PROJECT_ROOT/graph-infra"
 log() { echo "[migrate] $*" >&2; }
 die() { echo "[migrate] ERROR: $*" >&2; exit 1; }
@@ -66,9 +72,20 @@ if [ "$ASSUME_YES" != "1" ]; then
 fi
 
 # 1. backup / export (this IS the rollback point) ----------------------------
-log "Exporting local graph (encrypted backup = rollback point)…"
-sh "$SKILLS_DIR/graph-infra/scripts/handover-export.sh" --out-dir="$GRAPH_INFRA/handover" \
-  || die "handover-export failed"
+# handover-export derives REPO_ROOT from its own path (= skills-dir, NOT this project) and several
+# *-neo4j containers may be running, so auto-detect is unsafe. Pin THIS project's local container
+# (and password) from its config.yaml via the env _lib.sh honors (NACL_CONTAINER checked first).
+LOCAL_PREFIX="$(sed -n '/^graph:/,/^[^[:space:]#]/{ s/^[[:space:]]*container_prefix:[[:space:]]*"\{0,1\}\([^"#]*[^"# ]\)"\{0,1\}[[:space:]]*$/\1/p; }' "$PROJECT_ROOT/config.yaml" | head -1)"
+LOCAL_PW="$(sed -n '/^graph:/,/^[^[:space:]#]/{ s/^[[:space:]]*neo4j_password:[[:space:]]*"\{0,1\}\([^"#]*[^"# ]\)"\{0,1\}[[:space:]]*$/\1/p; }' "$PROJECT_ROOT/config.yaml" | head -1)"
+[ -n "$LOCAL_PREFIX" ] || die "could not read graph.container_prefix from $PROJECT_ROOT/config.yaml"
+LOCAL_CONTAINER="${LOCAL_PREFIX}-neo4j"
+docker inspect "$LOCAL_CONTAINER" >/dev/null 2>&1 || die "local container $LOCAL_CONTAINER not found — is the local graph up?"
+log "Exporting local graph from $LOCAL_CONTAINER (encrypted backup = rollback point)…"
+(
+  export NACL_CONTAINER="$LOCAL_CONTAINER"
+  [ -n "$LOCAL_PW" ] && export NEO4J_PASSWORD="$LOCAL_PW"
+  sh "$SKILLS_DIR/graph-infra/scripts/handover-export.sh" --container="$LOCAL_CONTAINER" --out-dir="$GRAPH_INFRA/handover"
+) || die "handover-export failed"
 ARTIFACT="$(ls -1t "$GRAPH_INFRA/handover/"*.cypher.gz.age 2>/dev/null | head -1)"
 [ -n "$ARTIFACT" ] || die "no export artifact produced"
 MANIFEST="${ARTIFACT%.cypher.gz.age}.cypher.manifest.json"
@@ -76,11 +93,13 @@ MANIFEST="${ARTIFACT%.cypher.gz.age}.cypher.manifest.json"
 log "Artifact: $ARTIFACT"
 
 # 2. ship to VPS + import on the VPS (handover-import runs where docker exec works) ----
-REMOTE_TMP="$VPS_STATE/$SCOPE/handover"
+# stage the artifact in a writable path: $VPS_STATE is root-owned, but migrate runs over ssh as a
+# non-root user (docker-group handles the import), so use /tmp rather than the state dir.
+REMOTE_TMP="/tmp/nacl-handover-$SCOPE"
 ssh "$VPS_SSH" "mkdir -p '$REMOTE_TMP'" || die "ssh mkdir failed"
 scp "$ARTIFACT" "$MANIFEST" "$VPS_SSH:$REMOTE_TMP/" || die "scp of artifact failed"
 log "Importing into VPS container $VPS_CONTAINER (verifies counts vs manifest)…"
-ssh "$VPS_SSH" "cd '$VPS_STATE' && NACL_CONTAINER='$VPS_CONTAINER' bash -lc \
+ssh "$VPS_SSH" "cd '$VPS_STATE' && NACL_CONTAINER='$VPS_CONTAINER' NEO4J_PASSWORD='$PASSWORD' NACL_HANDOVER_PASSPHRASE='$HANDOVER_PASSPHRASE' bash -lc \
   'bash \$(ls -1 */graph-infra/scripts/handover-import.sh 2>/dev/null | head -1 || echo handover-import.sh) \
    --file=\"$REMOTE_TMP/$(basename "$ARTIFACT")\" --container=\"$VPS_CONTAINER\" --force'" \
   || die "remote handover-import failed (graph NOT re-pointed; local project untouched)"
@@ -113,6 +132,16 @@ if [ "${A_NODES:-0}" != "$M_NODES" ]; then
   emit FAILED; die "verification failed; local config restored (local graph intact)"
 fi
 log "Verify OK: $A_NODES nodes match manifest."
+
+# 4b. seed the (:Project {id:scope}) marker (handover replays the source graph, which may
+#     predate the marker; connect-remote.sh gates joiners on it). Idempotent MERGE, run AFTER
+#     the exact count-verify so the byte-identical check above stays strict. ----------------
+log "Ensuring (:Project {id:'$SCOPE'}) marker exists on the remote graph…"
+node "$SKILLS_DIR/nacl-tl-core/scripts/mcp-cypher.mjs" --binary "$HOME/.neo4j-mcp-bin/neo4j-mcp" \
+  --uri "$URI" --password "$PASSWORD" --write \
+  --query "MERGE (p:Project {id:'$SCOPE'}) ON CREATE SET p.created_by='auto-migrated', p.created_at=datetime() SET p.updated_by='auto-migrated', p.updated_at=datetime() RETURN p.id AS id" \
+  >/dev/null 2>&1 || die "failed to seed (:Project) marker on remote (graph imported; config re-pointed — re-run this MERGE manually before joiners connect)"
+log "Project marker present."
 
 # 5. decommission local container (containers only; volume kept as cold rollback) ----
 if [ -f "$GRAPH_INFRA/docker-compose.yml" ]; then
