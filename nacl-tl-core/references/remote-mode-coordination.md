@@ -37,9 +37,15 @@ branch/PR) already partitions work; claim-locks cover interactive (non-conduct) 
 
 ## 3. Provenance: `developer_id`
 
-Resolve once per machine: `config.yaml` `developer.id` → else `git config user.email` → else
-`$USER@hostname`. Export as `NACL_DEVELOPER_ID` (parallels `NACL_GOAL_CLUSTER_ID`). v1 stamps:
-`claimed_by` on claims, and `updated_by`/`updated_at` on phase-advance writes.
+Resolve with the pinned tool:
+`NACL_DEVELOPER_ID="$(node nacl-core/scripts/resolve-developer-id.mjs --project-root .)"`.
+Precedence: `$NACL_DEVELOPER_ID` env (explicit override) → `config.yaml` `developer.id` → auto
+`<git user.email | $USER>/<machine-key>`. The **machine-key** is stable per machine (IOPlatformUUID
+on macOS, `/etc/machine-id` on Linux, else hostname; hashed to 8 hex), so ONE human on TWO machines
+gets two distinct ids **automatically, with nothing to configure** — essential because the claim-lock
+keys ONLY on this id (`claimed_by = $dev` is re-claimable, so two machines sharing an id would
+re-grab each other's tasks). `claimed_by` stays human-readable, e.g. `alice@x.com/3f9a2c1b`. v1
+stamps `claimed_by` on claims, and `updated_by`/`updated_at` on phase-advance writes.
 
 ## 4. Per-skill behaviour in remote mode
 

@@ -198,7 +198,10 @@ diagnostics reconcile the state.
 absent or `local`). When `graph.mode: remote`, the graph is the SOLE source of truth and
 `.tl/status.json` is a best-effort per-clone cache: a successful graph write advances the phase;
 resume reads the graph only (no stale-cache fallback — HALT if the graph is unreachable). Before
-working a task, acquire its claim-lock (`nacl-core/scripts/claim-task.mjs claim`), and stamp
+working a task, resolve the per-machine id with
+`NACL_DEVELOPER_ID="$(node nacl-core/scripts/resolve-developer-id.mjs --project-root .)"` (auto
+`<git email|user>/<machine-key>`, so one human on two machines never self-collides), acquire its
+claim-lock (`nacl-core/scripts/claim-task.mjs claim --dev "$NACL_DEVELOPER_ID"`), and stamp
 `updated_by`/`updated_at` provenance on phase writes. See
 `../../nacl-tl-core/references/remote-mode-coordination.md`.
 
