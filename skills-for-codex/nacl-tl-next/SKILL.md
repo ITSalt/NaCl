@@ -30,6 +30,14 @@ Recommend a single next action unless the user asks for a list.
   `tl_task_scoring` when graph access is available.
 - Respect `DEPENDS_ON` and `IN_WAVE`; do not recommend a task with unfinished
   dependencies as actionable.
+- Remote mode (`config.yaml` `graph.mode: remote`, shared graph): the `.tl/status.json` fallback in
+  step 3 is DISABLED — HALT if the graph is unreachable (a per-clone cache cannot represent shared
+  state). Recommendation is claim-first: resolve the per-machine id with
+  `NACL_DEVELOPER_ID="$(node nacl-core/scripts/resolve-developer-id.mjs --project-root .)"` (auto
+  `<git email|user>/<machine-key>`, so one human on two machines never self-collides), then claim the
+  task atomically (`nacl-core/scripts/claim-task.mjs claim --dev "$NACL_DEVELOPER_ID"`) before
+  presenting it; if another developer owns it, skip to the next candidate. See
+  `../../nacl-tl-core/references/remote-mode-coordination.md`.
 - Use canonical task and wave IDs from graph or `.tl/` evidence. Do not invent
   task IDs, waves, priorities, or dependency state.
 - In `.tl/` fallback mode, label the result as fallback-derived and omit

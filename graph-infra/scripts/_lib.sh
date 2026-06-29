@@ -24,6 +24,9 @@ require() {
 }
 
 load_env() {
+  # an explicitly-exported NEO4J_PASSWORD (e.g. the VPS password threaded in by migrate-to-remote.sh)
+  # must win over the file default — capture it before the allexport source clobbers it.
+  local _pre_pw="${NEO4J_PASSWORD:-}"
   local env_file="${GRAPH_INFRA}/.env"
   if [[ ! -f "$env_file" ]]; then
     env_file="${GRAPH_INFRA}/.env.example"
@@ -31,6 +34,7 @@ load_env() {
   fi
   # shellcheck disable=SC1090
   set -o allexport; source "$env_file"; set +o allexport
+  [[ -n "$_pre_pw" ]] && NEO4J_PASSWORD="$_pre_pw"
   : "${NEO4J_PASSWORD:=neo4j_graph_dev}"
   : "${NEO4J_BOLT_PORT:=3587}"
   : "${NEO4J_HTTP_PORT:=3574}"

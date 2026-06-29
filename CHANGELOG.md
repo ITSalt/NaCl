@@ -4,6 +4,82 @@ All notable changes to NaCl (Natural Agent Control Language) will be documented 
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [2.23.0] — 2026-06-29
+
+**A project's spec graph can now live on a VPS and be shared by several developers over the public
+internet — while local-only projects are completely unchanged.** Until now every project ran its own
+local Neo4j Docker container (`bolt://localhost:<port>`), one per machine, with state moved between
+people only by a one-shot encrypted handover. This release adds an opt-in `mode: remote`: one shared
+Neo4j on a VPS, reached through a per-developer mTLS tunnel, with the connection abstraction kept
+where it already was — skills talk to the graph only through the `neo4j` MCP server, so the MCP
+keeps pointing at `bolt://localhost:<sidecar_port>` and **no skill changes are needed for
+connectivity**. Access is gated by a personal client certificate (a revocable "API key"); the only
+edition needed is Neo4j Community.
+
+### Added
+- **Config schema:** `graph.mode` (`local` | `remote`, absent ⇒ `local`, fully backward compatible)
+  plus a `graph.remote` endpoint block (host, gateway/sidecar ports, cert paths). Documented in
+  `docs/configuration.md`.
+- **Deterministic client tools** (each with a `*.test.*` pin, run by `test-tools.yml`):
+  `resolve-graph-mode.mjs` (routes `local|create|connect`), `register-project.mjs` (extracts the old
+  inline Step 2d registry merge, mirrors `project-registry.ts`), `write-mcp-config.mjs` (merges the
+  `neo4j` MCP server, removing setup-graph's `python3` dependency), `write-graph-config.mjs`
+  (`graph:` block patcher), `mcp-cypher.mjs` (client-side Cypher over the MCP stdio binary — no
+  docker/cypher-shell), and `nacl-core/scripts/claim-task.mjs` (atomic task claim-lock Cypher).
+- **Auto per-machine developer identity:** `nacl-core/scripts/resolve-developer-id.mjs` (pinned by
+  its `.test.mjs`) derives `NACL_DEVELOPER_ID` as `<git email|user>/<machine-key>`, where machine-key
+  is a stable hash of the OS machine id (IOPlatformUUID on macOS, `/etc/machine-id` on Linux,
+  registry MachineGuid on Windows, hostname fallback); `$NACL_DEVELOPER_ID` and `config.yaml`
+  `developer.id` override it. The claim-lock keys only on this id, so one human on two machines gets
+  two distinct ids and never self-collides. Wired into `tl-full`/`tl-next` (+ codex mirrors).
+- **Remote provisioners:** `connect-remote.sh/.ps1` (JOIN an existing shared project — no Docker, no
+  schema, read-only verify gate with a `project-exists` guard that fails loud) and
+  `create-remote.sh/.ps1` (provision a new shared project — idempotent `(:Project)` marker seed).
+- **VPS automation (turnkey, ghostunnel mTLS):** `graph-infra/vps/provision-vps.sh` + a private CA
+  (`lib-ca.sh`) + `issue-client-cert.sh` / `revoke-client-cert.sh`, and the
+  `graph-docker-compose.vps.yml` overlay (Neo4j on loopback, public access only via the mTLS
+  gateway). One CA signs both the gateway and every client cert — no Let's Encrypt required.
+- **Client tunnel:** `graph-infra/scripts/install-sidecar.sh/.ps1` (ghostunnel client → local
+  `bolt://localhost:<port>`).
+- **Migration:** `graph-infra/scripts/migrate-to-remote.sh` — local → cloud, wrapping the existing
+  handover export/import, idempotent and fail-loud with rollback at every gate.
+- **Docs:** runbooks `provision-shared-graph-vps.md`, `connect-to-existing-remote-project.md`,
+  `migrate-local-graph-to-vps.md`; coordination spec `nacl-tl-core/references/remote-mode-coordination.md`.
+
+### Changed
+- **`/nacl-init` is now a thin orchestrator for the graph step:** Step 2c resolves the mode and
+  dispatches to `setup-graph` (local) / `create-remote` / `connect-remote`, reading a
+  `NACL_GRAPH_RESULT:` gate; Step 2d's ~85 lines of inline registry bash became a call to
+  `register-project.mjs`. Codex mirror updated in lockstep.
+- **Coordination in remote mode** (spec `remote-mode-coordination.md` + the five TL skills wired,
+  root + codex mirrors): the graph is the sole source of truth and `.tl/status.json` degrades to a
+  per-clone local cache; `tl-full` is graph-authoritative and claims a task before working it;
+  `tl-next` claims before recommending and disables the stale fallback (HALT if the graph is down);
+  `tl-status` reads the graph only and shows a `claimed_by` column; `tl-ship` reads the graph `Task`
+  node (not the cache) and releases the claim on a successful push; `tl-diagnose` treats
+  status.json-vs-graph divergence as expected/benign. Writes stamp `developer_id` provenance. Local
+  mode is unchanged throughout.
+
+### Fixed
+- **First live end-to-end run on a real VPS** (provision → migrate a real local graph to the cloud →
+  connect a second machine → concurrent claim-locks → revoke) surfaced and fixed nine issues the
+  syntax/compose checks could not catch:
+  - ghostunnel exposes **no `--crl` flag** — revocation is now a managed **`--allow-cn` allow-list**
+    (revoke = drop the CN and `docker compose up -d`, not a restart);
+  - the gateway server certificate must carry a **subjectAltName** — modern Go TLS rejects a CN-only
+    cert even with a matching hostname (`copy_extensions=copy` + `-addext subjectAltName=DNS:/IP:`);
+  - `--keepalive` → `--connect-timeout` (client and server), and a non-localhost `--target` needs
+    `--unsafe-target`;
+  - server/client cert issuance is now idempotent (modulus-match guard + `unique_subject=no`);
+  - all schema `CREATE CONSTRAINT/INDEX/FULLTEXT` statements are now `IF NOT EXISTS`;
+  - migration MERGEs the `(:Project)` marker after the strict count verify so a second developer's
+    `project-exists` gate passes;
+  - migration threads the handover passphrase and the database password through export/import and
+    pins the local container when several `*-neo4j` containers exist;
+  - `_lib.sh` lets an explicit `NEO4J_PASSWORD` win over the `.env` default.
+- **Windows sidecar + identity parity:** `install-sidecar.ps1` uses `--connect-timeout` (matching the
+  POSIX script) and the developer-id resolver reads the Windows registry MachineGuid.
+
 ## [2.22.0] — 2026-06-13
 
 **`/nacl-init` graph setup now works the same on Windows, macOS, and Linux — and fails

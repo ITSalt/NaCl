@@ -414,6 +414,14 @@ RULE: Every hypothesis emitted in the report MUST include its evidence block.
       "candidate hypothesis (unverified)" rather than a confirmed finding.
 ```
 
+**Remote mode (multi-user shared graph):** when `config.yaml` `graph.mode: remote`, the graph is the
+canonical source and `.tl/status.json` is a per-clone local cache. Divergence between the local
+`status.json` and the graph is **EXPECTED and benign** (it reflects other developers' machines, not
+a bug) — report it informationally, do NOT raise it as drift or recommend reconciliation. Keep full
+diagnostic weight on `stale_nodes` (above), which record real upstream changes whose dependents were
+never re-synced — those are genuine drift in either mode. See
+`nacl-tl-core/references/remote-mode-coordination.md`.
+
 ---
 
 ### Step 3: TARGETED GAP-ANALYSIS (1-2 agents)

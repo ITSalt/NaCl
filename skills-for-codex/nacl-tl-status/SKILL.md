@@ -33,6 +33,10 @@ Status is read-only. It should not modify graph, files, git, or task trackers.
   handoff data. Never derive SA coverage from `.tl/status.json` alone.
 - When falling back to `.tl/`, print a fallback note and treat graph-only
   metrics as `UNVERIFIED` or omit them.
+- Remote mode (`config.yaml` `graph.mode: remote`, shared graph): read the graph ONLY — the
+  `.tl/status.json` fallback is disabled (HALT if the graph is unreachable; a per-clone cache is not
+  shared state). Add a `claimed_by` column to per-task details so each developer sees who holds what.
+  See `../../nacl-tl-core/references/remote-mode-coordination.md`.
 - This skill is read-only. It must not normalize status files, update graph
   nodes, or move tracker items.
 

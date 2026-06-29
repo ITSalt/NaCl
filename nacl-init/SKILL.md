@@ -466,15 +466,65 @@ If any errors → show them, suggest manual fix.
 
 ### Step 2c: GRAPH INFRASTRUCTURE (optional)
 
-**Goal:** Set up per-project Neo4j infrastructure for graph-based BA/SA skills.
+**Goal:** Set up the project's Neo4j graph for BA/SA skills — either a LOCAL per-project Docker
+container (default), or a connection to a SHARED graph on a VPS (multi-user). This step is an
+**orchestrator**: it resolves the mode with a tool and dispatches to the matching tool, then reads
+a deterministic `NACL_GRAPH_RESULT:` gate. It does not improvise graph logic in prose.
 
 ```
-Ask: "Will this project use Neo4j graph for BA/SA specifications? (nacl-ba-*, nacl-sa-* skills)"
+Ask: "Will this project use a Neo4j graph for BA/SA specifications? (nacl-ba-*, nacl-sa-* skills)"
 If no → skip to Step 3.
-If yes → execute steps below.
+If yes → continue with 2c.0.
 ```
 
-#### 2c.1 Auto-detect available ports
+#### 2c.0 Resolve the graph mode (local | create | connect)
+
+Run the resolver (it reads any `--scale` flag plus a committed `graph.mode` in config.yaml):
+
+```bash
+REPO_ROOT="$(cd -P "$HOME/.claude/skills/nacl-init" 2>/dev/null && cd .. && pwd)"
+node "$REPO_ROOT/nacl-tl-core/scripts/resolve-graph-mode.mjs" --project-root "$(pwd)" ${SCALE:+--scale "$SCALE"}
+# → NACL_GRAPH_MODE: mode=local|create|connect reason="…"
+```
+
+Dispatch on `mode`:
+- **`local`** → today's flow: 2c.1 (detect ports) → 2c.2 (write config) → 2c.3 (run `setup-graph`) → 2c.4 (gate).
+- **`create`** → a fresh SHARED project: skip 2c.1; gather the remote endpoint (host, gateway port,
+  sidecar port, project_scope) and run `create-remote` (2c-remote below). The VPS must already be
+  provisioned (`graph-infra/vps/provision-vps.sh`).
+- **`connect`** → JOIN an existing shared project: skip 2c.1–2c.3 entirely; run `connect-remote`
+  (2c-remote below). **No Docker, no schema, no graph writes.** A teammate who cloned a repo whose
+  committed `config.yaml` has `graph.mode: remote` lands here automatically — they must NOT re-init.
+
+For `create`/`connect`, ensure the developer's mTLS tunnel is up first (one-time per machine):
+`graph-infra/scripts/install-sidecar.sh --project-scope <scope> --host <host> --gateway-port <gp> --sidecar-port <sp> --cert … --key … --cacert … --start`. The `--uri` passed below is the LOCAL
+sidecar socket (e.g. `bolt://localhost:3700`); skills/.mcp.json stay on localhost.
+
+#### 2c-remote: connect / create dispatch (deterministic tools)
+
+```bash
+# connect (join existing) — read-only verify gate; FAILS LOUD if the project marker is absent
+sh "$REPO_ROOT/nacl-tl-core/scripts/connect-remote.sh" \
+  --project-root "$(pwd)" --skills-dir "$REPO_ROOT" \
+  --uri "bolt://localhost:$SIDECAR_PORT" --project-scope "$SCOPE" \
+  --id "$PROJECT_ID" --name "$PROJECT_NAME" [--password "$NEO4J_PASSWORD"]
+# → NACL_GRAPH_RESULT: status=CONNECTED|FAILED  (project_exists guard inside)
+
+# create (provision a new shared project) — idempotent (:Project) marker seed
+sh "$REPO_ROOT/nacl-tl-core/scripts/create-remote.sh" \
+  --project-root "$(pwd)" --skills-dir "$REPO_ROOT" \
+  --uri "bolt://localhost:$SIDECAR_PORT" --project-scope "$SCOPE" \
+  --id "$PROJECT_ID" --name "$PROJECT_NAME" --developer-id "$NACL_DEVELOPER_ID"
+# → NACL_GRAPH_RESULT: status=READY|FAILED
+```
+
+Windows: call `connect-remote.ps1` / `create-remote.ps1` with the matching `-ProjectRoot`,
+`-SkillsDir`, `-Uri`, `-ProjectScope`, `-Id`, `-Name` parameters (see Step 2c.3 for the PS dispatch
+shape). Both tools write `.mcp.json` + the `config.yaml` `graph:` block and register the project — so
+on `CONNECTED`/`READY`, skip the rest of 2c and go to Step 3. On `FAILED`, fail loud with the
+`failed_check` (e.g. `project-missing` → tell the user to run `--scale=create` first).
+
+#### 2c.1 Auto-detect available ports  *(local mode only)*
 
 Scan for running Docker containers to find used Neo4j ports.
 
@@ -635,81 +685,33 @@ Re-run /nacl-init (graph step is idempotent) after addressing the cause.
 
 **Do not skip this step for `--dry-run`.** In dry-run mode, show what would be written but do not modify the file.
 
-#### 2d.1 Resolve registry path
+This step is performed by a single tested tool, `register-project.mjs`, which mirrors
+`analyst-tool/server/src/services/project-registry.ts` exactly (the canonical `version: 1` shape,
+2-space JSON, atomic tmp+rename, BOM-tolerant read, `createdAt` preserved on update). Do not
+hand-roll the registry merge in prose — that is what this tool replaced.
+
+#### 2d.1 Derive the project id
+
+`project.id` is the project name lowercased with spaces replaced by hyphens and all characters not
+matching `[a-z0-9_-]` removed, truncated to 64 characters (must match `/^[a-z0-9_-]{1,64}$/`). If
+`config.yaml` already contains `project.id` (from Step 1.5 or a prior run), use that value; otherwise
+derive it from the skill argument. Example: `"My Acme Project"` → `my-acme-project`.
+
+#### 2d.2 Run the tool (honours `NACL_HOME`)
 
 ```bash
-NACL_REGISTRY="${NACL_HOME:-$HOME/.nacl}/projects.json"
+REPO_ROOT="$(cd -P "$HOME/.claude/skills/nacl-init" 2>/dev/null && cd .. && pwd)"
+node "$REPO_ROOT/nacl-tl-core/scripts/register-project.mjs" \
+  --id "$PROJECT_ID" --name "$PROJECT_NAME" --root "$(pwd)"
+# Prints: "Registered '<name>' (<id>) in <path>"  OR
+#         "Updated registry entry '<id>' (root + lastUsed refreshed) in <path>"
 ```
 
-#### 2d.2 Derive the project id
+For `--dry-run`, show what would be written but do not invoke the tool.
 
-`project.id` is the project name lowercased with spaces replaced by hyphens and all characters not matching `[a-z0-9_-]` removed, truncated to 64 characters. This must match `/^[a-z0-9_-]{1,64}$/` (the constraint enforced by `analyst-tool/server/src/services/project-registry.ts`).
-
-Example: `"My Acme Project"` → `my-acme-project`.
-
-If `config.yaml` already contains `project.id` (written by Step 1.5 or present from a prior run), use that value. Otherwise derive it from the skill argument.
-
-#### 2d.3 Ensure the directory and file exist
-
-```bash
-mkdir -p "$(dirname "$NACL_REGISTRY")"
-chmod 700 "$(dirname "$NACL_REGISTRY")" 2>/dev/null || true   # best-effort; Windows ignores
-
-if [ ! -f "$NACL_REGISTRY" ]; then
-  printf '{"version":1,"activeProjectId":null,"projects":[]}\n' > "$NACL_REGISTRY"
-  chmod 600 "$NACL_REGISTRY" 2>/dev/null || true
-fi
-```
-
-#### 2d.4 Read, validate, and merge
-
-Read and parse `$NACL_REGISTRY`. Validate `version === 1`. If `version` is anything else, **abort with an error** — do not silently overwrite:
-
-```
-ERROR: ~/.nacl/projects.json has version <N>, expected 1.
-Your analyst-tool may be newer than this skill. Upgrade nacl-init or fix the registry manually.
-See: analyst-tool/server/src/services/project-registry.ts
-```
-
-Find the existing record where `id === <project.id>`:
-
-- **Record exists:** update `name` (in case it was renamed), `root` (current absolute working directory), `lastUsed` (ISO 8601 UTC timestamp). **Keep the original `createdAt`.**
-- **Record does not exist:** append a new object:
-  ```json
-  {
-    "id": "<project.id>",
-    "name": "<project.name>",
-    "root": "<absolute cwd>",
-    "createdAt": "<ISO now>",
-    "lastUsed": "<ISO now>"
-  }
-  ```
-
-Set `activeProjectId = <project.id>`.
-
-The resulting registry shape must match `ProjectRegistry` and `ProjectRecord` from `analyst-tool/server/src/services/project-registry.ts` exactly — field names, types, and the top-level `version: 1` are canonical.
-
-#### 2d.5 Write atomically
-
-```bash
-# Write to a temp file first, then rename (atomic on POSIX)
-printf '%s\n' "$UPDATED_JSON" > "${NACL_REGISTRY}.tmp"
-chmod 600 "${NACL_REGISTRY}.tmp" 2>/dev/null || true
-mv "${NACL_REGISTRY}.tmp" "$NACL_REGISTRY"
-```
-
-#### 2d.6 Log the result
-
-```
-Registered '<name>' (<id>) in <NACL_REGISTRY>
-```
-
-If the entry already existed and was updated, log:
-```
-Updated registry entry '<id>' (root + lastUsed refreshed) in <NACL_REGISTRY>
-```
-
-**Idempotency contract:** re-running `/nacl-init` in the same directory is safe. It updates `name`, `root`, and `lastUsed`; it never duplicates the entry.
+The tool aborts loudly if the registry has a `version` other than `1` (it does not silently
+overwrite). **Idempotency contract:** re-running `/nacl-init` in the same directory updates `name`,
+`root`, and `lastUsed`, preserves `createdAt`, and never duplicates the entry.
 
 ---
 

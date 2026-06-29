@@ -15,46 +15,46 @@
 // 1. UNIQUE CONSTRAINTS on id for every BA node label
 // -----------------------------------------------------------------------------
 
-CREATE CONSTRAINT constraint_processgroup_id FOR (n:ProcessGroup) REQUIRE n.id IS UNIQUE;
+CREATE CONSTRAINT constraint_processgroup_id IF NOT EXISTS FOR (n:ProcessGroup) REQUIRE n.id IS UNIQUE;
 
-CREATE CONSTRAINT constraint_businessprocess_id FOR (n:BusinessProcess) REQUIRE n.id IS UNIQUE;
+CREATE CONSTRAINT constraint_businessprocess_id IF NOT EXISTS FOR (n:BusinessProcess) REQUIRE n.id IS UNIQUE;
 
-CREATE CONSTRAINT constraint_workflowstep_id FOR (n:WorkflowStep) REQUIRE n.id IS UNIQUE;
+CREATE CONSTRAINT constraint_workflowstep_id IF NOT EXISTS FOR (n:WorkflowStep) REQUIRE n.id IS UNIQUE;
 
-CREATE CONSTRAINT constraint_businessentity_id FOR (n:BusinessEntity) REQUIRE n.id IS UNIQUE;
+CREATE CONSTRAINT constraint_businessentity_id IF NOT EXISTS FOR (n:BusinessEntity) REQUIRE n.id IS UNIQUE;
 
-CREATE CONSTRAINT constraint_entityattribute_id FOR (n:EntityAttribute) REQUIRE n.id IS UNIQUE;
+CREATE CONSTRAINT constraint_entityattribute_id IF NOT EXISTS FOR (n:EntityAttribute) REQUIRE n.id IS UNIQUE;
 
-CREATE CONSTRAINT constraint_entitystate_id FOR (n:EntityState) REQUIRE n.id IS UNIQUE;
+CREATE CONSTRAINT constraint_entitystate_id IF NOT EXISTS FOR (n:EntityState) REQUIRE n.id IS UNIQUE;
 
-CREATE CONSTRAINT constraint_businessrole_id FOR (n:BusinessRole) REQUIRE n.id IS UNIQUE;
+CREATE CONSTRAINT constraint_businessrole_id IF NOT EXISTS FOR (n:BusinessRole) REQUIRE n.id IS UNIQUE;
 
-CREATE CONSTRAINT constraint_businessrule_id FOR (n:BusinessRule) REQUIRE n.id IS UNIQUE;
+CREATE CONSTRAINT constraint_businessrule_id IF NOT EXISTS FOR (n:BusinessRule) REQUIRE n.id IS UNIQUE;
 
-CREATE CONSTRAINT constraint_glossaryterm_id FOR (n:GlossaryTerm) REQUIRE n.id IS UNIQUE;
+CREATE CONSTRAINT constraint_glossaryterm_id IF NOT EXISTS FOR (n:GlossaryTerm) REQUIRE n.id IS UNIQUE;
 
 
 // -----------------------------------------------------------------------------
 // 2. INDEXES on name for every BA node label (search by name)
 // -----------------------------------------------------------------------------
 
-CREATE INDEX index_processgroup_name FOR (n:ProcessGroup) ON (n.name);
+CREATE INDEX index_processgroup_name IF NOT EXISTS FOR (n:ProcessGroup) ON (n.name);
 
-CREATE INDEX index_businessprocess_name FOR (n:BusinessProcess) ON (n.name);
+CREATE INDEX index_businessprocess_name IF NOT EXISTS FOR (n:BusinessProcess) ON (n.name);
 
-CREATE INDEX index_workflowstep_function_name FOR (n:WorkflowStep) ON (n.function_name);
+CREATE INDEX index_workflowstep_function_name IF NOT EXISTS FOR (n:WorkflowStep) ON (n.function_name);
 
-CREATE INDEX index_businessentity_name FOR (n:BusinessEntity) ON (n.name);
+CREATE INDEX index_businessentity_name IF NOT EXISTS FOR (n:BusinessEntity) ON (n.name);
 
-CREATE INDEX index_entityattribute_name FOR (n:EntityAttribute) ON (n.name);
+CREATE INDEX index_entityattribute_name IF NOT EXISTS FOR (n:EntityAttribute) ON (n.name);
 
-CREATE INDEX index_entitystate_name FOR (n:EntityState) ON (n.name);
+CREATE INDEX index_entitystate_name IF NOT EXISTS FOR (n:EntityState) ON (n.name);
 
-CREATE INDEX index_businessrole_name FOR (n:BusinessRole) ON (n.full_name);
+CREATE INDEX index_businessrole_name IF NOT EXISTS FOR (n:BusinessRole) ON (n.full_name);
 
-CREATE INDEX index_businessrule_name FOR (n:BusinessRule) ON (n.name);
+CREATE INDEX index_businessrule_name IF NOT EXISTS FOR (n:BusinessRule) ON (n.name);
 
-CREATE INDEX index_glossaryterm_term FOR (n:GlossaryTerm) ON (n.term);
+CREATE INDEX index_glossaryterm_term IF NOT EXISTS FOR (n:GlossaryTerm) ON (n.term);
 
 
 // -----------------------------------------------------------------------------
@@ -63,8 +63,7 @@ CREATE INDEX index_glossaryterm_term FOR (n:GlossaryTerm) ON (n.term);
 //            GlossaryTerm (term + definition)
 // -----------------------------------------------------------------------------
 
-CREATE FULLTEXT INDEX fulltext_ba_search
-  FOR (n:ProcessGroup|BusinessProcess|BusinessEntity|BusinessRule|GlossaryTerm)
+CREATE FULLTEXT INDEX fulltext_ba_search IF NOT EXISTS  FOR (n:ProcessGroup|BusinessProcess|BusinessEntity|BusinessRule|GlossaryTerm)
   ON EACH [n.name, n.description];
 
 
@@ -72,19 +71,19 @@ CREATE FULLTEXT INDEX fulltext_ba_search
 // 4. SYSTEM CONTEXT NODE TYPES (system boundaries, stakeholders, data flows)
 // -----------------------------------------------------------------------------
 
-CREATE CONSTRAINT constraint_systemcontext_id FOR (n:SystemContext) REQUIRE n.id IS UNIQUE;
+CREATE CONSTRAINT constraint_systemcontext_id IF NOT EXISTS FOR (n:SystemContext) REQUIRE n.id IS UNIQUE;
 
-CREATE CONSTRAINT constraint_stakeholder_id FOR (n:Stakeholder) REQUIRE n.id IS UNIQUE;
+CREATE CONSTRAINT constraint_stakeholder_id IF NOT EXISTS FOR (n:Stakeholder) REQUIRE n.id IS UNIQUE;
 
-CREATE CONSTRAINT constraint_externalentity_id FOR (n:ExternalEntity) REQUIRE n.id IS UNIQUE;
+CREATE CONSTRAINT constraint_externalentity_id IF NOT EXISTS FOR (n:ExternalEntity) REQUIRE n.id IS UNIQUE;
 
-CREATE CONSTRAINT constraint_dataflow_id FOR (n:DataFlow) REQUIRE n.id IS UNIQUE;
+CREATE CONSTRAINT constraint_dataflow_id IF NOT EXISTS FOR (n:DataFlow) REQUIRE n.id IS UNIQUE;
 
-CREATE INDEX index_systemcontext_name FOR (n:SystemContext) ON (n.name);
+CREATE INDEX index_systemcontext_name IF NOT EXISTS FOR (n:SystemContext) ON (n.name);
 
-CREATE INDEX index_stakeholder_name FOR (n:Stakeholder) ON (n.name);
+CREATE INDEX index_stakeholder_name IF NOT EXISTS FOR (n:Stakeholder) ON (n.name);
 
-CREATE INDEX index_externalentity_name FOR (n:ExternalEntity) ON (n.name);
+CREATE INDEX index_externalentity_name IF NOT EXISTS FOR (n:ExternalEntity) ON (n.name);
 
 
 // -----------------------------------------------------------------------------

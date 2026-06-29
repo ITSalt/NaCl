@@ -16,14 +16,11 @@
 // 1. UNIQUE CONSTRAINTS on id for every TL node label
 // ---------------------------------------------------------------------------
 
-CREATE CONSTRAINT constraint_task_id
-  FOR (n:Task) REQUIRE n.id IS UNIQUE;
+CREATE CONSTRAINT constraint_task_id IF NOT EXISTS  FOR (n:Task) REQUIRE n.id IS UNIQUE;
 
-CREATE CONSTRAINT constraint_wave_id
-  FOR (n:Wave) REQUIRE n.id IS UNIQUE;
+CREATE CONSTRAINT constraint_wave_id IF NOT EXISTS  FOR (n:Wave) REQUIRE n.id IS UNIQUE;
 
-CREATE CONSTRAINT constraint_apiendpoint_id
-  FOR (n:APIEndpoint) REQUIRE n.id IS UNIQUE;
+CREATE CONSTRAINT constraint_apiendpoint_id IF NOT EXISTS  FOR (n:APIEndpoint) REQUIRE n.id IS UNIQUE;
 
 
 // ---------------------------------------------------------------------------
@@ -31,24 +28,19 @@ CREATE CONSTRAINT constraint_apiendpoint_id
 // ---------------------------------------------------------------------------
 
 // Task.status — filter "all incomplete tasks"
-CREATE INDEX index_task_status
-  FOR (n:Task) ON (n.status);
+CREATE INDEX index_task_status IF NOT EXISTS  FOR (n:Task) ON (n.status);
 
 // Task.wave — filter tasks by wave number
-CREATE INDEX index_task_wave
-  FOR (n:Task) ON (n.wave);
+CREATE INDEX index_task_wave IF NOT EXISTS  FOR (n:Task) ON (n.wave);
 
 // Task.title — lookup by name
-CREATE INDEX index_task_title
-  FOR (n:Task) ON (n.title);
+CREATE INDEX index_task_title IF NOT EXISTS  FOR (n:Task) ON (n.title);
 
 // Wave.number — lookup by wave number
-CREATE INDEX index_wave_number
-  FOR (n:Wave) ON (n.number);
+CREATE INDEX index_wave_number IF NOT EXISTS  FOR (n:Wave) ON (n.number);
 
 // APIEndpoint.path — lookup by path
-CREATE INDEX index_apiendpoint_path
-  FOR (n:APIEndpoint) ON (n.path);
+CREATE INDEX index_apiendpoint_path IF NOT EXISTS  FOR (n:APIEndpoint) ON (n.path);
 
 
 // ---------------------------------------------------------------------------

@@ -43,6 +43,10 @@ Shipping mutates git and possibly external trackers. It is confirmation-gated.
   branch is wrong, stop and ask.
 - Prior verification evidence gates shipping. Local checks are a sanity check,
   not a replacement for upstream review/verify status.
+- Remote mode (`config.yaml` `graph.mode: remote`, shared graph): read the prior verification status
+  from the graph `Task` node (authoritative), never from the per-clone `.tl/status.json`; after a
+  successful push, release the claim-lock (`nacl-core/scripts/claim-task.mjs release`). Local mode is
+  unchanged. See `../../nacl-tl-core/references/remote-mode-coordination.md`.
 - Commit, push, PR creation, tracker updates, graph updates, and deploy handoff
   all require confirmation and read-back evidence.
 - Goal-context append mode (`NACL_SHIP_MODE` / `NACL_GOAL_BRANCH` /

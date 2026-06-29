@@ -116,6 +116,18 @@ Recommendations based on .tl/status.json + master-plan.md.
 Enrichment (entity/form names) unavailable in fallback mode.
 ```
 
+**Remote mode (multi-user shared graph):** the FALLBACK path above is **local mode** only. When
+`config.yaml` `graph.mode: remote` (one shared graph, several developers), the `.tl/status.json`
+fallback is **disabled** — a per-clone cache cannot represent shared state. If Neo4j is unreachable,
+**HALT** with a clear message rather than recommend from stale local data. Additionally, in remote
+mode the recommendation is **claim-first**: first resolve the per-machine id with
+`NACL_DEVELOPER_ID="$(node nacl-core/scripts/resolve-developer-id.mjs --project-root .)"` (auto
+`<git email|user>/<machine-key>`, so one human on two machines never self-collides), then before
+presenting a task, claim it atomically with
+`node nacl-core/scripts/claim-task.mjs claim --task <id> --dev "$NACL_DEVELOPER_ID"` (run the
+emitted Cypher via `mcp__neo4j__write-cypher`). If the returned `owner` ≠ you, another developer
+holds it — skip to the next candidate. See `nacl-tl-core/references/remote-mode-coordination.md`.
+
 ---
 
 ## Workflow -- Graph Mode

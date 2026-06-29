@@ -171,6 +171,14 @@ If config.yaml missing → use all fallback defaults. If YouGile missing → ski
 5. Check for uncommitted changes: `git status`
 6. If no changes → report "nothing to ship" and exit
 
+**Remote mode (multi-user shared graph):** when `config.yaml` `graph.mode: remote`, step 0 above
+reads the prior verification status from the **graph `Task` node** (authoritative), NEVER from the
+local `.tl/status.json` (a per-clone cache — another developer may have verified the work, or yours
+may be stale). After a successful push (end of Step 5/6), **release your claim-lock**:
+`node nacl-core/scripts/claim-task.mjs release --task <id> --dev "$NACL_DEVELOPER_ID"` (run the
+emitted Cypher via `mcp__neo4j__write-cypher`). Local mode is unchanged. See
+`nacl-tl-core/references/remote-mode-coordination.md`.
+
 ### Step 2: DETERMINE GIT STRATEGY
 
 ```

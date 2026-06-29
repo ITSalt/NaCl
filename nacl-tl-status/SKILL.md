@@ -92,6 +92,13 @@ Then execute exactly the same logic as `/nacl-tl-status` (read `.tl/status.json`
 
 **The rest of this document describes the Neo4j primary path.**
 
+**Remote mode (multi-user shared graph):** the `.tl/status.json` fallback above applies only in
+**local mode**. When `config.yaml` `graph.mode: remote`, read the **graph only** — if Neo4j is
+unreachable, HALT (a per-clone `status.json` reflects only this machine, not the shared state). Add a
+**`claimed_by`** column to the per-task details so each developer sees who currently holds which
+task; if you ever do surface local-cache data, label it explicitly as stale. See
+`nacl-tl-core/references/remote-mode-coordination.md`.
+
 ---
 
 ### Step 1: Read Data Sources
