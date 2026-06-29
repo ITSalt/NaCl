@@ -37,7 +37,7 @@ test('machineKey is stable and 8 hex chars', () => {
 test('parseDeveloperId reads the developer block only (not project.id)', () => {
   const yaml = [
     'project:',
-    '  id: "powerarena-telecom"',
+    '  id: "acme-billing"',
     '  name: "X"',
     'developer:',
     '  id: "magz@laptop"',

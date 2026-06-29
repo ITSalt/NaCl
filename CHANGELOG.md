@@ -4,7 +4,7 @@ All notable changes to NaCl (Natural Agent Control Language) will be documented 
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [Unreleased] — multi-user shared graph
+## [2.23.0] — 2026-06-29
 
 **A project's spec graph can now live on a VPS and be shared by several developers over the public
 internet — while local-only projects are completely unchanged.** Until now every project ran its own
@@ -26,6 +26,12 @@ edition needed is Neo4j Community.
   `neo4j` MCP server, removing setup-graph's `python3` dependency), `write-graph-config.mjs`
   (`graph:` block patcher), `mcp-cypher.mjs` (client-side Cypher over the MCP stdio binary — no
   docker/cypher-shell), and `nacl-core/scripts/claim-task.mjs` (atomic task claim-lock Cypher).
+- **Auto per-machine developer identity:** `nacl-core/scripts/resolve-developer-id.mjs` (pinned by
+  its `.test.mjs`) derives `NACL_DEVELOPER_ID` as `<git email|user>/<machine-key>`, where machine-key
+  is a stable hash of the OS machine id (IOPlatformUUID on macOS, `/etc/machine-id` on Linux,
+  registry MachineGuid on Windows, hostname fallback); `$NACL_DEVELOPER_ID` and `config.yaml`
+  `developer.id` override it. The claim-lock keys only on this id, so one human on two machines gets
+  two distinct ids and never self-collides. Wired into `tl-full`/`tl-next` (+ codex mirrors).
 - **Remote provisioners:** `connect-remote.sh/.ps1` (JOIN an existing shared project — no Docker, no
   schema, read-only verify gate with a `project-exists` guard that fails loud) and
   `create-remote.sh/.ps1` (provision a new shared project — idempotent `(:Project)` marker seed).
@@ -53,6 +59,26 @@ edition needed is Neo4j Community.
   node (not the cache) and releases the claim on a successful push; `tl-diagnose` treats
   status.json-vs-graph divergence as expected/benign. Writes stamp `developer_id` provenance. Local
   mode is unchanged throughout.
+
+### Fixed
+- **First live end-to-end run on a real VPS** (provision → migrate a real local graph to the cloud →
+  connect a second machine → concurrent claim-locks → revoke) surfaced and fixed nine issues the
+  syntax/compose checks could not catch:
+  - ghostunnel exposes **no `--crl` flag** — revocation is now a managed **`--allow-cn` allow-list**
+    (revoke = drop the CN and `docker compose up -d`, not a restart);
+  - the gateway server certificate must carry a **subjectAltName** — modern Go TLS rejects a CN-only
+    cert even with a matching hostname (`copy_extensions=copy` + `-addext subjectAltName=DNS:/IP:`);
+  - `--keepalive` → `--connect-timeout` (client and server), and a non-localhost `--target` needs
+    `--unsafe-target`;
+  - server/client cert issuance is now idempotent (modulus-match guard + `unique_subject=no`);
+  - all schema `CREATE CONSTRAINT/INDEX/FULLTEXT` statements are now `IF NOT EXISTS`;
+  - migration MERGEs the `(:Project)` marker after the strict count verify so a second developer's
+    `project-exists` gate passes;
+  - migration threads the handover passphrase and the database password through export/import and
+    pins the local container when several `*-neo4j` containers exist;
+  - `_lib.sh` lets an explicit `NEO4J_PASSWORD` win over the `.env` default.
+- **Windows sidecar + identity parity:** `install-sidecar.ps1` uses `--connect-timeout` (matching the
+  POSIX script) and the developer-id resolver reads the Windows registry MachineGuid.
 
 ## [2.22.0] — 2026-06-13
 
