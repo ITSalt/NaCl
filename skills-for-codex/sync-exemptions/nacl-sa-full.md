@@ -1,0 +1,3 @@
+Source root: 2.23.0 release follow-up — relocated docs/upgrade-graph-extensions.md → docs/runbooks/upgrade-graph-extensions.md. Root nacl-sa-full cites that runbook in its hard launch-order section ("dependencies per docs/runbooks/upgrade-graph-extensions.md").
+Intentional divergence: The Codex variant states launch order as fixed layer dependencies inline and deliberately does not cite root orchestration docs, so the upgrade-runbook pointer is a root-only user-guidance line with no condensed Codex counterpart. Only the path string changed.
+Next review: next NaCl release that touches nacl-sa-full

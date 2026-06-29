@@ -10,7 +10,7 @@ What ships:
 
 — **Proof, not promises.** Each phase: benchmark on an isolated clone of a real project graph with falsifiable hypotheses, defect-injection matrices 8/8 → 14/14 → 21/21 → 27/27 with zero cross-talk, then an independent skill-level run with a blind verifier. The finished roadmap passed an external expert audit — and the audit was itself verified claim-by-claim, with live replays of all four harnesses coming back byte-identical to the committed reference results. Five lab reports + a five-article research series in the repo.
 
-— **Upgrade path for existing graphs.** `docs/upgrade-graph-extensions.md`: hand it to a clean-context agent — it orchestrates the whole upgrade through subagents, asks ONE question up front (source of truth: code or you?), asks only business-behavior questions after that, and ends with a code-vs-spec reconciliation.
+— **Upgrade path for existing graphs.** `docs/runbooks/upgrade-graph-extensions.md`: hand it to a clean-context agent — it orchestrates the whole upgrade through subagents, asks ONE question up front (source of truth: code or you?), asks only business-behavior questions after that, and ends with a code-vs-spec reconciliation.
 
 Everything is additive and strictly opt-in — vacuous pass is a benchmarked property: graphs that don't adopt a layer are untouched by its validators.
 

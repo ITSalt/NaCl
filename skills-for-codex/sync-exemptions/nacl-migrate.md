@@ -1,3 +1,3 @@
-Source root: fix/validation-skills-v2.15-integration (Phase F expectations "L1–L6 = 0 errors; XL1–XL5" → "L1–L13 = 0 CRITICAL; XL6–XL9" + pointer to docs/upgrade-graph-extensions.md; report bullet level spans)
+Source root: fix/validation-skills-v2.15-integration (Phase F expectations "L1–L6 = 0 errors; XL1–XL5" → "L1–L13 = 0 CRITICAL; XL6–XL9" + pointer to docs/runbooks/upgrade-graph-extensions.md; report bullet level spans)
 Intentional divergence: The Codex variant abstracts validation phases as "BA validation when available, SA validation when available" without naming level spans, so the stale L-range text and its fix exist in the root file only. The upgrade-doc pointer is a root-orchestrator user-guidance line with no condensed counterpart.
 Next review: next NaCl release that touches nacl-migrate

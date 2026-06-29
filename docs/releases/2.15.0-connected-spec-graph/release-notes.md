@@ -136,7 +136,7 @@ commit.
 
 ## Upgrading an existing graph
 
-`docs/upgrade-graph-extensions.md` (RU) — an orchestration instruction you hand
+`docs/runbooks/upgrade-graph-extensions.md` (RU) — an orchestration instruction you hand
 to a clean-context agent in a project whose graph predates 2.15. The agent acts
 as an orchestrator (subagents do the heavy reading; its own context stays for
 analysis and control), asks ONE mandatory question up front — *what is the

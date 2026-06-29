@@ -156,7 +156,7 @@ in-repo pattern downward — SA-only; the BA side is unchanged.
   normalize the discriminator → re-derive anchors with high/low confidence (high auto-written
   with `provenance:'backfill'`, low surfaced for human resolution — never silently guessed) →
   flag legitimate exemptions → verify → rollback by `provenance` filter. Pointer added from
-  `docs/upgrade-graph-extensions.md`.
+  `docs/runbooks/upgrade-graph-extensions.md`.
 
 ### Changed
 - **`nacl-sa-uc` Phase 4** now persists the anchor it already computed (a confirmable
@@ -471,7 +471,7 @@ five-article series (RU). Transparency: the phase-4 harness `.py` shipped one
 release early inside the 2.14.0 release commit (concurrent process in a shared
 checkout); content verified byte-for-byte by the replay.
 
-**Upgrade path.** `docs/upgrade-graph-extensions.md` (RU) — orchestration
+**Upgrade path.** `docs/runbooks/upgrade-graph-extensions.md` (RU) — orchestration
 instruction for a clean-context agent: one mandatory source-of-truth question
 (code vs user answers), business-behavior questions only, opt-in gap list,
 dependency-ordered skill runs, final code-vs-spec reconciliation. On adoption

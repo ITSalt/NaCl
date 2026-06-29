@@ -189,7 +189,7 @@ Delegate: **`/nacl-sa-validate`**. Expect L1–L13 = 0 CRITICAL; XL6–XL9 cross
 
 A freshly migrated graph has no connected-spec extension nodes (Screens,
 Slices, DomainErrors, CachePolicies — 2.15+), so L10–L13 pass vacuously.
-To adopt those layers afterwards, follow `docs/upgrade-graph-extensions.md`.
+To adopt those layers afterwards, follow `docs/runbooks/upgrade-graph-extensions.md`.
 
 ### Phase G — Drift diagnostic
 

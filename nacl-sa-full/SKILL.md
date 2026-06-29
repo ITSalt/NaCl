@@ -411,7 +411,7 @@ Default is adopt; opting out skips straight to Phase 7 and records
 `extensions: skipped` in progress — the L10-L13 vacuous pass in Phase 7 must
 be a documented choice, not an accident.
 
-**Launch order is hard** (dependencies per `docs/upgrade-graph-extensions.md`):
+**Launch order is hard** (dependencies per `docs/runbooks/upgrade-graph-extensions.md`):
 
 1. **Screen machines** — for every UC with `coalesce(uc.has_ui, true) = true`:
 

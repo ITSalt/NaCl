@@ -81,7 +81,7 @@ examples). Skills: `nacl-sa-uc` (Phase 4 anchor write + Anchor column), `nacl-sa
 (L3.7/L3.7b/L3.8 + normalization + exemption table), `nacl-sa-architect` (NFR exemption note),
 `nacl-sa-domain` (canonical `rq_type` + anchor guidance) — each mirrored to `skills-for-codex/`.
 Tool: `nacl-core/scripts/classify-findings.mjs` + `.test.mjs`. Docs:
-`docs/runbooks/requirement-anchoring-upgrade.md` + pointer from `docs/upgrade-graph-extensions.md`.
+`docs/runbooks/requirement-anchoring-upgrade.md` + pointer from `docs/runbooks/upgrade-graph-extensions.md`.
 
 ## Verification
 
