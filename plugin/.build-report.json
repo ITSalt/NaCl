@@ -1,6 +1,5 @@
 {
   "version": "2.23.0",
-  "sourceCommit": "8b4cb5e2e663d145a0848b96eae710da1ca93ab9",
   "ruleCounts": {
     "R1_skill_md_frontmatter_name": 53,
     "R2_repo_root_bash": 3,

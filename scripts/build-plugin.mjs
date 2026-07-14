@@ -575,9 +575,11 @@ export function buildPlugin({ root, outDir, manifest }) {
   const readme = buildReadme({ manifest, version, rosterDirNames });
   fs.writeFileSync(path.join(outDir, "README.md"), readme, "utf8");
 
+  // The committed report must not embed the source commit: the commit that
+  // will contain this file cannot be known at build time, so any recorded
+  // HEAD makes `--check` drift against a rebuild from the committed tree.
   const buildReport = {
     version,
-    sourceCommit,
     ruleCounts: ruleTotals,
     warnings: report.warnings,
     invariantViolations,
