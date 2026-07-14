@@ -15,7 +15,44 @@ matches the agent runtime you use on this machine.
 Install once at the user level. The skills are then available from every
 project opened by that runtime on the same machine.
 
-## Claude Code
+## Choose your channel
+
+Claude Code has two install channels. Pick one per machine -- do not install both.
+
+| Host | Channel | Package |
+|---|---|---|
+| Claude Code CLI | Symlinked skills | Root-level `nacl-*` skills, installed by `scripts/install-claude-code-skills.sh/.ps1` (below) |
+| Claude Code Desktop | Plugin | Committed `plugin/` artifact, installed from the in-app marketplace |
+
+Both channels ship the same skills; they just differ in packaging. Installing
+both on the same machine duplicates every skill under two different names
+(`nacl-*` and `/nacl:*`). The plugin's SessionStart hook detects a symlinked
+`~/.claude/skills/nacl-*` install and warns; likewise a symlinked install
+picks up whichever skill runs first if both are present. Pick the channel
+that matches how you run Claude Code and stick to it.
+
+### Claude Code Desktop (plugin)
+
+Inside Claude Code Desktop, run:
+
+```text
+/plugin marketplace add ITSalt/NaCl
+/plugin install nacl@nacl
+```
+
+This installs 53 of the 59 skills as `/nacl:<name>` slash commands and 7
+agent profiles as `@nacl:<name>`. `nacl-goal` is excluded (it wraps the CLI-only
+`/goal` command, which Desktop cannot run); `nacl-postmortem` and the three
+`nacl-migrate*` skills are excluded as rare/repo-checkout-only. The neo4j MCP
+server is still configured per-project by `/nacl:init`, not by the plugin.
+See [Graph Setup](graph-setup.md) for the Desktop graph-infrastructure
+specifics (Docker Desktop detection, sidecar autostart, the pinned
+`neo4j-mcp` binary, and the `graph-doctor` liveness probe).
+
+To update the plugin, use Claude Code Desktop's own plugin update flow; there
+is no separate NaCl script for this channel.
+
+### Claude Code CLI (symlinked skills)
 
 Claude Code uses the root-level NaCl skill folders and the `.claude/agents/`
 agent profiles. A single script installs both.

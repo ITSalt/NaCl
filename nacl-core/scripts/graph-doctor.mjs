@@ -342,6 +342,19 @@ async function runDefault() {
   return 0;
 }
 
+export async function deepCheckWithRetry(checkFn, { attempts = 15, delayMs = 2000, sleep } = {}) {
+  const doSleep = sleep || ((ms) => new Promise((r) => setTimeout(r, ms)));
+  for (let i = 0; i < attempts; i++) {
+    try {
+      if (await checkFn()) return true;
+    } catch {
+      // failed attempt — retry until the bounded window is exhausted
+    }
+    if (i < attempts - 1) await doSleep(delayMs);
+  }
+  return false;
+}
+
 async function runFix() {
   const { root } = resolveProjectRoot(process.cwd());
   const cfg = readGraphConfig(root);
@@ -384,13 +397,18 @@ async function runFix() {
     const conn = readMcpConnection(root);
     if (conn) {
       const cypherPath = join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'nacl-tl-core', 'scripts', 'mcp-cypher.mjs');
-      try {
+      // Bolt accepts TCP connections ~10ms after `compose up`, but auth is not
+      // ready for another 1-2s — a single-shot check false-negatives on every
+      // container restart. Retry within a bounded window instead.
+      const ok = await deepCheckWithRetry(() => {
         execFileSync(process.execPath, [
           cypherPath, '--binary', conn.command, '--uri', conn.uri,
           '--user', conn.username, '--password', conn.password, '--database', conn.database,
           '--query', 'RETURN 1',
         ], { stdio: 'ignore', timeout: 15000 });
-      } catch {
+        return true;
+      }, { attempts: 15, delayMs: 2000 });
+      if (!ok) {
         process.stdout.write(`NACL_GRAPH_FIX: status=FAILED failed_check=cypher-deep-check\n`);
         return 1;
       }

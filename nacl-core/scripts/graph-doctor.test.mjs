@@ -415,3 +415,51 @@ test('--hook: NaCl dir with a live port is silent (exit 0, no stdout)', async ()
     rmSync(dir, { recursive: true, force: true });
   }
 });
+
+// ---------------------------------------------------------------------------
+// deepCheckWithRetry (--fix: cypher-deep-check must retry with short backoff
+// instead of a single-shot check — Bolt auth on real machines becomes ready
+// ~1-2s after the TCP port opens, so a one-shot RETURN 1 is a false negative)
+//
+// Expected seam (not yet implemented on current graph-doctor.mjs):
+//   export async function deepCheckWithRetry(checkFn, { attempts = 15, delayMs = 2000, sleep } = {})
+//     - calls `await checkFn()` up to `attempts` times
+//     - checkFn may throw or resolve false/true; both are treated as "failed" unless truthy
+//     - on first truthy result, resolves `true` immediately (no further calls, no extra sleep)
+//     - between attempts (never after the last one), awaits `sleep(delayMs)` (injectable, defaults
+//       to a real timer) so tests can run with delayMs=1 and finish in milliseconds
+//     - if every attempt fails, resolves `false` after exactly `attempts` invocations — bounded,
+//       never unbounded retries
+// ---------------------------------------------------------------------------
+
+test('deepCheckWithRetry: is exported by graph-doctor.mjs', async () => {
+  const mod = await import('./graph-doctor.mjs');
+  assert.equal(typeof mod.deepCheckWithRetry, 'function',
+    'graph-doctor.mjs must export deepCheckWithRetry(checkFn, opts) so the --fix cypher deep-check ' +
+    'can retry with backoff instead of failing on a single Bolt-not-ready-yet attempt');
+});
+
+test('deepCheckWithRetry: check that fails N times then succeeds resolves true with >= N+1 invocations', async () => {
+  const { deepCheckWithRetry } = await import('./graph-doctor.mjs');
+  let calls = 0;
+  const flakyCheck = async () => {
+    calls += 1;
+    if (calls <= 3) throw new Error('bolt auth not ready yet');
+    return true;
+  };
+  const result = await deepCheckWithRetry(flakyCheck, { attempts: 10, delayMs: 1, sleep: async () => {} });
+  assert.equal(result, true, 'a check that eventually succeeds must make the overall deep-check succeed');
+  assert.ok(calls >= 4, `expected >= 4 invocations (3 failures + 1 success), got ${calls}`);
+});
+
+test('deepCheckWithRetry: check that always fails resolves false after a bounded number of attempts', async () => {
+  const { deepCheckWithRetry } = await import('./graph-doctor.mjs');
+  let calls = 0;
+  const alwaysFailingCheck = async () => {
+    calls += 1;
+    throw new Error('bolt still down');
+  };
+  const result = await deepCheckWithRetry(alwaysFailingCheck, { attempts: 5, delayMs: 1, sleep: async () => {} });
+  assert.equal(result, false, 'a check that never succeeds must make the overall deep-check fail (not hang or throw)');
+  assert.equal(calls, 5, `expected exactly 5 invocations (bounded retries, not unbounded), got ${calls}`);
+});
