@@ -547,26 +547,24 @@ on `CONNECTED`/`READY`, skip the rest of 2c and go to Step 3. On `FAILED`, fail 
 
 #### 2c.1 Auto-detect available ports  *(local mode only)*
 
-Scan for running Docker containers to find used Neo4j ports.
+Scan the port bindings of ALL Docker containers — running AND stopped. Stopped
+containers keep their configured bindings and re-claim them on `docker start`,
+so a scan of running containers alone hands the new project a latent collision
+(this happened live: a fresh project got the bolt/http block of a stopped
+project's container). Use the deterministic scanner — it inspects every
+container and suggests the first ladder rung where BOTH ports are free:
 
-macOS / Linux / WSL2 (bash):
 ```bash
-docker ps --format '{{.Ports}}' 2>/dev/null | grep -oE '[0-9]+->7687' | grep -oE '^[0-9]+'
+node "$REPO_ROOT/nacl-core/scripts/graph-doctor.mjs" --scan-ports
+# → NACL_GRAPH_PORTS: bolt=<csv of taken bolt ports> http=<csv of taken http ports>
+# → NACL_GRAPH_PORTS_SUGGEST: bolt=<port> http=<port>
 ```
 
-Native Windows (PowerShell — no `grep`):
-```powershell
-docker ps --format '{{.Ports}}' | Select-String -Pattern '(\d+)->7687' -AllMatches |
-  ForEach-Object { $_.Matches } | ForEach-Object { $_.Groups[1].Value }
-```
+(Windows: same command — the scanner is Node, no grep needed.)
 
-Find the highest Bolt port in use (default baseline: 3587). Propose the next block with +10 offset:
-- If 3587 is in use → propose 3597
-- If 3597 is in use → propose 3607
-
-Present to user:
+Use the `NACL_GRAPH_PORTS_SUGGEST` pair as the proposal. Present to user:
 ```
-Proposed graph ports (auto-detected free range):
+Proposed graph ports (auto-detected free range, stopped containers included):
   Neo4j Bolt:       {bolt_port}
   Neo4j Browser:    {http_port}
 
@@ -669,10 +667,13 @@ Handshake: ok ✓
 
 ### MCP config:
   .mcp.json created (points directly at the official neo4j-mcp binary)
-  → Desktop: run /mcp — if "neo4j" is not listed, start a new session for this
-    project (the graph itself keeps running; nothing is lost)
-  → CLI: restart `claude`, or run /mcp → reconnect
-  After reload, verify with one call: mcp__neo4j__read-cypher "RETURN 1"
+  ⚠ MCP servers are picked up ONLY at session start (verified live: no
+    hot-reload; `/mcp reconnect` does not see NEW .mcp.json entries, and
+    Desktop's /mcp opens the connector directory, not a status panel).
+  → Start a NEW session for this project (Desktop and CLI alike; the graph
+    container keeps running — nothing is lost).
+  → In the new session verify with one call:
+    mcp__neo4j__read-cypher "RETURN 1"  → must return 1.
 
 ### Next:
   /nacl:ba-from-board new {project_name}

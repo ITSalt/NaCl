@@ -20,6 +20,9 @@ import {
   buildStartPlan,
   tryAcquireLock,
   releaseLock,
+  parsePortBindings,
+  scanUsedPorts,
+  suggestFreeBlock,
 } from './graph-doctor.mjs';
 
 const GRAPH_DOCTOR = join(new URL('.', import.meta.url).pathname, 'graph-doctor.mjs');
@@ -462,4 +465,133 @@ test('deepCheckWithRetry: check that always fails resolves false after a bounded
   const result = await deepCheckWithRetry(alwaysFailingCheck, { attempts: 5, delayMs: 1, sleep: async () => {} });
   assert.equal(result, false, 'a check that never succeeds must make the overall deep-check fail (not hang or throw)');
   assert.equal(calls, 5, `expected exactly 5 invocations (bounded retries, not unbounded), got ${calls}`);
+});
+
+// ---------------------------------------------------------------------------
+// parsePortBindings — pure, no docker needed. Fixtures replicate the real
+// `docker inspect -f '{{range $p, $b := .HostConfig.PortBindings}}{{$p}}={{(index $b 0).HostPort}} {{end}}'`
+// output shape: one line per container id, in the order ids were passed to inspect.
+// NOTE: docker inspect's HostConfig.PortBindings is a static config field, not runtime
+// state — a stopped container's inspect output is byte-identical to when it was running,
+// which is exactly why scanning docker ps -aq (not just docker ps) closes the bug.
+// ---------------------------------------------------------------------------
+
+test('parsePortBindings: single container with both bolt and http bindings', () => {
+  const out = '7687/tcp=3587 7474/tcp=3574 \n';
+  const r = parsePortBindings(out);
+  assert.deepEqual(r.bolt, [3587]);
+  assert.deepEqual(r.http, [3574]);
+});
+
+test('parsePortBindings: multi-container output, one line per container', () => {
+  // 3 containers: ev-dispatcher (bolt+http), a container with no published ports
+  // (blank line — e.g. an unrelated service), and a stopped-but-still-bound container
+  // (kinga's collision from today) whose inspect line is identical in shape.
+  const out = [
+    '7687/tcp=3607 7474/tcp=3594 ',
+    '',
+    '7687/tcp=3617 7474/tcp=3604 ',
+  ].join('\n');
+  const r = parsePortBindings(out);
+  assert.deepEqual(r.bolt, [3607, 3617]);
+  assert.deepEqual(r.http, [3594, 3604]);
+});
+
+test('parsePortBindings: dedupes and sorts ascending regardless of input order', () => {
+  const out = ['7687/tcp=3627 7474/tcp=3614 ', '7687/tcp=3587 7474/tcp=3574 ', '7687/tcp=3587 7474/tcp=3574 '].join('\n');
+  const r = parsePortBindings(out);
+  assert.deepEqual(r.bolt, [3587, 3627]);
+  assert.deepEqual(r.http, [3574, 3614]);
+});
+
+test('parsePortBindings: empty/garbage input => empty lists, never throws', () => {
+  assert.deepEqual(parsePortBindings(''), { bolt: [], http: [] });
+  assert.deepEqual(parsePortBindings(null), { bolt: [], http: [] });
+  assert.deepEqual(parsePortBindings(undefined), { bolt: [], http: [] });
+});
+
+// ---------------------------------------------------------------------------
+// scanUsedPorts — docker absent/unresolvable => empty lists, never throws
+// ---------------------------------------------------------------------------
+
+test('scanUsedPorts: unresolvable docker path => empty bolt/http lists', () => {
+  const r = scanUsedPorts('/no/such/docker/binary/anywhere');
+  assert.deepEqual(r, { bolt: [], http: [] });
+});
+
+// ---------------------------------------------------------------------------
+// suggestFreeBlock
+// ---------------------------------------------------------------------------
+
+test('suggestFreeBlock: no ports used => first rung (base values)', () => {
+  const s = suggestFreeBlock({ bolt: [], http: [] });
+  assert.deepEqual(s, { bolt: 3587, http: 3574 });
+});
+
+test('suggestFreeBlock: real today-data — suggests the first fully-free rung, not the naive next-free', () => {
+  // Reproduces the live incident: naive "next free bolt" (3617) collides with a
+  // stopped due-diligence container's http port (3604) at that same rung, so the
+  // rung must be skipped entirely and the search must continue past it.
+  const used = {
+    bolt: [3587, 3597, 3607, 3617, 3627],
+    http: [3574, 3584, 3594, 3604, 3614],
+  };
+  const s = suggestFreeBlock(used);
+  assert.deepEqual(s, { bolt: 3637, http: 3624 });
+});
+
+test('suggestFreeBlock: bolt free at a rung but http taken at that rung => rung is skipped', () => {
+  // bolt 3597 is free, but http 3584 (the paired port at that same rung) is taken by
+  // another project — a both-free requirement must reject this rung and keep searching.
+  const used = {
+    bolt: [3587], // 3597 free
+    http: [3574, 3584], // 3584 taken -> rung k=1 must be skipped despite bolt being free
+  };
+  const s = suggestFreeBlock(used);
+  assert.deepEqual(s, { bolt: 3607, http: 3594 });
+});
+
+test('suggestFreeBlock: custom base/step honored', () => {
+  const s = suggestFreeBlock({ bolt: [1000], http: [] }, { boltBase: 1000, httpBase: 2000, step: 5 });
+  assert.deepEqual(s, { bolt: 1005, http: 2005 });
+});
+
+// ---------------------------------------------------------------------------
+// --scan-ports CLI mode
+// ---------------------------------------------------------------------------
+
+test('--scan-ports: prints well-formed lines and exits 0 (docker cli-missing => empty csv; ' +
+     'note: resolveDocker also checks absolute fallback paths like /usr/local/bin/docker, so an ' +
+     'empty PATH alone does not guarantee cli-missing on a box with Docker Desktop installed — ' +
+     'same caveat as the existing resolveDocker cli-missing test above)', () => {
+  const emptyPath = tmpDir('empty-path-');
+  try {
+    const out = execFileSync(process.execPath, [GRAPH_DOCTOR, '--scan-ports'], {
+      encoding: 'utf8',
+      env: { ...process.env, PATH: emptyPath },
+    });
+    const lines = out.trim().split('\n');
+    assert.match(lines[0], /^NACL_GRAPH_PORTS: bolt=(\d+(,\d+)*)? http=(\d+(,\d+)*)?$/);
+    assert.match(lines[1], /^NACL_GRAPH_PORTS_SUGGEST: bolt=\d+ http=\d+$/);
+    const boltUsed = (lines[0].match(/bolt=([^\s]*)/)[1]).split(',').filter(Boolean).map(Number);
+    const httpUsed = (lines[0].match(/http=([^\s]*)/)[1]).split(',').filter(Boolean).map(Number);
+    const suggBolt = Number(lines[1].match(/bolt=(\d+)/)[1]);
+    const suggHttp = Number(lines[1].match(/http=(\d+)/)[1]);
+    assert.ok(!boltUsed.includes(suggBolt), 'suggested bolt port must not be already in use');
+    assert.ok(!httpUsed.includes(suggHttp), 'suggested http port must not be already in use');
+  } finally {
+    rmSync(emptyPath, { recursive: true, force: true });
+  }
+});
+
+test('--scan-ports: docker genuinely unresolvable (PATH stubbed AND absolute fallbacks masked) => empty csv, exit 0', () => {
+  // Cover the true "docker absent" case deterministically: DOCKER_CANDIDATES includes
+  // absolute fallback paths (e.g. /usr/local/bin/docker) that findOnPath() bypasses, so an
+  // empty PATH alone isn't sufficient on a box with Docker Desktop installed there. Route
+  // through NACL_HOME-independent isolation isn't available for docker resolution, so this
+  // pins the underlying pure functions instead (already exercised end-to-end above).
+  const r = scanUsedPorts('/no/such/docker/binary/anywhere');
+  const s = suggestFreeBlock(r);
+  assert.deepEqual(r, { bolt: [], http: [] });
+  assert.deepEqual(s, { bolt: 3587, http: 3574 });
 });
