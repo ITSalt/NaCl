@@ -1,0 +1,2 @@
+#!/bin/sh
+CDPATH= cd -P -- "$(dirname -- "$0")/.." && pwd

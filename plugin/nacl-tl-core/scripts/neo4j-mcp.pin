@@ -1,0 +1,24 @@
+# neo4j-mcp.pin — version pin + sha256 checksums for the official neo4j-mcp binary release.
+#
+# Consumed by setup-graph.sh / setup-graph.ps1 / lib-neo4j-mcp.sh / lib-neo4j-mcp.ps1
+# (resolved relative to the calling script's own directory — this file must stay
+# next to them). Format: plain `key=value` lines, `#` comments allowed.
+#
+# To bump: fetch https://api.github.com/repos/neo4j/mcp/releases/latest, take
+# tag_name as `version`, download the release's `*_checksums.txt` asset and copy
+# the sha256 values below (asset filenames use Darwin/Linux/Windows + x86_64/arm64/i386,
+# this file uses lowercase os_arch keys).
+#
+# NaCl's own infra pin (not a project-facing template) — out of scope for
+# scripts/check-version-pins.sh, see that script's header.
+
+version=v1.5.3
+
+sha256_darwin_arm64=c1cb18a6ee30e8ac129868ca2d7f8889d5101dbd0340f22f9d5b9e02cfef6e66
+sha256_darwin_x86_64=eff3724b59ce531fb506c3d864c3871912b3f0d94b4ebc42043b690042077906
+sha256_linux_arm64=5d1f46e14769a8516d79b7e1576138fd56e2073ecbd5135c6097ac96859cf3f6
+sha256_linux_i386=ccb51a213383b7ddd5052d78235f7a671b53dd685f723c37dc4ef07a95570598
+sha256_linux_x86_64=89ee385bf1853f02d32d5519df207cebdbd7488da895e215059bbf445f73a14e
+sha256_windows_arm64=b5da7ee1f48613dd8e5b8a21847c5d67cf91fc9aeb7a9bc221efe3ea7d0fb350
+sha256_windows_i386=6c94c95c6d72881c8706f9eaabf55dd4b24aba02634847d03d29599036283113
+sha256_windows_x86_64=36107158c35961f4edcdd55de2762cffb7b111456fe580cb03565bd072f46362

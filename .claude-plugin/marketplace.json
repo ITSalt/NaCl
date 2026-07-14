@@ -1,0 +1,14 @@
+{
+  "name": "nacl",
+  "description": "NaCl framework: BA/SA/TL spec-graph methodology skills, backed by a Neo4j project graph.",
+  "owner": {
+    "name": "ITSalt"
+  },
+  "plugins": [
+    {
+      "name": "nacl",
+      "source": "./plugin",
+      "description": "NaCl framework: BA/SA/TL spec-graph methodology skills, backed by a Neo4j project graph."
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "name": "nacl",
+  "description": "NaCl framework: BA/SA/TL spec-graph methodology skills, backed by a Neo4j project graph.",
+  "version": "2.23.0",
+  "author": {
+    "name": "ITSalt"
+  }
+}

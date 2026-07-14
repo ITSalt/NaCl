@@ -1,0 +1,35 @@
+{
+  "version": "2.23.0",
+  "sourceCommit": "8b4cb5e2e663d145a0848b96eae710da1ca93ab9",
+  "ruleCounts": {
+    "R1_skill_md_frontmatter_name": 53,
+    "R2_repo_root_bash": 3,
+    "R3_repo_root_powershell": 1,
+    "R4_graph_doctor_path": 16,
+    "R5_home_skills_leftover_warnings": 1,
+    "R6_relative_lib_links": 5,
+    "R7_bare_lib_token_md": 232,
+    "R7_lib_dirs_templates_refs_md": 72,
+    "Rgoal_sections": 10,
+    "Rgoal_standalone_refs": 0,
+    "R8_install_sidecar_sh": 1,
+    "R8_install_sidecar_ps1": 0,
+    "R8_vps_provision_warnings": 1,
+    "R10_slash_invocations": 1460,
+    "R10_subagent_type": 1
+  },
+  "warnings": [
+    "R8: SKILL.md in nacl-init references graph-infra/vps/provision-vps.sh (left as-is)",
+    "R5: nacl-init/SKILL.md still contains \"$HOME/.claude/skills/yougile-setup\" (left as-is; requires repo checkout)",
+    "R10: nacl-init/SKILL.md references excluded nacl-goal 5x (left as-is)",
+    "R10: nacl-sa-feature/SKILL.md references excluded nacl-goal 3x (left as-is)",
+    "R10: nacl-tl-dev/SKILL.md references excluded nacl-goal 2x (left as-is)",
+    "R10: nacl-tl-dev-be/SKILL.md references excluded nacl-goal 2x (left as-is)",
+    "R10: nacl-tl-dev-fe/SKILL.md references excluded nacl-goal 2x (left as-is)",
+    "R10: nacl-tl-fix/SKILL.md references excluded nacl-goal 5x (left as-is)",
+    "R10: nacl-tl-intake/SKILL.md references excluded nacl-goal 6x (left as-is)",
+    "R10: nacl-tl-qa/SKILL.md references excluded nacl-goal 1x (left as-is)",
+    "R10: nacl-tl-ship/SKILL.md references excluded nacl-goal 12x (left as-is)"
+  ],
+  "invariantViolations": []
+}
