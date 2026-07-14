@@ -49,6 +49,6 @@ alias nacl-update='sh ~/NaCl/scripts/install-claude-code-skills.sh'
 
 ## Дальше
 
-- [Графовая инфраструктура](graph-setup.ru.md) — Neo4j + Excalidraw
+- [Графовая инфраструктура](graph-setup.ru.md) — Neo4j + борды Analyst Tool
 - [Установка скиллов](install-skills.ru.md) — Claude Code или Codex
 - [Быстрый старт](../quickstart.ru.md) — первый проект

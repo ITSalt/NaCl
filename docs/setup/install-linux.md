@@ -88,7 +88,7 @@ cd ~/NaCl/yougile-setup && npm install && npm run build
 
 ## Graph Infrastructure
 
-See [Graph Setup](graph-setup.md) for Docker + Neo4j + Excalidraw configuration.
+See [Graph Setup](graph-setup.md) for Docker + Neo4j configuration. Excalidraw boards are managed by the NaCl Analyst Tool (`analyst-tool/`), which runs outside Docker.
 
 ## Verify
 
@@ -104,6 +104,6 @@ Then open your agent runtime in a project and run `/nacl-init --dry-run`.
 
 ## Next Steps
 
-- [Graph Setup](graph-setup.md) — Neo4j + Excalidraw
+- [Graph Setup](graph-setup.md) — Neo4j + Analyst Tool boards
 - [Skill Installation](install-skills.md) — Claude Code or Codex
 - [Quick Start](../quickstart.md) — first project

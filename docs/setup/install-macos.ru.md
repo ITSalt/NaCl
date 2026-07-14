@@ -53,6 +53,6 @@ find ~/.agents/skills -maxdepth 1 -type l -name 'nacl-*' | wc -l
 
 ## Дальше
 
-- [Графовая инфраструктура](graph-setup.ru.md) — Neo4j + Excalidraw
+- [Графовая инфраструктура](graph-setup.ru.md) — Neo4j + борды Analyst Tool
 - [Установка скиллов](install-skills.ru.md) — Claude Code или Codex
 - [Быстрый старт](../quickstart.ru.md) — первый проект

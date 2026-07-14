@@ -76,7 +76,7 @@ symlink.
 
 ## Графовая инфраструктура
 
-Конфигурацию Docker + Neo4j + Excalidraw см. в [Графовой инфраструктуре](graph-setup.ru.md).
+Конфигурацию Docker + Neo4j см. в [Графовой инфраструктуре](graph-setup.ru.md). Excalidraw-борды ведёт NaCl Analyst Tool (`analyst-tool/`), работающий вне Docker.
 
 ### Neo4j MCP на Windows
 
@@ -110,6 +110,6 @@ symlink.
 
 ## Дальше
 
-- [Графовая инфраструктура](graph-setup.ru.md) — Neo4j + Excalidraw
+- [Графовая инфраструктура](graph-setup.ru.md) — Neo4j + борды Analyst Tool
 - [Установка скиллов](install-skills.ru.md) — Claude Code или Codex
 - [Быстрый старт](../quickstart.ru.md) — первый проект
