@@ -96,7 +96,22 @@ NaCl ships skill packages for both Claude Code and Codex.
 See [Skill Installation](docs/setup/install-skills.md) for runtime-specific and
 OS-specific commands.
 
-> Skills do **not** work on claude.ai/code (web app) because it runs in a sandbox without local filesystem access.
+> Skills do **not** work on claude.ai/code (web app) because it runs in a sandbox without local filesystem access. Claude Code **Desktop** (the native app) is fully supported through both channels below; only cloud/web sessions are unsupported.
+
+### Choose your channel
+
+| You use | Install as | Command |
+|---|---|---|
+| Claude Code CLI | Symlinked skills (this repo checkout) | `sh scripts/install-claude-code-skills.sh` |
+| Claude Code Desktop | Plugin | `/plugin marketplace add ITSalt/NaCl` then `/plugin install nacl@nacl` |
+| Codex | `skills-for-codex/` (unchanged) | `sh skills-for-codex/scripts/install-user-symlinks.sh` |
+
+Pick one Claude Code channel per machine -- do not install both the symlinked skills and
+the plugin at the same time. Both work technically, but they duplicate the same skills
+under different names, and the plugin's SessionStart hook will warn if it detects the
+other channel already installed. See [Graph Setup](docs/setup/graph-setup.md) for the
+graph-infrastructure specifics Desktop needs (Docker Desktop autodetection, sidecar
+autostart, the pinned `neo4j-mcp` binary).
 
 ## Quick Start
 

@@ -4,6 +4,58 @@ All notable changes to NaCl (Natural Agent Control Language) will be documented 
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [2.24.0] — 2026-07-14
+
+**NaCl now works as a native Claude Code Desktop citizen.** Until this release the graph
+runtime assumed a CLI shell (bash-first PATH resolution, no autostart, an npm-launched
+`neo4j-mcp` with no version pin), and there was no way to run NaCl skills inside Desktop
+except by symlinking the repo checkout the same way the CLI does. This release hardens the
+graph runtime for Desktop's GUI-app environment and adds a second, independent install
+channel: a committed Claude Code plugin.
+
+### Added
+- **`nacl-core/scripts/graph-doctor.mjs`** — a liveness probe for the local graph container
+  and MCP binary, runnable standalone, via `--fix` (starts the stack), and wired as a
+  SessionStart hook so a stale/down graph is caught before a skill runs into it.
+- **Docker CLI + daemon resolution in `setup-graph`** now searches GUI-app PATH candidates
+  (Docker Desktop's non-shell PATH on macOS/Windows) and auto-launches Docker Desktop when
+  the daemon is reachable but not running, instead of failing with "docker not found" inside
+  a GUI host.
+- **Version-pinned, sha256-verified `neo4j-mcp` binary** (`nacl-tl-core/scripts/neo4j-mcp.pin`,
+  default v1.5.3, overridable via `NEO4J_MCP_VERSION`) replaces the unpinned npm launcher —
+  same reproducibility guarantee the CLI path already had, now enforced for Desktop too.
+- **Sidecar OS-autostart**: a macOS LaunchAgent and a Windows Scheduled Task keep the graph
+  sidecar running across reboots without a manual `docker compose up`.
+- **Canonical graph-down HALT message**, now identical across all 11 skills that can hit a
+  down graph, plus a lint gate that fails a skill whose HALT wording drifts from the
+  canonical text.
+- **Claude Code plugin** (`plugin/`), built by `scripts/build-plugin.mjs` from
+  `scripts/plugin-manifest.json` and committed as an artifact: 53 of 59 skills as
+  `/nacl:<name>` slash commands, 7 agent profiles as `@nacl:<name>`, `nacl-core` bundled
+  whole as a shared library, graph-infra bundled, and two SessionStart hooks (graph
+  liveness, dual-channel coexistence warning). A repo-root marketplace manifest makes
+  `/plugin marketplace add ITSalt/NaCl` + `/plugin install nacl@nacl` the full install.
+  Excluded from the plugin: `nacl-goal` (wraps the CLI-only `/goal` command, absent in
+  Desktop), `nacl-postmortem` (rare/high-stakes), and the three `nacl-migrate*` skills (rare,
+  need a repo checkout).
+- **Docs:** the README/README.ru channel matrix (CLI symlink vs. Desktop plugin vs. Codex,
+  unchanged), a matching channel-choice section in `docs/setup/install-skills.md/.ru.md`, and
+  a desktop graph smoke matrix (manual, stage-3 verification) at `tests/desktop/`.
+
+### Changed
+- **Worktree-safe project-root resolution** across the graph-setup path, and an `/nacl-init`
+  worktree guard, so a project opened from a git worktree resolves the same graph config as
+  the primary checkout instead of silently pointing at the wrong one.
+- **Reconnect wording** in graph-related skill output is now Desktop-aware (does not assume a
+  terminal the user can retype a shell command into).
+
+### Notes
+- CLI users are unaffected by default: the symlink installer
+  (`scripts/install-claude-code-skills.sh`) is unchanged, and nothing about this release
+  requires switching channels. Do not install both the symlinked skills and the plugin on the
+  same machine — pick one; the plugin's SessionStart hook warns if it detects the other.
+- The Codex channel (`skills-for-codex/`) is unchanged and untouched by this release.
+
 ## [2.23.0] — 2026-06-29
 
 **A project's spec graph can now live on a VPS and be shared by several developers over the public
