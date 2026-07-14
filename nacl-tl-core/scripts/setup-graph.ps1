@@ -42,6 +42,9 @@ $SchemaDir  = Join-Path $GraphDir "schema"
 $BinDir     = Join-Path $env:USERPROFILE ".neo4j-mcp-bin"
 $StableBin  = Join-Path $BinDir "neo4j-mcp.exe"
 $CacheDir   = Join-Path $env:USERPROFILE ".cache\neo4j-mcp"
+$ScriptDir  = Split-Path -Parent $MyInvocation.MyCommand.Path
+$PinFile    = Join-Path $ScriptDir "neo4j-mcp.pin"
+$script:Docker = $null
 
 $script:Health    = "unknown"
 $script:Expected  = 0
@@ -85,8 +88,16 @@ try {
 } catch { Fail "copy-infra" }
 
 # ---------------------------------------------------------------------------
-# 2. Resolve the official neo4j-mcp.exe to a stable path
+# 2. Resolve the official neo4j-mcp.exe to a stable path (version-pinned,
+#    checksum-verified — see neo4j-mcp.pin next to this script).
 # ---------------------------------------------------------------------------
+function Get-PinValue([string]$Key) {
+  if (-not (Test-Path $PinFile)) { return $null }
+  $line = Get-Content $PinFile | Where-Object { $_ -match "^$Key=" } | Select-Object -First 1
+  if (-not $line) { return $null }
+  return ($line -replace "^$Key=", "")
+}
+
 function Resolve-Binary {
   if (Test-Path $StableBin) { Write-Verbose "binary: reusing $StableBin"; return }
   New-Item -ItemType Directory -Force -Path $BinDir | Out-Null
@@ -104,15 +115,52 @@ function Resolve-Binary {
   }
   $asset = "neo4j-mcp_Windows_$arch.zip"
 
+  # Version: pinned by default (neo4j-mcp.pin); NEO4J_MCP_VERSION=latest opts out
+  # of pinning AND checksum verification (with a loud warning).
+  $version = $env:NEO4J_MCP_VERSION
+  $skipChecksum = $false
+  if ($version -eq "latest") {
+    $skipChecksum = $true
+    [Console]::Error.WriteLine("WARN: NEO4J_MCP_VERSION=latest - resolving the latest release and SKIPPING checksum verification.")
+  } elseif ([string]::IsNullOrEmpty($version)) {
+    $version = Get-PinValue "version"
+    if ([string]::IsNullOrEmpty($version) -or $version -eq "UNPINNED-FILL-ME") {
+      throw "neo4j-mcp.pin has no valid 'version' (got: '$version'). Set `$env:NEO4J_MCP_VERSION=<tag> or 'latest', or fill in $PinFile."
+    }
+  }
+
   [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-  $rel = Invoke-RestMethod -Uri "https://api.github.com/repos/neo4j/mcp/releases/latest" `
-           -Headers @{ "User-Agent" = "nacl-init" }
-  $a = $rel.assets | Where-Object { $_.name -eq $asset } | Select-Object -First 1
-  if (-not $a) { throw "Release asset $asset not found (available: $($rel.assets.name -join ', '))" }
+  $downloadUrl = $null
+  if ($version -eq "latest") {
+    $rel = Invoke-RestMethod -Uri "https://api.github.com/repos/neo4j/mcp/releases/latest" `
+             -Headers @{ "User-Agent" = "nacl-init" }
+    $a = $rel.assets | Where-Object { $_.name -eq $asset } | Select-Object -First 1
+    if (-not $a) { throw "Release asset $asset not found (available: $($rel.assets.name -join ', '))" }
+    $downloadUrl = $a.browser_download_url
+  } else {
+    $downloadUrl = "https://github.com/neo4j/mcp/releases/download/$version/$asset"
+  }
 
   New-Item -ItemType Directory -Force -Path $CacheDir | Out-Null
   $archive = Join-Path $CacheDir $asset
-  Invoke-WebRequest -Uri $a.browser_download_url -OutFile $archive -Headers @{ "User-Agent" = "nacl-init" }
+  try {
+    Invoke-WebRequest -Uri $downloadUrl -OutFile $archive -Headers @{ "User-Agent" = "nacl-init" }
+  } catch {
+    throw "Download failed: $downloadUrl`nManual fallback: download $downloadUrl in a browser, extract it, and place the neo4j-mcp.exe binary at $StableBin (create $BinDir first)."
+  }
+
+  if (-not $skipChecksum) {
+    $archKey = $arch
+    $expected = Get-PinValue "sha256_windows_$archKey"
+    if ([string]::IsNullOrEmpty($expected)) {
+      throw "No sha256_windows_$archKey entry in $PinFile - cannot verify $asset. Set `$env:NEO4J_MCP_VERSION='latest' to skip verification, or fill in the pin."
+    }
+    $actual = (Get-FileHash -Path $archive -Algorithm SHA256).Hash.ToLowerInvariant()
+    if ($actual -ne $expected) {
+      throw "Checksum mismatch for $asset`: expected $expected, got $actual`nManual fallback: download $downloadUrl in a browser, verify it yourself, extract it, and place the neo4j-mcp.exe binary at $StableBin (create $BinDir first)."
+    }
+    Write-Verbose "binary: checksum verified ($asset)"
+  }
 
   $tmp = Join-Path $CacheDir ("extract_" + $PID)
   if (Test-Path $tmp) { Remove-Item $tmp -Recurse -Force }
@@ -170,15 +218,44 @@ try {
 # Switch off Stop: under it, PS 5.1 turns ANY native-command stderr (docker/cypher-shell
 # progress and benign "already exists" notices) into a terminating NativeCommandError.
 $ErrorActionPreference = "Continue"
-if (-not (Get-Command docker -ErrorAction SilentlyContinue)) { Fail "docker-missing" }
+
+function Resolve-Docker {
+  $cmd = Get-Command docker.exe -ErrorAction SilentlyContinue
+  if (-not $cmd) { $cmd = Get-Command docker -ErrorAction SilentlyContinue }
+  if ($cmd) { $script:Docker = $cmd.Source; return $true }
+  $fallback = "C:\Program Files\Docker\Docker\resources\bin\docker.exe"
+  if (Test-Path $fallback) { $script:Docker = $fallback; return $true }
+  return $false
+}
+if (-not (Resolve-Docker)) { Fail "docker-cli-missing" }
+
+function Wait-DockerDaemon {
+  & $script:Docker info *> $null
+  if ($LASTEXITCODE -eq 0) { return $true }
+  $desktopExe = "C:\Program Files\Docker\Docker\Docker Desktop.exe"
+  if (Test-Path $desktopExe) {
+    [Console]::Error.WriteLine("Docker daemon not responding - launching Docker Desktop...")
+    Start-Process -FilePath $desktopExe | Out-Null
+    for ($i = 0; $i -lt 30; $i++) {
+      & $script:Docker info *> $null
+      if ($LASTEXITCODE -eq 0) { return $true }
+      [Console]::Error.WriteLine("waiting for Docker daemon... ($($i * 3)s elapsed of 90s)")
+      Start-Sleep -Seconds 3
+    }
+  }
+  & $script:Docker info *> $null
+  return ($LASTEXITCODE -eq 0)
+}
+if (-not (Wait-DockerDaemon)) { Fail "docker-daemon-down" }
+
 Push-Location $ProjectRoot
 try {
-  docker compose -f graph-infra/docker-compose.yml up -d | Out-Null
+  & $script:Docker compose -f graph-infra/docker-compose.yml up -d | Out-Null
   if ($LASTEXITCODE -ne 0) { Fail "docker-up" }
 } finally { Pop-Location }
 
 for ($i = 0; $i -lt 40; $i++) {
-  try { $script:Health = (docker inspect -f '{{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}' $Container 2>$null) } catch { $script:Health = "absent" }
+  try { $script:Health = (& $script:Docker inspect -f '{{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}' $Container 2>$null) } catch { $script:Health = "absent" }
   if ($script:Health -eq "healthy") { break }
   Start-Sleep -Seconds 3
 }
@@ -190,13 +267,13 @@ foreach ($s in @("ba-schema","sa-schema","tl-schema")) {
   $clean = Join-Path $CacheDir "$s.clean.cypher"
   New-Item -ItemType Directory -Force -Path $CacheDir | Out-Null
   Write-NoBom $clean ([System.IO.File]::ReadAllText($src).TrimStart([char]0xFEFF))
-  docker cp $clean "${Container}:/tmp/$s.cypher" | Out-Null
+  & $script:Docker cp $clean "${Container}:/tmp/$s.cypher" | Out-Null
   if ($LASTEXITCODE -ne 0) { Fail "schema-copy" }
   # Non-fatal: a re-run hits "constraint already exists" (schema is not IF NOT EXISTS).
   # Gate 2 (constraint count) is the authoritative verdict, so log and continue.
   # NOTE: never use 2>&1 here — under ErrorActionPreference=Stop, PS 5.1 wraps a native
   # command's stderr as a terminating NativeCommandError. 2>$null discards it safely.
-  docker exec $Container cypher-shell -u neo4j -p $Password -d $Database --file "/tmp/$s.cypher" 2>$null | Out-Null
+  & $script:Docker exec $Container cypher-shell -u neo4j -p $Password -d $Database --file "/tmp/$s.cypher" 2>$null | Out-Null
   if ($LASTEXITCODE -ne 0) { [Console]::Error.WriteLine("note: $s load reported errors (continuing; gate verifies final state)") }
 }
 
@@ -210,7 +287,7 @@ $script:Expected = 0
 foreach ($s in @("ba-schema","sa-schema","tl-schema")) {
   $script:Expected += ([regex]::Matches([System.IO.File]::ReadAllText((Join-Path $SchemaDir "$s.cypher")), "(?i)CREATE CONSTRAINT")).Count
 }
-$countOut = docker exec $Container cypher-shell -u neo4j -p $Password -d $Database --format plain `
+$countOut = & $script:Docker exec $Container cypher-shell -u neo4j -p $Password -d $Database --format plain `
               "SHOW CONSTRAINTS YIELD name RETURN count(name) AS c" 2>$null
 $lastLine = ($countOut | Select-Object -Last 1)
 $script:Actual = [int](($lastLine -replace '[^0-9]', ''))

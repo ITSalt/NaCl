@@ -474,8 +474,29 @@ a deterministic `NACL_GRAPH_RESULT:` gate. It does not improvise graph logic in 
 ```
 Ask: "Will this project use a Neo4j graph for BA/SA specifications? (nacl-ba-*, nacl-sa-* skills)"
 If no → skip to Step 3.
-If yes → continue with 2c.0.
+If yes → continue with 2c.-1 (worktree guard), then 2c.0.
 ```
+
+#### 2c.-1 Worktree guard (HALT)
+
+Claude Code Desktop parallel sessions run in linked git worktrees. Graph
+infrastructure must be initialized from the MAIN checkout only — a second init
+from a worktree would allocate new ports and a duplicate container for the
+same project. Check first:
+
+```bash
+TOP=$(git rev-parse --show-toplevel 2>/dev/null)
+COMMON=$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null)
+if [ -n "$TOP" ] && [ "$COMMON" != "$TOP/.git" ]; then echo WORKTREE; else echo MAIN; fi
+```
+
+If it prints `WORKTREE` → HALT Step 2c with:
+
+> This session runs in a linked git worktree (`{worktree path}`), but the main
+> checkout is `{dirname of common dir}`. Run /nacl-init from the main checkout
+> (open a session on the project root, not a parallel-session worktree). If the
+> graph is already initialized there, this project needs no init — new sessions
+> pick it up automatically.
 
 #### 2c.0 Resolve the graph mode (local | create | connect)
 
@@ -651,7 +672,10 @@ Handshake: ok ✓
 
 ### MCP config:
   .mcp.json created (points directly at the official neo4j-mcp binary)
-  — restart Claude Code to connect to this project's Neo4j
+  → Desktop: run /mcp — if "neo4j" is not listed, start a new session for this
+    project (the graph itself keeps running; nothing is lost)
+  → CLI: restart `claude`, or run /mcp → reconnect
+  After reload, verify with one call: mcp__neo4j__read-cypher "RETURN 1"
 
 ### Next:
   /nacl-ba-from-board new {project_name}
@@ -665,7 +689,17 @@ naming `failed_check` and the remediation. Do not invent a "looks done" summary.
 Failed check: {failed_check}
   resolve-binary    → no network / GitHub unreachable, or unsupported OS/arch.
                       Check connectivity; the binary installs to ~/.neo4j-mcp-bin/.
-  docker-up         → Docker not running, or the bolt/http port is taken. Pick new ports.
+                      Fallback: download the release asset in a browser and extract
+                      it to ~/.neo4j-mcp-bin/neo4j-mcp (the error names the exact URL).
+  docker-cli-missing → docker binary not found on PATH or in standard locations.
+                      Install Docker Desktop: https://www.docker.com/products/docker-desktop/
+                      (Claude Code Desktop on macOS reads PATH from your shell profile;
+                      if docker works in a terminal but not here, restart the Desktop app
+                      or add the path in Settings → environment editor.)
+  docker-daemon-down → docker CLI found, but the daemon is not running and could not
+                      be auto-started. Open the Docker Desktop application, wait for
+                      the whale icon to settle, then re-run /nacl-init.
+  docker-up         → the bolt/http port is taken. Pick new ports.
   container-health  → container never became healthy. `docker logs {container_prefix}-neo4j`.
   schema-copy       → `docker cp` failed; container not running.
   constraints-count → schema did not fully load (got {constraints_actual} of {constraints_expected}).

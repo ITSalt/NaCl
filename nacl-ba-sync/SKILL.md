@@ -879,7 +879,13 @@ Before creating a BusinessRole node, query for an existing role with the same `f
 
 If any `mcp__neo4j__write-cypher` or `mcp__neo4j__read-cypher` call fails with a connection error:
 
-> Neo4j is not reachable. Check config.yaml → graph.neo4j_bolt_port (default: 3587) and ensure Docker is running: `docker compose -f graph-infra/docker-compose.yml up -d`. Cannot proceed with sync.
+<!-- nacl-graph-halt -->
+> Neo4j is not reachable at `bolt://localhost:{$neo4j_bolt_port}`.
+> Tell me "start the graph" and I will run `node "$HOME/.claude/skills/nacl-core/scripts/graph-doctor.mjs" --fix` via Bash (works in Claude Code Desktop and CLI).
+> Or start it yourself from the project root (main checkout, not a worktree):
+> - local mode: `docker compose -f graph-infra/docker-compose.yml up -d` --- if Docker Desktop is not running, open the Docker Desktop app first
+> - remote mode: relaunch the sidecar `~/.nacl/sidecar/<project_scope>.sh` (Windows: `%USERPROFILE%\.nacl\sidecar\<project_scope>.cmd`)
+> Cannot proceed with sync.
 
 Stop execution. Do NOT write partial results to the board file --- the board must remain in its pre-sync state so that a retry produces correct results. Write the failure meta sidecar (see "Meta Sidecar on Failure" above).
 

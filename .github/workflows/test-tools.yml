@@ -12,12 +12,16 @@ on:
     paths:
       - '**/scripts/*.mjs'
       - '**/scripts/*.sh'
+      - 'scripts/*.mjs'
+      - 'scripts/*.sh'
       - '.github/workflows/test-tools.yml'
   push:
     branches: [main]
     paths:
       - '**/scripts/*.mjs'
       - '**/scripts/*.sh'
+      - 'scripts/*.mjs'
+      - 'scripts/*.sh'
       - '.github/workflows/test-tools.yml'
 
 jobs:
@@ -33,7 +37,7 @@ jobs:
       - name: Node tool tests (node --test)
         shell: bash
         run: |
-          tests=$(git ls-files '*/scripts/*.test.mjs')
+          tests=$(git ls-files '*/scripts/*.test.mjs' 'scripts/*.test.mjs')
           if [ -z "$tests" ]; then
             echo "No Node tool tests found."
           else
@@ -46,11 +50,11 @@ jobs:
         shell: bash
         run: |
           failed=0
-          for t in $(git ls-files '*/scripts/*.test.sh'); do
+          for t in $(git ls-files '*/scripts/*.test.sh' 'scripts/*.test.sh'); do
             echo "== run $t =="
             bash "$t" || failed=1
           done
-          for s in $(git ls-files '*/scripts/*.sh'); do
+          for s in $(git ls-files '*/scripts/*.sh' 'scripts/*.sh'); do
             bash -n "$s" || { echo "SYNTAX FAIL: $s"; failed=1; }
           done
           exit "$failed"

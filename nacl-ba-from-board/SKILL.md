@@ -451,7 +451,7 @@ If any step fails, show error and ask whether to retry, skip, or stop.
 | **Import: source file not found** | "Source file not found: `{file_path}`. Provide a valid DOCX, PDF, XLSX, or text file." |
 | **Import: unsupported file type** | "Unsupported file type: `{ext}`. Supported: `.docx`, `.pdf`, `.xlsx`, `.txt`, `.md`" |
 | **Invalid Excalidraw JSON** | "File `{path}` is not a valid Excalidraw file. Expected JSON with `type: excalidraw`." |
-| **Sync: Neo4j unavailable** | "Neo4j is not reachable. Check config.yaml → graph.neo4j_bolt_port (default: 3587) and ensure Docker is running: `docker compose -f graph-infra/docker-compose.yml up -d`. Board remains unchanged." |
+| **Sync: Neo4j unavailable** | "Neo4j is not reachable at bolt://localhost:{$neo4j_bolt_port}. Tell me "start the graph" (I will run node "$HOME/.claude/skills/nacl-core/scripts/graph-doctor.mjs" --fix) or start it from the project root: docker compose -f graph-infra/docker-compose.yml up -d (local) / ~/.nacl/sidecar/<project_scope>.sh (remote). Board remains unchanged." |
 | **Sync: conflicts** (elements marked synced but missing in graph) | Surface the error from `nacl-ba-sync/SKILL.md` Phase 5.1. Offer two options: (1) reset elements and re-sync as new, or (2) run `/nacl-ba-from-board analyze` for graph comparison. |
 
 ---

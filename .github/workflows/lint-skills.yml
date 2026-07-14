@@ -93,6 +93,14 @@ jobs:
           # `# version-pin-ok` comment.
           sh scripts/check-version-pins.sh
 
+      - name: Check graph-down HALT snippet sync
+        run: |
+          # The "Neo4j is not reachable" HALT message is duplicated across
+          # graph skills; the canon lives in nacl-core/SKILL.md § Graph-Down
+          # HALT (canonical). This gate fails on any drifted copy so Desktop
+          # and CLI users always get the same (graph-doctor-based) remediation.
+          sh scripts/check-graph-halt-snippet.sh
+
       - name: Check root/Codex skill sync
         run: |
           sh skills-for-codex/scripts/check-root-codex-sync.sh \

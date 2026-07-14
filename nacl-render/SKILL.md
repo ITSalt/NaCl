@@ -764,7 +764,7 @@ ff with no MAPS_TO                  → dashed arrow to unmapped:
 | Situation | Action |
 |---|---|
 | Entity/UC/Form not found | Print: `ERROR: {type} with id "{id}" not found in graph.` |
-| Neo4j connection failed | Print: `ERROR: Cannot connect to Neo4j. Check config.yaml → graph.neo4j_bolt_port (default: 3587) and ensure Docker is running.` |
+| Neo4j connection failed | Print: `ERROR: ` + "Neo4j is not reachable at bolt://localhost:{$neo4j_bolt_port}. Tell me "start the graph" (I will run node "$HOME/.claude/skills/nacl-core/scripts/graph-doctor.mjs" --fix) or start it from the project root: docker compose -f graph-infra/docker-compose.yml up -d (local) / ~/.nacl/sidecar/<project_scope>.sh (remote)." |
 | Empty graph (no nodes) | Print: `WARNING: No {type} nodes found. Run seed data first (graph-infra/schema/seed-data.cypher).` |
 | Mermaid ID collision after sanitization | Append numeric suffix: `{id}_1`, `{id}_2` |
 
