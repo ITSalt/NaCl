@@ -1,0 +1,85 @@
+# Backend deployment workflow
+# Triggers: push to main (production) or feature/* (staging)
+# Template from claude-skills — customize for your project
+#
+# STACK PROFILE: this file is a Node.js/npm reference profile, NOT a NaCl
+# mandate. The framework does not prescribe a runtime, package manager, or
+# process manager. If your backend is not Node, replace the setup-node /
+# npm ci / npm test / npm run build steps with your ecosystem's equivalents.
+# Fill ${NODE_VERSION} (and any other versions) from the project's own
+# toolchain (config.yaml → modules.<m>.stack) — never inherit a framework default.
+
+name: Deploy Backend
+
+on:
+  push:
+    branches:
+      - main
+      - 'feature/**'
+    paths:
+      - 'backend/**'
+      - '.github/workflows/deploy-backend.yml'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    env:
+      # Set these in GitHub Secrets:
+      # SSH_PRIVATE_KEY, VPS_IP_STAGING, VPS_IP_PROD, VPS_USER, DEPLOY_USER
+      DEPLOY_TARGET: ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
+      VPS_IP: ${{ github.ref == 'refs/heads/main' && secrets.VPS_IP_PROD || secrets.VPS_IP_STAGING }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '${NODE_VERSION}'  # set your project's Node version (from config.yaml / .nvmrc); pin explicitly # version-pin-ok
+          cache: 'npm'
+          cache-dependency-path: 'backend/package-lock.json'
+
+      - name: Install dependencies
+        run: cd backend && npm ci
+
+      - name: Run tests
+        run: cd backend && npm test
+
+      - name: Build
+        run: cd backend && npm run build
+
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Deploy to server
+        run: |
+          rsync -avz --delete \
+            --exclude='node_modules' \
+            --exclude='.env' \
+            backend/ ${{ secrets.VPS_USER }}@${{ env.VPS_IP }}:/app/backend/
+
+      # Process manager shown is PM2 as one example; substitute systemd, Docker,
+      # or your project's runner. NaCl does not mandate a process manager.
+      - name: Install + Build + Migrate + Restart on server
+        run: |
+          ssh ${{ secrets.VPS_USER }}@${{ env.VPS_IP }} << 'EOF'
+            cd /app/backend
+            npm ci --production
+            npm run build
+            npm run migrate
+            sudo -u ${{ secrets.DEPLOY_USER || 'deploy' }} pm2 restart backend || \
+            sudo -u ${{ secrets.DEPLOY_USER || 'deploy' }} pm2 start dist/server.js --name backend
+          EOF
+
+      - name: Health check
+        run: |
+          sleep 5
+          URL="${{ env.DEPLOY_TARGET == 'production' && secrets.PROD_URL || secrets.STAGING_URL }}"
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$URL/api/health" || echo "000")
+          if [ "$STATUS" != "200" ]; then
+            echo "Health check failed: $STATUS"
+            exit 1
+          fi
+          echo "Health check passed: $STATUS"

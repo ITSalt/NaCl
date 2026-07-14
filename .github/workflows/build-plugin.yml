@@ -1,0 +1,78 @@
+name: Build Plugin
+
+# Verifies the committed plugin/ directory is exactly what
+# `node scripts/build-plugin.mjs` produces from the current root skills, and
+# runs the build pipeline's own unit/e2e tests.
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'nacl-*/**'
+      - '.claude/agents/**'
+      - 'graph-infra/**'
+      - 'scripts/build-plugin*'
+      - 'scripts/plugin-manifest.json'
+      - 'plugin/**'
+      - '.claude-plugin/**'
+  push:
+    branches: [main]
+    paths:
+      - 'nacl-*/**'
+      - '.claude/agents/**'
+      - 'graph-infra/**'
+      - 'scripts/build-plugin*'
+      - 'scripts/plugin-manifest.json'
+      - 'plugin/**'
+      - '.claude-plugin/**'
+
+jobs:
+  build-plugin:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Verify plugin/ matches the build (--check, no writes)
+        run: node scripts/build-plugin.mjs --check
+
+      - name: Run build-plugin unit/e2e tests
+        run: node --test scripts/build-plugin.test.mjs
+
+      - name: Validate plugin manifest with the Claude Code CLI (best-effort)
+        run: |
+          set +e
+          npm install -g @anthropic-ai/claude-code >/tmp/claude-install.log 2>&1
+          install_status=$?
+          if [ "$install_status" -ne 0 ]; then
+            echo "validate skipped: could not install @anthropic-ai/claude-code (exit $install_status) — see /tmp/claude-install.log"
+            cat /tmp/claude-install.log
+          else
+            claude plugin validate ./plugin --strict >/tmp/claude-validate.log 2>&1
+            validate_status=$?
+            cat /tmp/claude-validate.log
+            if [ "$validate_status" -ne 0 ]; then
+              if grep -qiE 'auth|network|login|unauthorized|ENOTFOUND|ETIMEDOUT' /tmp/claude-validate.log; then
+                echo "validate skipped: 'claude plugin validate' requires auth/network which is unavailable in CI"
+              else
+                echo "'claude plugin validate' failed for a reason unrelated to auth/network — treating as a real failure."
+                exit 1
+              fi
+            fi
+          fi
+
+      - name: Fallback sanity check of plugin.json
+        run: |
+          node -e "
+            const p = require('./plugin/.claude-plugin/plugin.json');
+            const required = ['name', 'description', 'version', 'author'];
+            const missing = required.filter((k) => !(k in p));
+            if (missing.length > 0) {
+              console.error('plugin.json missing required field(s): ' + missing.join(', '));
+              process.exit(1);
+            }
+            console.log('plugin.json sanity check passed:', JSON.stringify(p));
+          "
