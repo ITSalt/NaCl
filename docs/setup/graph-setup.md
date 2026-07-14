@@ -97,7 +97,11 @@ script reuses an existing binary at that path instead of downloading.
 }
 ```
 
-Run `/mcp` to confirm the `neo4j` server is listed, then start a new session to connect
+Start a new session to connect (MCP servers are only picked up at session
+start — verified live: there is no hot-reload, and `/mcp reconnect` does not
+see newly added `.mcp.json` entries). In the new session, the smoke test is
+one call: ask Claude to run `mcp__neo4j__read-cypher "RETURN 1"` — it must
+return `1`
 (a plain in-session "restart" is not enough — MCP servers are only (re)spawned at session
 start).
 
@@ -108,8 +112,10 @@ Desktop app inherits its `PATH` from how it was launched, not your shell profile
 tool like `docker` works in a terminal but the graph setup fails inside Desktop, restart
 the Desktop app after changing your shell profile, or add the missing directory to `PATH`
 via Desktop's built-in environment variable editor. After `/nacl-init` writes `.mcp.json`,
-run `/mcp` in Desktop and start a new session if `neo4j` isn't listed — Desktop, like the
-CLI, only picks up MCP server changes at session start.
+start a new session — Desktop, like the CLI, only picks up MCP server changes at session
+start. Note: typing `/mcp` in Desktop opens the connector directory (adding new
+connectors), not a status panel — to verify the connection, just ask Claude to run
+`mcp__neo4j__read-cypher "RETURN 1"` in the new session.
 
 ## Step 5: Smoke Test
 
@@ -176,7 +182,7 @@ is unreachable, instead of failing outright.
 
 **Schema won't load**: Open Neo4j Browser at `http://localhost:3574`, login with `bolt://localhost:3587` / `neo4j` / `neo4j_graph_dev`, and run each `.cypher` file manually.
 
-**MCP connection fails**: Run `node "$HOME/.claude/skills/nacl-core/scripts/graph-doctor.mjs"` to check liveness first. Verify the binary exists and is executable (`ls -l ~/.neo4j-mcp-bin/neo4j-mcp`), `.mcp.json` is at the project root and points at that path, then run `/mcp` and start a new session — MCP servers are only picked up at session start, not by an in-session restart.
+**MCP connection fails**: Run `node "$HOME/.claude/skills/nacl-core/scripts/graph-doctor.mjs"` to check liveness first. Verify the binary exists and is executable (`ls -l ~/.neo4j-mcp-bin/neo4j-mcp`), `.mcp.json` is at the project root and points at that path, then start a new session — MCP servers are only picked up at session start, not by an in-session restart, and `/mcp reconnect` does not see newly added `.mcp.json` entries.
 
 ## Next Steps
 

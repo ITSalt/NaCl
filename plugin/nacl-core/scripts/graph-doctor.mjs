@@ -15,7 +15,8 @@
 //   graph-doctor.mjs                 → NACL_GRAPH_DOCTOR: status=UP|DOWN|NOT_NACL mode=.. port=.. root=..
 //   graph-doctor.mjs --fix           → start/repair, then NACL_GRAPH_FIX: status=UP|FAILED [failed_check=..]
 //   graph-doctor.mjs --hook          → SessionStart hook JSON on stdout when DOWN, silent otherwise
-//   graph-doctor.mjs --scan-ports    → NACL_GRAPH_PORTS: used=<comma list of local bolt ports in use>
+//   graph-doctor.mjs --scan-ports    → NACL_GRAPH_PORTS: bolt=<csv> http=<csv>
+//                                       NACL_GRAPH_PORTS_SUGGEST: bolt=<n> http=<n>
 
 import { realpathSync, readFileSync, existsSync, mkdirSync, rmdirSync, statSync, copyFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -315,15 +316,61 @@ function readMcpConnection(root) {
 // --scan-ports helper
 // ---------------------------------------------------------------------------
 
-function scanUsedPorts(dockerPath) {
+// A stopped container KEEPS its configured HostConfig.PortBindings and re-claims them on
+// `docker start` — `docker ps` (running only) misses that, so init can allocate a new
+// project onto a stopped project's block. `docker inspect` output is identical whether the
+// container is running or stopped (bindings are a static config field, not runtime state),
+// so scanning ALL containers (docker ps -aq) via inspect is what makes this collision-proof.
+const INSPECT_TEMPLATE = '{{range $p, $b := .HostConfig.PortBindings}}{{$p}}={{(index $b 0).HostPort}} {{end}}';
+
+/**
+ * Parses one line of `docker inspect -f INSPECT_TEMPLATE`-style output per container
+ * (blank line = container with no published ports) into sorted-unique bolt/http port lists.
+ * @param {string} inspectOutput
+ * @returns {{bolt:number[], http:number[]}}
+ */
+export function parsePortBindings(inspectOutput) {
+  const bolt = new Set();
+  const http = new Set();
+  const text = typeof inspectOutput === 'string' ? inspectOutput : '';
+  for (const m of text.matchAll(/7687\/tcp=(\d+)/g)) bolt.add(Number(m[1]));
+  for (const m of text.matchAll(/7474\/tcp=(\d+)/g)) http.add(Number(m[1]));
+  return {
+    bolt: [...bolt].sort((a, b) => a - b),
+    http: [...http].sort((a, b) => a - b),
+  };
+}
+
+/**
+ * Scans ALL containers (running + stopped) for their configured 7687/tcp (bolt) and
+ * 7474/tcp (http) host-port bindings. Never throws — docker absent/empty => empty lists.
+ * @param {string} dockerPath
+ * @returns {{bolt:number[], http:number[]}}
+ */
+export function scanUsedPorts(dockerPath) {
   try {
-    const out = execFileSync(dockerPath, ['ps', '--format', '{{.Ports}}'], { encoding: 'utf8', timeout: 5000 });
-    const used = [];
-    for (const line of out.split('\n')) {
-      for (const m of line.matchAll(/:(\d+)->7687\/tcp/g)) used.push(m[1]);
-    }
-    return used;
-  } catch { return []; }
+    const idsOut = execFileSync(dockerPath, ['ps', '-aq'], { encoding: 'utf8', timeout: 5000 });
+    const ids = idsOut.split('\n').map((s) => s.trim()).filter(Boolean);
+    if (ids.length === 0) return { bolt: [], http: [] };
+    const inspectOut = execFileSync(dockerPath, ['inspect', '-f', INSPECT_TEMPLATE, ...ids], { encoding: 'utf8', timeout: 5000 });
+    return parsePortBindings(inspectOut);
+  } catch { return { bolt: [], http: [] }; }
+}
+
+/**
+ * Finds the smallest ladder rung (base + k*step) where BOTH the bolt and http ports are
+ * free — a rung with a free bolt port but a taken http port (or vice versa) is skipped.
+ * @param {{bolt:number[], http:number[]}} used
+ * @returns {{bolt:number, http:number}}
+ */
+export function suggestFreeBlock(used, { boltBase = 3587, httpBase = 3574, step = 10 } = {}) {
+  const boltUsed = new Set(used?.bolt || []);
+  const httpUsed = new Set(used?.http || []);
+  for (let k = 0; ; k++) {
+    const bolt = boltBase + k * step;
+    const http = httpBase + k * step;
+    if (!boltUsed.has(bolt) && !httpUsed.has(http)) return { bolt, http };
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -493,8 +540,10 @@ if (process.argv[1] && realpathSync(process.argv[1]) === fileURLToPath(import.me
     runFix().then((code) => process.exit(code)).catch(() => process.exit(1));
   } else if (args.includes('--scan-ports')) {
     const docker = resolveDocker();
-    const used = docker.status === 'ok' ? scanUsedPorts(docker.path) : [];
-    process.stdout.write(`NACL_GRAPH_PORTS: used=${used.join(',')}\n`);
+    const used = docker.status === 'ok' ? scanUsedPorts(docker.path) : { bolt: [], http: [] };
+    const suggestion = suggestFreeBlock(used);
+    process.stdout.write(`NACL_GRAPH_PORTS: bolt=${used.bolt.join(',')} http=${used.http.join(',')}\n`);
+    process.stdout.write(`NACL_GRAPH_PORTS_SUGGEST: bolt=${suggestion.bolt} http=${suggestion.http}\n`);
     process.exit(0);
   } else {
     runDefault().then((code) => process.exit(code)).catch(() => process.exit(0));
