@@ -16,7 +16,7 @@ local mTLS tunnel, with `.mcp.json` still pointing at `bolt://localhost:<port>`.
 
 ## Steps
 
-1. **Start your tunnel** (one-time per machine; restart on reboot):
+1. **Start your tunnel** (one-time per machine):
 
    ```sh
    sh <NaCl>/graph-infra/scripts/install-sidecar.sh \
@@ -28,6 +28,28 @@ local mTLS tunnel, with `.mcp.json` still pointing at `bolt://localhost:<port>`.
    ```
 
    This exposes `bolt://localhost:3700` backed by mTLS to the VPS.
+
+   **Autostart on reboot.** By default the installer also registers an OS-level autostart so
+   the tunnel comes back up on its own after a reboot or logout — you do **not** need to
+   manually relaunch it (this matters for Claude Code Desktop users, who won't re-run shell
+   commands by hand):
+   - macOS: a LaunchAgent `com.nacl.sidecar.<project_scope>` (`~/Library/LaunchAgents/com.nacl.sidecar.<project_scope>.plist`).
+   - Windows: a Scheduled Task named `NaCl Sidecar <project_scope>` (run at logon).
+
+   Manual relaunch (as before) is only needed if you passed `--no-autostart` / `-NoAutostart`
+   to the installer.
+
+   Check it's running:
+
+   ```sh
+   # macOS
+   launchctl print gui/$UID/com.nacl.sidecar.acme-billing | grep state
+   ```
+
+   ```powershell
+   # Windows
+   Get-ScheduledTask -TaskName "NaCl Sidecar acme-billing"
+   ```
 
 2. **Connect** (auto-routed if the repo's `config.yaml` has `graph.mode: remote`):
 

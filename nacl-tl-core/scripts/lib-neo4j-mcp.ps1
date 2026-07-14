@@ -9,6 +9,14 @@
 $script:BinDir    = Join-Path $env:USERPROFILE ".neo4j-mcp-bin"
 $script:StableBin = Join-Path $script:BinDir "neo4j-mcp.exe"
 $script:CacheDir  = Join-Path $env:USERPROFILE ".cache\neo4j-mcp"
+$script:PinFile   = Join-Path (Split-Path -Parent $MyInvocation.MyCommand.Path) "neo4j-mcp.pin"
+
+function Get-Neo4jMcpPinValue([string]$Key) {
+  if (-not (Test-Path $script:PinFile)) { return $null }
+  $line = Get-Content $script:PinFile | Where-Object { $_ -match "^$Key=" } | Select-Object -First 1
+  if (-not $line) { return $null }
+  return ($line -replace "^$Key=", "")
+}
 
 function Resolve-Neo4jMcpBin {
   if (Test-Path $script:StableBin) { Write-Verbose "binary: reusing $script:StableBin"; return }
@@ -24,13 +32,51 @@ function Resolve-Neo4jMcpBin {
     default { throw "Unsupported arch: $env:PROCESSOR_ARCHITECTURE" }
   }
   $asset = "neo4j-mcp_Windows_$arch.zip"
+
+  # Version: pinned by default (neo4j-mcp.pin); NEO4J_MCP_VERSION=latest opts out
+  # of pinning AND checksum verification (with a loud warning).
+  $version = $env:NEO4J_MCP_VERSION
+  $skipChecksum = $false
+  if ($version -eq "latest") {
+    $skipChecksum = $true
+    [Console]::Error.WriteLine("WARN: NEO4J_MCP_VERSION=latest - resolving the latest release and SKIPPING checksum verification.")
+  } elseif ([string]::IsNullOrEmpty($version)) {
+    $version = Get-Neo4jMcpPinValue "version"
+    if ([string]::IsNullOrEmpty($version) -or $version -eq "UNPINNED-FILL-ME") {
+      throw "neo4j-mcp.pin has no valid 'version' (got: '$version'). Set `$env:NEO4J_MCP_VERSION=<tag> or 'latest', or fill in $script:PinFile."
+    }
+  }
+
   [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-  $rel = Invoke-RestMethod -Uri "https://api.github.com/repos/neo4j/mcp/releases/latest" -Headers @{ "User-Agent" = "nacl-init" }
-  $a = $rel.assets | Where-Object { $_.name -eq $asset } | Select-Object -First 1
-  if (-not $a) { throw "Release asset $asset not found" }
+  $downloadUrl = $null
+  if ($version -eq "latest") {
+    $rel = Invoke-RestMethod -Uri "https://api.github.com/repos/neo4j/mcp/releases/latest" -Headers @{ "User-Agent" = "nacl-init" }
+    $a = $rel.assets | Where-Object { $_.name -eq $asset } | Select-Object -First 1
+    if (-not $a) { throw "Release asset $asset not found" }
+    $downloadUrl = $a.browser_download_url
+  } else {
+    $downloadUrl = "https://github.com/neo4j/mcp/releases/download/$version/$asset"
+  }
+
   New-Item -ItemType Directory -Force -Path $script:CacheDir | Out-Null
   $archive = Join-Path $script:CacheDir $asset
-  Invoke-WebRequest -Uri $a.browser_download_url -OutFile $archive -Headers @{ "User-Agent" = "nacl-init" }
+  try {
+    Invoke-WebRequest -Uri $downloadUrl -OutFile $archive -Headers @{ "User-Agent" = "nacl-init" }
+  } catch {
+    throw "Download failed: $downloadUrl`nManual fallback: download $downloadUrl in a browser, extract it, and place the neo4j-mcp.exe binary at $script:StableBin (create $script:BinDir first)."
+  }
+
+  if (-not $skipChecksum) {
+    $expected = Get-Neo4jMcpPinValue "sha256_windows_$arch"
+    if ([string]::IsNullOrEmpty($expected)) {
+      throw "No sha256_windows_$arch entry in $script:PinFile - cannot verify $asset. Set `$env:NEO4J_MCP_VERSION='latest' to skip verification, or fill in the pin."
+    }
+    $actual = (Get-FileHash -Path $archive -Algorithm SHA256).Hash.ToLowerInvariant()
+    if ($actual -ne $expected) {
+      throw "Checksum mismatch for $asset`: expected $expected, got $actual`nManual fallback: download $downloadUrl in a browser, verify it yourself, extract it, and place the neo4j-mcp.exe binary at $script:StableBin (create $script:BinDir first)."
+    }
+  }
+
   $tmp = Join-Path $script:CacheDir ("extract_" + $PID)
   if (Test-Path $tmp) { Remove-Item $tmp -Recurse -Force }
   New-Item -ItemType Directory -Force -Path $tmp | Out-Null

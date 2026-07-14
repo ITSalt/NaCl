@@ -52,42 +52,23 @@ done
 
 ## Step 4: Configure the Neo4j MCP server
 
-Install the Neo4j MCP server:
-
-```bash
-npm install -g @anthropic/neo4j-mcp
-```
-
-Add it to your project's `.mcp.json`:
-
-```json
-{
-  "mcpServers": {
-    "neo4j": {
-      "type": "stdio",
-      "command": "neo4j-mcp",
-      "env": {
-        "NEO4J_URI": "bolt://localhost:3587",
-        "NEO4J_USERNAME": "neo4j",
-        "NEO4J_PASSWORD": "neo4j_graph_dev",
-        "NEO4J_DATABASE": "neo4j"
-      }
-    }
-  }
-}
-```
-
-Restart Claude Code to pick up the MCP server.
+There's nothing to install manually here — `/nacl-init` (next step) downloads a
+version-pinned, checksum-verified `neo4j-mcp` binary and writes your project's `.mcp.json`
+for you. See [Graph Setup](setup/graph-setup.md#step-3-install-the-neo4j-mcp-server) for
+the manual-download fallback (blocked egress) and the Claude Code Desktop notes.
 
 ## Step 5: Initialize your first project
 
-Open your agent runtime in the target project directory:
+Open your agent runtime in the target project directory (the main checkout, not a linked
+worktree):
 
 ```
 /nacl-init "My Project Name"
 ```
 
-This creates `CLAUDE.md` and `config.yaml`. Then start the full pipeline:
+This creates `CLAUDE.md` and `config.yaml`, and sets up `.mcp.json` for the Neo4j MCP
+server. Run `/mcp` afterward and start a new session if `neo4j` isn't listed yet — MCP
+servers are only picked up at session start. Then start the full pipeline:
 
 ```
 /nacl-ba-full

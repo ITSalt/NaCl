@@ -48,6 +48,9 @@ SCHEMA_DIR="$GRAPH_DIR/schema"
 BIN_DIR="$HOME/.neo4j-mcp-bin"
 STABLE_BIN="$BIN_DIR/neo4j-mcp"
 CACHE_DIR="$HOME/.cache/neo4j-mcp"
+SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
+PIN_FILE="$SCRIPT_DIR/neo4j-mcp.pin"
+DOCKER=""
 
 FAILED_CHECK="none"
 emit_result() {
@@ -73,8 +76,22 @@ for q in "$SKILLS_DIR"/graph-infra/queries/*.cypher; do
 done
 
 # ---------------------------------------------------------------------------
-# 2. Resolve the official neo4j-mcp binary to a stable path
+# 2. Resolve the official neo4j-mcp binary to a stable path (version-pinned,
+#    checksum-verified — see neo4j-mcp.pin next to this script).
 # ---------------------------------------------------------------------------
+pin_get() {
+  # pin_get <key> — echoes the value of key=value from PIN_FILE, or nothing.
+  [ -f "$PIN_FILE" ] || return 1
+  sed -n "s/^$1=//p" "$PIN_FILE" | head -1
+}
+
+sha256_of() {
+  # sha256_of <file> — echoes the hex digest, using whichever tool is available.
+  if command -v shasum >/dev/null 2>&1; then shasum -a 256 "$1" | awk '{print $1}';
+  elif command -v sha256sum >/dev/null 2>&1; then sha256sum "$1" | awk '{print $1}';
+  else echo ""; fi
+}
+
 resolve_binary() {
   if [ -x "$STABLE_BIN" ]; then echo "binary: reusing $STABLE_BIN" >&2; return 0; fi
   mkdir -p "$BIN_DIR"
@@ -88,8 +105,8 @@ resolve_binary() {
   # Determine OS/ARCH using the same convention as the official release assets.
   os_raw=$(uname -s); arch_raw=$(uname -m)
   case "$os_raw" in
-    Darwin) os=Darwin ;;
-    Linux)  os=Linux ;;
+    Darwin) os=Darwin; os_key=darwin ;;
+    Linux)  os=Linux;  os_key=linux ;;
     *) echo "Unsupported OS for direct download: $os_raw (use setup-graph.ps1 on Windows)" >&2; return 1 ;;
   esac
   case "$arch_raw" in
@@ -99,19 +116,64 @@ resolve_binary() {
   esac
   asset="neo4j-mcp_${os}_${arch}.tar.gz"
 
+  # Version: pinned by default (neo4j-mcp.pin); NEO4J_MCP_VERSION=latest opts out
+  # of pinning AND checksum verification (with a loud warning).
+  version="${NEO4J_MCP_VERSION:-}"
+  skip_checksum=0
+  if [ "$version" = "latest" ]; then
+    skip_checksum=1
+    echo "WARN: NEO4J_MCP_VERSION=latest — resolving the latest release and SKIPPING checksum verification." >&2
+  elif [ -z "$version" ]; then
+    version=$(pin_get version)
+    if [ -z "$version" ] || [ "$version" = "UNPINNED-FILL-ME" ]; then
+      echo "neo4j-mcp.pin has no valid 'version' (got: '${version:-<empty>}'). Set NEO4J_MCP_VERSION=<tag> or NEO4J_MCP_VERSION=latest, or fill in $PIN_FILE." >&2
+      return 1
+    fi
+  fi
+
   dl=""
   if command -v curl >/dev/null 2>&1; then dl="curl -fsSL"; elif command -v wget >/dev/null 2>&1; then dl="wget -qO-"; else
     echo "Neither curl nor wget available to download $asset" >&2; return 1; fi
 
-  echo "binary: querying GitHub for latest release ($asset)..." >&2
-  url=$($dl "https://api.github.com/repos/neo4j/mcp/releases/latest" 2>/dev/null \
-        | grep -o "https://[^\"]*${asset}" | head -1)
+  if [ "$version" = "latest" ]; then
+    echo "binary: querying GitHub for latest release ($asset)..." >&2
+    url=$($dl "https://api.github.com/repos/neo4j/mcp/releases/latest" 2>/dev/null \
+          | grep -o "https://[^\"]*${asset}" | head -1)
+  else
+    url="https://github.com/neo4j/mcp/releases/download/${version}/${asset}"
+    echo "binary: resolving pinned release $version ($asset)..." >&2
+  fi
   [ -n "$url" ] || { echo "Could not find release asset $asset" >&2; return 1; }
 
   mkdir -p "$CACHE_DIR"
   archive="$CACHE_DIR/$asset"
   if command -v curl >/dev/null 2>&1; then curl -fsSL "$url" -o "$archive"; else wget -qO "$archive" "$url"; fi
-  [ -s "$archive" ] || { echo "Download failed: $url" >&2; return 1; }
+  if [ ! -s "$archive" ]; then
+    echo "Download failed: $url" >&2
+    echo "Manual fallback: download $url in a browser, extract it, and place the" >&2
+    echo "'neo4j-mcp' binary at $STABLE_BIN (mkdir -p $BIN_DIR first)." >&2
+    return 1
+  fi
+
+  if [ "$skip_checksum" -ne 1 ]; then
+    expected=$(pin_get "sha256_${os_key}_${arch}")
+    if [ -z "$expected" ]; then
+      echo "No sha256_${os_key}_${arch} entry in $PIN_FILE — cannot verify $asset. Set NEO4J_MCP_VERSION=latest to skip verification, or fill in the pin." >&2
+      return 1
+    fi
+    actual=$(sha256_of "$archive")
+    if [ -z "$actual" ]; then
+      echo "Neither shasum nor sha256sum available to verify $archive" >&2
+      return 1
+    fi
+    if [ "$actual" != "$expected" ]; then
+      echo "Checksum mismatch for $asset: expected $expected, got $actual" >&2
+      echo "Manual fallback: download $url in a browser, verify it yourself, extract it, and" >&2
+      echo "place the 'neo4j-mcp' binary at $STABLE_BIN (mkdir -p $BIN_DIR first)." >&2
+      return 1
+    fi
+    echo "binary: checksum verified ($asset)" >&2
+  fi
 
   tmp="$CACHE_DIR/extract.$$"; rm -rf "$tmp"; mkdir -p "$tmp"
   tar -xzf "$archive" -C "$tmp" || { echo "tar extract failed" >&2; return 1; }
@@ -189,15 +251,41 @@ PY
 write_mcp_json || fail write-mcp-json
 
 # ---------------------------------------------------------------------------
-# 4. Start Docker, wait healthy, load schema
+# 4. Resolve Docker (Desktop-app launches often inherit only a partial PATH),
+#    make sure the daemon is up, then start it, wait healthy, load schema.
 # ---------------------------------------------------------------------------
-command -v docker >/dev/null 2>&1 || fail docker-missing
-( cd "$PROJECT_ROOT" && docker compose -f graph-infra/docker-compose.yml up -d ) || fail docker-up
+resolve_docker() {
+  if command -v docker >/dev/null 2>&1; then DOCKER=$(command -v docker); return 0; fi
+  for c in /usr/local/bin/docker /opt/homebrew/bin/docker "$HOME/.docker/bin/docker" \
+           /Applications/Docker.app/Contents/Resources/bin/docker; do
+    if [ -x "$c" ]; then DOCKER="$c"; return 0; fi
+  done
+  return 1
+}
+resolve_docker || fail docker-cli-missing
+
+wait_for_docker_daemon() {
+  if "$DOCKER" info >/dev/null 2>&1; then return 0; fi
+  if [ "$(uname -s)" = "Darwin" ] && [ -d /Applications/Docker.app ]; then
+    echo "Docker daemon not responding — launching Docker Desktop..." >&2
+    open -g -a Docker >/dev/null 2>&1 || true
+    i=0
+    while [ "$i" -lt 30 ]; do
+      "$DOCKER" info >/dev/null 2>&1 && return 0
+      echo "waiting for Docker daemon... ($((i*3))s elapsed of 90s)" >&2
+      i=$((i+1)); sleep 3
+    done
+  fi
+  "$DOCKER" info >/dev/null 2>&1
+}
+wait_for_docker_daemon || fail docker-daemon-down
+
+( cd "$PROJECT_ROOT" && "$DOCKER" compose -f graph-infra/docker-compose.yml up -d ) || fail docker-up
 
 HEALTH="unknown"
 i=0
 while [ "$i" -lt 40 ]; do
-  HEALTH=$(docker inspect -f '{{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}' "$CONTAINER" 2>/dev/null || echo "absent")
+  HEALTH=$("$DOCKER" inspect -f '{{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}' "$CONTAINER" 2>/dev/null || echo "absent")
   [ "$HEALTH" = "healthy" ] && break
   i=$((i+1)); sleep 3
 done
@@ -208,10 +296,10 @@ for s in ba-schema sa-schema tl-schema; do
   src="$SCHEMA_DIR/$s.cypher"
   clean="$CACHE_DIR/$s.clean.cypher"; mkdir -p "$CACHE_DIR"
   sed '1s/^\xEF\xBB\xBF//' "$src" > "$clean" 2>/dev/null || cp "$src" "$clean"
-  docker cp "$clean" "$CONTAINER:/tmp/$s.cypher" >/dev/null 2>&1 || fail schema-copy
+  "$DOCKER" cp "$clean" "$CONTAINER:/tmp/$s.cypher" >/dev/null 2>&1 || fail schema-copy
   # Non-fatal: a re-run hits "constraint already exists" (schema is not IF NOT EXISTS).
   # Gate 2 (constraint count) is the authoritative verdict, so log and continue.
-  docker exec "$CONTAINER" cypher-shell -u neo4j -p "$PASSWORD" -d "$DATABASE" --file "/tmp/$s.cypher" >/dev/null 2>&1 \
+  "$DOCKER" exec "$CONTAINER" cypher-shell -u neo4j -p "$PASSWORD" -d "$DATABASE" --file "/tmp/$s.cypher" >/dev/null 2>&1 \
     || echo "note: $s load reported errors (continuing; gate verifies final state)" >&2
 done
 
@@ -222,7 +310,7 @@ done
 
 # gate 2: constraint count == expected (computed dynamically from the schema files)
 EXPECTED=$(cat "$SCHEMA_DIR"/ba-schema.cypher "$SCHEMA_DIR"/sa-schema.cypher "$SCHEMA_DIR"/tl-schema.cypher 2>/dev/null | grep -ci 'CREATE CONSTRAINT')
-ACTUAL=$(docker exec "$CONTAINER" cypher-shell -u neo4j -p "$PASSWORD" -d "$DATABASE" --format plain \
+ACTUAL=$("$DOCKER" exec "$CONTAINER" cypher-shell -u neo4j -p "$PASSWORD" -d "$DATABASE" --format plain \
          "SHOW CONSTRAINTS YIELD name RETURN count(name) AS c" 2>/dev/null | tail -1 | tr -dc '0-9')
 ACTUAL=${ACTUAL:-0}
 [ "$EXPECTED" -gt 0 ] || fail constraints-expected-zero

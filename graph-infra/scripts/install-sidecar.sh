@@ -7,13 +7,26 @@
 # exactly as a local container would. Per project scope.
 #
 #   install-sidecar.sh --project-scope SCOPE --host graph.example.com --gateway-port 7687 \
-#       --sidecar-port 3700 --cert PATH --key PATH --cacert PATH [--start]
+#       --sidecar-port 3700 --cert PATH --key PATH --cacert PATH [--start] [--autostart|--no-autostart]
 #
 # Without --start it only writes the launcher and prints how to run it; with --start it also
 # launches the tunnel in the background (nohup) and writes a pidfile. Idempotent.
+#
+# Autostart: on macOS (darwin), a LaunchAgent is installed by default so the tunnel survives
+# reboot/logout without a manual relaunch. Pass --no-autostart to keep the plain nohup behavior
+# (also the default on non-darwin POSIX, e.g. Linux, where no autostart mechanism is wired up
+# yet). When autostart is active, launchd owns the process — the launcher is not nohup-spawned
+# directly, and --start means "kickstart now" instead.
 set -eu
 
+UNAME_S=$(uname -s 2>/dev/null || echo "")
+case "$UNAME_S" in
+  Darwin) AUTOSTART_DEFAULT=1 ;;
+  *)      AUTOSTART_DEFAULT=0 ;;
+esac
+
 SCOPE=""; HOST=""; GW_PORT=""; SIDECAR_PORT=""; CERT=""; KEY=""; CACERT=""; START=0
+AUTOSTART=$AUTOSTART_DEFAULT
 while [ $# -gt 0 ]; do
   case "$1" in
     --project-scope) SCOPE="$2"; shift 2 ;;
@@ -24,6 +37,8 @@ while [ $# -gt 0 ]; do
     --key)           KEY="$2"; shift 2 ;;
     --cacert)        CACERT="$2"; shift 2 ;;
     --start)         START=1; shift ;;
+    --autostart)     AUTOSTART=1; shift ;;
+    --no-autostart)  AUTOSTART=0; shift ;;
     *) echo "Unknown argument: $1" >&2; exit 2 ;;
   esac
 done
@@ -53,6 +68,14 @@ mkdir -p "$SIDE_DIR"
 LAUNCHER="$SIDE_DIR/$SCOPE.sh"
 PIDFILE="$SIDE_DIR/$SCOPE.pid"
 LOGFILE="$SIDE_DIR/$SCOPE.log"
+MARKER="$SIDE_DIR/$SCOPE.autostart"
+LABEL="com.nacl.sidecar.$SCOPE"
+PLIST="$HOME/Library/LaunchAgents/$LABEL.plist"
+
+if [ "$AUTOSTART" = "1" ] && [ "$UNAME_S" != "Darwin" ]; then
+  echo "WARNING: --autostart has no implementation on $UNAME_S yet; falling back to manual start (--no-autostart behavior)." >&2
+  AUTOSTART=0
+fi
 
 # ghostunnel client: listen locally (plaintext bolt), forward over mTLS to the VPS gateway.
 cat > "$LAUNCHER" <<EOF
@@ -68,16 +91,67 @@ chmod +x "$LAUNCHER"
 echo "Sidecar launcher written: $LAUNCHER" >&2
 echo "  local bolt socket: bolt://localhost:$SIDECAR_PORT  →  mTLS  →  $HOST:$GW_PORT" >&2
 
-if [ "$START" = "1" ]; then
-  if [ -f "$PIDFILE" ] && kill -0 "$(cat "$PIDFILE")" 2>/dev/null; then
-    echo "Sidecar already running (pid $(cat "$PIDFILE"))." >&2
+if [ "$AUTOSTART" = "1" ]; then
+  # launchd owns the process from here on; no nohup, no pidfile.
+  rm -f "$PIDFILE"
+  mkdir -p "$HOME/Library/LaunchAgents"
+  cat > "$PLIST" <<EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>$LABEL</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/sh</string>
+    <string>$LAUNCHER</string>
+  </array>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>KeepAlive</key>
+  <true/>
+  <key>ThrottleInterval</key>
+  <integer>10</integer>
+  <key>StandardOutPath</key>
+  <string>$LOGFILE</string>
+  <key>StandardErrorPath</key>
+  <string>$LOGFILE</string>
+</dict>
+</plist>
+EOF
+  UID_NUM=$(id -u)
+  launchctl bootout "gui/$UID_NUM/$LABEL" 2>/dev/null || true
+  if launchctl bootstrap "gui/$UID_NUM" "$PLIST" 2>/dev/null; then
+    :
   else
-    nohup "$LAUNCHER" >"$LOGFILE" 2>&1 &
-    echo $! > "$PIDFILE"
-    echo "Sidecar started (pid $(cat "$PIDFILE")); logs: $LOGFILE" >&2
+    # Fallback for older macOS versions without `bootstrap`/`bootout`.
+    launchctl unload -w "$PLIST" 2>/dev/null || true
+    launchctl load -w "$PLIST"
+  fi
+  echo "launchd" > "$MARKER"
+  echo "Sidecar autostart installed: $PLIST" >&2
+  echo "  it will (re)start at login and after crashes/reboot; logs: $LOGFILE" >&2
+
+  if [ "$START" = "1" ]; then
+    launchctl kickstart -k "gui/$UID_NUM/$LABEL"
+    echo "Sidecar kickstarted now." >&2
+  else
+    echo "It will start automatically at next login. To start it now: launchctl kickstart -k gui/$UID_NUM/$LABEL" >&2
   fi
 else
-  echo "Run it with:  $LAUNCHER   (or re-run this with --start)" >&2
+  rm -f "$MARKER"
+  if [ "$START" = "1" ]; then
+    if [ -f "$PIDFILE" ] && kill -0 "$(cat "$PIDFILE")" 2>/dev/null; then
+      echo "Sidecar already running (pid $(cat "$PIDFILE"))." >&2
+    else
+      nohup "$LAUNCHER" >"$LOGFILE" 2>&1 &
+      echo $! > "$PIDFILE"
+      echo "Sidecar started (pid $(cat "$PIDFILE")); logs: $LOGFILE" >&2
+    fi
+  else
+    echo "Run it with:  $LAUNCHER   (or re-run this with --start)" >&2
+  fi
 fi
 
 printf '\nNACL_SIDECAR_RESULT: status=READY scope=%s listen=localhost:%s target=%s:%s\n' \
