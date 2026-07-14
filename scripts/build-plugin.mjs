@@ -543,7 +543,7 @@ export function buildPlugin({ root, outDir, manifest }) {
   fs.writeFileSync(path.join(outDir, "bin", "nacl-home"), naclHomeShim, "utf8");
   fs.chmodSync(path.join(outDir, "bin", "nacl-home"), 0o755);
 
-  const coexistScript = `#!/bin/sh\n# check-coexistence.sh — warn (never fail) if the repo-side symlink install\n# of NaCl skills is also present alongside this plugin install.\nif [ -e "$HOME/.claude/skills/nacl-init" ]; then\n  echo "nacl plugin: detected $HOME/.claude/skills/nacl-init (repo-side symlink install) alongside the nacl plugin — remove the symlinks (see docs/skills-guide.md) to avoid duplicate/conflicting skills."\nfi\nexit 0\n`;
+  const coexistScript = `#!/bin/sh\n# check-coexistence.sh — warn (never fail) if the repo-side symlink install\n# of NaCl skills is also present alongside this plugin install.\n# Intentional dual-channel setups (e.g. framework dogfooding: Desktop via\n# the plugin, CLI via the symlinked skills) opt out with NACL_ALLOW_DUAL=1.\nif [ "\${NACL_ALLOW_DUAL:-}" = "1" ]; then exit 0; fi\nif [ -e "$HOME/.claude/skills/nacl-init" ]; then\n  echo "nacl plugin: detected $HOME/.claude/skills/nacl-init (repo-side symlink install) alongside the nacl plugin — remove the symlinks (see docs/skills-guide.md) to avoid duplicate/conflicting skills, or set NACL_ALLOW_DUAL=1 if the dual setup is intentional."\nfi\nexit 0\n`;
   fs.mkdirSync(path.join(outDir, "scripts"), { recursive: true });
   fs.writeFileSync(path.join(outDir, "scripts", "check-coexistence.sh"), coexistScript, "utf8");
   fs.chmodSync(path.join(outDir, "scripts", "check-coexistence.sh"), 0o755);
