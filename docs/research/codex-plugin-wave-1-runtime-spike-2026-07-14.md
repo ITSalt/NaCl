@@ -63,8 +63,10 @@ reads or emits the environment.
 Command:
 
 ```sh
+output_file=$(mktemp)
+trap 'rm -f "$output_file"' EXIT
 node scripts/codex-plugin-wave1-matrix.mjs \
-  --output "$TMPDIR/nacl-wave1-matrix.json"
+  --output "$output_file"
 ```
 
 Exit: 0. Every shape used its own generated marketplace copy plus distinct
@@ -126,9 +128,11 @@ the three exact-path comparisons was true.
 The process-level negative probe was:
 
 ```sh
+output_file=$(mktemp)
+trap 'rm -f "$output_file"' EXIT
 node scripts/codex-plugin-wave1-matrix.mjs \
   --codex /usr/bin/false \
-  --output "$TMPDIR/nacl-wave1-false-strict.json"
+  --output "$output_file"
 ```
 
 It wrote a report with `overallStatus: FAILED`, named
@@ -141,10 +145,14 @@ canonical/symlink escapes without requiring Codex or a model.
 
 ## Cache And Source-Unavailable Proof
 
+In the historical text listings below, `$SYSTEM_TEMP` is a documentation-only
+placeholder for the system-selected temporary root. It is not a runnable shell
+variable; runnable examples above allocate their paths with `mktemp`.
+
 For the accepted companion form, initial install returned:
 
 ```text
-$TMPDIR/nacl-codex-plugin-wave1-matrix-RUN_ID/camel-case-companion/codex-home/plugins/cache/personal/nacl/0.1.0
+$SYSTEM_TEMP/nacl-codex-plugin-wave1-matrix-RUN_ID/camel-case-companion/codex-home/plugins/cache/personal/nacl/0.1.0
 ```
 
 `codex mcp list --json` resolved cwd to that cache directory. After renaming
@@ -209,7 +217,7 @@ official helper and reinstall, a new command/task with echo
 `codex-exec-cachebuster-proof` also exited 0 and completed from:
 
 ```text
-$TMPDIR/nacl-wave1-exec.RUN_ID/codex-home/plugins/cache/personal/nacl/0.1.0+codex.20260714115122
+$SYSTEM_TEMP/nacl-wave1-exec.RUN_ID/codex-home/plugins/cache/personal/nacl/0.1.0+codex.20260714115122
 ```
 
 The second response reported the same updated plugin version. The bypass flag
@@ -225,27 +233,27 @@ root classes below. Concrete host prefixes and random run suffixes are
 normalized in this historical record:
 
 ```text
-$TMPDIR/nacl-codex-plugin-wave1-matrix-RUN_ID_A
-$TMPDIR/nacl-codex-plugin-wave1-matrix-RUN_ID_B
-$TMPDIR/nacl-matrix-negative-RUN_ID_A
-$TMPDIR/nacl-matrix-negative-RUN_ID_B
-$TMPDIR/nacl-spike-copy-RUN_ID_A
-$TMPDIR/nacl-spike-copy-RUN_ID_B
-$TMPDIR/nacl-spike-copy-RUN_ID_C
-$TMPDIR/nacl-spike-copy-RUN_ID_D
-$TMPDIR/nacl-spike-copy-RUN_ID_E
-$TMPDIR/nacl-spike-copy-RUN_ID_F
-$TMPDIR/nacl-spike-copy-RUN_ID_G
-$TMPDIR/nacl-spike-copy-RUN_ID_H
-$TMPDIR/nacl-spike-copy-RUN_ID_I
-$TMPDIR/nacl-wave1-exec.RUN_ID
-$TMPDIR/nacl-wave1-probe.RUN_ID
+$SYSTEM_TEMP/nacl-codex-plugin-wave1-matrix-RUN_ID_A
+$SYSTEM_TEMP/nacl-codex-plugin-wave1-matrix-RUN_ID_B
+$SYSTEM_TEMP/nacl-matrix-negative-RUN_ID_A
+$SYSTEM_TEMP/nacl-matrix-negative-RUN_ID_B
+$SYSTEM_TEMP/nacl-spike-copy-RUN_ID_A
+$SYSTEM_TEMP/nacl-spike-copy-RUN_ID_B
+$SYSTEM_TEMP/nacl-spike-copy-RUN_ID_C
+$SYSTEM_TEMP/nacl-spike-copy-RUN_ID_D
+$SYSTEM_TEMP/nacl-spike-copy-RUN_ID_E
+$SYSTEM_TEMP/nacl-spike-copy-RUN_ID_F
+$SYSTEM_TEMP/nacl-spike-copy-RUN_ID_G
+$SYSTEM_TEMP/nacl-spike-copy-RUN_ID_H
+$SYSTEM_TEMP/nacl-spike-copy-RUN_ID_I
+$SYSTEM_TEMP/nacl-wave1-exec.RUN_ID
+$SYSTEM_TEMP/nacl-wave1-probe.RUN_ID
 ```
 
 Post-removal prefix scan result: `REMAINING_WAVE1_TEMP_ROOTS 0`. The removed
 `nacl-wave1-exec.RUN_ID` root contained the disposable copied authentication
 file; neither cleanup nor evidence generation read its contents. Associated
-ad-hoc `$TMPDIR/nacl-wave1-*` JSON/stdout/stderr files from these runs were also
+ad-hoc `$SYSTEM_TEMP/nacl-wave1-*` JSON/stdout/stderr files from these runs were also
 removed after the durable evidence was recorded here.
 
 ## Deterministic Gates

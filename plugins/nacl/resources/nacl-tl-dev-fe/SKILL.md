@@ -191,7 +191,7 @@ Run the discovered test command once **before writing any test file**. Capture a
 - Total tests collected, total passing, total failing
 - Whether the runner started cleanly (exit code, stderr)
 
-Allocate the output path with `baseline_file=$(mktemp -t 'UC###-fe-baseline.XXXXXX')` and store the output in `$baseline_file`. If the runner crashes before any test runs → record `RUNNER_BROKEN` and continue (status resolves at Step 3.5).
+Allocate one safe output path for the whole comparison: POSIX uses `baseline_file=$(mktemp)`; PowerShell uses `$baseline_file = [System.IO.Path]::GetTempFileName()`. Store the output in that same `baseline_file` variable, reuse it for later comparison, and remove it after the final comparison. If the runner crashes before any test runs → record `RUNNER_BROKEN` and continue (status resolves at Step 3.5).
 
 #### Step 3.2 — DELEGATE: Write Failing Tests
 

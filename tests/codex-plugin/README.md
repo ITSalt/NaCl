@@ -13,7 +13,9 @@ bash scripts/codex-plugin-ci.sh test:plugin-spike
 bash scripts/codex-plugin-ci.sh test:plugin-package
 bash scripts/codex-plugin-ci.sh test:plugin-closure
 bash scripts/codex-plugin-ci.sh test:cli-legacy
-bash scripts/codex-plugin-ci.sh test:cli-plugin --output "$TMPDIR/nacl-wave2-cli.json"
+output_file=$(mktemp)
+trap 'rm -f "$output_file"' EXIT
+bash scripts/codex-plugin-ci.sh test:cli-plugin --output "$output_file"
 ```
 
 The Codex skill gate runs the checksum-verified OpenAI validator snapshot
@@ -91,8 +93,10 @@ only through that bounded canonical relationship; arbitrary symlink escapes
 fail.
 
 ```sh
+output_file=$(mktemp)
+trap 'rm -f "$output_file"' EXIT
 node scripts/codex-plugin-wave1-matrix.mjs \
-  --output "$TMPDIR/nacl-wave1-matrix.json"
+  --output "$output_file"
 ```
 
 The default flow removes its disposable work root in `finally`. Use `--keep`

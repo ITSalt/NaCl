@@ -172,7 +172,7 @@ Run `scripts.test` once **before writing any test or production code**. Capture 
 - Total tests collected, total passing, total failing
 - Whether the runner started cleanly (exit code, any stderr)
 
-Allocate the output path with `baseline_file=$(mktemp -t 'TECH-###-baseline.XXXXXX')` and store the output in `$baseline_file`. This baseline is the reference for all subsequent comparisons.
+Allocate one safe output path for the whole comparison: POSIX uses `baseline_file=$(mktemp)`; PowerShell uses `$baseline_file = [System.IO.Path]::GetTempFileName()`. Store the output in that same `baseline_file` variable, reuse it for all subsequent comparisons, and remove it after the final comparison.
 
 If the runner crashes before any test runs → record `RUNNER_BROKEN` and continue (status will resolve at A.5).
 
@@ -290,7 +290,7 @@ Run the verification command once **before applying any change**. Capture:
 - Current running state (container names, statuses, exit codes)
 - Relevant config diff if applicable (e.g., `docker compose config`, `terraform show`)
 
-Allocate the output path with `baseline_file=$(mktemp -t 'TECH-###-baseline.XXXXXX')` and store the output in `$baseline_file`. This is the reference for comparison after the change.
+Allocate one safe output path for the whole comparison: POSIX uses `baseline_file=$(mktemp)`; PowerShell uses `$baseline_file = [System.IO.Path]::GetTempFileName()`. Store the output in that same `baseline_file` variable, reuse it for the comparison after the change, and remove it after that comparison.
 
 ### B.2: Implement Configuration (formerly B1)
 
