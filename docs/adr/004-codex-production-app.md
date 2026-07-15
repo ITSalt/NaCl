@@ -453,6 +453,22 @@ Annotation rules:
 | Publish, push, send, submit, or otherwise change public/external state | `false` | `true` | based on irreversibility |
 | Delete, revoke, overwrite, destructive cutover, or irreversible action | `false` | according to target | `true` |
 
+### Annotation freeze gate for audit telemetry
+
+Mandatory security audit telemetry is part of the handler contract and must
+never be suppressed merely to obtain a `readOnlyHint: true` classification.
+Immediately before freezing `tools/list` metadata, re-read the then-current
+official definition of `readOnlyHint` and record a per-tool classification
+decision with a test covering both its business operation and its persisted
+audit/security events.
+
+If the official semantics at freeze time treat persisted audit telemetry as a
+handler state change, every audited tool uses `readOnlyHint: false`, including
+business reads. `true` is permitted only when the official contract clearly
+allows mandatory out-of-band security telemetry to coexist with a read-only
+business operation and that interpretation is documented and tested. No tool
+may be silently labelled read-only solely because its graph query is a read.
+
 CI fails if a tool lacks one of the three annotations, if a read-only tool
 emits a mutation in contract tests, or if a descriptor and handler disagree.
 Server-admin, migration, backup, restore, and any future publish tools

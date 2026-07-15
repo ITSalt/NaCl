@@ -271,9 +271,13 @@ plugin/legacy classifications и затем обеспечить byte parity с
 
 ## 6. Защита исходного dirty checkout и untracked данных
 
-Исходный `/Users/maxnikitin/projects/NaCl` нельзя использовать для checkout,
-merge, rebase, pull, clean или генерации. На момент аудита там три untracked
-объекта:
+В начале каждого запуска orchestrator обязан разрешить путь checkout, из
+которого пользователь начал работу, в переменную `$ORIGINAL_CHECKOUT`, проверить
+её через `git -C "$ORIGINAL_CHECKOUT" rev-parse --show-toplevel` и зафиксировать
+как защищённую runtime-величину. Значение нельзя записывать в candidate,
+release manifest или distributable archive. Защищённый checkout нельзя
+использовать для checkout, merge, rebase, pull, clean или генерации. На момент
+аудита там три untracked объекта:
 
 | Объект | Зафиксированное состояние |
 |---|---|
@@ -281,11 +285,16 @@ merge, rebase, pull, clean или генерации. На момент ауди
 | `docs/presentations/ba-sa-live-demo/client-brief.md` | 7,752 bytes; SHA-256 `0ff11f5b1bcf87fe81719536a2946bb764be497455bd22c5cdbfb6fb3f1e32ab` |
 | `docs/runbooks/codex-desktop-plugin-orchestrator.md` | 1,490 lines, 51,364 bytes; SHA-256 `3ed49c33f90e252e7892b08630dd046a3304ad72fe5e4b759dd3d957d8023899` |
 
-Hash-manifest `.codex/` получен из точного cwd исходного checkout:
+Hash-manifest `.codex/` воспроизводится из runtime-resolved защищённого
+checkout:
 
 ```bash
-cd /Users/maxnikitin/projects/NaCl
-find .codex -type f -print0 | sort -z | xargs -0 shasum -a 256 | shasum -a 256
+test -n "$ORIGINAL_CHECKOUT"
+git -C "$ORIGINAL_CHECKOUT" rev-parse --show-toplevel
+(
+  cd "$ORIGINAL_CHECKOUT"
+  find .codex -type f -print0 | sort -z | xargs -0 shasum -a 256 | shasum -a 256
+)
 ```
 
 Tracked runbook из `c959879` имеет 1,725 lines и SHA-256
@@ -295,15 +304,16 @@ Tracked runbook из `c959879` имеет 1,725 lines и SHA-256
 
 Правила защиты:
 
-1. Перед каждым этапом повторно снять `git status --short`, hashes и размеры в
-   исходном checkout. Любое отличие от snapshot выше — `STOP`, сначала
+1. Перед каждым этапом выполнить
+   `git -C "$ORIGINAL_CHECKOUT" status --short`, повторно снять hashes и размеры
+   в защищённом checkout. Любое отличие от snapshot выше — `STOP`, сначала
    выясняется владелец изменения.
 2. Все действия выполнять только в новых sibling-worktrees. Никакого
    `git clean`, `reset --hard`, `checkout --`, `stash -u` или автоматического
    перемещения пользовательских файлов.
 3. Reconciled runbook создавать в successor worktree сравнением обеих версий;
    пользовательский untracked оригинал не является output path.
-4. Если позднее merge в `main` сделает runbook tracked, обновление исходного
+4. Если позднее merge в `main` сделает runbook tracked, обновление защищённого
    dirty checkout будет отдельно заблокировано Git из-за untracked collision.
    До pull пользователь сам выбирает backup/rename/commit; Wave 9 ничего не
    перемещает.
@@ -324,7 +334,7 @@ Tracked runbook из `c959879` имеет 1,725 lines и SHA-256
    sibling-worktree **непосредственно от `FRESH_MAIN`**. Старую integration не
    переименовывать и не менять.
 5. Подтвердить clean status нового worktree и неизменность трёх untracked
-   объектов исходного checkout.
+   объектов в `$ORIGINAL_CHECKOUT`.
 
 ### Этап 1 — импорт Codex-only основы по allowlist
 
@@ -497,7 +507,7 @@ comm -23 before-main-paths.txt candidate-paths.txt
 
 ### Repository и generation
 
-- clean successor worktree; original snapshot неизменен;
+- clean successor worktree; snapshot `$ORIGINAL_CHECKOUT` неизменен;
 - fresh-main ancestry и повторный merge-tree audit;
 - `git diff --check` и negative-deletion audit;
 - `node scripts/build-plugin.mjs --check` и Claude build tests;
@@ -543,7 +553,7 @@ comm -23 before-main-paths.txt candidate-paths.txt
 Немедленный `STOP/BLOCKED`, если выполняется хотя бы одно условие:
 
 - `origin/main` изменился после freshness snapshot;
-- original checkout status/hash/size изменился;
+- status/hash/size `$ORIGINAL_CHECKOUT` изменился или переменная не разрешена;
 - появилась попытка merge/rebase старой integration или whole-file
   `ours`/`theirs` для 24 конфликтов;
 - negative-deletion audit не пуст без path-specific approval;
@@ -570,7 +580,7 @@ comm -23 before-main-paths.txt candidate-paths.txt
 
 До merge rollback ограничен successor worktree: откатывать только отдельный
 этап новым revert commit или удалять disposable successor worktree после
-сохранения evidence. Старую integration и исходный checkout не reset/clean.
+сохранения evidence. Старую integration и `$ORIGINAL_CHECKOUT` не reset/clean.
 
 Если дефект найден после разрешённого PR merge, применять обычный revert PR
 точного successor merge и повторять generation/negative-deletion gates; не
@@ -584,7 +594,7 @@ rollback использует заранее проверенные deployment r
 основан на повторно свежем main, все 24 конфликта разрешены композиционно,
 auto-merged runbook проверен и зеркалирован, 24 root-source drift получили
 17 refresh + 7 dispositions, оба plugin trees воспроизводимы, CI ownership
-сохранён, negative-deletion audit пуст и исходный dirty checkout byte-for-byte
+сохранён, negative-deletion audit пуст и защищённый dirty checkout byte-for-byte
 не изменился. Rebuilt Codex package уже использует current-main remote-aware
 `nacl-init` и не содержит old-candidate claim «remote outside pilot». Только
 после этого Wave 9 может строить production artifact.
