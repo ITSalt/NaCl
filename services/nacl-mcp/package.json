@@ -13,6 +13,7 @@
   "scripts": {
     "build": "node ./scripts/build-bundle.mjs",
     "check": "node ./scripts/build-bundle.mjs --check",
+    "container:smoke": "node ./scripts/container-smoke.mjs",
     "start": "node ./src/entrypoint.mjs",
     "test": "node --test ./test/*.test.mjs"
   }

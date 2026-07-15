@@ -169,10 +169,18 @@ case ${1:-} in
     exec node --test --test-name-pattern='public OAuth boundary reaches two isolated project containers' \
       services/nacl-mcp/test/topology-docker-e2e.test.mjs
     ;;
+  test:production-mcp-container)
+    if [ "${NACL_RUN_DOCKER_SMOKE:-}" != "1" ]; then
+      echo "Status: BLOCKED"
+      echo "Reason: set NACL_RUN_DOCKER_SMOKE=1 to authorize a disposable rootless public MCP container"
+      exit 2
+    fi
+    exec npm --prefix services/nacl-mcp run container:smoke
+    ;;
   *)
     echo "Status: BLOCKED"
     echo "Reason: unknown Codex plugin CI entry point: ${1:-<missing>}"
-    echo "Available: test:contracts, test:codex-skills, test:claude-isolation, test:plugin-manifest, test:plugin-spike, test:plugin-package, test:plugin-closure, test:plugin-docs, test:cli-legacy, test:cli-plugin, test:graph-unit, test:workflow-integration, test:graph-local-e2e, test:multi-project, test:multi-user, test:candidate, test:production-mcp, test:production-mcp-docker"
+    echo "Available: test:contracts, test:codex-skills, test:claude-isolation, test:plugin-manifest, test:plugin-spike, test:plugin-package, test:plugin-closure, test:plugin-docs, test:cli-legacy, test:cli-plugin, test:graph-unit, test:workflow-integration, test:graph-local-e2e, test:multi-project, test:multi-user, test:candidate, test:production-mcp, test:production-mcp-docker, test:production-mcp-container"
     exit 2
     ;;
 esac

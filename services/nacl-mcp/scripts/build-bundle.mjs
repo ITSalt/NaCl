@@ -44,7 +44,7 @@ async function buildTree(root) {
     await copyFile(source, root, relative);
     records.push({ path: relative, sha256: digest(await readFile(source)) });
   };
-  for (const name of ["package.json", "package-lock.json", "README.md"]) {
+  for (const name of ["package.json", "package-lock.json", "README.md", "Containerfile"]) {
     await add(path.join(serviceRoot, name), `services/nacl-mcp/${name}`);
   }
   for (const directory of ["src", "scripts", "test"]) {
