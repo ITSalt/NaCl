@@ -598,8 +598,13 @@ if (process.argv[1] && realpathSync(process.argv[1]) === fileURLToPath(import.me
     runFix().then((code) => process.exit(code)).catch(() => process.exit(1));
   } else if (args.includes('--watch')) {
     // Long-running by design: resolves (exit 0) only for NOT_NACL dirs. A
-    // watcher crash must never surface as a notification, hence catch → 0.
-    runWatch().then((code) => process.exit(code)).catch(() => process.exit(0));
+    // watcher crash must never surface as a notification, hence exit 0 — but
+    // monitors deliver stdout only, so a stderr diagnostic is free and keeps a
+    // dead watcher distinguishable from a healthy-silent one in the task panel.
+    runWatch().then((code) => process.exit(code)).catch((err) => {
+      process.stderr.write(`nacl-graph-watch: watcher crashed: ${err?.message || err}\n`);
+      process.exit(0);
+    });
   } else if (args.includes('--scan-ports')) {
     const docker = resolveDocker();
     const used = docker.status === 'ok' ? scanUsedPorts(docker.path) : { bolt: [], http: [] };
