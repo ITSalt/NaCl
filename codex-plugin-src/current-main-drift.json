@@ -1,0 +1,66 @@
+{
+  "schemaVersion": 1,
+  "comparisonBase": "d98f7399e7b9941341421321407ad27ee895d221",
+  "currentMainSource": "d828e54dc3329c5b2664df5e388badb83fc5d83e",
+  "stage2Base": "da004829c12906945c6f0cdb6310856270f07fe9",
+  "directCounterparts": [
+    { "source": "nacl-ba-entities/SKILL.md", "destination": "resources/nacl-ba-entities/SKILL.md" },
+    { "source": "nacl-ba-from-board/SKILL.md", "destination": "resources/nacl-ba-from-board/SKILL.md" },
+    { "source": "nacl-ba-glossary/SKILL.md", "destination": "resources/nacl-ba-glossary/SKILL.md" },
+    { "source": "nacl-ba-process/SKILL.md", "destination": "resources/nacl-ba-process/SKILL.md" },
+    { "source": "nacl-ba-roles/SKILL.md", "destination": "resources/nacl-ba-roles/SKILL.md" },
+    { "source": "nacl-ba-rules/SKILL.md", "destination": "resources/nacl-ba-rules/SKILL.md" },
+    { "source": "nacl-ba-sync/SKILL.md", "destination": "resources/nacl-ba-sync/SKILL.md" },
+    { "source": "nacl-core/SKILL.md", "destination": "resources/nacl-core/SKILL.md" },
+    { "source": "nacl-init/SKILL.md", "destination": "resources/nacl-init/SKILL.md" },
+    { "source": "nacl-publish/SKILL.md", "destination": "resources/nacl-publish/SKILL.md" },
+    { "source": "nacl-render/SKILL.md", "destination": "resources/nacl-render/SKILL.md" },
+    { "source": "nacl-sa-uc/SKILL.md", "destination": "resources/nacl-sa-uc/SKILL.md" },
+    { "source": "nacl-sa-ui/SKILL.md", "destination": "resources/nacl-sa-ui/SKILL.md" },
+    { "source": "nacl-tl-core/scripts/lib-neo4j-mcp.ps1", "destination": "resources/nacl-tl-core/scripts/lib-neo4j-mcp.ps1" },
+    { "source": "nacl-tl-core/scripts/lib-neo4j-mcp.sh", "destination": "resources/nacl-tl-core/scripts/lib-neo4j-mcp.sh" },
+    { "source": "nacl-tl-core/scripts/setup-graph.ps1", "destination": "resources/nacl-tl-core/scripts/setup-graph.ps1" },
+    { "source": "nacl-tl-core/scripts/setup-graph.sh", "destination": "resources/nacl-tl-core/scripts/setup-graph.sh" }
+  ],
+  "nonDirectDispositions": [
+    {
+      "source": ".claude/agents/verifier.md",
+      "disposition": "claude-only",
+      "evidence": "Codex keeps its closed verification vocabulary and standalone verifier TOML; Claude builder parity protects the expanded Claude-only outcome list."
+    },
+    {
+      "source": "graph-infra/handover/README.md",
+      "disposition": "source-only",
+      "evidence": "The handover cleanup roadmap is repository documentation and is not a runtime dependency of the cache-contained Codex package."
+    },
+    {
+      "source": "graph-infra/scripts/install-sidecar.ps1",
+      "disposition": "package-exact",
+      "destination": "resources/graph-infra/scripts/install-sidecar.ps1",
+      "evidence": "The current Windows mTLS sidecar lifecycle is manifest-owned and copied byte-for-byte."
+    },
+    {
+      "source": "graph-infra/scripts/install-sidecar.sh",
+      "disposition": "package-exact",
+      "destination": "resources/graph-infra/scripts/install-sidecar.sh",
+      "evidence": "The current POSIX mTLS sidecar lifecycle is manifest-owned and copied byte-for-byte."
+    },
+    {
+      "source": "nacl-core/scripts/graph-doctor.mjs",
+      "disposition": "package-exact-local-only",
+      "destination": "resources/nacl-core/scripts/graph-doctor.mjs",
+      "evidence": "The deterministic local graph doctor ships as an internal resource and is not exported as a public remote MCP capability."
+    },
+    {
+      "source": "nacl-core/scripts/graph-doctor.test.mjs",
+      "disposition": "test-source-only",
+      "evidence": "Root tests remain canonical; the Codex drift suite proves the shipped implementation is byte-identical instead of packaging test fixtures."
+    },
+    {
+      "source": "nacl-tl-core/scripts/neo4j-mcp.pin",
+      "disposition": "package-exact-dependency-pin",
+      "destination": "resources/nacl-tl-core/scripts/neo4j-mcp.pin",
+      "evidence": "The current checked dependency pin ships as an explicit package-indexed server-access resource."
+    }
+  ]
+}

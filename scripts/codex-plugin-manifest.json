@@ -79,7 +79,8 @@
     { "source": "docs/skill-modifiers.md", "destination": "resources/docs/skill-modifiers.md" },
     { "source": "docs/skill-modifiers.ru.md", "destination": "resources/docs/skill-modifiers.ru.md" },
     { "source": "graph-infra/scripts/install-sidecar.ps1", "destination": "resources/graph-infra/scripts/install-sidecar.ps1" },
-    { "source": "graph-infra/scripts/install-sidecar.sh", "destination": "resources/graph-infra/scripts/install-sidecar.sh" }
+    { "source": "graph-infra/scripts/install-sidecar.sh", "destination": "resources/graph-infra/scripts/install-sidecar.sh" },
+    { "source": "skills-for-codex/nacl-core/scripts/nacl-installation-fallback.mjs", "destination": "resources/nacl-core/scripts/nacl-installation-fallback.mjs" }
   ],
   "sharedTrees": [
     { "source": "graph-infra/queries", "destination": "resources/graph-infra/queries" },
@@ -110,6 +111,13 @@
     { "workflow": "nacl-tl-reopened", "reason": "Loads reopened-drain proof as an internal reference instead of a project-cwd command." },
     { "workflow": "nacl-tl-review", "reason": "Uses package-local deterministic review commands and evidence classification." },
     { "workflow": "nacl-tl-ship", "reason": "Replaces legacy claim release scripts with exact bundled Task lease tools." }
+  ],
+  "historicalLegacyTargets": [
+    { "workflow": "nacl-core", "sha256": "2e4d35d3414d4483de4ff3430344f4a711d1fe99da78b906fcabcae251f766b2", "generation": "audited-base-d98f7399", "sourceCommit": "d98f7399e7b9941341421321407ad27ee895d221", "reason": "Exact audited legacy installer bytes from the Wave 0 repository base." },
+    { "workflow": "nacl-goal", "sha256": "ff953ce107f15ee16553afc8fa2a32a44d4096a83dd46403f2a840d78d90158a", "generation": "audited-base-d98f7399", "sourceCommit": "d98f7399e7b9941341421321407ad27ee895d221", "reason": "Exact audited legacy installer bytes from the Wave 0 repository base." },
+    { "workflow": "nacl-migrate-sa", "sha256": "1af1f87724ac5a2298578959ffa26d8d028eacf47bfa1bc612afb31fae4cfe65", "generation": "audited-base-d98f7399", "sourceCommit": "d98f7399e7b9941341421321407ad27ee895d221", "reason": "Exact audited legacy installer bytes from the Wave 0 repository base." },
+    { "workflow": "nacl-postmortem", "sha256": "09f56bf063acb4b8bdc6cac0aaa104ca9c02fe4731f7e31c82b17a8ee0e422e2", "generation": "audited-base-d98f7399", "sourceCommit": "d98f7399e7b9941341421321407ad27ee895d221", "reason": "Exact audited legacy installer bytes before the Codex frontmatter validator correction." },
+    { "workflow": "nacl-tl-core", "sha256": "faab6033e052c4702e5a89b86b2e66893eb40a7522a9278c2b26fa89db632bdb", "generation": "audited-base-d98f7399", "sourceCommit": "d98f7399e7b9941341421321407ad27ee895d221", "reason": "Exact audited legacy installer bytes from the Wave 0 repository base." }
   ],
   "transforms": [
     { "path": "resources/nacl-migrate-core/nacl_migrate_core/adapters/frontmatter_v1_sa.py", "name": "portable-python-temp-log" },

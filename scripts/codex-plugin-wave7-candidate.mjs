@@ -27,6 +27,7 @@ const auditedLegacyHashes = new Map(Object.entries({
   "nacl-core": "2e4d35d3414d4483de4ff3430344f4a711d1fe99da78b906fcabcae251f766b2",
   "nacl-goal": "ff953ce107f15ee16553afc8fa2a32a44d4096a83dd46403f2a840d78d90158a",
   "nacl-migrate-sa": "1af1f87724ac5a2298578959ffa26d8d028eacf47bfa1bc612afb31fae4cfe65",
+  "nacl-postmortem": "09f56bf063acb4b8bdc6cac0aaa104ca9c02fe4731f7e31c82b17a8ee0e422e2",
   "nacl-tl-core": "faab6033e052c4702e5a89b86b2e66893eb40a7522a9278c2b26fa89db632bdb",
 }));
 const expectedSkills = [
@@ -260,11 +261,9 @@ async function main() {
   if (sourceMarketplace.name !== "nacl-local") {
     throw new Error(`candidate marketplace must be nacl-local, found ${sourceMarketplace.name}`);
   }
-  const legacyNames = [...(sourcePackageIndex.internalWorkflows ?? [])]
-    .filter((name) => name !== "nacl-postmortem")
-    .sort();
-  if (sourcePackageIndex.internalWorkflows?.length !== 60 || legacyNames.length !== 59) {
-    throw new Error("candidate legacy journey requires the exact 59-of-60 live catalog fixture");
+  const legacyNames = [...(sourcePackageIndex.internalWorkflows ?? [])].sort();
+  if (sourcePackageIndex.internalWorkflows?.length !== 60 || legacyNames.length !== 60) {
+    throw new Error("candidate legacy journey requires the exact 60-workflow catalog fixture");
   }
   const marketplaceEntry = sourceMarketplace.plugins?.find((entry) => entry?.name === "nacl");
   if (
@@ -369,7 +368,7 @@ async function main() {
       oldPluginRemoved: true,
       legacySymlinkRemained: true,
       legacySymlinkCount: legacyNames.length,
-      missingCatalogEntry: "nacl-postmortem",
+      missingCatalogEntry: null,
       auditedBaseGenerationCount: auditedLegacyHashes.size,
     };
 
@@ -450,10 +449,10 @@ async function main() {
       throw new Error(`legacy migration plan failed: ${migrationPlan.status}/${migrationPlan.code}`);
     }
     if (
-      migrationPlan.foundCount !== 59 ||
-      migrationPlan.acceptedCount !== 59 ||
-      migrationPlan.missingCount !== 1 ||
-      migrationPlan.entries.length !== 59 ||
+      migrationPlan.foundCount !== 60 ||
+      migrationPlan.acceptedCount !== 60 ||
+      migrationPlan.missingCount !== 0 ||
+      migrationPlan.entries.length !== 60 ||
       migrationPlan.blockers.length !== 0
     ) {
       throw new Error(`legacy live-shape plan mismatch: ${JSON.stringify({
@@ -486,8 +485,8 @@ async function main() {
     if (migrationApply.status !== "VERIFIED" || migrationApply.code !== "LEGACY_SYMLINKS_REMOVED") {
       throw new Error(`legacy migration apply failed: ${migrationApply.status}/${migrationApply.code}`);
     }
-    if (migrationApply.removed.length !== 59) {
-      throw new Error(`legacy migration removed ${migrationApply.removed.length}, expected 59`);
+    if (migrationApply.removed.length !== 60) {
+      throw new Error(`legacy migration removed ${migrationApply.removed.length}, expected 60`);
     }
     for (const name of legacyNames) {
       const target = auditedLegacyHashes.has(name)

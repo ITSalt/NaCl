@@ -10,6 +10,22 @@ description: |
 
 # NaCl Core For Codex
 
+## Installation mode preflight
+
+Before any workflow work, reuse a `nacl_installation_doctor` result from the
+current invocation or call that tool once when it is available. Continue only
+when it returns `status=VERIFIED`; a `FAILED` or `BLOCKED` result stops the
+workflow with its actionable guidance.
+
+If the tool is absent or cannot be called, never infer legacy-only mode.
+Resolve the helper relative to the directory containing this loaded `SKILL.md`
+(the symlink or canonical target is acceptable), never from the project cwd,
+then run `node scripts/nacl-installation-fallback.mjs`; it reads only the current
+environment's `codex plugin list --json` catalog. Continue only for
+`status=VERIFIED` plus `mode=legacy-only`. An enabled NaCl plugin is `FAILED`;
+a disabled artifact, unavailable CLI, nonzero command, or malformed catalog is
+`BLOCKED`. Do not copy credentials or fall through on uncertainty.
+
 This skill is a shared reference for Codex-adapted NaCl skills. It is not a
 user-facing workflow skill.
 

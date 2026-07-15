@@ -33,6 +33,7 @@ const auditedLegacyHashes = new Map(Object.entries({
   "nacl-core": "2e4d35d3414d4483de4ff3430344f4a711d1fe99da78b906fcabcae251f766b2",
   "nacl-goal": "ff953ce107f15ee16553afc8fa2a32a44d4096a83dd46403f2a840d78d90158a",
   "nacl-migrate-sa": "1af1f87724ac5a2298578959ffa26d8d028eacf47bfa1bc612afb31fae4cfe65",
+  "nacl-postmortem": "09f56bf063acb4b8bdc6cac0aaa104ca9c02fe4731f7e31c82b17a8ee0e422e2",
   "nacl-tl-core": "faab6033e052c4702e5a89b86b2e66893eb40a7522a9278c2b26fa89db632bdb",
 }));
 
@@ -86,9 +87,9 @@ async function materializeAuditedLegacyTargets(root) {
   return sources;
 }
 
-test("actual 59-link audited-base installation is a recognized migration plan", async () => {
+test("actual 60-link audited-base installation is a recognized migration plan", async () => {
   const targetRoot = await mkdtemp(path.join(os.tmpdir(), "nacl-audited-legacy-targets-"));
-  const names = (await exactNames()).filter((name) => name !== "nacl-postmortem");
+  const names = await exactNames();
   const historicalSources = await materializeAuditedLegacyTargets(targetRoot);
   const { home } = await makeHome(names, { sources: historicalSources });
   try {
@@ -106,9 +107,9 @@ test("actual 59-link audited-base installation is a recognized migration plan", 
     assert.equal(plan.status, "VERIFIED");
     assert.equal(plan.code, "LEGACY_SYMLINK_PLAN_READY");
     assert.equal(plan.catalogSize, 60);
-    assert.equal(plan.foundCount, 59);
-    assert.equal(plan.entries.length, 59);
-    assert.equal(plan.missingCount, 1);
+    assert.equal(plan.foundCount, 60);
+    assert.equal(plan.entries.length, 60);
+    assert.equal(plan.missingCount, 0);
     assert.deepEqual(plan.blockers, []);
     assert.deepEqual(
       plan.entries

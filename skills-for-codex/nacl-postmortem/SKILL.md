@@ -3,7 +3,7 @@ name: nacl-postmortem
 description: |
   Post-mortem of a project built end-to-end via nacl-* skills: for each
   post-"done" bug, find which skill gate let it through. Produces
-  docs/retrospectives/<project>-postmortem.md. Use when a finished nacl-built
+  a project-named file under docs/retrospectives. Use when a finished nacl-built
   project has a git dev→fix boundary, "where did the skills break", deep skill-gap
   audit, or the user says `/nacl-postmortem`. RARE / read-only / high-stakes.
 ---

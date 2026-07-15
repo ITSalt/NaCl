@@ -143,6 +143,8 @@ async function loadManifest(filename) {
   }
   const overlayNames = manifest.workflowOverlays.map((item) => item.workflow);
   if (new Set(overlayNames).size !== overlayNames.length) throw new Error("workflow overlays must be unique");
+  const historicalKeys = manifest.historicalLegacyTargets.map((item) => `${item.workflow}:${item.sha256}`);
+  if (new Set(historicalKeys).size !== historicalKeys.length) throw new Error("historical legacy targets must be unique");
   for (const transform of manifest.transforms) {
     if (!TRANSFORMS[transform.name]) throw new Error(`Unknown transform: ${transform.name}`);
   }
@@ -248,6 +250,7 @@ async function buildInto(destination, manifest) {
     codexRootWorkflowCount: internalWorkflows.length,
     byteIdenticalCount,
     deliberateDivergences: divergences,
+    historicalLegacyTargets: manifest.historicalLegacyTargets,
   };
   const parityPath = path.join(destination, "resources", "references", "workflow-parity-baseline.json");
   await writeFile(parityPath, `${JSON.stringify(parity, null, 2)}\n`, { mode: 0o644 });

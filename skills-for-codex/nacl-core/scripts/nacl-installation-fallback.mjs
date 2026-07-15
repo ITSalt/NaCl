@@ -14,7 +14,6 @@ function blocked(reason) {
       "Cannot prove that the nacl plugin is absent. Repair Codex plugin listing or the installation doctor before running a legacy workflow.",
   };
 }
-
 export function classifyPluginCatalog(catalog) {
   if (!catalog || !Array.isArray(catalog.installed)) return blocked("invalid-catalog-shape");
   const matches = catalog.installed.filter((candidate) => {
