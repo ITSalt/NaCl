@@ -199,11 +199,11 @@ parked.
 
 | Tail | Status | PR / evidence | Notes |
 |---|---|---|---|
-| A pwsh gate | NOT_RUN | — | — |
-| B monitors | NOT_RUN | — | — |
-| C T-7 reboot | BLOCKED | — | needs live remote-mode project |
-| D release runbook | NOT_RUN | — | — |
-| E ptd-back FYI | NOT_RUN | — | owner decision |
+| A pwsh gate | VERIFIED | [PR #22](https://github.com/ITSalt/NaCl/pull/22); negative test: [run 29400687736](https://github.com/ITSalt/NaCl/actions/runs/29400687736) failed on the intentionally broken `.ps1`, final head all-green | awaiting owner merge |
+| B monitors | PARTIALLY_VERIFIED | [PR #23](https://github.com/ITSalt/NaCl/pull/23); 221/221 tests, `validate --strict` clean, adversarial review PASS with live E2E transition smoke | live Desktop UP→DOWN notification still pending (owner: stop a test container mid-session); awaiting owner merge |
+| C T-7 reboot | BLOCKED | 2026-07-15 probe: a remote-mode sidecar scope exists on the dev machine but is pre-2.24 (nohup wrapper, no LaunchAgent, no `.autostart` marker) and currently stopped | needs owner: re-run `install-sidecar` for the scope, then the kill/reboot sequence |
+| D release runbook | VERIFIED | [PR #21](https://github.com/ITSalt/NaCl/pull/21); adversarial review found 3 defects (incl. a vacuous privacy-canary ordering), fixed and re-verified | awaiting owner merge |
+| E ptd-back FYI | VERIFIED | 2026-07-15 probe: stopped `ptd-back-neo4j` has bolt 3597 configured; running `learn-neo4j` holds 0.0.0.0:3597 — `docker start ptd-back-neo4j` will fail until re-ported | surfaced to owner; nothing to code |
 | F variant 2 | PARKED | — | owner opt-in only |
 
 Final report per tail: status, PR link, commands + exit codes, evidence
