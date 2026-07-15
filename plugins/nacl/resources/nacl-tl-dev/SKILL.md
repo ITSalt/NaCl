@@ -172,7 +172,7 @@ Run `scripts.test` once **before writing any test or production code**. Capture 
 - Total tests collected, total passing, total failing
 - Whether the runner started cleanly (exit code, any stderr)
 
-Store output in `/tmp/TECH-###-baseline.txt` (or equivalent temp location). This baseline is the reference for all subsequent comparisons.
+Allocate the output path with `baseline_file=$(mktemp -t 'TECH-###-baseline.XXXXXX')` and store the output in `$baseline_file`. This baseline is the reference for all subsequent comparisons.
 
 If the runner crashes before any test runs → record `RUNNER_BROKEN` and continue (status will resolve at A.5).
 
@@ -290,7 +290,7 @@ Run the verification command once **before applying any change**. Capture:
 - Current running state (container names, statuses, exit codes)
 - Relevant config diff if applicable (e.g., `docker compose config`, `terraform show`)
 
-Store in `/tmp/TECH-###-baseline.txt`. This is the reference for comparison after the change.
+Allocate the output path with `baseline_file=$(mktemp -t 'TECH-###-baseline.XXXXXX')` and store the output in `$baseline_file`. This is the reference for comparison after the change.
 
 ### B.2: Implement Configuration (formerly B1)
 

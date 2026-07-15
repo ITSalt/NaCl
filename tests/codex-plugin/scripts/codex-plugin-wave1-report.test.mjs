@@ -31,6 +31,25 @@ const cacheFiles = [
   "scripts/nacl-spike-mcp.mjs",
   "skills/nacl-spike-health/SKILL.md",
 ];
+const syntheticRoot = path.join(path.parse(repoRoot).root, "synthetic-runtime");
+const syntheticHome = path.join(syntheticRoot, "developer-home");
+const syntheticDarwinTempRoot = path.join(
+  path.parse(repoRoot).root,
+  "var",
+  "folders",
+  "synthetic",
+  "T",
+  "nacl-codex-plugin-wave1-matrix-private-alias",
+);
+const syntheticDarwinTempCanonical = path.join(
+  path.parse(repoRoot).root,
+  "private",
+  "var",
+  "folders",
+  "synthetic",
+  "T",
+  "nacl-codex-plugin-wave1-matrix-private-alias",
+);
 
 function command(payload, exitCode = 0) {
   return {
@@ -317,10 +336,8 @@ test("accepts a complete synthetic report with explicit expected shape differenc
 
 test("accepts the bounded macOS /private realpath alias for disposable roots", () => {
   const report = validReport({
-    workRoot:
-      "/var/folders/synthetic/T/nacl-codex-plugin-wave1-matrix-private-alias",
-    workRootCanonical:
-      "/private/var/folders/synthetic/T/nacl-codex-plugin-wave1-matrix-private-alias",
+    workRoot: syntheticDarwinTempRoot,
+    workRootCanonical: syntheticDarwinTempCanonical,
   });
   const result = evaluateMatrixReport(report);
   assert.equal(result.overallStatus, "VERIFIED", result.failures.join("\n"));
@@ -401,9 +418,10 @@ test("fails disposable HOME, CODEX_HOME, and canonical cache escapes", async (t)
       "live CODEX_HOME",
       (report) => {
         const shape = report.shapes[0];
-        shape.codexHome = "/Users/maxnikitin/.codex";
-        shape.codexHomeCanonical = "/Users/maxnikitin/.codex";
-        shape.environment.CODEX_HOME = "/Users/maxnikitin/.codex";
+        const escaped = path.join(syntheticHome, ".codex");
+        shape.codexHome = escaped;
+        shape.codexHomeCanonical = escaped;
+        shape.environment.CODEX_HOME = escaped;
       },
       "shape.camel-case-companion.isolation.codexHome",
     ],
@@ -411,9 +429,9 @@ test("fails disposable HOME, CODEX_HOME, and canonical cache escapes", async (t)
       "HOME escape",
       (report) => {
         const shape = report.shapes[0];
-        shape.home = "/Users/maxnikitin";
-        shape.homeCanonical = "/Users/maxnikitin";
-        shape.environment.HOME = "/Users/maxnikitin";
+        shape.home = syntheticHome;
+        shape.homeCanonical = syntheticHome;
+        shape.environment.HOME = syntheticHome;
       },
       "shape.camel-case-companion.isolation.home",
     ],
@@ -422,7 +440,8 @@ test("fails disposable HOME, CODEX_HOME, and canonical cache escapes", async (t)
       (report) => {
         const shape = report.shapes[0];
         const escaped = path.join(
-          "/Users/maxnikitin/.codex",
+          syntheticHome,
+          ".codex",
           "plugins",
           "cache",
           "personal",
@@ -439,8 +458,10 @@ test("fails disposable HOME, CODEX_HOME, and canonical cache escapes", async (t)
     [
       "CODEX_HOME canonical symlink escape",
       (report) => {
-        report.shapes[0].codexHomeCanonical =
-          "/Users/maxnikitin/outside-codex-home";
+        report.shapes[0].codexHomeCanonical = path.join(
+          syntheticRoot,
+          "outside-codex-home",
+        );
       },
       "shape.camel-case-companion.isolation.codexHomeCanonicalPair",
     ],
@@ -449,7 +470,8 @@ test("fails disposable HOME, CODEX_HOME, and canonical cache escapes", async (t)
       (report) => {
         const shape = report.shapes[0];
         const escaped = path.join(
-          "/Users/maxnikitin/outside-codex-home",
+          syntheticRoot,
+          "outside-codex-home",
           "plugins",
           "cache",
           "personal",

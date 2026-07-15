@@ -4,7 +4,7 @@ set -euo pipefail
 
 repo_root=$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)
 gate="$repo_root/scripts/check-claude-runtime-unchanged.sh"
-tmp_dir=$(mktemp -d "${TMPDIR:-/tmp}/nacl-claude-gate-test.XXXXXX")
+tmp_dir=$(mktemp -d -t nacl-claude-gate-test.XXXXXX)
 trap 'rm -rf "$tmp_dir"' EXIT
 
 cd "$tmp_dir"

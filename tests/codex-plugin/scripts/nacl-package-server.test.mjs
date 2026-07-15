@@ -185,7 +185,7 @@ test("graph tool validation fails closed before lifecycle resolution", async () 
         method: "tools/call",
         params: {
           name: "nacl_graph_health",
-          arguments: { project_id: "?", project_root: "/tmp/project", ...graphIdentity() },
+          arguments: { project_id: "?", project_root: path.join(os.tmpdir(), "project"), ...graphIdentity() },
         },
       },
     ]);
@@ -433,7 +433,7 @@ test("double installation also blocks direct graph tool calls", async () => {
         method: "tools/call",
         params: {
           name: "nacl_graph_health",
-          arguments: { project_id: "project-a", project_root: "/tmp/project-a", ...graphIdentity() },
+          arguments: { project_id: "project-a", project_root: path.join(os.tmpdir(), "project-a"), ...graphIdentity() },
         },
       },
     ]);

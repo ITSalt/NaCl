@@ -6,7 +6,7 @@ repo_root=$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)
 installer="$repo_root/skills-for-codex/scripts/install-user-symlinks.sh"
 doctor="$repo_root/plugins/nacl/scripts/nacl-installation-doctor.mjs"
 plugin_root="$repo_root/plugins/nacl"
-work_root=$(mktemp -d "${TMPDIR:-/tmp}/nacl-legacy-e2e.XXXXXX")
+work_root=$(mktemp -d -t nacl-legacy-e2e.XXXXXX)
 trap 'rm -rf "$work_root"' EXIT
 
 actual_sh_hash=$(shasum -a 256 "$installer" | awk '{print $1}')

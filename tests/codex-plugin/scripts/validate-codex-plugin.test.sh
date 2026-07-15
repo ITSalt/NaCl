@@ -4,7 +4,7 @@ set -euo pipefail
 
 repo_root=$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)
 gate="$repo_root/scripts/validate-codex-plugin.sh"
-tmp_dir=$(mktemp -d "${TMPDIR:-/tmp}/nacl-plugin-gate-test.XXXXXX")
+tmp_dir=$(mktemp -d -t nacl-plugin-gate-test.XXXXXX)
 trap 'rm -rf "$tmp_dir"' EXIT
 plugin_root="$tmp_dir/nacl"
 

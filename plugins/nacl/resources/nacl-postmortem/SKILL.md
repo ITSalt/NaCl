@@ -90,7 +90,7 @@ the workflow is an opt-in alternative producer of the **same** deliverable.
   user-approved step.
 - **no-private-info-in-public-repo** — the artifact lives in this framework repo only when the
   audited project is the user's own (e.g. `family-cinema`); otherwise keep it in the project repo.
-  Never include local `/Users/` paths or dump metadata in the artifact body.
+  Never include developer-specific home-directory paths or dump metadata in the artifact body.
 
 ## References
 

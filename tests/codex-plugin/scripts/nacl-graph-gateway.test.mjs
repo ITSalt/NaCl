@@ -15,7 +15,7 @@ import { resolveSecret } from "../../../plugins/nacl/runtime/graph-gateway/secre
 import { GRAPH_TOOL_DEFINITIONS } from "../../../plugins/nacl/runtime/graph-gateway/tool-schemas.mjs";
 import { deriveWorkerId } from "../../../plugins/nacl/runtime/graph-gateway/identity.mjs";
 
-const projectRoot = "/tmp/nacl-project-a";
+const projectRoot = path.join(os.tmpdir(), "nacl-project-a");
 const identity = Object.freeze({
   principal_id: "principal-alice",
   client_id: "client-desktop-01",
@@ -613,7 +613,7 @@ test("lifecycle adapter consumes only the public resolve/doctor contract", async
         code: "INSTANCE_RESOLVED",
         projectId: "project-a",
         projectRoot,
-        auditPath: "/tmp/nacl-project-a/audit.jsonl",
+        auditPath: path.join(projectRoot, "audit.jsonl"),
         instance: {
           contract: "nacl-local-graph-instance-v1",
           projectId: "project-a",
@@ -638,7 +638,7 @@ test("lifecycle adapter consumes only the public resolve/doctor contract", async
   const resolver = createLifecycleProjectResolver({ getLifecycle: async () => lifecycle });
   const profile = await resolver({ projectId: "project-a", projectRoot });
   assert.equal(profile.endpoint, "http://127.0.0.1:17474");
-  assert.equal(profile.auditPath, "/tmp/nacl-project-a/audit.jsonl");
+  assert.equal(profile.auditPath, path.join(projectRoot, "audit.jsonl"));
   assert.equal(profile.lifecycleCode, "SCHEMA_MISSING");
   assert.deepEqual(calls, [
     ["resolve", { projectId: "project-a", projectRoot }],
@@ -1001,10 +1001,10 @@ test("transport pooling is keyed by project and never reuses a tenant transport"
       return { tenant: profile.projectId, sequence: ++created };
     },
   });
-  const profileA = verifiedProfile("/tmp/a");
-  const profileB = verifiedProfile("/tmp/b", {
+  const profileA = verifiedProfile(path.join(os.tmpdir(), "a"));
+  const profileB = verifiedProfile(path.join(os.tmpdir(), "b"), {
     projectId: "project-b",
-    projectRoot: "/tmp/nacl-project-b",
+    projectRoot: path.join(os.tmpdir(), "nacl-project-b"),
     endpoint: "http://127.0.0.1:27474",
     secretReference: "keychain:com.itsalt.nacl.local-graph/project-b",
   });

@@ -44,6 +44,13 @@ const LEGACY_DOCS = new Set([
 
 const ACCEPTED_COUNTS = Object.freeze({ publicSkills: 10, internalWorkflows: 60, mcpTools: 25 });
 
+const regexSlash = String.raw`\/`;
+const markdownTick = String.fromCharCode(96);
+const HOST_TEMP_OR_WAVE7_PATTERN = new RegExp(
+  `(?:\\bW7C\\d+\\b|0\\.1\\.0\\+codex\\.w7[0-9A-Za-z.+-]*|\\bnacl[-_](?:plugin[-_])?w7\\b|${regexSlash}(?:private${regexSlash})?tmp${regexSlash}[^\\s)${markdownTick}]+|${regexSlash}var${regexSlash}folders${regexSlash}[^\\s)${markdownTick}]+)`,
+  "i",
+);
+
 const PLUGIN_FIRST_FORBIDDEN = Object.freeze([
   ["git clone", /\bgit\s+clone\b/i],
   ["skills-for-codex", /\bskills-for-codex(?:\/|\b)/i],
@@ -60,7 +67,7 @@ const EVERYWHERE_FORBIDDEN = Object.freeze([
   ["personal /Users path", /\/Users\/[^/\s`]+\//],
   [
     "temporary candidate path or Wave 7 identifier",
-    /(?:\bW7C\d+\b|0\.1\.0\+codex\.w7[0-9A-Za-z.+-]*|\bnacl[-_](?:plugin[-_])?w7\b|(?:\/private)?\/tmp\/[^\s)`]+|\/var\/folders\/[^\s)`]+)/i,
+    HOST_TEMP_OR_WAVE7_PATTERN,
   ],
 ]);
 

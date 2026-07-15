@@ -92,7 +92,7 @@ Command:
 
 ```sh
 bash scripts/codex-plugin-ci.sh test:cli-plugin \
-  --output /tmp/nacl-wave2-cli-final.json
+  --output "$TMPDIR/nacl-wave2-cli-final.json"
 ```
 
 Result: exit 0, `Status: VERIFIED`.
@@ -155,7 +155,7 @@ The same isolated run proved `legacy-only=VERIFIED`, `both=FAILED`, and
 | `bash scripts/codex-plugin-ci.sh test:plugin-package` | exit 0; 10/10 official entry-skill validation and 38/38 package/protocol/adversarial tests |
 | `bash scripts/codex-plugin-ci.sh test:plugin-closure` | exit 0; 303 package files, 10 public skills, 60 internal workflows, 310 active inline paths, 22 command paths, 59 provenance paths, and two source-only annotations |
 | `bash scripts/codex-plugin-ci.sh test:cli-legacy` | exit 0; isolated legacy install/update and conflict diagnostics verified |
-| `bash scripts/codex-plugin-ci.sh test:cli-plugin --output /tmp/nacl-wave2-cli-final.json` | exit 0; cache/source-unavailable CLI E2E verified |
+| `bash scripts/codex-plugin-ci.sh test:cli-plugin --output "$TMPDIR/nacl-wave2-cli-final.json"` | exit 0; cache/source-unavailable CLI E2E verified |
 | `git diff --cached --check` | exit 0 |
 
 The closure gate covers:

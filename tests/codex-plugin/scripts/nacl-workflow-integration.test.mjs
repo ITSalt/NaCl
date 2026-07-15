@@ -147,7 +147,7 @@ test("strict evidence parser rejects unknown, duplicate, unsafe, and malformed e
     "repo-checks-GREEN:abcdef1 repo-checks-GREEN:abcdef2",
     "qa-stage:component:VERIFIED qa-stage:component:FAILED",
     "stub-shape-validated:UC-302:FormField:field stub-shape-validated:UC-302:FormField:field",
-    "test-GREEN:/tmp/test.mjs",
+    `test-GREEN:${path.join(os.tmpdir(), "test.mjs")}`,
     "test-GREEN:./tests/test.mjs",
     "test-GREEN:tests//test.mjs",
     "test-GREEN:tests/./test.mjs",
@@ -247,7 +247,7 @@ test("no-test confirmation is an exact mutate schema field bound into request co
   });
   const request = {
     project_id: "evidence-project",
-    project_root: "/tmp/evidence-project",
+    project_root: path.join(os.tmpdir(), "evidence-project"),
     ...identity,
     resource_type: "Task",
     resource_id: "TASK-EVIDENCE",
@@ -292,7 +292,7 @@ test("MCP lifecycle tools stop on confirmation before side effects", async () =>
     async doctor(input) { calls.push(["doctor", input]); return { contract: "nacl-local-graph-lifecycle-v1", operation: "doctor", status: "VERIFIED", code: "GRAPH_HEALTHY" }; },
   };
   const gateway = createWorkflowToolGateway({ lifecycle });
-  const common = { project_id: "workflow-project", project_root: "/tmp/workflow-project" };
+  const common = { project_id: "workflow-project", project_root: path.join(os.tmpdir(), "workflow-project") };
   const declined = await gateway.callTool("nacl_graph_local_init", { ...common, confirmation: "no" });
   assert.equal(declined.status, "BLOCKED");
   assert.equal(declined.code, "CONFIRMATION_REQUIRED");

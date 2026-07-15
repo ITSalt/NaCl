@@ -44,6 +44,7 @@ from __future__ import annotations
 
 import datetime as _dt
 import re
+import tempfile
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -81,11 +82,12 @@ _UC_ID_CANON_RE = re.compile(
 
 # Canonical BA-prefix tokens accepted in ``ba_source`` frontmatter on SA
 # artifacts (DomainEntity / Enumeration). Anything outside this whitelist is
-# dropped; non-matching tokens are warn-logged to /tmp/ko-sa-parse.log so
+# dropped; non-matching tokens are warn-logged under the platform's safe
+# temporary directory so
 # sentinel characters (``—``) or typo-prefixes (``KAR-44``) don't silently
 # disappear.
 _BA_TRACE_TOKEN_RE = re.compile(r"\b(?:OBJ-\d{3}|BRQ-\d{3}|ROL-\d{2})\b")
-_SA_PARSE_LOG = "/tmp/ko-sa-parse.log"
+_SA_PARSE_LOG = Path(tempfile.gettempdir()) / "ko-sa-parse.log"
 
 
 def _log_dropped_ba_token(source_file: str, raw_value: str) -> None:

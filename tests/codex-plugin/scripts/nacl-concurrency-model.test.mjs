@@ -1,4 +1,6 @@
 import assert from "node:assert/strict";
+import os from "node:os";
+import path from "node:path";
 import test from "node:test";
 import { rolesForCapability } from "../../../plugins/nacl/runtime/graph-gateway/authorization.mjs";
 import {
@@ -25,7 +27,7 @@ import { GRAPH_TOOL_BY_NAME } from "../../../plugins/nacl/runtime/graph-gateway/
 import { validateToolArguments } from "../../../plugins/nacl/runtime/graph-gateway/validation.mjs";
 
 const projectId = "wave5-model-project";
-const projectRoot = "/tmp/wave5-model-project";
+const projectRoot = path.join(os.tmpdir(), "wave5-model-project");
 const sha = "a".repeat(40);
 
 function identity(principal = "principal-alice", session = "session-one", suffix = "one") {

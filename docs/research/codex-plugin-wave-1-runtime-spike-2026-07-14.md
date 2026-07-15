@@ -64,7 +64,7 @@ Command:
 
 ```sh
 node scripts/codex-plugin-wave1-matrix.mjs \
-  --output /tmp/nacl-wave1-matrix.json
+  --output "$TMPDIR/nacl-wave1-matrix.json"
 ```
 
 Exit: 0. Every shape used its own generated marketplace copy plus distinct
@@ -100,13 +100,13 @@ filesystem realpath. It asserts the exact work-root → shape-root → disposabl
 `HOME`/`CODEX_HOME` relationships and requires initial and reinstalled caches
 to equal the expected versioned path beneath the exact canonical
 `CODEX_HOME`. The only raw/canonical spelling exception is the bounded macOS
-`/var` or `/tmp` to `/private/var` or `/private/tmp` realpath alias; arbitrary
-canonical and symlink escapes fail.
+system-temporary-directory realpath alias through the `/private` prefix;
+arbitrary canonical and symlink escapes fail.
 
 Codex CLI and the directly invoked STDIO server now receive an allowlisted
 child environment plus the two disposable homes. Live MCP and credential
 environment values are not inherited or recorded. Deterministic mutations
-prove failure for `codexHome=/Users/maxnikitin/.codex`, escaping `HOME`, an
+prove failure for `codexHome=$HOME/.codex`, escaping `HOME`, an
 outside cache with the correct suffix, a canonical `CODEX_HOME` escape, and a
 canonical cache escape. A positive synthetic case proves the bounded macOS
 `/private` equivalence.
@@ -128,7 +128,7 @@ The process-level negative probe was:
 ```sh
 node scripts/codex-plugin-wave1-matrix.mjs \
   --codex /usr/bin/false \
-  --output /tmp/nacl-wave1-false-strict.json
+  --output "$TMPDIR/nacl-wave1-false-strict.json"
 ```
 
 It wrote a report with `overallStatus: FAILED`, named
@@ -144,7 +144,7 @@ canonical/symlink escapes without requiring Codex or a model.
 For the accepted companion form, initial install returned:
 
 ```text
-/private/var/folders/nd/0zdmygxx7433_gtcxxr7xhdr0000gn/T/nacl-codex-plugin-wave1-matrix-8zB6aG/camel-case-companion/codex-home/plugins/cache/personal/nacl/0.1.0
+$TMPDIR/nacl-codex-plugin-wave1-matrix-RUN_ID/camel-case-companion/codex-home/plugins/cache/personal/nacl/0.1.0
 ```
 
 `codex mcp list --json` resolved cwd to that cache directory. After renaming
@@ -209,7 +209,7 @@ official helper and reinstall, a new command/task with echo
 `codex-exec-cachebuster-proof` also exited 0 and completed from:
 
 ```text
-/private/var/folders/nd/0zdmygxx7433_gtcxxr7xhdr0000gn/T/nacl-wave1-exec.KJ1Wvm/codex-home/plugins/cache/personal/nacl/0.1.0+codex.20260714115122
+$TMPDIR/nacl-wave1-exec.RUN_ID/codex-home/plugins/cache/personal/nacl/0.1.0+codex.20260714115122
 ```
 
 The second response reported the same updated plugin version. The bypass flag
@@ -220,31 +220,32 @@ installation guidance.
 
 The negative process and isolated-copy tests now remove their exact `mkdtemp`
 roots in `finally`. Normal matrix evidence no longer uses `--keep`. Without
-reading authentication contents, the correction removed these exact retained
-Wave 1 roots created by earlier runs:
+reading authentication contents, the correction removed the retained Wave 1
+root classes below. Concrete host prefixes and random run suffixes are
+normalized in this historical record:
 
 ```text
-/var/folders/nd/0zdmygxx7433_gtcxxr7xhdr0000gn/T/nacl-codex-plugin-wave1-matrix-8zB6aG
-/var/folders/nd/0zdmygxx7433_gtcxxr7xhdr0000gn/T/nacl-codex-plugin-wave1-matrix-WS90eE
-/var/folders/nd/0zdmygxx7433_gtcxxr7xhdr0000gn/T/nacl-matrix-negative-VWc3Ul
-/var/folders/nd/0zdmygxx7433_gtcxxr7xhdr0000gn/T/nacl-matrix-negative-Wtez0f
-/var/folders/nd/0zdmygxx7433_gtcxxr7xhdr0000gn/T/nacl-spike-copy-3MeiAM
-/var/folders/nd/0zdmygxx7433_gtcxxr7xhdr0000gn/T/nacl-spike-copy-3vk0CQ
-/var/folders/nd/0zdmygxx7433_gtcxxr7xhdr0000gn/T/nacl-spike-copy-9wZ9Rr
-/var/folders/nd/0zdmygxx7433_gtcxxr7xhdr0000gn/T/nacl-spike-copy-H5REn3
-/var/folders/nd/0zdmygxx7433_gtcxxr7xhdr0000gn/T/nacl-spike-copy-JcjrjN
-/var/folders/nd/0zdmygxx7433_gtcxxr7xhdr0000gn/T/nacl-spike-copy-UpTPHe
-/var/folders/nd/0zdmygxx7433_gtcxxr7xhdr0000gn/T/nacl-spike-copy-XvzLRp
-/var/folders/nd/0zdmygxx7433_gtcxxr7xhdr0000gn/T/nacl-spike-copy-jXSnhz
-/var/folders/nd/0zdmygxx7433_gtcxxr7xhdr0000gn/T/nacl-spike-copy-m245mr
-/var/folders/nd/0zdmygxx7433_gtcxxr7xhdr0000gn/T/nacl-wave1-exec.KJ1Wvm
-/var/folders/nd/0zdmygxx7433_gtcxxr7xhdr0000gn/T/nacl-wave1-probe.PYB1GR
+$TMPDIR/nacl-codex-plugin-wave1-matrix-RUN_ID_A
+$TMPDIR/nacl-codex-plugin-wave1-matrix-RUN_ID_B
+$TMPDIR/nacl-matrix-negative-RUN_ID_A
+$TMPDIR/nacl-matrix-negative-RUN_ID_B
+$TMPDIR/nacl-spike-copy-RUN_ID_A
+$TMPDIR/nacl-spike-copy-RUN_ID_B
+$TMPDIR/nacl-spike-copy-RUN_ID_C
+$TMPDIR/nacl-spike-copy-RUN_ID_D
+$TMPDIR/nacl-spike-copy-RUN_ID_E
+$TMPDIR/nacl-spike-copy-RUN_ID_F
+$TMPDIR/nacl-spike-copy-RUN_ID_G
+$TMPDIR/nacl-spike-copy-RUN_ID_H
+$TMPDIR/nacl-spike-copy-RUN_ID_I
+$TMPDIR/nacl-wave1-exec.RUN_ID
+$TMPDIR/nacl-wave1-probe.RUN_ID
 ```
 
 Post-removal prefix scan result: `REMAINING_WAVE1_TEMP_ROOTS 0`. The removed
-`nacl-wave1-exec.KJ1Wvm` root contained the disposable copied authentication
+`nacl-wave1-exec.RUN_ID` root contained the disposable copied authentication
 file; neither cleanup nor evidence generation read its contents. Associated
-ad-hoc `/tmp/nacl-wave1-*` JSON/stdout/stderr files from these runs were also
+ad-hoc `$TMPDIR/nacl-wave1-*` JSON/stdout/stderr files from these runs were also
 removed after the durable evidence was recorded here.
 
 ## Deterministic Gates

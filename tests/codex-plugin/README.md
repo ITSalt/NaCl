@@ -13,7 +13,7 @@ bash scripts/codex-plugin-ci.sh test:plugin-spike
 bash scripts/codex-plugin-ci.sh test:plugin-package
 bash scripts/codex-plugin-ci.sh test:plugin-closure
 bash scripts/codex-plugin-ci.sh test:cli-legacy
-bash scripts/codex-plugin-ci.sh test:cli-plugin --output /tmp/nacl-wave2-cli.json
+bash scripts/codex-plugin-ci.sh test:cli-plugin --output "$TMPDIR/nacl-wave2-cli.json"
 ```
 
 The Codex skill gate runs the checksum-verified OpenAI validator snapshot
@@ -92,7 +92,7 @@ fail.
 
 ```sh
 node scripts/codex-plugin-wave1-matrix.mjs \
-  --output /tmp/nacl-wave1-matrix.json
+  --output "$TMPDIR/nacl-wave1-matrix.json"
 ```
 
 The default flow removes its disposable work root in `finally`. Use `--keep`

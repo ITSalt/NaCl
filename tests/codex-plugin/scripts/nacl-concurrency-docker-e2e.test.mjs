@@ -388,7 +388,7 @@ test(
       assert.equal(takeover.fencingToken, 2, "expires_at == now must permit takeover and increment fence");
 
       const invalidTerminalEvidence = [
-        { evidence: "test-GREEN:/tmp/absolute.test.mjs", code: "TERMINAL_TASK_EVIDENCE_INVALID" },
+        { evidence: `test-GREEN:${path.join(os.tmpdir(), "absolute.test.mjs")}`, code: "TERMINAL_TASK_EVIDENCE_INVALID" },
         { evidence: "test-GREEN:tests/../escape.test.mjs", code: "TERMINAL_TASK_EVIDENCE_INVALID" },
         { evidence: "qa-stage:component:PASS test-GREEN:tests/task.test.mjs", code: "TERMINAL_TASK_EVIDENCE_INVALID" },
         { evidence: "test-GREEN:tests/task.test.mjs test-GREEN:tests/task.test.mjs", code: "TERMINAL_TASK_EVIDENCE_INVALID" },

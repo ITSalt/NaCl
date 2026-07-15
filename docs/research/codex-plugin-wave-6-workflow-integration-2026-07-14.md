@@ -233,7 +233,7 @@ not a claim that a live Desktop new task discovered the candidate.
 |---|---|
 | `bash scripts/codex-plugin-ci.sh test:workflow-integration` | 18/18 passed after `fbb46a77...`; includes public-entry-to-MCP create-only semantic execution |
 | `bash scripts/codex-plugin-ci.sh test:plugin-manifest` | `VERIFIED` |
-| `python3 /Users/maxnikitin/.codex/skills/.system/plugin-creator/scripts/validate_plugin.py plugins/nacl` | official plugin-creator validation passed |
+| `python3 "$PLUGIN_CREATOR/scripts/validate_plugin.py" plugins/nacl` | official plugin-creator validation passed |
 | `bash scripts/codex-plugin-ci.sh test:plugin-package` | 63/63 passed |
 | `bash scripts/codex-plugin-ci.sh test:plugin-closure` | `VERIFIED`; 356 files, 10 public entries, 60 internal workflows, 301 inline paths, 0 active command paths, 59 descriptive provenance paths |
 | `bash scripts/codex-plugin-ci.sh test:graph-unit` | 89/89 passed |

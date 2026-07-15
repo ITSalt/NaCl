@@ -102,10 +102,16 @@ function safeCanonicalPair(rawPath, canonicalPath, platform) {
   const canonical = path.resolve(canonicalPath);
   if (raw === canonical) return true;
   if (platform !== "darwin") return false;
-  const isDarwinAlias = ["/tmp", "/var"].some(
+  const filesystemRoot = path.parse(raw).root;
+  const isDarwinAlias = ["tmp", "var"].map((segment) => path.join(filesystemRoot, segment)).some(
     (root) => raw === root || raw.startsWith(`${root}${path.sep}`),
   );
-  return isDarwinAlias && canonical === `/private${raw}`;
+  const privateCanonical = path.join(
+    filesystemRoot,
+    "private",
+    raw.slice(filesystemRoot.length),
+  );
+  return isDarwinAlias && canonical === privateCanonical;
 }
 
 function samePathOrSafeAlias(left, right, platform) {
