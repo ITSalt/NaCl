@@ -21,6 +21,7 @@ case ${1:-} in
       tests/codex-plugin/scripts/nacl-concurrency-model.test.mjs
       tests/codex-plugin/scripts/nacl-graph-gateway-docker-e2e.test.mjs
       tests/codex-plugin/scripts/nacl-graph-gateway.test.mjs
+      tests/codex-plugin/scripts/nacl-interface-metadata.test.mjs
       tests/codex-plugin/scripts/nacl-legacy-symlinks.test.mjs
       tests/codex-plugin/scripts/nacl-local-graph-lifecycle-docker-smoke.test.mjs
       tests/codex-plugin/scripts/nacl-local-graph-lifecycle.test.mjs
