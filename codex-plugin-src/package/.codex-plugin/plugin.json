@@ -1,0 +1,22 @@
+{
+  "name": "nacl",
+  "version": "0.1.0+codex.20260715094133",
+  "description": "Self-contained NaCl workflows, optional project agents, and fenced multi-user graph gateway for Codex CLI and Desktop",
+  "author": {
+    "name": "NaCl contributors"
+  },
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "NaCl",
+    "shortDescription": "Run NaCl analysis and delivery workflows.",
+    "longDescription": "A cache-contained NaCl workflow package with bounded entry skills, optional confirmed project agent profiles, deterministic workflow routing, and a secure multi-project graph gateway with authoritative RBAC, leases, fencing, CAS, and atomic IDs.",
+    "developerName": "NaCl contributors",
+    "category": "Developer Tools",
+    "capabilities": [
+      "Read",
+      "Write"
+    ],
+    "defaultPrompt": "Check my NaCl installation, then route this project request to the right workflow."
+  },
+  "mcpServers": "./.mcp.json"
+}

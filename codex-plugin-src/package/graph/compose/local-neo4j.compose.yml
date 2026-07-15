@@ -1,0 +1,42 @@
+name: nacl-local-graph
+
+services:
+  neo4j:
+    image: "${NACL_NEO4J_IMAGE:?pinned Neo4j image is required}"
+    container_name: "${NACL_CONTAINER_NAME:?project container name is required}"
+    restart: "no"
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - FOWNER
+      # tini runs as root and must forward SIGTERM to the Neo4j process (UID 7474).
+      - KILL
+      - SETGID
+      - SETUID
+    ports:
+      - "127.0.0.1:${NACL_HTTP_PORT:?project HTTP port is required}:7474"
+      - "127.0.0.1:${NACL_BOLT_PORT:?project Bolt port is required}:7687"
+    environment:
+      NEO4J_AUTH: "${NACL_NEO4J_AUTH:?opaque secret resolution is required}"
+      NEO4J_PLUGINS: "[]"
+      NEO4J_dbms_security_procedures_allowlist: ""
+      NEO4J_dbms_security_procedures_unrestricted: ""
+      NEO4J_server_memory_heap_initial__size: 256m
+      NEO4J_server_memory_heap_max__size: 512m
+      NEO4J_server_memory_pagecache_size: 256m
+    volumes:
+      - graph-data:/data
+    labels:
+      com.itsalt.nacl.managed: "true"
+      com.itsalt.nacl.lifecycle: "nacl-local-neo4j-compose-v1"
+
+volumes:
+  graph-data:
+    name: "${NACL_VOLUME_NAME:?project volume name is required}"
+    labels:
+      com.itsalt.nacl.managed: "true"
+      com.itsalt.nacl.persistent: "true"

@@ -1,0 +1,11 @@
+{
+  "component": "nacl-graph-gateway",
+  "version": 1,
+  "description": "Add the gateway migration ledger and project write-canary identity.",
+  "risk": "additive",
+  "backupRequired": false,
+  "statements": [
+    "CREATE CONSTRAINT nacl_schema_migration_identity IF NOT EXISTS FOR (migration:SchemaMigration) REQUIRE (migration.component, migration.version) IS UNIQUE",
+    "CREATE CONSTRAINT nacl_gateway_canary_project IF NOT EXISTS FOR (canary:NaclGatewayCanary) REQUIRE canary.project_id IS UNIQUE"
+  ]
+}

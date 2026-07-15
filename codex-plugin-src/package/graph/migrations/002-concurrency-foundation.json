@@ -1,0 +1,14 @@
+{
+  "component": "nacl-graph-gateway",
+  "version": 2,
+  "description": "Add authoritative memberships, generic fenced leases, idempotency records, and project-scoped ID sequences.",
+  "risk": "additive",
+  "backupRequired": false,
+  "statements": [
+    "CREATE CONSTRAINT nacl_project_authorization_identity IF NOT EXISTS FOR (guard:ProjectAuthorization) REQUIRE guard.project_id IS UNIQUE",
+    "CREATE CONSTRAINT nacl_project_membership_identity IF NOT EXISTS FOR (membership:ProjectMembership) REQUIRE (membership.project_id, membership.principal_id) IS UNIQUE",
+    "CREATE CONSTRAINT nacl_resource_lease_identity IF NOT EXISTS FOR (lease:ResourceLease) REQUIRE (lease.project_id, lease.resource_type, lease.resource_id) IS UNIQUE",
+    "CREATE CONSTRAINT nacl_id_sequence_identity IF NOT EXISTS FOR (sequence:IdSequence) REQUIRE (sequence.project_id, sequence.entity_kind) IS UNIQUE",
+    "CREATE CONSTRAINT nacl_idempotency_record_identity IF NOT EXISTS FOR (request:IdempotencyRecord) REQUIRE (request.project_id, request.key_hash) IS UNIQUE"
+  ]
+}
