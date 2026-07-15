@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "queries": {
+    "transport-canary": {
+      "capability": "read",
+      "statement": "RETURN $expected AS observed",
+      "fixedParameters": {
+        "expected": "nacl-graph-read-canary-v1"
+      }
+    },
+    "summary": {
+      "capability": "read",
+      "statement": "MATCH (node) RETURN count(node) AS nodeCount"
+    },
+    "write-canary": {
+      "capability": "write",
+      "statement": "MERGE (canary:NaclGatewayCanary {project_id: $project_id}) ON CREATE SET canary.created_at = datetime(), canary.revision = 0 WITH membership, canary, coalesce(canary.last_idempotency_key, '') = $idempotency_key AS replay FOREACH (_ IN CASE WHEN replay THEN [] ELSE [1] END | SET canary.last_idempotency_key = $idempotency_key, canary.revision = canary.revision + 1, canary.updated_at = datetime()) RETURN canary.project_id AS projectId, canary.revision AS revision, canary.last_idempotency_key AS idempotencyKey, replay, membership.revision AS membershipRevision"
+    },
+    "write-canary-readback": {
+      "capability": "read",
+      "statement": "MATCH (canary:NaclGatewayCanary {project_id: $project_id}) RETURN canary.project_id AS projectId, canary.revision AS revision, canary.last_idempotency_key AS idempotencyKey"
+    }
+  }
+}

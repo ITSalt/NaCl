@@ -1,0 +1,87 @@
+# VPS overlay compose — a SHARED, internet-reachable Neo4j for multi-user NaCl projects.
+#
+# Differs from the local graph-docker-compose.yml in exactly the ways that matter for
+# exposing a graph to the internet safely:
+#   * Neo4j publishes NO host ports — it is only reachable on the internal docker network.
+#   * A ghostunnel "gateway" service owns the single public port and terminates mTLS:
+#     it accepts ONLY client certificates whose CN is on the managed allow-list below
+#     (and which are signed by our private CA), then forwards plaintext bolt to neo4j.
+#   * The DB password is project-unique and injected from .env (never the shared dev default).
+#
+# Revocation model: ghostunnel (>=1.x) has no CRL flag, so access is an explicit CN allow-list.
+# provision/issue/revoke-client-cert.sh manage <state>/<scope>/allowed-cns and re-render the
+# `--allow-cn` lines between the managed markers below, then restart the gateway. Revoking a
+# developer = drop their CN + restart (instant, no password rotation, others unaffected).
+#
+# One stack per project (CONTAINER_PREFIX) — Community Edition is one DB per instance, so
+# project isolation = one container per project (mirrors the existing per-project model).
+# Generated/managed by provision-vps.sh. Certs live in ./certs (ca.crt, server.crt/key).
+name: ${COMPOSE_PROJECT_NAME:-${CONTAINER_PREFIX:-graph}-graph}
+
+services:
+  neo4j:
+    image: neo4j:5-community
+    container_name: ${CONTAINER_PREFIX:-graph}-neo4j
+    restart: unless-stopped
+    # NO `ports:` — deliberately not published to the host. Reachable only via the gateway.
+    expose:
+      - "7687"
+      - "7474"
+    environment:
+      NEO4J_AUTH: neo4j/${NEO4J_PASSWORD:?set NEO4J_PASSWORD in .env}
+      NEO4J_PLUGINS: '["apoc"]'
+      NEO4J_server_memory_heap_initial__size: ${NEO4J_HEAP:-1G}
+      NEO4J_server_memory_heap_max__size: ${NEO4J_HEAP:-1G}
+      NEO4J_server_memory_pagecache_size: ${NEO4J_PAGECACHE:-512m}
+      NEO4J_dbms_security_procedures_unrestricted: apoc.*
+      NEO4J_dbms_security_procedures_allowlist: apoc.*
+    volumes:
+      - neo4j-data:/data
+      - neo4j-logs:/logs
+    networks:
+      - graph-net
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:7474 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  gateway:
+    image: ghostunnel/ghostunnel:latest
+    container_name: ${CONTAINER_PREFIX:-graph}-gateway
+    restart: unless-stopped
+    depends_on:
+      neo4j:
+        condition: service_healthy
+    ports:
+      - "${GATEWAY_PORT:-7687}:7687"     # the ONLY public surface — mutually authenticated bolt
+    command:
+      - "server"
+      - "--listen=0.0.0.0:7687"
+      - "--target=neo4j:7687"
+      # ghostunnel >=1.x refuses non-localhost targets unless told the hop is trusted; here the
+      # gateway→neo4j hop is plaintext bolt INSIDE the private docker bridge (graph-net), never public.
+      - "--unsafe-target"
+      - "--cert=/certs/server.crt"
+      - "--key=/certs/server.key"
+      - "--cacert=/certs/ca.crt"          # trust anchor for verifying CLIENT certs
+      # >>> NACL allow-cn (managed) — generated from <state>/<scope>/allowed-cns by provision/issue/revoke
+      - "--allow-cn=__none__"
+      # <<< NACL allow-cn (managed)
+      - "--connect-timeout=10s"
+    volumes:
+      - ./certs:/certs:ro
+    networks:
+      - graph-net
+
+volumes:
+  neo4j-data:
+    name: ${CONTAINER_PREFIX:-graph}-neo4j-data
+  neo4j-logs:
+    name: ${CONTAINER_PREFIX:-graph}-neo4j-logs
+
+networks:
+  graph-net:
+    name: ${CONTAINER_PREFIX:-graph}-net
+    driver: bridge

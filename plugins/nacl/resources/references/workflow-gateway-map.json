@@ -1,0 +1,168 @@
+{
+  "schemaVersion": 1,
+  "closedStatuses": [
+    "VERIFIED",
+    "FAILED",
+    "PARTIALLY_VERIFIED",
+    "BLOCKED",
+    "NOT_RUN",
+    "UNVERIFIED"
+  ],
+  "publicEntries": {
+    "nacl-init": { "sequence": "initialize", "workflows": ["nacl-init"] },
+    "nacl-goal": { "sequence": "read-preflight", "workflows": ["nacl-goal"] },
+    "nacl-ba": { "sequence": "ba-resource", "workflows": ["nacl-ba-full", "nacl-ba-context", "nacl-ba-import-doc", "nacl-ba-from-board", "nacl-ba-roles", "nacl-ba-process", "nacl-ba-entities", "nacl-ba-rules", "nacl-ba-glossary", "nacl-ba-workflow", "nacl-ba-analyze", "nacl-ba-validate", "nacl-ba-sync", "nacl-ba-handoff"] },
+    "nacl-sa": { "sequence": "sa-resource", "workflows": ["nacl-sa-full", "nacl-sa-architect", "nacl-sa-domain", "nacl-sa-roles", "nacl-sa-uc", "nacl-sa-ui", "nacl-sa-feature", "nacl-sa-flags", "nacl-sa-validate", "nacl-sa-finalize"] },
+    "nacl-tl": { "sequence": "tl-task", "workflows": ["nacl-tl-conductor", "nacl-tl-full", "nacl-tl-intake", "nacl-tl-plan", "nacl-tl-deliver", "nacl-tl-status", "nacl-tl-core", "nacl-tl-deploy", "nacl-tl-dev", "nacl-tl-dev-be", "nacl-tl-dev-fe", "nacl-tl-diagnose", "nacl-tl-docs", "nacl-tl-fix", "nacl-tl-hotfix", "nacl-tl-next", "nacl-tl-qa", "nacl-tl-reconcile", "nacl-tl-regression-test", "nacl-tl-release", "nacl-tl-reopened", "nacl-tl-review", "nacl-tl-ship", "nacl-tl-stubs", "nacl-tl-sync", "nacl-tl-verify", "nacl-tl-verify-code"] },
+    "nacl-fix": { "sequence": "tl-task", "workflows": ["nacl-tl-fix", "nacl-tl-hotfix", "nacl-tl-reopened", "nacl-tl-regression-test"] },
+    "nacl-verify": { "sequence": "read-preflight", "workflows": ["nacl-tl-verify", "nacl-tl-verify-code", "nacl-tl-qa", "nacl-tl-review", "nacl-tl-sync", "nacl-tl-stubs"] },
+    "nacl-migrate": { "sequence": "schema-recovery", "workflows": ["nacl-migrate", "nacl-migrate-ba", "nacl-migrate-sa"] },
+    "nacl-diagnose": { "sequence": "read-preflight", "workflows": ["nacl-tl-diagnose", "nacl-tl-next", "nacl-tl-status", "nacl-tl-reconcile", "nacl-postmortem"] },
+    "nacl-publish": { "sequence": "release", "workflows": ["nacl-render", "nacl-publish", "nacl-tl-ship", "nacl-tl-release", "nacl-tl-deploy"] }
+  },
+  "sequences": {
+    "read-preflight": {
+      "tools": ["nacl_installation_doctor", "nacl_project_resolve", "nacl_graph_derive_worker_identity", "nacl_graph_health", "nacl_graph_schema_status", "nacl_graph_read"],
+      "query": "summary",
+      "approval": null
+    },
+    "initialize": {
+      "tools": ["nacl_installation_doctor", "nacl_legacy_symlinks_plan", "nacl_legacy_symlinks_apply", "nacl_project_resolve", "nacl_project_migrate_identity", "nacl_project_register_root", "nacl_graph_local_init", "nacl_graph_local_start", "nacl_graph_local_doctor", "nacl_graph_derive_worker_identity", "nacl_graph_bootstrap_admin", "nacl_graph_health", "nacl_graph_schema_status", "nacl_graph_read", "nacl_graph_write_canary"],
+      "query": "summary",
+      "approval": "APPROVE_PROJECT_WRITE"
+    },
+    "ba-resource": {
+      "tools": ["nacl_installation_doctor", "nacl_project_resolve", "nacl_graph_derive_worker_identity", "nacl_graph_health", "nacl_graph_read", "nacl_graph_allocate_id", "nacl_graph_claim_resource", "nacl_graph_mutate_resource", "nacl_graph_release_resource"],
+      "resourceTypes": ["Board"],
+      "approval": "APPROVE_BA_WRITE"
+    },
+    "sa-resource": {
+      "tools": ["nacl_installation_doctor", "nacl_project_resolve", "nacl_graph_derive_worker_identity", "nacl_graph_health", "nacl_graph_read", "nacl_graph_allocate_id", "nacl_graph_claim_resource", "nacl_graph_mutate_resource", "nacl_graph_release_resource"],
+      "resourceTypes": ["Module", "FeatureRequest", "UseCase"],
+      "approval": "APPROVE_SA_WRITE"
+    },
+    "tl-task": {
+      "tools": ["nacl_installation_doctor", "nacl_project_resolve", "nacl_graph_derive_worker_identity", "nacl_graph_health", "nacl_graph_read", "nacl_graph_allocate_id", "nacl_graph_claim_resource", "nacl_graph_heartbeat_resource", "nacl_graph_mutate_resource", "nacl_graph_handoff_resource", "nacl_graph_release_resource"],
+      "resourceTypes": ["Task"],
+      "approval": "APPROVE_TL_WRITE",
+      "noTestEvidenceConfirmation": "CONFIRM_NO_TEST_EVIDENCE"
+    },
+    "schema-recovery": {
+      "tools": ["nacl_installation_doctor", "nacl_project_resolve", "nacl_graph_derive_worker_identity", "nacl_graph_health", "nacl_graph_claim_resource", "nacl_graph_heartbeat_resource", "nacl_graph_apply_migrations", "nacl_graph_release_resource", "nacl_graph_schema_status", "nacl_graph_read"],
+      "resourceTypes": ["SchemaMigration"],
+      "resourceId": "MIG-GATEWAY",
+      "approval": "CONFIRM_SCHEMA_ADMIN",
+      "confirmation": "APPLY_MIGRATIONS"
+    },
+    "release": {
+      "tools": ["nacl_installation_doctor", "nacl_project_resolve", "nacl_graph_derive_worker_identity", "nacl_graph_health", "nacl_graph_read", "nacl_graph_claim_resource", "nacl_graph_heartbeat_resource", "nacl_graph_mutate_resource", "nacl_graph_handoff_resource", "nacl_graph_release_resource"],
+      "resourceTypes": ["ReleaseEnvironment", "Task"],
+      "approval": "CONFIRM_RELEASE_OPERATION",
+      "taskApproval": "APPROVE_TL_WRITE",
+      "noTestEvidenceConfirmation": "CONFIRM_NO_TEST_EVIDENCE"
+    }
+  },
+  "workflowAuditGroups": [
+    {
+      "id": "ba-domain-gap",
+      "workflows": ["nacl-ba-analyze", "nacl-ba-context", "nacl-ba-entities", "nacl-ba-from-board", "nacl-ba-full", "nacl-ba-glossary", "nacl-ba-handoff", "nacl-ba-import-doc", "nacl-ba-process", "nacl-ba-roles", "nacl-ba-rules", "nacl-ba-sync", "nacl-ba-validate", "nacl-ba-workflow"],
+      "sequence": "ba-resource",
+      "supported": "Board metadata only",
+      "gapCode": "BA_DOMAIN_RESOURCE_UNAVAILABLE",
+      "reason": "The pilot gateway does not expose BA labels, relationships, or domain named reads. File-only preparation may continue, but a graph-complete result is BLOCKED."
+    },
+    {
+      "id": "shared-read",
+      "workflows": ["nacl-core", "nacl-goal", "nacl-postmortem"],
+      "sequence": "read-preflight",
+      "supported": "installation, project, health, schema, and count summary",
+      "gapCode": "NAMED_QUERY_UNAVAILABLE",
+      "reason": "Any richer graph claim requires a named packaged query that the pilot does not expose."
+    },
+    {
+      "id": "initialization",
+      "workflows": ["nacl-init"],
+      "sequence": "initialize",
+      "supported": "identity, registry, lifecycle, bootstrap, schema evidence, read and write canary, and optional agent profiles",
+      "gapCode": null,
+      "reason": "VERIFIED is allowed only after the complete read-back chain."
+    },
+    {
+      "id": "methodology-migration",
+      "workflows": ["nacl-migrate", "nacl-migrate-ba", "nacl-migrate-sa"],
+      "sequence": "schema-recovery",
+      "supported": "gateway schema migration and file-only methodology conversion",
+      "gapCode": "DOMAIN_MIGRATION_RESOURCE_UNAVAILABLE",
+      "reason": "Graph materialization beyond the fixed gateway migration catalog is not exposed by the pilot."
+    },
+    {
+      "id": "render-publish",
+      "workflows": ["nacl-publish", "nacl-render"],
+      "sequence": "release",
+      "supported": "local file rendering plus protected release-environment coordination",
+      "gapCode": "PUBLISH_NAMED_QUERY_UNAVAILABLE",
+      "reason": "Graph-derived render or reconciliation is BLOCKED until the required domain named reads exist. External writes also require separate user authority."
+    },
+    {
+      "id": "sa-supported-resource",
+      "workflows": ["nacl-sa-architect", "nacl-sa-domain", "nacl-sa-feature", "nacl-sa-flags", "nacl-sa-full", "nacl-sa-uc"],
+      "sequence": "sa-resource",
+      "supported": "Module, FeatureRequest, and UseCase scalar properties",
+      "gapCode": "SA_RELATIONSHIP_RESOURCE_UNAVAILABLE",
+      "reason": "Relations and additional SA labels remain unavailable and block a graph-complete result."
+    },
+    {
+      "id": "sa-domain-gap",
+      "workflows": ["nacl-sa-finalize", "nacl-sa-roles", "nacl-sa-ui", "nacl-sa-validate"],
+      "sequence": "sa-resource",
+      "supported": "read preflight only",
+      "gapCode": "SA_DOMAIN_RESOURCE_UNAVAILABLE",
+      "reason": "The required roles, UI, validation, and closure graph surfaces are not exposed as named pilot capabilities."
+    },
+    {
+      "id": "tl-terminal-writer",
+      "workflows": ["nacl-tl-conductor", "nacl-tl-deliver", "nacl-tl-fix", "nacl-tl-full", "nacl-tl-hotfix", "nacl-tl-qa", "nacl-tl-review", "nacl-tl-stubs", "nacl-tl-sync"],
+      "sequence": "tl-task",
+      "supported": "fenced Task status and verification evidence mutation",
+      "terminalTaskWriter": true,
+      "gapCode": "TL_NAMED_QUERY_UNAVAILABLE",
+      "reason": "A successful terminal Task status requires parseable verification_evidence in the same mutation. Batch or relation claims not represented by Task properties remain BLOCKED."
+    },
+    {
+      "id": "tl-task-work",
+      "workflows": ["nacl-tl-core", "nacl-tl-dev", "nacl-tl-dev-be", "nacl-tl-dev-fe", "nacl-tl-docs", "nacl-tl-intake", "nacl-tl-plan", "nacl-tl-regression-test", "nacl-tl-reopened", "nacl-tl-verify", "nacl-tl-verify-code"],
+      "sequence": "tl-task",
+      "supported": "Task allocation, lease, heartbeat, handoff, scalar mutation, and release",
+      "terminalTaskWriter": false,
+      "gapCode": "TL_RELATIONSHIP_RESOURCE_UNAVAILABLE",
+      "reason": "File and code work may continue; graph relations and non-Task domain writes not exposed by the pilot remain BLOCKED."
+    },
+    {
+      "id": "tl-readers",
+      "workflows": ["nacl-tl-diagnose", "nacl-tl-reconcile", "nacl-tl-status"],
+      "sequence": "read-preflight",
+      "supported": "health, schema, and graph count summary",
+      "terminalTaskWriter": false,
+      "gapCode": "TL_STATUS_QUERY_UNAVAILABLE",
+      "reason": "Task-level status and reconciliation require a named read not present in the pilot; stale file fallback is forbidden."
+    },
+    {
+      "id": "tl-next-claim-first",
+      "workflows": ["nacl-tl-next"],
+      "sequence": "tl-task",
+      "supported": "trusted Task identity and claim, heartbeat, handoff, or release",
+      "terminalTaskWriter": false,
+      "gapCode": "TL_STATUS_QUERY_UNAVAILABLE",
+      "reason": "Remote recommendation uses exact bundled Task lease tools, but it remains BLOCKED when the named actionable-task read is unavailable."
+    },
+    {
+      "id": "tl-release-readers",
+      "workflows": ["nacl-tl-deploy", "nacl-tl-release", "nacl-tl-ship"],
+      "sequence": "release",
+      "supported": "ReleaseEnvironment fencing plus file evidence",
+      "terminalTaskWriter": false,
+      "gapCode": "RELEASE_TASK_QUERY_UNAVAILABLE",
+      "reason": "The release reader taxonomy is preserved, but live Task evidence cannot be classified without a named Task read and therefore blocks graph-backed release."
+    }
+  ]
+}
