@@ -1,0 +1,7 @@
+[
+  {
+    "name": "nacl-graph-watch",
+    "command": "node \"${CLAUDE_PLUGIN_ROOT}/nacl-core/scripts/graph-doctor.mjs\" --watch",
+    "description": "NaCl graph liveness — notifies on mid-session UP/DOWN transitions"
+  }
+]

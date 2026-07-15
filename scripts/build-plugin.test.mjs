@@ -387,6 +387,15 @@ describe("end-to-end: synthetic mini-repo build", () => {
     assert.ok(fs.existsSync(path.join(outDir, ".claude-plugin", "plugin.json")));
     const pluginJson = JSON.parse(fs.readFileSync(path.join(outDir, ".claude-plugin", "plugin.json"), "utf8"));
     assert.equal(pluginJson.version, "0.1.0");
+    // monitors must be declared under experimental.* (top-level `monitors`
+    // fails `claude plugin validate --strict` since CC v2.1.129)
+    assert.equal(pluginJson.experimental.monitors, "./monitors/monitors.json");
+    assert.ok(!("monitors" in pluginJson), "top-level monitors key must not exist");
+    const monitors = JSON.parse(fs.readFileSync(path.join(outDir, "monitors", "monitors.json"), "utf8"));
+    assert.equal(monitors.length, 1);
+    assert.equal(monitors[0].name, "nacl-graph-watch");
+    assert.equal(monitors[0].command, 'node "${CLAUDE_PLUGIN_ROOT}/nacl-core/scripts/graph-doctor.mjs" --watch');
+    assert.equal(typeof monitors[0].description, "string");
     assert.ok(fs.existsSync(path.join(outDir, "bin", "nacl-home")));
     assert.ok(fs.existsSync(path.join(outDir, "hooks", "hooks.json")));
     assert.ok(fs.existsSync(path.join(outDir, "graph-infra", "docker-compose.yml")));

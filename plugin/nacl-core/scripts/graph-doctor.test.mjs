@@ -23,6 +23,8 @@ import {
   parsePortBindings,
   scanUsedPorts,
   suggestFreeBlock,
+  watchTransitions,
+  formatWatchLine,
 } from './graph-doctor.mjs';
 
 const GRAPH_DOCTOR = join(new URL('.', import.meta.url).pathname, 'graph-doctor.mjs');
@@ -465,6 +467,93 @@ test('deepCheckWithRetry: check that always fails resolves false after a bounded
   const result = await deepCheckWithRetry(alwaysFailingCheck, { attempts: 5, delayMs: 1, sleep: async () => {} });
   assert.equal(result, false, 'a check that never succeeds must make the overall deep-check fail (not hang or throw)');
   assert.equal(calls, 5, `expected exactly 5 invocations (bounded retries, not unbounded), got ${calls}`);
+});
+
+// ---------------------------------------------------------------------------
+// watchTransitions / formatWatchLine (--watch: the plugin's monitors entry runs
+// this for the whole session and EVERY stdout line becomes a user-visible
+// notification — so one line per UP→DOWN / DOWN→UP transition and silence
+// otherwise is the contract, pinned here with an injectable probe + sleep,
+// same seam style as deepCheckWithRetry above; no real 30s waits)
+// ---------------------------------------------------------------------------
+
+function sequenceProbe(states) {
+  let i = 0;
+  return async () => states[Math.min(i++, states.length - 1)];
+}
+
+test('watchTransitions: UP→DOWN emits exactly one down event', async () => {
+  const probe = sequenceProbe([true, true, false, false]);
+  const events = [];
+  await watchTransitions(probe, (s) => events.push(s), { iterations: 3, sleep: async () => {} });
+  assert.deepEqual(events, ['down']);
+});
+
+test('watchTransitions: DOWN→UP emits exactly one up event', async () => {
+  const probe = sequenceProbe([false, false, true, true]);
+  const events = [];
+  await watchTransitions(probe, (s) => events.push(s), { iterations: 3, sleep: async () => {} });
+  assert.deepEqual(events, ['up']);
+});
+
+test('watchTransitions: stable state emits nothing — including a DOWN baseline (graph-down at session start is the SessionStart hook\'s job, not the watcher\'s)', async () => {
+  for (const stable of [true, false]) {
+    const events = [];
+    await watchTransitions(async () => stable, (s) => events.push(s), { iterations: 5, sleep: async () => {} });
+    assert.deepEqual(events, [], `stable=${stable} must stay silent`);
+  }
+});
+
+test('watchTransitions: flap UP→DOWN→UP emits down then up, one event per transition', async () => {
+  const probe = sequenceProbe([true, false, true]);
+  const events = [];
+  await watchTransitions(probe, (s) => events.push(s), { iterations: 2, sleep: async () => {} });
+  assert.deepEqual(events, ['down', 'up']);
+});
+
+test('watchTransitions: sleeps intervalMs before every poll (injectable clock, bounded iterations)', async () => {
+  const sleeps = [];
+  await watchTransitions(async () => true, () => {}, {
+    iterations: 3,
+    intervalMs: 30000,
+    sleep: async (ms) => { sleeps.push(ms); },
+  });
+  assert.deepEqual(sleeps, [30000, 30000, 30000]);
+});
+
+test('formatWatchLine: DOWN is a single line naming mode/port and the --fix remedy (same remedy as --hook, no new graph-down variant)', () => {
+  const cfg = { mode: 'local', probe: { host: 'localhost', port: 3587 } };
+  const line = formatWatchLine(false, cfg, '/x/graph-doctor.mjs');
+  assert.ok(!line.includes('\n'), 'must be one line — each line is a separate notification');
+  assert.match(line, /^NACL_GRAPH_WATCH: status=DOWN mode=local port=3587 /);
+  assert.match(line, /Do not call mcp__neo4j__\* tools/);
+  assert.match(line, /node \/x\/graph-doctor\.mjs --fix/);
+  assert.match(line, /Docker Desktop must be running/);
+});
+
+test('formatWatchLine: UP is a single line clearing the do-not-call warning', () => {
+  const cfg = { mode: 'remote', probe: { host: 'localhost', port: 3700 } };
+  const line = formatWatchLine(true, cfg, '/x/graph-doctor.mjs');
+  assert.ok(!line.includes('\n'));
+  assert.match(line, /^NACL_GRAPH_WATCH: status=UP mode=remote port=3700 /);
+  assert.match(line, /safe to use/);
+});
+
+test('--watch: NOT_NACL dir exits 0 immediately with empty stdout (no long-running process for non-NaCl projects)', () => {
+  const dir = tmpDir();
+  try {
+    // execFileSync throws on non-zero exit; the timeout guards against a hang
+    // if NOT_NACL ever stopped short-circuiting the long-running loop.
+    const out = execFileSync(process.execPath, [GRAPH_DOCTOR, '--watch'], {
+      cwd: dir,
+      encoding: 'utf8',
+      env: { ...process.env, CLAUDE_PROJECT_DIR: dir },
+      timeout: 10000,
+    });
+    assert.equal(out, '');
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
 });
 
 // ---------------------------------------------------------------------------

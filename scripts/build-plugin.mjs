@@ -532,6 +532,10 @@ export function buildPlugin({ root, outDir, manifest }) {
     author: { name: "ITSalt" },
     homepage: "https://github.com/ITSalt/NaCl",
     license: "MIT",
+    // Monitors are declared under experimental.* — a top-level `monitors` key
+    // warns on `claude plugin validate --strict` since CC v2.1.129 (verified
+    // empirically on 2.1.210: experimental.monitors passes clean).
+    experimental: { monitors: "./monitors/monitors.json" },
   };
   fs.mkdirSync(path.join(outDir, ".claude-plugin"), { recursive: true });
   fs.writeFileSync(
@@ -573,6 +577,21 @@ export function buildPlugin({ root, outDir, manifest }) {
   };
   fs.mkdirSync(path.join(outDir, "hooks"), { recursive: true });
   fs.writeFileSync(path.join(outDir, "hooks", "hooks.json"), JSON.stringify(hooksJson, null, 2) + "\n", "utf8");
+
+  // Plugin monitors — mid-session graph watcher (phase 2 of the hook design:
+  // the SessionStart hook catches graph-down at session start, the monitor
+  // catches container death mid-session). The command runs as a long-running
+  // background process and every stdout line reaches Claude as a notification,
+  // so graph-doctor --watch emits transition lines only (NOT_NACL → exit 0).
+  const monitorsJson = [
+    {
+      name: "nacl-graph-watch",
+      command: 'node "${CLAUDE_PLUGIN_ROOT}/nacl-core/scripts/graph-doctor.mjs" --watch',
+      description: "NaCl graph liveness — notifies on mid-session UP/DOWN transitions",
+    },
+  ];
+  fs.mkdirSync(path.join(outDir, "monitors"), { recursive: true });
+  fs.writeFileSync(path.join(outDir, "monitors", "monitors.json"), JSON.stringify(monitorsJson, null, 2) + "\n", "utf8");
 
   const readme = buildReadme({ manifest, version, rosterDirNames });
   fs.writeFileSync(path.join(outDir, "README.md"), readme, "utf8");
