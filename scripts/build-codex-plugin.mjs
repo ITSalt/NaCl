@@ -17,7 +17,6 @@ import {
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { PUBLIC_TOOL_NAMES } from "../services/nacl-mcp/src/contracts.mjs";
 
 const scriptPath = fileURLToPath(import.meta.url);
 const canonicalScriptPath = await realpath(scriptPath);
@@ -64,10 +63,8 @@ async function applyProductionBinding(destination, binding) {
   const mcp = {
     mcpServers: {
       nacl: {
+        type: "http",
         url: binding.mcpUrl,
-        auth: "oauth",
-        required: true,
-        enabled_tools: PUBLIC_TOOL_NAMES,
       },
     },
   };

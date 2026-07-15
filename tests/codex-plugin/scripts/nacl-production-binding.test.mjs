@@ -28,11 +28,18 @@ test("release-only builder emits an OAuth MCP binding and portal app mapping wit
     assert.equal(manifest.apps, "./.app.json");
     assert.deepEqual(app, { apps: { nacl: { id: appId } } });
     assert.deepEqual(mcp.mcpServers.nacl, {
+      type: "http",
       url: mcpUrl,
-      auth: "oauth",
-      required: true,
-      enabled_tools: PUBLIC_TOOL_NAMES,
     });
+    assert.deepEqual(PUBLIC_TOOL_NAMES, [
+      "nacl_projects_list",
+      "nacl_project_summary",
+      "nacl_named_read",
+      "nacl_project_mutate",
+      "nacl_schema_apply",
+      "nacl_backup_create",
+      "nacl_restore_request",
+    ]);
     const validator = spawnSync("bash", ["scripts/validate-codex-plugin.sh", output], { cwd: repoRoot, encoding: "utf8" });
     assert.equal(validator.status, 0, `${validator.stdout}\n${validator.stderr}`);
     assert.match(validator.stdout, /Status: VERIFIED/);
