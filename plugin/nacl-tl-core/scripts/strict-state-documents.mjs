@@ -205,6 +205,7 @@ export function assertStrictYamlMappingDocument(input) {
   let previous = null;
   let blockScalarParent = null;
   let meaningful = 0;
+  let documentStartSeen = false;
 
   for (const raw of source.split(/\r?\n/)) {
     if (/^ *\t/.test(raw)) stateError("YAML", "malformed because indentation contains tabs");
@@ -215,7 +216,8 @@ export function assertStrictYamlMappingDocument(input) {
     }
     if (raw.trim() === "" || /^\s*#/.test(raw)) continue;
     if (indent === 0 && /^(?:---|\.\.\.)\s*(?:#.*)?$/.test(raw)) {
-      if (meaningful > 0 || raw.trimStart().startsWith("...")) stateError("YAML", "ambiguous because multiple documents are unsupported");
+      if (meaningful > 0 || documentStartSeen || raw.trimStart().startsWith("...")) stateError("YAML", "ambiguous because multiple documents are unsupported");
+      documentStartSeen = true;
       continue;
     }
     meaningful += 1;

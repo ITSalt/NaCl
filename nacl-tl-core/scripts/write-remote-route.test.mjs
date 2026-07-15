@@ -109,6 +109,7 @@ test("transaction rejects malformed MCP and malformed or duplicate graph state b
     { config: "project:\n  id: one\n  id: two\ngraph:\n  mode: local\n", mcp: "{}\n", pattern: /strict YAML state is ambiguous/ },
     { config: "project: {id: one, id: two}\ngraph:\n  mode: local\n", mcp: "{}\n", pattern: /strict YAML state is ambiguous/ },
     { config: "project: one\n---\nproject: two\ngraph:\n  mode: local\n", mcp: "{}\n", pattern: /multiple documents are unsupported/ },
+    { config: "---\n# empty first document\n---\ngraph:\n  mode: local\n", mcp: "{}\n", pattern: /multiple documents are unsupported/ },
     { config: "graph: [invalid]\n", mcp: "{}\n", pattern: /graph block is malformed/ },
     { config: " graph:\n  mode: local\n", mcp: "{}\n", pattern: /strict YAML state is outside the supported top-level mapping grammar/ },
     { config: "graph:\n  mode: local\ngraph:\n  mode: remote\n", mcp: "{}\n", pattern: /strict YAML state is ambiguous/ },
