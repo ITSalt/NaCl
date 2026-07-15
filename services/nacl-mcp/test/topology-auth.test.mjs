@@ -17,21 +17,33 @@ const ISSUER = "https://idp.example.test/";
 function registry(serverId) {
   const trusted = new Set();
   const projects = new Map();
-  return {
+  const value = {
     trusted,
     projects,
     failRevoke: false,
     async grantPrincipal(cn) { trusted.add(cn); return { status: "VERIFIED" }; },
-    async rotatePrincipal(previous, next) { trusted.add(next); trusted.delete(previous); return { status: "VERIFIED" }; },
+    async rotatePrincipal(previous, next) {
+      value.rotateEntered?.();
+      if (value.rotateWait) await value.rotateWait;
+      trusted.add(next);
+      trusted.delete(previous);
+      return { status: "VERIFIED" };
+    },
     async revokePrincipal(cn) {
       trusted.delete(cn);
       if (this.failRevoke) return { status: "BLOCKED", code: "REVOKE_QUARANTINED" };
       return { status: "VERIFIED" };
     },
-    async verifyPrincipal(cn) { return { status: trusted.has(cn) ? "VERIFIED" : "BLOCKED" }; },
+    async verifyPrincipal(cn) {
+      value.verifyCalls += 1;
+      if (value.failVerify) throw new Error("authoritative registry unavailable");
+      return { status: trusted.has(cn) ? "VERIFIED" : "BLOCKED" };
+    },
     provision(projectScope) { projects.set(projectScope, new Set(trusted)); },
     id: serverId,
+    verifyCalls: 0,
   };
+  return value;
 }
 
 function token(subject, session, epoch, scopes) {
@@ -227,6 +239,15 @@ test("an out-of-band authoritative principal revoke removes discovery and author
   assert.equal(ctx.graph.calls.length, before);
 });
 
+test("project discovery never sends a principal CN to or depends on an ungranted server", async () => {
+  const ctx = await fixture();
+  ctx.registryB.failVerify = true;
+  const auth = await ctx.context("token-alice-session-one");
+  const listed = await ctx.app({ name: "nacl_projects_list", arguments: {}, authContext: auth, requiredScope: "nacl.server.read" });
+  assert.deepEqual(listed.data.projects.map((project) => project.label), ["Alpha", "Beta"]);
+  assert.equal(ctx.registryB.verifyCalls, 0);
+});
+
 test("scope, exact confirmation mapping, idempotency replay, and payload mismatch are enforced", async () => {
   const ctx = await fixture();
   ctx.tokens.set("token-read-only-0000", token("subject-alice", "session-alice-read", await ctx.control.currentTokenEpoch(ISSUER, "subject-alice"), ["nacl.server.read"]));
@@ -390,6 +411,25 @@ test("principal-link receipts reject wrong certificate, wrong issuer, and replay
     ctx.control.registerSubject({ ...expected, issuer: "https://other-idp.example.test/", linkReceipt: wrongIssuerReceipt }),
     (error) => error.code === "REAUTHORIZATION_REQUIRED",
   );
+});
+
+test("registration cannot claim a certificate CN reserved by an in-flight principal rotation", async () => {
+  const ctx = await fixture();
+  let releaseRotation;
+  let rotationEntered;
+  ctx.registryA.rotateWait = new Promise((resolve) => { releaseRotation = resolve; });
+  const entered = new Promise((resolve) => { rotationEntered = resolve; });
+  ctx.registryA.rotateEntered = rotationEntered;
+  const rotating = ctx.control.rotatePrincipal({ issuer: ISSUER, subject: "subject-alice", nextCertificateCn: "cn-shared-v1" });
+  await entered;
+  const charlie = { issuer: ISSUER, subject: "subject-charlie", principalId: "principal-charlie", certificateCn: "cn-shared-v1" };
+  await assert.rejects(
+    ctx.control.registerSubject({ ...charlie, linkReceipt: ctx.links.issue(charlie) }),
+    /certificate already exists/,
+  );
+  releaseRotation();
+  assert.equal((await rotating).status, "VERIFIED");
+  assert.deepEqual([...ctx.registryA.trusted], ["cn-shared-v1"]);
 });
 
 test("audit and responses are minimized and contain no raw subject, principal, certificate, server, scope, token, host, or graph result extras", async () => {

@@ -267,7 +267,8 @@ export function createServerControlPlane({
         throw new ReauthorizationRequired({ error: "invalid_token" });
       }
       await persistAuthorizationState((next) => {
-        if (next.has(key) || [...next.values()].some((item) => item.principal_id === principalId || item.certificate_cn === certificateCn || item.link_receipt_id === verified.receipt_id)) {
+        if (next.has(key) || [...next.values()].some((item) => item.principal_id === principalId || item.certificate_cn === certificateCn ||
+            item.transition?.next_certificate_cn === certificateCn || item.link_receipt_id === verified.receipt_id)) {
           throw new TypeError("subject, principal, or certificate already exists");
         }
         next.set(key, {
@@ -332,20 +333,30 @@ export function createServerControlPlane({
         const registry = serverRegistries.get(serverId);
         return registry?.rotatePrincipal?.(prepared.previousCertificateCn, nextCertificateCn);
       }));
-      return persistAuthorizationState((next) => {
+      const finalized = await persistAuthorizationState((next) => {
         const persisted = next.get(key);
         if (persisted?.transition?.id !== intent) throw new ReauthorizationRequired({ error: "temporarily_unavailable" });
-        const verified = results.every((result) => result?.status === "VERIFIED");
+        const collision = [...next.values()].some((item) => item !== persisted &&
+          (item.certificate_cn === nextCertificateCn || item.transition?.next_certificate_cn === nextCertificateCn));
+        const verified = !collision && results.every((result) => result?.status === "VERIFIED");
         if (verified) persisted.certificate_cn = nextCertificateCn;
-        else for (const [, grant] of persisted.grants) grant.active = false;
+        else {
+          persisted.active = false;
+          for (const [, grant] of persisted.grants) grant.active = false;
+        }
         persisted.transition = null;
         invalidate(persisted);
-        return Object.freeze({
+        return {
+          collision,
           status: verified ? "VERIFIED" : "BLOCKED",
-          code: verified ? "PRINCIPAL_ROTATED" : "PRINCIPAL_ROTATION_NOT_RECONCILED",
+          code: verified ? "PRINCIPAL_ROTATED" : collision ? "PRINCIPAL_IDENTITY_COLLISION_QUARANTINED" : "PRINCIPAL_ROTATION_NOT_RECONCILED",
           token_epoch: persisted.epoch,
-        });
+        };
       });
+      if (finalized.collision) {
+        await Promise.allSettled(prepared.serverIds.map((serverId) => serverRegistries.get(serverId)?.revokePrincipal?.(nextCertificateCn)));
+      }
+      return Object.freeze({ status: finalized.status, code: finalized.code, token_epoch: finalized.token_epoch });
     },
     async revokeServer({ issuer, subject, serverId }) {
       await refreshAuthorizationState();
@@ -395,7 +406,9 @@ export function createServerControlPlane({
     },
     async listProjects({ tokenContext }) {
       const { binding } = await activeSession(tokenContext);
-      const serverIds = [...new Set([...routeMap.values()].map((route) => route.server_id))];
+      const serverIds = [...binding.grants]
+        .filter(([, grant]) => grant.active)
+        .map(([serverId]) => serverId);
       const authoritative = new Map(await Promise.all(serverIds.map(async (serverId) => [
         serverId,
         (await serverRegistries.get(serverId)?.verifyPrincipal?.(binding.certificate_cn))?.status === "VERIFIED",
