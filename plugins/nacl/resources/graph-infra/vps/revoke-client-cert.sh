@@ -38,28 +38,32 @@ HERE="$(cd "$(dirname "$0")" && pwd)"
 revoke_cert "$CERT" || true
 
 ACCESS_CONTROL="$HERE/server-access-control.mjs"
+DC="docker compose"; docker compose version >/dev/null 2>&1 || DC="docker-compose"
+# shellcheck source=/dev/null
+. "$HERE/lib-gateway-quarantine.sh"
 if ! node "$ACCESS_CONTROL" revoke --state-dir "$STATE_DIR" --server-id "$SERVER_ID" --cn "$DEV" >/dev/null; then
-  DC="docker compose"; docker compose version >/dev/null 2>&1 || DC="docker-compose"
-  for compose in "$STATE_DIR"/*/docker-compose.yml; do
-    [ -f "$compose" ] || continue; GRAPH_DIR="$(dirname "$compose")"
-    ( cd "$GRAPH_DIR" && $DC stop gateway ) >/dev/null 2>&1 || true
-  done
-  echo "BLOCKED: server-wide revoke projection failed; every gateway was stopped" >&2
-  printf '\nNACL_CERT_RESULT: status=BLOCKED dev=%s gateway_reloaded=no\n' "$DEV"
+  CRITICAL_UNRESOLVED="no"
+  quarantine_all_gateways revoke-projection-failed || CRITICAL_UNRESOLVED="yes"
+  echo "BLOCKED: server-wide revoke projection failed; physical quarantine was required" >&2
+  printf '\nNACL_CERT_RESULT: status=BLOCKED dev=%s gateway_reloaded=no critical_unresolved=%s\n' "$DEV" "$CRITICAL_UNRESOLVED"
   exit 1
 fi
-RELOADED="yes"; DC="docker compose"; docker compose version >/dev/null 2>&1 || DC="docker-compose"
+RELOADED="yes"
 for compose in "$STATE_DIR"/*/docker-compose.yml; do
   [ -f "$compose" ] || continue
-  GRAPH_DIR="$(dirname "$compose")"; scope="$(basename "$GRAPH_DIR")"
+  GRAPH_DIR="$(dirname "$compose")"
   if ! render_gateway_allowlist "$GRAPH_DIR" || ! ( cd "$GRAPH_DIR" && $DC up -d ); then
     RELOADED="no"
-    node "$ACCESS_CONTROL" quarantine --state-dir "$STATE_DIR" --server-id "$SERVER_ID" --scope "$scope" --reason reload-failed >/dev/null 2>&1 || true
-    ( cd "$GRAPH_DIR" && $DC stop gateway ) >/dev/null 2>&1 || true
   fi
 done
 
 echo "Revoked '$DEV'. CN removed from allow-list${RELOADED:+; gateway recreated=$RELOADED}." >&2
-[ "$RELOADED" = "yes" ] || { echo "BLOCKED: a stale gateway was quarantined and stopped" >&2; printf '\nNACL_CERT_RESULT: status=BLOCKED dev=%s gateway_reloaded=no\n' "$DEV"; exit 1; }
+if [ "$RELOADED" != "yes" ]; then
+  CRITICAL_UNRESOLVED="no"
+  quarantine_all_gateways revoke-reload-failed || CRITICAL_UNRESOLVED="yes"
+  echo "BLOCKED: a stale gateway required server-wide physical quarantine" >&2
+  printf '\nNACL_CERT_RESULT: status=BLOCKED dev=%s gateway_reloaded=no critical_unresolved=%s\n' "$DEV" "$CRITICAL_UNRESOLVED"
+  exit 1
+fi
 
 printf '\nNACL_CERT_RESULT: status=REVOKED dev=%s gateway_reloaded=%s\n' "$DEV" "$RELOADED"

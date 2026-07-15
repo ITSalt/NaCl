@@ -79,6 +79,18 @@ function controller(options) {
     mkdirSync(path.dirname(filename), { recursive: true, mode: 0o700 });
     atomic(filename, values.length ? `${values.join("\n")}\n` : "");
   }
+  function selectPort(inventory, rawPort) {
+    let port;
+    if (rawPort === undefined || rawPort === "auto") {
+      const used = new Set(inventory.gateways.map((entry) => entry.gateway_port));
+      for (let candidate = 7687; candidate <= 7999; candidate += 1) {
+        if (!used.has(candidate)) { port = candidate; break; }
+      }
+      if (port === undefined) die("GATEWAY_PORT_EXHAUSTED", "no gateway port is available");
+    } else port = Number(rawPort);
+    if (!Number.isSafeInteger(port) || port < 1024 || port > 65535) die("GATEWAY_PORT_INVALID", "gateway port is invalid");
+    return port;
+  }
   function locked(operation) {
     try { mkdirSync(lockPath, { mode: 0o700 }); } catch { die("STATE_LOCKED", "server access state is locked"); }
     try { return operation(); } finally { rmSync(lockPath, { recursive: true, force: true }); }
@@ -86,18 +98,29 @@ function controller(options) {
   function reconcileGrant(next, successCode) {
     const inventory = readInventory();
     const previous = readTrusted();
-    const changed = [];
     try {
-      for (const gateway of inventory.gateways) { project(next, gateway); changed.push(gateway); }
+      for (const gateway of inventory.gateways) project(next, gateway);
       writeTrusted(next);
       inventory.authorization_revision += 1;
       writeInventory(inventory);
       return { status: "VERIFIED", code: successCode, authorization_revision: inventory.authorization_revision };
     } catch (error) {
-      for (const gateway of changed) { try { project(previous, gateway); } catch { gateway.enabled = false; gateway.quarantine_reason = "grant-rollback-incomplete"; } }
+      const incomplete = [];
+      for (const gateway of inventory.gateways) {
+        try { project(previous, gateway); } catch {
+          gateway.enabled = false;
+          gateway.quarantine_reason = "grant-rollback-incomplete";
+          incomplete.push(gateway.project_scope);
+        }
+      }
       writeTrusted(previous);
       writeInventory(inventory);
-      return { status: "BLOCKED", code: "GRANT_ROLLED_BACK", error_code: error.code ?? "PROJECTION_FAILED" };
+      return {
+        status: "BLOCKED",
+        code: incomplete.length ? "GRANT_ROLLBACK_INCOMPLETE" : "GRANT_ROLLED_BACK",
+        error_code: error.code ?? "PROJECTION_FAILED",
+        ...(incomplete.length ? { critical_projects: incomplete } : {}),
+      };
     }
   }
   function migrationPlan(files) {
@@ -116,15 +139,7 @@ function controller(options) {
       return locked(() => {
         const inventory = readInventory();
         const projectScope = id(scope, "project_scope");
-        let port;
-        if (rawPort === undefined || rawPort === "auto") {
-          const used = new Set(inventory.gateways.map((entry) => entry.gateway_port));
-          for (let candidate = 7687; candidate <= 7999; candidate += 1) {
-            if (!used.has(candidate)) { port = candidate; break; }
-          }
-          if (port === undefined) die("GATEWAY_PORT_EXHAUSTED", "no gateway port is available");
-        } else port = Number(rawPort);
-        if (!Number.isSafeInteger(port) || port < 1024 || port > 65535) die("GATEWAY_PORT_INVALID", "gateway port is invalid");
+        const port = selectPort(inventory, rawPort);
         const existing = inventory.gateways.find((entry) => entry.project_scope === projectScope);
         if (existing) {
           if (existing.gateway_port !== port) die("GATEWAY_COLLISION", "project scope is already allocated to another port");
@@ -138,6 +153,59 @@ function controller(options) {
         inventory.gateways.sort((left, right) => left.project_scope.localeCompare(right.project_scope));
         writeInventory(inventory);
         return { status: "VERIFIED", code: "GATEWAY_PROVISIONED", ...gateway };
+      });
+    },
+    reserve(scope, rawPort) {
+      return locked(() => {
+        const inventory = readInventory();
+        const projectScope = id(scope, "project_scope");
+        const port = selectPort(inventory, rawPort);
+        const existing = inventory.gateways.find((entry) => entry.project_scope === projectScope);
+        if (existing) die("GATEWAY_COLLISION", "project scope is already allocated");
+        if (inventory.gateways.some((entry) => entry.gateway_port === port)) die("GATEWAY_COLLISION", "gateway port is already allocated");
+        const projectDir = path.dirname(projectFile(projectScope));
+        if (existsSync(projectDir)) die("PROJECT_ARTIFACT_COLLISION", "project state directory already exists");
+        const reservationToken = randomBytes(16).toString("hex");
+        const gateway = {
+          project_scope: projectScope,
+          gateway_port: port,
+          enabled: false,
+          provisioning: true,
+          reservation_token: reservationToken,
+          quarantine_reason: "provisioning",
+        };
+        inventory.gateways.push(gateway);
+        inventory.gateways.sort((left, right) => left.project_scope.localeCompare(right.project_scope));
+        writeInventory(inventory);
+        return { status: "RESERVED", code: "GATEWAY_RESERVED", project_scope: projectScope, gateway_port: port, reservation_token: reservationToken };
+      });
+    },
+    activate(scope, reservationToken) {
+      return locked(() => {
+        const inventory = readInventory();
+        const projectScope = id(scope, "project_scope");
+        const gateway = inventory.gateways.find((entry) => entry.project_scope === projectScope);
+        if (!gateway || gateway.provisioning !== true || gateway.reservation_token !== reservationToken) die("RESERVATION_MISMATCH", "gateway reservation is missing or stale");
+        project(readTrusted(), gateway);
+        gateway.enabled = true;
+        gateway.provisioning = false;
+        delete gateway.reservation_token;
+        gateway.quarantine_reason = null;
+        writeInventory(inventory);
+        return { status: "VERIFIED", code: "GATEWAY_ACTIVATED", project_scope: projectScope, gateway_port: gateway.gateway_port };
+      });
+    },
+    release(scope, reservationToken) {
+      return locked(() => {
+        const inventory = readInventory();
+        const projectScope = id(scope, "project_scope");
+        const index = inventory.gateways.findIndex((entry) => entry.project_scope === projectScope);
+        const gateway = inventory.gateways[index];
+        if (!gateway || gateway.provisioning !== true || gateway.reservation_token !== reservationToken) die("RESERVATION_MISMATCH", "gateway reservation is missing or stale");
+        inventory.gateways.splice(index, 1);
+        writeInventory(inventory);
+        rmSync(path.dirname(projectFile(projectScope)), { recursive: true, force: true });
+        return { status: "VERIFIED", code: "GATEWAY_RESERVATION_RELEASED", project_scope: projectScope, gateway_port: gateway.gateway_port };
       });
     },
     grant(value) {
@@ -192,6 +260,9 @@ try {
   const api = controller(options);
   let result;
   if (action === "provision") result = api.provision(options.scope, options.port);
+  else if (action === "reserve") result = api.reserve(options.scope, options.port);
+  else if (action === "activate") result = api.activate(options.scope, options["reservation-token"]);
+  else if (action === "release") result = api.release(options.scope, options["reservation-token"]);
   else if (action === "grant") result = api.grant(options.cn);
   else if (action === "revoke") result = api.revoke(options.cn);
   else if (action === "quarantine") result = api.quarantine(options.scope, options.reason);

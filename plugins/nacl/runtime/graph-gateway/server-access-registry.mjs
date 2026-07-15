@@ -212,6 +212,24 @@ export class FileServerAccessRegistry {
     } else await writeDefault();
   }
 
+  async #physicallyQuarantine(gateway, reason, failedReason) {
+    gateway.enabled = false;
+    gateway.quarantine_reason = reason;
+    try {
+      if (!this.#quarantineGateway) throw new Error("physical quarantine hook is unavailable");
+      await this.#quarantineGateway({
+        serverId: this.#serverId,
+        projectScope: gateway.project_scope,
+        gatewayPort: gateway.gateway_port,
+        reason,
+      });
+      return true;
+    } catch {
+      gateway.quarantine_reason = failedReason;
+      return false;
+    }
+  }
+
   async listTrustedPrincipals() {
     return this.#readTrusted();
   }
@@ -252,23 +270,41 @@ export class FileServerAccessRegistry {
   async #grantSet(next, successCode) {
     const inventory = await this.#readInventory();
     const previous = await this.#readTrusted();
-    const written = [];
     try {
       for (const gateway of inventory.gateways) {
         await this.#writeProjection(gateway, next);
-        written.push(gateway);
       }
       await this.#writeTrusted(next);
       inventory.authorization_revision += 1;
       await this.#writeInventory(inventory);
       return Object.freeze({ status: "VERIFIED", code: successCode, authorization_revision: inventory.authorization_revision, trusted_count: next.length });
     } catch {
-      let rollbackFailed = false;
-      for (const gateway of written) {
-        try { await this.#writeProjection(gateway, previous); } catch { rollbackFailed = true; }
+      const quarantined = [];
+      const critical = [];
+      // Roll back every gateway, not only writers that returned successfully: a writer may
+      // commit its projection and then throw, leaving the current gateway uncertain.
+      for (const gateway of inventory.gateways) {
+        try {
+          await this.#writeProjection(gateway, previous);
+        } catch {
+          quarantined.push(gateway.project_scope);
+          if (!await this.#physicallyQuarantine(gateway, "grant-rollback-incomplete", "grant-rollback-physical-stop-failed")) {
+            critical.push(gateway.project_scope);
+          }
+        }
       }
       await this.#writeTrusted(previous);
-      return Object.freeze({ status: "BLOCKED", code: rollbackFailed ? "GRANT_ROLLBACK_INCOMPLETE" : "GRANT_ROLLED_BACK", authorization_revision: inventory.authorization_revision });
+      if (quarantined.length > 0) await this.#writeInventory(inventory);
+      const code = critical.length > 0
+        ? "GRANT_ROLLBACK_CRITICAL"
+        : quarantined.length > 0 ? "GRANT_ROLLBACK_QUARANTINED" : "GRANT_ROLLED_BACK";
+      return Object.freeze({
+        status: "BLOCKED",
+        code,
+        authorization_revision: inventory.authorization_revision,
+        ...(quarantined.length > 0 ? { quarantined_projects: quarantined } : {}),
+        ...(critical.length > 0 ? { critical_projects: critical } : {}),
+      });
     }
   }
 
@@ -292,28 +328,24 @@ export class FileServerAccessRegistry {
       const next = previous.filter((value) => value !== cn);
       await this.#writeTrusted(next);
       const failed = [];
+      const critical = [];
       for (const gateway of inventory.gateways) {
         try {
           await this.#writeProjection(gateway, next);
         } catch {
-          gateway.enabled = false;
-          gateway.quarantine_reason = "authorization-projection-stale";
-          try {
-            await this.#quarantineGateway?.({
-              serverId: this.#serverId,
-              projectScope: gateway.project_scope,
-              gatewayPort: gateway.gateway_port,
-              reason: gateway.quarantine_reason,
-            });
-          } catch {
-            gateway.quarantine_reason = "authorization-projection-stale-quarantine-hook-failed";
-          }
+          if (!await this.#physicallyQuarantine(gateway, "authorization-projection-stale", "revoke-physical-stop-failed")) critical.push(gateway.project_scope);
           failed.push(gateway.project_scope);
         }
       }
       inventory.authorization_revision += 1;
       await this.#writeInventory(inventory);
-      if (failed.length > 0) return Object.freeze({ status: "BLOCKED", code: "REVOKE_QUARANTINED", authorization_revision: inventory.authorization_revision, quarantined_projects: failed });
+      if (failed.length > 0) return Object.freeze({
+        status: "BLOCKED",
+        code: critical.length > 0 ? "REVOKE_QUARANTINE_CRITICAL" : "REVOKE_QUARANTINED",
+        authorization_revision: inventory.authorization_revision,
+        quarantined_projects: failed,
+        ...(critical.length > 0 ? { critical_projects: critical } : {}),
+      });
       return Object.freeze({ status: "VERIFIED", code: "PRINCIPAL_REVOKED", authorization_revision: inventory.authorization_revision, trusted_count: next.length });
     });
   }

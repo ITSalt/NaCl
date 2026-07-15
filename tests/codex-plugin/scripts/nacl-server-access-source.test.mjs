@@ -146,6 +146,70 @@ test("partial grant rolls back; partial revoke disables stale routes and invalid
   }
 });
 
+test("grant rollback quarantines every uncertain writer and reports a physical stop failure as critical", async () => {
+  const quarantineAttempts = [];
+  let grantFailedAfterWrite = false;
+  const f = await fixture({
+    async projectionWriter({ projectScope, trustedCns, writeDefault }) {
+      await writeDefault();
+      if (projectScope === "project-b" && trustedCns.includes("developer.bob")) {
+        grantFailedAfterWrite = true;
+        throw new Error("writer failed after committing project-b");
+      }
+      if (grantFailedAfterWrite && projectScope === "project-b" && !trustedCns.includes("developer.bob")) {
+        throw new Error("project-b rollback failed after write");
+      }
+    },
+    async quarantineGateway(input) {
+      quarantineAttempts.push(input);
+      throw new Error("physical stop failed");
+    },
+  });
+  try {
+    await f.registry.provisionGateway({ projectScope: "project-a" });
+    await f.registry.provisionGateway({ projectScope: "project-b" });
+    await f.registry.grantPrincipal("developer.alice");
+    const result = await f.registry.grantPrincipal("developer.bob");
+
+    assert.equal(result.status, "BLOCKED");
+    assert.equal(result.code, "GRANT_ROLLBACK_CRITICAL");
+    assert.deepEqual(result.critical_projects, ["project-b"]);
+    assert.equal(quarantineAttempts.length, 1);
+    const gateway = (await f.registry.listGateways()).find((entry) => entry.project_scope === "project-b");
+    assert.equal(gateway.enabled, false);
+    assert.equal(gateway.quarantine_reason, "grant-rollback-physical-stop-failed");
+    await assert.rejects(
+      f.registry.resolveRoute({ principalCn: "developer.alice", projectScope: "project-b" }),
+      (error) => error.code === "ACCESS_OR_RESOURCE_NOT_FOUND",
+    );
+  } finally {
+    await rm(f.root, { recursive: true, force: true });
+  }
+});
+
+test("revoke projection uncertainty remains critical when the mandatory physical quarantine hook fails", async () => {
+  let failRevoke = false;
+  const f = await fixture({
+    async projectionWriter({ trustedCns, writeDefault }) {
+      if (failRevoke && !trustedCns.includes("developer.alice")) throw new Error("stale projection");
+      await writeDefault();
+    },
+    async quarantineGateway() { throw new Error("stop failed"); },
+  });
+  try {
+    await f.registry.provisionGateway({ projectScope: "project-a" });
+    await f.registry.grantPrincipal("developer.alice");
+    failRevoke = true;
+    const result = await f.registry.revokePrincipal("developer.alice");
+    assert.equal(result.status, "BLOCKED");
+    assert.equal(result.code, "REVOKE_QUARANTINE_CRITICAL");
+    assert.deepEqual(result.critical_projects, ["project-a"]);
+    assert.equal((await f.registry.listGateways())[0].quarantine_reason, "revoke-physical-stop-failed");
+  } finally {
+    await rm(f.root, { recursive: true, force: true });
+  }
+});
+
 test("malformed CN, scope, symlinked migration input, and unmanaged state are rejected", async () => {
   const f = await fixture();
   try {

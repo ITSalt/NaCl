@@ -49,6 +49,30 @@ command -v openssl >/dev/null 2>&1 || fail need-openssl
 command -v node >/dev/null 2>&1 || fail need-node
 DC="docker compose"; docker compose version >/dev/null 2>&1 || DC="docker-compose"
 
+# Reserve the server scope/port before creating a project directory, CA material,
+# password, .env, compose file, container, or volume. The token binds cleanup to
+# this exact attempt so a stale process cannot release another reservation.
+ACCESS_CONTROL="$SKILLS_DIR/graph-infra/vps/server-access-control.mjs"
+RESERVATION_JSON=$(node "$ACCESS_CONTROL" reserve --state-dir "$STATE_DIR" --server-id "$HOST" \
+  --scope "$SCOPE" --port "$GATEWAY_PORT") || fail server-reserve
+GATEWAY_PORT=$(printf '%s' "$RESERVATION_JSON" | node -e 'let s="";process.stdin.on("data",c=>s+=c);process.stdin.on("end",()=>process.stdout.write(String(JSON.parse(s).gateway_port)))') || fail server-reserve-readback
+RESERVATION_TOKEN=$(printf '%s' "$RESERVATION_JSON" | node -e 'let s="";process.stdin.on("data",c=>s+=c);process.stdin.on("end",()=>process.stdout.write(String(JSON.parse(s).reservation_token)))') || fail server-reserve-readback
+[ -n "$RESERVATION_TOKEN" ] || fail server-reserve-readback
+RESERVATION_ACTIVE=1
+rollback_reservation() {
+  _nacl_status=$?
+  if [ "$_nacl_status" -ne 0 ] && [ "${RESERVATION_ACTIVE:-0}" -eq 1 ]; then
+    if [ -f "${GRAPH_DIR:-}/docker-compose.yml" ]; then
+      (cd "$GRAPH_DIR" && $DC down --volumes --remove-orphans >/dev/null 2>&1) || true
+    fi
+    node "$ACCESS_CONTROL" release --state-dir "$STATE_DIR" --server-id "$HOST" \
+      --scope "$SCOPE" --reservation-token "$RESERVATION_TOKEN" >/dev/null 2>&1 || \
+      echo "CRITICAL: failed to release gateway reservation for $SCOPE" >&2
+  fi
+  return "$_nacl_status"
+}
+trap rollback_reservation EXIT
+
 GRAPH_DIR="$STATE_DIR/$SCOPE"
 CERT_DIR="$GRAPH_DIR/certs"
 export CA_DIR="$STATE_DIR/ca"
@@ -74,11 +98,9 @@ EOF
 chmod 600 "$GRAPH_DIR/.env"
 cp "$SKILLS_DIR/nacl-tl-core/templates/graph-docker-compose.vps.yml" "$GRAPH_DIR/docker-compose.yml" || fail copy-compose
 
-# Register the project/port atomically, then grant the first principal at the SERVER boundary.
+# Grant the first principal at the SERVER boundary. The scope/port was reserved
+# before any project artifact; activation occurs only after every readiness gate.
 # trusted-cns is authoritative; every project allowed-cns file is only its generated projection.
-ACCESS_CONTROL="$SKILLS_DIR/graph-infra/vps/server-access-control.mjs"
-node "$ACCESS_CONTROL" provision --state-dir "$STATE_DIR" --server-id "$HOST" \
-  --scope "$SCOPE" --port "$GATEWAY_PORT" >/dev/null || fail server-register
 node "$ACCESS_CONTROL" grant --state-dir "$STATE_DIR" --server-id "$HOST" \
   --cn "$FIRST_DEV" >/dev/null || fail server-grant
 render_gateway_allowlist "$GRAPH_DIR" || fail render-allowlist
@@ -124,6 +146,11 @@ echo "First client cert for '$FIRST_DEV' → $STATE_DIR/clients/$FIRST_DEV/ (del
 if command -v ss >/dev/null 2>&1; then
   ss -ltn 2>/dev/null | grep -q ":$GATEWAY_PORT " || fail gateway-listen
 fi
+
+node "$ACCESS_CONTROL" activate --state-dir "$STATE_DIR" --server-id "$HOST" \
+  --scope "$SCOPE" --reservation-token "$RESERVATION_TOKEN" >/dev/null || fail server-activate
+RESERVATION_ACTIVE=0
+trap - EXIT
 
 emit READY
 cat >&2 <<EOF

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
-import { execFileSync } from "node:child_process";
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { execFileSync, spawnSync } from "node:child_process";
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
@@ -37,6 +37,56 @@ test("VPS control plane provisions unique ports, inherits server grants and appl
   }
 });
 
+test("VPS reservation is inventory-only, collision leaves no project artifacts, and release removes the reservation", () => {
+  const root = mkdtempSync(path.join(os.tmpdir(), "nacl-vps-reservation-"));
+  try {
+    const reserved = run(root, "reserve", ["--scope", "project-a", "--port", "7443"]);
+    assert.equal(reserved.status, "RESERVED");
+    assert.match(reserved.reservation_token, /^[0-9a-f]{32}$/);
+    assert.throws(() => readFileSync(path.join(root, "project-a", "allowed-cns"), "utf8"));
+    assert.throws(() => run(root, "reserve", ["--scope", "project-b", "--port", "7443"]));
+    assert.throws(() => readFileSync(path.join(root, "project-b", ".env"), "utf8"));
+    mkdirSync(path.join(root, "project-a"), { recursive: true });
+    writeFileSync(path.join(root, "project-a", ".env"), "injected-later-failure\n");
+    const released = run(root, "release", ["--scope", "project-a", "--reservation-token", reserved.reservation_token]);
+    assert.equal(released.code, "GATEWAY_RESERVATION_RELEASED");
+    assert.deepEqual(run(root, "inventory").gateways, []);
+    assert.equal(existsSync(path.join(root, "project-a")), false);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("VPS quarantine helper reports stop failures as unresolved critical instead of claiming success", () => {
+  const root = mkdtempSync(path.join(os.tmpdir(), "nacl-vps-stop-failure-"));
+  try {
+    const bin = path.join(root, "bin");
+    const state = path.join(root, "state");
+    const graph = path.join(state, "project-a");
+    mkdirSync(bin, { recursive: true });
+    run(state, "provision", ["--scope", "project-a", "--port", "7443"]);
+    writeFileSync(path.join(graph, "docker-compose.yml"), "services: {}\n");
+    const docker = path.join(bin, "docker");
+    writeFileSync(docker, "#!/bin/sh\n[ \"$1 $2\" = \"compose version\" ] && exit 0\nexit 37\n");
+    chmodSync(docker, 0o755);
+    const script = [
+      `. ${JSON.stringify(path.join(repo, "graph-infra/vps/lib-gateway-quarantine.sh"))}`,
+      `PATH=${JSON.stringify(`${bin}:${process.env.PATH}`)}`,
+      `STATE_DIR=${JSON.stringify(state)}`,
+      `SERVER_ID=graph.example.com`,
+      `ACCESS_CONTROL=${JSON.stringify(cli)}`,
+      `DC='docker compose'`,
+      `quarantine_all_gateways injected-failure`,
+    ].join("\n");
+    const result = spawnSync("/bin/sh", ["-c", script], { encoding: "utf8" });
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /CRITICAL: physical gateway stop failed/);
+    assert.doesNotMatch(result.stderr, /every gateway was stopped/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test("POSIX and PowerShell create/connect scripts expose the exact full route contract", () => {
   const pairs = [
     ["create-remote.sh", "create-remote.ps1"],
@@ -59,7 +109,10 @@ test("VPS provision/issue/revoke use authoritative server control and never muta
   const issue = readFileSync(path.join(repo, "graph-infra/vps/issue-client-cert.sh"), "utf8");
   const revoke = readFileSync(path.join(repo, "graph-infra/vps/revoke-client-cert.sh"), "utf8");
   assert.match(provision, /server-access-control\.mjs/);
-  assert.match(provision, /node "\$ACCESS_CONTROL" provision/);
+  assert.match(provision, /node "\$ACCESS_CONTROL" reserve/);
+  assert.match(provision, /node "\$ACCESS_CONTROL" activate/);
+  assert.match(provision, /node "\$ACCESS_CONTROL" release/);
+  assert.ok(provision.indexOf('node "$ACCESS_CONTROL" reserve') < provision.indexOf('mkdir -p "$GRAPH_DIR"'));
   assert.match(provision, /node "\$ACCESS_CONTROL" grant/);
   assert.doesNotMatch(issue, /allowlist_add/);
   assert.doesNotMatch(revoke, /allowlist_remove/);
@@ -67,7 +120,10 @@ test("VPS provision/issue/revoke use authoritative server control and never muta
   assert.match(issue, /node "\$ACCESS_CONTROL" grant/);
   assert.match(revoke, /server-access-control\.mjs/);
   assert.match(revoke, /node "\$ACCESS_CONTROL" revoke/);
-  assert.match(revoke, /stop gateway/);
+  assert.match(issue, /quarantine_all_gateways/);
+  assert.match(revoke, /quarantine_all_gateways/);
+  assert.doesNotMatch(issue, /stop gateway[^\n]*\|\| true/);
+  assert.doesNotMatch(revoke, /stop gateway[^\n]*\|\| true/);
 });
 
 test("provider-neutral and VPS registries project to the same state-dir/scope/allowed-cns layout", () => {
