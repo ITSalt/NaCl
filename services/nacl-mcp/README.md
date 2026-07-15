@@ -19,6 +19,15 @@ Local tests use only a loopback HTTP listener and in-memory disposable graph
 fixtures. They do not contact an identity provider, VPS, Docker daemon, Neo4j
 instance, DNS service, or credential store.
 
+`npm run check` proves that two clean service bundles and their normalized tar
+archives are byte-identical. `npm run build` writes the verified source bundle
+under `dist/`; a deployment then runs `services/nacl-mcp/src/entrypoint.mjs`.
+The entrypoint requires absolute deployment-owned paths in
+`NACL_MCP_CONFIG_FILE` and `NACL_MCP_ADAPTER_MODULE`. The adapter module must
+verify provider tokens, construct the existing server-registry control plane,
+connect the existing graph boundary, and supply the redacted audit sink. No
+provider secret or Neo4j endpoint is embedded in the plugin bundle.
+
 ## Status boundary
 
 This source package is locally runnable. It is not a public deployment and it

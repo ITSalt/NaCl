@@ -29,6 +29,7 @@ case ${1:-} in
       tests/codex-plugin/scripts/nacl-package-contract.test.mjs
       tests/codex-plugin/scripts/nacl-package-server.test.mjs
       tests/codex-plugin/scripts/nacl-project-routing.test.mjs
+      tests/codex-plugin/scripts/nacl-production-binding.test.mjs
       tests/codex-plugin/scripts/nacl-server-access-source.test.mjs
       tests/codex-plugin/scripts/nacl-server-operation-authorization-source.test.mjs
       tests/codex-plugin/scripts/nacl-vps-provision-r2.test.mjs
@@ -145,10 +146,16 @@ case ${1:-} in
   test:candidate)
     exec node scripts/codex-plugin-wave7-candidate.mjs "${@:2}"
     ;;
+  test:production-mcp)
+    npm ci --ignore-scripts --prefix services/nacl-mcp
+    npm --prefix services/nacl-mcp test
+    npm --prefix services/nacl-mcp run check
+    exec node --test tests/codex-plugin/scripts/nacl-production-binding.test.mjs
+    ;;
   *)
     echo "Status: BLOCKED"
     echo "Reason: unknown Codex plugin CI entry point: ${1:-<missing>}"
-    echo "Available: test:contracts, test:codex-skills, test:claude-isolation, test:plugin-manifest, test:plugin-spike, test:plugin-package, test:plugin-closure, test:plugin-docs, test:cli-legacy, test:cli-plugin, test:graph-unit, test:workflow-integration, test:graph-local-e2e, test:multi-project, test:multi-user, test:candidate"
+    echo "Available: test:contracts, test:codex-skills, test:claude-isolation, test:plugin-manifest, test:plugin-spike, test:plugin-package, test:plugin-closure, test:plugin-docs, test:cli-legacy, test:cli-plugin, test:graph-unit, test:workflow-integration, test:graph-local-e2e, test:multi-project, test:multi-user, test:candidate, test:production-mcp"
     exit 2
     ;;
 esac

@@ -17,6 +17,7 @@ import {
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { PUBLIC_TOOL_NAMES } from "../services/nacl-mcp/src/contracts.mjs";
 
 const scriptPath = fileURLToPath(import.meta.url);
 const canonicalScriptPath = await realpath(scriptPath);
@@ -25,17 +26,60 @@ const canonicalRepoRoot = await realpath(repoRoot);
 const defaultManifest = path.join(repoRoot, "scripts", "codex-plugin-manifest.json");
 
 function parseArgs(argv) {
-  const options = { check: false, manifest: defaultManifest, output: null };
+  const options = { check: false, manifest: defaultManifest, output: null, productionMcpUrl: null, productionAppId: null };
   for (let index = 0; index < argv.length; index += 1) {
     const argument = argv[index];
     if (argument === "--check") options.check = true;
     else if (argument === "--manifest") options.manifest = path.resolve(argv[++index] ?? "");
     else if (argument === "--output") options.output = path.resolve(argv[++index] ?? "");
+    else if (argument === "--production-mcp-url") options.productionMcpUrl = argv[++index] ?? "";
+    else if (argument === "--production-app-id") options.productionAppId = argv[++index] ?? "";
     else throw new Error(`Unknown argument: ${argument}`);
   }
   if (!options.manifest) throw new Error("--manifest requires a path");
   if (options.check && options.output) throw new Error("--check and --output are mutually exclusive");
+  if (Boolean(options.productionMcpUrl) !== Boolean(options.productionAppId)) {
+    throw new Error("--production-mcp-url and --production-app-id must be provided together");
+  }
+  if (options.productionMcpUrl && (!options.output || options.check)) {
+    throw new Error("Production binding requires a non-check external --output");
+  }
   return options;
+}
+
+function productionBinding(options) {
+  if (!options.productionMcpUrl) return null;
+  let url;
+  try { url = new URL(options.productionMcpUrl); } catch { throw new Error("--production-mcp-url is invalid"); }
+  if (url.protocol !== "https:" || url.username || url.password || url.hash || url.search || url.pathname !== "/mcp") {
+    throw new Error("--production-mcp-url must be an HTTPS /mcp resource URL without credentials, query, or fragment");
+  }
+  if (!/^plugin_asdk_app_[A-Za-z0-9_-]{16,128}$/.test(options.productionAppId)) {
+    throw new Error("--production-app-id must be a portal-issued plugin_asdk_app identifier");
+  }
+  return Object.freeze({ mcpUrl: url.href, appId: options.productionAppId });
+}
+
+async function applyProductionBinding(destination, binding) {
+  const mcp = {
+    mcpServers: {
+      nacl: {
+        url: binding.mcpUrl,
+        auth: "oauth",
+        required: true,
+        enabled_tools: PUBLIC_TOOL_NAMES,
+      },
+    },
+  };
+  const app = { apps: { nacl: { id: binding.appId } } };
+  const manifestPath = path.join(destination, ".codex-plugin", "plugin.json");
+  const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
+  manifest.apps = "./.app.json";
+  await Promise.all([
+    writeFile(path.join(destination, ".mcp.json"), `${JSON.stringify(mcp, null, 2)}\n`, { mode: 0o644 }),
+    writeFile(path.join(destination, ".app.json"), `${JSON.stringify(app, null, 2)}\n`, { mode: 0o644 }),
+    writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`, { mode: 0o644 }),
+  ]);
 }
 
 function inside(root, filename) {
@@ -390,10 +434,14 @@ async function compareTrees(left, right) {
 
 async function main() {
   const options = parseArgs(process.argv.slice(2));
+  const binding = productionBinding(options);
   const manifest = await loadManifest(options.manifest);
   const committedOutput = repoPath(manifest.output);
   if (options.output && inside(repoRoot, options.output) && path.resolve(options.output) !== committedOutput) {
     throw new Error(`External build output must not write elsewhere in the repository: ${options.output}`);
+  }
+  if (binding && inside(repoRoot, options.output)) {
+    throw new Error("Production binding output must be outside the repository");
   }
   const destination = options.output ?? committedOutput;
   if (!options.check) await mkdir(path.dirname(destination), { recursive: true, mode: 0o755 });
@@ -401,6 +449,10 @@ async function main() {
   const staging = path.join(temporaryRoot, "nacl");
   try {
     const result = await buildInto(staging, manifest);
+    if (binding) {
+      await applyProductionBinding(staging, binding);
+      result.fileCount += 1;
+    }
     if (options.check) {
       const comparison = await compareTrees(staging, committedOutput).catch(() => ({ equal: false }));
       if (!comparison.equal) {
