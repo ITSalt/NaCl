@@ -311,12 +311,15 @@ export function createServerControlPlane({
         const persisted = next.get(key);
         if (persisted?.transition?.id !== intent) throw new ReauthorizationRequired({ error: "temporarily_unavailable" });
         const grant = persisted.grants.get(serverId);
-        grant.active = result?.status === "VERIFIED" && authoritative?.status === "VERIFIED";
-        persisted.transition = null;
-        invalidate(persisted);
+        const verified = result?.status === "VERIFIED" && authoritative?.status === "VERIFIED";
+        if (verified) {
+          grant.active = true;
+          persisted.transition = null;
+          invalidate(persisted);
+        }
         return Object.freeze({
-          status: grant.active ? "VERIFIED" : "BLOCKED",
-          code: grant.active ? "SERVER_GRANTED" : "SERVER_GRANT_NOT_RECONCILED",
+          status: verified ? "VERIFIED" : "BLOCKED",
+          code: verified ? "SERVER_GRANTED" : "SERVER_GRANT_NOT_RECONCILED",
           token_epoch: persisted.epoch,
         });
       });
@@ -354,12 +357,14 @@ export function createServerControlPlane({
           (item.certificate_cn === nextCertificateCn || item.transition?.next_certificate_cn === nextCertificateCn));
         const verified = !collision && results.every((result) => result?.status === "VERIFIED");
         if (verified) persisted.certificate_cn = nextCertificateCn;
-        else {
+        else if (collision) {
           persisted.active = false;
           for (const [, grant] of persisted.grants) grant.active = false;
         }
-        persisted.transition = null;
-        invalidate(persisted);
+        if (verified || collision) {
+          persisted.transition = null;
+          invalidate(persisted);
+        }
         return {
           collision,
           status: verified ? "VERIFIED" : "BLOCKED",
@@ -400,21 +405,24 @@ export function createServerControlPlane({
       return persistAuthorizationState((next) => {
         const persisted = next.get(key);
         if (persisted?.transition?.id !== intent) throw new ReauthorizationRequired({ error: "temporarily_unavailable" });
-        persisted.transition = null;
-        invalidate(persisted);
+        const verified = result?.status === "VERIFIED" && authoritative?.status === "BLOCKED";
+        if (verified) {
+          persisted.transition = null;
+          invalidate(persisted);
+        }
         return Object.freeze({
-          status: result?.status === "VERIFIED" && authoritative?.status === "BLOCKED" ? "VERIFIED" : "BLOCKED",
-          code: result?.status === "VERIFIED" && authoritative?.status === "BLOCKED" ? "SERVER_REVOKED" : "SERVER_REVOKE_NOT_RECONCILED",
+          status: verified ? "VERIFIED" : "BLOCKED",
+          code: verified ? "SERVER_REVOKED" : "SERVER_REVOKE_NOT_RECONCILED",
           token_epoch: persisted.epoch,
         });
       });
     },
     async revokeSession({ issuer, subject, sessionId, expiresAt }) {
-      issuerIdentifier(issuer);
+      const canonicalIssuer = issuerIdentifier(issuer);
       subjectIdentifier(subject);
       if (typeof sessionId !== "string" || !SESSION_ID.test(sessionId)) throw new TypeError("sessionId is invalid.");
       if (expiresAt !== undefined && (!Number.isSafeInteger(expiresAt) || expiresAt <= Date.now())) throw new TypeError("expiresAt is invalid.");
-      await sessionRegistry.revoke({ issuer, subject, sessionId, expiresAt });
+      await sessionRegistry.revoke({ issuer: canonicalIssuer, subject, sessionId, expiresAt });
     },
     async reconcileTransition({ issuer, subject }) {
       const key = bindingKey(issuer, subject);

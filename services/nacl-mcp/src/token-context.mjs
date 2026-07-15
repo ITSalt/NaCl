@@ -75,7 +75,7 @@ export function createInjectedTokenContextVerifier({
       }
       return Object.freeze({
         verified: true,
-        issuer: claims.issuer,
+        issuer: canonicalIssuer(claims.issuer),
         subject: claims.subject,
         audience: resource,
         scopes: Object.freeze(scopes),

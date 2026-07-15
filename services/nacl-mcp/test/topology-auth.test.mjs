@@ -44,6 +44,10 @@ function registry(serverId) {
     async verifyPrincipal(cn) {
       value.verifyCalls += 1;
       if (value.failVerify) throw new Error("authoritative registry unavailable");
+      if (value.verifyUndefinedOnce) {
+        value.verifyUndefinedOnce = false;
+        return undefined;
+      }
       return { status: trusted.has(cn) ? "VERIFIED" : "BLOCKED" };
     },
     provision(projectScope) { projects.set(projectScope, new Set(trusted)); },
@@ -364,6 +368,16 @@ test("individual OAuth session revocation is immediate and does not affect anoth
   assert.equal((await ctx.app({ name: "nacl_project_summary", arguments: { project_ref: PROJECT_A2 }, authContext: fresh, requiredScope: "nacl.server.read" })).status, "VERIFIED");
 });
 
+test("equivalent issuer spellings revoke the same canonical OAuth session", async () => {
+  const ctx = await fixture();
+  const auth = await ctx.context("token-alice-session-one");
+  await ctx.control.revokeSession({ issuer: ISSUER.slice(0, -1), subject: "subject-alice", sessionId: "session-alice-1" });
+  await assert.rejects(
+    ctx.app({ name: "nacl_project_summary", arguments: { project_ref: PROJECT_A1 }, authContext: auth, requiredScope: "nacl.server.read" }),
+    (error) => error.code === "REAUTHORIZATION_REQUIRED",
+  );
+});
+
 test("issuer-local session IDs do not collide and revocation stays within issuer and subject", async () => {
   const sessions = createMemorySessionRegistry({ now: () => 1_500_000 });
   const base = { principal_id: "principal-shared", binding_revision: 1, token_epoch: 0, revoked: false, expires_at: 2_000_000 };
@@ -488,6 +502,18 @@ test("revoke reconciliation never treats missing authoritative verification as a
   const recovered = await ctx.control.reconcileTransition({ issuer: ISSUER, subject: "subject-alice" });
   assert.equal(recovered.status, "VERIFIED");
   assert.equal(recovered.code, "SERVER_REVOKE_RECONCILED");
+});
+
+test("ambiguous revoke read-back retains the durable intent until exact reconciliation", async () => {
+  const ctx = await fixture();
+  ctx.registryA.verifyUndefinedOnce = true;
+  const ambiguous = await ctx.control.revokeServer({ issuer: ISSUER, subject: "subject-alice", serverId: "server-a" });
+  assert.equal(ambiguous.status, "BLOCKED");
+  assert.equal(ambiguous.code, "SERVER_REVOKE_NOT_RECONCILED");
+  await assert.rejects(ctx.control.currentTokenEpoch(ISSUER, "subject-alice"), (error) => error.code === "REAUTHORIZATION_REQUIRED");
+  const reconciled = await ctx.control.reconcileTransition({ issuer: ISSUER, subject: "subject-alice" });
+  assert.equal(reconciled.status, "VERIFIED");
+  assert.equal(reconciled.code, "SERVER_REVOKE_RECONCILED");
 });
 
 test("audit and responses are minimized and contain no raw subject, principal, certificate, server, scope, token, host, or graph result extras", async () => {
@@ -625,6 +651,8 @@ test("token verifier rejects wrong issuer, audience, expiry, not-before, unverif
     ctx.tokens.set(raw, claims);
     await assert.rejects(ctx.verify(`Bearer ${raw}`), (error) => error.code === "INVALID_TOKEN", name);
   }
+  ctx.tokens.set("issuer-no-slash-token", { ...base, issuer: ISSUER.slice(0, -1) });
+  assert.equal((await ctx.verify("Bearer issuer-no-slash-token")).issuer, ISSUER);
   await assert.rejects(ctx.verify("Bearer invalid token whitespace"), (error) => error.code === "INVALID_TOKEN");
   assert.throws(() => createInjectedTokenContextVerifier({
     resourceUrl: RESOURCE,
