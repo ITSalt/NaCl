@@ -98,3 +98,41 @@ test("one secret-source contract resolves env and injected server route provider
   }), "provider-secret");
   await assert.rejects(resolveSecretSource("server-route:project-a", { env: {} }), /provider unavailable/i);
 });
+
+test("transaction rejects malformed MCP and malformed or duplicate graph state byte-preservingly", async () => {
+  const cases = [
+    { config: "graph:\n  mode: local\n", mcp: "{not-json\n", pattern: /existing \.mcp\.json is malformed/ },
+    { config: "graph: [invalid]\n", mcp: "{}\n", pattern: /graph block is malformed/ },
+    { config: " graph:\n  mode: local\n", mcp: "{}\n", pattern: /graph block is malformed/ },
+    { config: "graph:\n  mode: local\ngraph:\n  mode: remote\n", mcp: "{}\n", pattern: /graph block is malformed or duplicated/ },
+    { config: "graph:\n  mode: local\n  mode: remote\n", mcp: "{}\n", pattern: /duplicate graph key mode/ },
+  ];
+  for (const entry of cases) {
+    const root = await fixture(entry.config, entry.mcp);
+    try {
+      await assert.rejects(writeRemoteRouteTransaction({ projectRoot: root, route, launcher }), entry.pattern);
+      assert.equal(await readFile(path.join(root, "config.yaml"), "utf8"), entry.config);
+      assert.equal(await readFile(path.join(root, ".mcp.json"), "utf8"), entry.mcp);
+    } finally { await rm(root, { recursive: true, force: true }); }
+  }
+});
+
+test("readback binds the exact launcher command, script, and binary", async () => {
+  const root = await fixture("graph:\n  mode: local\n", "{}\n");
+  try {
+    await writeRemoteRouteTransaction({ projectRoot: root, route, launcher });
+    const configText = await readFile(path.join(root, "config.yaml"), "utf8");
+    const mcpPath = path.join(root, ".mcp.json");
+    const original = JSON.parse(await readFile(mcpPath, "utf8"));
+    for (const mutate of [
+      (mcp) => { mcp.mcpServers.neo4j.command = "/tmp/attacker-command"; },
+      (mcp) => { mcp.mcpServers.neo4j.args[0] = "/tmp/attacker-script"; },
+      (mcp) => { mcp.mcpServers.neo4j.args[2] = "/tmp/attacker-binary"; },
+    ]) {
+      const mcp = structuredClone(original);
+      mutate(mcp);
+      const altered = `${JSON.stringify(mcp, null, 2)}\n`;
+      assert.throws(() => readRemoteRoutePair(configText, altered, { expectedLauncher: launcher }), /launcher metadata mismatch/);
+    }
+  } finally { await rm(root, { recursive: true, force: true }); }
+});

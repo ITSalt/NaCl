@@ -115,17 +115,18 @@ test("POSIX and PowerShell marker queries keep every dynamic value in MCP parame
   assert.doesNotMatch(connectSh, /id:'\$SCOPE'/);
   assert.match(createSh, /\$projectScope/);
   assert.match(createSh, /\$developerId/);
-  assert.match(createSh, /--param "projectScope=\$SCOPE"/);
-  assert.match(createSh, /--param "developerId=\$DEV"/);
+  assert.match(createSh, /--param-string "projectScope=\$SCOPE"/);
+  assert.match(createSh, /--param-string "developerId=\$DEV"/);
   assert.match(connectSh, /\$projectScope/);
-  assert.match(connectSh, /--param "projectScope=\$SCOPE"/);
+  assert.match(connectSh, /--param-string "projectScope=\$SCOPE"/);
 
   assert.doesNotMatch(createPs, /id:'\$ProjectScope'|created_by='\$DeveloperId'|updated_by='\$DeveloperId'/);
   assert.doesNotMatch(connectPs, /id:'\$ProjectScope'/);
   assert.match(createPs, /-Params @\{ projectScope = \$ProjectScope; developerId = \$DeveloperId \}/);
   assert.match(connectPs, /-Params @\{ projectScope = \$ProjectScope \}/);
   assert.match(psHelper, /\[hashtable\]\$Params/);
-  assert.match(psHelper, /"--param"/);
+  assert.match(psHelper, /\$Params\[\$key\] -is \[string\]/);
+  assert.match(psHelper, /"--param-string"/);
 });
 
 test("POSIX and PowerShell remote flows use one secret resolver and one transactional route writer", () => {

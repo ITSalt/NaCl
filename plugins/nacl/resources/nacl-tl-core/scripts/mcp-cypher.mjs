@@ -10,7 +10,7 @@
 // names are not guaranteed). Pure request/response helpers are pinned by mcp-cypher.test.mjs;
 // the spawn path needs a real binary so it is exercised by the connect/create integration gates.
 //
-//   mcp-cypher.mjs --binary <path> --uri <bolt-uri> [--user neo4j] [--password pw]
+//   NEO4J_PASSWORD=<pw> mcp-cypher.mjs --binary <path> --uri <bolt-uri> [--user neo4j]
 //       [--database neo4j] --query "MATCH (n) RETURN count(n) AS c" [--write] [--param k=v]...
 //   → prints result rows as JSON, then:  NACL_CYPHER_RESULT: status=ok|fail rows=<n>
 
@@ -85,6 +85,18 @@ export function parseParams(pairs) {
   return out;
 }
 
+/** Parse repeated --param-string k=v without JSON scalar coercion. */
+export function parseStringParams(pairs) {
+  const out = {};
+  for (const pair of pairs) {
+    const match = typeof pair === 'string' ? pair.match(/^([A-Za-z_][A-Za-z0-9_]*)=(.*)$/s) : null;
+    if (!match) throw new Error('mcp-cypher: invalid string parameter');
+    if (Object.hasOwn(out, match[1])) throw new Error(`mcp-cypher: duplicate string parameter ${match[1]}`);
+    out[match[1]] = match[2];
+  }
+  return out;
+}
+
 /**
  * Run a single Cypher query against the binary over stdio. Resolves to {rows}.
  * Rejects on spawn error, timeout, or a JSON-RPC error response.
@@ -132,25 +144,35 @@ export function runCypher({ binary, env, query, params = {}, write = false, time
 // CLI — symlink-safe main check.
 if (process.argv[1] && realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const args = process.argv.slice(2);
-  const opt = { params: [] };
+  const opt = { params: [], stringParams: [] };
   for (let i = 0; i < args.length; i++) {
     const a = args[i];
     if (a === '--write') opt.write = true;
+    else if (a === '--password' || a.startsWith('--password=')) {
+      process.stderr.write('mcp-cypher: --password is forbidden; use the bounded NEO4J_PASSWORD environment\n');
+      process.exit(2);
+    }
     else if (a === '--param') opt.params.push(args[++i]);
+    else if (a === '--param-string') opt.stringParams.push(args[++i]);
     else if (a.startsWith('--') && a.includes('=')) { const [k, v] = a.slice(2).split(/=(.*)/s); opt[k] = v; }
     else if (a.startsWith('--')) opt[a.slice(2)] = args[++i];
   }
   if (!opt.binary || !opt.uri || !opt.query) {
-    process.stderr.write('usage: mcp-cypher.mjs --binary <path> --uri <bolt-uri> --query <cypher> [--write] [--user] [--password] [--database] [--param k=v]\n');
+    process.stderr.write('usage: NEO4J_PASSWORD=<pw> mcp-cypher.mjs --binary <path> --uri <bolt-uri> --query <cypher> [--write] [--user] [--database] [--param k=v] [--param-string k=v]\n');
     process.exit(2);
   }
   const env = {
     NEO4J_URI: opt.uri,
     NEO4J_USERNAME: opt.user ?? 'neo4j',
-    NEO4J_PASSWORD: opt.password ?? process.env.NEO4J_PASSWORD ?? '',
+    NEO4J_PASSWORD: process.env.NEO4J_PASSWORD ?? '',
     NEO4J_DATABASE: opt.database ?? 'neo4j',
   };
-  runCypher({ binary: opt.binary, env, query: opt.query, params: parseParams(opt.params), write: !!opt.write })
+  const params = parseParams(opt.params);
+  const stringParams = parseStringParams(opt.stringParams);
+  for (const key of Object.keys(stringParams)) {
+    if (Object.hasOwn(params, key)) throw new Error(`mcp-cypher: parameter ${key} has conflicting types`);
+  }
+  runCypher({ binary: opt.binary, env, query: opt.query, params: { ...params, ...stringParams }, write: !!opt.write })
     .then(({ rows }) => {
       process.stdout.write(JSON.stringify(rows) + '\n');
       process.stdout.write(`NACL_CYPHER_RESULT: status=ok rows=${rows.length}\n`);

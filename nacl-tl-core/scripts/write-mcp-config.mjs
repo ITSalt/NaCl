@@ -63,6 +63,18 @@ export function readMcpDoc(text) {
   try { return JSON.parse(text.replace(/^﻿/, '')); } catch { return {}; }
 }
 
+/** Strict transaction parser: malformed user state must never be replaced silently. */
+export function readMcpDocStrict(text) {
+  if (typeof text !== 'string' || text.trim() === '') return {};
+  let parsed;
+  try { parsed = JSON.parse(text.replace(/^﻿/, '')); } catch { throw new Error('write-mcp-config: existing .mcp.json is malformed'); }
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) throw new Error('write-mcp-config: existing .mcp.json must be an object');
+  if (parsed.mcpServers !== undefined && (!parsed.mcpServers || typeof parsed.mcpServers !== 'object' || Array.isArray(parsed.mcpServers))) {
+    throw new Error('write-mcp-config: existing mcpServers must be an object');
+  }
+  return parsed;
+}
+
 /** Canonical serialization: 2-space indent, trailing newline, no BOM (matches prior merge). */
 export function serializeMcpDoc(doc) {
   return JSON.stringify(doc, null, 2) + '\n';

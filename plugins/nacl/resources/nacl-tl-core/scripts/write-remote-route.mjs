@@ -6,18 +6,47 @@ import { fileURLToPath } from "node:url";
 
 import { validateRemoteRoute } from "./remote-route-contract.mjs";
 import { findGraphBlock, parseGraphBlock, renderGraphBlock, replaceRemoteRouteValues, spliceGraphBlock } from "./write-graph-config.mjs";
-import { mergeMcpConfig, readMcpDoc, serializeMcpDoc } from "./write-mcp-config.mjs";
+import { mergeMcpConfig, readMcpDocStrict, serializeMcpDoc } from "./write-mcp-config.mjs";
 
 function scalar(value) {
   if (typeof value !== "string") return value;
   try { return JSON.parse(value); } catch { return value; }
 }
 
-export function readRemoteRoutePair(configText, mcpText) {
+function graphDocument(configText, { required = false } = {}) {
   const lines = configText.split(/\r?\n/);
+  const graphLike = lines.map((line, index) => ({ line, index })).filter(({ line }) => /^\s*graph\s*:/.test(line));
+  if (graphLike.some(({ line }) => !/^graph:\s*(#.*)?$/.test(line)) || graphLike.length > 1) {
+    throw new Error("remote route state: graph block is malformed or duplicated");
+  }
   const span = findGraphBlock(lines);
-  if (!span) throw new Error("remote route readback: graph block missing");
-  const graph = parseGraphBlock(lines.slice(span.startLine, span.endLine).join("\n"));
+  if (!span) {
+    if (required) throw new Error("remote route readback: graph block missing");
+    return { lines, span: null, parsed: { flat: {}, remote: {} } };
+  }
+  const flat = new Set();
+  const remote = new Set();
+  let inRemote = false;
+  for (const raw of lines.slice(span.startLine + 1, span.endLine)) {
+    if (raw.trim() === "" || /^\s*#/.test(raw)) continue;
+    const flatMatch = raw.match(/^ {2}([A-Za-z0-9_]+):\s*(.*?)\s*$/);
+    const remoteMatch = raw.match(/^ {4}([A-Za-z0-9_]+):\s*(.*?)\s*$/);
+    if (flatMatch) {
+      const key = flatMatch[1];
+      if (flat.has(key)) throw new Error(`remote route state: duplicate graph key ${key}`);
+      flat.add(key);
+      inRemote = key === "remote";
+    } else if (remoteMatch && inRemote) {
+      const key = remoteMatch[1];
+      if (remote.has(key)) throw new Error(`remote route state: duplicate remote key ${key}`);
+      remote.add(key);
+    } else throw new Error("remote route state: graph block contains unsupported structure");
+  }
+  return { lines, span, parsed: parseGraphBlock(lines.slice(span.startLine, span.endLine).join("\n")) };
+}
+
+export function readRemoteRoutePair(configText, mcpText, { expectedLauncher } = {}) {
+  const { parsed: graph } = graphDocument(configText, { required: true });
   for (const key of ["neo4j_bolt_port", "neo4j_http_port", "neo4j_password", "container_prefix"]) {
     if (key in graph.flat) throw new Error(`remote route readback: stale ${key}`);
   }
@@ -36,7 +65,7 @@ export function readRemoteRoutePair(configText, mcpText) {
     database: scalar(graph.flat.neo4j_database),
     secretSource: scalar(graph.remote.secret_source),
   });
-  const mcp = readMcpDoc(mcpText).mcpServers?.neo4j;
+  const mcp = readMcpDocStrict(mcpText).mcpServers?.neo4j;
   if (!mcp || mcp.type !== "stdio" || !Array.isArray(mcp.args) || mcp.args.length !== 5) throw new Error("remote route readback: MCP launcher missing");
   const [script, binaryFlag, binary, sourceFlag, source] = mcp.args;
   if (binaryFlag !== "--binary" || sourceFlag !== "--secret-source" || source !== route.secret_source) throw new Error("remote route readback: MCP launcher mismatch");
@@ -47,7 +76,11 @@ export function readRemoteRoutePair(configText, mcpText) {
     env.NEO4J_DATABASE !== route.database || env.NACL_NEO4J_SECRET_SOURCE !== route.secret_source ||
     env.NACL_REMOTE_ROUTE_MODE !== route.mode
   ) throw new Error("remote route readback: MCP route mismatch");
-  return { route: { ...route }, launcher: { command: mcp.command, script, binary } };
+  const launcher = { command: mcp.command, script, binary };
+  if (expectedLauncher && Object.keys(launcher).some((key) => launcher[key] !== expectedLauncher[key])) {
+    throw new Error("remote route readback: launcher metadata mismatch");
+  }
+  return { route: { ...route }, launcher };
 }
 
 async function original(filename) {
@@ -83,14 +116,10 @@ export async function writeRemoteRouteTransaction({ projectRoot, route: input, l
   const configPath = path.join(root, "config.yaml");
   const mcpPath = path.join(root, ".mcp.json");
   const [configOriginal, mcpOriginal] = await Promise.all([original(configPath), original(mcpPath)]);
-  const graphLines = configOriginal.content.split(/\r?\n/);
-  const graphSpan = findGraphBlock(graphLines);
-  const existingGraph = graphSpan
-    ? parseGraphBlock(graphLines.slice(graphSpan.startLine, graphSpan.endLine).join("\n"))
-    : { flat: {}, remote: {} };
+  const { parsed: existingGraph } = graphDocument(configOriginal.content);
   const configNext = spliceGraphBlock(configOriginal.content, renderGraphBlock(replaceRemoteRouteValues(existingGraph, route)));
   const configText = configNext.endsWith("\n") ? configNext : `${configNext}\n`;
-  const mcpDoc = mergeMcpConfig(readMcpDoc(mcpOriginal.content), {
+  const mcpDoc = mergeMcpConfig(readMcpDocStrict(mcpOriginal.content), {
     command: launcher.binary,
     uri: route.uri,
     username: route.username,
@@ -99,7 +128,7 @@ export async function writeRemoteRouteTransaction({ projectRoot, route: input, l
     launcher: { command: launcher.command, script: launcher.script, binary: launcher.binary, routeMode: route.mode },
   });
   const mcpText = serializeMcpDoc(mcpDoc);
-  readRemoteRoutePair(configText, mcpText);
+  readRemoteRoutePair(configText, mcpText, { expectedLauncher: launcher });
 
   let configTemp;
   let mcpTemp;
@@ -111,7 +140,7 @@ export async function writeRemoteRouteTransaction({ projectRoot, route: input, l
     firstWritten = true;
     if (failAfterFirstWrite) throw new Error("injected second-file failure");
     await rename(mcpTemp, mcpPath);
-    const readback = readRemoteRoutePair(await readFile(configPath, "utf8"), await readFile(mcpPath, "utf8"));
+    const readback = readRemoteRoutePair(await readFile(configPath, "utf8"), await readFile(mcpPath, "utf8"), { expectedLauncher: launcher });
     if (JSON.stringify(readback.route) !== JSON.stringify({ ...route })) throw new Error("remote route readback differs from staged route");
     return Object.freeze({ status: "VERIFIED", ...readback });
   } catch (error) {
