@@ -3,7 +3,7 @@
 import { readFile, realpath } from "node:fs/promises";
 import path from "node:path";
 import { pathToFileURL, fileURLToPath } from "node:url";
-import { createNaclMcpService } from "./service.mjs";
+import { createNaclMcpService, validateServiceConfiguration } from "./service.mjs";
 
 const DEPLOYMENT_CONFIG_FIELDS = new Set([
   "resourceUrl", "resourceMetadataUrl", "authorizationServers", "scopesSupported",
@@ -26,6 +26,8 @@ export async function loadDeployment() {
       Object.keys(configuration).some((key) => !DEPLOYMENT_CONFIG_FIELDS.has(key))) {
     throw new Error("The deployment configuration contains an unsupported field.");
   }
+  const serviceConfiguration = Object.fromEntries(Object.entries(configuration).filter(([key]) => key !== "listen"));
+  validateServiceConfiguration(serviceConfiguration);
   const adapterModule = await import(pathToFileURL(adapterPath).href);
   if (typeof adapterModule.createDeploymentAdapters !== "function") {
     throw new Error("The deployment adapter module must export createDeploymentAdapters().");
@@ -38,7 +40,6 @@ export async function loadDeployment() {
       !Number.isSafeInteger(listen.port) || listen.port < 1 || listen.port > 65535) {
     throw new Error("configuration.listen is invalid.");
   }
-  const serviceConfiguration = Object.fromEntries(Object.entries(configuration).filter(([key]) => key !== "listen"));
   return { server: createNaclMcpService({ configuration: serviceConfiguration, adapters }), listen };
 }
 

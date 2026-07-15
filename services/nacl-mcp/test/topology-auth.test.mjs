@@ -4,7 +4,7 @@ import { createToolApplication } from "../src/application.mjs";
 import { createRedactedAuditSink } from "../src/audit.mjs";
 import { createIdempotencyLedger } from "../src/idempotency.mjs";
 import { createLayeredRateLimiter } from "../src/rate-limit.mjs";
-import { createServerControlPlane } from "../src/server-control.mjs";
+import { createMemorySessionRegistry, createServerControlPlane } from "../src/server-control.mjs";
 import { createInjectedTokenContextVerifier } from "../src/token-context.mjs";
 
 const PROJECT_A1 = "prj_AAAAAAAAAAAAAAAA";
@@ -47,7 +47,7 @@ function token(subject, session, epoch, scopes) {
   };
 }
 
-async function fixture({ rateLimit = 100 } = {}) {
+async function fixture({ rateLimit = 100, sessionRegistry = createMemorySessionRegistry({ now: () => 1_500_000 }), auditSink } = {}) {
   const registryA = registry("server-a");
   const registryB = registry("server-b");
   const tokens = new Map();
@@ -66,6 +66,7 @@ async function fixture({ rateLimit = 100 } = {}) {
       { project_ref: PROJECT_B1, server_id: "server-b", project_scope: "scope-b1", label: "Gamma", enabled: true },
     ],
     serverRegistries: new Map([["server-a", registryA], ["server-b", registryB]]),
+    sessionRegistry,
   });
   control.registerSubject({ subject: "subject-alice", principalId: "principal-alice", certificateCn: "cn-alice-v1" });
   control.registerSubject({ subject: "subject-bob", principalId: "principal-bob", certificateCn: "cn-bob-v1" });
@@ -77,7 +78,7 @@ async function fixture({ rateLimit = 100 } = {}) {
   const allScopes = ["nacl.server.read", "nacl.server.write", "nacl.server.schema", "nacl.server.backup", "nacl.server.restore"];
   tokens.set("token-alice-session-one", token("subject-alice", "session-alice-1", control.currentTokenEpoch("subject-alice"), allScopes));
   tokens.set("token-bob-session-one00", token("subject-bob", "session-bob-0001", control.currentTokenEpoch("subject-bob"), allScopes));
-  const audit = createRedactedAuditSink({ secret: "a".repeat(64), now: () => 1_500_000 });
+  const audit = auditSink ?? createRedactedAuditSink({ secret: "a".repeat(64), now: () => 1_500_000 });
   const calls = [];
   const graph = {
     calls,
@@ -256,11 +257,29 @@ test("individual OAuth session revocation is immediate and does not affect anoth
   const ctx = await fixture();
   const revoked = await ctx.context("token-alice-session-one");
   assert.equal((await ctx.app({ name: "nacl_project_summary", arguments: { project_ref: PROJECT_A1 }, authContext: revoked, requiredScope: "nacl.server.read" })).status, "VERIFIED");
-  ctx.control.revokeSession({ subject: "subject-alice", sessionId: "session-alice-1" });
+  await ctx.control.revokeSession({ subject: "subject-alice", sessionId: "session-alice-1" });
   await assert.rejects(ctx.app({ name: "nacl_project_summary", arguments: { project_ref: PROJECT_A1 }, authContext: revoked, requiredScope: "nacl.server.read" }), (error) => error.code === "REAUTHORIZATION_REQUIRED");
   ctx.tokens.set("token-alice-session-two", token("subject-alice", "session-alice-2", ctx.control.currentTokenEpoch("subject-alice"), ctx.allScopes));
   const fresh = await ctx.context("token-alice-session-two");
   assert.equal((await ctx.app({ name: "nacl_project_summary", arguments: { project_ref: PROJECT_A2 }, authContext: fresh, requiredScope: "nacl.server.read" })).status, "VERIFIED");
+});
+
+test("preemptive session revoke persists as a tombstone across a reconstructed control plane", async () => {
+  const sessionRegistry = createMemorySessionRegistry({ now: () => 1_500_000 });
+  const first = await fixture({ sessionRegistry });
+  await first.control.revokeSession({ subject: "subject-alice", sessionId: "session-alice-1" });
+  const firstToken = await first.context("token-alice-session-one");
+  await assert.rejects(
+    first.app({ name: "nacl_project_summary", arguments: { project_ref: PROJECT_A1 }, authContext: firstToken, requiredScope: "nacl.server.read" }),
+    (error) => error.code === "REAUTHORIZATION_REQUIRED" && error.scope === "nacl.server.read",
+  );
+
+  const restarted = await fixture({ sessionRegistry });
+  const restartedToken = await restarted.context("token-alice-session-one");
+  await assert.rejects(
+    restarted.app({ name: "nacl_restore_request", arguments: { project_ref: PROJECT_A1 }, authContext: restartedToken, requiredScope: "nacl.server.restore" }),
+    (error) => error.code === "REAUTHORIZATION_REQUIRED" && error.scope === "nacl.server.restore",
+  );
 });
 
 test("new same-server project inherits the authoritative principal set in the disposable gateway fixture", async () => {
@@ -293,6 +312,46 @@ test("audit and responses are minimized and contain no raw subject, principal, c
   assert.match(auditText, /actor_ref/);
 });
 
+test("state-changing operations persist a write-ahead audit reservation before graph mutation", async () => {
+  let records = 0;
+  const unavailableAudit = {
+    newSupportRef() { return "support_0123456789abcdef0123456789abcdef"; },
+    async record() { records += 1; throw new Error("audit unavailable"); },
+  };
+  const ctx = await fixture({ auditSink: unavailableAudit });
+  const auth = await ctx.context("token-alice-session-one");
+  await assert.rejects(ctx.app({
+    name: "nacl_project_mutate",
+    arguments: {
+      project_ref: PROJECT_A1,
+      resource_type: "Task",
+      resource_ref: "TASK-9",
+      status: "verified",
+      idempotency_key: "idempotency-audit-0001",
+      confirmation: "APPLY_PROJECT_MUTATION",
+    },
+    authContext: auth,
+    requiredScope: "nacl.server.write",
+  }), /audit unavailable/);
+  assert.equal(records >= 1, true);
+  assert.equal(ctx.graph.calls.length, 0);
+});
+
+test("unknown adapter failures retain the same public and audit support reference", async () => {
+  const ctx = await fixture();
+  ctx.graph.projectSummary = async () => { throw new Error("private adapter detail"); };
+  const auth = await ctx.context("token-alice-session-one");
+  let failure;
+  try {
+    await ctx.app({ name: "nacl_project_summary", arguments: { project_ref: PROJECT_A1 }, authContext: auth, requiredScope: "nacl.server.read" });
+  } catch (error) {
+    failure = error;
+  }
+  assert.equal(failure.code, "INTERNAL_ERROR");
+  assert.doesNotMatch(failure.message, /private adapter detail/);
+  assert.equal(ctx.audit.events().at(-1).support_ref, failure.supportRef);
+});
+
 test("layered rate limits fail before another graph operation", async () => {
   const ctx = await fixture({ rateLimit: 2 });
   const auth = await ctx.context("token-alice-session-one");
@@ -301,6 +360,25 @@ test("layered rate limits fail before another graph operation", async () => {
   const before = ctx.graph.calls.length;
   await assert.rejects(ctx.app({ name: "nacl_project_summary", arguments: { project_ref: PROJECT_A1 }, authContext: auth, requiredScope: "nacl.server.read" }), (error) => error.code === "RATE_LIMITED");
   assert.equal(ctx.graph.calls.length, before);
+});
+
+test("in-memory test helpers prune expired windows and fail closed at bounded capacity", async () => {
+  let current = 0;
+  const limiter = createLayeredRateLimiter({ now: () => current, windowMs: 1000, limit: 10, maxKeys: 2 });
+  limiter.assert(["one", "two"]);
+  assert.throws(() => limiter.assert(["three"]), (error) => error.code === "RATE_LIMITED");
+  current = 1000;
+  limiter.assert(["three"]);
+
+  const ledger = createIdempotencyLedger({ now: () => current, ttlMs: 60_000, maxRecords: 1 });
+  const operation = async () => ({ revision: 1 });
+  await ledger.execute({ principalId: "principal-a", tool: "write", key: "idempotency-bounded-1", payload: { value: 1 }, operation });
+  await assert.rejects(
+    ledger.execute({ principalId: "principal-a", tool: "write", key: "idempotency-bounded-2", payload: { value: 2 }, operation }),
+    (error) => error.code === "RATE_LIMITED",
+  );
+  current += 60_001;
+  await ledger.execute({ principalId: "principal-a", tool: "write", key: "idempotency-bounded-2", payload: { value: 2 }, operation });
 });
 
 test("token verifier rejects wrong issuer, audience, expiry, not-before, unverified context, and whitespace tokens", async () => {

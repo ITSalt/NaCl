@@ -37,8 +37,9 @@ function toolResult(structuredContent, meta) {
   };
 }
 
-export function createSdkMcpServer({ callTool, resourceMetadataUrl, authContext, serverVersion = "0.1.0" } = {}) {
+export function createSdkMcpServer({ callTool, auditRejection, resourceMetadataUrl, authContext, serverVersion = "0.1.0" } = {}) {
   if (typeof callTool !== "function") throw new TypeError("callTool must be injected.");
+  if (typeof auditRejection !== "function") throw new TypeError("auditRejection must be injected.");
   if (typeof resourceMetadataUrl !== "string") throw new TypeError("resourceMetadataUrl must be configured.");
   const server = new Server(
     { name: "nacl-public-mcp", version: serverVersion },
@@ -50,10 +51,16 @@ export function createSdkMcpServer({ callTool, resourceMetadataUrl, authContext,
   server.setRequestHandler(ListToolsRequestSchema, async () => ({ tools: PUBLIC_TOOLS }));
   server.setRequestHandler(CallToolRequestSchema, async (request) => {
     const descriptor = TOOL_BY_NAME.get(request.params.name);
-    if (!descriptor) throw new McpError(ErrorCode.InvalidParams, "Tool is not in the public allowlist.");
+    if (!descriptor) {
+      await auditRejection({ name: request.params.name, code: "TOOL_NOT_ALLOWED", authContext });
+      throw new McpError(ErrorCode.InvalidParams, "Tool is not in the public allowlist.");
+    }
     const args = request.params.arguments ?? {};
     const validation = validateSchema(descriptor.inputSchema, args);
-    if (!validation.valid) throw new McpError(ErrorCode.InvalidParams, "Invalid tool arguments.");
+    if (!validation.valid) {
+      await auditRejection({ name: request.params.name, code: "INVALID_ARGUMENTS", authContext });
+      throw new McpError(ErrorCode.InvalidParams, "Invalid tool arguments.");
+    }
     try {
       const structuredContent = await callTool({
         name: request.params.name,

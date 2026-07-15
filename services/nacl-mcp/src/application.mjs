@@ -41,7 +41,7 @@ export function createToolApplication({ controlPlane, graphAdapter, auditSink, r
       if (!operation) throw new PublicMcpError("TOOL_NOT_ALLOWED", "The public tool is not allowed.");
       if (!authContext?.scopes?.includes(requiredScope)) throw new ReauthorizationRequired({ scope: requiredScope });
       if (operation.method === "listProjects") {
-        const listing = controlPlane.listProjects({ tokenContext: authContext });
+        const listing = await controlPlane.listProjects({ tokenContext: authContext });
         route = { principalId: listing.principalId, serverId: "authorized-server-set", projectRef: "project-list", sessionId: listing.sessionId };
         rateLimiter.assert([
           `ip:${authContext.sourceAddress ?? "direct"}`,
@@ -80,6 +80,21 @@ export function createToolApplication({ controlPlane, graphAdapter, auditSink, r
         }),
         input: args,
       });
+      if (operation.toolClass !== "read") {
+        await auditSink.record({
+          support_ref,
+          actor: route.principalId,
+          server: route.serverId,
+          project: route.projectRef,
+          session: route.sessionId,
+          tool: name,
+          capability: operation.capability,
+          decision: "reserved",
+          resultCode: "PENDING",
+          latencyMs: now() - started,
+          idempotencyOutcome: args.idempotency_key ? "reserved" : "not-applicable",
+        });
+      }
       let graphResult;
       let replayed = false;
       if (args.idempotency_key) {
@@ -107,10 +122,21 @@ export function createToolApplication({ controlPlane, graphAdapter, auditSink, r
       };
     } catch (error) {
       resultCode = error instanceof PublicMcpError ? error.code : "INTERNAL_ERROR";
-      if (error instanceof PublicMcpError) error.supportRef = support_ref;
-      throw error;
+      if (error instanceof ReauthorizationRequired) {
+        const scoped = new ReauthorizationRequired({ error: error.oauthError, scope: requiredScope });
+        scoped.supportRef = support_ref;
+        throw scoped;
+      }
+      if (error instanceof PublicMcpError) {
+        error.supportRef = support_ref;
+        throw error;
+      }
+      throw new PublicMcpError("INTERNAL_ERROR", "The operation failed inside the service boundary.", {
+        httpStatus: 500,
+        supportRef: support_ref,
+      });
     } finally {
-      auditSink.record({
+      await auditSink.record({
         support_ref,
         actor: route.principalId,
         server: route.serverId,

@@ -47,8 +47,11 @@ async function buildTree(root) {
   for (const name of ["package.json", "package-lock.json", "README.md"]) {
     await add(path.join(serviceRoot, name), `services/nacl-mcp/${name}`);
   }
-  for (const source of await filesUnder(path.join(serviceRoot, "src"))) {
-    await add(source, `services/nacl-mcp/src/${unix(path.relative(path.join(serviceRoot, "src"), source))}`);
+  for (const directory of ["src", "scripts", "test"]) {
+    const sourceRoot = path.join(serviceRoot, directory);
+    for (const source of await filesUnder(sourceRoot)) {
+      await add(source, `services/nacl-mcp/${directory}/${unix(path.relative(sourceRoot, source))}`);
+    }
   }
   for (const name of graphBoundary) {
     await add(

@@ -7,6 +7,20 @@ import test from "node:test";
 import { loadDeployment } from "../src/entrypoint.mjs";
 import { createNaclMcpService } from "../src/service.mjs";
 
+const configuration = {
+  resourceUrl: "http://127.0.0.1:39999/mcp",
+  resourceMetadataUrl: "http://127.0.0.1:39999/.well-known/oauth-protected-resource",
+  authorizationServers: ["https://identity.example.test/"],
+  scopesSupported: ["nacl.server.read"],
+  trustedIssuers: ["https://identity.example.test/"],
+  allowedOrigins: ["https://chatgpt.com"],
+  serverVersion: "0.0.0-test",
+};
+
+const graphAdapter = Object.fromEntries([
+  "projectSummary", "namedRead", "mutateProject", "applySchema", "createBackup", "requestRestore",
+].map((name) => [name, async () => ({})]));
+
 function request(port, host) {
   return new Promise((resolve, reject) => {
     const call = http.request({
@@ -26,22 +40,14 @@ function request(port, host) {
 
 test("deployment composition creates a locally runnable server without embedding a provider or graph lifecycle", async () => {
   const server = createNaclMcpService({
-    configuration: {
-      resourceUrl: "http://127.0.0.1:39999/mcp",
-      resourceMetadataUrl: "http://127.0.0.1:39999/.well-known/oauth-protected-resource",
-      authorizationServers: ["https://identity.example.test/"],
-      scopesSupported: ["nacl.server.read"],
-      trustedIssuers: ["https://identity.example.test/"],
-      allowedOrigins: ["https://chatgpt.com"],
-      serverVersion: "test-only",
-    },
+    configuration,
     adapters: {
       async resolveVerifiedToken() { throw new Error("not called by health check"); },
-      controlPlane: {},
-      graphAdapter: {},
-      auditSink: {},
-      rateLimiter: {},
-      idempotencyLedger: {},
+      controlPlane: { sessionRegistryDurability: "durable", async authorize() {}, async listProjects() {} },
+      graphAdapter,
+      auditSink: { durability: "durable", newSupportRef() {}, async record() {} },
+      rateLimiter: { scope: "shared", assert() {} },
+      idempotencyLedger: { durability: "durable", async execute() {} },
     },
   });
   await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
@@ -61,6 +67,20 @@ test("deployment composition rejects provider-specific or secret-bearing configu
   }), /configuration is invalid/);
 });
 
+test("deployment composition rejects process-local security state adapters", () => {
+  assert.throws(() => createNaclMcpService({
+    configuration,
+    adapters: {
+      async resolveVerifiedToken() {},
+      controlPlane: { sessionRegistryDurability: "process-local", async authorize() {}, async listProjects() {} },
+      graphAdapter,
+      auditSink: { durability: "process-local", newSupportRef() {}, record() {} },
+      rateLimiter: { scope: "process-local", assert() {} },
+      idempotencyLedger: { durability: "process-local", execute() {} },
+    },
+  }), /durable idempotency adapters are required/);
+});
+
 test("entrypoint rejects unknown deployment fields before importing a provider adapter", async () => {
   const temporary = await mkdtemp(path.join(os.tmpdir(), "nacl-mcp-config-"));
   const previousConfig = process.env.NACL_MCP_CONFIG_FILE;
@@ -71,6 +91,29 @@ test("entrypoint rejects unknown deployment fields before importing a provider a
     process.env.NACL_MCP_CONFIG_FILE = config;
     process.env.NACL_MCP_ADAPTER_MODULE = path.join(temporary, "does-not-exist.mjs");
     await assert.rejects(loadDeployment(), /unsupported field/);
+  } finally {
+    if (previousConfig === undefined) delete process.env.NACL_MCP_CONFIG_FILE;
+    else process.env.NACL_MCP_CONFIG_FILE = previousConfig;
+    if (previousAdapter === undefined) delete process.env.NACL_MCP_ADAPTER_MODULE;
+    else process.env.NACL_MCP_ADAPTER_MODULE = previousAdapter;
+    await rm(temporary, { recursive: true, force: true });
+  }
+});
+
+test("entrypoint validates transport configuration before importing a provider adapter", async () => {
+  const temporary = await mkdtemp(path.join(os.tmpdir(), "nacl-mcp-invalid-transport-"));
+  const previousConfig = process.env.NACL_MCP_CONFIG_FILE;
+  const previousAdapter = process.env.NACL_MCP_ADAPTER_MODULE;
+  try {
+    const config = path.join(temporary, "config.json");
+    await writeFile(config, `${JSON.stringify({
+      ...configuration,
+      resourceUrl: "http://mcp.example.test/mcp",
+      listen: { host: "127.0.0.1", port: 8080 },
+    })}\n`);
+    process.env.NACL_MCP_CONFIG_FILE = config;
+    process.env.NACL_MCP_ADAPTER_MODULE = path.join(temporary, "does-not-exist.mjs");
+    await assert.rejects(loadDeployment(), /(audience|resourceUrl) is invalid/);
   } finally {
     if (previousConfig === undefined) delete process.env.NACL_MCP_CONFIG_FILE;
     else process.env.NACL_MCP_CONFIG_FILE = previousConfig;

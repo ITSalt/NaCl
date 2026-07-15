@@ -96,8 +96,8 @@ test("test:contracts is a closed Codex inventory with Docker opt-in skips preser
     assert.ok(contracts.includes(filename), `test:contracts does not own ${filename}`);
   }
 
-  assert.equal((ciScript.match(/NACL_RUN_DOCKER_SMOKE/g) ?? []).length, 6);
-  for (const entryPoint of ["test:graph-local-e2e", "test:multi-project", "test:multi-user"]) {
+  assert.equal((ciScript.match(/NACL_RUN_DOCKER_SMOKE/g) ?? []).length, 8);
+  for (const entryPoint of ["test:graph-local-e2e", "test:multi-project", "test:multi-user", "test:production-mcp-docker"]) {
     assert.ok(ciScript.includes(entryPoint), `Docker opt-in entry point was removed: ${entryPoint}`);
   }
 });

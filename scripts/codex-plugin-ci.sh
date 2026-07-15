@@ -30,6 +30,7 @@ case ${1:-} in
       tests/codex-plugin/scripts/nacl-package-server.test.mjs
       tests/codex-plugin/scripts/nacl-project-routing.test.mjs
       tests/codex-plugin/scripts/nacl-production-binding.test.mjs
+      tests/codex-plugin/scripts/nacl-public-mcp-bundle.test.mjs
       tests/codex-plugin/scripts/nacl-server-access-source.test.mjs
       tests/codex-plugin/scripts/nacl-server-operation-authorization-source.test.mjs
       tests/codex-plugin/scripts/nacl-vps-provision-r2.test.mjs
@@ -150,12 +151,28 @@ case ${1:-} in
     npm ci --ignore-scripts --prefix services/nacl-mcp
     npm --prefix services/nacl-mcp test
     npm --prefix services/nacl-mcp run check
-    exec node --test tests/codex-plugin/scripts/nacl-production-binding.test.mjs
+    npm --prefix services/nacl-mcp audit --omit=dev
+    sbom_file=$(mktemp)
+    trap 'rm -f "$sbom_file"' EXIT
+    npm --prefix services/nacl-mcp sbom --sbom-format cyclonedx > "$sbom_file"
+    node -e 'const fs=require("fs"); const value=JSON.parse(fs.readFileSync(process.argv[1])); if(value.bomFormat!=="CycloneDX" || !Array.isArray(value.components) || value.components.length===0) process.exit(1)' "$sbom_file"
+    node --test \
+      tests/codex-plugin/scripts/nacl-production-binding.test.mjs \
+      tests/codex-plugin/scripts/nacl-public-mcp-bundle.test.mjs
+    ;;
+  test:production-mcp-docker)
+    if [ "${NACL_RUN_DOCKER_SMOKE:-}" != "1" ]; then
+      echo "Status: BLOCKED"
+      echo "Reason: set NACL_RUN_DOCKER_SMOKE=1 to authorize disposable three-project public MCP Docker resources"
+      exit 2
+    fi
+    exec node --test --test-name-pattern='public OAuth boundary reaches two isolated project containers' \
+      services/nacl-mcp/test/topology-docker-e2e.test.mjs
     ;;
   *)
     echo "Status: BLOCKED"
     echo "Reason: unknown Codex plugin CI entry point: ${1:-<missing>}"
-    echo "Available: test:contracts, test:codex-skills, test:claude-isolation, test:plugin-manifest, test:plugin-spike, test:plugin-package, test:plugin-closure, test:plugin-docs, test:cli-legacy, test:cli-plugin, test:graph-unit, test:workflow-integration, test:graph-local-e2e, test:multi-project, test:multi-user, test:candidate, test:production-mcp"
+    echo "Available: test:contracts, test:codex-skills, test:claude-isolation, test:plugin-manifest, test:plugin-spike, test:plugin-package, test:plugin-closure, test:plugin-docs, test:cli-legacy, test:cli-plugin, test:graph-unit, test:workflow-integration, test:graph-local-e2e, test:multi-project, test:multi-user, test:candidate, test:production-mcp, test:production-mcp-docker"
     exit 2
     ;;
 esac

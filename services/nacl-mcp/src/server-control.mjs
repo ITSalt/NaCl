@@ -7,6 +7,7 @@ import { PublicMcpError, ReauthorizationRequired } from "./errors.mjs";
 const ID = /^[A-Za-z0-9][A-Za-z0-9._:@-]{2,127}$/;
 const SUBJECT = /^[A-Za-z0-9][A-Za-z0-9._:@|/-]{2,127}$/;
 const PROJECT_REF = /^prj_[A-Za-z0-9_-]{16,76}$/;
+const SESSION_ID = /^[A-Za-z0-9][A-Za-z0-9._:-]{7,127}$/;
 
 function identifier(value, label) {
   if (typeof value !== "string" || !ID.test(value) || value.includes("..") || /[.:@-]$/.test(value)) throw new TypeError(`${label} is invalid.`);
@@ -53,7 +54,43 @@ function hiddenDenial() {
   return new PublicMcpError("ACCESS_OR_RESOURCE_NOT_FOUND", "Access or project route was not found.", { httpStatus: 403 });
 }
 
-export function createServerControlPlane({ routes, serverRegistries = new Map() } = {}) {
+export function createMemorySessionRegistry({ now = () => Date.now(), maxEntries = 10_000 } = {}) {
+  if (!Number.isSafeInteger(maxEntries) || maxEntries < 1) throw new TypeError("session registry bounds are invalid.");
+  const sessions = new Map();
+  function prune() {
+    const current = now();
+    for (const [sessionId, record] of sessions) {
+      if (record.expires_at <= current) sessions.delete(sessionId);
+    }
+  }
+  return Object.freeze({
+    durability: "process-local",
+    async getOrCreate(sessionId, record) {
+      prune();
+      const existing = sessions.get(sessionId);
+      if (existing) return structuredClone(existing);
+      if (sessions.size >= maxEntries) throw new ReauthorizationRequired({ error: "temporarily_unavailable" });
+      sessions.set(sessionId, structuredClone(record));
+      return structuredClone(record);
+    },
+    async revoke({ subject, sessionId, expiresAt }) {
+      prune();
+      const existing = sessions.get(sessionId);
+      const record = {
+        ...(existing ?? { subject, principal_id: null, binding_revision: null, token_epoch: null }),
+        subject,
+        revoked: true,
+        // Without an authoritative OAuth-session expiry, revocation is an
+        // indefinite tombstone. Capacity exhaustion fails closed rather than
+        // silently reviving an old session identifier.
+        expires_at: Math.max(existing?.expires_at ?? 0, expiresAt ?? Number.MAX_SAFE_INTEGER),
+      };
+      sessions.set(sessionId, structuredClone(record));
+    },
+  });
+}
+
+export function createServerControlPlane({ routes, serverRegistries = new Map(), sessionRegistry = createMemorySessionRegistry() } = {}) {
   if (!Array.isArray(routes) || routes.length === 0) throw new TypeError("routes are required.");
   const routeMap = new Map(routes.map((value) => {
     const route = routeRecord(value);
@@ -61,7 +98,9 @@ export function createServerControlPlane({ routes, serverRegistries = new Map() 
   }));
   if (routeMap.size !== routes.length) throw new TypeError("project_ref values must be unique.");
   const bindings = new Map();
-  const sessions = new Map();
+  if (typeof sessionRegistry?.getOrCreate !== "function" || typeof sessionRegistry?.revoke !== "function") {
+    throw new TypeError("a session registry is required.");
+  }
   const authorizer = createServerOperationAuthorizer({
     async resolveProjectRoute({ project_ref }) {
       const route = routeMap.get(project_ref);
@@ -89,15 +128,18 @@ export function createServerControlPlane({ routes, serverRegistries = new Map() 
     binding.revision += 1;
   }
 
-  function activeSession(tokenContext) {
+  async function activeSession(tokenContext) {
     if (tokenContext?.verified !== true) throw new ReauthorizationRequired({ error: "invalid_token" });
     const binding = bindingFor(tokenContext.subject);
     if (tokenContext.tokenEpoch !== binding.epoch) throw new ReauthorizationRequired({ error: "invalid_token" });
-    let session = sessions.get(tokenContext.sessionId);
-    if (!session) {
-      session = { subject: binding.subject, principal_id: binding.principal_id, binding_revision: binding.revision, token_epoch: binding.epoch, revoked: false };
-      sessions.set(tokenContext.sessionId, session);
-    }
+    const session = await sessionRegistry.getOrCreate(tokenContext.sessionId, {
+      subject: binding.subject,
+      principal_id: binding.principal_id,
+      binding_revision: binding.revision,
+      token_epoch: binding.epoch,
+      revoked: false,
+      expires_at: tokenContext.expiresAt * 1000,
+    });
     if (session.revoked || session.subject !== binding.subject || session.principal_id !== binding.principal_id ||
         session.binding_revision !== binding.revision || session.token_epoch !== binding.epoch) {
       throw new ReauthorizationRequired({ error: "invalid_token" });
@@ -106,6 +148,7 @@ export function createServerControlPlane({ routes, serverRegistries = new Map() 
   }
 
   return Object.freeze({
+    sessionRegistryDurability: sessionRegistry.durability ?? "unknown",
     registerSubject({ subject, principalId, certificateCn }) {
       subjectIdentifier(subject);
       identifier(principalId, "principalId");
@@ -166,13 +209,15 @@ export function createServerControlPlane({ routes, serverRegistries = new Map() 
         token_epoch: binding.epoch,
       });
     },
-    revokeSession({ subject, sessionId }) {
-      const session = sessions.get(sessionId);
-      if (session?.subject === subject) session.revoked = true;
+    async revokeSession({ subject, sessionId, expiresAt }) {
+      subjectIdentifier(subject);
+      if (typeof sessionId !== "string" || !SESSION_ID.test(sessionId)) throw new TypeError("sessionId is invalid.");
+      if (expiresAt !== undefined && (!Number.isSafeInteger(expiresAt) || expiresAt <= Date.now())) throw new TypeError("expiresAt is invalid.");
+      await sessionRegistry.revoke({ subject, sessionId, expiresAt });
     },
     currentTokenEpoch(subject) { return bindingFor(subject).epoch; },
-    listProjects({ tokenContext }) {
-      const { binding } = activeSession(tokenContext);
+    async listProjects({ tokenContext }) {
+      const { binding } = await activeSession(tokenContext);
       const projects = [...routeMap.values()]
         .filter((route) => route.enabled && binding.grants.get(route.server_id)?.active)
         .sort((left, right) => left.label.localeCompare(right.label) || left.project_ref.localeCompare(right.project_ref))
@@ -185,7 +230,7 @@ export function createServerControlPlane({ routes, serverRegistries = new Map() 
       });
     },
     async authorize({ tokenContext, projectRef, capability, toolClass, confirmation }) {
-      const { binding } = activeSession(tokenContext);
+      const { binding } = await activeSession(tokenContext);
       const decision = await authorizer.authorizeProjectOperation({
         project_id: projectRef,
         identity: internalIdentity(binding.principal_id, tokenContext),

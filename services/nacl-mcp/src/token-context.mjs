@@ -14,14 +14,15 @@ function exactObject(value, allowed, required, label) {
 
 function canonicalAudience(value) {
   const url = new URL(value);
-  if (!["http:", "https:"].includes(url.protocol) || url.username || url.password || url.hash) throw new Error("audience is invalid");
+  const loopback = ["127.0.0.1", "::1", "[::1]", "localhost"].includes(url.hostname);
+  if (url.protocol !== "https:" && !(url.protocol === "http:" && loopback) || url.username || url.password || url.hash) throw new Error("audience is invalid");
   return url.href;
 }
 
 function canonicalIssuer(value) {
-  const issuer = canonicalAudience(value);
-  if (new URL(issuer).protocol !== "https:") throw new Error("issuer must use HTTPS");
-  return issuer;
+  const issuer = new URL(value);
+  if (issuer.protocol !== "https:" || issuer.username || issuer.password || issuer.hash) throw new Error("issuer must use HTTPS");
+  return issuer.href;
 }
 
 function invalidToken() {

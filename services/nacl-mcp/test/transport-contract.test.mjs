@@ -27,6 +27,8 @@ async function fixture(callTool = async () => ({
   const base = `http://127.0.0.1:${reservedPort}`;
   const metadataUrl = `${base}/.well-known/oauth-protected-resource`;
   let graphCalls = 0;
+  let auditRejections = 0;
+  let authenticationRejections = 0;
   let server;
   server = createStreamableHttpServer({
     resourceUrl: `${base}/mcp`,
@@ -38,10 +40,12 @@ async function fixture(callTool = async () => ({
       if (header !== "Bearer valid-fixture") throw new Error("invalid");
       return Object.freeze({ verified: true, subject: "subject-alice", sessionId: "session-alice" });
     },
+    async auditAuthenticationRejection() { authenticationRejections += 1; },
     createMcpServer({ authContext }) {
       return createSdkMcpServer({
         resourceMetadataUrl: metadataUrl,
         authContext,
+        async auditRejection() { auditRejections += 1; },
         async callTool(input) {
           graphCalls += 1;
           return callTool(input);
@@ -51,7 +55,15 @@ async function fixture(callTool = async () => ({
   });
   server.listen(reservedPort, "127.0.0.1");
   await once(server, "listening");
-  return { server, base, metadataUrl, authServer, graphCalls: () => graphCalls };
+  return {
+    server,
+    base,
+    metadataUrl,
+    authServer,
+    graphCalls: () => graphCalls,
+    auditRejections: () => auditRejections,
+    authenticationRejections: () => authenticationRejections,
+  };
 }
 
 async function post(base, body, token, headers = {}) {
@@ -106,6 +118,31 @@ test("protected-resource metadata and transport challenge use one canonical reso
   assert.equal(response.status, 401);
   assert.equal(response.headers.get("www-authenticate"), `Bearer resource_metadata="${ctx.metadataUrl}", scope="nacl.server.read"`);
   assert.equal(ctx.graphCalls(), 0);
+  assert.equal(ctx.authenticationRejections(), 1);
+});
+
+test("transport challenges advertise the exact scope required by each requested public tool", async (t) => {
+  const ctx = await fixture();
+  t.after(() => ctx.server.close());
+  const cases = [
+    ["nacl_project_summary", "nacl.server.read"],
+    ["nacl_project_mutate", "nacl.server.write"],
+    ["nacl_schema_apply", "nacl.server.schema"],
+    ["nacl_backup_create", "nacl.server.backup"],
+    ["nacl_restore_request", "nacl.server.restore"],
+  ];
+  for (const [name, scope] of cases) {
+    const response = await post(ctx.base, {
+      jsonrpc: "2.0",
+      id: name,
+      method: "tools/call",
+      params: { name, arguments: {} },
+    });
+    assert.equal(response.status, 401, name);
+    assert.equal(response.headers.get("www-authenticate"), `Bearer resource_metadata="${ctx.metadataUrl}", scope="${scope}"`);
+  }
+  assert.equal(ctx.graphCalls(), 0);
+  assert.equal(ctx.authenticationRejections(), cases.length);
 });
 
 test("public catalog is strict, annotated, OAuth-protected, and excludes every local lifecycle capability", async (t) => {
@@ -164,6 +201,22 @@ test("schema rejects forged routing, identity, host, URI, path, certificate, pas
     const body = await response.json();
     assert.equal(body.error.code, -32602, field);
   }
+  assert.equal(ctx.graphCalls(), 0);
+  assert.equal(ctx.auditRejections(), 9);
+});
+
+test("unknown public tool attempts are audited before the SDK rejects them", async (t) => {
+  const ctx = await fixture();
+  t.after(() => ctx.server.close());
+  const response = await post(ctx.base, {
+    jsonrpc: "2.0",
+    id: 30,
+    method: "tools/call",
+    params: { name: "nacl_raw_cypher", arguments: {} },
+  }, "Bearer valid-fixture");
+  const body = await response.json();
+  assert.equal(body.error.code, -32602);
+  assert.equal(ctx.auditRejections(), 1);
   assert.equal(ctx.graphCalls(), 0);
 });
 
@@ -266,4 +319,21 @@ test("DNS-rebinding controls reject forged Host and Origin before auth or MCP pa
   const forgedOrigin = await rawRequest(ctx.base, { headers: { ...common, host: new URL(ctx.base).host, origin: "https://attacker.example" }, body });
   assert.equal(forgedOrigin.status, 403);
   assert.equal(ctx.graphCalls(), 0);
+});
+
+test("production origins and protected-resource metadata fail closed on HTTP, cross-origin, and non-well-known configuration", () => {
+  const base = {
+    resourceUrl: "https://mcp.example.test/mcp",
+    resourceMetadataUrl: "https://mcp.example.test/.well-known/oauth-protected-resource",
+    authorizationServers: ["https://idp.example.test/"],
+    scopesSupported: ["nacl.server.read"],
+    allowedOrigins: ["https://chatgpt.com"],
+    verifyAuthorization: async () => ({}),
+    auditAuthenticationRejection: async () => {},
+    createMcpServer: () => ({}),
+  };
+  assert.throws(() => createStreamableHttpServer({ ...base, resourceUrl: "http://mcp.example.test/mcp" }), /resourceUrl is invalid/);
+  assert.throws(() => createStreamableHttpServer({ ...base, resourceMetadataUrl: "https://attacker.example/.well-known/oauth-protected-resource" }), /same-origin/);
+  assert.throws(() => createStreamableHttpServer({ ...base, resourceMetadataUrl: "https://mcp.example.test/not-well-known" }), /same-origin/);
+  assert.throws(() => createStreamableHttpServer({ ...base, allowedOrigins: ["http://chatgpt.com"] }), /allowedOrigin is invalid/);
 });

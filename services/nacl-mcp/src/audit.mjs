@@ -14,6 +14,7 @@ export function createRedactedAuditSink({ secret, now = () => Date.now() } = {})
   const events = [];
   const pseudonym = (kind, value) => createHmac("sha256", secret).update(`${kind}\0${value}`).digest("hex").slice(0, 32);
   return Object.freeze({
+    durability: "process-local",
     newSupportRef: supportRef,
     record({ support_ref, actor, server, project, session, tool, capability, decision, resultCode, latencyMs, idempotencyOutcome }) {
       const event = Object.freeze({
