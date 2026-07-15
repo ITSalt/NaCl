@@ -7,8 +7,32 @@
   "plugins": [
     {
       "name": "nacl",
+      "displayName": "NaCl Spec-Graph Framework",
       "source": "./plugin",
-      "description": "NaCl framework: BA/SA/TL spec-graph methodology skills, backed by a Neo4j project graph."
+      "description": "53 skills for the NaCl methodology: business analysis (ba-*), solution architecture (sa-*), and team-lead delivery (tl-*) phases, all writing to a per-project Neo4j spec graph. Ships 7 role agents, a graph liveness SessionStart hook, and deterministic graph tooling. Requires Docker Desktop (local graph) or a remote NaCl graph; run /nacl:init in a project to set up.",
+      "author": {
+        "name": "ITSalt"
+      },
+      "homepage": "https://github.com/ITSalt/NaCl",
+      "repository": "https://github.com/ITSalt/NaCl",
+      "license": "MIT",
+      "category": "productivity",
+      "keywords": [
+        "business-analysis",
+        "solution-architecture",
+        "specifications",
+        "neo4j",
+        "graph",
+        "tdd",
+        "methodology"
+      ],
+      "tags": [
+        "ba",
+        "sa",
+        "tl",
+        "spec-first",
+        "workflow"
+      ]
     }
   ]
 }
