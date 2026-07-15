@@ -102,10 +102,15 @@ test("one secret-source contract resolves env and injected server route provider
 test("transaction rejects malformed MCP and malformed or duplicate graph state byte-preservingly", async () => {
   const cases = [
     { config: "graph:\n  mode: local\n", mcp: "{not-json\n", pattern: /existing \.mcp\.json is malformed/ },
+    { config: "graph:\n  mode: local\n", mcp: '{"mcpServers":{},"mcpServers":{}}\n', pattern: /existing \.mcp\.json is malformed or ambiguous/ },
+    { config: "project: [unterminated\ngraph:\n  mode: local\n", mcp: "{}\n", pattern: /strict YAML state is malformed/ },
+    { config: "project: one\nproject: two\ngraph:\n  mode: local\n", mcp: "{}\n", pattern: /strict YAML state is ambiguous/ },
+    { config: "project:\n  id: one\n  id: two\ngraph:\n  mode: local\n", mcp: "{}\n", pattern: /strict YAML state is ambiguous/ },
+    { config: "project: {id: one, id: two}\ngraph:\n  mode: local\n", mcp: "{}\n", pattern: /strict YAML state is ambiguous/ },
     { config: "graph: [invalid]\n", mcp: "{}\n", pattern: /graph block is malformed/ },
-    { config: " graph:\n  mode: local\n", mcp: "{}\n", pattern: /graph block is malformed/ },
-    { config: "graph:\n  mode: local\ngraph:\n  mode: remote\n", mcp: "{}\n", pattern: /graph block is malformed or duplicated/ },
-    { config: "graph:\n  mode: local\n  mode: remote\n", mcp: "{}\n", pattern: /duplicate graph key mode/ },
+    { config: " graph:\n  mode: local\n", mcp: "{}\n", pattern: /strict YAML state is outside the supported top-level mapping grammar/ },
+    { config: "graph:\n  mode: local\ngraph:\n  mode: remote\n", mcp: "{}\n", pattern: /strict YAML state is ambiguous/ },
+    { config: "graph:\n  mode: local\n  mode: remote\n", mcp: "{}\n", pattern: /strict YAML state is ambiguous/ },
   ];
   for (const entry of cases) {
     const root = await fixture(entry.config, entry.mcp);

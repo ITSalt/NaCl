@@ -97,6 +97,16 @@ export function parseStringParams(pairs) {
   return out;
 }
 
+function containsSecret(value, secret, seen = new WeakSet()) {
+  if (typeof secret !== 'string' || secret.length === 0) return false;
+  if (typeof value === 'string') return value.includes(secret);
+  if (!value || typeof value !== 'object') return false;
+  if (seen.has(value)) return true;
+  seen.add(value);
+  if (Array.isArray(value)) return value.some((entry) => containsSecret(entry, secret, seen));
+  return Object.entries(value).some(([key, entry]) => key.includes(secret) || containsSecret(entry, secret, seen));
+}
+
 /**
  * Run a single Cypher query against the binary over stdio. Resolves to {rows}.
  * Rejects on spawn error, timeout, or a JSON-RPC error response.
@@ -110,7 +120,7 @@ export function runCypher({ binary, env, query, params = {}, write = false, time
     const timer = setTimeout(() => { if (!settled) { settled = true; try { child.kill('SIGKILL'); } catch {} reject(new Error('mcp-cypher: timeout')); } }, timeoutMs);
     const done = (err, val) => { if (settled) return; settled = true; clearTimeout(timer); try { child.kill('SIGKILL'); } catch {} err ? reject(err) : resolve(val); };
 
-    child.on('error', (e) => done(e));
+    child.on('error', () => done(new Error('mcp-cypher: child process failed')));
     child.stderr.on('data', () => { /* binary diagnostics — ignored unless we fail */ });
     child.stdout.on('data', (d) => {
       buf += d.toString();
@@ -128,8 +138,10 @@ export function runCypher({ binary, env, query, params = {}, write = false, time
           toolsResult = picked;
           child.stdin.write(JSON.stringify(buildToolsCall(3, picked.name, picked.argKey, query, params)) + '\n');
         } else if (msg.id === 3) {
-          if (msg.error) return done(new Error(`mcp-cypher: ${msg.error.message ?? 'tools/call error'}`));
-          return done(null, { rows: parseRows(msg.result), tool: toolsResult });
+          if (msg.error) return done(new Error('mcp-cypher: downstream tools/call failed'));
+          const rows = parseRows(msg.result);
+          if (containsSecret(rows, env?.NEO4J_PASSWORD)) return done(new Error('mcp-cypher: downstream result rejected'));
+          return done(null, { rows, tool: toolsResult });
         }
       }
     });

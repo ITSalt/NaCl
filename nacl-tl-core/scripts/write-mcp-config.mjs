@@ -17,6 +17,7 @@ import { realpathSync, readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
 import { validateSecretSource } from './secret-source-contract.mjs';
+import { parseStrictJsonDocument } from './strict-state-documents.mjs';
 
 /**
  * Returns a NEW .mcp.json document with the `neo4j` server set/replaced, preserving any
@@ -67,7 +68,7 @@ export function readMcpDoc(text) {
 export function readMcpDocStrict(text) {
   if (typeof text !== 'string' || text.trim() === '') return {};
   let parsed;
-  try { parsed = JSON.parse(text.replace(/^﻿/, '')); } catch { throw new Error('write-mcp-config: existing .mcp.json is malformed'); }
+  try { parsed = parseStrictJsonDocument(text); } catch { throw new Error('write-mcp-config: existing .mcp.json is malformed or ambiguous'); }
   if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) throw new Error('write-mcp-config: existing .mcp.json must be an object');
   if (parsed.mcpServers !== undefined && (!parsed.mcpServers || typeof parsed.mcpServers !== 'object' || Array.isArray(parsed.mcpServers))) {
     throw new Error('write-mcp-config: existing mcpServers must be an object');

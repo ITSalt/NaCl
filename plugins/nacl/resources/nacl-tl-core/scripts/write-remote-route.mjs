@@ -7,6 +7,7 @@ import { fileURLToPath } from "node:url";
 import { validateRemoteRoute } from "./remote-route-contract.mjs";
 import { findGraphBlock, parseGraphBlock, renderGraphBlock, replaceRemoteRouteValues, spliceGraphBlock } from "./write-graph-config.mjs";
 import { mergeMcpConfig, readMcpDocStrict, serializeMcpDoc } from "./write-mcp-config.mjs";
+import { assertStrictYamlMappingDocument } from "./strict-state-documents.mjs";
 
 function scalar(value) {
   if (typeof value !== "string") return value;
@@ -14,6 +15,7 @@ function scalar(value) {
 }
 
 function graphDocument(configText, { required = false } = {}) {
+  assertStrictYamlMappingDocument(configText);
   const lines = configText.split(/\r?\n/);
   const graphLike = lines.map((line, index) => ({ line, index })).filter(({ line }) => /^\s*graph\s*:/.test(line));
   if (graphLike.some(({ line }) => !/^graph:\s*(#.*)?$/.test(line)) || graphLike.length > 1) {

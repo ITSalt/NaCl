@@ -5,7 +5,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdtemp, mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises';
+import { chmod, mkdtemp, mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import os from 'node:os';
 import path from 'node:path';
@@ -115,6 +115,39 @@ test('POSIX helper passes the password only through the bounded child environmen
       assert.doesNotMatch(await readFile(file, 'utf8'), new RegExp(fixtureSecret), `${file} persisted the secret`);
     }
     assert.doesNotMatch(await readFile(path.join(scriptDir, 'lib-neo4j-mcp.ps1'), 'utf8'), /"--password"/);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test('downstream MCP errors cannot reflect the password through CLI stdout or stderr', { skip: process.platform === 'win32' }, async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'nacl-mcp-secret-reflection-'));
+  const fake = path.join(root, 'reflecting-mcp.mjs');
+  const fixtureSecret = 'reflected-sensitive-fixture';
+  try {
+    await writeFile(fake, [
+      '#!/usr/bin/env node',
+      "import readline from 'node:readline';",
+      "const input = readline.createInterface({ input: process.stdin });",
+      "input.on('line', (line) => {",
+      "  const request = JSON.parse(line);",
+      "  if (request.id === 2) process.stdout.write(JSON.stringify({ jsonrpc: '2.0', id: 2, result: { tools: [{ name: 'read_cypher', inputSchema: { properties: { query: { type: 'string' } }, required: ['query'] } }] } }) + '\\n');",
+      "  if (request.id === 3 && process.env.NACL_FAKE_MODE === 'error') process.stdout.write(JSON.stringify({ jsonrpc: '2.0', id: 3, error: { code: -32000, message: process.env.NEO4J_PASSWORD } }) + '\\n');",
+      "  if (request.id === 3 && process.env.NACL_FAKE_MODE === 'result') process.stdout.write(JSON.stringify({ jsonrpc: '2.0', id: 3, result: { content: [{ type: 'text', text: JSON.stringify([{ leak: process.env.NEO4J_PASSWORD }]) }] } }) + '\\n');",
+      "});",
+      '',
+    ].join('\n'));
+    await chmod(fake, 0o755);
+    for (const mode of ['error', 'result']) {
+      const result = spawnSync(process.execPath, [path.join(scriptDir, 'mcp-cypher.mjs'), '--binary', fake, '--uri', 'bolt://localhost:3700', '--query', 'RETURN 1'], {
+        encoding: 'utf8',
+        env: { ...process.env, NEO4J_PASSWORD: fixtureSecret, NACL_FAKE_MODE: mode },
+      });
+      assert.equal(result.status, 1, `${mode}\n${result.stdout}\n${result.stderr}`);
+      assert.doesNotMatch(`${result.stdout}\n${result.stderr}`, new RegExp(fixtureSecret));
+      assert.match(result.stderr, mode === 'error' ? /downstream tools\/call failed/ : /downstream result rejected/);
+    }
+    assert.doesNotMatch(await readFile(fake, 'utf8'), new RegExp(fixtureSecret));
   } finally {
     await rm(root, { recursive: true, force: true });
   }
