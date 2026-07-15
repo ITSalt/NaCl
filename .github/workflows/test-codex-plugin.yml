@@ -1,0 +1,72 @@
+name: Test Codex Plugin Contracts
+
+on:
+  pull_request:
+  push:
+    branches:
+      - codex/desktop-plugin-integration
+      - 'codex/plugin-*'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  wave-0-contracts:
+    name: Wave 0 repository contracts
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11.9'
+
+      - name: Install the checksum-pinned validator dependency
+        run: |
+          python -m pip install --disable-pip-version-check --no-input \
+            --only-binary=:all: --require-hashes \
+            -r tests/codex-plugin/requirements-validator.txt
+
+      - name: Run full deterministic repository tool suite
+        run: bash scripts/codex-plugin-ci.sh test:contracts
+
+      - name: Validate all Codex skills
+        run: bash scripts/codex-plugin-ci.sh test:codex-skills
+
+      - name: Enforce frozen Claude runtime paths
+        run: |
+          bash scripts/codex-plugin-ci.sh test:claude-isolation \
+            f81b17732ec0b44d0e5dbad2d444c2cddc0e9818 HEAD
+
+      - name: Check root and Codex skill synchronization
+        run: |
+          sh skills-for-codex/scripts/check-root-codex-sync.sh \
+            d98f7399e7b9941341421321407ad27ee895d221 HEAD
+
+      - name: Validate repository plugin candidate or report Wave 0 absence
+        run: bash scripts/codex-plugin-ci.sh test:plugin-manifest
+
+      - name: Run deterministic Wave 1 report and Wave 2 package tests
+        run: bash scripts/codex-plugin-ci.sh test:plugin-package
+
+      - name: Enforce plugin package closure
+        run: bash scripts/codex-plugin-ci.sh test:plugin-closure
+
+      - name: Enforce Wave 8 plugin documentation contracts
+        run: bash scripts/codex-plugin-ci.sh test:plugin-docs
+
+      - name: Run deterministic local graph gateway and lifecycle tests
+        run: bash scripts/codex-plugin-ci.sh test:graph-unit
+
+      - name: Run packaged workflow and optional agent-profile contracts
+        run: bash scripts/codex-plugin-ci.sh test:workflow-integration
+
+      - name: Verify the legacy installer in an isolated home
+        run: bash scripts/codex-plugin-ci.sh test:cli-legacy
