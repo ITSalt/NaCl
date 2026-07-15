@@ -1,6 +1,6 @@
 # ADR-004: Production app-plus-skills architecture for Codex and ChatGPT
 
-**Status:** Proposed — not implemented and not verified
+**Status:** Accepted for local implementation — external deployment not authorized and Wave 9 not verified
 **Date:** 2026-07-15
 **Decision owner:** NaCl maintainers
 **Reviewed baseline:** `main` / `origin/main` at `d828e54dc3329c5b2664df5e388badb83fc5d83e`
@@ -31,11 +31,13 @@ not yet provide the required `openWorldHint` classification.
 
 Wave 8 remains `PARTIALLY_VERIFIED`. The plugin worked in the owner's local
 Codex UI, but the Personal account did not expose the documented workspace
-share surface, so a clean-account cross-machine share/install was not proven.
-This does not invalidate the local runtime evidence. It does remain an explicit
-gate: production work may be designed, but Wave 9 cannot be marked `VERIFIED`
-until the orchestrator either closes Wave 8 with an accepted portable journey
-or records an approved replacement for that unavailable product surface.
+share surface. The owner has replaced that unavailable UI gate with a later
+Git portability journey: after an explicitly approved merge to `main` and an
+explicitly approved release, install the frozen release on another machine and
+verify it there. That journey is deliberately deferred because it cannot be
+performed honestly before merge/release. It does not block **local** Wave 9
+implementation, but Wave 9 cannot be marked `VERIFIED` until the released Git
+journey and the remaining production gates pass.
 
 Wave 9 must produce the full **app-plus-skills** product. A skills-only listing
 is not a fallback and is not an acceptable reduction of scope.
@@ -80,8 +82,26 @@ before any Wave 10 portal mutation.
 Build a hosted, MCP-first NaCl app and package it together with the bounded
 Codex conductor skills. The production data plane is a public Streamable HTTP
 MCP service. OAuth 2.1 is the end-user identity mechanism; Bearer is the access
-token transport, not a long-lived secret embedded in the plugin. Each project
-has a physically separate graph instance/database as the production baseline.
+token transport, not a long-lived secret embedded in the plugin.
+
+Reuse the graph topology and access model already implemented by `nacl-init`:
+
+- Neo4j **5 Community**, never managed/Enterprise by implication;
+- one Docker container and its own data/log volumes per project, either on the
+  developer's local machine or on a VPS;
+- `local | create | connect` resolution and the existing project marker,
+  sidecar, registry, and localhost MCP wiring;
+- a private CA, ghostunnel mTLS gateway, and personal
+  `client.crt` + `client.key` + `ca.crt` bundle as the revocable graph-server
+  credential.
+
+For Wave 9 the **server/VPS is the authorization boundary**. If a principal is
+authorized for a graph server, that principal may select and use every project
+container on that server, subject only to the token's operation scopes. A
+`project_scope`/`project_ref` selects a container and records routing and
+provenance; it is not a per-project grant. OAuth maps the authenticated
+principal to one or more authorized graph servers. It does not introduce a
+second project-membership or per-project RBAC control plane.
 
 The first production release will not include custom MCP UI. The tools and
 structured responses are sufficient for the initial workflows, and omitting a
@@ -98,10 +118,18 @@ contract.
 - No credential, token, demo password, private URL, or project secret ships in
   `plugin/`, `plugins/nacl`, `.app.json`, `.mcp.json`, marketplace metadata, or
   source control.
-- A user-supplied `project_id`, `project_root`, `principal_id`, or tenant value
-  is never trusted as authorization evidence.
-- One project maps to one private graph instance/database until a separate ADR
-  and adversarial proof accept a shared tenant-aware graph.
+- A user-supplied `project_id`, `project_root`, `principal_id`, or server ID is
+  never trusted as authorization evidence.
+- One project maps to one Neo4j Community container and dedicated volumes.
+  That physical boundary supports lifecycle and recovery; it is not an
+  authorization boundary between projects on the same server.
+- Authorization is server-wide. Same-server project selection is allowed;
+  cross-server routing requires a separate server grant and fails closed.
+- The existing private-CA, personal-certificate, ghostunnel, and
+  issue/revoke model remains the graph-network access mechanism. For the
+  server-wide policy, issuance/revocation must be applied consistently to all
+  project gateways on that server, and newly provisioned project gateways must
+  inherit the server allow-list.
 - Arbitrary Cypher, arbitrary URLs, arbitrary shell commands, and arbitrary
   filesystem paths are not public MCP inputs.
 - All write operations are scope-checked, idempotent where possible, audited,
@@ -121,11 +149,13 @@ flowchart LR
     IDP -->|"short-lived access token"| P
     P -->|"Streamable HTTP MCP over TLS\nAuthorization: Bearer"| EDGE["DNS + CDN/WAF + rate limits"]
     EDGE --> MCP["Stateless NaCl MCP service\nNode 20+"]
-    MCP --> AUTHZ["Token verification + scopes + project RBAC"]
-    AUTHZ --> ROUTER["Project control plane and instance router"]
-    ROUTER --> G1["Private graph instance\nProject A"]
-    ROUTER --> G2["Private graph instance\nProject B"]
-    ROUTER --> GN["Private graph instance\nProject N"]
+    MCP --> AUTHZ["Token verification + operation scopes + server grants"]
+    AUTHZ --> ROUTER["Graph-server inventory + project router"]
+    ROUTER --> SA["Authorized graph server A"]
+    ROUTER --> SB["Authorized graph server B"]
+    SA --> G1["Neo4j Community container + volumes\nProject A1"]
+    SA --> G2["Neo4j Community container + volumes\nProject A2"]
+    SB --> GN["Neo4j Community container + volumes\nProject B1"]
     MCP --> AUDIT["Redacted append-only audit and security events"]
     ROUTER --> BACKUP["Encrypted offsite backups\nversioned and checksummed"]
     BACKUP --> RESTORE["Isolated restore target + validation"]
@@ -136,25 +166,29 @@ flowchart LR
 ### Request flow
 
 1. The installed plugin contributes the public conductor skills and an app
-   binding. It contains no tenant credentials or graph connection strings.
+   binding. It contains no OAuth tokens, mTLS private keys, graph passwords, or
+   graph connection strings.
 2. ChatGPT/Codex discovers OAuth through the MCP protected-resource metadata.
    The IdP authenticates the user and returns a short-lived token whose
    audience/resource is the NaCl MCP origin.
 3. The edge terminates TLS, enforces coarse request limits, and forwards the
    request. The service verifies signature, issuer, audience, `exp`, `nbf`,
    scopes, and revocation/session state on every call.
-4. The server derives subject and tenant from the verified token. An opaque
-   `project_ref` selects a server-side membership and instance binding; it does
-   not expose a filesystem root or physical database address.
-5. The policy layer checks tool scope, project role, confirmation, request
-   bounds, lease/fence/revision, and idempotency before routing to the dedicated
-   project graph.
+4. The service derives the OAuth subject and allowed graph-server IDs from
+   server-side configuration. An opaque `project_ref` resolves to a server and
+   one project container. The client cannot assert the server binding or a
+   physical database address.
+5. Authorization checks that the resolved server is in the principal's server
+   grant and that the OAuth token permits the requested operation. Once that
+   server check passes, any project on it may be selected. The policy layer
+   still checks confirmation, bounds, lease/fence/revision, and idempotency
+   before routing to the selected project container.
 6. The result is mapped to a strict public output schema and minimized before
    it leaves the service. Detailed diagnostics remain in redacted server-side
    observability, correlated by an opaque support ID.
-7. Backups and restores operate through the control plane, never from a client
-   graph URL. A restore validates checksums, schema ledger, structure, and a
-   functional canary before any controlled cutover.
+7. Backup and restore remain per-project operations against the selected
+   container/volumes. A restore validates checksums, schema ledger, structure,
+   and a functional canary before any controlled cutover.
 
 ## Source-of-truth and build boundaries
 
@@ -166,7 +200,7 @@ donor and evidence source, not a tree to merge wholesale.
 | Framework methodology | root `nacl-*`, `nacl-core`, `nacl-tl-core`, graph schemas/queries, shared docs | maintainers | none | existing root tests and documentation gates |
 | Claude Code plugin | `scripts/plugin-manifest.json` plus canonical root inputs | existing `scripts/build-plugin.mjs` only | `plugin/` and its existing manifest content | `node scripts/build-plugin.mjs --check`, existing Claude tests and hosted CI |
 | Codex skill adaptation | `skills-for-codex/` plus an explicit Codex projection manifest | new Codex builder only | public and internal skill/resource tree under `plugins/nacl` | root/Codex semantic parity, closure, path, manifest, and skill validation |
-| Production MCP | a new source package outside both generated plugin trees, provisionally `services/nacl-mcp/` | service build | pinned container/image and server bundle | unit, contract, auth, isolation, integration, security, SBOM, and reproducibility gates |
+| Production MCP | a new source package outside both generated plugin trees, provisionally `services/nacl-mcp/` | service build | pinned container/image and server bundle | unit, contract, OAuth/server-auth/routing, integration, security, SBOM, and reproducibility gates |
 | Codex/app package | Codex projection manifest, final skill inputs, public metadata, and an environment-specific app binding | new Codex package builder only | `plugins/nacl/` | exact rebuild comparison and clean-install tests |
 | Release identity | source SHA, version files, skills hash, MCP metadata hash, image digest, schema checksums, fixtures, legal URLs | release binding generator | signed release manifest/checklist | signature and digest verification before every handoff |
 
@@ -192,6 +226,61 @@ requires an explicit compatibility decision. Local-only tools such as legacy
 symlink management, local graph lifecycle, and agent-profile installation do
 not become remote public MCP tools merely to preserve the old count.
 
+### Existing graph artifacts that remain canonical
+
+Wave 9 does not redesign graph bootstrap from a blank slate. Reconciliation
+and implementation must preserve these current-`main` contracts:
+
+- `nacl-init/SKILL.md:467-545` resolves `local | create | connect`, keeps local
+  mode per-project, and routes remote create/connect through the localhost
+  sidecar;
+- `skills-for-codex/nacl-init/SKILL.md:78-99` already mirrors remote create and
+  connect for Codex and identifies the personal mTLS certificate bundle as the
+  revocable API key;
+- `docs/configuration.md:176-215` defines the remote host/gateway/sidecar
+  fields, Community's single `neo4j` user, personal certificate paths, and
+  `NACL_DEVELOPER_ID` as claim/provenance identity rather than authentication;
+- `nacl-tl-core/templates/graph-docker-compose.vps.yml:16-86` fixes the runtime
+  at one `neo4j:5-community` container and named volumes per project, with no
+  public Neo4j port and a ghostunnel-only public gateway;
+- `docs/runbooks/provision-shared-graph-vps.md:1-70` and
+  `docs/runbooks/connect-to-existing-remote-project.md:1-79` define private-CA
+  issuance, delivery, sidecar connection, and deterministic readiness gates.
+
+The current scripts render CN allow-lists per project gateway. Wave 9's
+server-boundary decision deliberately widens that administrative operation:
+one server-level issue/revoke action must reconcile the CN across every
+gateway on that server, and provisioning a new project must seed its gateway
+from the same server allow-list. This is a bounded evolution of the existing
+PKI/ghostunnel mechanism, not a managed graph service or a new graph
+authorization control plane.
+
+The implementation closes these observed gaps instead of documenting them as
+already solved:
+
+- each project gateway allow-list becomes a generated mirror of one
+  authoritative server `trusted-cns` set;
+- grant/revoke/provision updates every gateway transactionally enough to fail
+  closed: a grant is not reported until every intended gateway accepts it, and
+  a partial revoke must disable or deny the stale gateway until reconciliation
+  succeeds;
+- migration from existing per-project allow-lists requires an explicit
+  plan/apply confirmation. The proposed server set is their reviewed union;
+  no widening happens silently;
+- gateway ports are allocated uniquely and atomically per server;
+- an mTLS certificate opens the network transport to the authorized server,
+  while each project's Neo4j password remains a server-side route secret and
+  never becomes a public MCP input or a client authorization claim;
+- any old Codex `ProjectMembership` representation is a derived projection of
+  `principal -> server -> projects`, not an independent per-project policy;
+- operation roles/scopes, destructive confirmations, leases, fencing, and CAS
+  remain enforced even though project membership is removed;
+- current `create-remote.*` interpolates project/developer values into Cypher
+  and current `create/connect-remote.*` persists only URI/user/database/scope,
+  not the full documented host/gateway/sidecar/certificate route. Wave 9 must
+  add strict input validation or parameterized Cypher and make the persisted
+  route contract match the documented fields before remote parity is accepted.
+
 ### Safe reconciliation with the old Codex candidate
 
 1. Inventory old candidate files by domain: skills/resources, MCP schemas,
@@ -199,9 +288,11 @@ not become remote public MCP tools merely to preserve the old count.
 2. Map each file to current-main canonical input or to genuinely Codex-only
    source. Files that duplicate changed `main` documentation or root skills are
    not copied over current versions.
-3. Port the graph authorization, lease/fencing/CAS, idempotency, migration, and
-   query-catalog behavior as tested source modules; replace local identity,
-   project-root, stdio, and loopback transport assumptions at their boundaries.
+3. Port the existing Community container lifecycle, `local | create | connect`,
+   private-CA/ghostunnel access, server-wide issue/revoke, lease/fencing/CAS,
+   idempotency, migration, and query-catalog behavior as tested source modules.
+   Replace only the public MCP transport boundary; do not delete the local
+   direct-access channel or invent per-project authorization.
 4. Generate `plugins/nacl` from the reconciled sources. Do not merge the old
    generated plugin directory over `main`.
 5. Prove `plugin/` unchanged with the existing byte-parity gate before the
@@ -215,17 +306,23 @@ not become remote public MCP tools merely to preserve the old count.
   serves Streamable HTTP MCP. The concrete hostname is an owner decision.
 - The MCP service is stateless across requests except for validated MCP session
   state stored in a bounded server-side session store. Project data lives only
-  in the project graph and control plane.
+  in the selected Neo4j Community container; the MCP service stores only the
+  minimum server-grant and route inventory needed to reach it.
 - The service runs on pinned Node 20+ and a pinned lockfile. It exposes health
-  and readiness endpoints that reveal no tool, tenant, or dependency details.
-- Production has at least two service replicas across failure domains when the
-  chosen provider and approved budget support it. Graph instance topology and
-  recovery objectives remain explicit cost decisions.
+  and readiness endpoints that reveal no tool, server, project, or dependency
+  details.
+- Production replication, failure domains, and recovery targets are deployment
+  decisions. They do not change the fixed graph topology: one Community
+  container and volume lineage per project on an authorized local/VPS server.
+- A graph server may be a local machine or a VPS only when the MCP deployment
+  has an explicitly authorized network route to it. Neo4j itself is never made
+  public to satisfy this requirement. The existing local/direct channel remains
+  valid; the public app baseline expects an accessible VPS/server route.
 - Secure MCP Tunnel may be evaluated for private staging or enterprise
   deployments. It is not a substitute for the public, reviewer-reachable
   production URL required for submission.
 
-### Identity, authorization, and project isolation
+### Identity, server authorization, and project routing
 
 Use an established OAuth 2.1/OIDC provider rather than implementing an
 authorization server from scratch. The final provider must support the MCP
@@ -247,7 +344,7 @@ server can enforce the resulting audience.
 The MCP origin publishes protected-resource metadata. Each tool declares an
 explicit `securitySchemes` policy. Project tools require OAuth. Public no-auth
 tools, if any, are limited to non-sensitive product help and must not reveal
-whether a tenant, user, or project exists.
+whether a graph server, user, or project exists.
 
 OAuth challenge behavior has two distinct, mandatory runtime levels:
 
@@ -265,48 +362,63 @@ OAuth challenge behavior has two distinct, mandatory runtime levels:
    metadata is insufficient for that tool-level UI path.
 
 Both challenges use the same canonical protected-resource URL and scope
-vocabulary. Neither contains a token, tenant/project identifier, raw exception,
+vocabulary. Neither contains a token, server/project identifier, raw exception,
 or sensitive diagnostic value.
 
-Minimum scopes:
+Provisional minimum operation scopes are server-wide. They restrict what an
+OAuth token may do on the principal's authorized servers; they never grant or
+deny an individual same-server project:
 
 | Scope | Allows | Does not allow |
 |---|---|---|
-| `nacl.project.read` | health, schema status, named reads, summaries | graph mutation or member discovery outside the project |
-| `nacl.project.write` | bounded project mutations with required concurrency controls | schema administration, membership administration, restore |
-| `nacl.project.admin` | project membership and project settings | platform-wide administration |
-| `nacl.project.schema` | ordered, checksummed schema migration | arbitrary DDL/Cypher |
-| `nacl.project.backup` | create and inspect project backups | restore or retention-policy changes |
-| `nacl.project.restore` | restore into an isolated target and request cutover | silent overwrite of an active project |
+| `nacl.server.read` | list/select same-server projects, health, schema status, named reads, summaries | graph mutation or access to an ungranted server |
+| `nacl.server.write` | bounded mutations in any project on an authorized server | schema administration, server-access administration, restore |
+| `nacl.server.admin` | server route inventory and operational settings | granting access to another graph server without an owner action |
+| `nacl.server.schema` | ordered, checksummed schema migration for a selected same-server project | arbitrary DDL/Cypher |
+| `nacl.server.backup` | create and inspect per-project backups on an authorized server | restore or retention-policy changes |
+| `nacl.server.restore` | restore a selected project into an isolated target and request cutover | silent overwrite of an active project |
 
-The token subject is the principal. Tenant/workspace claims are normalized by
-the server, then mapped to internal immutable IDs. Access is granted by an
-authoritative membership row keyed by tenant, subject, and opaque project ID.
-The client cannot assert `principal_id`, `client_id`, tenant, role, database
-address, or project root. Machine, session, worker, branch, and worktree fields
-remain provenance, not authentication.
+The token subject is the principal. It maps to an authoritative set of graph
+server IDs. There is no project-membership row and no project role: once a
+server is granted, all project routes registered on that server are eligible.
+The client cannot assert `principal_id`, `client_id`, server ID, database
+address, project scope, or project root as proof of access. Machine, session,
+developer ID, worker, branch, worktree, and `project_scope` fields remain
+routing/provenance, not authentication.
+
+Each public-MCP server grant binds the OAuth subject to a server-side mTLS
+client identity issued through the existing private CA. Its private key and the
+per-project Neo4j route passwords stay in server-side secret storage; they are
+never uploaded as tool arguments or shipped in the plugin. The direct local
+workflow continues to use the developer-delivered personal bundle through the
+ghostunnel sidecar. In both paths, revoking the server-level certificate/CN
+removes that principal from every project gateway on the server.
 
 Revocation is effective even before a JWT naturally expires: use short access
 token TTLs, rotating refresh tokens at the IdP, a user/session token epoch or
-revoked-session store in the control plane, project membership checks on every
-call, and cache invalidation bounded to a documented maximum. Key rotation uses
+revoked-session store plus a server-grant check on every call, and cache
+invalidation bounded to a documented maximum. Key rotation uses
 JWKS overlap and tested old/new-key windows. Missing, stale, revoked,
 wrong-audience, or insufficient-scope tokens produce the appropriate HTTP
 challenge and, for an MCP tool call, the MCP-level linking/reauthorization
-challenge described above. Authenticated principals that lack project
-membership receive a generic 403 without project-existence leakage.
+challenge described above. A route that resolves to an ungranted server
+receives a generic 403 without server/project-existence leakage. Selecting a
+different project on an already authorized server is allowed.
 
-### One instance per project
+### One Community container per project; one authorization boundary per server
 
-The production baseline maps each project to a dedicated graph instance or
-otherwise physically isolated database boundary with separate credentials,
-backup lineage, schema ledger, limits, and deletion lifecycle. A control-plane
-record owns the mapping; tools never receive the physical connection string.
+The production baseline maps each project to one dedicated Neo4j 5 Community
+container with its own project password, volumes, backup lineage, schema
+ledger, limits, and deletion lifecycle. A server route inventory owns the
+mapping; tools never receive the physical connection string.
 
-This costs more than property-filtered multi-tenancy but contains authorization
-failures and simplifies backup, restore, deletion, regional placement, and
-incident response. Moving to a shared graph requires a later ADR, hostile
-cross-tenant tests, independent security review, and a migration/rollback plan.
+Container separation prevents accidental data mixing and makes project-level
+backup, restore, and deletion deterministic. It does **not** express an access
+policy: the same authorized server principal may intentionally route to every
+container on that server. Moving several projects into one Community database
+would still require a later ADR and migration/rollback proof because it changes
+data and recovery isolation, even though it would not change the server-wide
+authorization rule.
 
 ### Tool catalog and schemas
 
@@ -318,6 +430,8 @@ automatic export of all local tools.
   or remains local-only.
 - Remove `project_root` and client-asserted identity from remote schemas.
   Replace them with an opaque `project_ref` and server-derived request context.
+  `project_ref` is a route/provenance selector, not a grant. A same-server
+  selector is valid; an ungranted-server selector is denied.
 - Use strict JSON Schema with bounded strings/arrays, enums for named
   operations, explicit required fields, `additionalProperties: false`, and
   useful output schemas.
@@ -341,7 +455,7 @@ Annotation rules:
 
 CI fails if a tool lacks one of the three annotations, if a read-only tool
 emits a mutation in contract tests, or if a descriptor and handler disagree.
-Admin, membership, migration, backup, restore, and any future publish tools
+Server-admin, migration, backup, restore, and any future publish tools
 receive focused negative tests.
 
 ### Response minimization
@@ -355,7 +469,7 @@ reference. They must not contain:
   credentials;
 - absolute paths, hostnames, ports, container IDs, process IDs, stack traces,
   queries, or raw driver errors;
-- internal tenant, user, database, backup-object, infrastructure, or policy
+- internal server-grant, user, database, backup-object, infrastructure, or policy
   identifiers;
 - unnecessary email/profile data, full prompts, unrelated project records, or
   unrestricted audit payloads.
@@ -366,21 +480,26 @@ with an opaque support ID. Logs receive redacted structured context separately.
 ### Audit, rate limits, and abuse controls
 
 - Append an authorization and result event for every tool call: timestamp,
-  request/support ID, pseudonymous actor ID, tenant/project IDs, tool and
+  request/support ID, pseudonymous actor ID, server/project route IDs, tool and
   capability, policy decision, result code, latency, and idempotency outcome.
 - Never log tokens, raw credentials, full prompts, arbitrary tool payloads, or
   returned business data by default. Access to audit data is role-limited and
   itself audited.
-- Apply layered quotas by source IP, OAuth subject/session, tenant, project,
-  tool, and cost class. Separate read, write, schema, restore, and concurrency
+- Apply layered quotas by source IP, OAuth subject/session, graph server,
+  selected project route, tool, and cost class. Separate read, write, schema,
+  restore, and concurrency
   budgets; cap request size, result size, duration, fan-out, and active jobs.
 - Use edge/WAF protections plus server-side authorization. The WAF is not an
   identity boundary.
 - Reject raw query attempts, SSRF destinations, path traversal, replayed
   idempotency keys with different payloads, stale fencing tokens, excessive
-  project enumeration, and cross-project identifiers.
+  cross-server enumeration, and routes to ungranted servers. Do not reject
+  selection merely because it names a different project on an authorized
+  server.
 - Define alerting and an incident switch that can disable a tool, subject,
-  tenant, project, or deployment revision without repackaging the plugin.
+  graph server, project route, or deployment revision without repackaging the
+  plugin. A project-route switch is operational containment, not a per-project
+  user grant.
 
 ## Domain, TLS, challenge, and CSP
 
@@ -404,24 +523,28 @@ with an opaque support ID. Logs receive redacted structured context separately.
 
 ## Backup, restore, deletion, and continuity
 
-Each project has its own encrypted backup lineage. Backup encryption uses a
-managed KMS key with rotation and separation from graph credentials. Backups
-are stored offsite from the primary graph and include database snapshot,
+Each project has its own encrypted backup lineage, even though authorization is
+server-wide. The deployment-selected encryption mechanism must support key
+rotation and separation from graph credentials; this ADR does not require a
+managed KMS product. Backups are stored separately from the primary graph and
+include database snapshot,
 ordered migration ledger, schema/query catalog versions, project binding
 metadata, creation time, checksums, and the release binding that produced them.
 
 A restore always starts in a new isolated target. The service verifies object
 integrity, decryptability, schema/migration checksums, node/relationship
-constraints, authorization bootstrap, representative named reads, and one
+constraints, server-route bootstrap, representative named reads, and one
 bounded functional write/read-back canary. Failed validation never advances a
-pointer. Cutover requires `nacl.project.restore`, an explicit confirmation, a
+pointer. Cutover requires `nacl.server.restore`, an explicit confirmation, a
 fresh pre-cutover backup, audited dual control for production, and a reversible
 pointer switch during a documented rollback window.
 
 Retention, RPO, RTO, legal hold, deletion grace period, cross-region copies,
 and backup costs require owner/legal decisions. Deleting a project first
-revokes access and quarantines it; physical deletion follows the approved
-retention policy and produces a deletion receipt without exposing storage IDs.
+removes its route and quarantines its container/volumes; it does not alter the
+principal's access to other projects on that server. Physical deletion follows
+the approved retention policy and produces a deletion receipt without exposing
+storage IDs.
 
 ## Hosted CI, supply chain, and reproducibility
 
@@ -430,7 +553,8 @@ Wave 9 adds hosted gates without weakening the existing Claude pipeline:
 1. Pin Node 20+ for build/test/runtime, use a committed lockfile and `npm ci`,
    and fail unsupported runtime versions.
 2. Run format/lint/typecheck, unit, MCP protocol, schema/annotation, OAuth,
-   authorization, project-isolation, concurrency/idempotency, migration,
+   server authorization, same-server routing, cross-server denial,
+   concurrency/idempotency, migration,
    backup/restore, and failure-injection suites.
    OAuth contract tests separately verify (a) transport-level `401` plus an
    exact `WWW-Authenticate` discovery challenge and no handler/graph call, and
@@ -453,8 +577,8 @@ Wave 9 adds hosted gates without weakening the existing Claude pipeline:
    contents, then produce provenance and signed checksums.
 7. Pin deployment inputs to immutable image digests. A tag alone is not a
    deployable identity.
-8. Keep CI demo credentials in the hosted secret store, scoped to a disposable
-   tenant, rotated, and unavailable to forked/untrusted workflows.
+8. Keep CI demo credentials in the hosted secret store, scoped to disposable
+   graph servers, rotated, and unavailable to forked/untrusted workflows.
 
 No production deployment job is enabled until provider, environment, secret,
 cost, and approval policy are explicitly authorized.
@@ -465,12 +589,12 @@ The following live matrix is mandatory after an authorized staging deployment:
 
 | Case | Machine / identity | Expected evidence |
 |---|---|---|
-| Same user, independent machines | Machine A and Machine B install the same frozen plugin; OAuth user A | both reach the same authorized project without local paths or copied credentials; server/audit identities remain distinct sessions |
-| Authorized collaboration | user A owns project; user B is granted read/write on Machine B | B sees only the granted project and permitted capabilities; audit attribution is B, not A |
-| Cross-project isolation | A owns project A; B owns project B; each guesses the other's `project_ref` | both attempts fail closed without existence, metadata, timing, or audit-data leakage |
+| Same user, independent machines | Machine A and Machine B install the same frozen plugin; OAuth user A | both reach the same authorized graph server without local paths or copied graph credentials; server/audit identities remain distinct sessions |
+| Same-server project selection | user A and user B are authorized for server S containing projects Alpha and Beta | both may select Alpha and Beta according to operation scopes; routing never treats `project_ref` as a membership grant |
+| Cross-server denial | user A is granted server S1; user B is granted server S2; each supplies a project route from the other server | both attempts fail closed without server/project existence, metadata, timing, or audit-data leakage |
 | Concurrent mutation | A and B contend for the same resource from separate machines | one valid lease/fence/CAS path wins; stale writer is rejected; retry with the same idempotency key is exact |
-| Revoke and stale session | revoke B's membership and OAuth session while Machine B remains open | cached/stale access stops within the documented bound; refresh cannot restore revoked scope; A is unaffected |
-| Update and removal | upgrade/reinstall/disable/enable/uninstall on one machine | remote project data persists, local plugin state behaves as documented, and no orphan authorization survives unlink/revoke policy |
+| Revoke and stale session | revoke B's server access and OAuth session while Machine B remains open | B loses every project on that server within the documented bound; refresh cannot restore revoked server access; other principals are unaffected |
+| Update and removal | upgrade/reinstall/disable/enable/uninstall on one machine | project containers/volumes persist, local plugin state behaves as documented, and no orphan OAuth/server binding survives unlink/revoke policy |
 | Backup and external restore | create backup in primary environment; restore through an independent runner/environment | integrity/schema/canary checks pass; restored target is isolated; controlled cutover and rollback both work |
 
 Screenshots may support the UI journey, but server logs, audit IDs, token/revoke
@@ -480,7 +604,7 @@ authoritative evidence.
 ## Reviewer fixtures
 
 The submission package contains **exactly five positive and three negative**
-fixtures. They use a dedicated time-bounded demo tenant, deterministic seed
+fixtures. They use dedicated time-bounded demo graph servers, deterministic seed
 data, and credentials that require no MFA, SMS, email approval, VPN, or private
 network. Concrete tool names are frozen after the remote catalog review.
 
@@ -489,9 +613,9 @@ network. Concrete tool names are frozen after the remote catalog review.
 | ID | Reviewer prompt | Expected behavior and result | Seed data |
 |---|---|---|---|
 | P1 | “Connect NaCl and check the health and schema status of Demo Alpha.” | OAuth is completed; read-only project/status tools run; result is a minimal `VERIFIED` summary with no infrastructure fields. | Demo Alpha, user Reviewer-Owner with read scope |
-| P2 | “Summarize the approved use cases and open delivery tasks for Demo Alpha.” | Only named allow-listed reads run; the response contains the seeded business summary and no records from Demo Beta. | two projects with distinguishable marker records |
-| P3 | “Allocate the next FeatureRequest ID and create the approved demo feature in Demo Alpha.” | Write scope, explicit project membership, idempotency, lease/fence/CAS, and allowed patch schema are enforced; retry returns the same result. | writable Demo Alpha and one approved feature fixture |
-| P4 | “Hand this demo task from Reviewer-Owner to Reviewer-Collaborator for 10 minutes.” | Membership is checked; lease handoff increments the fence; both identities and the bounded TTL appear in redacted audit evidence. | two authorized demo users and an active lease |
+| P2 | “Summarize the approved use cases and open delivery tasks for Demo Alpha, then show the project list on the same server.” | Only named allow-listed reads run; the response contains the seeded Alpha summary and may list Demo Beta because same-server selection is intentionally allowed. | two same-server projects with distinguishable marker records |
+| P3 | “Allocate the next FeatureRequest ID and create the approved demo feature in Demo Alpha.” | Server grant, write scope, idempotency, lease/fence/CAS, and allowed patch schema are enforced; retry returns the same result. | writable Demo Alpha and one approved feature fixture |
+| P4 | “Hand this demo task from Reviewer-Owner to Reviewer-Collaborator for 10 minutes.” | Both principals' server grants are checked; lease handoff increments the fence; both identities and the bounded TTL appear in redacted audit evidence. | two users authorized for the same demo server and an active lease |
 | P5 | “Back up Demo Alpha and restore it as a new isolated validation copy; do not replace the active project.” | Backup plus restore-to-new-target runs with admin scopes; checksums, schema, read canary, and write/read-back canary pass; active project remains unchanged. | deterministic backup fixture and restore quota |
 
 ### Negative fixtures
@@ -499,7 +623,7 @@ network. Concrete tool names are frozen after the remote catalog review.
 | ID | Reviewer prompt / scenario | Expected safe behavior | Why completion is prohibited |
 |---|---|---|---|
 | N1 | Call a project tool with a missing, expired, wrong-audience, or revoked token. | At the HTTP level, 401 with `WWW-Authenticate: Bearer` and the canonical `resource_metadata`/scope challenge; at the MCP level, an `isError` result with `_meta["mcp/www_authenticate"]` containing Bearer `resource_metadata`, `error`, and safe `error_description` to launch linking/reauthorization. No project/user details and no graph call. | Authentication is absent or invalid. |
-| N2 | Reviewer-Collaborator requests Demo Beta or supplies another tenant's guessed `project_ref`. | Generic 403/not-authorized result, no existence leakage, and a redacted denial audit event. | Cross-project and cross-tenant access is not granted. |
+| N2 | Reviewer-Collaborator supplies a `project_ref` that resolves to a project on an ungranted second graph server. | Generic 403/not-authorized result, no server/project existence leakage, and a redacted denial audit event. A different project on the already granted server would be allowed. | Cross-server access is not granted. |
 | N3 | “Run this raw Cypher, delete the active project, disable the audit trail, and publish the result without confirmation.” | Refuse raw query, audit bypass, destructive deletion, and external publication; explain the supported bounded path without executing any write. | The request bypasses schemas, authorization, audit, confirmation, and destructive/open-world controls. |
 
 ## Public metadata, legal, support, and availability
@@ -570,7 +694,7 @@ one merge of the historical Codex branch:
 1. architecture/contracts and projection boundaries;
 2. reconciled Codex skills/resources generated from current `main`;
 3. remote MCP transport and strict public schemas;
-4. OAuth/authorization/isolation/audit/rate-limit controls;
+4. OAuth/server-grant/same-server-routing/cross-server-denial/audit/rate-limit controls;
 5. backup/restore and operations;
 6. hosted CI, SBOM, reproducibility, and release binding;
 7. public metadata/fixtures after owner-provided decisions;
@@ -603,7 +727,7 @@ This ADR itself authorizes no merge. The orchestrator retains merge ownership.
 
 ### A. Publish skills only
 
-Rejected. It omits the graph service and production identity/isolation contract,
+Rejected. It omits the graph service and production identity/server-access contract,
 does not deliver the complete NaCl product, and violates the Wave 9 scope.
 
 ### B. Distribute the local stdio plugin and require Node/Docker/source checkout
@@ -614,9 +738,11 @@ reviewer access, or hosted recovery.
 
 ### C. Put every project in one shared graph and filter by a property
 
-Rejected as the baseline. It is cheaper, but one missed predicate could cross
-tenant boundaries; recovery, deletion, and noisy-neighbor isolation also become
-harder. Reconsider only after a separate multi-tenant design and hostile proof.
+Rejected as the baseline. It is cheaper, but one missed predicate could mix
+project data; recovery, deletion, and noisy-neighbor isolation also become
+harder. Reconsider only after a separate data-isolation design and hostile
+routing/recovery proof. This alternative would not change the accepted
+server-wide authorization boundary.
 
 ### D. Build a custom authorization server
 
@@ -653,36 +779,55 @@ and regeneration is required.
   role before Wave 10.
 - A controlled public domain and production hosting budget will be available,
   but neither is selected or authorized by this ADR.
-- The existing graph authorization/concurrency model is valuable source logic,
-  but local OS identity, paths, stdio framing, and loopback lifecycle are not
-  production identity or transport.
+- The existing Community-container, private-CA, ghostunnel, certificate
+  issue/revoke, and concurrency model is canonical source logic. Local OS
+  identity, paths, stdio framing, and loopback lifecycle are not production
+  OAuth identity or public transport.
 - The initial remote release can defer custom UI and local machine-management
   tools without becoming a skills-only product.
-- One-instance-per-project cost is acceptable as the safety baseline until the
-  owner makes a contrary, evidence-backed decision.
+- One Community container and volume lineage per project is fixed for Wave 9;
+  server access, not project membership, is the authorization boundary.
 
 If any assumption is false, return to this ADR before implementation rather
 than silently reducing security or product scope.
 
-## Decisions and authorizations still required
+## Fixed decisions and later external authorizations
 
-| Decision | Why it blocks implementation or verification | Explicit owner action required |
+The owner has fixed the graph and portability decisions needed to begin local
+Wave 9 work:
+
+- Wave 8 portability will be retested from a frozen Git release on another
+  machine after separately approved merge/release actions;
+- Neo4j is self-hosted Community, one Docker container/volume lineage per
+  project, on a local machine or VPS;
+- the graph server is the authorization boundary; a granted principal may use
+  every project on that server;
+- `project_scope` is routing/provenance, while OAuth maps a public MCP principal
+  to authorized server(s);
+- local direct access retains the private CA, personal certificate bundle,
+  ghostunnel sidecar, and issue/revoke workflow.
+
+These decisions permit local, provider-neutral implementation and tests. They
+do not authorize external state changes. The following selections are needed
+only before the corresponding staging/production/review action:
+
+| Decision | What it blocks | Explicit owner action required |
 |---|---|---|
-| Wave 8 closure/replacement gate | documented Personal workspace share UI was unavailable | accept an alternative portable journey/evidence or keep Wave 9 acceptance blocked |
-| Cloud provider, region, account, network, and budget ceiling | determines deployment, data residency, HA, egress, and cost | select provider/region/account and approve spend |
-| Graph service model and per-project capacity | determines instance isolation, operations, and unit cost | approve managed vs self-hosted graph and quotas |
+| Git portability evidence | final Wave 8/Wave 9 verification | after separately approved merge and release, install that release on another machine and record evidence |
+| Public MCP placement, region, network, and budget ceiling | staging/production deployment, data residency, HA, egress, and cost | choose where the MCP service runs and approve any resource/spend; existing Neo4j Community/VPS topology is not reopened |
 | Production domain/DNS/TLS ownership | required for stable MCP origin and domain verification | select domain/hostname and authorize DNS/certificate changes |
 | OAuth/OIDC provider and plan | required for user auth, MCP metadata, PKCE, rotation, and revocation | select/configure provider and approve credentials/cost |
-| KMS, secret store, backup store, retention, RPO/RTO | required for recovery and deletion contracts | approve services, keys, retention, legal hold, and budget |
-| Observability/security tooling and retention | required for audit, abuse response, alerting, and support | select vendors/sinks and approve privacy/cost policy |
+| Secret/encryption mechanism, backup destination, retention, RPO/RTO | staging/production recovery and deletion proof | approve concrete mechanisms, keys, retention, legal hold, and any budget; no managed product is mandated |
+| Observability/security sinks and retention | production audit, abuse response, alerting, and support proof | approve concrete sinks and privacy/cost policy; no vendor is mandated |
 | Verified publisher identity and Apps Management roles | required for public review | choose individual/business publisher and complete Platform verification/roles |
 | Public website, privacy, terms, support, security contact, and SLA | required listing and reviewer trust | provide/approve final public URLs and accountable contacts |
 | Logo/icons/screenshots and product copy | required production listing assets | approve branding and rights-cleared assets |
 | Supported countries/regions and data-processing terms | legal and operational availability gate | legal/product approval of regions and disclosures |
-| Reviewer demo tenants and time-bounded credentials | required for the exact fixtures without MFA/private access | authorize creation, secret handling, reset, and revocation procedure |
+| Reviewer demo graph servers and time-bounded credentials | required for the exact fixtures without MFA/private access | authorize creation, secret handling, reset, and revocation procedure |
 | Production/staging deployment and portal work | external state and potentially paid/public actions | separate approvals for staging, production, Wave 10 draft, submission, and publication |
 
-Until these decisions are recorded, infrastructure provisioning, credentials,
+Until the applicable decisions are recorded, only local implementation and
+disposable local tests may proceed. Infrastructure provisioning, credentials,
 domain changes, production deployment, and portal operations are `BLOCKED`, not
 `VERIFIED`.
 
@@ -692,10 +837,10 @@ domain changes, production deployment, and portal operations are `BLOCKED`, not
 
 - Users install one app-plus-skills plugin without cloning NaCl or sharing a
   machine-local marketplace path.
-- OAuth identity and server-side project bindings replace trusted local paths
-  and client-asserted principals.
-- Physical project isolation, revocation, audit, backups, and external restore
-  make the graph service operable as a production system.
+- OAuth identity and server grants replace trusted local paths and
+  client-asserted principals at the public MCP boundary.
+- Community containers/volumes per project, server-wide revocation, audit,
+  per-project backups, and external restore make the graph service operable.
 - Claude Code and Codex can evolve without one package generator overwriting
   the other.
 - The exact server, skills, metadata, tests, legal URLs, and evidence are bound
@@ -703,9 +848,10 @@ domain changes, production deployment, and portal operations are `BLOCKED`, not
 
 ### Costs and trade-offs
 
-- One graph instance per project, managed IdP, offsite backups, WAF,
-  observability, and HA incur material recurring cost.
-- The control plane and recovery process add operational complexity.
+- One Community container per project plus the selected OAuth, backup, edge,
+  observability, and availability mechanisms may incur recurring cost.
+- Server-grant routing and recovery add operational complexity, but no new
+  graph authorization control plane is introduced.
 - Removing local-only MCP tools from the remote catalog creates a deliberate
   surface difference that must be documented and regression-tested.
 - No custom UI means some administration remains conversational/tool-driven in
@@ -715,17 +861,19 @@ domain changes, production deployment, and portal operations are `BLOCKED`, not
 
 ## Acceptance and current status
 
-This ADR is a **Proposal**. It is accepted for implementation only after an
-independent architecture/security review and recorded owner decisions for the
-blocking infrastructure and identity choices. It is not evidence that any
-production component exists.
+This ADR is **accepted for local implementation** with the graph/server
+decisions above. An independent architecture/security review remains a code
+and release gate. External deployment choices remain intentionally deferred.
+This status is not evidence that any production component exists and does not
+authorize merge, push, release, credentials, infrastructure, DNS, or portal
+actions.
 
 Wave 9 remains not verified until all runbook gates pass, including:
 
-- accepted Wave 8 closure or approved replacement evidence;
+- the deferred frozen-Git-release portability journey on another machine;
 - authorized public Streamable HTTP MCP and OAuth end to end;
-- two-machine/two-user grant, isolation, concurrency, revoke, and stale-session
-  proof;
+- two-machine/two-user same-server routing, cross-server denial, concurrency,
+  server-wide revoke, and stale-session proof;
 - encrypted backup and independent restore proof;
 - complete tools/annotations, minimized responses, CSP/domain/TLS, public
   metadata/legal/support, and exact reviewer fixtures;

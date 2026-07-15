@@ -1,7 +1,7 @@
 # Wave 9: план безопасного согласования с актуальным `main`
 
 Дата аудита: 2026-07-15
-Статус: `PLAN / NO MERGE PERFORMED`
+Статус: `PLAN ACCEPTED FOR LOCAL WAVE 9 / NO MERGE PERFORMED`
 Область: подготовка нового main-based successor integration для Wave 9; этот
 документ не разрешает merge, push, tag, публикацию, развёртывание production
 инфраструктуры или мутацию портала OpenAI.
@@ -18,6 +18,14 @@ Codex-специфичных файлов и истории решений. Ра
 явно перечисленных путей и ручная композиция пересечений. Нельзя применять
 whole-tree restore, merge/rebase старой integration, массовый cherry-pick её
 истории или разрешать конфликт целым файлом через `ours`/`theirs`.
+
+Владелец разрешил переход к локальной реализации Wave 9 после построения
+`RECONCILIATION_BASE_VERIFIED`. Это разрешение не включает merge/push/release,
+инфраструктуру, credentials, DNS, production deployment или portal. Отсутствие
+Personal workspace share UI больше не блокирует локальную работу: portable
+journey будет проверен на другой машине из замороженного Git-релиза после
+отдельно разрешённых merge в `main` и release. До этой проверки Wave 8 и Wave 9
+не получают итоговый `VERIFIED`.
 
 ## 2. Зафиксированный граф и количественный аудит
 
@@ -117,7 +125,7 @@ successor merge или открытием PR.
 | `plugin/**` | **Generated artifact** от root `nacl-*`, `.claude/agents`, `graph-infra` и `scripts/plugin-manifest.json` | Не редактировать вручную и не накладывать Codex-файлы. Любая смена source требует `node scripts/build-plugin.mjs`, затем byte-parity `--check`. |
 | `scripts/build-plugin.mjs`, `scripts/build-plugin.test.mjs`, `scripts/plugin-manifest.json` | Текущий `main`, Claude build pipeline | Брать из `main`. Codex builder/validator получает отдельные имена; общие имена не переиспользовать. |
 | Root `nacl-*/**`, `graph-infra/**` | Текущий `main`, framework source | Никогда не восстанавливать из `d98f739` или старой integration. Все package mirrors обновлять от этой версии с явными преобразованиями. |
-| `skills-for-codex/**` | Текущий `main` для legacy Codex, включая sync exemptions | На него вручную повторно наложить только проверенные double-install/fallback изменения старой integration; не заменять каталог целиком. |
+| `skills-for-codex/**` | Текущий `main` для legacy Codex, включая актуальный remote-aware `nacl-init` и sync exemptions | На него вручную повторно наложить только проверенные double-install/fallback изменения старой integration; не заменять каталог целиком и не возвращать claim старого candidate, что remote находится вне pilot. |
 | Root `README*` и `docs/**` | Текущий `main` после полного v2.24 docs-sync | Main — смысловая база. Codex-разделы повторно интегрируются вручную, EN/RU парами, после актуализации package/runtime claims. |
 | `plugins/nacl/**` | Codex package runtime/wrappers из accepted integration, но shared resources — производные от текущего main/`skills-for-codex` | Перенести Codex-only runtime как seed. Затем полностью пересчитать bundled workflows/docs/queries/schemas и hash-bound divergence ledger; старые зеркала не считать авторитетными. |
 | `tests/codex-plugin/**` | Accepted Codex integration, обновлённая под successor | Перенести из точного SHA, затем обновить fixtures, hashes, counts и negative tests для v2.24/current-main. Тест не может сам быть источником ожидаемого snapshot. |
@@ -126,6 +134,48 @@ successor merge или открытием PR.
 | `.github/workflows/build-plugin.yml` | Текущий `main`, Claude artifact CI | Сохранять целиком по смыслу; он единственный владелец Claude build parity. |
 | `.github/workflows/test-codex-plugin.yml` | Codex dedicated CI | Перенести и обновить после разделения generic/Codex glob ownership. |
 | `.github/workflows/test-tools.yml` | Совместный, разрешается только ручная композиция | Сохранить main exclusions и `pwsh-syntax`; Codex validator/Python вынести в dedicated job. |
+
+### 3.1 Зафиксированный graph/auth contract Wave 9
+
+Reconciliation сохраняет уже реализованную в `main` архитектуру, а не заменяет
+её новым managed graph/control plane:
+
+- Neo4j `5-community`; один Docker-контейнер и собственные volumes на проект;
+- локальный проект поднимается на машине разработчика, remote-проект — на VPS;
+- `nacl-init` детерминированно разрешает `local | create | connect`;
+- remote использует private CA, ghostunnel, персональный
+  `client.crt` + `client.key` + `ca.crt`, localhost sidecar и существующие
+  issue/revoke scripts;
+- `NACL_DEVELOPER_ID` и `project_scope` — provenance/routing, не
+  authentication;
+- **сервер/VPS является границей авторизации**: получив доступ к серверу,
+  principal может выбрать любой project container на этом сервере;
+- OAuth публичного MCP сопоставляет principal с разрешёнными серверами, а не с
+  отдельными project memberships. Same-server selection разрешён;
+  cross-server route без server grant запрещён и не раскрывает существование;
+- backup/restore и lifecycle остаются отдельными для каждого project
+  container/volume.
+
+Канонические входы, которые нужно переносить из свежего `main`, а не из
+frozen candidate:
+
+- `nacl-init/SKILL.md` (graph Step 2c, включая `local | create | connect`);
+- `skills-for-codex/nacl-init/SKILL.md` и его sync exemption;
+- `docs/configuration.md`;
+- `docs/runbooks/provision-shared-graph-vps.md`;
+- `docs/runbooks/connect-to-existing-remote-project.md`;
+- `graph-infra/vps/**` и `graph-infra/scripts/install-sidecar.{sh,ps1}`;
+- `nacl-tl-core/templates/graph-docker-compose{,.vps}.yml`;
+- `nacl-tl-core/scripts/{resolve-graph-mode.mjs,create-remote.*,connect-remote.*,
+  register-project.mjs}` и связанные тесты/references.
+
+Текущие VPS scripts рендерят CN allow-list для конкретного project gateway.
+Wave 9 обязана сохранить сам PKI/ghostunnel mechanism, но привести admin
+семантику к принятой server boundary: issue/revoke синхронизирует CN по всем
+gateway этого сервера, а новый project gateway наследует server allow-list.
+Это изменение должно иметь отдельные тесты server-wide grant/revoke и rollback;
+нельзя просто объявить существующий per-scope script server-wide без изменения
+и доказательства.
 
 ## 4. Drift shared sources, который нельзя потерять
 
@@ -186,12 +236,12 @@ parity ledger. Старый hash не разрешает оставить ста
 | 1 | `.github/workflows/test-tools.yml` | Сохранить main `:!plugin/**` во всех Node/bash/PowerShell globs и весь `pwsh-syntax` job. Добавить `:!tests/codex-plugin/**` в generic job; Codex tests, pinned Python и official validator передать dedicated `test-codex-plugin.yml`. Не делать union старых globs. |
 | 2 | `README.md` | Сохранить актуальные v2.24/Claude Code install, release и product facts из main; заново добавить отдельный Codex app-plus-skills раздел с production/public статусом Wave 9, без локального absolute-path share claim. |
 | 3 | `README.ru.md` | То же решение на русском; проверить одинаковые версии, ссылки, ограничения и product choice с EN, а не переводить старый README. |
-| 4 | `docs/architecture.md` | Сохранить текущую framework/Claude architecture; добавить Codex runtime, remote Streamable HTTP MCP, identity/isolation и packaging boundary как отдельный carrier, с актуальными diagrams/contracts. |
+| 4 | `docs/architecture.md` | Сохранить текущую framework/Claude architecture; добавить Codex runtime, remote Streamable HTTP MCP, OAuth→server-grant/same-server-routing boundary и packaging boundary как отдельный carrier, с актуальными diagrams/contracts. |
 | 5 | `docs/architecture.ru.md` | Синхронизировать архитектурные сущности и статусы с EN; не сохранять устаревшую v2.23 схему из integration. |
-| 6 | `docs/configuration.md` | Взять полный актуальный main config schema; вручную добавить только действующие Codex production MCP/auth/project settings. Local stdio/dev paths не должны стать normal install. Затем сгенерировать/проверить RU pair. |
+| 6 | `docs/configuration.md` | Взять полный актуальный main config schema; вручную добавить только действующие Codex production MCP/server-auth/project-route settings. `project_scope` не описывать как authorization. Local stdio/dev paths не должны стать normal install. Затем сгенерировать/проверить RU pair. |
 | 7 | `docs/quickstart.md` | Сохранить main quickstart для framework/Claude; добавить самостоятельную Codex UI/public-install ветку, которая не требует clone, terminal, Git или локального marketplace path. |
 | 8 | `docs/quickstart.ru.md` | Повторить ту же последовательность, expected outputs и rollback на русском; links/anchors должны пройти pair gate. |
-| 9 | `docs/setup/graph-setup.md` | Сохранить v2.24 graph bootstrap, monitor/doctor и changed port/probe semantics из main; добавить Codex remote-by-default и явно отделённый optional local graph. |
+| 9 | `docs/setup/graph-setup.md` | Сохранить v2.24 graph bootstrap, monitor/doctor, `local | create | connect` и changed port/probe semantics из main. Local остаётся default для проекта; public hosted MCP требует доступный server/VPS route, но не меняет init default и не вводит managed graph. |
 | 10 | `docs/setup/graph-setup.ru.md` | Ручная RU-синхронизация предыдущего решения, включая security/secret wording и отсутствие raw-password fallback. |
 | 11 | `docs/setup/install-linux.md` | Сохранить текущие Linux/Claude prerequisites и sidecar changes; добавить только проверенный Codex app install/permissions/restart path и production MCP prerequisites. |
 | 12 | `docs/setup/install-linux.ru.md` | EN/RU semantic parity, те же команды только для admin/legacy раздела; обычный пользователь не получает terminal path. |
@@ -288,6 +338,11 @@ Tracked runbook из `c959879` имеет 1,725 lines и SHA-256
 - проверенные изменения legacy `skills-for-codex/**` вручную поверх current
   main.
 
+Нельзя переносить из old candidate его frozen `nacl-init`/bundled init claim,
+что remote create/connect находится вне pilot. Сразу после seed import этот
+текст считается stale/blocking и заменяется адаптацией текущих root и
+`skills-for-codex` contracts.
+
 Запрещены `git merge codex/desktop-plugin-integration`, full-tree `git restore`,
 mass cherry-pick и перенос старого `.github/workflows/test-tools.yml`. Каждый
 commit обязан указывать source SHA и path allowlist в evidence.
@@ -300,6 +355,10 @@ commit обязан указывать source SHA и path allowlist в evidence.
    отсутствующих классифицировать по разделу 4.
 3. Пересобрать `plugins/nacl/resources/workflows/**`, shared docs,
    graph schemas/queries/scripts и public skill wrappers от текущих источников.
+   В обязательный allowlist refresh входят current-main `nacl-init`,
+   `skills-for-codex/nacl-init`, `docs/configuration.md`, оба VPS/connect
+   runbook, `graph-infra/vps/**`, sidecar scripts, remote scripts/references и
+   обе graph compose templates из раздела 3.1.
 4. Пересчитать `package-index.json`, workflow parity baseline, hash-bound
    deliberate divergences и inventory counts. Нельзя менять expected hash до
    независимого сравнения semantics.
@@ -308,6 +367,13 @@ commit обязан указывать source SHA и path allowlist в evidence.
    а не `старый package -> root`.
 6. Запустить package builder дважды в чистых временных каталогах и сравнить
    trees byte-for-byte.
+7. Отдельно доказать remote contract: `local | create | connect` сохраняются;
+   full host/gateway/sidecar/cert route действительно записывается; marker
+   Cypher parameterized или строго валидирован; Neo4j password остаётся
+   server-side route secret; gateway port выделяется атомарно и уникально.
+8. Удалить независимую per-project authorization semantics из old Codex seed.
+   Если runtime всё ещё требует `ProjectMembership`, генерировать её только как
+   derived projection `principal -> authorized server -> all server projects`.
 
 ### Этап 3 — сохранить Claude generated artifact byte parity
 
@@ -350,11 +416,30 @@ byte-for-byte в Codex package.
 ### Этап 6 — Wave 9 production implementation
 
 Только после `RECONCILIATION_BASE_VERIFIED` продолжать собственно Wave 9:
-production Streamable HTTP MCP, auth/identity/isolation, TLS/domain/CSP,
-revoke/rotation/rate limits, two-user/two-machine checks, backup/restore,
+production Streamable HTTP MCP, OAuth identity → server grants, same-server
+routing/cross-server denial, TLS/domain/CSP, server-wide revoke/rotation/rate
+limits, two-user/two-machine checks, per-project backup/restore,
 publisher/legal/support assets, complete tool annotations, five positive и три
 negative reviewer fixtures, hosted CI/security/SBOM/secret/privacy scans и
 frozen submission bundle. Skills-only fallback запрещён.
+
+Локальная provider-neutral реализация и disposable tests этого этапа разрешены.
+Graph choice не открыт заново: Neo4j 5 Community, один container/volume lineage
+на проект, local или VPS. Обязательные security gates:
+
+- authoritative server `trusted-cns`, а project gateway allow-lists — только
+  generated mirrors;
+- server-wide issue/revoke/provision sync всех gateway;
+- migration union из старых per-project allow-lists только через явные
+  plan/apply + confirmation;
+- grant при partial failure откатывается/не объявляется, revoke при partial
+  failure fail-closed и не оставляет доступный stale gateway;
+- cert подтверждает mTLS transport к серверу, но не раскрывает project Neo4j
+  password; password остаётся route secret на стороне сервиса;
+- operation scopes/roles, destructive confirmations, lease/fencing/CAS и
+  idempotency сохраняются;
+- deny/no-leak tests проходят между разными серверами; переход к другому
+  project на уже разрешённом сервере является положительным сценарием.
 
 Развёртывание, credentials, paid resources и external mutations требуют
 отдельной авторизации; отсутствие этой авторизации — `BLOCKED`, а не повод
@@ -431,13 +516,21 @@ comm -23 before-main-paths.txt candidate-paths.txt
 - Codex contracts, package, closure, docs, CLI/cache/reinstall/uninstall;
 - local graph, multi-project, multi-user/concurrency Docker suites в
   авторизованной disposable среде и нулевая утечка ресурсов;
+- один positive same-server multi-project suite и один negative cross-server
+  no-leak suite; cross-project denial внутри одного сервера считается ошибкой;
+- server-wide trusted-CN migration/issue/revoke/provision suites, включая
+  explicit plan/apply, atomic unique gateway-port allocation и fail-closed
+  partial failure;
+- parameterized/validated create-remote marker, полный persisted route
+  host/gateway/sidecar/cert contract и доказательство, что project password не
+  является public/client input;
 - hosted CI на PR, SBOM/dependency/vulnerability, secret/privacy/license scans.
 
 ### Production Wave 9
 
 - production MCP auth/TLS/domain/CSP and complete tool annotations;
-- two-machine/two-user grant, revoke, stale-session, isolation and abuse/rate
-  tests;
+- two-machine/two-user same-server routing, cross-server denial, server-wide
+  revoke, stale-session and abuse/rate tests;
 - encrypted offsite backup и внешний restore drill;
 - legal/privacy/terms/support/publisher identity and supported-region review;
 - clean reviewer fixtures: exactly five positive and three negative cases;
@@ -464,6 +557,12 @@ comm -23 before-main-paths.txt candidate-paths.txt
   пользовательский файл;
 - mandatory test имеет `FAILED`, необоснованный `SKIPPED` или только локальный
   substitute вместо hosted/production proof;
+- candidate оставляет per-project membership как независимую authorization
+  policy, запрещает same-server selection или выдаёт `project_scope` за grant;
+- trusted CN существует только в несогласованных per-project allow-list, revoke
+  может завершиться success при доступном stale gateway, gateway ports
+  выделяются неатомарно или create-remote интерполирует невалидированные данные
+  в Cypher;
 - нет отдельной авторизации на infrastructure, credentials, paid resource,
   push/PR, merge, portal, tag или publication.
 
@@ -486,4 +585,11 @@ rollback использует заранее проверенные deployment r
 auto-merged runbook проверен и зеркалирован, 24 root-source drift получили
 17 refresh + 7 dispositions, оба plugin trees воспроизводимы, CI ownership
 сохранён, negative-deletion audit пуст и исходный dirty checkout byte-for-byte
-не изменился. Только после этого Wave 9 может строить production artifact.
+не изменился. Rebuilt Codex package уже использует current-main remote-aware
+`nacl-init` и не содержит old-candidate claim «remote outside pilot». Только
+после этого Wave 9 может строить production artifact.
+
+`RECONCILIATION_BASE_VERIFIED` разрешает локальную реализацию, но не означает
+`WAVE_9_VERIFIED`: итоговый статус остаётся заблокирован до frozen Git-release
+journey на второй машине, hosted/production evidence и отдельно разрешённых
+external actions.
