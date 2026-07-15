@@ -52,13 +52,27 @@ function fixture() {
   const templateDir = path.join(skills, "nacl-tl-core/templates");
   const bin = path.join(root, "bin");
   const log = path.join(root, "docker.log");
+  const controlLog = path.join(root, "control.log");
   mkdirSync(vps, { recursive: true });
   mkdirSync(templateDir, { recursive: true });
   mkdirSync(bin, { recursive: true });
-  copyFileSync(controllerSource, path.join(vps, "server-access-control.mjs"));
+  const realController = path.join(vps, "server-access-control.real.mjs");
+  copyFileSync(controllerSource, realController);
+  writeFileSync(path.join(vps, "server-access-control.mjs"), `
+import { appendFileSync } from "node:fs";
+import { spawnSync } from "node:child_process";
+const args = process.argv.slice(2);
+const action = args[0] ?? "missing";
+const cnIndex = args.indexOf("--cn");
+if (process.env.FAKE_CONTROL_LOG) appendFileSync(process.env.FAKE_CONTROL_LOG, \`${'${action}'}:${'${cnIndex >= 0 ? args[cnIndex + 1] : "-"}'}\\n\`);
+if (action === "grant" && process.env.FAIL_GRANT_COMMAND === "1") process.exit(37);
+const result = spawnSync(process.execPath, [${JSON.stringify(realController)}, ...args], { stdio: "inherit", env: process.env });
+process.exit(result.status ?? 1);
+`);
   copyFileSync(path.join(repo, "graph-infra/vps/lib-gateway-quarantine.sh"), path.join(vps, "lib-gateway-quarantine.sh"));
   const authorizationHelper = path.join(repo, "graph-infra/vps/lib-gateway-authorization.sh");
   if (existsSync(authorizationHelper)) copyFileSync(authorizationHelper, path.join(vps, "lib-gateway-authorization.sh"));
+  copyFileSync(path.join(repo, "graph-infra/vps/revoke-client-cert.sh"), path.join(vps, "revoke-client-cert.sh"));
   writeFileSync(path.join(vps, "lib-ca.sh"), `
 ensure_ca() {
   mkdir -p "$CA_DIR"
@@ -79,6 +93,7 @@ issue_client_cert() {
   : > "$2/client.key"
   : > "$2/ca.crt"
 }
+revoke_cert() { :; }
 render_gateway_allowlist() {
   _scope="$(basename "$1")"
   printf 'render:%s\\n' "$_scope" >> "$FAKE_DOCKER_LOG"
@@ -123,7 +138,7 @@ exit 0
     control(cli, state, "provision", ["--scope", scope, "--port", port]);
     writeFileSync(path.join(state, scope, "docker-compose.yml"), "services:\n  gateway: {}\n");
   }
-  return { root, state, skills, cli, bin, log };
+  return { root, state, skills, vps, cli, bin, log, controlLog };
 }
 
 function runProvision(ctx, extraEnv = {}) {
@@ -179,6 +194,90 @@ test("provision grant reload uncertainty physically quarantines every registered
     for (const scope of ["project-a", "project-b", "project-c"]) {
       assert.ok(lines.includes(`stop:${scope}`), `missing physical quarantine for ${scope}: ${lines.join(", ")}`);
     }
+  } finally {
+    rmSync(ctx.root, { recursive: true, force: true });
+  }
+});
+
+test("provision grant command failure best-effort revokes before quarantining every gateway", () => {
+  const ctx = fixture();
+  try {
+    const result = runProvision(ctx, { FAIL_GRANT_COMMAND: "1", FAKE_CONTROL_LOG: ctx.controlLog });
+    assert.notEqual(result.status, 0);
+    const actions = readFileSync(ctx.controlLog, "utf8").trim().split("\n");
+    assert.ok(actions.includes("grant:developer.alice"), actions.join(", "));
+    assert.ok(actions.includes("revoke:developer.alice"), `missing best-effort revoke: ${actions.join(", ")}`);
+    const lines = logLines(ctx);
+    for (const scope of ["project-a", "project-b", "project-c"]) {
+      assert.ok(lines.includes(`stop:${scope}`), `missing physical quarantine for ${scope}: ${lines.join(", ")}`);
+    }
+  } finally {
+    rmSync(ctx.root, { recursive: true, force: true });
+  }
+});
+
+test("state-aware grant renders all projections but never starts disabled or release-pending gateways", () => {
+  const ctx = fixture();
+  try {
+    const quarantined = tryControl(ctx.cli, ctx.state, "quarantine", ["--scope", "project-b", "--reason", "previous-failure"]);
+    assert.notEqual(quarantined.status, 0);
+    const reserved = control(ctx.cli, ctx.state, "reserve", ["--scope", "project-c", "--port", "7445"]);
+    mkdirSync(path.join(ctx.state, "project-c"), { recursive: true });
+    writeFileSync(path.join(ctx.state, "project-c", "docker-compose.yml"), "services:\n  gateway: {}\n");
+    control(ctx.cli, ctx.state, "release", ["--scope", "project-c", "--reservation-token", reserved.reservation_token]);
+    rmSync(ctx.log, { force: true });
+    const script = [
+      `. ${JSON.stringify(path.join(ctx.vps, "lib-ca.sh"))}`,
+      `. ${JSON.stringify(path.join(ctx.vps, "lib-gateway-quarantine.sh"))}`,
+      `. ${JSON.stringify(path.join(ctx.vps, "lib-gateway-authorization.sh"))}`,
+      `STATE_DIR=${JSON.stringify(ctx.state)}`,
+      `SERVER_ID=graph.example.com`,
+      `ACCESS_CONTROL=${JSON.stringify(ctx.cli)}`,
+      `DC='docker compose'`,
+      `grant_and_reload_all_gateways developer.bob`,
+    ].join("\n");
+    const result = spawnSync("/bin/sh", ["-c", script], {
+      encoding: "utf8",
+      env: { ...process.env, PATH: `${ctx.bin}:${process.env.PATH}`, FAKE_DOCKER_LOG: ctx.log },
+    });
+    assert.equal(result.status, 0, result.stderr);
+    const lines = logLines(ctx);
+    for (const scope of ["project-a", "project-b", "project-c"]) assert.ok(lines.includes(`render:${scope}`), lines.join(", "));
+    assert.ok(lines.includes("up:project-a"), lines.join(", "));
+    assert.ok(lines.includes("stop:project-b"), lines.join(", "));
+    assert.ok(lines.includes("stop:project-c"), lines.join(", "));
+    assert.equal(lines.includes("up:project-b"), false, lines.join(", "));
+    assert.equal(lines.includes("up:project-c"), false, lines.join(", "));
+  } finally {
+    rmSync(ctx.root, { recursive: true, force: true });
+  }
+});
+
+test("certificate revoke uses state-aware reconciliation and does not restart a disabled gateway", () => {
+  const ctx = fixture();
+  try {
+    const quarantined = tryControl(ctx.cli, ctx.state, "quarantine", ["--scope", "project-b", "--reason", "previous-failure"]);
+    assert.notEqual(quarantined.status, 0);
+    const certDir = path.join(ctx.state, "clients/developer.alice");
+    mkdirSync(certDir, { recursive: true });
+    writeFileSync(path.join(certDir, "client.crt"), "fixture\n");
+    rmSync(ctx.log, { force: true });
+    const result = spawnSync("/bin/bash", [
+      path.join(ctx.vps, "revoke-client-cert.sh"),
+      "developer.alice",
+      "--state-dir", ctx.state,
+      "--server-id", "graph.example.com",
+    ], {
+      encoding: "utf8",
+      env: { ...process.env, PATH: `${ctx.bin}:${process.env.PATH}`, FAKE_DOCKER_LOG: ctx.log },
+    });
+    assert.equal(result.status, 0, result.stderr);
+    const lines = logLines(ctx);
+    assert.ok(lines.includes("render:project-a"), lines.join(", "));
+    assert.ok(lines.includes("render:project-b"), lines.join(", "));
+    assert.ok(lines.includes("up:project-a"), lines.join(", "));
+    assert.ok(lines.includes("stop:project-b"), lines.join(", "));
+    assert.equal(lines.includes("up:project-b"), false, lines.join(", "));
   } finally {
     rmSync(ctx.root, { recursive: true, force: true });
   }
