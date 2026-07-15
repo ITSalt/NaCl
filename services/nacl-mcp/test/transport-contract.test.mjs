@@ -137,12 +137,32 @@ test("transport challenges advertise the exact scope required by each requested 
       id: name,
       method: "tools/call",
       params: { name, arguments: {} },
-    });
+    }, "Bearer invalid-fixture");
     assert.equal(response.status, 401, name);
     assert.equal(response.headers.get("www-authenticate"), `Bearer resource_metadata="${ctx.metadataUrl}", scope="${scope}"`);
   }
   assert.equal(ctx.graphCalls(), 0);
   assert.equal(ctx.authenticationRejections(), cases.length);
+});
+
+test("unauthenticated malformed transport requests still receive an audited OAuth challenge", async (t) => {
+  const ctx = await fixture();
+  t.after(() => ctx.server.close());
+  const common = { host: new URL(ctx.base).host };
+  const invalidJson = await rawRequest(ctx.base, {
+    headers: { ...common, "content-type": "application/json", accept: "application/json, text/event-stream" },
+    body: "{not-json",
+  });
+  assert.equal(invalidJson.status, 401);
+  assert.equal(invalidJson.headers["www-authenticate"], `Bearer resource_metadata="${ctx.metadataUrl}", scope="nacl.server.read"`);
+  const missingAccept = await rawRequest(ctx.base, {
+    headers: { ...common, "content-type": "application/json" },
+    body: JSON.stringify({ jsonrpc: "2.0", id: 99, method: "tools/list" }),
+  });
+  assert.equal(missingAccept.status, 401);
+  assert.equal(missingAccept.headers["www-authenticate"], `Bearer resource_metadata="${ctx.metadataUrl}", scope="nacl.server.read"`);
+  assert.equal(ctx.authenticationRejections(), 2);
+  assert.equal(ctx.graphCalls(), 0);
 });
 
 test("public catalog is strict, annotated, OAuth-protected, and excludes every local lifecycle capability", async (t) => {

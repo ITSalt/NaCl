@@ -11,7 +11,7 @@ const configuration = {
   resourceUrl: "http://127.0.0.1:39999/mcp",
   resourceMetadataUrl: "http://127.0.0.1:39999/.well-known/oauth-protected-resource",
   authorizationServers: ["https://identity.example.test/"],
-  scopesSupported: ["nacl.server.read"],
+  scopesSupported: ["nacl.server.read", "nacl.server.write", "nacl.server.schema", "nacl.server.backup", "nacl.server.restore"],
   trustedIssuers: ["https://identity.example.test/"],
   allowedOrigins: ["https://chatgpt.com"],
   serverVersion: "0.0.0-test",
@@ -43,7 +43,13 @@ test("deployment composition creates a locally runnable server without embedding
     configuration,
     adapters: {
       async resolveVerifiedToken() { throw new Error("not called by health check"); },
-      controlPlane: { sessionRegistryDurability: "durable", async authorize() {}, async listProjects() {} },
+      controlPlane: {
+        sessionRegistryDurability: "durable",
+        authorizationStateDurability: "durable",
+        authorizationStateScope: "shared",
+        async authorize() {},
+        async listProjects() {},
+      },
       graphAdapter,
       auditSink: { durability: "durable", newSupportRef() {}, async record() {} },
       rateLimiter: { scope: "shared", assert() {} },
@@ -67,6 +73,20 @@ test("deployment composition rejects provider-specific or secret-bearing configu
   }), /configuration is invalid/);
 });
 
+test("deployment composition requires the exact scopes used by the fixed public catalog", () => {
+  assert.throws(() => createNaclMcpService({
+    configuration: { ...configuration, scopesSupported: ["nacl.server.read"] },
+    adapters: {},
+  }), /exactly match the public tool catalog/);
+});
+
+test("deployment composition cannot trust an issuer outside advertised authorization servers", () => {
+  assert.throws(() => createNaclMcpService({
+    configuration: { ...configuration, trustedIssuers: ["https://other-idp.example.test/"] },
+    adapters: {},
+  }), /exactly match the advertised authorizationServers/);
+});
+
 test("deployment composition rejects process-local security state adapters", () => {
   assert.throws(() => createNaclMcpService({
     configuration,
@@ -78,7 +98,27 @@ test("deployment composition rejects process-local security state adapters", () 
       rateLimiter: { scope: "process-local", assert() {} },
       idempotencyLedger: { durability: "process-local", execute() {} },
     },
-  }), /durable idempotency adapters are required/);
+  }), /durable audit\/idempotency\/session\/authorization/);
+});
+
+test("deployment composition rejects durable sessions combined with process-local grants", () => {
+  assert.throws(() => createNaclMcpService({
+    configuration,
+    adapters: {
+      async resolveVerifiedToken() {},
+      controlPlane: {
+        sessionRegistryDurability: "durable",
+        authorizationStateDurability: "process-local",
+        authorizationStateScope: "process-local",
+        async authorize() {},
+        async listProjects() {},
+      },
+      graphAdapter,
+      auditSink: { durability: "durable", newSupportRef() {}, async record() {} },
+      rateLimiter: { scope: "shared", async assert() {} },
+      idempotencyLedger: { durability: "durable", async execute() {} },
+    },
+  }), /durable audit\/idempotency\/session\/authorization/);
 });
 
 test("entrypoint rejects unknown deployment fields before importing a provider adapter", async () => {

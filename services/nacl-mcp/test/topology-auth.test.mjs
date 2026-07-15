@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { createToolApplication } from "../src/application.mjs";
 import { createRedactedAuditSink } from "../src/audit.mjs";
+import { PublicMcpError } from "../src/errors.mjs";
 import { createIdempotencyLedger } from "../src/idempotency.mjs";
 import { createLayeredRateLimiter } from "../src/rate-limit.mjs";
 import { createMemorySessionRegistry, createServerControlPlane } from "../src/server-control.mjs";
@@ -27,6 +28,7 @@ function registry(serverId) {
       if (this.failRevoke) return { status: "BLOCKED", code: "REVOKE_QUARANTINED" };
       return { status: "VERIFIED" };
     },
+    async verifyPrincipal(cn) { return { status: trusted.has(cn) ? "VERIFIED" : "BLOCKED" }; },
     provision(projectScope) { projects.set(projectScope, new Set(trusted)); },
     id: serverId,
   };
@@ -47,9 +49,42 @@ function token(subject, session, epoch, scopes) {
   };
 }
 
-async function fixture({ rateLimit = 100, sessionRegistry = createMemorySessionRegistry({ now: () => 1_500_000 }), auditSink } = {}) {
+function linkFixture() {
+  let sequence = 0;
+  const receipts = new Map();
+  return {
+    issue(expected) {
+      sequence += 1;
+      const receipt = `link_fixture_${String(sequence).padStart(16, "0")}`;
+      receipts.set(receipt, { ...expected, receipt_id: `proof_fixture_${String(sequence).padStart(16, "0")}` });
+      return receipt;
+    },
+    verifier: {
+      async verifyAndConsume({ receipt, ...expected }) {
+        const stored = receipts.get(receipt);
+        receipts.delete(receipt);
+        if (!stored || ["issuer", "subject", "principalId", "certificateCn"].some((key) => stored[key] !== expected[key])) {
+          return { verified: false };
+        }
+        return {
+          verified: true,
+          issuer: stored.issuer,
+          subject: stored.subject,
+          principal_id: stored.principalId,
+          certificate_cn: stored.certificateCn,
+          receipt_id: stored.receipt_id,
+          revision: 1,
+          expires_at: 2_000_000,
+        };
+      },
+    },
+  };
+}
+
+async function fixture({ rateLimit = 100, sessionRegistry = createMemorySessionRegistry({ now: () => 1_500_000 }), auditSink, rateLimiter } = {}) {
   const registryA = registry("server-a");
   const registryB = registry("server-b");
+  const links = linkFixture();
   const tokens = new Map();
   const verify = createInjectedTokenContextVerifier({
     resourceUrl: RESOURCE,
@@ -67,17 +102,21 @@ async function fixture({ rateLimit = 100, sessionRegistry = createMemorySessionR
     ],
     serverRegistries: new Map([["server-a", registryA], ["server-b", registryB]]),
     sessionRegistry,
+    principalLinkVerifier: links.verifier,
+    now: () => 1_500_000,
   });
-  control.registerSubject({ subject: "subject-alice", principalId: "principal-alice", certificateCn: "cn-alice-v1" });
-  control.registerSubject({ subject: "subject-bob", principalId: "principal-bob", certificateCn: "cn-bob-v1" });
-  await control.grantServer({ subject: "subject-alice", serverId: "server-a" });
-  await control.grantServer({ subject: "subject-bob", serverId: "server-b" });
+  const aliceLink = { issuer: ISSUER, subject: "subject-alice", principalId: "principal-alice", certificateCn: "cn-alice-v1" };
+  const bobLink = { issuer: ISSUER, subject: "subject-bob", principalId: "principal-bob", certificateCn: "cn-bob-v1" };
+  await control.registerSubject({ ...aliceLink, linkReceipt: links.issue(aliceLink) });
+  await control.registerSubject({ ...bobLink, linkReceipt: links.issue(bobLink) });
+  await control.grantServer({ issuer: ISSUER, subject: "subject-alice", serverId: "server-a" });
+  await control.grantServer({ issuer: ISSUER, subject: "subject-bob", serverId: "server-b" });
   registryA.provision("scope-a1");
   registryA.provision("scope-a2");
   registryB.provision("scope-b1");
   const allScopes = ["nacl.server.read", "nacl.server.write", "nacl.server.schema", "nacl.server.backup", "nacl.server.restore"];
-  tokens.set("token-alice-session-one", token("subject-alice", "session-alice-1", control.currentTokenEpoch("subject-alice"), allScopes));
-  tokens.set("token-bob-session-one00", token("subject-bob", "session-bob-0001", control.currentTokenEpoch("subject-bob"), allScopes));
+  tokens.set("token-alice-session-one", token("subject-alice", "session-alice-1", await control.currentTokenEpoch(ISSUER, "subject-alice"), allScopes));
+  tokens.set("token-bob-session-one00", token("subject-bob", "session-bob-0001", await control.currentTokenEpoch(ISSUER, "subject-bob"), allScopes));
   const audit = auditSink ?? createRedactedAuditSink({ secret: "a".repeat(64), now: () => 1_500_000 });
   const calls = [];
   const graph = {
@@ -93,14 +132,14 @@ async function fixture({ rateLimit = 100, sessionRegistry = createMemorySessionR
     controlPlane: control,
     graphAdapter: graph,
     auditSink: audit,
-    rateLimiter: createLayeredRateLimiter({ now: () => 1_500_000, limit: rateLimit }),
+    rateLimiter: rateLimiter ?? createLayeredRateLimiter({ now: () => 1_500_000, limit: rateLimit }),
     idempotencyLedger: createIdempotencyLedger(),
     now: () => 1_500_000,
   });
   async function context(raw) {
     return { ...(await verify(`Bearer ${raw}`)), sourceAddress: "127.0.0.1" };
   }
-  return { registryA, registryB, tokens, verify, control, audit, graph, app, context, allScopes };
+  return { registryA, registryB, tokens, verify, control, audit, graph, app, context, allScopes, links };
 }
 
 test("verified OAuth context maps one principal to both projects on server A and denies server B without a graph call", async () => {
@@ -131,15 +170,15 @@ test("project discovery returns only opaque refs and labels from authorized serv
   assert.equal(ctx.graph.calls.length, beforeCalls);
   assert.doesNotMatch(JSON.stringify(listed), /server-a|server-b|scope-a|scope-b/);
 
-  await ctx.control.grantServer({ subject: "subject-alice", serverId: "server-b" });
-  ctx.tokens.set("token-alice-two-servers", token("subject-alice", "session-alice-both", ctx.control.currentTokenEpoch("subject-alice"), ctx.allScopes));
+  await ctx.control.grantServer({ issuer: ISSUER, subject: "subject-alice", serverId: "server-b" });
+  ctx.tokens.set("token-alice-two-servers", token("subject-alice", "session-alice-both", await ctx.control.currentTokenEpoch(ISSUER, "subject-alice"), ctx.allScopes));
   const both = await ctx.context("token-alice-two-servers");
   const across = await ctx.app({ name: "nacl_projects_list", arguments: {}, authContext: both, requiredScope: "nacl.server.read" });
   assert.deepEqual(across.data.projects.map((project) => project.label), ["Alpha", "Beta", "Gamma"]);
 
-  await ctx.control.revokeServer({ subject: "subject-alice", serverId: "server-b" });
+  await ctx.control.revokeServer({ issuer: ISSUER, subject: "subject-alice", serverId: "server-b" });
   await assert.rejects(ctx.app({ name: "nacl_projects_list", arguments: {}, authContext: both, requiredScope: "nacl.server.read" }), (error) => error.code === "REAUTHORIZATION_REQUIRED");
-  ctx.tokens.set("token-alice-after-revoke", token("subject-alice", "session-alice-after", ctx.control.currentTokenEpoch("subject-alice"), ctx.allScopes));
+  ctx.tokens.set("token-alice-after-revoke", token("subject-alice", "session-alice-after", await ctx.control.currentTokenEpoch(ISSUER, "subject-alice"), ctx.allScopes));
   const after = await ctx.context("token-alice-after-revoke");
   const filtered = await ctx.app({ name: "nacl_projects_list", arguments: {}, authContext: after, requiredScope: "nacl.server.read" });
   assert.deepEqual(filtered.data.projects.map((project) => project.label), ["Alpha", "Beta"]);
@@ -156,9 +195,41 @@ test("two principals stay on their granted servers and token claims cannot asser
   assert.equal("certificateCn" in alice, false);
 });
 
+test("the same OIDC subject from a different issuer cannot inherit a server grant", async () => {
+  const ctx = await fixture();
+  const epoch = await ctx.control.currentTokenEpoch(ISSUER, "subject-alice");
+  const forgedIssuer = {
+    ...token("subject-alice", "session-cross-issuer-1", epoch, ["nacl.server.read"]),
+    issuer: "https://other-idp.example.test/",
+    sourceAddress: "127.0.0.1",
+  };
+  const before = ctx.graph.calls.length;
+  await assert.rejects(
+    ctx.app({ name: "nacl_projects_list", arguments: {}, authContext: forgedIssuer, requiredScope: "nacl.server.read" }),
+    (error) => error.code === "REAUTHORIZATION_REQUIRED",
+  );
+  assert.equal(ctx.graph.calls.length, before);
+});
+
+test("an out-of-band authoritative principal revoke removes discovery and authorization immediately", async () => {
+  const ctx = await fixture();
+  const auth = await ctx.context("token-alice-session-one");
+  const initial = await ctx.app({ name: "nacl_projects_list", arguments: {}, authContext: auth, requiredScope: "nacl.server.read" });
+  assert.equal(initial.data.projects.length, 2);
+  ctx.registryA.trusted.clear();
+  const listed = await ctx.app({ name: "nacl_projects_list", arguments: {}, authContext: auth, requiredScope: "nacl.server.read" });
+  assert.deepEqual(listed.data.projects, []);
+  const before = ctx.graph.calls.length;
+  await assert.rejects(
+    ctx.app({ name: "nacl_project_summary", arguments: { project_ref: PROJECT_A1 }, authContext: auth, requiredScope: "nacl.server.read" }),
+    (error) => error.code === "ACCESS_OR_RESOURCE_NOT_FOUND",
+  );
+  assert.equal(ctx.graph.calls.length, before);
+});
+
 test("scope, exact confirmation mapping, idempotency replay, and payload mismatch are enforced", async () => {
   const ctx = await fixture();
-  ctx.tokens.set("token-read-only-0000", token("subject-alice", "session-alice-read", ctx.control.currentTokenEpoch("subject-alice"), ["nacl.server.read"]));
+  ctx.tokens.set("token-read-only-0000", token("subject-alice", "session-alice-read", await ctx.control.currentTokenEpoch(ISSUER, "subject-alice"), ["nacl.server.read"]));
   const readOnly = await ctx.context("token-read-only-0000");
   await assert.rejects(ctx.app({
     name: "nacl_project_mutate",
@@ -239,15 +310,15 @@ test("in-flight idempotency is atomic, conflicts immediately, and failed operati
 test("principal rotation and full-server revoke invalidate stale sessions; partial revoke is still fail-closed", async () => {
   const ctx = await fixture();
   const stale = await ctx.context("token-alice-session-one");
-  assert.equal((await ctx.control.rotatePrincipal({ subject: "subject-alice", nextCertificateCn: "cn-alice-v2" })).status, "VERIFIED");
+  assert.equal((await ctx.control.rotatePrincipal({ issuer: ISSUER, subject: "subject-alice", nextCertificateCn: "cn-alice-v2" })).status, "VERIFIED");
   await assert.rejects(ctx.app({ name: "nacl_project_summary", arguments: { project_ref: PROJECT_A1 }, authContext: stale, requiredScope: "nacl.server.read" }), (error) => error.code === "REAUTHORIZATION_REQUIRED");
-  const rotatedEpoch = ctx.control.currentTokenEpoch("subject-alice");
+  const rotatedEpoch = await ctx.control.currentTokenEpoch(ISSUER, "subject-alice");
   ctx.tokens.set("token-alice-rotated000", token("subject-alice", "session-alice-2", rotatedEpoch, ctx.allScopes));
   const rotated = await ctx.context("token-alice-rotated000");
   assert.equal((await ctx.app({ name: "nacl_project_summary", arguments: { project_ref: PROJECT_A2 }, authContext: rotated, requiredScope: "nacl.server.read" })).status, "VERIFIED");
 
   ctx.registryA.failRevoke = true;
-  const revoked = await ctx.control.revokeServer({ subject: "subject-alice", serverId: "server-a" });
+  const revoked = await ctx.control.revokeServer({ issuer: ISSUER, subject: "subject-alice", serverId: "server-a" });
   assert.deepEqual(revoked.status, "BLOCKED");
   assert.equal(ctx.registryA.trusted.has("cn-alice-v2"), false);
   await assert.rejects(ctx.app({ name: "nacl_project_summary", arguments: { project_ref: PROJECT_A1 }, authContext: rotated, requiredScope: "nacl.server.read" }), (error) => error.code === "REAUTHORIZATION_REQUIRED");
@@ -257,9 +328,9 @@ test("individual OAuth session revocation is immediate and does not affect anoth
   const ctx = await fixture();
   const revoked = await ctx.context("token-alice-session-one");
   assert.equal((await ctx.app({ name: "nacl_project_summary", arguments: { project_ref: PROJECT_A1 }, authContext: revoked, requiredScope: "nacl.server.read" })).status, "VERIFIED");
-  await ctx.control.revokeSession({ subject: "subject-alice", sessionId: "session-alice-1" });
+  await ctx.control.revokeSession({ issuer: ISSUER, subject: "subject-alice", sessionId: "session-alice-1" });
   await assert.rejects(ctx.app({ name: "nacl_project_summary", arguments: { project_ref: PROJECT_A1 }, authContext: revoked, requiredScope: "nacl.server.read" }), (error) => error.code === "REAUTHORIZATION_REQUIRED");
-  ctx.tokens.set("token-alice-session-two", token("subject-alice", "session-alice-2", ctx.control.currentTokenEpoch("subject-alice"), ctx.allScopes));
+  ctx.tokens.set("token-alice-session-two", token("subject-alice", "session-alice-2", await ctx.control.currentTokenEpoch(ISSUER, "subject-alice"), ctx.allScopes));
   const fresh = await ctx.context("token-alice-session-two");
   assert.equal((await ctx.app({ name: "nacl_project_summary", arguments: { project_ref: PROJECT_A2 }, authContext: fresh, requiredScope: "nacl.server.read" })).status, "VERIFIED");
 });
@@ -267,7 +338,7 @@ test("individual OAuth session revocation is immediate and does not affect anoth
 test("preemptive session revoke persists as a tombstone across a reconstructed control plane", async () => {
   const sessionRegistry = createMemorySessionRegistry({ now: () => 1_500_000 });
   const first = await fixture({ sessionRegistry });
-  await first.control.revokeSession({ subject: "subject-alice", sessionId: "session-alice-1" });
+  await first.control.revokeSession({ issuer: ISSUER, subject: "subject-alice", sessionId: "session-alice-1" });
   const firstToken = await first.context("token-alice-session-one");
   await assert.rejects(
     first.app({ name: "nacl_project_summary", arguments: { project_ref: PROJECT_A1 }, authContext: firstToken, requiredScope: "nacl.server.read" }),
@@ -291,13 +362,33 @@ test("new same-server project inherits the authoritative principal set in the di
 
 test("one certificate CN cannot alias two OAuth subjects or be rotated onto another principal", async () => {
   const ctx = await fixture();
-  assert.throws(
-    () => ctx.control.registerSubject({ subject: "subject-charlie", principalId: "principal-charlie", certificateCn: "cn-alice-v1" }),
+  const charlie = { issuer: ISSUER, subject: "subject-charlie", principalId: "principal-charlie", certificateCn: "cn-alice-v1" };
+  await assert.rejects(
+    ctx.control.registerSubject({ ...charlie, linkReceipt: ctx.links.issue(charlie) }),
     /certificate.*already exists/,
   );
   await assert.rejects(
-    ctx.control.rotatePrincipal({ subject: "subject-bob", nextCertificateCn: "cn-alice-v1" }),
+    ctx.control.rotatePrincipal({ issuer: ISSUER, subject: "subject-bob", nextCertificateCn: "cn-alice-v1" }),
     /already bound/,
+  );
+});
+
+test("principal-link receipts reject wrong certificate, wrong issuer, and replay", async () => {
+  const ctx = await fixture();
+  const expected = { issuer: ISSUER, subject: "subject-charlie", principalId: "principal-charlie", certificateCn: "cn-charlie-v1" };
+  const wrongCertificateReceipt = ctx.links.issue(expected);
+  await assert.rejects(
+    ctx.control.registerSubject({ ...expected, certificateCn: "cn-charlie-v2", linkReceipt: wrongCertificateReceipt }),
+    (error) => error.code === "REAUTHORIZATION_REQUIRED",
+  );
+  await assert.rejects(
+    ctx.control.registerSubject({ ...expected, linkReceipt: wrongCertificateReceipt }),
+    (error) => error.code === "REAUTHORIZATION_REQUIRED",
+  );
+  const wrongIssuerReceipt = ctx.links.issue(expected);
+  await assert.rejects(
+    ctx.control.registerSubject({ ...expected, issuer: "https://other-idp.example.test/", linkReceipt: wrongIssuerReceipt }),
+    (error) => error.code === "REAUTHORIZATION_REQUIRED",
   );
 });
 
@@ -362,6 +453,29 @@ test("layered rate limits fail before another graph operation", async () => {
   assert.equal(ctx.graph.calls.length, before);
 });
 
+test("an asynchronous shared limiter rejection is awaited before list or graph responses", async () => {
+  const rejection = new PublicMcpError("RATE_LIMITED", "shared limiter rejected", { httpStatus: 429, retryable: true });
+  const ctx = await fixture({
+    rateLimiter: {
+      async assert() {
+        await Promise.resolve();
+        throw rejection;
+      },
+    },
+  });
+  const auth = await ctx.context("token-alice-session-one");
+  const before = ctx.graph.calls.length;
+  await assert.rejects(
+    ctx.app({ name: "nacl_projects_list", arguments: {}, authContext: auth, requiredScope: "nacl.server.read" }),
+    (error) => error.code === "RATE_LIMITED",
+  );
+  await assert.rejects(
+    ctx.app({ name: "nacl_project_summary", arguments: { project_ref: PROJECT_A1 }, authContext: auth, requiredScope: "nacl.server.read" }),
+    (error) => error.code === "RATE_LIMITED",
+  );
+  assert.equal(ctx.graph.calls.length, before);
+});
+
 test("in-memory test helpers prune expired windows and fail closed at bounded capacity", async () => {
   let current = 0;
   const limiter = createLayeredRateLimiter({ now: () => current, windowMs: 1000, limit: 10, maxKeys: 2 });
@@ -379,11 +493,27 @@ test("in-memory test helpers prune expired windows and fail closed at bounded ca
   );
   current += 60_001;
   await ledger.execute({ principalId: "principal-a", tool: "write", key: "idempotency-bounded-2", payload: { value: 2 }, operation });
+
+  const sessions = createMemorySessionRegistry({ now: () => current, maxEntries: 1 });
+  await sessions.revoke({ issuer: ISSUER, subject: "subject-alice", sessionId: "session-capacity-1" });
+  await assert.rejects(
+    sessions.revoke({ issuer: ISSUER, subject: "subject-alice", sessionId: "session-capacity-2" }),
+    (error) => error.code === "REAUTHORIZATION_REQUIRED" && error.oauthError === "temporarily_unavailable",
+  );
+
+  const audit = createRedactedAuditSink({ secret: "b".repeat(64), maxEvents: 1 });
+  const event = {
+    support_ref: audit.newSupportRef(), actor: "actor", server: "server", project: "project", session: "session",
+    tool: "tool", capability: "capability", decision: "accepted", resultCode: "OK", latencyMs: 0,
+    idempotencyOutcome: "not-applicable",
+  };
+  audit.record(event);
+  assert.throws(() => audit.record({ ...event, support_ref: audit.newSupportRef() }), /audit capacity reached/);
 });
 
 test("token verifier rejects wrong issuer, audience, expiry, not-before, unverified context, and whitespace tokens", async () => {
   const ctx = await fixture();
-  const base = token("subject-alice", "session-negative-1", ctx.control.currentTokenEpoch("subject-alice"), ["nacl.server.read"]);
+  const base = token("subject-alice", "session-negative-1", await ctx.control.currentTokenEpoch(ISSUER, "subject-alice"), ["nacl.server.read"]);
   const cases = {
     wrongIssuer: { ...base, issuer: "https://other.example.test/" },
     wrongAudience: { ...base, audiences: ["https://other.example.test/mcp"] },

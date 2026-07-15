@@ -2,6 +2,7 @@ import { createToolApplication } from "./application.mjs";
 import { createSdkMcpServer } from "./sdk-server.mjs";
 import { createStreamableHttpServer } from "./http-server.mjs";
 import { createInjectedTokenContextVerifier } from "./token-context.mjs";
+import { REQUIRED_SCOPES } from "./contracts.mjs";
 
 const CONFIG_FIELDS = new Set([
   "resourceUrl", "resourceMetadataUrl", "authorizationServers", "scopesSupported",
@@ -19,6 +20,17 @@ function exactConfiguration(value) {
 
 export function validateServiceConfiguration(configuration) {
   const config = exactConfiguration(configuration);
+  if (!Array.isArray(config.scopesSupported) || config.scopesSupported.length !== REQUIRED_SCOPES.length ||
+      new Set(config.scopesSupported).size !== REQUIRED_SCOPES.length ||
+      REQUIRED_SCOPES.some((scope) => !config.scopesSupported.includes(scope))) {
+    throw new TypeError("scopesSupported must exactly match the public tool catalog.");
+  }
+  if (!Array.isArray(config.authorizationServers) || !Array.isArray(config.trustedIssuers) ||
+      config.authorizationServers.length !== config.trustedIssuers.length ||
+      new Set(config.authorizationServers.map((value) => new URL(value).href)).size !== config.authorizationServers.length ||
+      config.trustedIssuers.some((value) => !config.authorizationServers.map((server) => new URL(server).href).includes(new URL(value).href))) {
+    throw new TypeError("trustedIssuers must exactly match the advertised authorizationServers.");
+  }
   if (config.serverVersion !== undefined && (typeof config.serverVersion !== "string" || !/^[0-9]+\.[0-9]+\.[0-9]+(?:[-+][A-Za-z0-9.-]+)?$/.test(config.serverVersion))) {
     throw new TypeError("serverVersion is invalid.");
   }
@@ -57,8 +69,9 @@ export function createNaclMcpService({ configuration, adapters } = {}) {
       typeof auditSink?.newSupportRef !== "function" || typeof auditSink?.record !== "function" ||
       typeof rateLimiter?.assert !== "function" || typeof idempotencyLedger?.execute !== "function" ||
       auditSink.durability !== "durable" || rateLimiter.scope !== "shared" ||
-      idempotencyLedger.durability !== "durable" || controlPlane.sessionRegistryDurability !== "durable") {
-    throw new TypeError("verified-token, control-plane, graph, audit, shared rate-limit, and durable idempotency adapters are required.");
+      idempotencyLedger.durability !== "durable" || controlPlane.sessionRegistryDurability !== "durable" ||
+      controlPlane.authorizationStateDurability !== "durable" || controlPlane.authorizationStateScope !== "shared") {
+    throw new TypeError("verified-token, graph, durable audit/idempotency/session/authorization, and shared rate-limit/authorization adapters are required.");
   }
   const verifyAuthorization = createInjectedTokenContextVerifier({
     resourceUrl: config.resourceUrl,
@@ -90,10 +103,14 @@ export function createNaclMcpService({ configuration, adapters } = {}) {
     });
     return support_ref;
   };
-  const auditAuthenticationRejection = async ({ scope }) => {
+  const auditAuthenticationRejection = async ({ scope, sourceAddress }) => {
+    await rateLimiter.assert([
+      `ip:${sourceAddress ?? "unknown"}`,
+      "tool:oauth-transport",
+    ], 1);
     await auditSink.record({
       support_ref: auditSink.newSupportRef(),
-      actor: "unverified",
+      actor: sourceAddress ?? "unknown",
       server: "unresolved",
       project: "unresolved",
       session: "unverified",

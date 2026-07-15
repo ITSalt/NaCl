@@ -9,14 +9,16 @@ function supportRef() {
   return `support_${randomBytes(16).toString("hex")}`;
 }
 
-export function createRedactedAuditSink({ secret, now = () => Date.now() } = {}) {
+export function createRedactedAuditSink({ secret, now = () => Date.now(), maxEvents = 10_000 } = {}) {
   if (typeof secret !== "string" || secret.length < 32) throw new TypeError("audit secret must be at least 32 characters.");
+  if (!Number.isSafeInteger(maxEvents) || maxEvents < 1) throw new TypeError("audit capacity is invalid.");
   const events = [];
   const pseudonym = (kind, value) => createHmac("sha256", secret).update(`${kind}\0${value}`).digest("hex").slice(0, 32);
   return Object.freeze({
     durability: "process-local",
     newSupportRef: supportRef,
     record({ support_ref, actor, server, project, session, tool, capability, decision, resultCode, latencyMs, idempotencyOutcome }) {
+      if (events.length >= maxEvents) throw new Error("audit capacity reached");
       const event = Object.freeze({
         support_ref,
         timestamp: new Date(now()).toISOString(),

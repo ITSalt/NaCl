@@ -9,12 +9,15 @@ import test from "node:test";
 import { createRedactedAuditSink } from "../src/audit.mjs";
 import { createIdempotencyLedger } from "../src/idempotency.mjs";
 import { createLayeredRateLimiter } from "../src/rate-limit.mjs";
-import { createMemorySessionRegistry, createServerControlPlane } from "../src/server-control.mjs";
+import { createMemoryAuthorizationStateRegistry, createMemorySessionRegistry, createServerControlPlane } from "../src/server-control.mjs";
 import { createNaclMcpService } from "../src/service.mjs";
 import { STABLE_PROTOCOL_VERSION } from "../src/http-server.mjs";
+import { prepareExactNeo4jImage } from "../../../tests/codex-plugin/scripts/neo4j-image-fixture.mjs";
 
 const enabled = process.env.NACL_RUN_DOCKER_SMOKE === "1";
 const image = "neo4j:5.24.2-community";
+const imageId = "sha256:2e7e4eea5bc1eec581a3097c018dfeb3747f3638e67a963c10554825c31c1425";
+const issuer = "https://identity.example.test/";
 const scopes = ["nacl.server.read", "nacl.server.write", "nacl.server.schema", "nacl.server.backup", "nacl.server.restore"];
 const projects = {
   a1: { ref: "prj_DOCKERAAAAAAAAAAA1", scope: "scope-docker-a1", label: "Docker Alpha" },
@@ -74,6 +77,33 @@ function registry() {
     async grantPrincipal(cn) { trusted.add(cn); return { status: "VERIFIED" }; },
     async rotatePrincipal(previous, next) { trusted.delete(previous); trusted.add(next); return { status: "VERIFIED" }; },
     async revokePrincipal(cn) { trusted.delete(cn); return { status: "VERIFIED" }; },
+    async verifyPrincipal(cn) { return { status: trusted.has(cn) ? "VERIFIED" : "BLOCKED" }; },
+  };
+}
+
+function links() {
+  const pending = new Map();
+  let sequence = 0;
+  return {
+    issue(expected) {
+      sequence += 1;
+      const receipt = `link_docker_${String(sequence).padStart(16, "0")}`;
+      pending.set(receipt, expected);
+      return receipt;
+    },
+    verifier: {
+      async verifyAndConsume({ receipt, ...expected }) {
+        const stored = pending.get(receipt);
+        pending.delete(receipt);
+        if (!stored || ["issuer", "subject", "principalId", "certificateCn"].some((key) => stored[key] !== expected[key])) return { verified: false };
+        return {
+          verified: true, issuer: stored.issuer, subject: stored.subject,
+          principal_id: stored.principalId, certificate_cn: stored.certificateCn,
+          receipt_id: `proof_docker_${String(sequence).padStart(16, "0")}`,
+          revision: 1, expires_at: Date.now() + 60_000,
+        };
+      },
+    },
   };
 }
 
@@ -98,10 +128,8 @@ test(
   { skip: !enabled, timeout: 300_000 },
   async () => {
     assert.equal(docker(["version", "--format", "{{.Server.Version}}" ]).status, 0, "Docker daemon is required");
-    assert.equal(docker(["image", "inspect", image]).status, 0, "the exact cached Neo4j fixture image is required; this test never pulls");
-    const version = docker(["run", "--rm", "--entrypoint", "neo4j", image, "--version"]);
-    assert.equal(version.status, 0);
-    assert.match(version.stdout, /5\.24\.2/);
+    const fixtureImage = prepareExactNeo4jImage({ docker, exactImage: image, expectedVersion: "5.24.2" });
+    assert.equal(fixtureImage.identity.id, imageId, "the cached Neo4j fixture must match the recorded immutable image ID");
 
     const root = await mkdtemp(path.join(os.tmpdir(), "nacl-public-mcp-docker-"));
     const unique = `${Date.now()}-${process.pid}`;
@@ -117,6 +145,8 @@ test(
         const name = `nacl-w9-${key}-${unique}`.toLowerCase();
         const volume = `${name}-data`;
         assert.equal(docker(["volume", "create", "--label", `nacl.test.run=${unique}`, "--label", `nacl.test.project=${key}`, volume]).status, 0);
+        const resource = { key, project, serverId, name, volume, containerCreated: false };
+        resources.push(resource);
         const started = docker([
           "run", "--detach", "--name", name,
           "--label", `nacl.test.run=${unique}`,
@@ -128,12 +158,13 @@ test(
           image,
         ]);
         assert.equal(started.status, 0, "disposable Neo4j container failed to start");
+        resource.containerCreated = true;
         const portResult = docker(["port", name, "7474/tcp"]);
         assert.equal(portResult.status, 0);
         const port = Number.parseInt(portResult.stdout.trim().split(":").at(-1), 10);
         assert.ok(Number.isSafeInteger(port) && port > 0);
         const httpUrl = `http://127.0.0.1:${port}`;
-        resources.push({ key, project, serverId, name, volume, port, httpUrl });
+        Object.assign(resource, { port, httpUrl });
         await waitForGraph(httpUrl, password);
         await transaction(httpUrl, password, "CREATE (:Marker {value: $value})", { value: `marker-${key}` });
       }
@@ -143,7 +174,9 @@ test(
 
       const registryA = registry();
       const registryB = registry();
+      const linkProofs = links();
       const sessions = durable(createMemorySessionRegistry(), "durability", "durable");
+      const durableAuthorization = durable(durable(createMemoryAuthorizationStateRegistry(), "durability", "durable"), "scope", "shared");
       const control = createServerControlPlane({
         routes: resources.map((item) => ({
           project_ref: item.project.ref,
@@ -154,17 +187,21 @@ test(
         })),
         serverRegistries: new Map([["server-a", registryA], ["server-b", registryB]]),
         sessionRegistry: sessions,
+        authorizationStateRegistry: durableAuthorization,
+        principalLinkVerifier: linkProofs.verifier,
       });
-      control.registerSubject({ subject: "subject-alice", principalId: "principal-alice", certificateCn: "cn-alice-v1" });
-      control.registerSubject({ subject: "subject-bob", principalId: "principal-bob", certificateCn: "cn-bob-v1" });
-      await control.grantServer({ subject: "subject-alice", serverId: "server-a" });
-      await control.grantServer({ subject: "subject-bob", serverId: "server-b" });
+      const aliceLink = { issuer, subject: "subject-alice", principalId: "principal-alice", certificateCn: "cn-alice-v1" };
+      const bobLink = { issuer, subject: "subject-bob", principalId: "principal-bob", certificateCn: "cn-bob-v1" };
+      await control.registerSubject({ ...aliceLink, linkReceipt: linkProofs.issue(aliceLink) });
+      await control.registerSubject({ ...bobLink, linkReceipt: linkProofs.issue(bobLink) });
+      await control.grantServer({ issuer, subject: "subject-alice", serverId: "server-a" });
+      await control.grantServer({ issuer, subject: "subject-bob", serverId: "server-b" });
 
       const servicePort = await reservePort();
       const base = `http://127.0.0.1:${servicePort}`;
       const tokens = new Map();
-      tokens.set("docker-token-alice-0001", token({ subject: "subject-alice", session: "session-alice-docker-1", epoch: control.currentTokenEpoch("subject-alice"), audience: `${base}/mcp` }));
-      tokens.set("docker-token-bob-000001", token({ subject: "subject-bob", session: "session-bob-docker-0001", epoch: control.currentTokenEpoch("subject-bob"), audience: `${base}/mcp` }));
+      tokens.set("docker-token-alice-0001", token({ subject: "subject-alice", session: "session-alice-docker-1", epoch: await control.currentTokenEpoch(issuer, "subject-alice"), audience: `${base}/mcp` }));
+      tokens.set("docker-token-bob-000001", token({ subject: "subject-bob", session: "session-bob-docker-0001", epoch: await control.currentTokenEpoch(issuer, "subject-bob"), audience: `${base}/mcp` }));
       let graphCalls = 0;
       const endpointByScope = new Map(resources.map((item) => [item.project.scope, item.httpUrl]));
       const graphAdapter = {
@@ -240,17 +277,17 @@ test(
       assert.equal(bob.result.structuredContent.data.summary, "marker-b1");
 
       const stale = "docker-token-alice-0001";
-      assert.equal((await control.rotatePrincipal({ subject: "subject-alice", nextCertificateCn: "cn-alice-v2" })).status, "VERIFIED");
+      assert.equal((await control.rotatePrincipal({ issuer, subject: "subject-alice", nextCertificateCn: "cn-alice-v2" })).status, "VERIFIED");
       const staleRotation = await call(stale, "nacl_project_summary", { project_ref: projects.a1.ref });
       assert.equal(staleRotation.result.structuredContent.code, "REAUTHORIZATION_REQUIRED");
-      tokens.set("docker-token-alice-0002", token({ subject: "subject-alice", session: "session-alice-docker-2", epoch: control.currentTokenEpoch("subject-alice"), audience: `${base}/mcp` }));
+      tokens.set("docker-token-alice-0002", token({ subject: "subject-alice", session: "session-alice-docker-2", epoch: await control.currentTokenEpoch(issuer, "subject-alice"), audience: `${base}/mcp` }));
       const rotated = await call("docker-token-alice-0002", "nacl_project_summary", { project_ref: projects.a2.ref });
       assert.equal(rotated.result.structuredContent.data.summary, "marker-a2");
 
-      assert.equal((await control.revokeServer({ subject: "subject-alice", serverId: "server-a" })).status, "VERIFIED");
+      assert.equal((await control.revokeServer({ issuer, subject: "subject-alice", serverId: "server-a" })).status, "VERIFIED");
       const staleRevoke = await call("docker-token-alice-0002", "nacl_project_summary", { project_ref: projects.a1.ref });
       assert.equal(staleRevoke.result.structuredContent.code, "REAUTHORIZATION_REQUIRED");
-      tokens.set("docker-token-alice-0003", token({ subject: "subject-alice", session: "session-alice-docker-3", epoch: control.currentTokenEpoch("subject-alice"), audience: `${base}/mcp` }));
+      tokens.set("docker-token-alice-0003", token({ subject: "subject-alice", session: "session-alice-docker-3", epoch: await control.currentTokenEpoch(issuer, "subject-alice"), audience: `${base}/mcp` }));
       const afterRevoke = await call("docker-token-alice-0003", "nacl_projects_list", {});
       assert.deepEqual(afterRevoke.result.structuredContent.data.projects, []);
       assert.deepEqual([...registryA.trusted], []);
@@ -258,7 +295,7 @@ test(
     } finally {
       if (server) await new Promise((resolve) => server.close(resolve));
       for (const item of resources.reverse()) {
-        docker(["container", "rm", "--force", item.name]);
+        if (item.containerCreated) docker(["container", "rm", "--force", item.name]);
         docker(["volume", "rm", item.volume]);
         assert.notEqual(docker(["container", "inspect", item.name]).status, 0);
         assert.notEqual(docker(["volume", "inspect", item.volume]).status, 0);

@@ -32,7 +32,12 @@ export function createToolApplication({ controlPlane, graphAdapter, auditSink, r
   return async function callTool({ name, arguments: args, authContext, requiredScope }) {
     const started = now();
     const support_ref = auditSink.newSupportRef();
-    let route = { principalId: "unknown", serverId: "unknown", projectRef: args.project_ref, sessionId: authContext?.sessionId ?? "unknown" };
+    let route = {
+      principalId: authContext?.issuer && authContext?.subject ? `${authContext.issuer}\0${authContext.subject}` : "unknown",
+      serverId: "unknown",
+      projectRef: args.project_ref,
+      sessionId: authContext?.sessionId ?? "unknown",
+    };
     let resultCode = "INTERNAL_ERROR";
     let decision = "rejected";
     let idempotencyOutcome = "not-applicable";
@@ -40,15 +45,15 @@ export function createToolApplication({ controlPlane, graphAdapter, auditSink, r
     try {
       if (!operation) throw new PublicMcpError("TOOL_NOT_ALLOWED", "The public tool is not allowed.");
       if (!authContext?.scopes?.includes(requiredScope)) throw new ReauthorizationRequired({ scope: requiredScope });
+      await rateLimiter.assert([
+        `ip:${authContext.sourceAddress ?? "direct"}`,
+        `subject:${authContext.issuer}\0${authContext.subject}`,
+        `session:${authContext.sessionId}`,
+        `tool:${name}`,
+      ], operation.cost);
       if (operation.method === "listProjects") {
         const listing = await controlPlane.listProjects({ tokenContext: authContext });
         route = { principalId: listing.principalId, serverId: "authorized-server-set", projectRef: "project-list", sessionId: listing.sessionId };
-        rateLimiter.assert([
-          `ip:${authContext.sourceAddress ?? "direct"}`,
-          `subject:${authContext.subject}`,
-          `session:${authContext.sessionId}`,
-          `tool:${name}`,
-        ], operation.cost);
         decision = "accepted";
         resultCode = "OPERATION_COMPLETED";
         return {
@@ -62,13 +67,9 @@ export function createToolApplication({ controlPlane, graphAdapter, auditSink, r
         };
       }
       route = await controlPlane.authorize({ tokenContext: authContext, projectRef: args.project_ref, capability: operation.capability, toolClass: operation.toolClass, ...(operation.confirmation ? { confirmation: operation.confirmation } : {}) });
-      rateLimiter.assert([
-        `ip:${authContext.sourceAddress ?? "direct"}`,
-        `subject:${authContext.subject}`,
-        `session:${authContext.sessionId}`,
+      await rateLimiter.assert([
         `server:${route.serverId}`,
         `project:${route.projectRef}`,
-        `tool:${name}`,
       ], operation.cost);
       const invoke = () => graphAdapter[operation.method]({
         route: Object.freeze({

@@ -128,6 +128,39 @@ export function createStreamableHttpServer({
       if (["GET", "DELETE"].includes(request.method ?? "")) return jsonRpcMethodNotAllowed(response);
       if (request.method !== "POST") return jsonRpcMethodNotAllowed(response);
 
+      // The protected resource must authenticate before returning transport
+      // parsing details. For a presented token we perform only a bounded body
+      // read first so an invalid token can still receive the exact tool scope;
+      // any parse error is deferred until after successful authentication.
+      let message;
+      let bodyError;
+      if (request.headers.authorization !== undefined) {
+        try {
+          message = await readJson(request);
+        } catch (error) {
+          bodyError = error;
+        }
+      }
+      let verified;
+      try {
+        verified = await verifyAuthorization(request.headers.authorization);
+      } catch {
+        const scope = requestScope(message);
+        try {
+          await auditAuthenticationRejection({
+            scope,
+            sourceAddress: request.socket.remoteAddress ?? "unknown",
+          });
+        } catch {
+          return empty(response, 503);
+        }
+        return empty(response, 401, {
+          "www-authenticate": transportChallenge({ resourceMetadataUrl: metadataUrl, scope }),
+        });
+      }
+      if (message === undefined && bodyError === undefined) message = await readJson(request);
+      if (bodyError) throw bodyError;
+
       if (!hasRequiredAccept(request.headers.accept)) {
         return json(response, 406, { jsonrpc: "2.0", error: { code: -32000, message: "Not Acceptable." }, id: null });
       }
@@ -137,26 +170,12 @@ export function createStreamableHttpServer({
       if (request.headers["mcp-session-id"] !== undefined) {
         return json(response, 400, { jsonrpc: "2.0", error: { code: -32000, message: "This endpoint uses stateless MCP transport." }, id: null });
       }
-      const message = await readJson(request);
       const protocolVersion = request.headers["mcp-protocol-version"];
       if (isInitialization(message) && message.params?.protocolVersion !== STABLE_PROTOCOL_VERSION) {
         return json(response, 400, { jsonrpc: "2.0", error: { code: -32000, message: "Unsupported MCP protocol version." }, id: message.id ?? null });
       }
       if (!isInitialization(message) && protocolVersion !== STABLE_PROTOCOL_VERSION) {
         return json(response, 400, { jsonrpc: "2.0", error: { code: -32000, message: protocolVersion === undefined ? "MCP-Protocol-Version is required after initialization." : "Unsupported MCP protocol version." }, id: message.id ?? null });
-      }
-      let verified;
-      try {
-        verified = await verifyAuthorization(request.headers.authorization);
-      } catch {
-        try {
-          await auditAuthenticationRejection({ scope: requestScope(message) });
-        } catch {
-          return empty(response, 503);
-        }
-        return empty(response, 401, {
-          "www-authenticate": transportChallenge({ resourceMetadataUrl: metadataUrl, scope: requestScope(message) }),
-        });
       }
       const authContext = Object.freeze({
         ...verified,
