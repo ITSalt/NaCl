@@ -44,7 +44,7 @@ field, infrastructure fields, or raw debug payloads.
 
 | ID | Attempt | Required safe outcome |
 |---|---|---|
-| N1 | Missing, expired, or wrong-audience transport authorization; stale or revoked accepted session | Invalid transport authorization: empty HTTP 401 plus Bearer challenge and no MCP result. Stale/revoked accepted session: HTTP 200 MCP `isError`, `REAUTHORIZATION_REQUIRED`, and `mcp/www_authenticate`. Both make zero graph calls. |
+| N1 | Missing, expired, or wrong-audience transport authorization; stale or revoked accepted session | Invalid transport authorization: empty HTTP 401 plus Bearer challenge and no MCP result. Stale/revoked accepted session: HTTP 200 MCP `isError`, `REAUTHORIZATION_REQUIRED`, and `mcp/www_authenticate` with `error="invalid_token"`. Both make zero graph calls. |
 | N2 | Opaque project reference outside authorized grants | HTTP 200 MCP `isError` with `ACCESS_OR_RESOURCE_NOT_FOUND`, zero graph calls, no existence disclosure. The internal application status 403 is not the wire status. |
 | N3 | Arbitrary query, active-project deletion, audit bypass, and external publication | Conversational refusal with zero tool calls and no MCP result; explain the closed supported path |
 

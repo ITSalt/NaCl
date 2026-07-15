@@ -368,7 +368,7 @@
         "wwwAuthenticate": {
           "scheme": "Bearer",
           "resourceMetadata": "RUNTIME_PROTECTED_RESOURCE_METADATA_URL",
-          "error": "insufficient_scope",
+          "error": "invalid_token",
           "errorDescription": "Authorization is required for this capability.",
           "scope": "nacl.server.read"
         },

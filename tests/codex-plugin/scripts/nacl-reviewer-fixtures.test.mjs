@@ -12,6 +12,7 @@ import { PublicMcpError, ReauthorizationRequired } from "../../../services/nacl-
 import { createStreamableHttpServer, STABLE_PROTOCOL_VERSION } from "../../../services/nacl-mcp/src/http-server.mjs";
 import { validateSchema } from "../../../services/nacl-mcp/src/json-schema.mjs";
 import { createSdkMcpServer } from "../../../services/nacl-mcp/src/sdk-server.mjs";
+import { createMemorySessionRegistry, createServerControlPlane } from "../../../services/nacl-mcp/src/server-control.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
 const sourceRoot = path.join(repoRoot, "codex-plugin-src", "package");
@@ -132,7 +133,7 @@ async function deterministicNegativeWireFixture() {
       },
       async authorize({ tokenContext, projectRef }) {
         if (["stale-fixture", "revoked-fixture"].includes(tokenContext.sessionId)) {
-          throw new ReauthorizationRequired({ scope: "nacl.server.read" });
+          throw new ReauthorizationRequired({ error: "invalid_token", scope: "nacl.server.read" });
         }
         if (projectRef === "prj_DEMORESTRICTED0001") {
           throw new PublicMcpError("ACCESS_OR_RESOURCE_NOT_FOUND", "Access or project route was not found.", { httpStatus: 403 });
@@ -189,6 +190,95 @@ async function deterministicNegativeWireFixture() {
     toolCalls: () => supportIndex,
     graphCalls: () => graphCalls,
   };
+}
+
+async function actualServerControlReauthorizationErrors() {
+  const issuer = "https://identity.invalid/";
+  const subject = "reviewer-subject";
+  const principalId = "reviewer-principal";
+  const trusted = new Set();
+  const registry = {
+    async grantPrincipal(certificateCn) {
+      trusted.add(certificateCn);
+      return { status: "VERIFIED" };
+    },
+    async rotatePrincipal(previousCertificateCn, nextCertificateCn) {
+      trusted.delete(previousCertificateCn);
+      trusted.add(nextCertificateCn);
+      return { status: "VERIFIED" };
+    },
+    async revokePrincipal(certificateCn) {
+      trusted.delete(certificateCn);
+      return { status: "VERIFIED" };
+    },
+    async verifyPrincipal(certificateCn) {
+      return { status: trusted.has(certificateCn) ? "VERIFIED" : "BLOCKED" };
+    },
+  };
+  const control = createServerControlPlane({
+    routes: [{
+      project_ref: "prj_DEMOALPHA00000001",
+      server_id: "fixture-server",
+      project_scope: "fixture-project-scope",
+      label: "Demo Alpha",
+      enabled: true,
+    }],
+    serverRegistries: new Map([["fixture-server", registry]]),
+    sessionRegistry: createMemorySessionRegistry({ now: () => 1_500_000 }),
+    principalLinkVerifier: {
+      async verifyAndConsume({ issuer: verifiedIssuer, subject: verifiedSubject, principalId: verifiedPrincipal, certificateCn }) {
+        return {
+          verified: true,
+          issuer: verifiedIssuer,
+          subject: verifiedSubject,
+          principal_id: verifiedPrincipal,
+          certificate_cn: certificateCn,
+          receipt_id: "proof_fixture_0000000000000001",
+          revision: 1,
+          expires_at: 2_000_000,
+        };
+      },
+    },
+    now: () => 1_500_000,
+  });
+  await control.registerSubject({
+    issuer,
+    subject,
+    principalId,
+    certificateCn: "fixture-cn-v1",
+    linkReceipt: "link_fixture_0000000000000001",
+  });
+  await control.grantServer({ issuer, subject, serverId: "fixture-server" });
+  const tokenContext = (sessionId, tokenEpoch) => ({
+    verified: true,
+    issuer,
+    subject,
+    sessionId,
+    tokenEpoch,
+    expiresAt: 2_000,
+  });
+  const stale = tokenContext("session-stale-0001", await control.currentTokenEpoch(issuer, subject));
+  await control.listProjects({ tokenContext: stale });
+  await control.rotatePrincipal({ issuer, subject, nextCertificateCn: "fixture-cn-v2" });
+  let staleError;
+  try {
+    await control.listProjects({ tokenContext: stale });
+  } catch (error) {
+    staleError = error;
+  }
+
+  const revoked = tokenContext("session-revoked-0001", await control.currentTokenEpoch(issuer, subject));
+  await control.listProjects({ tokenContext: revoked });
+  await control.revokeSession({ issuer, subject, sessionId: revoked.sessionId, expiresAt: Number.MAX_SAFE_INTEGER });
+  let revokedError;
+  try {
+    await control.listProjects({ tokenContext: revoked });
+  } catch (error) {
+    revokedError = error;
+  }
+  assert.ok(staleError instanceof ReauthorizationRequired);
+  assert.ok(revokedError instanceof ReauthorizationRequired);
+  return [staleError.oauthError, revokedError.oauthError];
 }
 
 async function postTool(base, token, projectRef) {
@@ -308,6 +398,10 @@ test("negative cases match the actual transport and MCP wire contracts without g
   const summaryOutputSchema = TOOL_BY_NAME.get("nacl_project_summary").outputSchema;
 
   assert.deepEqual(authentication.expectedSessionReauthorization.cases, ["stale-rotation", "revoked-session"]);
+  assert.deepEqual(
+    await actualServerControlReauthorizationErrors(),
+    authentication.expectedSessionReauthorization.cases.map(() => authentication.expectedSessionReauthorization.wwwAuthenticate.error),
+  );
   assert.deepEqual(
     authentication.expectedSessionReauthorization.expectedMcpResults.map((item) => item.case),
     authentication.expectedSessionReauthorization.cases,

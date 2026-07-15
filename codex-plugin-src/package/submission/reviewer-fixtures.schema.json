@@ -208,7 +208,7 @@
       "properties": {
         "scheme": { "const": "Bearer" },
         "resourceMetadata": { "const": "RUNTIME_PROTECTED_RESOURCE_METADATA_URL" },
-        "error": { "const": "insufficient_scope" },
+        "error": { "const": "invalid_token" },
         "errorDescription": { "const": "Authorization is required for this capability." },
         "scope": { "type": "string", "pattern": "^nacl\\.server\\.(read|write|schema|backup|restore)$" }
       }

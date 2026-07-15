@@ -15,9 +15,9 @@
   "reviewerFixtureSet": {
     "version": "nacl-reviewer-fixtures-v1",
     "path": "./submission/reviewer-fixtures.json",
-    "sha256": "ed49709629b3e943fd7af7ac49e6961e27878949fcbbae5452e0a342ebf15bf9",
+    "sha256": "848f76c9ddb59af55c8bc52e14fe8bd9657b5b07d22fa84925b0fdbf25c67c15",
     "schemaPath": "./submission/reviewer-fixtures.schema.json",
-    "schemaSha256": "74d9be146d65135519e91e1d505a98d0f8487ada2773d05bc012d4ad5cfdb5dd",
+    "schemaSha256": "0b48a73f9e4df903716d497128b038becf79ba4e36cd3d22d18377e015481f24",
     "positiveCount": 5,
     "negativeCount": 3,
     "localStatus": "VERIFIED_CONTRACT_ONLY",
