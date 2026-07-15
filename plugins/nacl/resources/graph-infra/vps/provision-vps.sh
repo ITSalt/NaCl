@@ -62,12 +62,24 @@ RESERVATION_ACTIVE=1
 rollback_reservation() {
   _nacl_status=$?
   if [ "$_nacl_status" -ne 0 ] && [ "${RESERVATION_ACTIVE:-0}" -eq 1 ]; then
-    if [ -f "${GRAPH_DIR:-}/docker-compose.yml" ]; then
-      (cd "$GRAPH_DIR" && $DC down --volumes --remove-orphans >/dev/null 2>&1) || true
+    _nacl_release_prepared=1
+    if ! node "$ACCESS_CONTROL" release --state-dir "$STATE_DIR" --server-id "$HOST" \
+      --scope "$SCOPE" --reservation-token "$RESERVATION_TOKEN" >/dev/null 2>&1; then
+      echo "CRITICAL: failed to prepare gateway reservation release for $SCOPE" >&2
+      _nacl_release_prepared=0
     fi
-    node "$ACCESS_CONTROL" release --state-dir "$STATE_DIR" --server-id "$HOST" \
-      --scope "$SCOPE" --reservation-token "$RESERVATION_TOKEN" >/dev/null 2>&1 || \
-      echo "CRITICAL: failed to release gateway reservation for $SCOPE" >&2
+    _nacl_down_verified=1
+    if [ "$_nacl_release_prepared" -eq 1 ] && [ -f "${GRAPH_DIR:-}/docker-compose.yml" ]; then
+      if ! (cd "$GRAPH_DIR" && $DC down --volumes --remove-orphans >/dev/null 2>&1); then
+        echo "CRITICAL: failed to stop gateway reservation for $SCOPE; reservation and port retained" >&2
+        _nacl_down_verified=0
+      fi
+    fi
+    if [ "$_nacl_release_prepared" -eq 1 ] && [ "$_nacl_down_verified" -eq 1 ]; then
+      node "$ACCESS_CONTROL" release-commit --state-dir "$STATE_DIR" --server-id "$HOST" \
+        --scope "$SCOPE" --reservation-token "$RESERVATION_TOKEN" >/dev/null 2>&1 || \
+        echo "CRITICAL: failed to remove owned artifacts for $SCOPE; reservation and port retained" >&2
+    fi
   fi
   return "$_nacl_status"
 }
@@ -85,6 +97,12 @@ ensure_ca || fail ca
 issue_server_cert "$HOST" "$CERT_DIR" || fail server-cert
 cp "$CA_DIR/crl.pem" "$CERT_DIR/crl.pem" 2>/dev/null || gen_crl && cp "$CA_DIR/crl.pem" "$CERT_DIR/crl.pem"
 
+SERVER_ID="$HOST"
+# shellcheck source=/dev/null
+. "$SKILLS_DIR/graph-infra/vps/lib-gateway-quarantine.sh"
+# shellcheck source=/dev/null
+. "$SKILLS_DIR/graph-infra/vps/lib-gateway-authorization.sh"
+
 # 4. write .env + compose, bring the stack up
 PASSWORD_FILE="$GRAPH_DIR/.neo4j-password"
 if [ ! -f "$PASSWORD_FILE" ]; then openssl rand -hex 24 > "$PASSWORD_FILE"; chmod 600 "$PASSWORD_FILE"; fi
@@ -98,15 +116,15 @@ EOF
 chmod 600 "$GRAPH_DIR/.env"
 cp "$SKILLS_DIR/nacl-tl-core/templates/graph-docker-compose.vps.yml" "$GRAPH_DIR/docker-compose.yml" || fail copy-compose
 
-# Grant the first principal at the SERVER boundary. The scope/port was reserved
-# before any project artifact; activation occurs only after every readiness gate.
-# trusted-cns is authoritative; every project allowed-cns file is only its generated projection.
-node "$ACCESS_CONTROL" grant --state-dir "$STATE_DIR" --server-id "$HOST" \
-  --cn "$FIRST_DEV" >/dev/null || fail server-grant
-render_gateway_allowlist "$GRAPH_DIR" || fail render-allowlist
-
 CONTAINER="$PREFIX-neo4j"
-( cd "$GRAPH_DIR" && $DC up -d ) || fail compose-up
+
+# Grant the first principal at the SERVER boundary. Success requires projection
+# render and compose reload for every registered gateway, including this reserved
+# gateway. Any grant/reload uncertainty physically quarantines every gateway.
+if ! grant_and_reload_all_gateways "$FIRST_DEV"; then
+  echo "CRITICAL: server-wide grant boundary failed ($NACL_AUTHORIZATION_FAILURE); critical_unresolved=$NACL_CRITICAL_UNRESOLVED" >&2
+  fail server-grant-reload
+fi
 
 # wait for neo4j healthy
 i=0; HEALTH="starting"

@@ -43,25 +43,12 @@ ACCESS_CONTROL="$HERE/server-access-control.mjs"
 GW_APPLIED="yes"; DC="docker compose"; docker compose version >/dev/null 2>&1 || DC="docker-compose"
 # shellcheck source=/dev/null
 . "$HERE/lib-gateway-quarantine.sh"
-if ! node "$ACCESS_CONTROL" grant --state-dir "$STATE_DIR" --server-id "$SERVER_ID" --cn "$DEV" >/dev/null; then
-  CRITICAL_UNRESOLVED="no"
-  quarantine_all_gateways grant-rollback-uncertain || CRITICAL_UNRESOLVED="yes"
-  echo "ERROR: server-wide grant failed; every registered gateway required physical quarantine" >&2
-  printf '\nNACL_CERT_RESULT: status=BLOCKED dev=%s out=%s gateway_applied=no critical_unresolved=%s\n' "$DEV" "$OUT" "$CRITICAL_UNRESOLVED"
-  exit 1
-fi
-for compose in "$STATE_DIR"/*/docker-compose.yml; do
-  [ -f "$compose" ] || continue
-  GRAPH_DIR="$(dirname "$compose")"
-  render_gateway_allowlist "$GRAPH_DIR" || GW_APPLIED="no"
-  ( cd "$GRAPH_DIR" && $DC up -d ) || GW_APPLIED="no"
-done
-if [ "$GW_APPLIED" != "yes" ]; then
-  node "$ACCESS_CONTROL" revoke --state-dir "$STATE_DIR" --server-id "$SERVER_ID" --cn "$DEV" >/dev/null 2>&1 || true
-  CRITICAL_UNRESOLVED="no"
-  quarantine_all_gateways grant-reload-failed || CRITICAL_UNRESOLVED="yes"
-  echo "ERROR: server-wide gateway reload failed; grant was rolled back and gateways quarantined" >&2
-  printf '\nNACL_CERT_RESULT: status=BLOCKED dev=%s out=%s gateway_applied=no critical_unresolved=%s\n' "$DEV" "$OUT" "$CRITICAL_UNRESOLVED"
+# shellcheck source=/dev/null
+. "$HERE/lib-gateway-authorization.sh"
+if ! grant_and_reload_all_gateways "$DEV"; then
+  GW_APPLIED="no"
+  echo "ERROR: server-wide grant boundary failed ($NACL_AUTHORIZATION_FAILURE); every registered gateway required physical quarantine" >&2
+  printf '\nNACL_CERT_RESULT: status=BLOCKED dev=%s out=%s gateway_applied=no critical_unresolved=%s\n' "$DEV" "$OUT" "$NACL_CRITICAL_UNRESOLVED"
   exit 1
 fi
 

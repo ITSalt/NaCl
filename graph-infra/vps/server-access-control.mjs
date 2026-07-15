@@ -185,7 +185,7 @@ function controller(options) {
         const inventory = readInventory();
         const projectScope = id(scope, "project_scope");
         const gateway = inventory.gateways.find((entry) => entry.project_scope === projectScope);
-        if (!gateway || gateway.provisioning !== true || gateway.reservation_token !== reservationToken) die("RESERVATION_MISMATCH", "gateway reservation is missing or stale");
+        if (!gateway || gateway.provisioning !== true || gateway.release_pending === true || gateway.reservation_token !== reservationToken) die("RESERVATION_MISMATCH", "gateway reservation is missing or stale");
         project(readTrusted(), gateway);
         gateway.enabled = true;
         gateway.provisioning = false;
@@ -199,12 +199,31 @@ function controller(options) {
       return locked(() => {
         const inventory = readInventory();
         const projectScope = id(scope, "project_scope");
+        const gateway = inventory.gateways.find((entry) => entry.project_scope === projectScope);
+        if (!gateway || gateway.provisioning !== true || gateway.reservation_token !== reservationToken) die("RESERVATION_MISMATCH", "gateway reservation is missing or stale");
+        gateway.enabled = false;
+        gateway.release_pending = true;
+        gateway.quarantine_reason = "release-pending";
+        writeInventory(inventory);
+        return { status: "PENDING", code: "GATEWAY_RESERVATION_RELEASE_PENDING", project_scope: projectScope, gateway_port: gateway.gateway_port };
+      });
+    },
+    releaseCommit(scope, reservationToken) {
+      return locked(() => {
+        const inventory = readInventory();
+        const projectScope = id(scope, "project_scope");
         const index = inventory.gateways.findIndex((entry) => entry.project_scope === projectScope);
         const gateway = inventory.gateways[index];
-        if (!gateway || gateway.provisioning !== true || gateway.reservation_token !== reservationToken) die("RESERVATION_MISMATCH", "gateway reservation is missing or stale");
+        if (!gateway || gateway.provisioning !== true || gateway.release_pending !== true || gateway.reservation_token !== reservationToken) die("RESERVATION_MISMATCH", "gateway release is missing or stale");
+        const projectDir = path.dirname(projectFile(projectScope));
+        try {
+          rmSync(projectDir, { recursive: true, force: true });
+        } catch (error) {
+          die("OWNED_ARTIFACT_CLEANUP_FAILED", `owned project artifacts could not be removed: ${error.message}`);
+        }
+        if (existsSync(projectDir)) die("OWNED_ARTIFACT_CLEANUP_FAILED", "owned project artifacts still exist after cleanup");
         inventory.gateways.splice(index, 1);
         writeInventory(inventory);
-        rmSync(path.dirname(projectFile(projectScope)), { recursive: true, force: true });
         return { status: "VERIFIED", code: "GATEWAY_RESERVATION_RELEASED", project_scope: projectScope, gateway_port: gateway.gateway_port };
       });
     },
@@ -263,6 +282,7 @@ try {
   else if (action === "reserve") result = api.reserve(options.scope, options.port);
   else if (action === "activate") result = api.activate(options.scope, options["reservation-token"]);
   else if (action === "release") result = api.release(options.scope, options["reservation-token"]);
+  else if (action === "release-commit") result = api.releaseCommit(options.scope, options["reservation-token"]);
   else if (action === "grant") result = api.grant(options.cn);
   else if (action === "revoke") result = api.revoke(options.cn);
   else if (action === "quarantine") result = api.quarantine(options.scope, options.reason);
