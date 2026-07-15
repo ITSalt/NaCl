@@ -60,7 +60,7 @@ modules:
 graph:
   neo4j_bolt_port: 3587
   neo4j_http_port: 3574
-  neo4j_password: "<generated-by-nacl-local-init>"
+  neo4j_password: "${NEO4J_PASSWORD}"
   container_prefix: "my-project"
   boards_dir: "graph-infra/boards"
 
@@ -367,6 +367,29 @@ If `config.yaml` is missing entirely, all fields fall back to their defaults. Sk
 
 A literal branch name in a git command inside a shell code fence is rejected by CI (`scripts/check-branch-literals.sh`, wired into `Lint Skills`). Prose, output blocks, and prohibition rules ("never `git checkout main`") are not flagged; if a literal is genuinely intentional, append `# branch-literal-ok` to that line. The runtime counterpart of this rule — what to do when you *find* such a hardcoded value in an existing skill — is in `nacl-tl-core/references/tl-protocol.md`, § 8 "Дефекты в глобальных скиллах (выноси и жди)" ("Skill / framework defects — surface and wait").
 
+## Codex Plugin and Public Service
+
+### Local installed candidate
+
+The full Codex plugin reads the same project `config.yaml`; it does not add a
+second project configuration schema. The verified local candidate resolves a
+project, then uses named gateway operations and runtime-resolved credentials.
+Local stdio is an installed-candidate and development transport. The normal
+user installs the full plugin through the Codex UI, while the skills-only
+layout is compatibility-only.
+
+### Production boundary
+
+No public-only Codex settings are active yet. The Streamable HTTP endpoint,
+OAuth deployment, domain, release, and marketplace submission are `NOT_RUN`,
+so this reference does not invent fields for them. The production gateway must
+authenticate an OAuth principal, map it to an allowed Neo4j server, allow
+same-server project selection, and deny cross-server routing. The current
+authorization boundary is the server: access to it implies access to all
+project databases hosted there. `graph.project_scope` is routing/provenance,
+not authorization. Secrets remain in runtime secret stores or environment;
+they are never package data or committed config.
+
 ---
 
 ## Minimal Configs
@@ -415,7 +438,7 @@ modules:
 graph:
   neo4j_bolt_port: 3587
   neo4j_http_port: 3574
-  neo4j_password: "<generated-by-nacl-local-init>"
+  neo4j_password: "${NEO4J_PASSWORD}"
   container_prefix: "my-project"
 ```
 

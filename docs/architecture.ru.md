@@ -116,12 +116,31 @@ modules:
 graph:                          # только для графовых скиллов
   neo4j_bolt_port: 3587
   neo4j_http_port: 3574
-  neo4j_password: "neo4j_graph_dev"
+  neo4j_password: "${NEO4J_PASSWORD}"
   container_prefix: "my-project"
   boards_dir: "graph-infra/boards"  # доски Excalidraw, ими управляет analyst-tool
 ```
 
 Скиллы читают `config.yaml` при запуске и адаптируют поведение под проект.
+
+## Codex Runtime и граница сервиса
+
+Сгенерированный Codex-артефакт в `plugins/nacl/` показывает десять публичных
+скиллов-дирижёров, хранит шестьдесят внутренних workflow и запускает ограниченный
+Node.js MCP-сервер с двадцатью пятью инструментами. Package index — inventory-контракт; корневые
+Claude-исходники остаются источником методологии.
+
+Проверенный локальный candidate работает из installed cache Codex. Целевой production-транспорт —
+Streamable HTTP с OAuth, но публичный endpoint, OAuth deployment, домен, релиз и подача в
+marketplace имеют статус `NOT_RUN`. Локальный stdio — транспорт разработки и
+installed candidate, а не архитектура публичного сервиса.
+
+Neo4j 5 Community остаётся отдельно администрируемым для каждого проекта — локально или на
+доступном VPS. Текущая граница авторизации — сервер: доступ к нему означает доступ ко
+всем базам проектов на нём. `project_scope` обеспечивает маршрутизацию и provenance, а не
+авторизацию. Публичный gateway должен сопоставить OAuth principal с server grant, разрешить выбор
+проекта на том же сервере и отклонить cross-server routing. Credentials разрешаются в runtime и не
+встраиваются в пакет или коммиченный config.
 
 ## Что дальше
 

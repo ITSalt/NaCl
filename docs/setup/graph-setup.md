@@ -88,7 +88,7 @@ script reuses an existing binary at that path instead of downloading.
       "env": {
         "NEO4J_URI": "bolt://localhost:3587",
         "NEO4J_USERNAME": "neo4j",
-        "NEO4J_PASSWORD": "neo4j_graph_dev",
+        "NEO4J_PASSWORD": "${NEO4J_PASSWORD}",
         "NEO4J_DATABASE": "neo4j",
         "NEO4J_TELEMETRY": "false"
       }
@@ -210,6 +210,25 @@ notifies.
 **Schema won't load**: Open Neo4j Browser at `http://localhost:3574`, login with `bolt://localhost:3587` / `neo4j` / `neo4j_graph_dev`, and run each `.cypher` file manually.
 
 **MCP connection fails**: Run `node "$HOME/.claude/skills/nacl-core/scripts/graph-doctor.mjs"` (CLI symlink channel) or `node "$(nacl-home)/nacl-core/scripts/graph-doctor.mjs"` (Desktop plugin channel) to check liveness first. Verify the binary exists and is executable (`ls -l ~/.neo4j-mcp-bin/neo4j-mcp`), `.mcp.json` is at the project root and points at that path, then start a new session — MCP servers are only picked up at session start, not by an in-session restart, and `/mcp reconnect` does not see newly added `.mcp.json` entries.
+
+## Codex Graph Modes
+
+### Local project graph
+
+The default Codex path uses one Neo4j 5 Community container and durable volumes
+per project. `nacl-init` plans and creates the stack, waits for health, loads the
+schema, and records the project route. The full Codex plugin uses its bounded
+gateway tools; the stdio example above remains the Claude/repository channel.
+
+### VPS connection and authorization
+
+`nacl-init` can create or connect to a project container on a reachable VPS.
+NaCl does not provide a managed graph. The server is currently the authorization
+boundary: access to it implies access to all project databases hosted there.
+`project_scope` selects a logical project and records provenance; it does not
+grant access. A future public Streamable HTTP gateway must map OAuth principals
+to server grants and deny cross-server routing. That public deployment and its
+release remain `NOT_RUN`.
 
 ## Next Steps
 

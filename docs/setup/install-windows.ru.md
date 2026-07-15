@@ -4,120 +4,120 @@
 
 # Установка на Windows
 
-Два варианта: WSL2 (рекомендуется) или нативный.
+Два варианта: WSL2 (рекомендуется) или нативный PowerShell.
 
 ## Вариант A: WSL2 (рекомендуется)
 
+### 1. Установить WSL2
+
+Откройте PowerShell от имени администратора:
+
 ```powershell
-# PowerShell от имени администратора
 wsl --install -d Ubuntu
 ```
 
-После перезагрузки откройте Ubuntu из меню Пуск и следуйте
-[инструкции для Linux](install-linux.ru.md). Для скиллов используйте
-[установку скиллов](install-skills.ru.md) и выберите Claude Code или Codex.
+Перезагрузите компьютер и откройте Ubuntu.
 
-Установите [Docker Desktop](https://docs.docker.com/desktop/install/windows-install/):
-- Settings > General > "Use the WSL 2 based engine" — включить
-- Settings > Resources > WSL Integration — включить для вашего дистрибутива Ubuntu
+### 2. Установить Docker Desktop
 
-## Вариант B: Нативный (PowerShell)
+Установите [Docker Desktop](https://docs.docker.com/desktop/install/windows-install/). В настройках включите
+**Use the WSL 2 based engine** и WSL Integration для Ubuntu.
 
-Установите: [Docker Desktop](https://docs.docker.com/desktop/install/windows-install/), [Node.js 20](https://nodejs.org/), [Git](https://git-scm.com/download/win), Claude Code или Codex
+### 3. В WSL2 следовать Linux-инструкции
+
+Продолжите по [инструкции для Linux](install-linux.ru.md). Пути будут Linux-формата. Для обычной
+Codex-установки используйте полный плагин из UI.
+
+## Вариант B: Нативный Windows (PowerShell)
+
+### 1. Предварительные требования
+
+Установите Docker Desktop с WSL2 backend, Node.js 20, Git for Windows и Claude Code или Codex.
+Для Claude Code CLI:
 
 ```powershell
-npm install -g @anthropic-ai/claude-code    # CLI; скиллы также работают в десктоп-приложении и расширениях IDE
+npm install -g @anthropic-ai/claude-code
+```
+
+### 2. Клонировать репозиторий
+
+Этот шаг нужен для Claude Code CLI и разработки, но не для обычной Codex UI-установки.
+
+```powershell
 git clone https://github.com/ITSalt/NaCl.git $HOME\NaCl
 ```
 
-Для Claude Code запустите штатный инсталлятор (PowerShell от имени
-Администратора или с включённым Developer Mode):
+### 3. Установить скиллы
+
+Для Claude Code CLI запустите PowerShell от имени администратора или включите Developer Mode:
 
 ```powershell
 & "$HOME\NaCl\scripts\install-claude-code-skills.ps1"
 ```
 
-Скрипт линкует каждую `nacl-*` директорию с `SKILL.md` в
-`%USERPROFILE%\.claude\skills` и каждый профиль агента в
-`%USERPROFILE%\.claude\agents`. Сначала выполняется `git pull --ff-only`,
-поэтому одна команда работает и для первой установки, и для обновления.
-Передайте `-NoPull`, чтобы пропустить git-шаг. Для скиллов при недоступности
-symlink есть fallback на directory junction; для агентов нужны настоящие
-symlink.
+Скрипт связывает `nacl-*` с `%USERPROFILE%\.claude\skills`, а профили агентов — с
+`%USERPROFILE%\.claude\agents`. Для скиллов есть fallback на directory junction; агентам нужны symlink.
 
-Для Codex (отдельный дистрибутив) — соответствующий скрипт:
-
-```powershell
-& "$HOME\NaCl\skills-for-codex\scripts\install-user-symlinks.ps1"
-```
-
-Полный справочник для обоих runtime:
-[Установка скиллов](install-skills.ru.md).
-
-> Скиллы и агенты, подключённые к `%USERPROFILE%\.claude\` на нативном
-> Windows (или `~/.claude/` в WSL2), доступны в CLI и расширениях IDE.
-> Для **Claude Code Desktop** актуальный канал (с v2.24.0) — плагин
-> `nacl`, а не этот симлинк-инсталлятор: выполните внутри Desktop
-> `/plugin marketplace add ITSalt/NaCl`, затем `/plugin install
-> nacl@nacl`, и выбирайте один канал на машину (не устанавливайте оба —
-> см. [Установка скиллов, раздел «Выберите канал»](install-skills.ru.md)).
-> Codex использует `%USERPROFILE%\.agents\skills`.
+Полный Codex-плагин устанавливается из **Plugins**. Skills-only PowerShell installer остаётся
+только legacy-каналом и не должен совмещаться с полным плагином. См.
+[Установку скиллов](install-skills.ru.md).
 
 ### После `git pull`
 
-Инсталлятор и для обновлений тоже. Запустите ту же команду — она идемпотентна:
-существующие симлинки пересоздаются на тот же таргет, для новых `nacl-*`
-директорий из релиза создаются новые ссылки. Полная процедура для всех
-платформ:
-[Обновление Claude-Code-скиллов](install-skills.ru.md#обновление-claude-code-скиллов).
+Повторно запустите Claude-инсталлятор: он идемпотентен, обновит старые ссылки и добавит новые.
 
-## Типичные проблемы
+### 4. Собрать опциональные CLI-инструменты
 
-- **Окончания строк**: `git config --global core.autocrlf input` перед клонированием
-- **Длинные пути**: `git config --global core.longpaths true`
-- **Симлинки**: нужны права администратора или включённый Developer Mode
-- **Codex-скиллы**: нативная Windows-установка использует `%USERPROFILE%\.agents\skills`; WSL2 использует `~/.agents/skills` внутри WSL.
+```powershell
+cd $HOME\NaCl\docmost-sync; npm install; npm run build
+cd $HOME\NaCl\yougile-setup; npm install; npm run build
+```
+
+## Типичные проблемы Windows
+
+- Окончания строк: `git config --global core.autocrlf input`.
+- Длинные пути: `git config --global core.longpaths true`.
+- Docker Desktop: включите WSL2 engine.
+- Symlink: нужны права администратора или Developer Mode.
+- Legacy Codex skills: нативный Windows и WSL2 имеют разные user-level-каталоги.
 
 ## Графовая инфраструктура
 
-Конфигурацию Docker + Neo4j см. в [Графовой инфраструктуре](graph-setup.ru.md). Excalidraw-борды ведёт NaCl Analyst Tool (`analyst-tool/`), работающий вне Docker.
+Конфигурацию Docker + Neo4j см. в [Настройке графа](graph-setup.ru.md). Доски Excalidraw ведёт
+NaCl Analyst Tool, работающий вне Docker.
 
 ### Neo4j MCP на Windows
 
-`/nacl-init` (шаг графа) всё настраивает сам — никаких ручных действий и **npm-пакет
-`neo4j-mcp` не нужен**. На нативной Windows запускается
-`nacl-tl-core\scripts\setup-graph.ps1`, который:
+`/nacl-init` запускает `nacl-tl-core\scripts\setup-graph.ps1`, который:
 
-- скачивает **официальный** бинарник `neo4j-mcp` напрямую с GitHub и распаковывает его
-  через `Expand-Archive` в `%USERPROFILE%\.neo4j-mcp-bin\neo4j-mcp.exe` (без скачивания
-  при старте и без зависимости от `unzip`);
-- пишет `.mcp.json` **прямо на этот бинарник** (npm-лаунчер печатает баннер в STDOUT и
-  ломает stdio-поток JSON-RPC, поэтому не используется);
-- пишет `.env` / `.mcp.json` / схему как **UTF-8 без BOM** (`cypher-shell` не принимает BOM
-  в первой строке);
-- запускает Docker, загружает схему и не отчитывается об успехе, пока не пройдёт жёсткая
-  проверка.
+- скачивает официальный `neo4j-mcp.exe` и распаковывает его через `Expand-Archive`;
+- пишет `.mcp.json` прямо на бинарник, не используя npm-лаунчер с лишним STDOUT;
+- пишет `.env`, `.mcp.json` и схему в UTF-8 без BOM;
+- запускает Docker, загружает схему и отказывается сообщать об успехе до прохода жёстких gates.
 
-**Приёмочный тест** — после `/nacl-init` с включённым графом, **без дополнительных
-действий**:
+Приёмка: контейнер `healthy`, `SHOW CONSTRAINTS` возвращает ожидаемое число,
+бинарник отвечает на `initialize` и `tools/list`, а в новой сессии проходит один запрос `RETURN 1`.
+`/mcp` в Claude Code Desktop открывает каталог коннекторов, поэтому рабочий smoke-запрос надёжнее.
+При сбое setup печатает `NACL_GRAPH_RESULT: status=FAILED`; после устранения причины шаг можно безопасно повторить.
 
-1. `docker ps` показывает `<prefix>-neo4j` как **healthy**.
-2. `SHOW CONSTRAINTS` возвращает ожидаемое число ограничений (скрипт проверяет это
-   автоматически по загруженной схеме).
-3. Бинарник `neo4j-mcp.exe` отвечает на JSON-RPC-рукопожатие `initialize` + `tools/list`
-   (это третья проверка скрипта).
-4. Начните **новую сессию** (не перезапуск внутри текущей) и выполните один
-   smoke-тест: вызов `mcp__neo4j__read-cypher "RETURN 1"` проходит с первого раза.
-   Учтите: в Claude Code Desktop команда `/mcp` открывает каталог коннекторов —
-   она не показывает статус проектного сервера `neo4j` — поэтому надёжна именно
-   эта проверка, и в CLI, и в Desktop.
+## Codex Desktop
 
-При сбое печатается `NACL_GRAPH_RESULT: status=FAILED` с упавшей проверкой — полу-настроенный
-граф никогда не выдаётся за готовый. Шаг графа идемпотентен, поэтому после устранения причины
-просто запустите `/nacl-init` ещё раз.
+### Установка в UI
+
+Установите доверенный полный плагин NaCl из **Plugins**, выдайте только показанные права,
+перезапустите Codex и в новой задаче вызовите `nacl_installation_doctor` ровно один раз.
+Продолжайте только при `status=VERIFIED`, `mode=plugin-only` и `executionLocation=installed-cache`.
+Для этой нормальной установки PowerShell и путь к репозиторию не нужны.
+
+### Граф и авторизация
+
+Локальный режим использует контейнер Neo4j 5 Community проекта через WSL2 backend Docker Desktop;
+удалённый режим подключается к отдельно администрируемому VPS. Доступ к серверу означает доступ
+ко всем базам проектов на нём; `project_scope` — маршрутизация и provenance, а не авторизация. Публичный HTTP/OAuth
+и релиз остаются `NOT_RUN`.
 
 ## Дальше
 
-- [Графовая инфраструктура](graph-setup.ru.md) — Neo4j + борды Analyst Tool
-- [Установка скиллов](install-skills.ru.md) — Claude Code или Codex
-- [Быстрый старт](../quickstart.ru.md) — первый проект
+- [Графовая инфраструктура](graph-setup.ru.md) — Neo4j и доски Analyst Tool.
+- [Установка скиллов](install-skills.ru.md) — Claude Code и Codex.
+- [Быстрый старт](../quickstart.ru.md) — первый проект.

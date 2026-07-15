@@ -159,8 +159,11 @@ const TRANSFORMS = {
   )),
   "package-doc-secret-placeholder": (input) => {
     const content = input.toString("utf8");
-    if (!content.includes("neo4j_graph_dev")) throw new Error("Transform package-doc-secret-placeholder expected a source match");
-    return Buffer.from(content.replaceAll("neo4j_graph_dev", "<generated-by-nacl-local-init>"));
+    if (content.includes("neo4j_graph_dev")) {
+      return Buffer.from(content.replaceAll("neo4j_graph_dev", "<generated-by-nacl-local-init>"));
+    }
+    if (content.includes("${NEO4J_PASSWORD}")) return input;
+    throw new Error("Transform package-doc-secret-placeholder expected a secret placeholder source match");
   },
   "package-shell-secret-required": (input) => Buffer.from(replaceExact(
     input.toString("utf8"),
