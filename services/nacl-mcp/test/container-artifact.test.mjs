@@ -18,6 +18,8 @@ test("container runtime is rootless, digest-pinned, health-checked, and installs
   assert.match(source, /archive-digest="\$\{ARCHIVE_DIGEST\}"/);
   assert.match(source, /image\.revision="\$\{VCS_REVISION\}"/);
   assert.match(source, /\^\[0-9a-f\]\{64\}\$/);
+  assert.match(source, /printf '%s\\n' "\$\{SOURCE_DIGEST\}" \| grep -Eq/);
+  assert.match(source, /printf '%s\\n' "\$\{ARCHIVE_DIGEST\}" \| grep -Eq/);
   assert.match(source, /\^\[0-9a-f\]\{40\}\$/);
   assert.doesNotMatch(source, /(?:SECRET|PASSWORD|TOKEN|PRIVATE_KEY)\s*=/i);
   assert.doesNotMatch(source, /COPY\s+\.\s+/);

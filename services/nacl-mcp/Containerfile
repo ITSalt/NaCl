@@ -8,7 +8,8 @@ FROM node@sha256:09e2b3d9726018aecf269bd35325f46bf75046a643a66d28360ec71132750ec
 ARG SOURCE_DIGEST
 ARG ARCHIVE_DIGEST
 ARG VCS_REVISION
-RUN printf '%s\n' "${SOURCE_DIGEST}" "${ARCHIVE_DIGEST}" | grep -Eq '^[0-9a-f]{64}$' \
+RUN printf '%s\n' "${SOURCE_DIGEST}" | grep -Eq '^[0-9a-f]{64}$' \
+    && printf '%s\n' "${ARCHIVE_DIGEST}" | grep -Eq '^[0-9a-f]{64}$' \
     && printf '%s\n' "${VCS_REVISION}" | grep -Eq '^[0-9a-f]{40}$'
 LABEL org.opencontainers.image.title="NaCl public MCP" \
       org.opencontainers.image.source-digest="${SOURCE_DIGEST}" \

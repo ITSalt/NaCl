@@ -13,6 +13,8 @@ const bundleRoot = path.join(serviceRoot, "dist/nacl-public-mcp-bundle");
 const archive = path.join(serviceRoot, "dist/nacl-public-mcp-bundle.tar");
 const baseDigest = "sha256:09e2b3d9726018aecf269bd35325f46bf75046a643a66d28360ec71132750ec8";
 const image = `nacl-public-mcp-smoke:${process.pid}-${Date.now()}`;
+const invalidSourceImage = `${image}-invalid-source`;
+const invalidArchiveImage = `${image}-invalid-archive`;
 const container = `nacl-public-mcp-smoke-${process.pid}-${Date.now()}`;
 const temporary = await mkdtemp(path.join(os.tmpdir(), "nacl-public-mcp-container-"));
 
@@ -26,14 +28,14 @@ function requireSuccess(result, action) {
 }
 
 const config = {
-  resourceUrl: "http://127.0.0.1:8080/mcp",
-  resourceMetadataUrl: "http://127.0.0.1:8080/.well-known/oauth-protected-resource",
+  resourceUrl: "https://mcp.example.test/mcp",
+  resourceMetadataUrl: "https://mcp.example.test/.well-known/oauth-protected-resource",
   authorizationServers: ["https://identity.example.test/"],
   scopesSupported: ["nacl.server.read", "nacl.server.write", "nacl.server.schema", "nacl.server.backup", "nacl.server.restore"],
   trustedIssuers: ["https://identity.example.test/"],
   allowedOrigins: ["https://chatgpt.com"],
   serverVersion: "0.1.0-container-smoke",
-  listen: { host: "127.0.0.1", port: 8080 },
+  listen: { host: "0.0.0.0", port: 8080 },
 };
 
 const adapter = `
@@ -71,6 +73,22 @@ try {
   const manifest = JSON.parse(await readFile(path.join(bundleRoot, "bundle-manifest.json"), "utf8"));
   const archiveDigest = createHash("sha256").update(await readFile(archive)).digest("hex");
   const revision = requireSuccess(spawnSync("git", ["rev-parse", "HEAD"], { cwd: repoRoot, encoding: "utf8" }), "VCS revision lookup");
+  for (const [label, tag, sourceDigest, candidateArchiveDigest] of [
+    ["source", invalidSourceImage, "not-a-source-digest", archiveDigest],
+    ["archive", invalidArchiveImage, manifest.sourceDigest, "not-an-archive-digest"],
+  ]) {
+    const rejected = docker([
+      "build", "--pull=false",
+      "--file", path.join(bundleRoot, "services/nacl-mcp/Containerfile"),
+      "--build-arg", `SOURCE_DIGEST=${sourceDigest}`,
+      "--build-arg", `ARCHIVE_DIGEST=${candidateArchiveDigest}`,
+      "--build-arg", `VCS_REVISION=${revision}`,
+      "--tag", tag,
+      bundleRoot,
+    ], { timeout: 300_000 });
+    if (rejected.status === 0) throw new Error(`container build accepted an invalid ${label} digest`);
+    if (docker(["image", "inspect", tag]).status === 0) throw new Error(`invalid ${label} build left an image`);
+  }
   requireSuccess(docker([
     "build", "--pull=false",
     "--file", path.join(bundleRoot, "services/nacl-mcp/Containerfile"),
@@ -125,5 +143,7 @@ try {
 } finally {
   docker(["container", "rm", "--force", container]);
   docker(["image", "rm", "--force", image]);
+  docker(["image", "rm", "--force", invalidSourceImage]);
+  docker(["image", "rm", "--force", invalidArchiveImage]);
   await rm(temporary, { recursive: true, force: true });
 }
