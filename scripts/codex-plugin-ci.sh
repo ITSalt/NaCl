@@ -7,17 +7,58 @@ cd "$repo_root"
 
 case ${1:-} in
   test:contracts)
-    node_tests=$(git ls-files '*/scripts/*.test.mjs')
-    if [ -n "$node_tests" ]; then
-      # paths in this repository contain no spaces; intentional word split
-      # shellcheck disable=SC2086
-      node --test $node_tests
-    fi
+    # Codex owns this closed test inventory. Generic repository tests are owned
+    # by test-tools.yml; generated Claude-package tests are owned by
+    # build-plugin.yml and must never enter this suite through a broad glob.
+    node_tests=(
+      scripts/build-codex-plugin.test.mjs
+      tests/codex-plugin/scripts/ci-ownership.test.mjs
+      tests/codex-plugin/scripts/codex-plugin-wave1-report.test.mjs
+      tests/codex-plugin/scripts/codex-source-drift.test.mjs
+      tests/codex-plugin/scripts/nacl-agent-profiles.test.mjs
+      tests/codex-plugin/scripts/nacl-authorization.test.mjs
+      tests/codex-plugin/scripts/nacl-concurrency-docker-e2e.test.mjs
+      tests/codex-plugin/scripts/nacl-concurrency-model.test.mjs
+      tests/codex-plugin/scripts/nacl-graph-gateway-docker-e2e.test.mjs
+      tests/codex-plugin/scripts/nacl-graph-gateway.test.mjs
+      tests/codex-plugin/scripts/nacl-legacy-symlinks.test.mjs
+      tests/codex-plugin/scripts/nacl-local-graph-lifecycle-docker-smoke.test.mjs
+      tests/codex-plugin/scripts/nacl-local-graph-lifecycle.test.mjs
+      tests/codex-plugin/scripts/nacl-multi-project-docker-e2e.test.mjs
+      tests/codex-plugin/scripts/nacl-multi-project.test.mjs
+      tests/codex-plugin/scripts/nacl-package-contract.test.mjs
+      tests/codex-plugin/scripts/nacl-package-server.test.mjs
+      tests/codex-plugin/scripts/nacl-project-routing.test.mjs
+      tests/codex-plugin/scripts/nacl-server-access-source.test.mjs
+      tests/codex-plugin/scripts/nacl-server-operation-authorization-source.test.mjs
+      tests/codex-plugin/scripts/nacl-vps-provision-r2.test.mjs
+      tests/codex-plugin/scripts/nacl-vps-server-access-source.test.mjs
+      tests/codex-plugin/scripts/nacl-workflow-integration.test.mjs
+      tests/codex-plugin/scripts/neo4j-image-fixture.test.mjs
+      tests/codex-plugin/scripts/plugin-docs.test.mjs
+      tests/codex-plugin/scripts/validate-codex-skills.test.mjs
+    )
+    node --test "${node_tests[@]}"
+
+    shell_tests=(
+      tests/codex-plugin/scripts/check-claude-runtime-unchanged.test.sh
+      tests/codex-plugin/scripts/legacy-installer-isolated.test.sh
+      tests/codex-plugin/scripts/validate-codex-plugin.test.sh
+    )
     failed=0
-    for test_file in $(git ls-files 'scripts/*.test.sh' '*/scripts/*.test.sh'); do
+    for test_file in "${shell_tests[@]}"; do
       bash "$test_file" || failed=1
     done
-    for shell_file in $(git ls-files 'scripts/*.sh' '*/scripts/*.sh'); do
+
+    shell_sources=(
+      scripts/check-claude-runtime-unchanged.sh
+      scripts/codex-plugin-ci.sh
+      scripts/validate-codex-plugin.sh
+      tests/codex-plugin/scripts/check-claude-runtime-unchanged.test.sh
+      tests/codex-plugin/scripts/legacy-installer-isolated.test.sh
+      tests/codex-plugin/scripts/validate-codex-plugin.test.sh
+    )
+    for shell_file in "${shell_sources[@]}"; do
       bash -n "$shell_file" || { echo "SYNTAX FAIL: $shell_file"; failed=1; }
     done
     exit "$failed"

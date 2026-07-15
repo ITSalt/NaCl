@@ -4,6 +4,7 @@ on:
   pull_request:
   push:
     branches:
+      - main
       - codex/desktop-plugin-integration
       - 'codex/plugin-*'
   workflow_dispatch:
@@ -34,21 +35,22 @@ jobs:
             --only-binary=:all: --require-hashes \
             -r tests/codex-plugin/requirements-validator.txt
 
-      - name: Run full deterministic repository tool suite
+      - name: Verify the generated Codex package and builder
+        run: |
+          node scripts/build-codex-plugin.mjs --check
+          node --test scripts/build-codex-plugin.test.mjs
+
+      - name: Run the explicit Codex contract suite
         run: bash scripts/codex-plugin-ci.sh test:contracts
 
       - name: Validate all Codex skills
         run: bash scripts/codex-plugin-ci.sh test:codex-skills
 
       - name: Enforce frozen Claude runtime paths
-        run: |
-          bash scripts/codex-plugin-ci.sh test:claude-isolation \
-            f81b17732ec0b44d0e5dbad2d444c2cddc0e9818 HEAD
+        run: bash scripts/codex-plugin-ci.sh test:claude-isolation
 
-      - name: Check root and Codex skill synchronization
-        run: |
-          sh skills-for-codex/scripts/check-root-codex-sync.sh \
-            d98f7399e7b9941341421321407ad27ee895d221 HEAD
+      - name: Check current-main source drift and Codex synchronization
+        run: node --test tests/codex-plugin/scripts/codex-source-drift.test.mjs
 
       - name: Validate repository plugin candidate or report Wave 0 absence
         run: bash scripts/codex-plugin-ci.sh test:plugin-manifest
