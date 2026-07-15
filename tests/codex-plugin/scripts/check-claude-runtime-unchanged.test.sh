@@ -3,82 +3,87 @@
 set -euo pipefail
 
 repo_root=$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)
-gate="$repo_root/scripts/check-claude-runtime-unchanged.sh"
-tmp_dir=$(mktemp -d -t nacl-claude-gate-test.XXXXXX)
+source_gate="$repo_root/scripts/check-claude-runtime-unchanged.sh"
+tmp_dir=$(mktemp -d "${TMPDIR:-/tmp}/nacl-claude-gate-test.XXXXXX")
 trap 'rm -rf "$tmp_dir"' EXIT
 
-cd "$tmp_dir"
-git init -q
+git clone -q --shared "$repo_root" "$tmp_dir/repo"
+test_repo="$tmp_dir/repo"
+cp "$source_gate" "$test_repo/scripts/check-claude-runtime-unchanged.sh"
+cd "$test_repo"
 git config user.email test@example.invalid
 git config user.name "NaCl Gate Test"
-mkdir -p .claude .claude-plugin .github/workflows scripts plugin allowed
-printf '%s\n' frozen >.claude/config
-printf '%s\n' frozen >.claude-plugin/marketplace.json
-printf '%s\n' frozen >.github/workflows/build-plugin.yml
-cat >scripts/build-plugin.mjs <<'EOF'
-if (process.argv[2] !== "--check") process.exit(1);
-EOF
-printf '%s\n' frozen >scripts/build-plugin.test.mjs
-printf '%s\n' frozen >scripts/plugin-manifest.json
-printf '%s\n' generated >plugin/output.txt
-printf '%s\n' allowed >allowed/file.txt
-git add .
-git commit -qm baseline
-git rev-parse HEAD >frozen-base.txt
+gate=scripts/check-claude-runtime-unchanged.sh
 
-printf '%s\n' changed >allowed/file.txt
-output=$(NACL_CLAUDE_REPO_ROOT="$tmp_dir" NACL_CLAUDE_BASE_FILE="$tmp_dir/frozen-base.txt" bash "$gate")
+output=$(bash "$gate")
 grep -q '^Status: VERIFIED$' <<<"$output"
 grep -q '^Generated parity: VERIFIED$' <<<"$output"
 
-printf '%s\n' changed >.claude/config
-set +e
-output=$(NACL_CLAUDE_REPO_ROOT="$tmp_dir" NACL_CLAUDE_BASE_FILE="$tmp_dir/frozen-base.txt" bash "$gate" 2>&1)
-status=$?
-set -e
-test "$status" -eq 1
-grep -q '^FAILED frozen path: .claude/config$' <<<"$output"
-grep -q '^Status: FAILED$' <<<"$output"
+printf '%s\n' allowed >wave9-allowed-untracked.txt
+output=$(bash "$gate")
+grep -q '^Status: VERIFIED$' <<<"$output"
+rm wave9-allowed-untracked.txt
 
-git checkout -q -- .claude/config
+expect_failed_path() {
+  expected=$1
+  set +e
+  output=$(bash "$gate" 2>&1)
+  status=$?
+  set -e
+  test "$status" -eq 1
+  grep -q "^FAILED frozen path: $expected$" <<<"$output"
+  grep -q '^Status: FAILED$' <<<"$output"
+}
+
+mkdir -p .claude
+printf '%s\n' changed >.claude/wave9-untracked
+expect_failed_path '.claude/wave9-untracked'
+rm .claude/wave9-untracked
+
 printf '%s\n' changed >.claude-plugin/marketplace.json
-set +e
-output=$(NACL_CLAUDE_REPO_ROOT="$tmp_dir" NACL_CLAUDE_BASE_FILE="$tmp_dir/frozen-base.txt" bash "$gate" 2>&1)
-status=$?
-set -e
-test "$status" -eq 1
-grep -q '^FAILED frozen path: .claude-plugin/marketplace.json$' <<<"$output"
+expect_failed_path '.claude-plugin/marketplace.json'
 git checkout -q -- .claude-plugin/marketplace.json
 
 printf '%s\n' changed >scripts/plugin-manifest.json
+expect_failed_path 'scripts/plugin-manifest.json'
+git checkout -q -- scripts/plugin-manifest.json
+
+printf '%s\n' changed >.github/workflows/build-plugin-extra.yml
+expect_failed_path '.github/workflows/build-plugin-extra.yml'
+rm .github/workflows/build-plugin-extra.yml
+
+printf '%s\n' changed >scripts/build-plugin-helper.mjs
+expect_failed_path 'scripts/build-plugin-helper.mjs'
+rm scripts/build-plugin-helper.mjs
+
+printf '%s\n' drift >>plugin/.build-report.json
 set +e
-output=$(NACL_CLAUDE_REPO_ROOT="$tmp_dir" NACL_CLAUDE_BASE_FILE="$tmp_dir/frozen-base.txt" bash "$gate" 2>&1)
+output=$(bash "$gate" 2>&1)
 status=$?
 set -e
 test "$status" -eq 1
-grep -q '^FAILED frozen path: scripts/plugin-manifest.json$' <<<"$output"
-git checkout -q -- scripts/plugin-manifest.json
+grep -q 'Claude generated artifact differs from the current root sources' <<<"$output"
+git checkout -q -- plugin/.build-report.json
 
-git add allowed/file.txt
-git commit -qm candidate-with-frozen-change
-printf '%s\n' HEAD >symbolic-base.txt
+printf '%s\n' committed-drift >.claude-plugin/marketplace.json
+git add .claude-plugin/marketplace.json
+git commit -qm committed-frozen-drift
+expect_failed_path '.claude-plugin/marketplace.json'
+
+printf '%s\n' "$(git rev-parse HEAD)" >tests/codex-plugin/claude-frozen-base.txt
 set +e
-output=$(NACL_CLAUDE_REPO_ROOT="$tmp_dir" NACL_CLAUDE_BASE_FILE="$tmp_dir/symbolic-base.txt" bash "$gate" 2>&1)
+output=$(bash "$gate" 2>&1)
 status=$?
 set -e
 test "$status" -eq 2
-grep -q 'recorded base must be a literal lowercase 40-hex SHA' <<<"$output"
-grep -q '^Status: BLOCKED$' <<<"$output"
+grep -q 'recorded base does not match the immutable audited main SHA' <<<"$output"
+git checkout -q -- tests/codex-plugin/claude-frozen-base.txt
 
-unrelated_tree=$(git mktree </dev/null)
-unrelated_sha=$(printf '%s\n' unrelated | git commit-tree "$unrelated_tree")
-printf '%s\n' "$unrelated_sha" >unrelated-base.txt
 set +e
-output=$(NACL_CLAUDE_REPO_ROOT="$tmp_dir" NACL_CLAUDE_BASE_FILE="$tmp_dir/unrelated-base.txt" bash "$gate" "$unrelated_sha" HEAD 2>&1)
+output=$(bash "$gate" HEAD 2>&1)
 status=$?
 set -e
 test "$status" -eq 2
-grep -q 'recorded base is not an ancestor of the candidate' <<<"$output"
-grep -q '^Status: BLOCKED$' <<<"$output"
+grep -q 'accepts no caller-selected refs' <<<"$output"
 
-printf '%s\n' "6 passed, 0 failed"
+printf '%s\n' "10 passed, 0 failed"

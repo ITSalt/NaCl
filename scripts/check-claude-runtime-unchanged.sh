@@ -2,10 +2,17 @@
 
 set -euo pipefail
 
-repo_root=${NACL_CLAUDE_REPO_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}
+repo_root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 cd "$repo_root"
 
-base_file=${NACL_CLAUDE_BASE_FILE:-tests/codex-plugin/claude-frozen-base.txt}
+if [ "$#" -ne 0 ]; then
+  echo "Status: BLOCKED"
+  echo "Reason: Claude isolation gate accepts no caller-selected refs"
+  exit 2
+fi
+
+audited_base=19dd5e263024a2e43e456e9f37efcfc8c8a3bc73
+base_file=tests/codex-plugin/claude-frozen-base.txt
 if [ ! -f "$base_file" ]; then
   echo "Status: BLOCKED"
   echo "Reason: frozen-path base file is unavailable: $base_file"
@@ -13,69 +20,52 @@ if [ ! -f "$base_file" ]; then
 fi
 
 recorded_base=$(awk 'NF && $1 !~ /^#/ { print $1; exit }' "$base_file")
-if ! printf '%s\n' "$recorded_base" | grep -Eq '^[0-9a-f]{40}$'; then
+if [ "$recorded_base" != "$audited_base" ]; then
   echo "Status: BLOCKED"
-  echo "Reason: recorded base must be a literal lowercase 40-hex SHA"
+  echo "Reason: recorded base does not match the immutable audited main SHA"
   exit 2
 fi
 
-base_ref=${1:-$recorded_base}
-head_ref=${2:-HEAD}
-
-if ! printf '%s\n' "$base_ref" | grep -Eq '^[0-9a-f]{40}$'; then
+if ! git rev-parse --verify "$audited_base^{commit}" >/dev/null 2>&1; then
   echo "Status: BLOCKED"
-  echo "Reason: requested base must be a literal lowercase 40-hex SHA"
+  echo "Reason: immutable audited main SHA cannot be resolved"
   exit 2
 fi
-if [ "$base_ref" != "$recorded_base" ]; then
+if ! git rev-parse --verify "HEAD^{commit}" >/dev/null 2>&1; then
   echo "Status: BLOCKED"
-  echo "Reason: requested base does not match the recorded audited SHA"
+  echo "Reason: candidate HEAD cannot be resolved"
   exit 2
 fi
-if ! git rev-parse --verify "$base_ref^{commit}" >/dev/null 2>&1; then
+if ! git merge-base --is-ancestor "$audited_base" HEAD >/dev/null 2>&1; then
   echo "Status: BLOCKED"
-  echo "Reason: frozen-path base ref cannot be resolved: ${base_ref:-<empty>}"
-  exit 2
-fi
-if ! git rev-parse --verify "$head_ref^{commit}" >/dev/null 2>&1; then
-  echo "Status: BLOCKED"
-  echo "Reason: candidate ref cannot be resolved: $head_ref"
-  exit 2
-fi
-if ! git merge-base --is-ancestor "$base_ref" "$head_ref" >/dev/null 2>&1; then
-  echo "Status: BLOCKED"
-  echo "Reason: recorded base is not an ancestor of the candidate"
+  echo "Reason: immutable audited main SHA is not an ancestor of candidate HEAD"
   exit 2
 fi
 
-base_sha=$(git rev-parse "$base_ref^{commit}")
-candidate_sha=$(git rev-parse "$head_ref^{commit}")
+base_sha=$(git rev-parse "$audited_base^{commit}")
+candidate_sha=$(git rev-parse "HEAD^{commit}")
 tmp_dir=$(mktemp -d "${TMPDIR:-/tmp}/nacl-claude-isolation.XXXXXX")
 trap 'rm -rf "$tmp_dir"' EXIT HUP INT TERM
-paths_file="$tmp_dir/paths.txt"
 changes_file="$tmp_dir/changes.txt"
 
-cat >"$paths_file" <<'EOF'
-.claude
-.claude-plugin
-.github/workflows/build-plugin.yml
-scripts/build-plugin.mjs
-scripts/build-plugin.test.mjs
-scripts/plugin-manifest.json
-EOF
-
-frozen_paths=$(cat "$paths_file")
-# The frozen path list contains no spaces. Intentional splitting keeps this
-# compatible with the Bash 3.2 shipped by macOS.
-# shellcheck disable=SC2086
-git diff --name-only "$base_ref" "$head_ref" -- $frozen_paths >"$changes_file"
-
-if [ "$head_ref" = "HEAD" ]; then
-  # shellcheck disable=SC2086
-  git diff --name-only HEAD -- $frozen_paths >>"$changes_file"
-  # shellcheck disable=SC2086
-  git ls-files --others --exclude-standard -- $frozen_paths >>"$changes_file"
-fi
+git diff --name-only "$audited_base" HEAD -- \
+  .claude \
+  .claude-plugin \
+  '.github/workflows/build-plugin*' \
+  'scripts/build-plugin*' \
+  'scripts/plugin-manifest*' >"$changes_file"
+git diff --name-only HEAD -- \
+  .claude \
+  .claude-plugin \
+  '.github/workflows/build-plugin*' \
+  'scripts/build-plugin*' \
+  'scripts/plugin-manifest*' >>"$changes_file"
+git ls-files --others --exclude-standard -- \
+  .claude \
+  .claude-plugin \
+  '.github/workflows/build-plugin*' \
+  'scripts/build-plugin*' \
+  'scripts/plugin-manifest*' >>"$changes_file"
 
 sort -u "$changes_file" -o "$changes_file"
 if [ -s "$changes_file" ]; then
@@ -88,29 +78,27 @@ if [ -s "$changes_file" ]; then
   exit 1
 fi
 
-generated_status="NOT_RUN"
-if [ "$head_ref" = "HEAD" ] && [ "${NACL_CLAUDE_SKIP_GENERATED_CHECK:-0}" != "1" ]; then
-  if [ ! -f scripts/build-plugin.mjs ]; then
-    echo "Status: BLOCKED"
-    echo "Reason: Claude generated-parity builder is unavailable"
-    exit 2
-  fi
-  if ! node scripts/build-plugin.mjs --check; then
-    echo "Status: FAILED"
-    echo "Reason: Claude generated artifact differs from the current root sources"
-    exit 1
-  fi
-  generated_status="VERIFIED"
+if [ ! -f scripts/build-plugin.mjs ]; then
+  echo "Status: BLOCKED"
+  echo "Reason: Claude generated-parity builder is unavailable"
+  exit 2
+fi
+if ! node scripts/build-plugin.mjs --check; then
+  echo "Status: FAILED"
+  echo "Reason: Claude generated artifact differs from the current root sources"
+  exit 1
 fi
 
-# shellcheck disable=SC2086
-base_manifest_hash=$(git ls-tree "$base_ref" -- $frozen_paths | git hash-object --stdin)
-# shellcheck disable=SC2086
-candidate_manifest_hash=$(git ls-tree "$head_ref" -- $frozen_paths | git hash-object --stdin)
-echo "Frozen roots: $(wc -l <"$paths_file" | tr -d ' ')"
+base_manifest_hash=$(git ls-tree -r "$audited_base" -- \
+  .claude .claude-plugin '.github/workflows/build-plugin*' \
+  'scripts/build-plugin*' 'scripts/plugin-manifest*' | git hash-object --stdin)
+candidate_manifest_hash=$(git ls-tree -r HEAD -- \
+  .claude .claude-plugin '.github/workflows/build-plugin*' \
+  'scripts/build-plugin*' 'scripts/plugin-manifest*' | git hash-object --stdin)
+echo "Frozen namespaces: 5"
 echo "Base SHA: $base_sha"
 echo "Candidate SHA: $candidate_sha"
 echo "Base frozen manifest hash: $base_manifest_hash"
 echo "Candidate frozen manifest hash: $candidate_manifest_hash"
-echo "Generated parity: $generated_status"
+echo "Generated parity: VERIFIED"
 echo "Status: VERIFIED"
