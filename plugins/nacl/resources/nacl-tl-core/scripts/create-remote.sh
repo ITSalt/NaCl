@@ -64,7 +64,7 @@ fail() { FAILED_CHECK="$1"; echo "FAILED at: $1" >&2; emit FAILED; exit 1; }
 
 NODE=$(command -v node 2>/dev/null || command -v nodejs 2>/dev/null)
 [ -n "$NODE" ] || fail node-missing
-[ "$SECRET_SOURCE" != "env:NEO4J_PASSWORD" ] || [ -n "$PASSWORD" ] || fail secret-source-unavailable
+PASSWORD=$("$NODE" "$SKILLS_DIR/nacl-tl-core/scripts/secret-source-contract.mjs" --resolve "$SECRET_SOURCE") || fail secret-source-unavailable
 "$NODE" "$SKILLS_DIR/nacl-tl-core/scripts/remote-route-contract.mjs" \
   --mode create --host "$HOST" --gateway-port "$GATEWAY_PORT" --sidecar-port "$SIDECAR_PORT" \
   --project-scope "$SCOPE" --client-cert "$CLIENT_CERT" --client-key "$CLIENT_KEY" \
@@ -89,21 +89,14 @@ OUT=$(mcp_cypher_read "$SKILLS_DIR" "$URI" "$USER_" "$PASSWORD" "$DATABASE" \
 echo "$OUT" | grep -qE '"c"[: ]*[1-9]' && SEEDED="yes"
 [ "$SEEDED" = "yes" ] || fail verify
 
-# Write client config + register (same as connect).
-"$NODE" "$SKILLS_DIR/nacl-tl-core/scripts/write-mcp-config.mjs" \
-  --project-root "$PROJECT_ROOT" --command "$STABLE_BIN" \
-  --uri "$URI" --username "$USER_" --database "$DATABASE" --secret-source "$SECRET_SOURCE" >/dev/null || fail write-mcp
-
-"$NODE" "$SKILLS_DIR/nacl-tl-core/scripts/write-graph-config.mjs" \
-  --project-root "$PROJECT_ROOT" --mode remote \
-  --set "neo4j_uri=\"$URI\"" --set "neo4j_username=\"$USER_\"" \
-  --set "neo4j_database=\"$DATABASE\"" --set "project_scope=\"$SCOPE\"" >/dev/null || fail write-config
-"$NODE" "$SKILLS_DIR/nacl-tl-core/scripts/write-graph-config.mjs" \
-  --project-root "$PROJECT_ROOT" --mode remote \
-  --set "remote.host=\"$HOST\"" --set "remote.gateway_port=$GATEWAY_PORT" \
-  --set "remote.sidecar_port=$SIDECAR_PORT" --set "remote.client_cert=\"$CLIENT_CERT\"" \
-  --set "remote.client_key=\"$CLIENT_KEY\"" --set "remote.ca_cert=\"$CA_CERT\"" \
-  --set "remote.tls=$TLS" --set "remote.secret_source=\"$SECRET_SOURCE\"" >/dev/null || fail write-route
+# Commit config.yaml + .mcp.json as one validated route transaction.
+"$NODE" "$SKILLS_DIR/nacl-tl-core/scripts/write-remote-route.mjs" \
+  --project-root "$PROJECT_ROOT" --mode create --host "$HOST" --gateway-port "$GATEWAY_PORT" \
+  --sidecar-port "$SIDECAR_PORT" --project-scope "$SCOPE" --client-cert "$CLIENT_CERT" \
+  --client-key "$CLIENT_KEY" --ca-cert "$CA_CERT" --tls "$TLS" --uri "$URI" \
+  --username "$USER_" --database "$DATABASE" --secret-source "$SECRET_SOURCE" \
+  --launcher-command "$NODE" --launcher-script "$SKILLS_DIR/nacl-tl-core/scripts/secret-source-launcher.mjs" \
+  --binary "$STABLE_BIN" >/dev/null || fail write-route
 
 "$NODE" "$SKILLS_DIR/nacl-tl-core/scripts/register-project.mjs" \
   --id "$PID" --name "$PNAME" --root "$PROJECT_ROOT" >/dev/null || fail register

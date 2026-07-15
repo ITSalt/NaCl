@@ -25,7 +25,11 @@ const FLAT_ORDER = [
   'neo4j_uri', 'neo4j_username', 'neo4j_database', 'project_scope',            // remote
   'boards_dir',                                                                // shared
 ];
-const REMOTE_ORDER = ['host', 'gateway_port', 'sidecar_port', 'client_cert', 'client_key', 'ca_cert', 'tls', 'secret_source'];
+const REMOTE_ORDER = ['route_mode', 'host', 'gateway_port', 'sidecar_port', 'client_cert', 'client_key', 'ca_cert', 'tls', 'secret_source'];
+const ROUTE_OWNED_FLAT = new Set([
+  'mode', 'neo4j_bolt_port', 'neo4j_http_port', 'neo4j_password', 'container_prefix',
+  'neo4j_uri', 'neo4j_username', 'neo4j_database', 'project_scope',
+]);
 
 const isEmpty = (v) => v === undefined || v === null || v === '' || v === '""' || v === "''";
 
@@ -78,6 +82,32 @@ export function mergeGraphValues(existing, next, { force = false } = {}) {
     if (force || isEmpty(out.remote[k])) out.remote[k] = v;
   }
   return out;
+}
+
+/** Replace the complete tool-owned local/remote route while preserving unrelated graph keys. */
+export function replaceRemoteRouteValues(existing, route) {
+  const flat = Object.fromEntries(Object.entries(existing.flat ?? {}).filter(([key]) => !ROUTE_OWNED_FLAT.has(key)));
+  Object.assign(flat, {
+    mode: JSON.stringify('remote'),
+    neo4j_uri: JSON.stringify(route.uri),
+    neo4j_username: JSON.stringify(route.username),
+    neo4j_database: JSON.stringify(route.database),
+    project_scope: JSON.stringify(route.project_scope),
+  });
+  return {
+    flat,
+    remote: {
+      route_mode: JSON.stringify(route.mode),
+      host: JSON.stringify(route.host),
+      gateway_port: route.gateway_port,
+      sidecar_port: route.sidecar_port,
+      client_cert: JSON.stringify(route.client_cert),
+      client_key: JSON.stringify(route.client_key),
+      ca_cert: JSON.stringify(route.ca_cert),
+      tls: route.tls,
+      secret_source: JSON.stringify(route.secret_source),
+    },
+  };
 }
 
 /** Render a canonical `graph:` block (no trailing newline). Unknown keys render after known ones. */

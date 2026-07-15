@@ -48,6 +48,10 @@ test("route rejects dropped fields, silent URI defaults, plaintext secret values
   ]) assert.throws(() => validateRemoteRoute(input));
 });
 
+test("route accepts an opaque server-route reference through the shared secret-source grammar", () => {
+  assert.equal(validateRemoteRoute({ ...route, secretSource: "server-route:project-a" }).secret_source, "server-route:project-a");
+});
+
 test("create marker interpolation accepts only exact non-Cypher grammar", () => {
   assert.deepEqual(validateMarkerInputs({ projectScope: "project-a", developerId: "alice@example.com" }), {
     projectScope: "project-a",

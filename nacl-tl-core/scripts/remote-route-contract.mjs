@@ -1,11 +1,11 @@
 import { realpathSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
+import { validateSecretSource } from "./secret-source-contract.mjs";
 
 const SCOPE = /^[A-Za-z0-9][A-Za-z0-9._-]{2,127}$/;
 const PRINCIPAL = /^[A-Za-z0-9][A-Za-z0-9._:@+-]{2,127}$/;
 const HOST = /^(?=.{1,253}$)(?:[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?)(?:\.(?:[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?))*$/;
-const SECRET_SOURCE = /^(?:env:NEO4J_PASSWORD|server-route:[A-Za-z0-9][A-Za-z0-9._-]{2,127})$/;
 
 function bounded(value, pattern, label) {
   if (typeof value !== "string" || !pattern.test(value) || value.includes("..") || /[._:@+-]$/.test(value)) {
@@ -50,7 +50,7 @@ export function validateRemoteRoute(input) {
   if (input.tls !== true) throw new Error("remote route requires tls=true");
   if (typeof input.username !== "string" || !/^[A-Za-z0-9_]{1,64}$/.test(input.username)) throw new Error("username is invalid");
   if (typeof input.database !== "string" || !/^[A-Za-z0-9_]{1,64}$/.test(input.database)) throw new Error("database is invalid");
-  if (typeof input.secretSource !== "string" || !SECRET_SOURCE.test(input.secretSource)) throw new Error("secret_source is invalid");
+  const secretSource = validateSecretSource(input.secretSource).reference;
   return Object.freeze({
     mode: input.mode,
     host,
@@ -64,7 +64,7 @@ export function validateRemoteRoute(input) {
     uri,
     username: input.username,
     database: input.database,
-    secret_source: input.secretSource,
+    secret_source: secretSource,
   });
 }
 

@@ -16,6 +16,7 @@
 import { realpathSync, readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
+import { validateSecretSource } from './secret-source-contract.mjs';
 
 /**
  * Returns a NEW .mcp.json document with the `neo4j` server set/replaced, preserving any
@@ -24,16 +25,14 @@ import { join } from 'node:path';
  * @param {{command:string, uri:string, username?:string, password?:string, database?:string}} conn
  * @returns {object}
  */
-export function mergeMcpConfig(existingDoc, { command, uri, username = 'neo4j', password, database = 'neo4j', secretSource }) {
+export function mergeMcpConfig(existingDoc, { command, uri, username = 'neo4j', password, database = 'neo4j', secretSource, launcher }) {
   if (!command) throw new Error('write-mcp-config: --command (neo4j-mcp binary path) is required');
   if (!uri) throw new Error('write-mcp-config: --uri is required');
 
   const doc = (existingDoc && typeof existingDoc === 'object') ? structuredClone(existingDoc) : {};
   if (!doc.mcpServers || typeof doc.mcpServers !== 'object') doc.mcpServers = {};
 
-  if (secretSource !== undefined && !['env:NEO4J_PASSWORD', 'server-route'].includes(secretSource)) {
-    throw new Error('write-mcp-config: unsupported secret source');
-  }
+  const parsedSecretSource = secretSource === undefined ? null : validateSecretSource(secretSource);
   const env = {
     NEO4J_URI: uri,
     NEO4J_USERNAME: username,
@@ -41,10 +40,18 @@ export function mergeMcpConfig(existingDoc, { command, uri, username = 'neo4j', 
     NEO4J_TELEMETRY: 'false',
   };
   if (secretSource === undefined) env.NEO4J_PASSWORD = password ?? '';
+  else {
+    env.NACL_NEO4J_SECRET_SOURCE = parsedSecretSource.reference;
+    if (launcher !== undefined) env.NACL_REMOTE_ROUTE_MODE = launcher.routeMode;
+  }
+  if (parsedSecretSource?.kind === 'server-route' && !launcher) throw new Error('write-mcp-config: server-route requires a secret launcher');
+  if (launcher && (!launcher.command || !launcher.script || !launcher.binary || !['create', 'connect'].includes(launcher.routeMode))) {
+    throw new Error('write-mcp-config: invalid secret launcher');
+  }
   doc.mcpServers.neo4j = {
     type: 'stdio',
-    command,
-    args: [],
+    command: launcher?.command ?? command,
+    args: launcher ? [launcher.script, '--binary', launcher.binary, '--secret-source', parsedSecretSource.reference] : [],
     env,
   };
   return doc;

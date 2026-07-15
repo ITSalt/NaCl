@@ -24,7 +24,6 @@ param(
   [string]$SecretSource = "env:NEO4J_PASSWORD"
 )
 . (Join-Path $SkillsDir "nacl-tl-core\scripts\lib-neo4j-mcp.ps1")
-$Password = $env:NEO4J_PASSWORD
 
 $script:Handshake = "fail"; $script:ProjectExists = "no"; $script:FailedCheck = "none"
 function Emit([string]$Status) {
@@ -34,9 +33,9 @@ function Emit([string]$Status) {
 }
 function Fail([string]$Check) { $script:FailedCheck = $Check; [Console]::Error.WriteLine("FAILED at: $Check"); Emit "FAILED"; exit 1 }
 
-if ($SecretSource -eq "env:NEO4J_PASSWORD" -and -not $Password) { Fail "secret-source-unavailable" }
-
 $node = Get-NodeExe
+$Password = (& $node (Join-Path $SkillsDir "nacl-tl-core\scripts\secret-source-contract.mjs") --resolve $SecretSource)
+if ($LASTEXITCODE -ne 0 -or -not $Password) { Fail "secret-source-unavailable" }
 & $node (Join-Path $SkillsDir "nacl-tl-core\scripts\remote-route-contract.mjs") --mode connect --host $Host --gateway-port $GatewayPort --sidecar-port $SidecarPort --project-scope $ProjectScope --client-cert $ClientCert --client-key $ClientKey --ca-cert $CaCert --tls $Tls.ToString().ToLowerInvariant() --uri $Uri --username $User --database $Database --secret-source $SecretSource | Out-Null
 if ($LASTEXITCODE -ne 0) { Fail "route-contract" }
 
@@ -54,11 +53,7 @@ if ($script:ProjectExists -ne "yes") {
   Fail "project-missing"
 }
 
-& $node (Join-Path $SkillsDir "nacl-tl-core\scripts\write-mcp-config.mjs") --project-root $ProjectRoot --command $script:StableBin --uri $Uri --username $User --database $Database --secret-source $SecretSource | Out-Null
-if ($LASTEXITCODE -ne 0) { Fail "write-mcp" }
-& $node (Join-Path $SkillsDir "nacl-tl-core\scripts\write-graph-config.mjs") --project-root $ProjectRoot --mode remote --set "neo4j_uri=`"$Uri`"" --set "neo4j_username=`"$User`"" --set "neo4j_database=`"$Database`"" --set "project_scope=`"$ProjectScope`"" | Out-Null
-if ($LASTEXITCODE -ne 0) { Fail "write-config" }
-& $node (Join-Path $SkillsDir "nacl-tl-core\scripts\write-graph-config.mjs") --project-root $ProjectRoot --mode remote --set "remote.host=`"$Host`"" --set "remote.gateway_port=$GatewayPort" --set "remote.sidecar_port=$SidecarPort" --set "remote.client_cert=`"$ClientCert`"" --set "remote.client_key=`"$ClientKey`"" --set "remote.ca_cert=`"$CaCert`"" --set "remote.tls=$($Tls.ToString().ToLowerInvariant())" --set "remote.secret_source=`"$SecretSource`"" | Out-Null
+& $node (Join-Path $SkillsDir "nacl-tl-core\scripts\write-remote-route.mjs") --project-root $ProjectRoot --mode connect --host $Host --gateway-port $GatewayPort --sidecar-port $SidecarPort --project-scope $ProjectScope --client-cert $ClientCert --client-key $ClientKey --ca-cert $CaCert --tls $Tls.ToString().ToLowerInvariant() --uri $Uri --username $User --database $Database --secret-source $SecretSource --launcher-command $node --launcher-script (Join-Path $SkillsDir "nacl-tl-core\scripts\secret-source-launcher.mjs") --binary $script:StableBin | Out-Null
 if ($LASTEXITCODE -ne 0) { Fail "write-route" }
 & $node (Join-Path $SkillsDir "nacl-tl-core\scripts\register-project.mjs") --id $Id --name $Name --root $ProjectRoot | Out-Null
 if ($LASTEXITCODE -ne 0) { Fail "register" }

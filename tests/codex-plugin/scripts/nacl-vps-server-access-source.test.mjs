@@ -128,6 +128,16 @@ test("POSIX and PowerShell marker queries keep every dynamic value in MCP parame
   assert.match(psHelper, /"--param"/);
 });
 
+test("POSIX and PowerShell remote flows use one secret resolver and one transactional route writer", () => {
+  for (const name of ["create-remote.sh", "connect-remote.sh", "create-remote.ps1", "connect-remote.ps1"]) {
+    const source = readFileSync(path.join(repo, "nacl-tl-core/scripts", name), "utf8");
+    assert.match(source, /secret-source-contract\.mjs/);
+    assert.match(source, /write-remote-route\.mjs/);
+    assert.doesNotMatch(source, /write-mcp-config\.mjs/);
+    assert.doesNotMatch(source, /write-graph-config\.mjs/);
+  }
+});
+
 test("VPS provision/issue/revoke use authoritative server control and never mutate a single project grant", () => {
   const provision = readFileSync(path.join(repo, "graph-infra/vps/provision-vps.sh"), "utf8");
   const issue = readFileSync(path.join(repo, "graph-infra/vps/issue-client-cert.sh"), "utf8");
