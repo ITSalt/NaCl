@@ -20,19 +20,25 @@ All graph skills use Neo4j MCP tools:
 **Connection is managed by the MCP server** (configured in `.mcp.json` at project root).
 Skills do NOT pass connection strings — they just call MCP tools.
 
+Liveness probe and start/fix tool: `nacl-core/scripts/graph-doctor.mjs`
+(`node "$HOME/.claude/skills/nacl-core/scripts/graph-doctor.mjs" [--fix]`) —
+reports `NACL_GRAPH_DOCTOR: status=UP|DOWN|NOT_NACL`, and with `--fix` starts
+the local container / relaunches the remote sidecar. Use it in remediation
+instead of raw docker commands.
+
 ## Graph Config Resolution (execute at skill start)
 
 Every graph skill MUST read `config.yaml` at the start to resolve graph settings.
 
 ### Steps:
 
-1. Read `config.yaml` from the project root (current working directory)
+1. Resolve `$NACL_PROJECT_ROOT` (see Project Root Resolution below) and read `config.yaml` from there
 2. Extract the `graph` section
 3. If `graph` section missing or `config.yaml` absent → use all defaults
 4. Store resolved values for use in error messages and board paths:
    - `$neo4j_bolt_port` = graph.neo4j_bolt_port || 3587
    - `$neo4j_http_port` = graph.neo4j_http_port || 3574
-   - `$neo4j_secret_reference` = graph.neo4j_secret_reference (required for graph work)
+   - `$neo4j_password` = graph.neo4j_password || "neo4j_graph_dev"
    - `$excalidraw_port` = graph.excalidraw_port || 3580
    - `$boards_dir` = graph.boards_dir || "graph-infra/boards"
    - `$container_prefix` = graph.container_prefix || project.name || "graph"
@@ -43,7 +49,7 @@ Every graph skill MUST read `config.yaml` at the start to resolve graph settings
 |------|---------------|
 | Neo4j Bolt port | `graph.neo4j_bolt_port` > fallback `3587` |
 | Neo4j HTTP port | `graph.neo4j_http_port` > fallback `3574` |
-| Neo4j secret | `graph.neo4j_secret_reference` (no committed fallback) |
+| Neo4j password | `graph.neo4j_password` > fallback `"neo4j_graph_dev"` |
 | Excalidraw port | `graph.excalidraw_port` > fallback `3580` |
 | Boards directory | `graph.boards_dir` > fallback `"graph-infra/boards"` |
 | Container prefix | `graph.container_prefix` > `project.name` > fallback `"graph"` |
@@ -52,6 +58,70 @@ Every graph skill MUST read `config.yaml` at the start to resolve graph settings
 - Do NOT pass connection strings to MCP tools — the MCP server handles this
 - These values are ONLY for: error messages, Docker commands, board file paths, Excalidraw URLs
 - When showing error messages, always use resolved values: `bolt://localhost:{$neo4j_bolt_port}`
+
+### Project Root Resolution (worktree-safe)
+
+Claude Code Desktop parallel sessions run in linked git worktrees
+(`<project>/.claude/worktrees/...`). Configuration and infrastructure live at
+the MAIN checkout root, not the worktree root. Resolve the root before reading
+`config.yaml` or composing docker commands:
+
+```bash
+# NaCl project root (worktree-safe) — for config.yaml, graph-infra/, .mcp.json.
+# dirname of the absolute common git dir = MAIN checkout root in every case:
+# repo root, subdirectory, linked worktree, subdirectory of a worktree.
+COMMON=$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null)  # git >= 2.31
+if [ -n "$COMMON" ]; then NACL_PROJECT_ROOT=$(dirname "$COMMON"); else NACL_PROJECT_ROOT=$(pwd); fi
+```
+
+Rule of thumb: configuration and infra (`config.yaml`, `graph-infra/`,
+`.mcp.json`, `.env`) resolve against `$NACL_PROJECT_ROOT`; versioned content
+(boards, docs, source code) resolves against the checkout you are working in.
+The JS authority for this resolution is `resolveProjectRoot` in
+`nacl-core/scripts/graph-doctor.mjs`, pinned by its test.
+
+## Graph-Down HALT (canonical)
+
+When a graph skill HALTs because Neo4j is unreachable, it MUST use the
+canonical message below, preceded by the marker comment
+`<!-- nacl-graph-halt -->`. The lint gate `scripts/check-graph-halt-snippet.sh`
+enforces byte-identical copies across skills — edit here first, then re-sync
+the copies.
+
+Full form (blockquote HALT sites):
+
+<!-- nacl-graph-halt-canonical-start -->
+> Neo4j is not reachable at `bolt://localhost:{$neo4j_bolt_port}`.
+> Tell me "start the graph" and I will run `node "$HOME/.claude/skills/nacl-core/scripts/graph-doctor.mjs" --fix` via Bash (works in Claude Code Desktop and CLI).
+> Or start it yourself from the project root (main checkout, not a worktree):
+> - local mode: `docker compose -f graph-infra/docker-compose.yml up -d` --- if Docker Desktop is not running, open the Docker Desktop app first
+> - remote mode: relaunch the sidecar `~/.nacl/sidecar/<project_scope>.sh` (Windows: `%USERPROFILE%\.nacl\sidecar\<project_scope>.cmd`)
+<!-- nacl-graph-halt-canonical-end -->
+
+The line after the block is the per-skill tail — one of:
+- `> This skill requires Neo4j --- cannot proceed without it.` (default)
+- `> Cannot proceed with sync.` (nacl-ba-sync)
+
+Compact form (table cells and `ERROR:` print strings — from-board, render, publish):
+
+<!-- nacl-graph-halt-compact-start -->
+Neo4j is not reachable at bolt://localhost:{$neo4j_bolt_port}. Tell me "start the graph" (I will run node "$HOME/.claude/skills/nacl-core/scripts/graph-doctor.mjs" --fix) or start it from the project root: docker compose -f graph-infra/docker-compose.yml up -d (local) / ~/.nacl/sidecar/<project_scope>.sh (remote).
+<!-- nacl-graph-halt-compact-end -->
+
+## Concurrent Sessions (Desktop parallel sessions / worktrees)
+
+Parallel Claude Code sessions of one project share ONE graph (one local
+container or one remote scope). The database layer is safe (Neo4j per-write
+locking), but semantic lost-updates are possible when two sessions run the
+same writing BA/SA skill over the same nodes. Known limitation:
+
+- Run at most one WRITING BA/SA skill at a time per project. Read-only skills
+  and validators are safe in parallel.
+- TL task claiming in remote mode is protected by the claim-lock
+  (`nacl-core/scripts/claim-task.mjs`).
+- Board files under `graph-infra/boards/` are versioned per-checkout: two
+  worktrees syncing the same board into one graph will fight — run
+  `/nacl-ba-sync` from the main checkout only.
 
 ## Schema Reference
 
@@ -450,7 +520,7 @@ RETURN 'BP-' + apoc.text.lpad(toString(coalesce(maxNum, 0) + 1), 3, '0') AS next
 
 ## Skill Modifier Conventions
 
-Skills accept **modifiers** — arguments that change behavior. See [Skill Modifiers Reference](../docs/skill-modifiers.md) for the full catalog.
+Skills accept **modifiers** — arguments that change behavior. See [Skill Modifiers Reference](docs/skill-modifiers.md) for the full catalog.
 
 ### Three Paradigms
 

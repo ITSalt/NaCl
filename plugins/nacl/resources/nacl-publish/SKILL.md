@@ -176,7 +176,7 @@ Before any Docmost command, verify:
    - If fails -> `ERROR: Docmost MCP not available. Check that the MCP server is connected.`
 
 2. **Neo4j available?** Call `mcp__neo4j__read-cypher` with `RETURN 1`.
-   - If fails -> `ERROR: Neo4j not available. Check config.yaml → graph.neo4j_bolt_port (default: 3587) and ensure Docker is running.`
+   - If fails -> `ERROR: ` + "Neo4j is not reachable at bolt://localhost:{$neo4j_bolt_port}. Tell me "start the graph" (I will run node "$HOME/.claude/skills/nacl-core/scripts/graph-doctor.mjs" --fix) or start it from the project root: docker compose -f graph-infra/docker-compose.yml up -d (local) / ~/.nacl/sidecar/<project_scope>.sh (remote)."
 
 3. **Graph has data?** Query:
    ```cypher
@@ -312,7 +312,7 @@ reconciliation evidence:
 ```
 
 Same schema as the conductor's reconciliation artifact
-(see `<project-root>/.tl/reconciliation/
+(see `/home/project-owner/projects/NaCl/.tl/reconciliation/
 _template.json`) but with `sources_checked` scoped to the publish
 subset and `terminal_status` recorded against the publish gate
 specifically.
@@ -790,7 +790,7 @@ Used for finding existing pages during manifest rebuild.
 | Situation | Action |
 |-----------|--------|
 | Docmost MCP unavailable | `ERROR: Docmost MCP not available. Check MCP server connection.` |
-| Neo4j unavailable | `ERROR: Neo4j not available. Check config.yaml → graph.neo4j_bolt_port (default: 3587) and ensure Docker is running.` |
+| Neo4j unavailable | `ERROR: ` + "Neo4j is not reachable at bolt://localhost:{$neo4j_bolt_port}. Tell me "start the graph" (I will run node "$HOME/.claude/skills/nacl-core/scripts/graph-doctor.mjs" --fix) or start it from the project root: docker compose -f graph-infra/docker-compose.yml up -d (local) / ~/.nacl/sidecar/<project_scope>.sh (remote)." |
 | Graph is empty | `WARNING: Graph is empty. Run /nacl-ba-from-board or seed first.` |
 | Manifest missing (incremental) | `ERROR: No manifest. Run /nacl-publish docmost first.` |
 | Manifest missing (full) | Proceed with init flow: read `config.yaml → docmost.spaces.graph` first; only ask the user if config.yaml is empty. |
@@ -956,7 +956,7 @@ Generate boards sequentially in this order:
 
 | Situation | Action |
 |-----------|--------|
-| Neo4j unavailable | `ERROR: Neo4j not available. Check config.yaml → graph.neo4j_bolt_port (default: 3587) and ensure Docker is running.` |
+| Neo4j unavailable | `ERROR: ` + "Neo4j is not reachable at bolt://localhost:{$neo4j_bolt_port}. Tell me "start the graph" (I will run node "$HOME/.claude/skills/nacl-core/scripts/graph-doctor.mjs" --fix) or start it from the project root: docker compose -f graph-infra/docker-compose.yml up -d (local) / ~/.nacl/sidecar/<project_scope>.sh (remote)." |
 | No DomainEntities | Skip domain-model board, log: `SKIP: domain-model -- no entities in graph` |
 | No Modules | Skip context-map board, log: `SKIP: context-map -- no modules in graph` |
 | No UseCases with steps | Skip all activity boards, log: `SKIP: activity boards -- no UCs with steps` |

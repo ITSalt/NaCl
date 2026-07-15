@@ -2,6 +2,8 @@
 
 The NaCl wrapper around Anthropic's `/goal` command that adds alias resolution, GOAL_PROOF verification, tier caps, and a mandatory refusal catalog for human-gate skills.
 
+**CLI-only.** `/nacl-goal` is invoked as a slash command in the Claude Code CLI. It is deliberately excluded from the Claude Code Desktop plugin (`/goal` itself cannot run in Desktop), so there is no `/nacl:goal` equivalent among the Desktop plugin's skills.
+
 ---
 
 ## What `/goal` is
@@ -23,7 +25,7 @@ Key properties:
 
 - **Alias resolution.** Human-readable aliases (`wave:5`, `fix:BUG-042`, `reopened-drain`, `validate:module:AUTH`) expand to the full GOAL_PROOF-instructing condition automatically.
 - **GOAL_PROOF protocol.** The composed condition instructs the primary session to run a deterministic check script every turn and print a structured `GOAL_PROOF` block into the transcript. The evaluator reads that block — not raw filesystem state. See [./goal-proof-protocol.md](./goal-proof-protocol.md).
-- **Mandatory tier cap.** Every alias carries a soft budget (turns, wall-clock hours, observed token target) from the tier table. See §Tier table below.
+- **Mandatory tier cap.** Every alias carries a soft budget (turns, wall-clock hours, observed token target) from the tier table, with one shipped exception (`intake`, see below). See §Tier table below.
 - **Refusal catalog.** Ten structured refusal codes prevent `/nacl-goal` from wrapping human-approval gates. See `nacl-goal/refusal-catalog.md`.
 - **Dry-run-first invocation.** `/nacl-goal <alias>` without `--start` prints a full preview and exits. No `/goal` is issued, no turn is consumed.
 
@@ -106,7 +108,7 @@ Tier S. Resolves a specific bug: writes and verifies RED regression test, applie
 
 ### `validate:module:<MOD-ID>`
 
-Tier S. Re-runs all seven NaCl validators (L1–L7 plus BA-SA cross-validation if applicable) for a module until all pass. Check script: `nacl-goal/checks/validate.sh <MOD-ID>`.
+Tier S. Re-runs the NaCl validator suite (L1–L13 — L10–L13 are opt-in layers, 2.15+, and PASS vacuously when that layer is empty — plus BA-SA cross-validation XL6–XL9 where applicable) for a module until all pass. Check script: `nacl-goal/checks/validate.sh <MOD-ID>`.
 
 ### `reopened-drain`
 
@@ -119,6 +121,8 @@ Two aliases are autonomy-by-default (they issue `/goal` without `--start`, optin
 ### `intake` — single-PR
 
 Tier M. `/nacl-goal intake "<free-text goal>"`. Classifies a free-text/image goal into BUG/TASK/FEATURE_SMALL atoms, runs them on ONE branch producing ONE PR, drives it through CI to a healthy staging stand. Unitary by design — refuses a goal that would need splitting across modules with `PLAN_BLOCKED_PLAN_SPLIT_REQUIRED`. Check script: `nacl-goal/checks/intake.sh`.
+
+`intake` is tier M by classification, but its shipped `GOAL_BUDGET_EXHAUSTED` contract does **not** use the tier-M row below — it caps at 200 turns / 3 h / 4,000,000 observed tokens (tighter than tier M's 500 / 6 h / 8,000,000), per `nacl-goal/aliases.md`.
 
 ### `conduct` — multi-cluster, one PR per cluster
 

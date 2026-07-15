@@ -1,4 +1,4 @@
-[Package boundary](../references/package-boundary.md) > Skill Modifiers Reference
+[Home](../README.md) > Skill Modifiers Reference
 
 :ru: [Русская версия](skill-modifiers.ru.md)
 
@@ -22,7 +22,7 @@ NaCl skills use three invocation paradigms. Each paradigm fits a specific type o
 
 ### Naming Rules
 
-- **Flags:** kebab-case with double dashes: `--skip-verify`, `--dry-run`, `--auto-ship`
+- **Flags:** kebab-case with double dashes: `--push-direct-to-main`, `--dry-run`, `--auto-ship`
 - **Mode values:** UPPER_CASE for CRUD-like workflow branches: `FULL`, `CREATE`, `MODIFY`, `IMPORT_BA`. Lowercase for utility modes: `full`, `module`, `stats-only`, `internal`
 - **Subcommands:** lowercase: `sync`, `verify`, `stories`, `docmost`
 - **Positional identifiers:** match the ID format of their layer: `UC028`, `FR-001`, `TECH003`, `ELE-644`
@@ -61,19 +61,6 @@ These flags appear across multiple TL skills. When designing a new skill, reuse 
 | `--branch <name>` | Explicit branch name | `nacl-tl-conductor`, `nacl-tl-deliver` |
 | `--all` | Process all available items | `nacl-tl-verify`, `nacl-tl-reopened` |
 
-### Skip Flags
-
-Skip a named workflow phase. Pattern: `--skip-{phase}`.
-
-| Flag | Meaning | Used by |
-|------|---------|---------|
-| `--skip-verify` | Skip staging verification | `nacl-tl-deliver` |
-| `--skip-deploy` | Skip health check / deploy | `nacl-tl-deliver` |
-| `--skip-plan` | Skip planning phase | `nacl-tl-full` |
-| `--skip-qa` | Skip E2E QA testing | `nacl-tl-full`, `nacl-tl-conductor` |
-| `--skip-merge` | Skip PR merge steps | `nacl-tl-release` |
-| `--skip-deliver` | Skip delivery step | `nacl-tl-conductor` |
-
 ### User Gate Controls
 
 These are **semantic inverses** by design:
@@ -88,8 +75,7 @@ These are **semantic inverses** by design:
 | Flag | Meaning | Risk Level | Used by |
 |------|---------|------------|---------|
 | `--dry-run` | Show plan without executing | Safe | `nacl-tl-fix`, `nacl-tl-dev`, `nacl-tl-dev-be`, `nacl-tl-dev-fe`, `nacl-tl-hotfix`, `nacl-tl-release`, `nacl-tl-reopened`, `nacl-tl-reconcile`, `nacl-init` |
-| `--force` | Override guards / skip confirmation | Medium | `nacl-tl-reconcile` |
-| `--force-push` | Push directly to main (bypasses PR) | High | `nacl-tl-hotfix` |
+| `--push-direct-to-main` | Push directly to main (bypasses PR, double confirmation) | High | `nacl-tl-hotfix` |
 
 ### Auto-Chain Flags
 
@@ -243,6 +229,9 @@ See [nacl-core/lang-directive.md](../nacl-core/lang-directive.md) for full resol
 |-----------|---------|-------------|
 | `/nacl-sa-uc stories` | stories | Create UC registry from BA automation scope |
 | `/nacl-sa-uc detail <UC-ID>` | detail | Detail specific UC (activity, forms, requirements) |
+| `/nacl-sa-uc slices <UC-ID>` | slices | Author/modify behavior slices (graph-native acceptance scenarios) |
+| `/nacl-sa-uc errors <UC-ID>` | errors | Author/modify domain errors observable through the UC's endpoints |
+| `/nacl-sa-uc resilience <UC-ID>` | resilience | Author/modify cache policies and degradation rules |
 | `/nacl-sa-uc list` | list | Show all UCs |
 
 #### nacl-sa-ui
@@ -254,6 +243,7 @@ See [nacl-core/lang-directive.md](../nacl-core/lang-directive.md) for full resol
 | `/nacl-sa-ui verify [module]` | verify | Verify form-domain mapping |
 | `/nacl-sa-ui components [module]` | components | Identify shared components |
 | `/nacl-sa-ui navigation` | navigation | Define navigation structure |
+| `/nacl-sa-ui state-machine <UC-NNN\|SCR-Name>` | state-machine | Author/modify a screen's deterministic state machine |
 | `/nacl-sa-ui full [module]` | full | Run all phases |
 
 #### nacl-sa-validate
@@ -430,8 +420,6 @@ Invoked as: `/nacl-tl-ship`, `/nacl-tl-ship UC###`, `/nacl-tl-ship --feature FR-
 | `--feature FR-NNN` | Deliver all UCs in the feature request |
 | `--branch <name>` | Switch to specified branch |
 | `--env staging\|production` | Target deployment environment (default: staging) |
-| `--skip-verify` | Skip staging verification phase |
-| `--skip-deploy` | Skip deploy health check phase |
 
 #### nacl-tl-release
 
@@ -440,7 +428,6 @@ Invoked as: `/nacl-tl-ship`, `/nacl-tl-ship UC###`, `/nacl-tl-ship --feature FR-
 | `--major` | Force major version bump |
 | `--minor` | Force minor version bump |
 | `--patch` | Force patch version bump |
-| `--skip-merge` | Tag-only mode — skip PR merge steps |
 | `--pr N,N` | Merge specific PR numbers (skip discovery) |
 | `--dry-run` | Show plan without executing |
 | `--yes` | Skip user confirmation gates |
@@ -471,7 +458,7 @@ Invoked as: `/nacl-tl-fix "description"` or `/nacl-tl-fix --dry-run "description
 |------|-------------|
 | `--apply` | Stash uncommitted changes for hotfix |
 | `--cherry-pick <commit\|HEAD>` | Apply existing commit to hotfix branch |
-| `--force-push` | Push directly to main (requires double confirmation) |
+| `--push-direct-to-main` | Push directly to main (requires double confirmation) |
 | `--rebase-feature` | After hotfix, rebase source feature branch from main |
 | `--dry-run` | Analysis only, no git operations |
 | `--yes` | Skip confirmation gates |
@@ -494,7 +481,6 @@ Invoked as: `/nacl-tl-diagnose` or `/nacl-tl-diagnose "problem description"`
 | `--report=<path>` | Use existing diagnostic report (e.g., `DIAGNOSTIC-REPORT.md`) |
 | `--scope=UC###` | Reconcile specific UC only |
 | `--dry-run` | Plan only, no changes |
-| `--force` | Skip user confirmation |
 
 #### nacl-tl-docs
 
@@ -507,8 +493,6 @@ No user-facing modifiers. Invoked as: `/nacl-tl-docs UC###`
 | `--wave N` | Execute only wave N |
 | `--task UC###` | Full lifecycle for a single UC |
 | `--feature FR-NNN` | Execute feature wave |
-| `--skip-plan` | Skip planning phase (graph already populated) |
-| `--skip-qa` | Skip E2E QA testing |
 | `--yes` | Skip START GATE confirmation |
 
 #### nacl-tl-conductor
@@ -518,8 +502,6 @@ No user-facing modifiers. Invoked as: `/nacl-tl-docs UC###`
 | `--items FR-001,FR-002,BUG-003` | Comma-separated list of items to process |
 | `--feature FR-NNN` | Single feature request |
 | `--branch <name>` | Explicit branch name |
-| `--skip-deliver` | Skip delivery step |
-| `--skip-qa` | Skip E2E testing |
 | `--yes` | Skip confirmation gates |
 
 ---
@@ -528,24 +510,26 @@ No user-facing modifiers. Invoked as: `/nacl-tl-docs UC###`
 
 #### nacl-goal
 
-**Paradigm:** Alias + flag. Preview by default; `--start` issues the underlying `/goal`. See [Goal-driven workflows](guides/goal-command.md).
+**Paradigm:** Alias + flag. Preview by default for the 2.10.0 aliases; `--start` issues the underlying `/goal`. `intake` and `conduct` are autonomy-by-default instead (opt out with `--plan-only`). See [Goal-driven workflows](guides/goal-command.md).
 
 | Invocation | Description |
 |-----------|-------------|
 | `/nacl-goal wave:<N>` | Preview: finish Wave N (Tier M) — `nacl-tl-full` work |
 | `/nacl-goal fix:<BUG-NNN>` | Preview: drive a bug fix to GREEN (Tier S) — `nacl-tl-fix` work |
-| `/nacl-goal validate:module:<MOD-ID>` | Preview: turn all L1–L7 validators GREEN (Tier S) |
+| `/nacl-goal validate:module:<MOD-ID>` | Preview: turn all L1–L13 validators GREEN, plus XL6-XL9 when the module has a BA layer (Tier S) |
 | `/nacl-goal reopened-drain` | Preview: drain the Reopened YouGile column (Tier M) |
-| `/nacl-goal stubs-cleanup:<MOD-ID>` | Preview: empty stub registry ≥ medium (Tier S, **ships in 2.10.1**) |
-| `/nacl-goal feature:<FR-NNN>` | Preview: deliver an FR end-to-end (Tier L, **ships in 2.10.1**) |
-| `/nacl-goal migrate-canary` | Preview: migrate canary project up to retrospective gate (Tier L, **ships in 2.10.1**) |
+| `/nacl-goal intake` | **2.10.1, autonomous by default.** Ingests free-text/image intent, classifies into BUG/TASK/FEATURE_SMALL atoms, runs them on one feature branch → one PR, drives CI to a healthy staging stand. Unitary by design (refuses goals needing a module split). |
+| `/nacl-goal conduct` | **2.18.0, autonomous by default.** Sibling of `intake` for goals spanning several unrelated modules: materializes the split as per-module clusters, each shipping its own PR, wave-ordered by cross-cluster dependencies. |
 | `/nacl-goal custom "<condition>" --check-script=<path> --tier=<T> --description=<…>` | Custom alias with user-supplied check script |
 | `/nacl-goal resume` | Re-attach to a stale `goal_in_progress` marker (**2.10.1**) |
 | `/nacl-goal abort <run_id>` | Clear a stale marker, write `exit_reason=crashed` to run file (**2.10.1**) |
 
+`stubs-cleanup:<MOD-ID>`, `feature:<FR-NNN>`, and `migrate-canary` remain **deferred** (post-2.10.1): their check scripts are placeholders and their contracts are not yet published in `nacl-goal/aliases.md`.
+
 | Flag | Description |
 |------|-------------|
-| `--start` | Actually issue `/goal` with the composed condition. Without it, the wrapper only prints the preview block. In 2.10.0, `--start` warns for Tier S/M and refuses Tier L/XL; in 2.10.1 it is fully enabled. |
+| `--start` | Actually issue `/goal` with the composed condition (2.10.0-era aliases only). Without it, the wrapper only prints the preview block. |
+| `--plan-only` | Opt-out for `intake`/`conduct`: preview only, do not issue `/goal`. |
 | `--tier=<S\|M\|L\|XL>` | Required for `custom`. Overrides the alias-default soft budget. Tier table in `docs/guides/goal-command.md`. |
 | `--check-script=<path>` | Required for `custom`. Must exist, be executable, and emit a GOAL_PROOF-compatible block per `docs/guides/goal-proof-protocol.md`. |
 | `--description="<one line>"` | Recorded in the run file for human review. |
@@ -558,7 +542,7 @@ Refuses Tier-C skills (`nacl-ba-full`, `nacl-sa-full`, `nacl-tl-hotfix`, post-ca
 
 #### nacl-render
 
-**Paradigm:** Dual-namespace subcommand + flag
+**Paradigm:** Subcommand + flag. Excalidraw board rendering was removed and moved to the analyst-tool backend (`analyst-tool/server/src/render/excalidraw/`); only the `md` namespace remains.
 
 | Invocation | Description |
 |-----------|-------------|
@@ -568,7 +552,6 @@ Refuses Tier-C skills (`nacl-ba-full`, `nacl-sa-full`, `nacl-tl-hotfix`, post-ca
 | `/nacl-render md domain-model` | Render full domain model |
 | `/nacl-render md traceability` | Render traceability matrix |
 | `/nacl-render md ... --output <path>` | Write to file instead of terminal |
-| `/nacl-render excalidraw <command> [args]` | Generate Excalidraw board |
 
 #### nacl-publish
 
@@ -607,13 +590,11 @@ Which flags work on which skills. Only flags appearing on 2+ skills are shown.
 | `--feature` | x | | | | | | | x | x | x | | | | | | | | | | | | |
 | `--task` | | | | | | | | x | | | | x | | x | x | | | | | | | |
 | `--wave N` | | | | | | x | | x | | | | | | | | | | | | | | |
-| `--skip-qa` | | | | | | | | x | x | | | | | | | | | | | | | |
 | `--all` | | | | | | | | | | | | x | | x | | | | | | | | |
 | `--branch` | | | | | | | | | x | x | | | | | | | | | | | | |
 | `--auto-ship` | | x | | | | | | | | | | x | | | | | | | | | | |
 | `--deploy` | x | | | | | | | | | | | | | | | | | | | | | |
-| `--force` | | | | | | | | | | | | | | | | x | | | | | | |
-| `--force-push` | | | | | | | | | | | | | x | | | | | | | | | |
+| `--push-direct-to-main` | | | | | | | | | | | | | x | | | | | | | | | |
 
 ### BA/SA Flags (not in TL column matrix)
 

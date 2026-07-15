@@ -1,6 +1,6 @@
 # NaCl Graph Gateway contract
 
-Status: Wave 4 local multi-project pilot contract
+Status: Wave 9 Stage 2 local implementation contract
 
 ## Requirements and constraints
 
@@ -10,12 +10,22 @@ from the installed plugin cache on system Node.js 20 or newer, serve the same
 MCP schemas to CLI and Desktop, and fail closed when lifecycle, registry,
 secret, schema, audit, transaction, or read-back evidence is incomplete.
 
-The Wave 4 scope is local and multi-project. Stable generated project identity,
+The retained local scope is multi-project. Stable generated project identity,
 confirmed root registration, physical Community-instance isolation, and
 project-keyed routing are enabled. RBAC, leases, fencing, and general domain
 writes remain Wave 5 and Wave 6 responsibilities. Every graph operation
 requires explicit `project_id` plus `project_root`; the gateway never selects a
 last-used project.
+
+For remote Community deployments, one project still means one container and
+one independent data/log volume lineage, but the **server is the authorization
+boundary**. `project_scope` is route and provenance only. An authoritative
+server `trusted-cns` set is projected to every registered project gateway;
+same-server project selection is positive behavior, while another server needs
+a separate grant and denial does not reveal its inventory. Any graph
+`ProjectMembership` record used by the legacy concurrency engine is a derived
+operation-role projection of that server grant, never an independently
+managed project-access grant.
 
 ## Components and data flow
 
@@ -59,6 +69,20 @@ uninstall.
   persist the pre-write audit blocks the mutation.
 
 ## Project API and routing
+
+The production-shaped server route accepts only a server-controlled
+`project_ref`. The resolver returns `(authorized_server_id, project_scope)`;
+callers cannot supply a server ID, host, URI, certificate path, Neo4j password,
+or principal binding. The personal mTLS certificate authorizes transport to
+the server, operation scopes authorize the requested action, and the per-route
+Neo4j password remains a distinct server-side secret.
+
+VPS state uses `trusted-cns` plus an atomic gateway inventory. Provisioning a
+new gateway inherits the set and atomically reserves a unique public port.
+Legacy per-project lists migrate only through a digest-bound union plan/apply.
+Grant projection failure rolls back. Revoke projection/reload failure disables,
+quarantines, and stops a stale route, invalidates its authorization revision,
+and cannot return success.
 
 | Tool | Capability | Persistence policy |
 |---|---|---|

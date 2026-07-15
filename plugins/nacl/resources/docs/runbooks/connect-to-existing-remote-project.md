@@ -16,7 +16,7 @@ local mTLS tunnel, with `.mcp.json` still pointing at `bolt://localhost:<port>`.
 
 ## Steps
 
-1. **Start your tunnel** (one-time per machine; restart on reboot):
+1. **Start your tunnel** (one-time per machine):
 
    ```sh
    sh <NaCl>/graph-infra/scripts/install-sidecar.sh \
@@ -29,11 +29,36 @@ local mTLS tunnel, with `.mcp.json` still pointing at `bolt://localhost:<port>`.
 
    This exposes `bolt://localhost:3700` backed by mTLS to the VPS.
 
-2. **Connect** (auto-routed if the repo's `config.yaml` has `graph.mode: remote`):
+   **Autostart on reboot.** By default the installer also registers an OS-level autostart so
+   the tunnel comes back up on its own after a reboot or logout — you do **not** need to
+   manually relaunch it (this matters for Claude Code Desktop users, who won't re-run shell
+   commands by hand):
+   - macOS: a LaunchAgent `com.nacl.sidecar.<project_scope>` (`~/Library/LaunchAgents/com.nacl.sidecar.<project_scope>.plist`).
+   - Windows: a Scheduled Task named `NaCl Sidecar <project_scope>` (run at logon).
+
+   Manual relaunch (as before) is only needed if you passed `--no-autostart` / `-NoAutostart`
+   to the installer.
+
+   Check it's running:
 
    ```sh
-   /nacl-init --scale=connect          # or just /nacl-init --from .  (auto-detects remote)
+   # macOS
+   launchctl print gui/$UID/com.nacl.sidecar.acme-billing | grep state
    ```
+
+   ```powershell
+   # Windows
+   Get-ScheduledTask -TaskName "NaCl Sidecar acme-billing"
+   ```
+
+2. **Connect** (auto-routed if the repo's `config.yaml` has `graph.mode: remote`). The command
+   prefix depends on your channel — pick one, do not mix (see `plugin/README.md`, "Do not
+   double-install"):
+   - **CLI** (repo-side symlinked skills): `/nacl-init --scale=connect` — or just
+     `/nacl-init --from .` (auto-detects remote).
+   - **Claude Code Desktop plugin** (v2.24.0+): `/nacl:init --scale=connect` — or just
+     `/nacl:init --from=.` (same auto-detection; the flag syntax is unchanged, only the
+     `/nacl-`→`/nacl:` prefix differs).
 
    Under the hood this runs `connect-remote.sh`: it writes `.mcp.json` (localhost sidecar) and the
    `config.yaml` `graph` block, registers the project, and runs a READ-ONLY gate. It ends with
@@ -41,7 +66,8 @@ local mTLS tunnel, with `.mcp.json` still pointing at `bolt://localhost:<port>`.
 
 3. **If FAILED with `project-missing`** — the graph has no `(:Project {id:<scope>})`. Either your
    endpoint/scope is wrong, or the project was never provisioned; the first developer must run
-   `/nacl-init --scale=create` (or the owner runs `provision-vps.sh`). Connect never seeds a graph.
+   `/nacl-init --scale=create` (CLI) or `/nacl:init --scale=create` (Desktop plugin) (or the owner
+   runs `provision-vps.sh`). Connect never seeds a graph.
 
 4. **Restart Claude Code** so the MCP server reconnects to the (now localhost-tunnelled) graph.
 

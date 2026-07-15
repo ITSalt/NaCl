@@ -20,25 +20,32 @@ In **remote** mode `.tl/status.json` is per-clone and would diverge across devel
 
 ## 2. Task claim-locks (prevent two developers grabbing the same task)
 
-Fine-grained coordination uses only the bundled gateway. Derive a worker with
-`nacl_graph_derive_worker_identity`, then call `nacl_graph_claim_resource` for
-the exact `Task` with a stable idempotency key, bounded TTL, and
-`APPROVE_TL_WRITE`. Retain the returned fencing token. Long work uses
-`nacl_graph_heartbeat_resource`; completion uses
-`nacl_graph_release_resource`, or `nacl_graph_handoff_resource` with its exact
-target confirmation. `LEASE_HELD` means another worker owns the task, so pick
-another. Never submit raw Cypher or run a package-relative helper from project
-cwd. For `conduct` runs cluster ownership still partitions work; Task leases
-cover interactive coordination.
+Fine-grained coordination is an atomic conditional write on the `Task` node, built by the tested
+tool `nacl-core/scripts/claim-task.mjs` (do not hand-write the Cypher — run the tool's query via
+`mcp__neo4j__write-cypher` and interpret with the tool's rule). Properties: `claimed_by`,
+`claimed_at`, `claim_expires_at` (TTL, default 4h). A single statement is atomic under Neo4j's
+per-write locking, so no external coordinator is needed:
+
+```
+claim:   node nacl-core/scripts/claim-task.mjs claim   --task <id> --dev <NACL_DEVELOPER_ID> --json
+release: node nacl-core/scripts/claim-task.mjs release --task <id> --dev <NACL_DEVELOPER_ID> --json
+```
+
+If the returned `owner` ≠ me, the task is held by someone else → pick another. Release on
+successful ship. For `conduct` runs the existing cluster ownership (`cluster_id` + per-cluster
+branch/PR) already partitions work; claim-locks cover interactive (non-conduct) use.
 
 ## 3. Provenance: `developer_id`
 
-Use the trusted principal/client/session envelope and
-`nacl_graph_derive_worker_identity`. The returned opaque worker ID separates
-sessions and machines without accepting a caller-supplied role. Carry the same
-identity, worktree, branch, base SHA, and optional PR provenance into every
-lease and mutation. The gateway stamps trusted principal/worker provenance on
-accepted writes.
+Resolve with the pinned tool:
+`NACL_DEVELOPER_ID="$(node nacl-core/scripts/resolve-developer-id.mjs --project-root .)"`.
+Precedence: `$NACL_DEVELOPER_ID` env (explicit override) → `config.yaml` `developer.id` → auto
+`<git user.email | $USER>/<machine-key>`. The **machine-key** is stable per machine (IOPlatformUUID
+on macOS, `/etc/machine-id` on Linux, else hostname; hashed to 8 hex), so ONE human on TWO machines
+gets two distinct ids **automatically, with nothing to configure** — essential because the claim-lock
+keys ONLY on this id (`claimed_by = $dev` is re-claimable, so two machines sharing an id would
+re-grab each other's tasks). `claimed_by` stays human-readable, e.g. `alice@x.com/3f9a2c1b`. v1
+stamps `claimed_by` on claims, and `updated_by`/`updated_at` on phase-advance writes.
 
 ## 4. Per-skill behaviour in remote mode
 

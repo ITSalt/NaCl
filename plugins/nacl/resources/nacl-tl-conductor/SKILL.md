@@ -861,7 +861,7 @@ the reconciliation artifact to:
 .tl/reconciliation/<ISO-8601-utc>.json
 ```
 
-Format follows `<project-root>/.tl/reconciliation/
+Format follows `/home/project-owner/projects/NaCl/.tl/reconciliation/
 _template.json`. Required fields:
 
 - `timestamp` — wall-clock UTC, same string as the filename basename.

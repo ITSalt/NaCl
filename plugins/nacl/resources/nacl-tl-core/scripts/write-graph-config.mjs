@@ -25,7 +25,7 @@ const FLAT_ORDER = [
   'neo4j_uri', 'neo4j_username', 'neo4j_database', 'project_scope',            // remote
   'boards_dir',                                                                // shared
 ];
-const REMOTE_ORDER = ['host', 'gateway_port', 'sidecar_port', 'client_cert', 'client_key', 'ca_cert', 'tls'];
+const REMOTE_ORDER = ['host', 'gateway_port', 'sidecar_port', 'client_cert', 'client_key', 'ca_cert', 'tls', 'secret_source'];
 
 const isEmpty = (v) => v === undefined || v === null || v === '' || v === '""' || v === "''";
 

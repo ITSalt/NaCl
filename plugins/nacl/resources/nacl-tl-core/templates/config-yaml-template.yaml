@@ -165,7 +165,7 @@ docmost:
 #                      /nacl-init into connect-mode (no Docker, no schema seed).
 #
 # Backward-compatibility: an ABSENT `mode` key is treated as `local`. Existing configs
-# need no edits. Secrets are NEVER committed — only an opaque reference is stored
+# need no edits. Secrets (neo4j_password) are NEVER committed — they live in env
 # (NEO4J_PASSWORD) / a gitignored .env. For remote projects .mcp.json is gitignored too.
 graph:
   mode: "local"                  # local | remote
@@ -173,7 +173,7 @@ graph:
   # --- local mode (mode: local, or key absent) ---
   neo4j_bolt_port: 3587          # Bolt protocol port (MUST be unique per project on same host)
   neo4j_http_port: 3574          # Neo4j Browser UI port
-  neo4j_secret_reference: "env:NEO4J_PASSWORD"
+  neo4j_password: "neo4j_graph_dev"
   container_prefix: ""           # Docker container name prefix (auto: project name if empty)
 
   # --- remote mode (mode: remote) — uncomment & fill; commit ONLY the non-secret fields ---

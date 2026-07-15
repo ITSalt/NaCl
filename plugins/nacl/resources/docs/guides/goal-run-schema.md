@@ -2,6 +2,8 @@
 
 Schema reference for `.tl/goal-runs/<run_id>.md`, the machine-parseable record of a single `/nacl-goal` execution.
 
+**Scope: 2.10.0 aliases only** (`wave`, `fix`, `validate`, `reopened-drain`). The autonomy-default orchestrators `intake` (2.10.1) and `conduct` (2.18.0) do not use this single-file YAML format — they write a gitignored directory-per-run layout at `.tl/goal-runs/<run_id>/` (`request.json`, `intake.json`, `plan.lock.json`, `progress.jsonl`, `atoms/`, `clusters/`, ...) with `run_id` format `goal-intake-<utc-iso>-<short-hash>`. See `nacl-goal/run-artifacts.md` and `nacl-goal/plan-lock-schema.md` for those.
+
 ## How run files are built
 
 Each run file is built up **incrementally** by `/nacl-goal`'s outer process during a `--start` session. It is not written by the in-loop Claude session. The wrapper:

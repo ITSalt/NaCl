@@ -98,9 +98,10 @@ async function loadCatalog(pluginRoot) {
     throw fail("LEGACY_CATALOG_INVALID", "The packaged legacy workflow catalog is not the exact 60-name set.", {}, "FAILED");
   }
   if (
-    parity?.schemaVersion !== 1 ||
+    parity?.schemaVersion !== 2 ||
     parity?.codexRootWorkflowCount !== 60 ||
-    !Array.isArray(parity?.deliberateDivergences)
+    !Array.isArray(parity?.deliberateDivergences) ||
+    !Array.isArray(parity?.historicalLegacyTargets)
   ) {
     throw fail("LEGACY_CATALOG_INVALID", "The packaged parity baseline is unavailable.", {}, "FAILED");
   }
@@ -115,8 +116,7 @@ async function loadCatalog(pluginRoot) {
       if (
         divergence.packagedSha256 !== packagedHash ||
         !TOKEN.test(divergence.codexRootSha256) ||
-        typeof divergence.reason !== "string" ||
-        !Array.isArray(divergence.acceptedLegacySha256 ?? [])
+        typeof divergence.reason !== "string"
       ) {
         throw fail("LEGACY_CATALOG_DRIFT", `Parity metadata drifted for ${name}.`, {}, "FAILED");
       }
@@ -127,20 +127,6 @@ async function loadCatalog(pluginRoot) {
         sourcePath: `skills-for-codex/${name}/SKILL.md`,
         reason: "Current exact Codex root parity hash.",
       }];
-      for (const historical of divergence.acceptedLegacySha256 ?? []) {
-        if (
-          !TOKEN.test(historical?.sha256) ||
-          !/^audited-base-[0-9a-f]{7,12}$/.test(historical?.generation ?? "") ||
-          !COMMIT.test(historical?.sourceCommit ?? "") ||
-          historical?.sourcePath !== `skills-for-codex/${name}/SKILL.md` ||
-          typeof historical?.reason !== "string" ||
-          historical.reason.length < 40 ||
-          acceptedTargets.some((entry) => entry.sha256 === historical.sha256)
-        ) {
-          throw fail("LEGACY_CATALOG_DRIFT", `Historical parity metadata drifted for ${name}.`, {}, "FAILED");
-        }
-        acceptedTargets.push({ ...historical });
-      }
       catalog.set(name, {
         name,
         acceptedTargets,
@@ -164,6 +150,27 @@ async function loadCatalog(pluginRoot) {
   }
   if ([...divergences.keys()].some((name) => !catalog.has(name))) {
     throw fail("LEGACY_CATALOG_INVALID", "The parity baseline names a workflow outside the exact catalog.", {}, "FAILED");
+  }
+  for (const historical of parity.historicalLegacyTargets) {
+    const entry = catalog.get(historical?.workflow);
+    if (
+      !entry ||
+      !TOKEN.test(historical?.sha256) ||
+      !/^audited-base-[0-9a-f]{7,12}$/.test(historical?.generation ?? "") ||
+      !COMMIT.test(historical?.sourceCommit ?? "") ||
+      typeof historical?.reason !== "string" ||
+      historical.reason.length < 40 ||
+      entry.acceptedTargets.some((target) => target.sha256 === historical.sha256)
+    ) {
+      throw fail("LEGACY_CATALOG_DRIFT", `Historical parity metadata drifted for ${historical?.workflow ?? "unknown"}.`, {}, "FAILED");
+    }
+    entry.acceptedTargets.push({
+      sha256: historical.sha256,
+      generation: historical.generation,
+      sourceCommit: historical.sourceCommit,
+      sourcePath: `skills-for-codex/${historical.workflow}/SKILL.md`,
+      reason: historical.reason,
+    });
   }
   return catalog;
 }

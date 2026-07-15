@@ -945,11 +945,14 @@ changes per `nacl-tl-core/references/remote-mode-coordination.md`:
   developers — never authoritative, never a coordination signal).
 - **Resume reads the graph only** (not `status.json`); there is no stale-cache fallback — if the
   graph is unreachable, HALT.
-- **Claim before working.** Call `nacl_graph_derive_worker_identity`, then
-  `nacl_graph_claim_resource` for the exact `Task` with a stable idempotency
-  key, bounded TTL, and `APPROVE_TL_WRITE`. Retain the fence for heartbeat,
-  mutation, explicit handoff, or release. `LEASE_HELD` means pick another.
-  Never run a package-relative command or submit raw Cypher.
+- **Claim before working.** Before starting a Task, acquire its claim-lock with
+  `node nacl-core/scripts/claim-task.mjs claim --task <id> --dev "$NACL_DEVELOPER_ID"` (run the
+  emitted Cypher via `mcp__neo4j__write-cypher`); if the returned `owner` ≠ you, the task is held —
+  pick another. Resolve the id with
+  `NACL_DEVELOPER_ID="$(node nacl-core/scripts/resolve-developer-id.mjs --project-root .)"`
+  (precedence: `$NACL_DEVELOPER_ID` env → `config.yaml developer.id` → auto
+  `<git email|user>/<machine-key>` — one human on two machines gets two distinct ids with nothing to
+  configure; see `nacl-tl-core/references/remote-mode-coordination.md` §3).
 - **Stamp provenance** (`updated_by`/`updated_at`) on phase-advance writes.
 
 ---

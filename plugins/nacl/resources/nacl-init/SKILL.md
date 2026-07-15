@@ -474,8 +474,29 @@ a deterministic `NACL_GRAPH_RESULT:` gate. It does not improvise graph logic in 
 ```
 Ask: "Will this project use a Neo4j graph for BA/SA specifications? (nacl-ba-*, nacl-sa-* skills)"
 If no → skip to Step 3.
-If yes → continue with 2c.0.
+If yes → continue with 2c.-1 (worktree guard), then 2c.0.
 ```
+
+#### 2c.-1 Worktree guard (HALT)
+
+Claude Code Desktop parallel sessions run in linked git worktrees. Graph
+infrastructure must be initialized from the MAIN checkout only — a second init
+from a worktree would allocate new ports and a duplicate container for the
+same project. Check first:
+
+```bash
+TOP=$(git rev-parse --show-toplevel 2>/dev/null)
+COMMON=$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null)
+if [ -n "$TOP" ] && [ "$COMMON" != "$TOP/.git" ]; then echo WORKTREE; else echo MAIN; fi
+```
+
+If it prints `WORKTREE` → HALT Step 2c with:
+
+> This session runs in a linked git worktree (`{worktree path}`), but the main
+> checkout is `{dirname of common dir}`. Run /nacl-init from the main checkout
+> (open a session on the project root, not a parallel-session worktree). If the
+> graph is already initialized there, this project needs no init — new sessions
+> pick it up automatically.
 
 #### 2c.0 Resolve the graph mode (local | create | connect)
 
@@ -507,45 +528,51 @@ sidecar socket (e.g. `bolt://localhost:3700`); skills/.mcp.json stay on localhos
 sh "$REPO_ROOT/nacl-tl-core/scripts/connect-remote.sh" \
   --project-root "$(pwd)" --skills-dir "$REPO_ROOT" \
   --uri "bolt://localhost:$SIDECAR_PORT" --project-scope "$SCOPE" \
-  --id "$PROJECT_ID" --name "$PROJECT_NAME"
+  --id "$PROJECT_ID" --name "$PROJECT_NAME" \
+  --host "$GRAPH_HOST" --gateway-port "$GATEWAY_PORT" --sidecar-port "$SIDECAR_PORT" \
+  --client-cert "$CLIENT_CERT" --client-key "$CLIENT_KEY" --ca-cert "$CA_CERT" \
+  --tls true --secret-source env:NEO4J_PASSWORD
 # → NACL_GRAPH_RESULT: status=CONNECTED|FAILED  (project_exists guard inside)
 
 # create (provision a new shared project) — idempotent (:Project) marker seed
 sh "$REPO_ROOT/nacl-tl-core/scripts/create-remote.sh" \
   --project-root "$(pwd)" --skills-dir "$REPO_ROOT" \
   --uri "bolt://localhost:$SIDECAR_PORT" --project-scope "$SCOPE" \
-  --id "$PROJECT_ID" --name "$PROJECT_NAME" --developer-id "$NACL_DEVELOPER_ID"
+  --id "$PROJECT_ID" --name "$PROJECT_NAME" --developer-id "$NACL_DEVELOPER_ID" \
+  --host "$GRAPH_HOST" --gateway-port "$GATEWAY_PORT" --sidecar-port "$SIDECAR_PORT" \
+  --client-cert "$CLIENT_CERT" --client-key "$CLIENT_KEY" --ca-cert "$CA_CERT" \
+  --tls true --secret-source env:NEO4J_PASSWORD
 # → NACL_GRAPH_RESULT: status=READY|FAILED
 ```
 
 Windows: call `connect-remote.ps1` / `create-remote.ps1` with the matching `-ProjectRoot`,
-`-SkillsDir`, `-Uri`, `-ProjectScope`, `-Id`, `-Name` parameters (see Step 2c.3 for the PS dispatch
-shape). Both tools write `.mcp.json` + the `config.yaml` `graph:` block and register the project — so
+`-SkillsDir`, `-Uri`, `-ProjectScope`, `-Id`, `-Name`, `-Host`, `-GatewayPort`,
+`-SidecarPort`, `-ClientCert`, `-ClientKey`, `-CaCert`, `-Tls` and `-SecretSource`
+parameters (see Step 2c.3 for the PS dispatch shape). Both tools write `.mcp.json` + the
+complete `config.yaml` `graph.remote` route and register the project — so
 on `CONNECTED`/`READY`, skip the rest of 2c and go to Step 3. On `FAILED`, fail loud with the
 `failed_check` (e.g. `project-missing` → tell the user to run `--scale=create` first).
 
 #### 2c.1 Auto-detect available ports  *(local mode only)*
 
-Scan for running Docker containers to find used Neo4j ports.
+Scan the port bindings of ALL Docker containers — running AND stopped. Stopped
+containers keep their configured bindings and re-claim them on `docker start`,
+so a scan of running containers alone hands the new project a latent collision
+(this happened live: a fresh project got the bolt/http block of a stopped
+project's container). Use the deterministic scanner — it inspects every
+container and suggests the first ladder rung where BOTH ports are free:
 
-macOS / Linux / WSL2 (bash):
 ```bash
-docker ps --format '{{.Ports}}' 2>/dev/null | grep -oE '[0-9]+->7687' | grep -oE '^[0-9]+'
+node "$REPO_ROOT/nacl-core/scripts/graph-doctor.mjs" --scan-ports
+# → NACL_GRAPH_PORTS: bolt=<csv of taken bolt ports> http=<csv of taken http ports>
+# → NACL_GRAPH_PORTS_SUGGEST: bolt=<port> http=<port>
 ```
 
-Native Windows (PowerShell — no `grep`):
-```powershell
-docker ps --format '{{.Ports}}' | Select-String -Pattern '(\d+)->7687' -AllMatches |
-  ForEach-Object { $_.Matches } | ForEach-Object { $_.Groups[1].Value }
-```
+(Windows: same command — the scanner is Node, no grep needed.)
 
-Find the highest Bolt port in use (default baseline: 3587). Propose the next block with +10 offset:
-- If 3587 is in use → propose 3597
-- If 3597 is in use → propose 3607
-
-Present to user:
+Use the `NACL_GRAPH_PORTS_SUGGEST` pair as the proposal. Present to user:
 ```
-Proposed graph ports (auto-detected free range):
+Proposed graph ports (auto-detected free range, stopped containers included):
   Neo4j Bolt:       {bolt_port}
   Neo4j Browser:    {http_port}
 
@@ -559,7 +586,7 @@ Add to the existing config.yaml:
 graph:
   neo4j_bolt_port: {bolt_port}
   neo4j_http_port: {http_port}
-  neo4j_secret_reference: "env:NEO4J_PASSWORD"
+  neo4j_password: "neo4j_graph_dev"
   container_prefix: "{project_name_slug}"
   boards_dir: "graph-infra/boards"
 ```
@@ -604,6 +631,7 @@ sh "$REPO_ROOT/nacl-tl-core/scripts/setup-graph.sh" \
   --project-root "$(pwd)" --skills-dir "$REPO_ROOT" \
   --prefix "{project_name_slug}" \
   --bolt-port {bolt_port} --http-port {http_port} \
+  --password "{neo4j_password}"
 ```
 
 Native Windows (PowerShell):
@@ -617,6 +645,7 @@ $RepoRoot = Split-Path $target -Parent
   -ProjectRoot (Get-Location).Path -SkillsDir $RepoRoot `
   -Prefix "{project_name_slug}" `
   -BoltPort {bolt_port} -HttpPort {http_port} `
+  -Password "{neo4j_password}"
 ```
 
 #### 2c.4 Read the result and report (HARD GATE — no soft fallback)
@@ -649,7 +678,13 @@ Handshake: ok ✓
 
 ### MCP config:
   .mcp.json created (points directly at the official neo4j-mcp binary)
-  — restart Claude Code to connect to this project's Neo4j
+  ⚠ MCP servers are picked up ONLY at session start (verified live: no
+    hot-reload; `/mcp reconnect` does not see NEW .mcp.json entries, and
+    Desktop's /mcp opens the connector directory, not a status panel).
+  → Start a NEW session for this project (Desktop and CLI alike; the graph
+    container keeps running — nothing is lost).
+  → In the new session verify with one call:
+    mcp__neo4j__read-cypher "RETURN 1"  → must return 1.
 
 ### Next:
   /nacl-ba-from-board new {project_name}
@@ -663,7 +698,17 @@ naming `failed_check` and the remediation. Do not invent a "looks done" summary.
 Failed check: {failed_check}
   resolve-binary    → no network / GitHub unreachable, or unsupported OS/arch.
                       Check connectivity; the binary installs to ~/.neo4j-mcp-bin/.
-  docker-up         → Docker not running, or the bolt/http port is taken. Pick new ports.
+                      Fallback: download the release asset in a browser and extract
+                      it to ~/.neo4j-mcp-bin/neo4j-mcp (the error names the exact URL).
+  docker-cli-missing → docker binary not found on PATH or in standard locations.
+                      Install Docker Desktop: https://www.docker.com/products/docker-desktop/
+                      (Claude Code Desktop on macOS reads PATH from your shell profile;
+                      if docker works in a terminal but not here, restart the Desktop app
+                      or add the path in Settings → environment editor.)
+  docker-daemon-down → docker CLI found, but the daemon is not running and could not
+                      be auto-started. Open the Docker Desktop application, wait for
+                      the whale icon to settle, then re-run /nacl-init.
+  docker-up         → the bolt/http port is taken. Pick new ports.
   container-health  → container never became healthy. `docker logs {container_prefix}-neo4j`.
   schema-copy       → `docker cp` failed; container not running.
   constraints-count → schema did not fully load (got {constraints_actual} of {constraints_expected}).

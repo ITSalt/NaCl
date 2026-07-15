@@ -24,24 +24,28 @@ import { join } from 'node:path';
  * @param {{command:string, uri:string, username?:string, password?:string, database?:string}} conn
  * @returns {object}
  */
-export function mergeMcpConfig(existingDoc, { command, uri, username = 'neo4j', password = '', database = 'neo4j' }) {
+export function mergeMcpConfig(existingDoc, { command, uri, username = 'neo4j', password, database = 'neo4j', secretSource }) {
   if (!command) throw new Error('write-mcp-config: --command (neo4j-mcp binary path) is required');
   if (!uri) throw new Error('write-mcp-config: --uri is required');
 
   const doc = (existingDoc && typeof existingDoc === 'object') ? structuredClone(existingDoc) : {};
   if (!doc.mcpServers || typeof doc.mcpServers !== 'object') doc.mcpServers = {};
 
+  if (secretSource !== undefined && !['env:NEO4J_PASSWORD', 'server-route'].includes(secretSource)) {
+    throw new Error('write-mcp-config: unsupported secret source');
+  }
+  const env = {
+    NEO4J_URI: uri,
+    NEO4J_USERNAME: username,
+    NEO4J_DATABASE: database,
+    NEO4J_TELEMETRY: 'false',
+  };
+  if (secretSource === undefined) env.NEO4J_PASSWORD = password ?? '';
   doc.mcpServers.neo4j = {
     type: 'stdio',
     command,
     args: [],
-    env: {
-      NEO4J_URI: uri,
-      NEO4J_USERNAME: username,
-      NEO4J_PASSWORD: password,
-      NEO4J_DATABASE: database,
-      NEO4J_TELEMETRY: 'false',
-    },
+    env,
   };
   return doc;
 }
@@ -76,6 +80,7 @@ if (process.argv[1] && realpathSync(process.argv[1]) === fileURLToPath(import.me
       username: opt.username,
       password: opt.password,
       database: opt.database,
+      secretSource: opt['secret-source'],
     });
     writeFileSync(mcpPath, serializeMcpDoc(merged), 'utf-8');
     process.stdout.write(`wrote neo4j MCP server → ${mcpPath} (uri=${opt.uri})\n`);
