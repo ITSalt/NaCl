@@ -19,6 +19,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const canonicalRepoRoot = await realpath(repoRoot);
 const defaultManifest = path.join(repoRoot, "scripts", "codex-plugin-manifest.json");
 
 function parseArgs(argv) {
@@ -51,6 +52,26 @@ function repoPath(relativePath) {
 
 function relativeUnix(root, filename) {
   return path.relative(root, filename).split(path.sep).join("/");
+}
+
+async function assertRepoSource(filename, expectedType, label = "source") {
+  const resolved = path.resolve(filename);
+  if (!inside(repoRoot, resolved)) throw new Error(`${label} escapes repository: ${filename}`);
+  const relative = path.relative(repoRoot, resolved);
+  let current = repoRoot;
+  for (const segment of relative.split(path.sep).filter(Boolean)) {
+    current = path.join(current, segment);
+    const metadata = await lstat(current);
+    if (metadata.isSymbolicLink()) {
+      throw new Error(`Source symlink is forbidden: ${relativeUnix(repoRoot, current)}`);
+    }
+  }
+  const canonical = await realpath(resolved);
+  if (!inside(canonicalRepoRoot, canonical)) throw new Error(`${label} resolves outside repository: ${relativeUnix(repoRoot, resolved)}`);
+  const metadata = await lstat(resolved);
+  if (expectedType === "file" && !metadata.isFile()) throw new Error(`${label} is not a file: ${relativeUnix(repoRoot, resolved)}`);
+  if (expectedType === "directory" && !metadata.isDirectory()) throw new Error(`${label} is not a directory: ${relativeUnix(repoRoot, resolved)}`);
+  return resolved;
 }
 
 async function filesUnder(root) {
@@ -180,6 +201,7 @@ const TRANSFORMS = {
 };
 
 async function loadManifest(filename) {
+  await assertRepoSource(filename, "file", "Manifest");
   const manifest = JSON.parse(await readFile(filename, "utf8"));
   if (manifest.schemaVersion !== 1) throw new Error(`Unsupported manifest schema: ${manifest.schemaVersion}`);
   if (!Array.isArray(manifest.rootPackages) || new Set(manifest.rootPackages).size !== manifest.rootPackages.length) {
@@ -213,6 +235,7 @@ async function buildInto(destination, manifest) {
       throw new Error(`Duplicate package destination: ${relativeDestination} from ${origins.get(relativeDestination)} and ${origin}`);
     }
     origins.set(relativeDestination, origin);
+    await assertRepoSource(source, "file", "Package source");
     const target = path.join(destination, ...relativeDestination.split("/"));
     if (!inside(destination, target)) throw new Error(`Destination escapes package: ${relativeDestination}`);
     await mkdir(path.dirname(target), { recursive: true, mode: 0o755 });
@@ -223,6 +246,7 @@ async function buildInto(destination, manifest) {
   }
 
   async function copyTree(sourceRoot, relativeDestination, origin, filter = () => true) {
+    await assertRepoSource(sourceRoot, "directory", "Package source root");
     const files = await filesUnder(sourceRoot);
     for (const source of files) {
       const relativeSource = relativeUnix(sourceRoot, source);
@@ -234,8 +258,7 @@ async function buildInto(destination, manifest) {
 
   for (const packageName of manifest.rootPackages) {
     const source = repoPath(packageName);
-    const metadata = await stat(source);
-    if (!metadata.isDirectory()) throw new Error(`Root package is not a directory: ${packageName}`);
+    await assertRepoSource(source, "directory", "Root package");
     await copyTree(source, `resources/${packageName}`, `root:${packageName}`, (relativePath) => !isTestResource(relativePath));
   }
 
@@ -247,6 +270,7 @@ async function buildInto(destination, manifest) {
   }
 
   const workflowRoot = repoPath(manifest.workflowSource);
+  await assertRepoSource(workflowRoot, "directory", "Workflow source");
   const workflowEntries = (await readdir(workflowRoot, { withFileTypes: true }))
     .filter((entry) => entry.isDirectory() && entry.name.startsWith("nacl-"))
     .map((entry) => entry.name)
@@ -276,7 +300,9 @@ async function buildInto(destination, manifest) {
     .map((entry) => entry.name)
     .sort();
   const internalWorkflows = workflowEntries;
-  const template = JSON.parse(await readFile(repoPath(manifest.packageIndexTemplate), "utf8"));
+  const packageIndexTemplate = repoPath(manifest.packageIndexTemplate);
+  await assertRepoSource(packageIndexTemplate, "file", "Package index template");
+  const template = JSON.parse(await readFile(packageIndexTemplate, "utf8"));
   const packageIndex = { ...template, publicEntrySkills, internalWorkflows };
   const indexPath = path.join(destination, "resources", "package-index.json");
   await writeFile(indexPath, `${JSON.stringify(packageIndex, null, 2)}\n`, { mode: 0o644 });

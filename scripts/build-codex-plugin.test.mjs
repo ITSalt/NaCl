@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { lstat, mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
+import { lstat, mkdtemp, readFile, readdir, rm, symlink, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
@@ -103,5 +103,49 @@ test("generated package modes are deterministic data modes and all runtime entri
     assert.match(mcp.mcpServers.nacl.args[0], /\.mjs$/);
   } finally {
     await rm(tempRoot, { recursive: true, force: true });
+  }
+});
+
+test("builder rejects symlinked root packages, shared trees, and shared files before reading them", async () => {
+  const repoFixture = await mkdtemp(path.join(repoRoot, ".nacl-codex-builder-symlink-"));
+  const outputRoot = await mkdtemp(path.join(os.tmpdir(), "nacl-codex-builder-symlink-output-"));
+  try {
+    const baseManifest = JSON.parse(await readFile(path.join(repoRoot, "scripts", "codex-plugin-manifest.json"), "utf8"));
+    const fixtures = [
+      {
+        name: "root-package",
+        target: path.join(repoRoot, "nacl-core"),
+        link: path.join(repoFixture, "root-package"),
+        mutate(manifest, relativeLink) { manifest.rootPackages[0] = relativeLink; },
+      },
+      {
+        name: "shared-tree",
+        target: path.join(repoRoot, "graph-infra", "queries"),
+        link: path.join(repoFixture, "shared-tree"),
+        mutate(manifest, relativeLink) { manifest.sharedTrees[0].source = relativeLink; },
+      },
+      {
+        name: "shared-file",
+        target: path.join(repoRoot, "docs", "configuration.md"),
+        link: path.join(repoFixture, "shared-file"),
+        mutate(manifest, relativeLink) { manifest.sharedFiles[0].source = relativeLink; },
+      },
+    ];
+    for (const fixture of fixtures) {
+      await symlink(fixture.target, fixture.link);
+      const manifest = structuredClone(baseManifest);
+      fixture.mutate(manifest, path.relative(repoRoot, fixture.link).split(path.sep).join("/"));
+      const manifestPath = path.join(repoFixture, `${fixture.name}.json`);
+      await writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
+      const result = spawnSync(process.execPath, [builder, "--manifest", manifestPath, "--output", path.join(outputRoot, fixture.name)], {
+        cwd: repoRoot,
+        encoding: "utf8",
+      });
+      assert.equal(result.status, 1, `${fixture.name}\n${result.stdout}\n${result.stderr}`);
+      assert.match(result.stderr, /Source symlink is forbidden/);
+    }
+  } finally {
+    await rm(repoFixture, { recursive: true, force: true });
+    await rm(outputRoot, { recursive: true, force: true });
   }
 });
