@@ -134,10 +134,12 @@ function yamlKey(raw) {
 function validateFlowValue(value) {
   const trimmed = value.trim();
   if (!trimmed) return;
-  const { text } = analyzeYamlExpression(trimmed);
+  const { text, colon } = analyzeYamlExpression(trimmed);
+  if (colon >= 0) stateError("YAML", "malformed because a plain scalar contains a mapping separator");
   if ((text.startsWith("[") && !text.endsWith("]")) || (text.startsWith("{") && !text.endsWith("}"))) stateError("YAML", "malformed");
   if (text.startsWith('"') && !/^"(?:[^"\\]|\\.)*"$/.test(text)) stateError("YAML", "malformed");
   if (text.startsWith("'") && !/^'(?:[^']|'')*'$/.test(text)) stateError("YAML", "malformed");
+  if (/^(?:[@`,%]|[&*!]|[-?:]\s)/.test(text)) stateError("YAML", "outside the supported scalar grammar");
   if (text.startsWith("{") && text.endsWith("}")) {
     const body = text.slice(1, -1).trim();
     if (!body) return;

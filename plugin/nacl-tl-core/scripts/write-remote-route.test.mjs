@@ -105,6 +105,8 @@ test("transaction rejects malformed MCP and malformed or duplicate graph state b
     { config: "graph:\n  mode: local\n", mcp: '{"mcpServers":{},"mcpServers":{}}\n', pattern: /existing \.mcp\.json is malformed or ambiguous/ },
     { config: "graph:\n  mode: local\n", mcp: '{"mcpServers":{"neo4j":{"command":"one","command":"two"}}}\n', pattern: /existing \.mcp\.json is malformed or ambiguous/ },
     { config: "project: [unterminated\ngraph:\n  mode: local\n", mcp: "{}\n", pattern: /strict YAML state is malformed/ },
+    { config: "project: @invalid\ngraph:\n  mode: local\n", mcp: "{}\n", pattern: /supported scalar grammar/ },
+    { config: "description: bad: value\ngraph:\n  mode: local\n", mcp: "{}\n", pattern: /plain scalar contains a mapping separator/ },
     { config: "project: one\nproject: two\ngraph:\n  mode: local\n", mcp: "{}\n", pattern: /strict YAML state is ambiguous/ },
     { config: "project:\n  id: one\n  id: two\ngraph:\n  mode: local\n", mcp: "{}\n", pattern: /strict YAML state is ambiguous/ },
     { config: "project: {id: one, id: two}\ngraph:\n  mode: local\n", mcp: "{}\n", pattern: /strict YAML state is ambiguous/ },
