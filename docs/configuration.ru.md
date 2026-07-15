@@ -99,21 +99,38 @@ Legacy-проекты могут иметь `modules.[name].git_strategy` и `gi
 
 ### `graph` (обязательно для graph-aware-скиллов)
 
-Общие поля: `mode` (`local` по умолчанию или `remote`) и `boards_dir` (`graph-infra/boards`).
+Общие поля: `mode` (`local` по умолчанию или `remote`) и `boards_dir` (`graph-infra/boards`). В
+`remote` каждый проект получает отдельный контейнер Neo4j 5 Community с независимыми постоянными
+volumes на доступном VPS; отсутствие `mode` по-прежнему означает `local`.
 
 Для local: `neo4j_bolt_port`, `neo4j_http_port`, runtime-секрет `neo4j_password`, `container_prefix`.
 
-Для remote: `neo4j_uri` (локальный sidecar socket), `neo4j_username` (`neo4j`), `neo4j_database` (`neo4j`), `project_scope`, `remote.host`, `remote.gateway_port`, `remote.sidecar_port`, `remote.client_cert`, `remote.client_key`, `remote.ca_cert`, `remote.tls` (`true`).
+Для remote: `neo4j_uri` (локальный sidecar socket), `neo4j_username` (`neo4j`),
+`neo4j_database` (`neo4j`), `project_scope`, `remote.route_mode` (`create` или `connect`),
+`remote.host`, `remote.gateway_port`, `remote.sidecar_port`, `remote.client_cert`,
+`remote.client_key`, `remote.ca_cert`, `remote.tls` (`true`) и обязательный
+`remote.secret_source`. `project_scope` — идентификатор маршрутизации и provenance отдельного
+контейнера/маршрута проекта, а не разрешение доступа и не маркер `(:Project)` в общем графе.
 
 `developer.id` штампуется в claim locks и provenance. Приоритет: `NACL_DEVELOPER_ID` > `developer.id` > автовывод из Git/user и machine key.
 
 #### Режим графа: local и remote
 
-Каждый проект по умолчанию получает свой local-контейнер Neo4j 5 Community. Remote выбирается явно: первый участник выполняет `nacl-init` в create-режиме, следующие — в connect-режиме. Несекретные endpoint-поля коммитятся и автоматически выбирают connect для команды.
+Каждый проект по умолчанию получает свой local-контейнер Neo4j 5 Community. Remote выбирается явно:
+первый участник выполняет `nacl-init` в create-режиме и создаёт отдельные контейнер, volumes и маршрут
+проекта на VPS; следующие участники подключаются к этому же маршруту в connect-режиме. Несекретные
+endpoint-поля коммитятся и автоматически выбирают connect для команды.
 
-Remote-доступ идёт через личный отзываемый mTLS-сертификат и sidecar tunnel. Секреты не коммитятся: Neo4j-пароль живёт в `NEO4J_PASSWORD` или gitignored `.env`; remote `.mcp.json` тоже gitignored.
+Remote-доступ идёт через личный отзываемый mTLS-сертификат и sidecar tunnel. Секреты не коммитятся:
+`graph.remote.secret_source` обязателен и содержит только точную ссылку `env:NEO4J_PASSWORD` или
+`server-route:<id>`. Первый вариант читает `NEO4J_PASSWORD` только из окружения текущего runtime,
+второй передаётся внешнему провайдеру из `NACL_SERVER_ROUTE_SECRET_PROVIDER`. `.mcp.json` хранит
+непрозрачную ссылку и метаданные launcher/маршрута, но никогда не сырой или общий пароль. Если env
+или провайдер недоступен, инициализация и подключение завершаются fail closed без demo/default fallback.
 
-Текущая граница авторизации — сервер: если разработчик имеет к нему доступ, он считается имеющим доступ ко всем базам проектов на нём. `project_scope` выбирает проект и фиксирует provenance; это не auth-граница.
+Текущая граница авторизации — сервер: если разработчик имеет к нему доступ, он считается имеющим
+доступ ко всем базам проектов на нём. `project_scope` выбирает маршрут проекта и фиксирует provenance;
+это не auth-граница и не grant через маркер `(:Project)` в общем графе.
 
 ### `yougile` (опционально)
 

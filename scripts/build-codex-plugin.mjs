@@ -18,7 +18,9 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const scriptPath = fileURLToPath(import.meta.url);
+const canonicalScriptPath = await realpath(scriptPath);
+const repoRoot = path.resolve(path.dirname(scriptPath), "..");
 const canonicalRepoRoot = await realpath(repoRoot);
 const defaultManifest = path.join(repoRoot, "scripts", "codex-plugin-manifest.json");
 
@@ -110,6 +112,27 @@ function replaceExact(content, before, after, label) {
   return `${content.slice(0, first)}${after}${content.slice(first + before.length)}`;
 }
 
+export function transformPackageDocSecretPlaceholder(input) {
+  const content = input.toString("utf8");
+  const legacyValue = "neo4j_graph_dev";
+  const exactEnvironmentReference = "${NEO4J_PASSWORD}";
+  const rawLegacyCount = content.split(legacyValue).length - 1;
+  const exactLegacyMatches = [...content.matchAll(/(?<![A-Za-z0-9._-])neo4j_graph_dev(?![A-Za-z0-9._-])/g)];
+  if (rawLegacyCount !== exactLegacyMatches.length) {
+    throw new Error("Transform package-doc-secret-placeholder rejected an unsafe legacy-secret near-match");
+  }
+  const rawEnvironmentCount = content.split("${NEO4J_PASSWORD").length - 1;
+  const environmentMatches = content.match(/\$\{NEO4J_PASSWORD[^}]*\}/g) ?? [];
+  if (rawEnvironmentCount !== environmentMatches.length || environmentMatches.some((value) => value !== exactEnvironmentReference)) {
+    throw new Error("Transform package-doc-secret-placeholder rejected an unsafe environment-secret near-match");
+  }
+  if (exactLegacyMatches.length > 0) {
+    return Buffer.from(content.replaceAll(legacyValue, "<generated-by-nacl-local-init>"));
+  }
+  if (environmentMatches.length > 0) return input;
+  throw new Error("Transform package-doc-secret-placeholder expected an exact secret placeholder source match");
+}
+
 const TRANSFORMS = {
   "portable-python-temp-log": (input) => {
     let content = input.toString("utf8");
@@ -157,14 +180,7 @@ const TRANSFORMS = {
     "Allocate one safe output path for the whole comparison: POSIX uses `baseline_file=$(mktemp)`; PowerShell uses `$baseline_file = [System.IO.Path]::GetTempFileName()`. Store the output in that same `baseline_file` variable, reuse it for later comparison, and remove it after the final comparison. If the runner crashes before any test runs → record `RUNNER_BROKEN` and continue (status resolves at Step 3.5).",
     "portable-tl-dev-fe-baseline",
   )),
-  "package-doc-secret-placeholder": (input) => {
-    const content = input.toString("utf8");
-    if (content.includes("neo4j_graph_dev")) {
-      return Buffer.from(content.replaceAll("neo4j_graph_dev", "<generated-by-nacl-local-init>"));
-    }
-    if (content.includes("${NEO4J_PASSWORD}")) return input;
-    throw new Error("Transform package-doc-secret-placeholder expected a secret placeholder source match");
-  },
+  "package-doc-secret-placeholder": transformPackageDocSecretPlaceholder,
   "package-shell-secret-required": (input) => Buffer.from(replaceExact(
     input.toString("utf8"),
     'PASSWORD="neo4j_graph_dev"; DATABASE="neo4j"',
@@ -425,4 +441,7 @@ async function main() {
   }
 }
 
-await main();
+const invokedScriptPath = process.argv[1]
+  ? await realpath(process.argv[1]).catch(() => path.resolve(process.argv[1]))
+  : null;
+if (invokedScriptPath === canonicalScriptPath) await main();

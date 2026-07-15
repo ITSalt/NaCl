@@ -207,7 +207,7 @@ notifies.
 
 **Neo4j won't start**: Check Docker has enough memory (min 2GB for Neo4j).
 
-**Schema won't load**: Open Neo4j Browser at `http://localhost:3574`, login with `bolt://localhost:3587` / `neo4j` / `neo4j_graph_dev`, and run each `.cypher` file manually.
+**Schema won't load**: Resolve the project secret through its configured runtime source before retrying the verified schema loader. Local mode requires `NEO4J_PASSWORD` in the current runtime environment; remote mode requires `graph.remote.secret_source` (`env:NEO4J_PASSWORD` or `server-route:<id>`). If the environment variable or external provider is unavailable, stop and repair that provider — do not try a demo/default password or copy a raw password into project files.
 
 **MCP connection fails**: Run `node "$HOME/.claude/skills/nacl-core/scripts/graph-doctor.mjs"` (CLI symlink channel) or `node "$(nacl-home)/nacl-core/scripts/graph-doctor.mjs"` (Desktop plugin channel) to check liveness first. Verify the binary exists and is executable (`ls -l ~/.neo4j-mcp-bin/neo4j-mcp`), `.mcp.json` is at the project root and points at that path, then start a new session — MCP servers are only picked up at session start, not by an in-session restart, and `/mcp reconnect` does not see newly added `.mcp.json` entries.
 
@@ -225,8 +225,10 @@ gateway tools; the stdio example above remains the Claude/repository channel.
 `nacl-init` can create or connect to a project container on a reachable VPS.
 NaCl does not provide a managed graph. The server is currently the authorization
 boundary: access to it implies access to all project databases hosted there.
-`project_scope` selects a logical project and records provenance; it does not
-grant access. A future public Streamable HTTP gateway must map OAuth principals
+Each project has a separate Neo4j 5 Community container and independent durable
+volumes. `project_scope` selects its route and records provenance; it does not
+grant access or represent a shared-graph `(:Project)` authorization marker. A
+future public Streamable HTTP gateway must map OAuth principals
 to server grants and deny cross-server routing. That public deployment and its
 release remain `NOT_RUN`.
 

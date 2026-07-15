@@ -6,9 +6,34 @@ import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
+import { transformPackageDocSecretPlaceholder } from "./build-codex-plugin.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const builder = path.join(repoRoot, "scripts", "build-codex-plugin.mjs");
+
+test("package doc secret transform accepts only exact safe placeholders and fails closed", () => {
+  const safeEnvironmentReference = Buffer.from('neo4j_password: "${NEO4J_PASSWORD}"\n');
+  assert.equal(transformPackageDocSecretPlaceholder(safeEnvironmentReference), safeEnvironmentReference);
+
+  const legacySentinel = Buffer.from('neo4j_password: "neo4j_graph_dev"\n');
+  assert.equal(
+    transformPackageDocSecretPlaceholder(legacySentinel).toString("utf8"),
+    'neo4j_password: "<generated-by-nacl-local-init>"\n',
+  );
+
+  assert.throws(
+    () => transformPackageDocSecretPlaceholder(Buffer.from("neo4j_password: missing\n")),
+    /expected an exact secret placeholder source match/,
+  );
+  assert.throws(
+    () => transformPackageDocSecretPlaceholder(Buffer.from('neo4j_password: "neo4j_graph_dev_backup"\n')),
+    /unsafe legacy-secret near-match/,
+  );
+  assert.throws(
+    () => transformPackageDocSecretPlaceholder(Buffer.from('neo4j_password: "${NEO4J_PASSWORD:-demo}"\n')),
+    /unsafe environment-secret near-match/,
+  );
+});
 
 async function treeDigest(root) {
   const records = [];

@@ -161,7 +161,7 @@ Connection settings for Neo4j. Used by all `nacl-*` skills that read or write th
 
 | Field | Type | Required | Default | Description |
 |---|---|---|---|---|
-| `mode` | string | no | `local` | `local` (per-project Docker Neo4j on this machine) or `remote` (shared Neo4j on a VPS). **Absent ⇒ `local`** (backward compatible). |
+| `mode` | string | no | `local` | `local` (per-project Docker Neo4j on this machine) or `remote` (a separate Neo4j 5 Community container with independent durable volumes for this project on a reachable VPS). **Absent ⇒ `local`** (backward compatible). |
 | `boards_dir` | string | no | `graph-infra/boards` | Directory where Excalidraw board files are stored. Each `.excalidraw` file may have a `<basename>.meta.json` sidecar managed by `nacl-render` and `nacl-ba-sync` — format defined in `nacl-core/SKILL.md` § "Board Meta Sidecar". |
 
 **Local-mode fields** (`mode: local`):
@@ -178,14 +178,16 @@ Connection settings for Neo4j. Used by all `nacl-*` skills that read or write th
 | Field | Type | Required | Default | Description |
 |---|---|---|---|---|
 | `neo4j_uri` | string | yes | — | Bolt URI the MCP server connects to. In remote mode this is the **local sidecar socket** (e.g. `bolt://localhost:3700`); the mTLS tunnel carries traffic to the VPS. |
-| `neo4j_username` | string | no | `neo4j` | DB username (Community = single shared user). |
+| `neo4j_username` | string | no | `neo4j` | DB username for the project's Neo4j Community container. |
 | `neo4j_database` | string | no | `neo4j` | Database name. |
-| `project_scope` | string | yes | — | Logical project id inside the shared graph; matches the `(:Project {id})` marker node. |
+| `project_scope` | string | yes | — | Project routing and provenance identifier for the dedicated container/route. It is not an authorization grant and does not depend on a `(:Project)` marker in a shared graph. |
+| `remote.route_mode` | string | yes | — | `create` provisions this project's remote container/volumes/route; `connect` joins that same project route. |
 | `remote.host` | string | yes | — | VPS hostname (e.g. `graph.example.com`). |
 | `remote.gateway_port` | integer | yes | — | Public mTLS gateway port on the VPS. |
 | `remote.sidecar_port` | integer | yes | — | Local port the ghostunnel client listens on (must match `neo4j_uri`). |
 | `remote.client_cert` / `client_key` / `ca_cert` | string | yes | — | Paths to the developer's personal client certificate (the revocable "API key"), key, and CA. |
 | `remote.tls` | bool | no | `true` | Whether the gateway link uses TLS (it must). |
+| `remote.secret_source` | string | yes | — | Opaque secret reference accepted by the runtime: exactly `env:NEO4J_PASSWORD` or `server-route:<id>`. A raw password is forbidden. |
 
 **Developer identity** (`developer.id`, optional, any mode):
 
@@ -199,20 +201,28 @@ By default every project runs **local** — `/nacl-init` provisions a per-projec
 container, exactly as before. Nothing about existing projects changes; an absent `mode` key is
 read as `local`.
 
-A project becomes **remote** (one shared Neo4j on a VPS, used concurrently by developers in
-different locations) only deliberately — either the first developer runs `/nacl-init --scale=create`
-to provision the shared graph, or a teammate runs `/nacl-init --scale=connect` to join it. Because
-the non-secret endpoint fields are committed to `config.yaml`, a teammate who simply clones the repo
-and re-runs `/nacl-init` is **auto-routed into connect-mode** (no Docker, no schema seed) by the
-committed `mode: remote`.
+A project becomes **remote** only deliberately. It still owns a separate Neo4j 5 Community
+container and independent durable volumes, but they run on a reachable VPS instead of the
+developer's machine. The first developer runs `/nacl-init --scale=create` to provision that
+project's container, volumes, and route; a teammate runs `/nacl-init --scale=connect` to join the
+same project route. Because the non-secret endpoint fields are committed to `config.yaml`, a
+teammate who simply clones the repo and re-runs `/nacl-init` is **auto-routed into connect-mode**
+(no local Docker and no schema seed) by the committed `mode: remote`.
 
 **Security model (remote):** access is gated by a personal **mTLS client certificate** per developer
-(the revocable "API key"), terminated at a gateway in front of Neo4j; the MCP server still connects to
-`bolt://localhost:<sidecar_port>` through a local tunnel, so skills are unchanged. See
+(the revocable "API key"), terminated at the VPS gateway; the MCP server still connects to
+`bolt://localhost:<sidecar_port>` through a local tunnel, so skills are unchanged. The server is the
+current authorization boundary: access to it is treated as access to every project database hosted
+there. `project_scope` selects a project route and records provenance; it neither grants access nor
+creates a shared-graph `(:Project)` authorization boundary. See
 `docs/runbooks/provision-shared-graph-vps.md` and `docs/runbooks/connect-to-existing-remote-project.md`.
 
-**Secrets are never committed.** `neo4j_password` lives in env (`NEO4J_PASSWORD`) or a gitignored
-`.env`; in remote mode `.mcp.json` is gitignored too (it would otherwise expose the shared password).
+**Secrets are never committed.** Remote mode requires `graph.remote.secret_source`. The exact
+`env:NEO4J_PASSWORD` reference reads `NEO4J_PASSWORD` only from the current runtime environment;
+`server-route:<id>` delegates resolution to the external provider configured by
+`NACL_SERVER_ROUTE_SECRET_PROVIDER`. `.mcp.json` stores only that opaque reference plus launcher and
+route metadata, never a raw or shared password. If the selected environment variable or provider is
+unavailable, initialization and connection fail closed; there is no demo/default password fallback.
 
 ---
 
