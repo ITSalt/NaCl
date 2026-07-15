@@ -67,17 +67,43 @@ plugin's SessionStart hook warns if it detects the symlinked install already pre
 - **`nacl-postmortem`.** Rare/high-stakes; the workflow panel it depends on stays repo-side.
 - **`nacl-migrate`, `nacl-migrate-ba`, `nacl-migrate-sa`.** Rare, and require a full repo
   checkout plus Python — not a fit for a plugin-only install.
-- **A live Desktop end-to-end checklist (T-1…T-7).** This release ships a manual desktop graph
-  smoke matrix (`tests/desktop/`) as stage-3 verification, but a full live run through Claude
-  Code Desktop against a real project has not been performed yet and stays an open follow-up.
+- **Sidecar reboot test and monitors.** The remote-mode sidecar autostart (LaunchAgent /
+  Scheduled Task) ships in this release, but the live reboot test (T-7) and the optional
+  plugin `monitors/` watcher are deferred to the next remote-mode connection.
+
+## Verified live on Claude Code Desktop
+
+Before tagging, the adaptation was exercised on a real Desktop install (macOS):
+
+- Fresh-project `/nacl:init` end-to-end: docker resolved from a GUI launch, pinned binary,
+  schema loaded, `NACL_GRAPH_RESULT: READY`, project registered.
+- SessionStart hook: graph-down state reached the model as context and it offered
+  `graph-doctor --fix` unprompted; silent when the graph is up or the project has no graph.
+- MCP reload semantics: `.mcp.json` written mid-session is NOT hot-reloaded and
+  `/mcp reconnect` does not see new entries — a new session picks it up; the canonical
+  check is one `mcp__neo4j__read-cypher "RETURN 1"` call (docs and init wording match this).
+- Parallel worktree session on a real project: `mcp__neo4j__*` tools present and working.
+- Graph-heavy skill reads through the plugin channel (`/nacl:tl-status` over a
+  4k-node project graph).
+- Two real defects were found by these checks and fixed before the tag: a single-shot
+  deep-check race in `graph-doctor --fix` (retry with bounded backoff now) and a port scan
+  blind to stopped containers' bindings (now `docker inspect` over ALL containers, with a
+  both-ports-free ladder suggestion).
+
+## Known operational note
+
+`claude plugin update` is a no-op while the plugin version string is unchanged — mid-cycle
+plugin content changes (same-version rebuilds on `main`) require `claude plugin uninstall`
++ `install` to refresh the cache. Tagged releases bump the version, so regular users are
+unaffected.
 
 ## Scope and follow-ups
 
-Both stages landed on a real branch history and the smoke matrix gives a repeatable manual check
-for the graph runtime changes; the plugin build is deterministic from `plugin-manifest.json`
-against the same skill sources the CLI channel uses, so the two channels cannot drift in content,
-only in packaging. The open follow-up is the live Desktop checklist (T-1…T-7) noted above — this
-release is verified by the smoke matrix and code review, not yet by a live Desktop session on a
-real project.
+Both stages landed on a real branch history; the smoke matrix (`tests/desktop/`) gives a
+repeatable manual check for the graph runtime changes, and the checklist above adds live
+Desktop verification on real projects. The plugin build is deterministic from
+`plugin-manifest.json` against the same skill sources the CLI channel uses, so the two
+channels cannot drift in content, only in packaging. Open follow-ups: sidecar reboot test
+(T-7), plugin monitors watcher, Windows PowerShell syntax pass over the four `.ps1` scripts.
 
 Telegram post: docs/releases/2.24.0-desktop-plugin/tg-post.md
