@@ -73,19 +73,24 @@ export function createMemorySessionRegistry({ now = () => Date.now(), maxEntries
       if (record.expires_at <= current) sessions.delete(sessionId);
     }
   }
+  function sessionKey(issuer, subject, sessionId) {
+    return `${issuer}\0${subject}\0${sessionId}`;
+  }
   return Object.freeze({
     durability: "process-local",
     async getOrCreate(sessionId, record) {
       prune();
-      const existing = sessions.get(sessionId);
+      const key = sessionKey(record.issuer, record.subject, sessionId);
+      const existing = sessions.get(key);
       if (existing) return structuredClone(existing);
       if (sessions.size >= maxEntries) throw new ReauthorizationRequired({ error: "temporarily_unavailable" });
-      sessions.set(sessionId, structuredClone(record));
+      sessions.set(key, structuredClone(record));
       return structuredClone(record);
     },
     async revoke({ issuer, subject, sessionId, expiresAt }) {
       prune();
-      const existing = sessions.get(sessionId);
+      const key = sessionKey(issuer, subject, sessionId);
+      const existing = sessions.get(key);
       if (!existing && sessions.size >= maxEntries) throw new ReauthorizationRequired({ error: "temporarily_unavailable" });
       const record = {
         ...(existing ?? { issuer, subject, principal_id: null, binding_revision: null, token_epoch: null }),
@@ -97,7 +102,7 @@ export function createMemorySessionRegistry({ now = () => Date.now(), maxEntries
         // silently reviving an old session identifier.
         expires_at: Math.max(existing?.expires_at ?? 0, expiresAt ?? Number.MAX_SAFE_INTEGER),
       };
-      sessions.set(sessionId, structuredClone(record));
+      sessions.set(key, structuredClone(record));
     },
   });
 }
@@ -290,7 +295,7 @@ export function createServerControlPlane({
         if (!persisted?.active || persisted.transition) throw new ReauthorizationRequired({ error: "temporarily_unavailable" });
         const previous = persisted.grants.get(serverId);
         persisted.grants.set(serverId, { role, active: false, revision: (previous?.revision ?? 0) + 1 });
-        persisted.transition = { id: intent, type: "grant", server_id: serverId };
+        persisted.transition = { id: intent, type: "grant", server_id: serverId, started_at: now() };
         invalidate(persisted);
         return { certificateCn: persisted.certificate_cn };
       });
@@ -325,7 +330,7 @@ export function createServerControlPlane({
           throw new ReauthorizationRequired({ error: "temporarily_unavailable" });
         }
         const serverIds = [...persisted.grants].filter(([, grant]) => grant.active).map(([serverId]) => serverId);
-        persisted.transition = { id: intent, type: "rotate", next_certificate_cn: nextCertificateCn };
+        persisted.transition = { id: intent, type: "rotate", next_certificate_cn: nextCertificateCn, started_at: now() };
         invalidate(persisted);
         return { previousCertificateCn: persisted.certificate_cn, serverIds };
       });
@@ -376,7 +381,7 @@ export function createServerControlPlane({
         if (!persistedGrant?.active) throw hiddenDenial();
         persistedGrant.active = false;
         persistedGrant.revision += 1;
-        persisted.transition = { id: intent, type: "revoke", server_id: serverId };
+        persisted.transition = { id: intent, type: "revoke", server_id: serverId, started_at: now() };
         invalidate(persisted);
         return { epoch: persisted.epoch, certificateCn: persisted.certificate_cn };
       });
@@ -399,6 +404,77 @@ export function createServerControlPlane({
       if (typeof sessionId !== "string" || !SESSION_ID.test(sessionId)) throw new TypeError("sessionId is invalid.");
       if (expiresAt !== undefined && (!Number.isSafeInteger(expiresAt) || expiresAt <= Date.now())) throw new TypeError("expiresAt is invalid.");
       await sessionRegistry.revoke({ issuer, subject, sessionId, expiresAt });
+    },
+    async reconcileTransition({ issuer, subject }) {
+      const key = bindingKey(issuer, subject);
+      await refreshAuthorizationState();
+      const binding = bindings.get(key);
+      if (!binding?.transition) throw hiddenDenial();
+      const transition = structuredClone(binding.transition);
+      const pending = Object.freeze({ status: "BLOCKED", code: "PRINCIPAL_TRANSITION_PENDING", transition_id: transition.id });
+      try {
+        if (transition.type === "grant") {
+          const registry = serverRegistries.get(transition.server_id);
+          if (!registry) return pending;
+          let authoritative = await registry.verifyPrincipal?.(binding.certificate_cn);
+          if (authoritative?.status !== "VERIFIED") {
+            const projected = await registry.grantPrincipal?.(binding.certificate_cn);
+            if (projected?.status !== "VERIFIED") return pending;
+            authoritative = await registry.verifyPrincipal?.(binding.certificate_cn);
+          }
+          if (authoritative?.status !== "VERIFIED") return pending;
+          return persistAuthorizationState((next) => {
+            const persisted = next.get(key);
+            if (persisted?.transition?.id !== transition.id) throw new ReauthorizationRequired({ error: "temporarily_unavailable" });
+            persisted.grants.get(transition.server_id).active = true;
+            persisted.transition = null;
+            invalidate(persisted);
+            return Object.freeze({ status: "VERIFIED", code: "SERVER_GRANT_RECONCILED", token_epoch: persisted.epoch });
+          });
+        }
+        if (transition.type === "rotate") {
+          const serverIds = [...binding.grants].filter(([, grant]) => grant.active).map(([serverId]) => serverId);
+          for (const serverId of serverIds) {
+            const registry = serverRegistries.get(serverId);
+            if (!registry) return pending;
+            let authoritative = await registry.verifyPrincipal?.(transition.next_certificate_cn);
+            if (authoritative?.status !== "VERIFIED") {
+              const projected = await registry.rotatePrincipal?.(binding.certificate_cn, transition.next_certificate_cn);
+              if (projected?.status !== "VERIFIED") return pending;
+              authoritative = await registry.verifyPrincipal?.(transition.next_certificate_cn);
+            }
+            if (authoritative?.status !== "VERIFIED") return pending;
+          }
+          return persistAuthorizationState((next) => {
+            const persisted = next.get(key);
+            if (persisted?.transition?.id !== transition.id) throw new ReauthorizationRequired({ error: "temporarily_unavailable" });
+            const collision = [...next.values()].some((item) => item !== persisted &&
+              (item.certificate_cn === transition.next_certificate_cn || item.transition?.next_certificate_cn === transition.next_certificate_cn));
+            if (collision) return pending;
+            persisted.certificate_cn = transition.next_certificate_cn;
+            persisted.transition = null;
+            invalidate(persisted);
+            return Object.freeze({ status: "VERIFIED", code: "PRINCIPAL_ROTATION_RECONCILED", token_epoch: persisted.epoch });
+          });
+        }
+        if (transition.type === "revoke") {
+          const registry = serverRegistries.get(transition.server_id);
+          if (!registry) return pending;
+          await registry.revokePrincipal?.(binding.certificate_cn);
+          const authoritative = await registry.verifyPrincipal?.(binding.certificate_cn);
+          if (authoritative?.status === "VERIFIED") return pending;
+          return persistAuthorizationState((next) => {
+            const persisted = next.get(key);
+            if (persisted?.transition?.id !== transition.id) throw new ReauthorizationRequired({ error: "temporarily_unavailable" });
+            persisted.transition = null;
+            invalidate(persisted);
+            return Object.freeze({ status: "VERIFIED", code: "SERVER_REVOKE_RECONCILED", token_epoch: persisted.epoch });
+          });
+        }
+        return pending;
+      } catch {
+        return pending;
+      }
     },
     async currentTokenEpoch(issuer, subject) {
       await refreshAuthorizationState();

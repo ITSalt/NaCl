@@ -65,7 +65,8 @@ export function createNaclMcpService({ configuration, adapters } = {}) {
   }
   const { resolveVerifiedToken, controlPlane, graphAdapter, auditSink, rateLimiter, idempotencyLedger } = adapters;
   if (typeof resolveVerifiedToken !== "function" || typeof controlPlane?.authorize !== "function" ||
-      typeof controlPlane?.listProjects !== "function" || GRAPH_METHODS.some((method) => typeof graphAdapter?.[method] !== "function") ||
+      typeof controlPlane?.listProjects !== "function" || typeof controlPlane?.reconcileTransition !== "function" ||
+      GRAPH_METHODS.some((method) => typeof graphAdapter?.[method] !== "function") ||
       typeof auditSink?.newSupportRef !== "function" || typeof auditSink?.record !== "function" ||
       typeof rateLimiter?.assert !== "function" || typeof idempotencyLedger?.execute !== "function" ||
       auditSink.durability !== "durable" || rateLimiter.scope !== "shared" ||

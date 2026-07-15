@@ -21,7 +21,14 @@ function registry(serverId) {
     trusted,
     projects,
     failRevoke: false,
-    async grantPrincipal(cn) { trusted.add(cn); return { status: "VERIFIED" }; },
+    async grantPrincipal(cn) {
+      if (value.failGrantOnce) {
+        value.failGrantOnce = false;
+        throw new Error("transient projection failure");
+      }
+      trusted.add(cn);
+      return { status: "VERIFIED" };
+    },
     async rotatePrincipal(previous, next) {
       value.rotateEntered?.();
       if (value.rotateWait) await value.rotateWait;
@@ -356,6 +363,18 @@ test("individual OAuth session revocation is immediate and does not affect anoth
   assert.equal((await ctx.app({ name: "nacl_project_summary", arguments: { project_ref: PROJECT_A2 }, authContext: fresh, requiredScope: "nacl.server.read" })).status, "VERIFIED");
 });
 
+test("issuer-local session IDs do not collide and revocation stays within issuer and subject", async () => {
+  const sessions = createMemorySessionRegistry({ now: () => 1_500_000 });
+  const base = { principal_id: "principal-shared", binding_revision: 1, token_epoch: 0, revoked: false, expires_at: 2_000_000 };
+  const first = { ...base, issuer: ISSUER, subject: "subject-alice" };
+  const second = { ...base, issuer: "https://other-idp.example.test/", subject: "subject-alice" };
+  await sessions.getOrCreate("shared-session-id", first);
+  await sessions.getOrCreate("shared-session-id", second);
+  await sessions.revoke({ issuer: ISSUER, subject: "subject-alice", sessionId: "shared-session-id" });
+  assert.equal((await sessions.getOrCreate("shared-session-id", first)).revoked, true);
+  assert.equal((await sessions.getOrCreate("shared-session-id", second)).revoked, false);
+});
+
 test("preemptive session revoke persists as a tombstone across a reconstructed control plane", async () => {
   const sessionRegistry = createMemorySessionRegistry({ now: () => 1_500_000 });
   const first = await fixture({ sessionRegistry });
@@ -430,6 +449,27 @@ test("registration cannot claim a certificate CN reserved by an in-flight princi
   releaseRotation();
   assert.equal((await rotating).status, "VERIFIED");
   assert.deepEqual([...ctx.registryA.trusted], ["cn-shared-v1"]);
+});
+
+test("a durable grant intent can be reconciled after a transient projection failure", async () => {
+  const ctx = await fixture();
+  ctx.registryB.failGrantOnce = true;
+  await assert.rejects(
+    ctx.control.grantServer({ issuer: ISSUER, subject: "subject-alice", serverId: "server-b" }),
+    /transient projection failure/,
+  );
+  await assert.rejects(
+    ctx.control.currentTokenEpoch(ISSUER, "subject-alice"),
+    (error) => error.code === "REAUTHORIZATION_REQUIRED",
+  );
+  const reconciled = await ctx.control.reconcileTransition({ issuer: ISSUER, subject: "subject-alice" });
+  assert.equal(reconciled.status, "VERIFIED");
+  assert.equal(reconciled.code, "SERVER_GRANT_RECONCILED");
+  const epoch = await ctx.control.currentTokenEpoch(ISSUER, "subject-alice");
+  ctx.tokens.set("token-alice-reconciled", token("subject-alice", "session-alice-reconciled", epoch, ctx.allScopes));
+  const auth = await ctx.context("token-alice-reconciled");
+  const listed = await ctx.app({ name: "nacl_projects_list", arguments: {}, authContext: auth, requiredScope: "nacl.server.read" });
+  assert.deepEqual(listed.data.projects.map((project) => project.label), ["Alpha", "Beta", "Gamma"]);
 });
 
 test("audit and responses are minimized and contain no raw subject, principal, certificate, server, scope, token, host, or graph result extras", async () => {

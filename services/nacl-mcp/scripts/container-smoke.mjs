@@ -51,6 +51,7 @@ export async function createDeploymentAdapters() {
       authorizationStateScope: "shared",
       async authorize() { throw new Error("not used"); },
       async listProjects() { throw new Error("not used"); },
+      async reconcileTransition() { throw new Error("not used"); },
     },
     graphAdapter,
     auditSink: { durability: "durable", newSupportRef() { return "support_00000000000000000000000000000000"; }, async record() {} },

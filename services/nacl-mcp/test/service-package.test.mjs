@@ -49,6 +49,7 @@ test("deployment composition creates a locally runnable server without embedding
         authorizationStateScope: "shared",
         async authorize() {},
         async listProjects() {},
+        async reconcileTransition() {},
       },
       graphAdapter,
       auditSink: { durability: "durable", newSupportRef() {}, async record() {} },
