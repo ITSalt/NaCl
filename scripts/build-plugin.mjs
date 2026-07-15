@@ -530,6 +530,8 @@ export function buildPlugin({ root, outDir, manifest }) {
     description: manifest.description,
     version,
     author: { name: "ITSalt" },
+    homepage: "https://github.com/ITSalt/NaCl",
+    license: "MIT",
   };
   fs.mkdirSync(path.join(outDir, ".claude-plugin"), { recursive: true });
   fs.writeFileSync(

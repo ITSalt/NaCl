@@ -4,5 +4,7 @@
   "version": "2.24.0",
   "author": {
     "name": "ITSalt"
-  }
+  },
+  "homepage": "https://github.com/ITSalt/NaCl",
+  "license": "MIT"
 }
