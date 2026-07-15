@@ -161,9 +161,10 @@ test("VPS provision/issue/revoke use authoritative server control and never muta
   assert.match(authorization, /reload_all_registered_gateways/);
   assert.match(authorization, /quarantine_all_gateways/);
   assert.match(revoke, /server-access-control\.mjs/);
-  assert.match(revoke, /node "\$ACCESS_CONTROL" revoke/);
+  assert.match(revoke, /revoke_and_reload_all_gateways/);
+  assert.match(authorization, /node "\$ACCESS_CONTROL" revoke/);
   assert.match(issue, /lib-gateway-quarantine\.sh/);
-  assert.match(revoke, /quarantine_all_gateways/);
+  assert.match(revoke, /lib-gateway-quarantine\.sh/);
   assert.doesNotMatch(issue, /stop gateway[^\n]*\|\| true/);
   assert.doesNotMatch(revoke, /stop gateway[^\n]*\|\| true/);
 });

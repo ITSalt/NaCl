@@ -41,29 +41,14 @@ ACCESS_CONTROL="$HERE/server-access-control.mjs"
 DC="docker compose"; docker compose version >/dev/null 2>&1 || DC="docker-compose"
 # shellcheck source=/dev/null
 . "$HERE/lib-gateway-quarantine.sh"
-if ! node "$ACCESS_CONTROL" revoke --state-dir "$STATE_DIR" --server-id "$SERVER_ID" --cn "$DEV" >/dev/null; then
-  CRITICAL_UNRESOLVED="no"
-  quarantine_all_gateways revoke-projection-failed || CRITICAL_UNRESOLVED="yes"
-  echo "BLOCKED: server-wide revoke projection failed; physical quarantine was required" >&2
-  printf '\nNACL_CERT_RESULT: status=BLOCKED dev=%s gateway_reloaded=no critical_unresolved=%s\n' "$DEV" "$CRITICAL_UNRESOLVED"
+# shellcheck source=/dev/null
+. "$HERE/lib-gateway-authorization.sh"
+if ! revoke_and_reload_all_gateways "$DEV"; then
+  echo "BLOCKED: server-wide revoke boundary failed ($NACL_AUTHORIZATION_FAILURE); physical quarantine was required" >&2
+  printf '\nNACL_CERT_RESULT: status=BLOCKED dev=%s gateway_reloaded=no critical_unresolved=%s\n' "$DEV" "$NACL_CRITICAL_UNRESOLVED"
   exit 1
 fi
+
 RELOADED="yes"
-for compose in "$STATE_DIR"/*/docker-compose.yml; do
-  [ -f "$compose" ] || continue
-  GRAPH_DIR="$(dirname "$compose")"
-  if ! render_gateway_allowlist "$GRAPH_DIR" || ! ( cd "$GRAPH_DIR" && $DC up -d ); then
-    RELOADED="no"
-  fi
-done
-
-echo "Revoked '$DEV'. CN removed from allow-list${RELOADED:+; gateway recreated=$RELOADED}." >&2
-if [ "$RELOADED" != "yes" ]; then
-  CRITICAL_UNRESOLVED="no"
-  quarantine_all_gateways revoke-reload-failed || CRITICAL_UNRESOLVED="yes"
-  echo "BLOCKED: a stale gateway required server-wide physical quarantine" >&2
-  printf '\nNACL_CERT_RESULT: status=BLOCKED dev=%s gateway_reloaded=no critical_unresolved=%s\n' "$DEV" "$CRITICAL_UNRESOLVED"
-  exit 1
-fi
-
+echo "Revoked '$DEV'. CN removed from allow-list; registered gateways reconciled by state." >&2
 printf '\nNACL_CERT_RESULT: status=REVOKED dev=%s gateway_reloaded=%s\n' "$DEV" "$RELOADED"
