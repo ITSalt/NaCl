@@ -4,9 +4,11 @@ import {
   chmodSync,
   copyFileSync,
   existsSync,
+  lstatSync,
   mkdirSync,
   mkdtempSync,
   readFileSync,
+  readdirSync,
   rmSync,
   writeFileSync,
 } from "node:fs";
@@ -168,6 +170,53 @@ function logLines(ctx) {
   return existsSync(ctx.log) ? readFileSync(ctx.log, "utf8").trim().split("\n").filter(Boolean) : [];
 }
 
+function treeSnapshot(root) {
+  const entries = [];
+  function visit(filename, relative) {
+    const metadata = lstatSync(filename);
+    const mode = metadata.mode & 0o7777;
+    if (metadata.isDirectory()) {
+      entries.push({ path: relative || ".", type: "directory", mode });
+      for (const name of readdirSync(filename).sort()) visit(path.join(filename, name), relative ? `${relative}/${name}` : name);
+    } else if (metadata.isFile()) {
+      entries.push({ path: relative, type: "file", mode, content: readFileSync(filename, "utf8") });
+    } else if (metadata.isSymbolicLink()) {
+      entries.push({ path: relative, type: "symlink", mode });
+    } else entries.push({ path: relative, type: "other", mode });
+  }
+  visit(root, "");
+  return entries;
+}
+
+function validCompose(inner = '      - "--allow-cn=old"') {
+  return [
+    "services:",
+    "  gateway:",
+    "    command:",
+    "      # >>> NACL allow-cn (managed) — generated projection of <state>/trusted-cns",
+    inner,
+    "      # <<< NACL allow-cn (managed)",
+    "",
+  ].join("\n");
+}
+
+function runGrantHelper(ctx, principal = "developer.bob") {
+  const script = [
+    `. ${JSON.stringify(path.join(ctx.vps, "lib-ca.sh"))}`,
+    `. ${JSON.stringify(path.join(ctx.vps, "lib-gateway-quarantine.sh"))}`,
+    `. ${JSON.stringify(path.join(ctx.vps, "lib-gateway-authorization.sh"))}`,
+    `STATE_DIR=${JSON.stringify(ctx.state)}`,
+    `SERVER_ID=graph.example.com`,
+    `ACCESS_CONTROL=${JSON.stringify(ctx.cli)}`,
+    `DC='docker compose'`,
+    `grant_and_reload_all_gateways ${principal}`,
+  ].join("\n");
+  return spawnSync("/bin/bash", ["-c", script], {
+    encoding: "utf8",
+    env: { ...process.env, PATH: `${ctx.bin}:${process.env.PATH}`, FAKE_DOCKER_LOG: ctx.log },
+  });
+}
+
 test("provision grant renders and reloads two existing gateways and the new gateway", () => {
   const ctx = fixture();
   try {
@@ -253,6 +302,53 @@ test("state-aware grant renders all projections but never starts disabled or rel
   }
 });
 
+test("reserve then metadata quarantine is never treated as active provisioning during grant", () => {
+  const ctx = fixture();
+  try {
+    const reserved = control(ctx.cli, ctx.state, "reserve", ["--scope", "project-c", "--port", "7445"]);
+    mkdirSync(path.join(ctx.state, "project-c"), { recursive: true });
+    writeFileSync(path.join(ctx.state, "project-c", "docker-compose.yml"), "services:\n  gateway: {}\n");
+    const quarantined = tryControl(ctx.cli, ctx.state, "quarantine", ["--scope", "project-c", "--reason", "prior-failure"]);
+    assert.notEqual(quarantined.status, 0);
+    const gateway = control(ctx.cli, ctx.state, "inventory").gateways.find((entry) => entry.project_scope === "project-c");
+    assert.equal(gateway.provisioning, true);
+    assert.equal(gateway.reservation_token, reserved.reservation_token);
+    assert.equal(gateway.quarantine_reason, "prior-failure");
+    rmSync(ctx.log, { force: true });
+    const result = runGrantHelper(ctx);
+    assert.equal(result.status, 0, result.stderr);
+    const lines = logLines(ctx);
+    assert.ok(lines.includes("render:project-c"), lines.join(", "));
+    assert.ok(lines.includes("stop:project-c"), lines.join(", "));
+    assert.equal(lines.includes("up:project-c"), false, lines.join(", "));
+  } finally {
+    rmSync(ctx.root, { recursive: true, force: true });
+  }
+});
+
+test("release and quarantine stop-precedence wins over corrupt enabled metadata", () => {
+  const ctx = fixture();
+  try {
+    const inventoryPath = path.join(ctx.state, "gateways.json");
+    const inventory = JSON.parse(readFileSync(inventoryPath, "utf8"));
+    const projectA = inventory.gateways.find((entry) => entry.project_scope === "project-a");
+    const projectB = inventory.gateways.find((entry) => entry.project_scope === "project-b");
+    Object.assign(projectA, { enabled: true, provisioning: true, release_pending: true, quarantine_reason: null });
+    Object.assign(projectB, { enabled: true, provisioning: false, quarantine_reason: "drifted-quarantine" });
+    writeFileSync(inventoryPath, `${JSON.stringify(inventory, null, 2)}\n`);
+    rmSync(ctx.log, { force: true });
+    const result = runGrantHelper(ctx);
+    assert.equal(result.status, 0, result.stderr);
+    const lines = logLines(ctx);
+    for (const scope of ["project-a", "project-b"]) {
+      assert.ok(lines.includes(`stop:${scope}`), lines.join(", "));
+      assert.equal(lines.includes(`up:${scope}`), false, lines.join(", "));
+    }
+  } finally {
+    rmSync(ctx.root, { recursive: true, force: true });
+  }
+});
+
 test("certificate revoke uses state-aware reconciliation and does not restart a disabled gateway", () => {
   const ctx = fixture();
   try {
@@ -283,6 +379,53 @@ test("certificate revoke uses state-aware reconciliation and does not restart a 
   }
 });
 
+test("real allowlist renderer writes and verifies the exact managed projection", () => {
+  const root = mkdtempSync(path.join(os.tmpdir(), "nacl-vps-render-exact-"));
+  try {
+    const graph = path.join(root, "project-a");
+    mkdirSync(graph, { recursive: true });
+    writeFileSync(path.join(graph, "allowed-cns"), "developer.alice\ndeveloper.bob\n");
+    writeFileSync(path.join(graph, "docker-compose.yml"), validCompose());
+    const script = `. ${JSON.stringify(path.join(repo, "graph-infra/vps/lib-ca.sh"))}\nrender_gateway_allowlist ${JSON.stringify(graph)}`;
+    const result = spawnSync("/bin/bash", ["-c", script], { encoding: "utf8", env: { ...process.env, CA_DIR: path.join(root, "ca") } });
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(readFileSync(path.join(graph, "docker-compose.yml"), "utf8"), validCompose([
+      '      - "--allow-cn=developer.alice"',
+      '      - "--allow-cn=developer.bob"',
+    ].join("\n")));
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+for (const malformed of [
+  { name: "missing managed markers", compose: "services:\n  gateway: {}\n" },
+  { name: "duplicate managed markers", compose: validCompose().replace("      # <<< NACL allow-cn (managed)", "      # >>> NACL allow-cn (managed)\n      # <<< NACL allow-cn (managed)") },
+]) {
+  test(`grant reload fails closed for ${malformed.name}`, () => {
+    const ctx = fixture();
+    try {
+      copyFileSync(path.join(repo, "graph-infra/vps/lib-ca.sh"), path.join(ctx.vps, "lib-ca.sh"));
+      const target = path.join(ctx.state, "project-a", "docker-compose.yml");
+      writeFileSync(target, malformed.compose);
+      writeFileSync(path.join(ctx.state, "project-b", "docker-compose.yml"), validCompose());
+      const before = readFileSync(target, "utf8");
+      rmSync(ctx.log, { force: true });
+      const result = runGrantHelper(ctx);
+      assert.notEqual(result.status, 0);
+      assert.equal(readFileSync(target, "utf8"), before, "malformed compose must remain unchanged");
+      const lines = logLines(ctx);
+      assert.ok(lines.includes("stop:project-a"), lines.join(", "));
+      assert.ok(lines.includes("stop:project-b"), lines.join(", "));
+      assert.equal(lines.includes("up:project-a"), false, lines.join(", "));
+      const inventory = control(ctx.cli, ctx.state, "inventory");
+      assert.ok(inventory.gateways.every((entry) => entry.enabled === false));
+    } finally {
+      rmSync(ctx.root, { recursive: true, force: true });
+    }
+  });
+}
+
 test("failed docker down retains the disabled reservation and prevents later port reuse", () => {
   const ctx = fixture();
   try {
@@ -308,26 +451,38 @@ test("failed owned-artifact cleanup is retryable and keeps the port reserved unt
   try {
     const reserved = control(controllerSource, state, "reserve", ["--scope", "project-a", "--port", "7443"]);
     mkdirSync(project, { recursive: true });
-    writeFileSync(path.join(project, "owned-artifact"), "keep until cleanup succeeds\n");
+    const locked = path.join(project, "z-locked");
+    mkdirSync(locked);
+    writeFileSync(path.join(project, "a-removable"), "must survive a failed cleanup\n");
+    writeFileSync(path.join(locked, "owned-artifact"), "keep until cleanup succeeds\n");
+    chmodSync(path.join(project, "a-removable"), 0o640);
+    chmodSync(path.join(locked, "owned-artifact"), 0o600);
+    chmodSync(locked, 0o500);
+    const beforeFailure = treeSnapshot(project);
     const pending = control(controllerSource, state, "release", ["--scope", "project-a", "--reservation-token", reserved.reservation_token]);
     assert.equal(pending.status, "PENDING");
     assert.equal(pending.code, "GATEWAY_RESERVATION_RELEASE_PENDING");
 
-    chmodSync(project, 0o500);
     const failed = tryControl(controllerSource, state, "release-commit", ["--scope", "project-a", "--reservation-token", reserved.reservation_token]);
     assert.notEqual(failed.status, 0);
     assert.equal(control(controllerSource, state, "inventory").gateways[0].release_pending, true);
+    assert.equal(existsSync(project), true);
+    assert.deepEqual(treeSnapshot(project), beforeFailure, "failed cleanup must preserve every path, byte and mode");
     const collision = tryControl(controllerSource, state, "reserve", ["--scope", "project-b", "--port", "7443"]);
     assert.notEqual(collision.status, 0);
     assert.match(collision.stderr, /GATEWAY_COLLISION/);
 
-    chmodSync(project, 0o700);
+    chmodSync(locked, 0o700);
+    const beforeCommit = treeSnapshot(project);
     const committed = control(controllerSource, state, "release-commit", ["--scope", "project-a", "--reservation-token", reserved.reservation_token]);
     assert.equal(committed.code, "GATEWAY_RESERVATION_RELEASED");
+    assert.equal(committed.artifact_gc_status, "RETAINED");
+    assert.ok(path.isAbsolute(committed.artifact_tombstone));
     assert.deepEqual(control(controllerSource, state, "inventory").gateways, []);
     assert.equal(existsSync(project), false);
+    assert.deepEqual(treeSnapshot(committed.artifact_tombstone), beforeCommit);
   } finally {
-    if (existsSync(project)) chmodSync(project, 0o700);
+    if (existsSync(path.join(project, "z-locked"))) chmodSync(path.join(project, "z-locked"), 0o700);
     rmSync(root, { recursive: true, force: true });
   }
 });
