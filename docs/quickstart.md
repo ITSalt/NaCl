@@ -4,69 +4,59 @@
 
 # Quick Start
 
-Get from zero to your first skill run in 10 minutes.
+Use the runtime branch that matches your application. Codex users follow the UI-first path; Claude users retain the current 2.24.0 channels.
 
+<!-- doc-key: prerequisites -->
 ## Prerequisites
 
-- Claude Code or Codex installed and authenticated
-- [Docker](https://docs.docker.com/get-docker/) installed and running
-- [Git](https://git-scm.com/)
-- [Node.js 18+](https://nodejs.org/) -- required: `/nacl-init` and the deterministic skill-tools run Node scripts
+- An authenticated Codex Desktop or Claude Code installation.
+- Docker Desktop for a local Neo4j graph, or access to a VPS that already hosts the project's Neo4j Community container.
+- A project folder that the agent runtime is allowed to read and write.
 
-## Step 1: Clone the repository
+Repository development additionally needs Git 2.30+ and Node.js 18+, but an ordinary Codex plugin user does not need a checkout or terminal for installation.
 
-```bash
-git clone https://github.com/ITSalt/NaCl.git ~/NaCl
+<!-- doc-key: choose-channel -->
+## Choose the installation channel
+
+For **Codex Desktop**, install the full NaCl plugin from a trusted NaCl card in **Plugins**. Fully restart Codex and open a new task. The verified artifact is currently a local candidate; a public card, public Streamable HTTP MCP endpoint, OAuth flow, and release are `NOT_RUN`. See [Install the Codex plugin](setup/install-codex-plugin.md).
+
+For **Claude Code Desktop or CLI**, follow [Skill Installation](setup/install-skills.md). Keep the 2.24.0 GUI walkthrough and use only one Claude installation channel per machine.
+
+<!-- doc-key: verify-installation -->
+## Verify the installation
+
+In a new Codex task, send:
+
+```text
+Call nacl_installation_doctor exactly once with no arguments. Report status, mode, pluginVersion, and executionLocation. Continue only if status=VERIFIED and mode=plugin-only.
 ```
 
-> Adjust `~/NaCl` to your preferred location. All instructions below use `$NACL_DIR` to refer to this path.
+The version must equal the installed card and `executionLocation` must be `installed-cache`. Stop if any field differs. Claude users can run the dry-run command documented by their selected channel.
 
-## Step 2: Install skills for your agent runtime
+<!-- doc-key: run-first-dry-run -->
+## Run the first dry run
 
-Claude Code has two install channels -- CLI (symlinked skills) and Desktop (a
-plugin installed from the in-app marketplace). Codex has its own adapted
-package. Pick the one channel that matches your runtime and machine (never
-install both Claude Code channels on the same machine):
+Ask the installed NaCl plugin:
 
-- [Claude Code installation](setup/install-skills.md#choose-your-channel)
-- [Codex installation](setup/install-skills.md#codex)
-
-The guide includes macOS, Linux, Windows WSL2, and Windows PowerShell commands.
-
-## Step 3: Configure the Neo4j MCP server
-
-There's nothing to install manually here — `/nacl-init` (next step) downloads a
-version-pinned, checksum-verified `neo4j-mcp` binary and writes your project's `.mcp.json`
-for you. See [Graph Setup](setup/graph-setup.md#step-3-install-the-neo4j-mcp-server) for
-the manual-download fallback (blocked egress) and the Claude Code Desktop notes.
-
-## Step 4: Initialize your first project
-
-Open your agent runtime in the target project directory (the main checkout, not a linked
-worktree):
-
-```
-/nacl-init "My Project Name"
+```text
+Use nacl-init for this project in dry-run mode. Show the resolved project identity, graph mode, planned files, ports, server route, and blockers. Do not change anything.
 ```
 
-`/nacl-init` provisions the Neo4j graph for you: it copies the graph infrastructure
-into your project, starts a per-project Docker Compose stack, waits for it to become
-healthy, loads the schema, and sets up `.mcp.json` for the Neo4j MCP server. You don't
-run `docker compose up` from the NaCl checkout yourself. Run `/mcp` afterward and start
-a new session if `neo4j` isn't listed yet — MCP servers are only picked up at session
-start. Then start the full pipeline:
+Review the plan. Local graph mode creates one Neo4j 5 Community container and durable volumes for this project. Remote mode connects to a project container on a reachable VPS. Access to a server currently implies access to all project databases hosted on that server; `project_scope` is routing and provenance, not authorization.
 
-```
-/nacl-ba-full
-```
+<!-- doc-key: initialize-project -->
+## Initialize the first project
 
-Claude will guide you through business analysis interactively, storing everything in the Neo4j graph.
+After the dry run is correct, ask `nacl-init` to initialize the project and approve only the exact confirmation returned by the current plan. Initialization creates or connects the graph, waits for health, loads the schema, and records the project connection without exposing a raw password in project files.
 
-## What's Next?
+Start with `nacl-ba`, continue with `nacl-sa`, and use `nacl-tl` for planning and delivery. Use `nacl-verify` before closure. These are public conductors; they choose the internal leaf skills.
 
-- **Full pipeline**: [Workflows](workflows.md) -- end-to-end scenarios
-- **All skills**: [Skills Reference](skills-reference.md) -- complete catalog
-- **Architecture**: [Architecture](architecture.md) -- how it all fits together
-- **Skill installation**: [Claude Code or Codex](setup/install-skills.md)
-- **Platform setup**: [macOS](setup/install-macos.md) | [Linux](setup/install-linux.md) | [Windows](setup/install-windows.md)
-- **Optional tools**: [Docmost & YouGile](setup/optional-tools.md)
+<!-- doc-key: next-steps -->
+## What's next
+
+- [Workflows](workflows.md) — end-to-end routes.
+- [Graph Setup](setup/graph-setup.md) — local, create, and connect modes.
+- [Skills Guide](skills-guide.md) — select one of the ten public skills.
+- [Skills Reference](skills-reference.md) — exact ten-public/sixty-internal inventory.
+- [Configuration](configuration.md) — `config.yaml`, secrets, and server routing.
+- [Platform guides](setup/install-macos.md) — macOS; [Linux](setup/install-linux.md); [Windows](setup/install-windows.md).
