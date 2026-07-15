@@ -33,6 +33,34 @@ that matches how you run Claude Code and stick to it.
 
 ### Claude Code Desktop (plugin)
 
+There are two equivalent ways to add the NaCl marketplace and install the
+plugin: the settings GUI or two slash commands. Both end at the same
+`nacl@nacl` install.
+
+**Option A — settings GUI (point-and-click)**
+
+1. Open **Settings** (or type `/plugin` in the task input at the bottom — it
+   opens the same panel).
+2. In the left sidebar, under **Customize**, click **Plugins**.
+3. Top-right, click **Add ▾** → **Add marketplace**.
+4. Choose **Add from a repository** ("Sync a plugin marketplace from a GitHub
+   repository or git URL").
+5. In the **URL** field, type `ITSalt/NaCl`. A GitHub `owner/repo` is enough —
+   you do not need the full `https://…` URL, a local folder path, or a
+   pre-cloned copy of the repository. Acknowledge the trust warning.
+6. Click **Sync**. The `nacl` marketplace is added.
+7. Back in the **Plugins** panel, click **Browse**. In the **Directory** dialog
+   that opens, select **Plugins** in the left sidebar and click the **Code** tab
+   at the top. Find the **NaCl Spec-Graph Framework** card (by `ITSalt`) and
+   click the **`+`** button on it to install.
+
+If step 6 shows **"Failed to add marketplace"**, the repository is fine — it is
+a known Desktop-client limitation. See
+[Troubleshooting](#troubleshooting-failed-to-add-marketplace) below and use
+Option B instead.
+
+**Option B — slash commands**
+
 Inside Claude Code Desktop, run:
 
 ```text
@@ -40,11 +68,11 @@ Inside Claude Code Desktop, run:
 /plugin install nacl@nacl
 ```
 
-This installs 53 of the 59 skills as `/nacl:<name>` slash commands and 7
-agent profiles as `@nacl:<name>`. `nacl-goal` is excluded (it wraps the CLI-only
-`/goal` command, which Desktop cannot run); `nacl-postmortem` and the three
-`nacl-migrate*` skills are excluded as rare/repo-checkout-only; `nacl-core` is
-excluded as a shared library shipped whole at the plugin root, not as an
+Either option installs 53 of the 59 skills as `/nacl:<name>` slash commands and
+7 agent profiles as `@nacl:<name>`. `nacl-goal` is excluded (it wraps the
+CLI-only `/goal` command, which Desktop cannot run); `nacl-postmortem` and the
+three `nacl-migrate*` skills are excluded as rare/repo-checkout-only; `nacl-core`
+is excluded as a shared library shipped whole at the plugin root, not as an
 invocable skill (6 exclusions total: 59 − 6 = 53). The neo4j MCP
 server is still configured per-project by `/nacl:init`, not by the plugin.
 See [Graph Setup](graph-setup.md) for the Desktop graph-infrastructure
@@ -53,6 +81,36 @@ specifics (Docker Desktop detection, sidecar autostart, the pinned
 
 To update the plugin, use Claude Code Desktop's own plugin update flow; there
 is no separate NaCl script for this channel.
+
+#### Troubleshooting: "Failed to add marketplace"
+
+If the GUI **Add marketplace → Sync** step fails with a bare
+**"Failed to add marketplace"** (the client log records
+`MARKETPLACE_ERROR:UNKNOWN` alongside `Unrecognized git clone error output`),
+the NaCl repository and its `marketplace.json` are not the problem — this is a
+Claude Desktop client limitation.
+
+Under the hood the GUI shells out to the bundled `claude` CLI to `git clone` the
+marketplace repository and kills that clone after roughly 60 seconds. When the
+clone resolves to SSH (the CLI prefers SSH for the `owner/repo` form) and the
+desktop's non-interactive process has no usable SSH agent or `known_hosts`
+entry, the clone stalls on a host-key or credential prompt and is killed at the
+timeout. The client cannot parse the truncated output, so it reports the
+generic error — even though the same clone finishes in seconds from a real
+terminal.
+
+Workaround — run the same two commands from a normal terminal, where SSH is
+fully set up and the clone timeout is 120 seconds:
+
+```text
+claude plugin marketplace add ITSalt/NaCl
+claude plugin install nacl@nacl
+```
+
+Then restart Claude Code Desktop; the installed `nacl@nacl` plugin is picked up
+automatically. These are the Desktop plugin channel's own commands (they update
+the plugin marketplace list and `enabledPlugins`), not the symlink channel — so
+this workaround does not create a dual install.
 
 ### Claude Code CLI (symlinked skills)
 
