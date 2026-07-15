@@ -1,8 +1,8 @@
 # Runbook: releasing the NaCl framework itself
 
-Written: 2026-07-15. Cross-checked against how v2.23.0 (tag `v2.23.0`, release
-commit `f0a8923`) and v2.24.0 (tag `v2.24.0`, release commit `0ddf80c`, PRs
-#17–#20) actually shipped. Re-verify every snapshot fact against the live repo
+Written: 2026-07-15. Cross-checked against how v2.23.0 (release-docs commit
+`f0a8923`, tag on merge commit `be306fc`) and v2.24.0 (tag `v2.24.0` on
+release commit `0ddf80c`, PRs #17–#20) actually shipped. Re-verify every snapshot fact against the live repo
 before acting on it.
 
 **Scope.** This is the manual procedure for cutting a release of the NaCl
@@ -57,7 +57,8 @@ header), formatted exactly:
 ```
 
 - The dash is an **em dash** (`—`, U+2014), not a hyphen. Every entry since
-  2.23.0 uses it; keep the file uniform.
+  2.23.0 uses it; match the recent entries (older headings are not perfectly
+  uniform — the 2.7.1 heading uses an ASCII hyphen).
 - Keep a Changelog sections as applicable: `### Added`, `### Changed`,
   `### Fixed`, `### Notes`.
 - Position matters: `scripts/build-plugin.mjs` derives the plugin version from
@@ -117,7 +118,11 @@ and the plugin rebuild with the version bump (`5b5fa32`) together.
 
 Run all of these on the release diff and record exit codes. Direct pushes to
 `main` skip `lint-skills.yml` entirely (it has only a `pull_request` trigger),
-so on the owner's direct-push path these local runs are the ONLY gate.
+and nothing runs BEFORE the push lands — `build-plugin.yml`, `test-tools.yml`,
+and `test-python.yml` do have `push: branches: [main]` triggers, so the
+drift/tool gates still fire on `main` after the push, but by then a bad push
+is already public. On the owner's direct-push path these local runs are the
+only pre-push gate, and the only execution of the lint-skills greps at all.
 
 ```sh
 # 1. Canonical graph-down HALT copies in sync
@@ -129,8 +134,12 @@ node scripts/build-plugin.mjs --check
 # 3. Tool tests (record the pass count; compare with your pre-change baseline)
 git ls-files '*/scripts/*.test.mjs' 'scripts/*.test.mjs' ':!plugin/**' | xargs node --test
 
-# 4. Privacy canary — machine-specific paths in the release diff
+# 4. Privacy canary — machine-specific paths in the release diff.
+#    Run this AFTER the release-docs commit exists locally (step 6) and
+#    BEFORE pushing: with HEAD still at origin/main the diff is empty and
+#    the grep passes vacuously. The guard below makes that loud.
 BASE=$(git merge-base origin/main HEAD)   # or the previous release tag for a full sweep
+test -n "$(git diff "$BASE"..HEAD --stat)" || echo "VACUOUS: empty diff — commit first, then re-run"
 git diff "$BASE"..HEAD | grep -nE '/Users/[A-Za-z0-9_-]+/' && echo "LEAK: local paths"
 ```
 
@@ -145,8 +154,9 @@ push, grep the diff for:
 - dump metadata and operational anecdotes: per-project node counts, dump file
   names, dates tied to client work.
 
-Zero matches is the bar. The 2.11.0 pre-release canary caught a real
-client-name fragment — treat this step as one that finds things.
+Zero matches is the bar. A pre-release canary has caught a real client-name
+leak before (scrub commit `e81645b`, shipped in v2.12.2) — treat this step as
+one that finds things.
 
 If the release-docs commit touches any root `nacl-*/SKILL.md` (it normally
 does not — release commits are docs + `plugin/`), the Codex sync gate also
@@ -157,14 +167,16 @@ applies: `sh skills-for-codex/scripts/check-root-codex-sync.sh <merge-base> HEAD
 One commit containing: CHANGELOG entry, `docs/releases/<ver>-<slug>/` bundle,
 `_drafts/` deletions (if any), rebuilt `plugin/`. Message convention
 (both precedented): `docs(release): finalize X.Y.Z <slug> release` or
-`chore(release): X.Y.Z — <slug>`.
+`chore(release): X.Y.Z — <slug>`. After committing and BEFORE pushing, re-run
+the step-5 privacy canary — only now does it inspect a non-empty diff.
 
 - **Owner:** direct push to `main` is allowed. Remember: no PR means no
   `lint-skills.yml` — step 5 already covered you locally.
 - **Non-owner / agent:** branch + PR to `main`, wait for CI green
   (`gh pr checks <num> --watch`, ~5 min), owner merges. PR-triggered checks a
   release PR will hit: `lint-skills.yml` (always), `build-plugin.yml` (via
-  `plugin/**`), `test-tools.yml` (only if `scripts/` paths changed),
+  `plugin/**`), `test-tools.yml` (via `**/scripts/*.mjs` — the rebuilt
+  `plugin/` matches whenever any bundled script changed),
   `test-python.yml` / `build-cli.yml` (only if their paths changed).
 
 Do not tag until the release commit is on `main` and CI on it is green.
@@ -181,10 +193,12 @@ gh release create vX.Y.Z \
   --notes-file docs/releases/<X.Y.Z>-<slug>/release-notes.md
 ```
 
-- Annotated tag, message `NaCl X.Y.Z — <slug>` (2.21.0–2.23.0 style; 2.24.0
-  used a longer descriptive message — either is fine, keep the version first).
-- The release body is the committed `release-notes.md` verbatim — do not
-  hand-write notes into the `gh` prompt.
+- Annotated tag; the message starts with the version and names the theme —
+  the exact style varies across releases (`NaCl 2.23.0 —
+  multi-user-shared-graph`; `v2.24.0 — Claude Code Desktop adaptation: …`).
+  Keep the version first, slug/theme after.
+- The release body is the committed `release-notes.md` as-is (modulo a
+  trailing newline) — do not hand-write notes into the `gh` prompt.
 - Verify: `gh release view vX.Y.Z` shows the right title, tag, and body.
 
 Both v2.23.0 and v2.24.0 tags sit exactly on their release-docs commits
