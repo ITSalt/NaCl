@@ -45,7 +45,7 @@ if (-not (Test-Path $script:StableBin)) { Fail "resolve-binary" }
 
 try {
   $out = Invoke-McpCypher -SkillsDir $SkillsDir -Uri $Uri -User $User -Password $Password -Database $Database `
-    -Query "MATCH (p:Project {id:'$ProjectScope'}) RETURN count(p) AS c"
+    -Query 'MATCH (p:Project {id:$projectScope}) RETURN count(p) AS c' -Params @{ projectScope = $ProjectScope }
 } catch { [Console]::Error.WriteLine($_); Fail "handshake" }
 $script:Handshake = "ok"
 if ($out -match '"c"[: ]*[1-9]') { $script:ProjectExists = "yes" }

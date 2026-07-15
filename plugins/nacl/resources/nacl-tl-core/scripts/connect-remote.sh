@@ -75,7 +75,8 @@ resolve_neo4j_mcp_bin || fail resolve-binary
 
 # Verify gate (READ-ONLY): connectivity + project marker must exist.
 OUT=$(mcp_cypher_read "$SKILLS_DIR" "$URI" "$USER_" "$PASSWORD" "$DATABASE" \
-      "MATCH (p:Project {id:'$SCOPE'}) RETURN count(p) AS c" 2>/dev/null) || fail handshake
+      'MATCH (p:Project {id:$projectScope}) RETURN count(p) AS c' \
+      --param "projectScope=$SCOPE" 2>/dev/null) || fail handshake
 HANDSHAKE="ok"
 # rows look like [{"c":1}] — treat any non-zero count as "exists"
 echo "$OUT" | grep -qE '"c"[: ]*[1-9]' && PROJECT_EXISTS="yes"

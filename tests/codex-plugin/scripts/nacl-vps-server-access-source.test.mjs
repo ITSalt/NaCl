@@ -104,6 +104,30 @@ test("POSIX and PowerShell create/connect scripts expose the exact full route co
   }
 });
 
+test("POSIX and PowerShell marker queries keep every dynamic value in MCP parameters", () => {
+  const createSh = readFileSync(path.join(repo, "nacl-tl-core/scripts/create-remote.sh"), "utf8");
+  const connectSh = readFileSync(path.join(repo, "nacl-tl-core/scripts/connect-remote.sh"), "utf8");
+  const createPs = readFileSync(path.join(repo, "nacl-tl-core/scripts/create-remote.ps1"), "utf8");
+  const connectPs = readFileSync(path.join(repo, "nacl-tl-core/scripts/connect-remote.ps1"), "utf8");
+  const psHelper = readFileSync(path.join(repo, "nacl-tl-core/scripts/lib-neo4j-mcp.ps1"), "utf8");
+
+  assert.doesNotMatch(createSh, /id:'\$SCOPE'|created_by='\$DEV'|updated_by='\$DEV'/);
+  assert.doesNotMatch(connectSh, /id:'\$SCOPE'/);
+  assert.match(createSh, /\$projectScope/);
+  assert.match(createSh, /\$developerId/);
+  assert.match(createSh, /--param "projectScope=\$SCOPE"/);
+  assert.match(createSh, /--param "developerId=\$DEV"/);
+  assert.match(connectSh, /\$projectScope/);
+  assert.match(connectSh, /--param "projectScope=\$SCOPE"/);
+
+  assert.doesNotMatch(createPs, /id:'\$ProjectScope'|created_by='\$DeveloperId'|updated_by='\$DeveloperId'/);
+  assert.doesNotMatch(connectPs, /id:'\$ProjectScope'/);
+  assert.match(createPs, /-Params @\{ projectScope = \$ProjectScope; developerId = \$DeveloperId \}/);
+  assert.match(connectPs, /-Params @\{ projectScope = \$ProjectScope \}/);
+  assert.match(psHelper, /\[hashtable\]\$Params/);
+  assert.match(psHelper, /"--param"/);
+});
+
 test("VPS provision/issue/revoke use authoritative server control and never mutate a single project grant", () => {
   const provision = readFileSync(path.join(repo, "graph-infra/vps/provision-vps.sh"), "utf8");
   const issue = readFileSync(path.join(repo, "graph-infra/vps/issue-client-cert.sh"), "utf8");

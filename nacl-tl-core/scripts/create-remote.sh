@@ -77,13 +77,15 @@ resolve_neo4j_mcp_bin || fail resolve-binary
 
 # Idempotent seed of the project marker (MERGE — never destructive).
 mcp_cypher_write "$SKILLS_DIR" "$URI" "$USER_" "$PASSWORD" "$DATABASE" \
-  "MERGE (p:Project {id:'$SCOPE'}) ON CREATE SET p.created_by='$DEV', p.created_at=datetime() SET p.updated_by='$DEV', p.updated_at=datetime() RETURN p.id AS id" \
+  'MERGE (p:Project {id:$projectScope}) ON CREATE SET p.created_by=$developerId, p.created_at=datetime() SET p.updated_by=$developerId, p.updated_at=datetime() RETURN p.id AS id' \
+  --param "projectScope=$SCOPE" --param "developerId=$DEV" \
   >/dev/null 2>&1 || fail seed-marker
 HANDSHAKE="ok"
 
 # Verify the marker is now present (read-back).
 OUT=$(mcp_cypher_read "$SKILLS_DIR" "$URI" "$USER_" "$PASSWORD" "$DATABASE" \
-      "MATCH (p:Project {id:'$SCOPE'}) RETURN count(p) AS c" 2>/dev/null) || fail verify
+      'MATCH (p:Project {id:$projectScope}) RETURN count(p) AS c' \
+      --param "projectScope=$SCOPE" 2>/dev/null) || fail verify
 echo "$OUT" | grep -qE '"c"[: ]*[1-9]' && SEEDED="yes"
 [ "$SEEDED" = "yes" ] || fail verify
 

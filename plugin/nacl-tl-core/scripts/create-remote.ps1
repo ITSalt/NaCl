@@ -53,13 +53,14 @@ if (-not (Test-Path $script:StableBin)) { Fail "resolve-binary" }
 
 try {
   Invoke-McpCypher -SkillsDir $SkillsDir -Uri $Uri -User $User -Password $Password -Database $Database -Write `
-    -Query "MERGE (p:Project {id:'$ProjectScope'}) ON CREATE SET p.created_by='$DeveloperId', p.created_at=datetime() SET p.updated_by='$DeveloperId', p.updated_at=datetime() RETURN p.id AS id" | Out-Null
+    -Query 'MERGE (p:Project {id:$projectScope}) ON CREATE SET p.created_by=$developerId, p.created_at=datetime() SET p.updated_by=$developerId, p.updated_at=datetime() RETURN p.id AS id' `
+    -Params @{ projectScope = $ProjectScope; developerId = $DeveloperId } | Out-Null
 } catch { [Console]::Error.WriteLine($_); Fail "seed-marker" }
 $script:Handshake = "ok"
 
 try {
   $out = Invoke-McpCypher -SkillsDir $SkillsDir -Uri $Uri -User $User -Password $Password -Database $Database `
-    -Query "MATCH (p:Project {id:'$ProjectScope'}) RETURN count(p) AS c"
+    -Query 'MATCH (p:Project {id:$projectScope}) RETURN count(p) AS c' -Params @{ projectScope = $ProjectScope }
 } catch { [Console]::Error.WriteLine($_); Fail "verify" }
 if ($out -match '"c"[: ]*[1-9]') { $script:Seeded = "yes" }
 if ($script:Seeded -ne "yes") { Fail "verify" }

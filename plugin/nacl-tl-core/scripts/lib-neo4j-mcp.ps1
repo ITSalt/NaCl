@@ -104,12 +104,17 @@ function Invoke-McpCypher {
     [string]$Password = "",
     [string]$Database = "neo4j",
     [Parameter(Mandatory)][string]$Query,
+    [hashtable]$Params = @{},
     [switch]$Write
   )
   $node = Get-NodeExe
   $script = Join-Path $SkillsDir "nacl-tl-core\scripts\mcp-cypher.mjs"
   $args = @($script, "--binary", $script:StableBin, "--uri", $Uri, "--user", $User,
             "--password", $Password, "--database", $Database, "--query", $Query)
+  foreach ($key in ($Params.Keys | Sort-Object)) {
+    $encoded = ConvertTo-Json -Compress -InputObject $Params[$key]
+    $args += @("--param", "$key=$encoded")
+  }
   if ($Write) { $args += "--write" }
   $out = & $node @args 2>$null
   if ($LASTEXITCODE -ne 0) { throw "mcp-cypher failed (exit $LASTEXITCODE)" }
