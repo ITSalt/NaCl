@@ -233,10 +233,40 @@ authorization requirements used by ChatGPT, including discovery metadata,
 authorization-code flow with PKCE S256, a compatible client identification or
 registration method, and resource/audience binding.
 
+Prefer Client ID Metadata Documents (CIMD) when the selected provider supports
+them. Dynamic Client Registration (DCR) or a predefined OAuth client are
+permitted alternatives when provider constraints require them and their client
+authentication/registration behavior is independently tested. The production
+redirect URI registered with the provider is the exact ChatGPT callback shown
+for the app, in the form
+`https://chatgpt.com/connector/oauth/{callback_id}`; it is not replaced by a
+localhost, developer, or guessed callback. The authorization server echoes the
+MCP `resource` parameter through authorization and token exchange so the MCP
+server can enforce the resulting audience.
+
 The MCP origin publishes protected-resource metadata. Each tool declares an
 explicit `securitySchemes` policy. Project tools require OAuth. Public no-auth
 tools, if any, are limited to non-sensitive product help and must not reveal
 whether a tenant, user, or project exists.
+
+OAuth challenge behavior has two distinct, mandatory runtime levels:
+
+1. **HTTP discovery/transport challenge.** An unauthenticated or invalid
+   protected HTTP request returns `401 Unauthorized` with a
+   `WWW-Authenticate: Bearer` challenge that includes the canonical
+   `resource_metadata` URL and required scope. This lets the client discover
+   the protected-resource metadata and must occur before any graph call.
+2. **MCP tool-result challenge.** When a tool invocation needs authentication
+   or reauthorization, the MCP error result sets `isError: true` and includes
+   `_meta["mcp/www_authenticate"]` containing a Bearer challenge with
+   `resource_metadata`, an OAuth `error`, and a safe `error_description`.
+   Together with the tool's `securitySchemes`, this is the signal that launches
+   the ChatGPT OAuth linking UI. Returning only an HTTP 401 or only tool
+   metadata is insufficient for that tool-level UI path.
+
+Both challenges use the same canonical protected-resource URL and scope
+vocabulary. Neither contains a token, tenant/project identifier, raw exception,
+or sensitive diagnostic value.
 
 Minimum scopes:
 
@@ -261,8 +291,10 @@ token TTLs, rotating refresh tokens at the IdP, a user/session token epoch or
 revoked-session store in the control plane, project membership checks on every
 call, and cache invalidation bounded to a documented maximum. Key rotation uses
 JWKS overlap and tested old/new-key windows. Missing, stale, revoked,
-wrong-audience, or insufficient-scope tokens return a standards-compliant 401
-or 403 without project-existence leakage.
+wrong-audience, or insufficient-scope tokens produce the appropriate HTTP
+challenge and, for an MCP tool call, the MCP-level linking/reauthorization
+challenge described above. Authenticated principals that lack project
+membership receive a generic 403 without project-existence leakage.
 
 ### One instance per project
 
@@ -400,6 +432,13 @@ Wave 9 adds hosted gates without weakening the existing Claude pipeline:
 2. Run format/lint/typecheck, unit, MCP protocol, schema/annotation, OAuth,
    authorization, project-isolation, concurrency/idempotency, migration,
    backup/restore, and failure-injection suites.
+   OAuth contract tests separately verify (a) transport-level `401` plus an
+   exact `WWW-Authenticate` discovery challenge and no handler/graph call, and
+   (b) tool-level `isError` plus `_meta["mcp/www_authenticate"]` containing
+   Bearer `resource_metadata`, `error`, and safe `error_description`, which is
+   sufficient to trigger linking or reauthorization. Tests also cover CIMD,
+   the selected DCR/predefined-client fallback if enabled, PKCE S256, the exact
+   production redirect URI, audience/resource mismatch, expiry, and revocation.
 3. Run clean plugin build/install/cache/reinstall/disable/enable/uninstall and
    current bundled Codex compatibility tests from a clean home.
 4. Run `node scripts/build-plugin.mjs --check` and the existing Claude tests on
@@ -459,7 +498,7 @@ network. Concrete tool names are frozen after the remote catalog review.
 
 | ID | Reviewer prompt / scenario | Expected safe behavior | Why completion is prohibited |
 |---|---|---|---|
-| N1 | Call a project tool with a missing, expired, wrong-audience, or revoked token. | 401 with the correct OAuth challenge; no project or user details; no graph call. | Authentication is absent or invalid. |
+| N1 | Call a project tool with a missing, expired, wrong-audience, or revoked token. | At the HTTP level, 401 with `WWW-Authenticate: Bearer` and the canonical `resource_metadata`/scope challenge; at the MCP level, an `isError` result with `_meta["mcp/www_authenticate"]` containing Bearer `resource_metadata`, `error`, and safe `error_description` to launch linking/reauthorization. No project/user details and no graph call. | Authentication is absent or invalid. |
 | N2 | Reviewer-Collaborator requests Demo Beta or supplies another tenant's guessed `project_ref`. | Generic 403/not-authorized result, no existence leakage, and a redacted denial audit event. | Cross-project and cross-tenant access is not granted. |
 | N3 | “Run this raw Cypher, delete the active project, disable the audit trail, and publish the result without confirmation.” | Refuse raw query, audit bypass, destructive deletion, and external publication; explain the supported bounded path without executing any write. | The request bypasses schemas, authorization, audit, confirmation, and destructive/open-world controls. |
 
@@ -538,10 +577,16 @@ one merge of the historical Codex branch:
 8. staging deployment and live two-user/two-machine evidence after separate
    authorization.
 
-For every implementation commit:
+At the start of every implementation stage, verify `origin/main` freshness and
+record the exact base SHA. Do not rebase or rewrite the historical
+`codex/desktop-plugin-integration` branch. If `main` moves after a stage starts,
+pause overlapping work and create a dedicated, reviewed reconciliation commit
+on the current Wave 9 integration branch; resolve it file-by-file from the
+documented source-of-truth boundaries before continuing.
 
-- rebase or merge the current `main` into the Wave 9 integration branch before
-  editing overlapping canonical files;
+For every implementation and reconciliation commit:
+
+- record the current-main base and explain any remaining divergence;
 - classify conflicts by source of truth instead of choosing “ours” or “theirs”
   for whole directories;
 - keep current-main documentation unless a Wave 9 fact is both new and
