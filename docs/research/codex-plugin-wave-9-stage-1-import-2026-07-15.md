@@ -1,8 +1,8 @@
 # Wave 9 Stage 1: donor import and sanitized candidate manifest
 
 Date: 2026-07-15
-Status: PARTIALLY_VERIFIED — EXACT IMPORT AND PATH SANITIZATION COMPLETE,
-STAGE 2 REFRESH REQUIRED
+Status: PARTIALLY_VERIFIED — EXACT IMPORT AND TWO PATH-SAFETY CORRECTIONS
+COMPLETE, STAGE 2 REFRESH REQUIRED
 
 This evidence covers only the path-scoped Stage 1 import. It does not declare
 the provisional Codex package current, production-ready, or release-ready. It
@@ -19,8 +19,10 @@ mutation, or portal action.
 | Provisional plugin-seed import | b20ad464dd84d893e464170925a45b582afd0d8d |
 | Absent Codex-only docs/evidence import | 09db0c8f845a8394aef45a0f2cb1e47971b28e72 |
 | Initial evidence commit | 323e2fbb3bc81b02818738e4dd822820f87ba378 |
-| Sanitized candidate commit | c741139be6583c6607e568d12e9347da82398887 |
-| Sanitized candidate tree | 87649817ed6695d20952bab3de4164c3db101113 |
+| First path-sanitization commit | c741139be6583c6607e568d12e9347da82398887 |
+| First evidence-update commit | 35fd2fc0b602fe06535427209a24c7b004d99637 |
+| Portable-temp correction commit | 36762be4a3d4ab055b60e7d5331b7db8ab6017b9 |
+| Current sanitized candidate tree | c7ec91c527d3c0aab3c691523a38016044271098 |
 
 No merge, rebase, whole-tree restore, mass cherry-pick, or old shared-file
 replacement was used. At import boundary
@@ -88,24 +90,25 @@ comparison is forbidden.
 
 ## Sanitized candidate transformations
 
-Commit `c741139be6583c6607e568d12e9347da82398887` changes only additions that
-were introduced by the three import commits. Every file remains an addition
-relative to the fresh-main base; no pre-existing base path was modified.
+Commits `c741139be6583c6607e568d12e9347da82398887` and
+`36762be4a3d4ab055b60e7d5331b7db8ab6017b9` change only additions that were
+introduced by the three import commits. Every file remains an addition relative
+to the fresh-main base; no pre-existing base path was modified.
 
 | Candidate file | Imported path class | Current form and reason | Mode | Candidate blob |
 |---|---|---|---:|---|
-| docs/research/codex-plugin-wave-1-runtime-spike-2026-07-14.md | concrete home/temp/runtime evidence | `$HOME`, `$CODEX_HOME`, and `$TMPDIR` forms with neutral run IDs; preserves historical meaning without host identity | 100644 | 8c3f2bb58db86b83c18a71ee60d2f1290bf635e5 |
-| docs/research/codex-plugin-wave-2-package-cli-2026-07-14.md | host temp output | `$TMPDIR` output form for portable historical commands | 100644 | 87afea9988d433f193726e695520d7c8e4c9b1ed |
+| docs/research/codex-plugin-wave-1-runtime-spike-2026-07-14.md | concrete home/temp/runtime evidence and uninitialized temp variable | runnable commands allocate `output_file=$(mktemp)` with cleanup; historical listings use the explicitly non-runnable `$SYSTEM_TEMP` notation | 100644 | 1492c2975ac7483fe6db7f2e7d5a65348b5c5a3b |
+| docs/research/codex-plugin-wave-2-package-cli-2026-07-14.md | host temp output and uninitialized temp variable | runnable command allocates `output_file=$(mktemp)`, reuses it, and installs cleanup | 100644 | 049d75b3164a6c1722089c4f9071908783b19464 |
 | docs/research/codex-plugin-wave-6-workflow-integration-2026-07-14.md | personal validator location | `$PLUGIN_CREATOR`-relative validator form | 100644 | 4f48ee7f1cd4b4d7ffde84b2e83439e6cf7940a9 |
-| docs/research/codex-plugin-wave-7-candidate-2026-07-15.md | personal worker and temp paths | `$WORKTREE`, `$TMPDIR`, and `$URL_ENCODED_MARKETPLACE_PATH` forms | 100644 | 492f57fbfd3975e91281a9256b561aeeded47945 |
+| docs/research/codex-plugin-wave-7-candidate-2026-07-15.md | personal worker/temp paths and uninitialized archive variable | historical listing uses `$SYSTEM_TEMP`; runnable archive sequence allocates `work_dir=$(mktemp -d)`, reuses it, and installs cleanup | 100644 | c9b86d2c115c9e501c4518ebc0876c6f58ecbe1e |
 | plugins/nacl/resources/nacl-migrate-core/nacl_migrate_core/adapters/frontmatter_v1_sa.py | hard-coded host parse log | `Path(tempfile.gettempdir())` selects the platform temp root safely | 100644 | e8f7cadf587d077c613546a929f586c8eb721a0f |
 | plugins/nacl/resources/nacl-postmortem/SKILL.md | concrete home-root warning example | generic developer-home wording keeps the prohibition without embedding a host prefix | 100644 | 11c00782abc49c571c541de9d3fbf28f16b17756 |
-| plugins/nacl/resources/nacl-tl-dev-be/SKILL.md | hard-coded baseline path | `mktemp -t` plus `$baseline_file` allocates and reuses a safe path | 100644 | a15ae84c9b3205ea572ec7305c3d0ab26691bcd2 |
-| plugins/nacl/resources/nacl-tl-dev-fe/SKILL.md | hard-coded baseline path | `mktemp -t` plus `$baseline_file` allocates and reuses a safe path | 100644 | d7aec59b1a6531c5dddce29ae1a40231b37a5931 |
-| plugins/nacl/resources/nacl-tl-dev/SKILL.md | two hard-coded baseline paths | both workflows allocate with `mktemp -t` and reuse `$baseline_file` | 100644 | 5d3bade3d55b7a68b25bea2dd62f1b629ff3e900 |
+| plugins/nacl/resources/nacl-tl-dev-be/SKILL.md | hard-coded baseline path and platform-specific template | exact POSIX `baseline_file=$(mktemp)` and PowerShell `GetTempFileName()` forms; one variable is reused and then removed | 100644 | aa98a5f50e5744d3badf40760e88523bcf6fe74e |
+| plugins/nacl/resources/nacl-tl-dev-fe/SKILL.md | hard-coded baseline path and platform-specific template | exact POSIX `baseline_file=$(mktemp)` and PowerShell `GetTempFileName()` forms; one variable is reused and then removed | 100644 | e5fddc573bd68f220902fbe6831c9200c0e55372 |
+| plugins/nacl/resources/nacl-tl-dev/SKILL.md | two hard-coded baseline locations and platform-specific templates | both locations give exact POSIX and PowerShell allocation, single-variable reuse, and cleanup contracts | 100644 | de3ada7d703825b130c527634259a617cadab98f |
 | scripts/check-plugin-docs.mjs | literal forbidden-path regex source | composed separator/backtick pattern preserves the same rejection semantics while keeping the candidate literal-free | 100644 | 72d891ac7978a9971b1f3ea368fd4a6f142aff18 |
 | scripts/codex-plugin-wave1-report.mjs | literal Darwin temp aliases | `path.parse` and `path.join` derive bounded raw/private aliases | 100644 | 96b9fc3d34c4a50e880b1f307aa9ae5a97153565 |
-| tests/codex-plugin/README.md | hard-coded test outputs | `$TMPDIR` forms document runtime-selected outputs | 100644 | 585f5b08aeb02551882fe890161e45e66ee12e29 |
+| tests/codex-plugin/README.md | hard-coded and uninitialized test outputs | both runnable examples allocate `output_file=$(mktemp)`, reuse it, and install cleanup | 100644 | 95f26c0edd1468feb74fdd9cac025260664386d3 |
 | tests/codex-plugin/scripts/check-claude-runtime-unchanged.test.sh | shell fallback temp root | `mktemp -d -t` delegates root selection to the host | 100644 | c69c53306e9a0395bbe80dd30f7c0d8c74e53fed |
 | tests/codex-plugin/scripts/codex-plugin-wave1-report.test.mjs | personal and real-host synthetic fixtures | `path.join` builds neutral synthetic home and Darwin-alias fixtures; negative assertions are unchanged | 100644 | 16b419e0060141064902b3feeb1fd85c2b5afee6 |
 | tests/codex-plugin/scripts/legacy-installer-isolated.test.sh | shell fallback temp root | `mktemp -d -t` delegates root selection to the host | 100644 | f43f6b8bad730b42fca96420787a7e832d173bc9 |
@@ -116,10 +119,12 @@ relative to the fresh-main base; no pre-existing base path was modified.
 | tests/codex-plugin/scripts/nacl-workflow-integration.test.mjs | literal evidence/project fixtures | `os.tmpdir()` plus `path.join` preserves unsafe absolute evidence and project scope cases | 100644 | 046e735f18e5bc3cfcfaadb4e9e93e145534a3fb |
 | tests/codex-plugin/scripts/validate-codex-plugin.test.sh | shell fallback temp root | `mktemp -d -t` delegates root selection to the host | 100644 | ce95db95f099911569832d67d7d27979c4b4178a |
 
-The table is exhaustive for the sanitization range `323e2fb..c741139`:
-exactly 21 imported paths, all mode `100644`. The candidate tree SHA above
-binds the other 399 donor-identical imports and the pre-sanitization evidence
-file as well.
+The table is exhaustive for the 420 imported paths at current candidate
+`36762be4a3d4ab055b60e7d5331b7db8ab6017b9`: exactly 21 imported paths differ
+from donor and all remain mode `100644`. The candidate tree SHA above binds the
+other 399 donor-identical imports and evidence state `35fd2fc` as well. The
+second correction changes seven rows already present in the 21-path table; it
+does not increase the transformed-path count.
 
 ## Exact container-internal temp allowlist
 
@@ -137,6 +142,12 @@ file and searches for concrete home/user identity, encoded personal-home
 forms, known host temp roots, the historical worker location, and literal host
 temporary paths. It returns exactly the four line locations above and zero
 other matches.
+
+A separate runnable-example classifier requires the TMPDIR shell-variable
+token to be absent from the four corrected example documents and forbids
+`$SYSTEM_TEMP` inside `sh` or `bash` fences. Therefore `$SYSTEM_TEMP` remains
+historical notation only, while every runnable output/archive example performs
+its own `mktemp` allocation and cleanup.
 
 ## Verification results
 
@@ -159,6 +170,11 @@ other matches.
 | Sanitized graph fixture regressions | PASS | concurrency model 16/16 and graph gateway 22/22 |
 | Sanitized migration adapter regression | PASS | unittest runner passed 30/30; pytest entry was separately NOT_RUN because pytest is unavailable |
 | Documentation checker regression | PASS | 9 passed, 0 failed; constructed forbidden-path regex retains rejection behavior |
+| Portable runnable-example scope | PASS | Exactly 7 implementation files changed: 4 example documents and 3 runtime skill files with 4 allocation locations |
+| Historical-placeholder classifier | PASS | TMPDIR token absent from corrected example docs; `$SYSTEM_TEMP` absent from every runnable shell fence |
+| TMPDIR-unset allocator regression | PASS | With `env -u TMPDIR`, both `mktemp` and `mktemp -d` produced existing children whose parent was not filesystem root; file/directory cleanup succeeded |
+| Internal runtime skill contract | PASS | YAML/frontmatter parsed for all 3 files; exact POSIX and PowerShell forms present at all 4 locations; package closure remained VERIFIED |
+| Minimal upstream internal-skill validator | NOT_APPLICABLE | It rejects pre-existing `effort` and `model` frontmatter fields before body validation; official plugin/public-skill validators pass |
 | Sanitized shell gates | PASS / KNOWN STALE EXCEPTION | validator 4/4 and isolated legacy gate passed; Claude harness reaches an absent Stage 2 support script |
 | Touched package-server regression | FAIL / EXPECTED STALE SEED | 10 passed, 3 failed only on the already-missing legacy fallback source |
 | Touched workflow regression | FAIL / EXPECTED STALE SEED | 12 passed, 1 failed only on existing exact-copy parity 38 versus 39 |
