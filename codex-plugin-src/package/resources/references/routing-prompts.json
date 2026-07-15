@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "cases": [
+    { "prompt": "Initialize this repository for NaCl", "skill": "nacl-init" },
+    { "prompt": "Conduct a resumable multi-step objective", "skill": "nacl-goal" },
+    { "prompt": "Describe business roles and processes", "skill": "nacl-ba" },
+    { "prompt": "Design the use cases and system architecture", "skill": "nacl-sa" },
+    { "prompt": "Plan and deliver the next feature wave", "skill": "nacl-tl" },
+    { "prompt": "Diagnose and fix this regression", "skill": "nacl-fix" },
+    { "prompt": "Verify code, tests, and QA evidence", "skill": "nacl-verify" },
+    { "prompt": "Migrate these legacy NaCl artifacts", "skill": "nacl-migrate" },
+    { "prompt": "Diagnose project drift and recommend next work", "skill": "nacl-diagnose" },
+    { "prompt": "Render and publish the approved artifacts", "skill": "nacl-publish" }
+  ]
+}

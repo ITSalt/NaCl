@@ -1,0 +1,20 @@
+{
+  "name": "nacl-local",
+  "interface": {
+    "displayName": "NaCl Local Candidate"
+  },
+  "plugins": [
+    {
+      "name": "nacl",
+      "source": {
+        "source": "local",
+        "path": "./plugins/nacl"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+# Exact wheels accepted by the Wave 0 validator gate:
+# - CPython 3.11 / macOS 11+ arm64
+# - CPython 3.11 / manylinux x86_64 (GitHub-hosted Ubuntu runner)
+# - CPython 3.14 / macOS 11+ arm64 (current local runtime)
+--only-binary=:all:
+PyYAML==6.0.3 \
+    --hash=sha256:652cb6edd41e718550aad172851962662ff2681490a8a711af6a4d288dd96824 \
+    --hash=sha256:b8bb0864c5a28024fac8a632c443c87c5aa6f215c0b126c449ae1a150412f31d \
+    --hash=sha256:34d5fcd24b8445fadc33f9cf348c1047101756fd760b4dacb5c3e99755703310

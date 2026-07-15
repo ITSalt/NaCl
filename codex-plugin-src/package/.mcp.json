@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "nacl": {
+      "command": "node",
+      "args": [
+        "./scripts/nacl-package-mcp.mjs"
+      ],
+      "cwd": "."
+    }
+  }
+}

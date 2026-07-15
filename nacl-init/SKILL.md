@@ -528,20 +528,28 @@ sidecar socket (e.g. `bolt://localhost:3700`); skills/.mcp.json stay on localhos
 sh "$REPO_ROOT/nacl-tl-core/scripts/connect-remote.sh" \
   --project-root "$(pwd)" --skills-dir "$REPO_ROOT" \
   --uri "bolt://localhost:$SIDECAR_PORT" --project-scope "$SCOPE" \
-  --id "$PROJECT_ID" --name "$PROJECT_NAME" [--password "$NEO4J_PASSWORD"]
+  --id "$PROJECT_ID" --name "$PROJECT_NAME" \
+  --host "$GRAPH_HOST" --gateway-port "$GATEWAY_PORT" --sidecar-port "$SIDECAR_PORT" \
+  --client-cert "$CLIENT_CERT" --client-key "$CLIENT_KEY" --ca-cert "$CA_CERT" \
+  --tls true --secret-source env:NEO4J_PASSWORD
 # → NACL_GRAPH_RESULT: status=CONNECTED|FAILED  (project_exists guard inside)
 
 # create (provision a new shared project) — idempotent (:Project) marker seed
 sh "$REPO_ROOT/nacl-tl-core/scripts/create-remote.sh" \
   --project-root "$(pwd)" --skills-dir "$REPO_ROOT" \
   --uri "bolt://localhost:$SIDECAR_PORT" --project-scope "$SCOPE" \
-  --id "$PROJECT_ID" --name "$PROJECT_NAME" --developer-id "$NACL_DEVELOPER_ID"
+  --id "$PROJECT_ID" --name "$PROJECT_NAME" --developer-id "$NACL_DEVELOPER_ID" \
+  --host "$GRAPH_HOST" --gateway-port "$GATEWAY_PORT" --sidecar-port "$SIDECAR_PORT" \
+  --client-cert "$CLIENT_CERT" --client-key "$CLIENT_KEY" --ca-cert "$CA_CERT" \
+  --tls true --secret-source env:NEO4J_PASSWORD
 # → NACL_GRAPH_RESULT: status=READY|FAILED
 ```
 
 Windows: call `connect-remote.ps1` / `create-remote.ps1` with the matching `-ProjectRoot`,
-`-SkillsDir`, `-Uri`, `-ProjectScope`, `-Id`, `-Name` parameters (see Step 2c.3 for the PS dispatch
-shape). Both tools write `.mcp.json` + the `config.yaml` `graph:` block and register the project — so
+`-SkillsDir`, `-Uri`, `-ProjectScope`, `-Id`, `-Name`, `-Host`, `-GatewayPort`,
+`-SidecarPort`, `-ClientCert`, `-ClientKey`, `-CaCert`, `-Tls` and `-SecretSource`
+parameters (see Step 2c.3 for the PS dispatch shape). Both tools write `.mcp.json` + the
+complete `config.yaml` `graph.remote` route and register the project — so
 on `CONNECTED`/`READY`, skip the rest of 2c and go to Step 3. On `FAILED`, fail loud with the
 `failed_check` (e.g. `project-missing` → tell the user to run `--scale=create` first).
 

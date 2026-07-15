@@ -16,6 +16,8 @@
 import { realpathSync, readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
+import { validateSecretSource } from './secret-source-contract.mjs';
+import { parseStrictJsonDocument } from './strict-state-documents.mjs';
 
 /**
  * Returns a NEW .mcp.json document with the `neo4j` server set/replaced, preserving any
@@ -24,24 +26,34 @@ import { join } from 'node:path';
  * @param {{command:string, uri:string, username?:string, password?:string, database?:string}} conn
  * @returns {object}
  */
-export function mergeMcpConfig(existingDoc, { command, uri, username = 'neo4j', password = '', database = 'neo4j' }) {
+export function mergeMcpConfig(existingDoc, { command, uri, username = 'neo4j', password, database = 'neo4j', secretSource, launcher }) {
   if (!command) throw new Error('write-mcp-config: --command (neo4j-mcp binary path) is required');
   if (!uri) throw new Error('write-mcp-config: --uri is required');
 
   const doc = (existingDoc && typeof existingDoc === 'object') ? structuredClone(existingDoc) : {};
   if (!doc.mcpServers || typeof doc.mcpServers !== 'object') doc.mcpServers = {};
 
+  const parsedSecretSource = secretSource === undefined ? null : validateSecretSource(secretSource);
+  const env = {
+    NEO4J_URI: uri,
+    NEO4J_USERNAME: username,
+    NEO4J_DATABASE: database,
+    NEO4J_TELEMETRY: 'false',
+  };
+  if (secretSource === undefined) env.NEO4J_PASSWORD = password ?? '';
+  else {
+    env.NACL_NEO4J_SECRET_SOURCE = parsedSecretSource.reference;
+    if (launcher !== undefined) env.NACL_REMOTE_ROUTE_MODE = launcher.routeMode;
+  }
+  if (parsedSecretSource?.kind === 'server-route' && !launcher) throw new Error('write-mcp-config: server-route requires a secret launcher');
+  if (launcher && (!launcher.command || !launcher.script || !launcher.binary || !['create', 'connect'].includes(launcher.routeMode))) {
+    throw new Error('write-mcp-config: invalid secret launcher');
+  }
   doc.mcpServers.neo4j = {
     type: 'stdio',
-    command,
-    args: [],
-    env: {
-      NEO4J_URI: uri,
-      NEO4J_USERNAME: username,
-      NEO4J_PASSWORD: password,
-      NEO4J_DATABASE: database,
-      NEO4J_TELEMETRY: 'false',
-    },
+    command: launcher?.command ?? command,
+    args: launcher ? [launcher.script, '--binary', launcher.binary, '--secret-source', parsedSecretSource.reference] : [],
+    env,
   };
   return doc;
 }
@@ -50,6 +62,18 @@ export function mergeMcpConfig(existingDoc, { command, uri, username = 'neo4j', 
 export function readMcpDoc(text) {
   if (typeof text !== 'string' || text.trim() === '') return {};
   try { return JSON.parse(text.replace(/^﻿/, '')); } catch { return {}; }
+}
+
+/** Strict transaction parser: malformed user state must never be replaced silently. */
+export function readMcpDocStrict(text) {
+  if (typeof text !== 'string' || text.trim() === '') return {};
+  let parsed;
+  try { parsed = parseStrictJsonDocument(text); } catch { throw new Error('write-mcp-config: existing .mcp.json is malformed or ambiguous'); }
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) throw new Error('write-mcp-config: existing .mcp.json must be an object');
+  if (parsed.mcpServers !== undefined && (!parsed.mcpServers || typeof parsed.mcpServers !== 'object' || Array.isArray(parsed.mcpServers))) {
+    throw new Error('write-mcp-config: existing mcpServers must be an object');
+  }
+  return parsed;
 }
 
 /** Canonical serialization: 2-space indent, trailing newline, no BOM (matches prior merge). */
@@ -76,6 +100,7 @@ if (process.argv[1] && realpathSync(process.argv[1]) === fileURLToPath(import.me
       username: opt.username,
       password: opt.password,
       database: opt.database,
+      secretSource: opt['secret-source'],
     });
     writeFileSync(mcpPath, serializeMcpDoc(merged), 'utf-8');
     process.stdout.write(`wrote neo4j MCP server → ${mcpPath} (uri=${opt.uri})\n`);

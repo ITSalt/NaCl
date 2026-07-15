@@ -12,10 +12,17 @@ param(
   [Parameter(Mandatory)][string]$ProjectScope,
   [Parameter(Mandatory)][string]$Id,
   [Parameter(Mandatory)][string]$Name,
+  [Parameter(Mandatory)][string]$Host,
+  [Parameter(Mandatory)][int]$GatewayPort,
+  [Parameter(Mandatory)][int]$SidecarPort,
+  [Parameter(Mandatory)][string]$ClientCert,
+  [Parameter(Mandatory)][string]$ClientKey,
+  [Parameter(Mandatory)][string]$CaCert,
   [string]$DeveloperId = "",
   [string]$User = "neo4j",
-  [string]$Password = $env:NEO4J_PASSWORD,
-  [string]$Database = "neo4j"
+  [string]$Database = "neo4j",
+  [bool]$Tls = $true,
+  [string]$SecretSource = "env:NEO4J_PASSWORD"
 )
 . (Join-Path $SkillsDir "nacl-tl-core\scripts\lib-neo4j-mcp.ps1")
 
@@ -32,27 +39,33 @@ function Emit([string]$Status) {
 }
 function Fail([string]$Check) { $script:FailedCheck = $Check; [Console]::Error.WriteLine("FAILED at: $Check"); Emit "FAILED"; exit 1 }
 
+$node = Get-NodeExe
+$Password = (& $node (Join-Path $SkillsDir "nacl-tl-core\scripts\secret-source-contract.mjs") --resolve $SecretSource)
+if ($LASTEXITCODE -ne 0 -or -not $Password) { Fail "secret-source-unavailable" }
+& $node (Join-Path $SkillsDir "nacl-tl-core\scripts\remote-route-contract.mjs") --mode create --host $Host --gateway-port $GatewayPort --sidecar-port $SidecarPort --project-scope $ProjectScope --client-cert $ClientCert --client-key $ClientKey --ca-cert $CaCert --tls $Tls.ToString().ToLowerInvariant() --uri $Uri --username $User --database $Database --secret-source $SecretSource | Out-Null
+if ($LASTEXITCODE -ne 0) { Fail "route-contract" }
+& $node (Join-Path $SkillsDir "nacl-tl-core\scripts\remote-route-contract.mjs") --validate-marker yes --project-scope $ProjectScope --developer-id $DeveloperId | Out-Null
+if ($LASTEXITCODE -ne 0) { Fail "marker-input" }
+
 try { Resolve-Neo4jMcpBin } catch { [Console]::Error.WriteLine($_); Fail "resolve-binary" }
 if (-not (Test-Path $script:StableBin)) { Fail "resolve-binary" }
 
 try {
   Invoke-McpCypher -SkillsDir $SkillsDir -Uri $Uri -User $User -Password $Password -Database $Database -Write `
-    -Query "MERGE (p:Project {id:'$ProjectScope'}) ON CREATE SET p.created_by='$DeveloperId', p.created_at=datetime() SET p.updated_by='$DeveloperId', p.updated_at=datetime() RETURN p.id AS id" | Out-Null
+    -Query 'MERGE (p:Project {id:$projectScope}) ON CREATE SET p.created_by=$developerId, p.created_at=datetime() SET p.updated_by=$developerId, p.updated_at=datetime() RETURN p.id AS id' `
+    -Params @{ projectScope = $ProjectScope; developerId = $DeveloperId } | Out-Null
 } catch { [Console]::Error.WriteLine($_); Fail "seed-marker" }
 $script:Handshake = "ok"
 
 try {
   $out = Invoke-McpCypher -SkillsDir $SkillsDir -Uri $Uri -User $User -Password $Password -Database $Database `
-    -Query "MATCH (p:Project {id:'$ProjectScope'}) RETURN count(p) AS c"
+    -Query 'MATCH (p:Project {id:$projectScope}) RETURN count(p) AS c' -Params @{ projectScope = $ProjectScope }
 } catch { [Console]::Error.WriteLine($_); Fail "verify" }
 if ($out -match '"c"[: ]*[1-9]') { $script:Seeded = "yes" }
 if ($script:Seeded -ne "yes") { Fail "verify" }
 
-$node = Get-NodeExe
-& $node (Join-Path $SkillsDir "nacl-tl-core\scripts\write-mcp-config.mjs") --project-root $ProjectRoot --command $script:StableBin --uri $Uri --username $User --password $Password --database $Database | Out-Null
-if ($LASTEXITCODE -ne 0) { Fail "write-mcp" }
-& $node (Join-Path $SkillsDir "nacl-tl-core\scripts\write-graph-config.mjs") --project-root $ProjectRoot --mode remote --set "neo4j_uri=`"$Uri`"" --set "neo4j_username=`"$User`"" --set "neo4j_database=`"$Database`"" --set "project_scope=`"$ProjectScope`"" | Out-Null
-if ($LASTEXITCODE -ne 0) { Fail "write-config" }
+& $node (Join-Path $SkillsDir "nacl-tl-core\scripts\write-remote-route.mjs") --project-root $ProjectRoot --mode create --host $Host --gateway-port $GatewayPort --sidecar-port $SidecarPort --project-scope $ProjectScope --client-cert $ClientCert --client-key $ClientKey --ca-cert $CaCert --tls $Tls.ToString().ToLowerInvariant() --uri $Uri --username $User --database $Database --secret-source $SecretSource --launcher-command $node --launcher-script (Join-Path $SkillsDir "nacl-tl-core\scripts\secret-source-launcher.mjs") --binary $script:StableBin | Out-Null
+if ($LASTEXITCODE -ne 0) { Fail "write-route" }
 & $node (Join-Path $SkillsDir "nacl-tl-core\scripts\register-project.mjs") --id $Id --name $Name --root $ProjectRoot | Out-Null
 if ($LASTEXITCODE -ne 0) { Fail "register" }
 

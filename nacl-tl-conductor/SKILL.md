@@ -343,7 +343,7 @@ For each UC in wave order (sequential within wave, wave-by-wave):
    bypass is no longer a flag; users who need stage-level skip pass
    `--skip-e2e` directly to /nacl-tl-qa, and any resulting NOT_RUN on a
    mandatory stage requires a W4 signed exception.)
-   
+
    This runs the full 8-step UC lifecycle:
    BE dev -> BE review -> FE dev -> FE review -> Sync -> Stubs -> QA -> Docs
 
@@ -661,11 +661,11 @@ After all development items have been processed:
    - If SOME failed -> **USER GATE** (skip if `--yes`):
      ```
      Partial completion: 2/3 items done, 1 failed.
-     
+
      UC028: Image format selection          -- DONE
      BUG-003: Share button on mobile        -- DONE
      UC029: Scene prompt display            -- FAILED at sync, 3 retries
-     
+
      Options:
        [1] Continue to delivery (ship what's done)
        [2] Abort (keep branch, fix manually later)
@@ -900,7 +900,7 @@ to Phase 5.
    ```
    Execute /nacl-tl-deliver --branch [branch_name]
    ```
-   
+
    nacl-tl-deliver handles:
    - Push branch to origin
    - Create PR (if feature-branch strategy)

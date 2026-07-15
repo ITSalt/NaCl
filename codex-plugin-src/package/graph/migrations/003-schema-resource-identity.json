@@ -1,0 +1,10 @@
+{
+  "component": "nacl-graph-gateway",
+  "version": 3,
+  "description": "Add project-scoped identity for the schema-migration lease resource.",
+  "risk": "additive",
+  "backupRequired": false,
+  "statements": [
+    "CREATE CONSTRAINT nacl_schema_resource_identity IF NOT EXISTS FOR (migration:SchemaMigration) REQUIRE (migration.project_id, migration.id) IS UNIQUE"
+  ]
+}
