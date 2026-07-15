@@ -120,7 +120,9 @@
     }
   },
   "repositoryPrivacyNotice": {
-    "path": "./PRIVACY.md",
+    "repositoryPath": "PRIVACY.md",
+    "pathBase": "repository-root",
+    "includedInPackage": false,
     "status": "LOCAL_FRAMEWORK_NOTICE_ONLY",
     "productionPublicPolicyStatus": "NOT_VERIFIED"
   }

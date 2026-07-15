@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -25,6 +26,10 @@ function git(arguments_, cwd) {
   const result = spawnSync("git", arguments_, { cwd, encoding: "utf8" });
   assert.equal(result.status, 0, `${arguments_.join(" ")}\n${result.stdout}\n${result.stderr}`);
   return result.stdout.trim();
+}
+
+function sha256(value) {
+  return createHash("sha256").update(value).digest("hex");
 }
 
 test("source and packaged disclosures enumerate the complete bounded data flow and unresolved production decisions", async () => {
@@ -74,6 +79,16 @@ test("source and packaged disclosures enumerate the complete bounded data flow a
   assert.equal(source.productionDecisions.modelTraining.sourceImplementationStatus, "DOES_NOT_SEND_TO_AUTHOR_ANALYTICS");
   assert.equal(source.productionDecisions.modelTraining.productionCommitmentStatus, "NOT_VERIFIED");
   assert.equal(source.repositoryPrivacyNotice.productionPublicPolicyStatus, "NOT_VERIFIED");
+  assert.deepEqual(source.repositoryPrivacyNotice, {
+    repositoryPath: "PRIVACY.md",
+    pathBase: "repository-root",
+    includedInPackage: false,
+    status: "LOCAL_FRAMEWORK_NOTICE_ONLY",
+    productionPublicPolicyStatus: "NOT_VERIFIED",
+  });
+  assert.ok((await readFile(path.join(repoRoot, "PRIVACY.md"), "utf8")).length > 0);
+  await assert.rejects(readFile(path.join(sourceRoot, "PRIVACY.md")), /ENOENT/);
+  await assert.rejects(readFile(path.join(pluginRoot, "PRIVACY.md")), /ENOENT/);
 
   assert.equal(metadata.status, "NOT_READY_FOR_SUBMISSION");
   assert.equal(metadata.freezeStatus, "PREFREEZE_NOT_BOUND");
@@ -100,6 +115,14 @@ test("release binding derives current hashes, remains explicitly unready, and va
   assert.equal(binding.status, "NOT_READY_FOR_SUBMISSION");
   assert.equal(binding.source.value, sourceSha);
   assert.equal(binding.plugin.version.value, context.pluginVersion);
+  assert.equal(binding.plugin.packageTree.sha256, context.generatedPlugin.manifestSha256);
+  assert.equal(binding.plugin.packageTree.treeSha256, context.generatedPlugin.manifest.treeSha256);
+  assert.equal(binding.plugin.packageTree.fileCount, context.generatedPlugin.manifest.fileCount);
+  assert.equal(binding.plugin.installArchive.sha256, context.generatedPlugin.archiveSha256);
+  assert.equal(binding.plugin.installArchive.sizeBytes, context.generatedPlugin.archive.length);
+  assert.ok(binding.plugin.packageTree.fileCount > 300);
+  assert.ok(context.generatedPlugin.manifest.files.some((entry) => entry.path === ".codex-plugin/plugin.json"));
+  assert.ok(context.generatedPlugin.manifest.files.some((entry) => entry.path === "submission/data-flow-security.json"));
   assert.equal(binding.publicMcp.publicToolsMetadata.sha256, context.publicToolsMetadataSha256);
   assert.equal(binding.publicMcp.serverInstructions.sha256, context.serverInstructionsSha256);
   assert.equal(binding.artifacts.containerImage.status, "NOT_BOUND");
@@ -109,6 +132,26 @@ test("release binding derives current hashes, remains explicitly unready, and va
   assert.doesNotMatch(JSON.stringify(binding), /\/(?:Users|home)\//);
 });
 
+test("two generated plugin builds produce one complete deterministic tree manifest and install archive", async () => {
+  const context = await collectReleaseContext(repoRoot);
+  const generated = context.generatedPlugin;
+  assert.equal(sha256(generated.manifestContent), generated.manifestSha256);
+  assert.equal(sha256(generated.archive), generated.archiveSha256);
+  assert.equal(generated.manifest.files.length, generated.manifest.fileCount);
+  assert.ok(generated.manifest.files.every((entry) => entry.mode === "0644" || entry.mode === "0755"));
+  const temporary = await mkdtemp(path.join(os.tmpdir(), "nacl-plugin-archive-"));
+  try {
+    const archive = path.join(temporary, "nacl.tar");
+    await writeFile(archive, generated.archive);
+    const listing = spawnSync("tar", ["-tf", archive], { encoding: "utf8" });
+    assert.equal(listing.status, 0, `${listing.stdout}\n${listing.stderr}`);
+    const entries = listing.stdout.trim().split("\n");
+    assert.deepEqual(entries, generated.manifest.files.map((entry) => `nacl/${entry.path}`));
+  } finally {
+    await rm(temporary, { recursive: true, force: true });
+  }
+});
+
 test("release binding fails closed for false verification, stale bindings, sensitive values, readiness gaps, and signing claims", async () => {
   const context = await collectReleaseContext(repoRoot);
   const baseline = buildReleaseBinding({ sourceSha, context });
@@ -116,6 +159,8 @@ test("release binding fails closed for false verification, stale bindings, sensi
     ["VERIFIED without value", (value) => { value.productionBindings.publicEndpoint = { status: "VERIFIED", value: null }; }, /VERIFIED without binding evidence/],
     ["wrong source", (value) => { value.source.value = "b".repeat(40); }, /source SHA/],
     ["wrong plugin version", (value) => { value.plugin.version.value = "9.9.9"; }, /plugin version/],
+    ["stale package tree", (value) => { value.plugin.packageTree.treeSha256 = "0".repeat(64); }, /generated plugin tree hash/],
+    ["stale install archive", (value) => { value.plugin.installArchive.sha256 = "0".repeat(64); }, /generated plugin install archive hash/],
     ["stale skills", (value) => { value.plugin.skills.treeSha256 = "0".repeat(64); }, /skills tree hash/],
     ["stale tools", (value) => { value.publicMcp.publicToolsMetadata.sha256 = "0".repeat(64); }, /public tools metadata hash/],
     ["stale instructions", (value) => { value.publicMcp.serverInstructions.sha256 = "0".repeat(64); }, /server instructions hash/],

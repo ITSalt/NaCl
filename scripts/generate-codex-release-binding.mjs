@@ -2,7 +2,8 @@
 
 import { createHash } from "node:crypto";
 import { spawnSync } from "node:child_process";
-import { link, lstat, mkdir, open, readFile, readdir, realpath, rm } from "node:fs/promises";
+import { link, lstat, mkdir, mkdtemp, open, readFile, readdir, realpath, rm } from "node:fs/promises";
+import os from "node:os";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { PUBLIC_TOOLS } from "../services/nacl-mcp/src/contracts.mjs";
@@ -80,6 +81,100 @@ async function treeBinding(repoRoot, relative) {
     fileCount: records.length,
     treeSha256: sha256(records.map((record) => `${record.path}\0${record.sha256}`).join("\n")),
   };
+}
+
+function octal(value, width) {
+  const result = value.toString(8).padStart(width - 1, "0");
+  if (result.length >= width) throw new Error("Install archive tar field overflow.");
+  return `${result}\0`;
+}
+
+function tarHeader(name, size, mode) {
+  const header = Buffer.alloc(512);
+  let basename = name;
+  let prefix = "";
+  if (Buffer.byteLength(name) > 100) {
+    const index = name.lastIndexOf("/");
+    if (index < 1) throw new Error(`Install archive path is too long: ${name}`);
+    prefix = name.slice(0, index);
+    basename = name.slice(index + 1);
+  }
+  if (Buffer.byteLength(basename) > 100 || Buffer.byteLength(prefix) > 155) {
+    throw new Error(`Install archive path is too long: ${name}`);
+  }
+  header.write(basename, 0, 100, "utf8");
+  header.write(octal(mode, 8), 100, 8, "ascii");
+  header.write(octal(0, 8), 108, 8, "ascii");
+  header.write(octal(0, 8), 116, 8, "ascii");
+  header.write(octal(size, 12), 124, 12, "ascii");
+  header.write(octal(0, 12), 136, 12, "ascii");
+  header.fill(0x20, 148, 156);
+  header.write("0", 156, 1, "ascii");
+  header.write("ustar\0", 257, 6, "ascii");
+  header.write("00", 263, 2, "ascii");
+  header.write("root", 265, 32, "ascii");
+  header.write("root", 297, 32, "ascii");
+  header.write(prefix, 345, 155, "utf8");
+  const checksum = [...header].reduce((sum, byte) => sum + byte, 0);
+  header.write(`${checksum.toString(8).padStart(6, "0")}\0 `, 148, 8, "ascii");
+  return header;
+}
+
+async function inspectGeneratedPlugin(root) {
+  const records = [];
+  const chunks = [];
+  for (const filename of await filesUnder(root)) {
+    const metadata = await lstat(filename);
+    if (!metadata.isFile()) throw new Error(`Generated plugin contains a non-file: ${filename}`);
+    const content = await readFile(filename);
+    const relative = unix(path.relative(root, filename));
+    const mode = metadata.mode & 0o777;
+    if (mode !== 0o644 && mode !== 0o755) throw new Error(`Generated plugin has a non-deterministic mode: ${relative}`);
+    records.push({
+      path: relative,
+      mode: mode.toString(8).padStart(4, "0"),
+      sizeBytes: content.length,
+      sha256: sha256(content),
+    });
+    chunks.push(tarHeader(`nacl/${relative}`, content.length, mode), content);
+    const remainder = content.length % 512;
+    if (remainder) chunks.push(Buffer.alloc(512 - remainder));
+  }
+  chunks.push(Buffer.alloc(1024));
+  const archive = Buffer.concat(chunks);
+  const manifest = {
+    schemaVersion: 1,
+    artifact: "nacl-generated-plugin-tree",
+    archiveRoot: "nacl/",
+    fileCount: records.length,
+    treeSha256: sha256(records.map((record) => `${record.path}\0${record.mode}\0${record.sha256}`).join("\n")),
+    files: records,
+  };
+  const manifestContent = encoded(manifest);
+  return {
+    manifest,
+    manifestContent,
+    manifestSha256: sha256(manifestContent),
+    archive,
+    archiveSha256: sha256(archive),
+  };
+}
+
+export async function buildGeneratedPluginArtifacts(repoRoot = defaultRepoRoot) {
+  const temporary = await mkdtemp(path.join(os.tmpdir(), "nacl-generated-plugin-release-"));
+  try {
+    const firstRoot = path.join(temporary, "first");
+    const secondRoot = path.join(temporary, "second");
+    run(process.execPath, ["scripts/build-codex-plugin.mjs", "--output", firstRoot], repoRoot);
+    run(process.execPath, ["scripts/build-codex-plugin.mjs", "--output", secondRoot], repoRoot);
+    const [first, second] = await Promise.all([inspectGeneratedPlugin(firstRoot), inspectGeneratedPlugin(secondRoot)]);
+    if (first.manifestContent !== second.manifestContent || !first.archive.equals(second.archive)) {
+      throw new Error("Two generated Codex plugin builds are not byte-identical.");
+    }
+    return first;
+  } finally {
+    await rm(temporary, { recursive: true, force: true });
+  }
 }
 
 export function deriveCleanHead(repoRoot) {
@@ -175,6 +270,7 @@ export async function collectReleaseContext(repoRoot = defaultRepoRoot) {
   const bundle = await bundleBindings(repoRoot);
   const context = {
     pluginVersion: pluginManifest.version,
+    generatedPlugin: await buildGeneratedPluginArtifacts(repoRoot),
     mcpPackageVersion: mcpPackage.version,
     skills: await treeBinding(repoRoot, "codex-plugin-src/package/skills"),
     publicToolsMetadataSha256: sha256(encoded(PUBLIC_TOOLS)),
@@ -195,7 +291,11 @@ export async function collectReleaseContext(repoRoot = defaultRepoRoot) {
   return context;
 }
 
-export function buildReleaseBinding({ sourceSha, context }) {
+export function buildReleaseBinding({
+  sourceSha,
+  context,
+  artifactNames = { packageTree: "release-binding.plugin-tree.json", installArchive: "release-binding.plugin.tar" },
+}) {
   if (!/^[0-9a-f]{40}$/.test(sourceSha)) throw new Error("sourceSha must be an exact 40-character Git SHA.");
   return {
     schemaVersion: 1,
@@ -204,6 +304,21 @@ export function buildReleaseBinding({ sourceSha, context }) {
     source: { status: "VERIFIED", algorithm: "git-sha1", value: sourceSha },
     plugin: {
       version: { status: "VERIFIED", value: context.pluginVersion },
+      packageTree: {
+        status: "VERIFIED",
+        path: artifactNames.packageTree,
+        sha256: context.generatedPlugin.manifestSha256,
+        treeSha256: context.generatedPlugin.manifest.treeSha256,
+        fileCount: context.generatedPlugin.manifest.fileCount,
+      },
+      installArchive: {
+        status: "VERIFIED",
+        path: artifactNames.installArchive,
+        format: "tar",
+        archiveRoot: "nacl/",
+        sizeBytes: context.generatedPlugin.archive.length,
+        sha256: context.generatedPlugin.archiveSha256,
+      },
       skills: context.skills,
       assets: context.assets,
     },
@@ -225,8 +340,8 @@ export function buildReleaseBinding({ sourceSha, context }) {
     artifacts: {
       license: context.license,
       lockfile: context.lockfile,
-      sourceBundle: context.bundle.sourceBundle,
-      archive: context.bundle.archive,
+      publicMcpSourceBundle: context.bundle.sourceBundle,
+      publicMcpArchive: context.bundle.archive,
       sbom: context.sbom,
       containerImage: {
         status: "NOT_BOUND",
@@ -299,6 +414,14 @@ export function validateReleaseBinding(binding, { sourceSha, context }) {
   });
   requireSame(binding.source.value, sourceSha, "source SHA");
   requireSame(binding.plugin.version.value, context.pluginVersion, "plugin version");
+  requireSame(binding.plugin.packageTree.sha256, context.generatedPlugin.manifestSha256, "generated plugin tree manifest hash");
+  requireSame(binding.plugin.packageTree.treeSha256, context.generatedPlugin.manifest.treeSha256, "generated plugin tree hash");
+  requireSame(binding.plugin.packageTree.fileCount, context.generatedPlugin.manifest.fileCount, "generated plugin file count");
+  requireSame(binding.plugin.installArchive.sha256, context.generatedPlugin.archiveSha256, "generated plugin install archive hash");
+  requireSame(binding.plugin.installArchive.sizeBytes, context.generatedPlugin.archive.length, "generated plugin install archive size");
+  if (binding.plugin.installArchive.archiveRoot !== "nacl/" || binding.plugin.installArchive.format !== "tar") {
+    throw new Error("Generated plugin install archive format or root is incorrect.");
+  }
   requireSame(binding.plugin.skills.treeSha256, context.skills.treeSha256, "skills tree hash");
   if (binding.plugin.assets.length !== context.assets.length) throw new Error("Stale or incomplete asset bindings.");
   for (let index = 0; index < context.assets.length; index += 1) {
@@ -316,12 +439,12 @@ export function validateReleaseBinding(binding, { sourceSha, context }) {
   requireSame(binding.disclosures.humanDataFlowSecurity.sha256, context.humanDisclosure.sha256, "human disclosure hash");
   requireSame(binding.artifacts.license.sha256, context.license.sha256, "license hash");
   requireSame(binding.artifacts.lockfile.sha256, context.lockfile.sha256, "lockfile hash");
-  requireSame(binding.artifacts.sourceBundle.status, context.bundle.sourceBundle.status, "source bundle status");
-  requireSame(binding.artifacts.archive.status, context.bundle.archive.status, "archive status");
+  requireSame(binding.artifacts.publicMcpSourceBundle.status, context.bundle.sourceBundle.status, "public MCP source bundle status");
+  requireSame(binding.artifacts.publicMcpArchive.status, context.bundle.archive.status, "public MCP archive status");
   if (context.bundle.sourceBundle.status === "VERIFIED") {
-    requireSame(binding.artifacts.sourceBundle.sourceDigest, context.bundle.sourceBundle.sourceDigest, "source bundle digest");
-    requireSame(binding.artifacts.sourceBundle.manifestSha256, context.bundle.sourceBundle.manifestSha256, "source bundle manifest hash");
-    requireSame(binding.artifacts.archive.sha256, context.bundle.archive.sha256, "archive hash");
+    requireSame(binding.artifacts.publicMcpSourceBundle.sourceDigest, context.bundle.sourceBundle.sourceDigest, "public MCP source bundle digest");
+    requireSame(binding.artifacts.publicMcpSourceBundle.manifestSha256, context.bundle.sourceBundle.manifestSha256, "public MCP source bundle manifest hash");
+    requireSame(binding.artifacts.publicMcpArchive.sha256, context.bundle.archive.sha256, "public MCP archive hash");
   }
   requireSame(binding.artifacts.sbom.status, context.sbom.status, "SBOM status");
   if (context.sbom.status === "VERIFIED") {
@@ -391,6 +514,16 @@ async function writeExclusive(filename, content) {
   }
 }
 
+function artifactDestinations(output) {
+  const extension = path.extname(output);
+  const stem = extension === ".json" ? output.slice(0, -extension.length) : output;
+  return {
+    binding: output,
+    packageTree: `${stem}.plugin-tree.json`,
+    installArchive: `${stem}.plugin.tar`,
+  };
+}
+
 function parseArgs(argv) {
   let output = null;
   for (let index = 0; index < argv.length; index += 1) {
@@ -405,11 +538,31 @@ export async function generateReleaseBinding({ repoRoot = defaultRepoRoot, outpu
   const sourceSha = deriveCleanHead(repoRoot);
   run(process.execPath, ["scripts/build-codex-plugin.mjs", "--check"], repoRoot);
   const context = await collectReleaseContext(repoRoot);
-  const binding = validateReleaseBinding(buildReleaseBinding({ sourceSha, context }), { sourceSha, context });
+  const requested = artifactDestinations(output);
+  const destinations = {
+    binding: await assertExternalOutput(repoRoot, requested.binding),
+    packageTree: await assertExternalOutput(repoRoot, requested.packageTree),
+    installArchive: await assertExternalOutput(repoRoot, requested.installArchive),
+  };
+  const artifactNames = {
+    packageTree: path.basename(destinations.packageTree),
+    installArchive: path.basename(destinations.installArchive),
+  };
+  const binding = validateReleaseBinding(buildReleaseBinding({ sourceSha, context, artifactNames }), { sourceSha, context });
   if (deriveCleanHead(repoRoot) !== sourceSha) throw new Error("Git HEAD changed while the release binding was generated.");
-  const destination = await assertExternalOutput(repoRoot, output);
-  await writeExclusive(destination, encoded(binding));
-  return { destination, binding };
+  const created = [];
+  try {
+    await writeExclusive(destinations.packageTree, context.generatedPlugin.manifestContent);
+    created.push(destinations.packageTree);
+    await writeExclusive(destinations.installArchive, context.generatedPlugin.archive);
+    created.push(destinations.installArchive);
+    await writeExclusive(destinations.binding, encoded(binding));
+    created.push(destinations.binding);
+  } catch (error) {
+    await Promise.all(created.map((filename) => rm(filename, { force: true })));
+    throw error;
+  }
+  return { destination: destinations.binding, destinations, binding };
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href) {

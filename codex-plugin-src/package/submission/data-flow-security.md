@@ -38,4 +38,4 @@ Publisher identity, hosting regions, retention periods, deletion and export proc
 
 The source implementation does not send data to author analytics (`DOES_NOT_SEND_TO_AUTHOR_ANALYTICS`). A binding production commitment about model training or secondary data use is `NOT_VERIFIED` until the publisher, hosting, and legal terms are selected.
 
-The packaged `PRIVACY.md` describes the local framework and Claude policy input. It is not a production public-MCP privacy policy.
+The repository-root `PRIVACY.md` describes the local framework and Claude policy input. It is not included in the Codex plugin package and is not a production public-MCP privacy policy.

@@ -35,7 +35,9 @@
     },
     "repositoryPrivacyNotice": {
       "status": "LOCAL_FRAMEWORK_NOTICE_ONLY",
-      "path": "./PRIVACY.md",
+      "repositoryPath": "PRIVACY.md",
+      "pathBase": "repository-root",
+      "includedInPackage": false,
       "productionPublicPolicyStatus": "NOT_VERIFIED"
     }
   },
