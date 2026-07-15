@@ -1,7 +1,8 @@
-# Wave 9 Stage 1: exact donor import manifest
+# Wave 9 Stage 1: donor import and sanitized candidate manifest
 
 Date: 2026-07-15
-Status: PARTIALLY_VERIFIED — EXACT IMPORT COMPLETE, STAGE 2 REFRESH REQUIRED
+Status: PARTIALLY_VERIFIED — EXACT IMPORT AND PATH SANITIZATION COMPLETE,
+STAGE 2 REFRESH REQUIRED
 
 This evidence covers only the path-scoped Stage 1 import. It does not declare
 the provisional Codex package current, production-ready, or release-ready. It
@@ -17,11 +18,17 @@ mutation, or portal action.
 | Support/tests/scripts import | b37dd79b9e42c31f98bb708efde07bd45082451c |
 | Provisional plugin-seed import | b20ad464dd84d893e464170925a45b582afd0d8d |
 | Absent Codex-only docs/evidence import | 09db0c8f845a8394aef45a0f2cb1e47971b28e72 |
-| Pre-evidence Stage 1 head | 09db0c8f845a8394aef45a0f2cb1e47971b28e72 |
+| Initial evidence commit | 323e2fbb3bc81b02818738e4dd822820f87ba378 |
+| Sanitized candidate commit | c741139be6583c6607e568d12e9347da82398887 |
+| Sanitized candidate tree | 87649817ed6695d20952bab3de4164c3db101113 |
 
 No merge, rebase, whole-tree restore, mass cherry-pick, or old shared-file
-replacement was used. Every imported blob below is byte-identical to the exact
-donor object recorded in the full manifest.
+replacement was used. At import boundary
+`09db0c8f845a8394aef45a0f2cb1e47971b28e72`, donor and import file modes were
+machine-compared and every imported blob was byte-identical to the donor
+object recorded in the full manifest. The current sanitized candidate keeps
+399 of those files donor-identical and intentionally transforms the 21 files
+in the exhaustive candidate manifest below.
 
 ## Imported classes and counts
 
@@ -30,8 +37,10 @@ donor object recorded in the full manifest.
 | support-tests-scripts | 46 | Exact donor support seed: repo marketplace, dedicated Codex workflow, 35 test/vendor files, and 9 named Codex scripts |
 | provisional-plugin-seed | 357 | Exact donor runtime/package seed; deliberately stale against current main and not a source of shared truth |
 | codex-docs-evidence | 17 | Exact donor Codex-only ADR, user docs, legacy/install docs, and Wave 0-8 historical evidence absent from the successor base |
-| Total imported donor paths | 420 | Full path and donor blob list below |
-| This authored evidence file | 1 | New Stage 1 evidence, not a donor import |
+| Total imported donor paths | 420 | Exact at the import boundary; full donor blob list below |
+| Donor-identical at sanitized candidate | 399 | Blob and mode still equal to the donor |
+| Sanitized imported additions | 21 | Intentional path-safety transformations; candidate blob/mode manifest below |
+| This authored evidence file | 1 | Stage 1 evidence, not a donor import and not part of the 420-path set |
 
 The donor-only docs/configuration.ru.md was deliberately excluded. Despite
 being absent in the base, it is shared framework documentation from an older
@@ -64,10 +73,10 @@ The following donor contracts are stale and block Stage 2 completion:
    bundled docs, and legacy fallback contracts have not been refreshed.
 6. The imported dedicated CI script still has old repository-wide selection
    behavior. CI ownership and exclusions remain Stage 5 work.
-7. Ten absolute temporary-path references remain in the provisional plugin
-   seed. Four are container-internal schema paths; the host-workflow and
-   migration-log references require explicit Stage 2 classification or
-   replacement. No concrete personal home path is present in the plugin tree.
+7. The candidate-wide path scan is zero except for four exact
+   container-internal schema-transfer locations listed below. Host workflow,
+   migration-log, historical-document, and synthetic-fixture paths now use
+   runtime variables or platform temp APIs rather than hard-coded host roots.
 8. The existing certificate, Neo4j route password, and future OAuth token have
    separate roles. The donor seed must not collapse them into one credential or
    expose the route secret as client input.
@@ -77,13 +86,66 @@ counterparts and 7 explicit dispositions, regenerate inventories/hashes, and
 replace the stale contracts above. Changing expected hashes without semantic
 comparison is forbidden.
 
+## Sanitized candidate transformations
+
+Commit `c741139be6583c6607e568d12e9347da82398887` changes only additions that
+were introduced by the three import commits. Every file remains an addition
+relative to the fresh-main base; no pre-existing base path was modified.
+
+| Candidate file | Imported path class | Current form and reason | Mode | Candidate blob |
+|---|---|---|---:|---|
+| docs/research/codex-plugin-wave-1-runtime-spike-2026-07-14.md | concrete home/temp/runtime evidence | `$HOME`, `$CODEX_HOME`, and `$TMPDIR` forms with neutral run IDs; preserves historical meaning without host identity | 100644 | 8c3f2bb58db86b83c18a71ee60d2f1290bf635e5 |
+| docs/research/codex-plugin-wave-2-package-cli-2026-07-14.md | host temp output | `$TMPDIR` output form for portable historical commands | 100644 | 87afea9988d433f193726e695520d7c8e4c9b1ed |
+| docs/research/codex-plugin-wave-6-workflow-integration-2026-07-14.md | personal validator location | `$PLUGIN_CREATOR`-relative validator form | 100644 | 4f48ee7f1cd4b4d7ffde84b2e83439e6cf7940a9 |
+| docs/research/codex-plugin-wave-7-candidate-2026-07-15.md | personal worker and temp paths | `$WORKTREE`, `$TMPDIR`, and `$URL_ENCODED_MARKETPLACE_PATH` forms | 100644 | 492f57fbfd3975e91281a9256b561aeeded47945 |
+| plugins/nacl/resources/nacl-migrate-core/nacl_migrate_core/adapters/frontmatter_v1_sa.py | hard-coded host parse log | `Path(tempfile.gettempdir())` selects the platform temp root safely | 100644 | e8f7cadf587d077c613546a929f586c8eb721a0f |
+| plugins/nacl/resources/nacl-postmortem/SKILL.md | concrete home-root warning example | generic developer-home wording keeps the prohibition without embedding a host prefix | 100644 | 11c00782abc49c571c541de9d3fbf28f16b17756 |
+| plugins/nacl/resources/nacl-tl-dev-be/SKILL.md | hard-coded baseline path | `mktemp -t` plus `$baseline_file` allocates and reuses a safe path | 100644 | a15ae84c9b3205ea572ec7305c3d0ab26691bcd2 |
+| plugins/nacl/resources/nacl-tl-dev-fe/SKILL.md | hard-coded baseline path | `mktemp -t` plus `$baseline_file` allocates and reuses a safe path | 100644 | d7aec59b1a6531c5dddce29ae1a40231b37a5931 |
+| plugins/nacl/resources/nacl-tl-dev/SKILL.md | two hard-coded baseline paths | both workflows allocate with `mktemp -t` and reuse `$baseline_file` | 100644 | 5d3bade3d55b7a68b25bea2dd62f1b629ff3e900 |
+| scripts/check-plugin-docs.mjs | literal forbidden-path regex source | composed separator/backtick pattern preserves the same rejection semantics while keeping the candidate literal-free | 100644 | 72d891ac7978a9971b1f3ea368fd4a6f142aff18 |
+| scripts/codex-plugin-wave1-report.mjs | literal Darwin temp aliases | `path.parse` and `path.join` derive bounded raw/private aliases | 100644 | 96b9fc3d34c4a50e880b1f307aa9ae5a97153565 |
+| tests/codex-plugin/README.md | hard-coded test outputs | `$TMPDIR` forms document runtime-selected outputs | 100644 | 585f5b08aeb02551882fe890161e45e66ee12e29 |
+| tests/codex-plugin/scripts/check-claude-runtime-unchanged.test.sh | shell fallback temp root | `mktemp -d -t` delegates root selection to the host | 100644 | c69c53306e9a0395bbe80dd30f7c0d8c74e53fed |
+| tests/codex-plugin/scripts/codex-plugin-wave1-report.test.mjs | personal and real-host synthetic fixtures | `path.join` builds neutral synthetic home and Darwin-alias fixtures; negative assertions are unchanged | 100644 | 16b419e0060141064902b3feeb1fd85c2b5afee6 |
+| tests/codex-plugin/scripts/legacy-installer-isolated.test.sh | shell fallback temp root | `mktemp -d -t` delegates root selection to the host | 100644 | f43f6b8bad730b42fca96420787a7e832d173bc9 |
+| tests/codex-plugin/scripts/nacl-concurrency-docker-e2e.test.mjs | literal absolute negative fixture | `path.join(os.tmpdir(), ...)` retains absolute-path rejection coverage | 100644 | 678152e360f7e5abf0f5108791564870ec55c354 |
+| tests/codex-plugin/scripts/nacl-concurrency-model.test.mjs | literal project fixture | `path.join(os.tmpdir(), ...)` provides a platform-safe absolute project root | 100644 | 36dafbd16b9b7ea75742ef15ef760eea2395e686 |
+| tests/codex-plugin/scripts/nacl-graph-gateway.test.mjs | literal project/audit fixtures | `os.tmpdir()` plus `path.join` preserves project isolation and audit assertions | 100644 | 23fdb9f68e3e3d88abf788690315ac06056ff91e |
+| tests/codex-plugin/scripts/nacl-package-server.test.mjs | literal project fixtures | `path.join(os.tmpdir(), ...)` preserves invalid/valid request semantics | 100644 | 530967fb7a91cb70e66b17eadfd78c53763af621 |
+| tests/codex-plugin/scripts/nacl-workflow-integration.test.mjs | literal evidence/project fixtures | `os.tmpdir()` plus `path.join` preserves unsafe absolute evidence and project scope cases | 100644 | 046e735f18e5bc3cfcfaadb4e9e93e145534a3fb |
+| tests/codex-plugin/scripts/validate-codex-plugin.test.sh | shell fallback temp root | `mktemp -d -t` delegates root selection to the host | 100644 | ce95db95f099911569832d67d7d27979c4b4178a |
+
+The table is exhaustive for the sanitization range `323e2fb..c741139`:
+exactly 21 imported paths, all mode `100644`. The candidate tree SHA above
+binds the other 399 donor-identical imports and the pre-sanitization evidence
+file as well.
+
+## Exact container-internal temp allowlist
+
+The only candidate matches are schema files copied into and read inside the
+Neo4j container. The allowlist is exact by repository path, line, mode, and
+candidate blob; no directory or glob allowance exists.
+
+| Repository path | Exact lines | Mode | Candidate blob | Scope |
+|---|---:|---:|---|---|
+| plugins/nacl/resources/nacl-tl-core/scripts/setup-graph.ps1 | 194, 200 | 100644 | 403e0611e668f1fc63604fe621217fa888437e42 | Docker container target and cypher-shell input |
+| plugins/nacl/resources/nacl-tl-core/scripts/setup-graph.sh | 212, 215 | 100644 | 65cace4b1dc59538514444bcae9b32d6edfa82f7 | Docker container target and cypher-shell input |
+
+The strict machine scan covers all 420 imported additions plus this evidence
+file and searches for concrete home/user identity, encoded personal-home
+forms, known host temp roots, the historical worker location, and literal host
+temporary paths. It returns exactly the four line locations above and zero
+other matches.
+
 ## Verification results
 
 | Gate | Result | Evidence |
 |---|---|---|
 | Exact base, branch, and clean pre-import status | PASS | Base and branch matched the requested exact values before the first import |
-| Donor content and file-mode identity | PASS | All 420 imported files matched their donor blob and mode before commit |
-| Import allowlist | PASS | Machine comparison found exactly 420 allowed donor paths and no additional path |
+| Donor content and file-mode identity at import boundary | PASS | All 420 imported files matched donor blob and mode through `09db0c8` |
+| Sanitized candidate manifest | PASS | 399 donor-identical files plus the exact 21-path candidate blob/mode table above |
+| Import and sanitization allowlist | PASS | Exactly 420 imported additions; current changes are limited to the 21 listed imported paths plus this evidence |
 | Negative deletion relative to base | PASS | Empty deletion set |
 | Shared/current-main paths | PASS | No existing base path was modified |
 | Claude generated plugin tree | PASS | Base and Stage 1 tree object both 3af70561ecc7c8d0494f411c5b89218a02826a1b |
@@ -92,16 +154,25 @@ comparison is forbidden.
 | Provisional plugin manifest validator | PASS | Status VERIFIED |
 | Provisional public skill validator | PASS | 10 checked, Status VERIFIED |
 | Provisional package closure | PASS | 357 files, 10 public skills, 60 workflows, Status VERIFIED |
-| Imported JavaScript/shell/Python syntax | PASS | node --check, bash -n, and Python AST parsing exited 0 |
+| Sanitized JavaScript/shell/Python syntax | PASS | node --check, bash -n, and Python AST parsing exited 0 |
+| Sanitized Wave 1 report regression | PASS | 18 passed, 0 failed; synthetic escape and Darwin alias semantics retained |
+| Sanitized graph fixture regressions | PASS | concurrency model 16/16 and graph gateway 22/22 |
+| Sanitized migration adapter regression | PASS | unittest runner passed 30/30; pytest entry was separately NOT_RUN because pytest is unavailable |
+| Documentation checker regression | PASS | 9 passed, 0 failed; constructed forbidden-path regex retains rejection behavior |
+| Sanitized shell gates | PASS / KNOWN STALE EXCEPTION | validator 4/4 and isolated legacy gate passed; Claude harness reaches an absent Stage 2 support script |
+| Touched package-server regression | FAIL / EXPECTED STALE SEED | 10 passed, 3 failed only on the already-missing legacy fallback source |
+| Touched workflow regression | FAIL / EXPECTED STALE SEED | 12 passed, 1 failed only on existing exact-copy parity 38 versus 39 |
+| Touched Docker regression | NOT_RUN BY DEFAULT | 2 Docker tests skipped because the opt-in smoke flag was not set |
 | Donor graph-unit regression | PASS WITH STALE CONTRACT | 89 passed, 0 failed; not server-boundary acceptance |
 | Current legacy Codex skill validator | FAIL / STAGE 2 BLOCKER | 60 checked; nacl-postmortem description contains forbidden angle brackets |
 | Plugin-package suite | FAIL / EXPECTED STALE SEED | 76 passed, 7 failed: legacy catalog, fallback/preflight, and current-main source mismatches |
 | Workflow-integration suite | FAIL / EXPECTED STALE SEED | 35 passed, 3 failed: legacy catalog and old workflow parity assumptions |
 | Plugin documentation suite | FAIL / EXPECTED RECONCILIATION WORK | Shared main docs, EN/RU parity, generated inventory, anchors, configuration RU source, and bundled runbook mirror require later composition |
 | Secret-pattern scan | PASS | No private-key header or common live-token signature in the 420 imported paths |
-| Personal-path scan: distributable/public docs | PASS | No concrete personal home path in plugins/nacl or imported public Codex docs |
-| Historical/test path scan | REVIEWED, NON-DISTRIBUTABLE | Eleven synthetic host-path fixture lines in one test; three imported historical evidence files contain old host paths; three contain temporary paths |
+| Candidate personal/temp path scan | PASS | Zero concrete personal/host-temp matches outside the exact four-line container allowlist |
+| Container temp allowlist | PASS | Exactly four matches at the two files and four lines listed above; no glob allowance |
 | Node 20 exact runner | NOT_RUN | Local runner is Node v24.13.1 |
+| pytest entry point | NOT_RUN / ENVIRONMENT | Selected host Python has no pytest module; equivalent unittest file passed 30/30 |
 | PowerShell parser | NOT_RUN / HOSTED GATE | pwsh is unavailable locally |
 | Docker E2E | NOT_RUN | Stage 1 is a mechanical import; server/topology behavior is not claimed |
 | CLI/Desktop/Git-release portability | NOT_RUN | Deferred to rebuilt/frozen candidate and separately authorized release sequence |
@@ -132,9 +203,8 @@ Stage 2 must, at minimum:
    that cannot be parameterized.
 6. Reconcile legacy fallback/preflight, package hashes, exact workflow parity,
    bundled docs and generated inventories with current main.
-7. Neutralize personal-name test literals before a merge-ready diff and
-   classify/replace host absolute temporary paths before a distributable
-   archive.
+7. Preserve the candidate-wide zero personal/host-temp gate and keep the
+   four-line container allowlist exact if Stage 2 regeneration moves content.
 8. Repair the current legacy Codex validator failure without modifying frozen
    Claude source merely to satisfy Codex packaging.
 9. Preserve the current Claude plugin byte-for-byte unless a separately
@@ -143,9 +213,12 @@ Stage 2 must, at minimum:
     Docker, hosted CI and security/reproducibility gates. None may be marked
     passed from the donor's historical evidence.
 
-## Full imported path and donor blob manifest
+## Full import-boundary path and donor blob manifest
 
-Format: class, donor Git blob object, repository-relative path.
+This manifest binds the exact donor import through commit `09db0c8`; it is not
+a claim that all current candidate blobs still equal donor. Modes were compared
+directly between donor and import commits. Format: class, donor Git blob object,
+repository-relative path.
 
 ~~~text
 support-tests-scripts 920a66384d2cbc1f6c7a1d90d258b18a96a101d0 .agents/plugins/marketplace.json
