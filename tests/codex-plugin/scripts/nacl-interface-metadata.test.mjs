@@ -29,6 +29,11 @@ const expectedInterface = {
   logo: "./assets/logo.png",
   logoDark: "./assets/logo-dark.png",
 };
+const expectedPackageMetadata = {
+  repository: "https://github.com/ITSalt/NaCl",
+  license: "MIT",
+  keywords: ["developer-tools", "software-delivery", "systems-analysis", "verification"],
+};
 
 function run(command, arguments_, cwd = repoRoot) {
   const result = spawnSync(command, arguments_, { cwd, encoding: "utf8", timeout: 120_000 });
@@ -67,11 +72,15 @@ test("plugin interface metadata is stable, honest, and backed by deterministic P
   ]);
   assert.deepEqual(source, packaged);
   assert.deepEqual(packaged.interface, expectedInterface);
+  for (const [key, value] of Object.entries(expectedPackageMetadata)) assert.deepEqual(packaged[key], value);
   assert.equal(expectedPrompts.length, 3);
   for (const prompt of expectedPrompts) assert.ok(prompt.length > 20 && prompt.length <= 128);
   assert.equal(Object.hasOwn(packaged.interface, "screenshots"), false);
   for (const field of ["websiteURL", "privacyPolicyURL", "termsOfServiceURL"]) {
     assert.equal(Object.hasOwn(packaged.interface, field), false);
+  }
+  for (const field of ["homepage", "website", "privacyPolicy", "termsOfService"]) {
+    assert.equal(Object.hasOwn(packaged, field), false);
   }
   assert.equal(Object.hasOwn(packaged, "apps"), false);
   assert.equal(marketplace.plugins[0].category, "Developer Tools");

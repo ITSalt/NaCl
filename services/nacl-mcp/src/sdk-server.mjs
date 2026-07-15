@@ -11,6 +11,8 @@ import { PublicMcpError, ReauthorizationRequired } from "./errors.mjs";
 import { validateSchema } from "./json-schema.mjs";
 import { toolChallenge } from "./oauth-challenge.mjs";
 
+export const SERVER_INSTRUCTIONS = "Use opaque project_ref values only. Never send graph URLs, paths, credentials, identities, or Cypher. Writes require exact confirmation and idempotency fields.";
+
 function supportRef() {
   return `support_${randomBytes(16).toString("hex")}`;
 }
@@ -45,7 +47,7 @@ export function createSdkMcpServer({ callTool, auditRejection, resourceMetadataU
     { name: "nacl-public-mcp", version: serverVersion },
     {
       capabilities: { tools: {} },
-      instructions: "Use opaque project_ref values only. Never send graph URLs, paths, credentials, identities, or Cypher. Writes require exact confirmation and idempotency fields.",
+      instructions: SERVER_INSTRUCTIONS,
     },
   );
   server.setRequestHandler(ListToolsRequestSchema, async () => ({ tools: PUBLIC_TOOLS }));

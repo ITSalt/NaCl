@@ -5,6 +5,14 @@
   "author": {
     "name": "NaCl contributors"
   },
+  "repository": "https://github.com/ITSalt/NaCl",
+  "license": "MIT",
+  "keywords": [
+    "developer-tools",
+    "software-delivery",
+    "systems-analysis",
+    "verification"
+  ],
   "skills": "./skills/",
   "interface": {
     "displayName": "NaCl",

@@ -1,0 +1,127 @@
+{
+  "schemaVersion": 1,
+  "artifact": "nacl-public-mcp-data-flow-security",
+  "contractVersion": "nacl-public-mcp-v1",
+  "status": "LOCAL_SOURCE_DISCLOSURE_ONLY",
+  "productionPolicyStatus": "NOT_VERIFIED",
+  "scope": {
+    "included": "The source implementation, intended production topology, data categories, controls, and unresolved production decisions for the NaCl public MCP service.",
+    "excluded": "This artifact is not a published privacy policy, terms of service, security certification, subprocessors list, or production deployment attestation."
+  },
+  "topology": {
+    "projectIsolation": "One Neo4j Community container with independent data, logs, and backup volumes per NaCl project.",
+    "authorizationBoundary": "A user who is authorized for a configured Neo4j server or VPS is treated as authorized for every NaCl project database configured on that server. The MCP control plane still resolves opaque project_ref values and rejects client-supplied graph URLs, paths, credentials, identities, and Cypher.",
+    "deploymentStatus": "NOT_VERIFIED"
+  },
+  "dataCategories": [
+    {
+      "id": "oauth-identity",
+      "data": ["OAuth subject and issuer", "token audience and scopes", "session identifier", "authorization revision"],
+      "purpose": "Authenticate the caller, enforce scopes and server-level access, and invalidate stale or revoked sessions."
+    },
+    {
+      "id": "project-graph",
+      "data": ["NaCl project requirements", "architecture and process records", "delivery plans and tasks", "verification evidence", "project metadata"],
+      "purpose": "Provide the bounded analysis, planning, delivery, and verification operations explicitly requested by the user."
+    },
+    {
+      "id": "mcp-request-result",
+      "data": ["allowlisted tool name", "validated tool arguments", "bounded structured result", "confirmation and idempotency fields for writes"],
+      "purpose": "Execute the selected public MCP operation and return its result to Codex."
+    },
+    {
+      "id": "security-audit",
+      "data": ["authorization decision", "rate-limit and idempotency state", "redacted audit event", "opaque support reference"],
+      "purpose": "Prevent replay and abuse, investigate failures, and support security operations without exposing graph credentials."
+    },
+    {
+      "id": "backup-restore",
+      "data": ["project-scoped backup artifact", "restore request and approval state", "integrity metadata"],
+      "purpose": "Create project backups and perform isolated, confirmed restore workflows."
+    }
+  ],
+  "flows": [
+    {
+      "from": "OAuth provider",
+      "to": "NaCl MCP token verifier",
+      "dataCategory": "oauth-identity",
+      "purpose": "Validate issuer, audience, expiry, scopes, session, and authorization revision."
+    },
+    {
+      "from": "NaCl MCP token verifier",
+      "to": "NaCl server control plane",
+      "dataCategory": "oauth-identity",
+      "purpose": "Resolve the principal's server-level authorization and active session."
+    },
+    {
+      "from": "NaCl MCP application",
+      "to": "project graph adapter",
+      "dataCategory": "mcp-request-result",
+      "purpose": "Route an allowlisted operation to the project selected by opaque project_ref."
+    },
+    {
+      "from": "project graph adapter",
+      "to": "project Neo4j container",
+      "dataCategory": "project-graph",
+      "purpose": "Read or mutate only the catalogued project graph operation."
+    },
+    {
+      "from": "NaCl MCP application",
+      "to": "audit, rate-limit, idempotency, and session stores",
+      "dataCategory": "security-audit",
+      "purpose": "Enforce operational controls and record redacted decisions."
+    },
+    {
+      "from": "project graph adapter",
+      "to": "Codex",
+      "dataCategory": "mcp-request-result",
+      "purpose": "Return a bounded result conforming to nacl-public-mcp-v1."
+    },
+    {
+      "from": "project Neo4j container",
+      "to": "project backup store or isolated restore target",
+      "dataCategory": "backup-restore",
+      "purpose": "Create or restore a project-scoped artifact after the required confirmation."
+    }
+  ],
+  "implementedControls": [
+    "OAuth issuer, audience, expiry, scope, session, and authorization-revision verification",
+    "Closed public tool and named-query catalog",
+    "Opaque project_ref routing with no client-supplied graph URL, path, credential, identity, or Cypher",
+    "Server-level authorization applied before project routing",
+    "Exact confirmation and idempotency requirements for writes",
+    "Rate limiting, replay handling, and redacted audit events",
+    "Independent Neo4j data, log, and backup volumes per project"
+  ],
+  "productionDecisions": {
+    "publisherIdentity": { "status": "NOT_VERIFIED", "value": null },
+    "oauthProvider": { "status": "NOT_SELECTED", "value": null },
+    "subprocessors": { "status": "NOT_SELECTED", "value": [] },
+    "hostingRegions": { "status": "NOT_VERIFIED", "value": [] },
+    "primaryDataRetention": { "status": "NOT_VERIFIED", "value": null },
+    "auditDataRetention": { "status": "NOT_VERIFIED", "value": null },
+    "backupRetention": { "status": "NOT_VERIFIED", "value": null },
+    "deletionProcess": { "status": "NOT_VERIFIED", "value": null },
+    "exportProcess": { "status": "NOT_VERIFIED", "value": null },
+    "supportOwner": { "status": "NOT_VERIFIED", "value": null },
+    "supportContact": { "status": "NOT_VERIFIED", "value": null },
+    "supportResponseCommitment": { "status": "NOT_VERIFIED", "value": null },
+    "securityOwner": { "status": "NOT_VERIFIED", "value": null },
+    "securityContact": { "status": "NOT_VERIFIED", "value": null },
+    "vulnerabilityReportingProcess": { "status": "NOT_VERIFIED", "value": null },
+    "securityIncidentProcess": { "status": "NOT_VERIFIED", "value": null },
+    "publicWebsite": { "status": "NOT_VERIFIED", "value": null },
+    "publicPrivacyPolicy": { "status": "NOT_VERIFIED", "value": null },
+    "publicTermsOfService": { "status": "NOT_VERIFIED", "value": null },
+    "modelTraining": {
+      "sourceImplementationStatus": "DOES_NOT_SEND_TO_AUTHOR_ANALYTICS",
+      "productionCommitmentStatus": "NOT_VERIFIED",
+      "productionCommitment": null
+    }
+  },
+  "repositoryPrivacyNotice": {
+    "path": "./PRIVACY.md",
+    "status": "LOCAL_FRAMEWORK_NOTICE_ONLY",
+    "productionPublicPolicyStatus": "NOT_VERIFIED"
+  }
+}
