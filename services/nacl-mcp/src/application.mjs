@@ -32,11 +32,14 @@ export function createToolApplication({ controlPlane, graphAdapter, auditSink, r
   return async function callTool({ name, arguments: args, authContext, requiredScope }) {
     const started = now();
     const support_ref = auditSink.newSupportRef();
+    const sessionIdentity = authContext?.issuer && authContext?.subject && authContext?.sessionId
+      ? `${authContext.issuer}\0${authContext.subject}\0${authContext.sessionId}`
+      : "unknown";
     let route = {
       principalId: authContext?.issuer && authContext?.subject ? `${authContext.issuer}\0${authContext.subject}` : "unknown",
       serverId: "unknown",
       projectRef: args.project_ref,
-      sessionId: authContext?.sessionId ?? "unknown",
+      sessionId: sessionIdentity,
     };
     let resultCode = "INTERNAL_ERROR";
     let decision = "rejected";
@@ -48,12 +51,12 @@ export function createToolApplication({ controlPlane, graphAdapter, auditSink, r
       await rateLimiter.assert([
         `ip:${authContext.sourceAddress ?? "direct"}`,
         `subject:${authContext.issuer}\0${authContext.subject}`,
-        `session:${authContext.sessionId}`,
+        `session:${sessionIdentity}`,
         `tool:${name}`,
       ], operation.cost);
       if (operation.method === "listProjects") {
         const listing = await controlPlane.listProjects({ tokenContext: authContext });
-        route = { principalId: listing.principalId, serverId: "authorized-server-set", projectRef: "project-list", sessionId: listing.sessionId };
+        route = { principalId: listing.principalId, serverId: "authorized-server-set", projectRef: "project-list", sessionId: sessionIdentity };
         decision = "accepted";
         resultCode = "OPERATION_COMPLETED";
         return {
@@ -66,7 +69,10 @@ export function createToolApplication({ controlPlane, graphAdapter, auditSink, r
           support_ref,
         };
       }
-      route = await controlPlane.authorize({ tokenContext: authContext, projectRef: args.project_ref, capability: operation.capability, toolClass: operation.toolClass, ...(operation.confirmation ? { confirmation: operation.confirmation } : {}) });
+      route = {
+        ...await controlPlane.authorize({ tokenContext: authContext, projectRef: args.project_ref, capability: operation.capability, toolClass: operation.toolClass, ...(operation.confirmation ? { confirmation: operation.confirmation } : {}) }),
+        sessionId: sessionIdentity,
+      };
       await rateLimiter.assert([
         `server:${route.serverId}`,
         `project:${route.projectRef}`,

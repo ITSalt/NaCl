@@ -2,6 +2,7 @@ import http from "node:http";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { requiredScope } from "./contracts.mjs";
 import { transportChallenge } from "./oauth-challenge.mjs";
+import { canonicalIssuer } from "./canonical-url.mjs";
 
 export const STABLE_PROTOCOL_VERSION = "2025-11-25";
 const MAX_BODY_BYTES = 256 * 1024;
@@ -94,7 +95,7 @@ export function createStreamableHttpServer({
     throw new TypeError("resourceMetadataUrl must be a same-origin protected-resource metadata endpoint.");
   }
   if (!Array.isArray(authorizationServers) || authorizationServers.length === 0) throw new TypeError("authorizationServers are required.");
-  const authServers = authorizationServers.map((value) => canonicalUrl(value, "authorizationServer", { requireHttps: true }));
+  const authServers = authorizationServers.map((value) => canonicalIssuer(value, "authorizationServer"));
   if (!Array.isArray(scopesSupported) || scopesSupported.length === 0) throw new TypeError("scopesSupported are required.");
   if (!Array.isArray(allowedOrigins) || allowedOrigins.length === 0) throw new TypeError("allowedOrigins are required.");
   const origins = new Set(allowedOrigins.map((value) => {

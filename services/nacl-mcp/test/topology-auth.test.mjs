@@ -600,6 +600,25 @@ test("an asynchronous shared limiter rejection is awaited before list or graph r
   assert.equal(ctx.graph.calls.length, before);
 });
 
+test("shared limiter session keys are isolated by canonical issuer and subject", async () => {
+  const calls = [];
+  const ctx = await fixture({ rateLimiter: { async assert(keys) { calls.push(keys); } } });
+  const first = await ctx.context("token-alice-session-one");
+  await ctx.app({ name: "nacl_projects_list", arguments: {}, authContext: first, requiredScope: "nacl.server.read" });
+  await assert.rejects(
+    ctx.app({
+      name: "nacl_projects_list",
+      arguments: {},
+      authContext: { ...first, issuer: "https://other-idp.example.test/" },
+      requiredScope: "nacl.server.read",
+    }),
+    (error) => error.code === "REAUTHORIZATION_REQUIRED",
+  );
+  const sessionKeys = calls.map((keys) => keys.find((key) => key.startsWith("session:")));
+  assert.equal(sessionKeys.length, 2);
+  assert.notEqual(sessionKeys[0], sessionKeys[1]);
+});
+
 test("in-memory test helpers prune expired windows and fail closed at bounded capacity", async () => {
   let current = 0;
   const limiter = createLayeredRateLimiter({ now: () => current, windowMs: 1000, limit: 10, maxKeys: 2 });
@@ -659,5 +678,5 @@ test("token verifier rejects wrong issuer, audience, expiry, not-before, unverif
     trustedIssuers: ["http://idp.example.test/"],
     supportedScopes: ["nacl.server.read"],
     resolveVerifiedToken: async () => base,
-  }), /issuer must use HTTPS/);
+  }), /issuer must be a query-free HTTPS URL/);
 });

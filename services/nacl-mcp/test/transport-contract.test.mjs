@@ -356,4 +356,5 @@ test("production origins and protected-resource metadata fail closed on HTTP, cr
   assert.throws(() => createStreamableHttpServer({ ...base, resourceMetadataUrl: "https://attacker.example/.well-known/oauth-protected-resource" }), /same-origin/);
   assert.throws(() => createStreamableHttpServer({ ...base, resourceMetadataUrl: "https://mcp.example.test/not-well-known" }), /same-origin/);
   assert.throws(() => createStreamableHttpServer({ ...base, allowedOrigins: ["http://chatgpt.com"] }), /allowedOrigin is invalid/);
+  assert.throws(() => createStreamableHttpServer({ ...base, authorizationServers: ["https://idp.example.test/?tenant=a"] }), /query-free HTTPS URL/);
 });

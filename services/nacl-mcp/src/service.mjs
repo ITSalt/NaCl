@@ -3,6 +3,7 @@ import { createSdkMcpServer } from "./sdk-server.mjs";
 import { createStreamableHttpServer } from "./http-server.mjs";
 import { createInjectedTokenContextVerifier } from "./token-context.mjs";
 import { REQUIRED_SCOPES } from "./contracts.mjs";
+import { canonicalIssuer } from "./canonical-url.mjs";
 
 const CONFIG_FIELDS = new Set([
   "resourceUrl", "resourceMetadataUrl", "authorizationServers", "scopesSupported",
@@ -27,8 +28,8 @@ export function validateServiceConfiguration(configuration) {
   }
   if (!Array.isArray(config.authorizationServers) || !Array.isArray(config.trustedIssuers) ||
       config.authorizationServers.length !== config.trustedIssuers.length ||
-      new Set(config.authorizationServers.map((value) => new URL(value).href)).size !== config.authorizationServers.length ||
-      config.trustedIssuers.some((value) => !config.authorizationServers.map((server) => new URL(server).href).includes(new URL(value).href))) {
+      new Set(config.authorizationServers.map((value) => canonicalIssuer(value, "authorizationServer"))).size !== config.authorizationServers.length ||
+      config.trustedIssuers.some((value) => !config.authorizationServers.map((server) => canonicalIssuer(server, "authorizationServer")).includes(canonicalIssuer(value)))) {
     throw new TypeError("trustedIssuers must exactly match the advertised authorizationServers.");
   }
   if (config.serverVersion !== undefined && (typeof config.serverVersion !== "string" || !/^[0-9]+\.[0-9]+\.[0-9]+(?:[-+][A-Za-z0-9.-]+)?$/.test(config.serverVersion))) {

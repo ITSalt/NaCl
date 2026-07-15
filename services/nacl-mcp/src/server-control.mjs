@@ -3,6 +3,7 @@ import { createServerOperationAuthorizer } from "../../../codex-plugin-src/packa
 import { deriveWorkerId } from "../../../codex-plugin-src/package/runtime/graph-gateway/identity.mjs";
 import { ROLES } from "../../../codex-plugin-src/package/runtime/graph-gateway/authorization.mjs";
 import { PublicMcpError, ReauthorizationRequired } from "./errors.mjs";
+import { canonicalIssuer } from "./canonical-url.mjs";
 
 const ID = /^[A-Za-z0-9][A-Za-z0-9._:@-]{2,127}$/;
 const SUBJECT = /^[A-Za-z0-9][A-Za-z0-9._:@|/-]{2,127}$/;
@@ -21,14 +22,8 @@ function subjectIdentifier(value) {
   return value;
 }
 
-function issuerIdentifier(value) {
-  const parsed = new URL(value);
-  if (parsed.protocol !== "https:" || parsed.username || parsed.password || parsed.hash || parsed.search) throw new TypeError("issuer is invalid.");
-  return parsed.href;
-}
-
 function bindingKey(issuer, subject) {
-  return `${issuerIdentifier(issuer)}\0${subjectIdentifier(subject)}`;
+  return `${canonicalIssuer(issuer)}\0${subjectIdentifier(subject)}`;
 }
 
 function routeRecord(value) {
@@ -265,12 +260,12 @@ export function createServerControlPlane({
       if (typeof linkReceipt !== "string" || !/^link_[A-Za-z0-9_-]{16,128}$/.test(linkReceipt)) throw new TypeError("linkReceipt is invalid.");
       const verified = await principalLinkVerifier.verifyAndConsume({
         receipt: linkReceipt,
-        issuer: issuerIdentifier(issuer),
+        issuer: canonicalIssuer(issuer),
         subject,
         principalId,
         certificateCn,
       });
-      if (verified?.verified !== true || verified.issuer !== issuerIdentifier(issuer) || verified.subject !== subject ||
+      if (verified?.verified !== true || verified.issuer !== canonicalIssuer(issuer) || verified.subject !== subject ||
           verified.principal_id !== principalId || verified.certificate_cn !== certificateCn ||
           typeof verified.receipt_id !== "string" || !/^proof_[A-Za-z0-9_-]{16,128}$/.test(verified.receipt_id) ||
           !Number.isSafeInteger(verified.revision) || verified.revision < 1 ||
@@ -283,7 +278,7 @@ export function createServerControlPlane({
           throw new TypeError("subject, principal, or certificate already exists");
         }
         next.set(key, {
-          issuer: issuerIdentifier(issuer), subject, principal_id: principalId, certificate_cn: certificateCn,
+          issuer: canonicalIssuer(issuer), subject, principal_id: principalId, certificate_cn: certificateCn,
           link_receipt_id: verified.receipt_id, link_revision: verified.revision,
           active: true, epoch: 0, revision: 1, transition: null, grants: new Map(),
         });
@@ -418,11 +413,11 @@ export function createServerControlPlane({
       });
     },
     async revokeSession({ issuer, subject, sessionId, expiresAt }) {
-      const canonicalIssuer = issuerIdentifier(issuer);
+      const normalizedIssuer = canonicalIssuer(issuer);
       subjectIdentifier(subject);
       if (typeof sessionId !== "string" || !SESSION_ID.test(sessionId)) throw new TypeError("sessionId is invalid.");
       if (expiresAt !== undefined && (!Number.isSafeInteger(expiresAt) || expiresAt <= Date.now())) throw new TypeError("expiresAt is invalid.");
-      await sessionRegistry.revoke({ issuer: canonicalIssuer, subject, sessionId, expiresAt });
+      await sessionRegistry.revoke({ issuer: normalizedIssuer, subject, sessionId, expiresAt });
     },
     async reconcileTransition({ issuer, subject }) {
       const key = bindingKey(issuer, subject);

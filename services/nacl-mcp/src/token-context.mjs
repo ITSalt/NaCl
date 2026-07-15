@@ -1,4 +1,5 @@
 import { PublicMcpError } from "./errors.mjs";
+import { canonicalIssuer } from "./canonical-url.mjs";
 
 const SUBJECT = /^[A-Za-z0-9][A-Za-z0-9._:@|/-]{2,127}$/;
 const SESSION = /^[A-Za-z0-9][A-Za-z0-9._:-]{7,127}$/;
@@ -17,12 +18,6 @@ function canonicalAudience(value) {
   const loopback = ["127.0.0.1", "::1", "[::1]", "localhost"].includes(url.hostname);
   if (url.protocol !== "https:" && !(url.protocol === "http:" && loopback) || url.username || url.password || url.hash) throw new Error("audience is invalid");
   return url.href;
-}
-
-function canonicalIssuer(value) {
-  const issuer = new URL(value);
-  if (issuer.protocol !== "https:" || issuer.username || issuer.password || issuer.hash) throw new Error("issuer must use HTTPS");
-  return issuer.href;
 }
 
 function invalidToken() {

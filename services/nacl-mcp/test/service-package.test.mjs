@@ -88,6 +88,17 @@ test("deployment composition cannot trust an issuer outside advertised authoriza
   }), /exactly match the advertised authorizationServers/);
 });
 
+test("deployment composition rejects query-bearing issuer and authorization-server URLs", () => {
+  assert.throws(() => createNaclMcpService({
+    configuration: {
+      ...configuration,
+      authorizationServers: ["https://identity.example.test/?tenant=a"],
+      trustedIssuers: ["https://identity.example.test/?tenant=a"],
+    },
+    adapters: {},
+  }), /query-free HTTPS URL/);
+});
+
 test("deployment composition rejects process-local security state adapters", () => {
   assert.throws(() => createNaclMcpService({
     configuration,
