@@ -27,6 +27,10 @@ const supportPairs = [
   ["docs/skills-guide.md", "docs/skills-guide.ru.md"],
   ["docs/skills-reference.md", "docs/skills-reference.ru.md"],
   ["docs/configuration.md", "docs/configuration.ru.md"],
+  ["docs/runbooks/provision-shared-graph-vps.md", "docs/runbooks/provision-shared-graph-vps.ru.md"],
+  ["docs/runbooks/connect-to-existing-remote-project.md", "docs/runbooks/connect-to-existing-remote-project.ru.md"],
+  ["plugins/nacl/resources/docs/runbooks/provision-shared-graph-vps.md", "plugins/nacl/resources/docs/runbooks/provision-shared-graph-vps.ru.md"],
+  ["plugins/nacl/resources/docs/runbooks/connect-to-existing-remote-project.md", "plugins/nacl/resources/docs/runbooks/connect-to-existing-remote-project.ru.md"],
 ];
 
 const supportSingles = [
@@ -63,6 +67,18 @@ function documentContent(relative, russian = false, { core = false, inventoryNam
     ? "\nLegacy examples: `git clone`, `skills-for-codex`, `.agents/skills`, `install-user-symlinks.sh`, and `@anthropic/neo4j-mcp`.\n"
     : "";
   const inventory = inventoryNames.length > 0 ? `\n${inventoryNames.map((name) => `\`${name}\``).join("\n")}\n` : "";
+  const provisionContract = relative.endsWith("provision-shared-graph-vps.md") || relative.endsWith("provision-shared-graph-vps.ru.md")
+    ? [
+        "server-wide registered gateways",
+        "```sh",
+        "sh <NaCl>/graph-infra/vps/issue-client-cert.sh dev@example.com --server-id graph.example.com",
+        "sh <NaCl>/graph-infra/vps/revoke-client-cert.sh dev@example.com --server-id graph.example.com",
+        "```",
+      ].join("\n")
+    : "";
+  const connectContract = relative.endsWith("connect-to-existing-remote-project.md") || relative.endsWith("connect-to-existing-remote-project.ru.md")
+    ? "graph.remote.secret_source env:NEO4J_PASSWORD server-route:<id> .mcp.json opaque непрозрачная"
+    : "";
   return [
     russian ? "# Документ" : "# Document",
     "",
@@ -71,6 +87,8 @@ function documentContent(relative, russian = false, { core = false, inventoryNam
     link,
     legacy,
     inventory,
+    provisionContract,
+    connectContract,
   ].join("\n");
 }
 
@@ -144,7 +162,7 @@ test("verifies all Wave 8 links, translation parity, the legacy allowlist, and g
 
   assert.equal(result.status, 0, result.combined);
   assert.match(result.stdout, /Status: VERIFIED/);
-  assert.match(result.stdout, /Wave 8 Markdown files: 32/);
+  assert.match(result.stdout, /Wave 8 Markdown files: 40/);
   assert.match(result.stdout, /Public skills \(10\):/);
   assert.match(result.stdout, /Internal workflows \(60\):/);
   assert.match(result.stdout, /MCP tools \(25\):/);
@@ -227,6 +245,32 @@ test("rejects drift between a root runbook and its bundled documentation mirror"
     result.stderr,
     /bundled documentation mirror differs: docs\/runbooks\/upgrade-graph-extensions\.md <> plugins\/nacl\/resources\/docs\/runbooks\/upgrade-graph-extensions\.md/,
   );
+});
+
+test("rejects legacy project-scoped issue/revoke commands and revoke without server-id", async (t) => {
+  const root = await createFixture(t);
+  const provision = path.join(root, "docs", "runbooks", "provision-shared-graph-vps.md");
+  await writeFile(
+    provision,
+    `${await readFile(provision, "utf8")}\n\`\`\`sh\nsh graph-infra/vps/issue-client-cert.sh dev@example.com --scope project-a --prefix project-a\nsh graph-infra/vps/revoke-client-cert.sh dev@example.com --scope project-a --prefix project-a\n\`\`\`\n`,
+  );
+
+  const result = runCheck(root);
+  assert.equal(result.status, 1, result.combined);
+  assert.match(result.stderr, /certificate command requires --server-id: docs\/runbooks\/provision-shared-graph-vps\.md -> issue-client-cert\.sh/);
+  assert.match(result.stderr, /legacy project-scoped certificate command is forbidden: docs\/runbooks\/provision-shared-graph-vps\.md -> issue-client-cert\.sh/);
+  assert.match(result.stderr, /certificate command requires --server-id: docs\/runbooks\/provision-shared-graph-vps\.md -> revoke-client-cert\.sh/);
+  assert.match(result.stderr, /legacy project-scoped certificate command is forbidden: docs\/runbooks\/provision-shared-graph-vps\.md -> revoke-client-cert\.sh/);
+});
+
+test("rejects a remote connect runbook without graph.remote.secret_source", async (t) => {
+  const root = await createFixture(t);
+  const connect = path.join(root, "docs", "runbooks", "connect-to-existing-remote-project.md");
+  await writeFile(connect, (await readFile(connect, "utf8")).replace("graph.remote.secret_source", "graph.remote.route_reference"));
+
+  const result = runCheck(root);
+  assert.equal(result.status, 1, result.combined);
+  assert.match(result.stderr, /mandatory remote secret contract token is missing: docs\/runbooks\/connect-to-existing-remote-project\.md -> graph\.remote\.secret_source/);
 });
 
 test("rejects a skills reference that omits an internal workflow from the generated inventory", async (t) => {

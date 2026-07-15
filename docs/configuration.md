@@ -214,8 +214,9 @@ teammate who simply clones the repo and re-runs `/nacl-init` is **auto-routed in
 `bolt://localhost:<sidecar_port>` through a local tunnel, so skills are unchanged. The server is the
 current authorization boundary: access to it is treated as access to every project database hosted
 there. `project_scope` selects a project route and records provenance; it neither grants access nor
-creates a shared-graph `(:Project)` authorization boundary. See
-`docs/runbooks/provision-shared-graph-vps.md` and `docs/runbooks/connect-to-existing-remote-project.md`.
+creates a shared-graph `(:Project)` authorization boundary. See the
+[VPS provisioning runbook](runbooks/provision-shared-graph-vps.md) and
+[remote connection runbook](runbooks/connect-to-existing-remote-project.md).
 
 **Secrets are never committed.** Remote mode requires `graph.remote.secret_source`. The exact
 `env:NEO4J_PASSWORD` reference reads `NEO4J_PASSWORD` only from the current runtime environment;

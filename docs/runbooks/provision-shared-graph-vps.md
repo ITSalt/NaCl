@@ -1,24 +1,28 @@
-# Runbook: provision a shared graph on a VPS (multi-user NaCl)
+# Runbook: provision a project graph on a shared VPS
 
-**Для кого / Audience.** The owner standing up a SHARED Neo4j on a VPS so several developers (in
-different locations, over the public internet) can work against one graph. One-time per project.
+**Audience.** The server owner provisioning a project's Neo4j 5 Community container on a reachable
+VPS for a team in different locations. Run the provisioning step once per project. Client access is
+granted once per server, not once per project.
 
-**Что получится / Outcome.** A per-project Neo4j reachable only through an mTLS gateway, a private
-CA that issues per-developer client certificates (the revocable "API keys"), and the first
-developer's certificate ready to hand out.
+**Outcome.** The project has its own Neo4j container, durable volumes, and mTLS gateway. A private CA
+issues personal developer certificates (revocable "API keys"). The server inventory records every
+project gateway and projects the same server-wide grant set into all of them.
 
-**Non-negotiables.** Neo4j is never published to the host; only the gateway port is public. The CA
-private key never leaves the VPS/admin host. Secrets are generated, never committed.
+**Non-negotiables.** Neo4j is never published directly to the host; only each project's gateway port
+is public. The CA private key never leaves the VPS/admin host. Secrets are generated and never
+committed. The server is the current authorization boundary: a developer granted access to this
+server can access every registered project gateway on it.
 
 ## Prerequisites
 
-- A VPS with a DNS name (e.g. `graph.example.com`) you control, Docker + Docker Compose installed,
-  `openssl`, and (optionally) `ufw`.
-- The NaCl checkout present on the VPS (for the templates + schema). SSH access as a sudo user.
+- A VPS with a DNS name such as `graph.example.com`, Docker and Docker Compose, `node`, `openssl`,
+  and optionally `ufw`.
+- The NaCl checkout on the VPS for the provisioning scripts, templates, and schema.
+- SSH access as a sudo-capable server administrator.
 
-## Steps
+## Provision a project container
 
-1. **Run the provisioner** on the VPS (or via SSH):
+1. Run the provisioner on the VPS or through SSH:
 
    ```sh
    sh <NaCl>/graph-infra/vps/provision-vps.sh \
@@ -28,43 +32,53 @@ private key never leaves the VPS/admin host. Secrets are generated, never commit
      --state-dir /etc/nacl-graph
    ```
 
-   It creates the private CA, signs the gateway server cert, brings up Neo4j + the ghostunnel
-   gateway from `graph-docker-compose.vps.yml`, loads the ba/sa/tl schema constraints, sets a
-   default-deny firewall (allow 22 + the gateway port), and issues the first client cert. It ends
-   with `NACL_VPS_RESULT: status=READY|FAILED`.
+   `--host` is also the server identifier recorded by the access controller. The provisioner
+   reserves this project's scope and gateway port, creates separate Neo4j storage, loads the schema,
+   registers the gateway, grants the first developer at the server boundary, and reconciles all
+   registered gateways. It ends with `NACL_VPS_RESULT: status=READY|FAILED`.
 
-2. **On FAILED**, read `failed_check`: `need-docker`/`need-openssl` (install it), `container-health`
-   (`docker logs <prefix>-neo4j`), `schema-load` (re-run; loads are idempotent), `gateway-listen`
-   (check the gateway container + firewall).
+2. On `FAILED`, inspect `failed_check`. Install missing prerequisites for `need-docker`,
+   `need-compose`, `need-node`, or `need-openssl`. For `container-health`, inspect
+   `docker logs <prefix>-neo4j`. Schema loading is idempotent and may be retried. An authorization
+   or gateway reconciliation failure is not partial success: affected gateways are quarantined and
+   the operation remains blocked.
 
-3. **Deliver the first developer's bundle** securely (not email/chat in clear): the three files in
-   `/etc/nacl-graph/clients/alice@example.com/` (`client.crt`, `client.key`, `ca.crt`).
+3. Deliver the first developer's bundle through a secure channel. The files are under
+   `/etc/nacl-graph/clients/alice@example.com/`: `client.crt`, `client.key`, and `ca.crt`.
 
-4. **Give every developer the endpoint** (non-secret, goes in the project's committed `config.yaml`
-   `graph.remote` block): `host`, `gateway_port`, `project_scope`.
+4. Commit only the project's non-secret route metadata described in
+   [Configuration](../configuration.md#graph-required-for-graph-aware-skills). Never commit a raw
+   Neo4j password, client private key, or CA private key.
 
-## Issuing / revoking access
+## Issue and revoke server-wide access
+
+Use the same `--server-id` that was registered by `provision-vps.sh --host`. Issuing or revoking a
+certificate updates the server-wide trusted-CN grant and reconciles every registered project
+gateway before returning success.
 
 ```sh
-# add a developer — --scope/--prefix are REQUIRED here: they add the new CN to the gateway
-# allow-list and recreate the gateway. Without them the cert is minted but NOT added to the
-# allow-list, and the developer cannot connect.
-sh <NaCl>/graph-infra/vps/issue-client-cert.sh bob@example.com --host graph.example.com \
-  --gateway-port 7687 --scope acme-billing --prefix acme-billing
-# revoke instantly (allow-list removal + gateway reload — ghostunnel has no CRL; no password
-# change, others unaffected)
-sh <NaCl>/graph-infra/vps/revoke-client-cert.sh bob@example.com --scope acme-billing --prefix acme-billing
+# Issue a personal certificate and grant this developer access to every registered gateway.
+sh <NaCl>/graph-infra/vps/issue-client-cert.sh bob@example.com \
+  --state-dir /etc/nacl-graph --server-id graph.example.com \
+  --host graph.example.com --gateway-port 7687
+
+# Revoke the certificate and remove this developer from every registered gateway.
+sh <NaCl>/graph-infra/vps/revoke-client-cert.sh bob@example.com \
+  --state-dir /etc/nacl-graph --server-id graph.example.com
 ```
 
-> **Warning.** A cert issued without `--scope`/`--prefix` is valid cryptographically but grants no
-> access: the gateway's ghostunnel `--allow-cn` list is the actual access control, and the
-> developer's CN is only added to it when `--scope`/`--prefix` are passed (and the graph directory
-> exists at `<state-dir>/<scope>`). Add the CN later with the same flags if you minted without them.
+`issue-client-cert.sh` succeeds only after all registered gateway projections have been updated.
+`revoke-client-cert.sh` requires `--server-id`; it updates the CA audit record, removes the CN from
+the server grant, and reconciles all registered gateways. If any projection or reload cannot be
+verified, the command returns `BLOCKED` and physically quarantines uncertain gateways rather than
+reporting a false success. Neither operation rotates the Neo4j password or restarts Neo4j.
 
 ## Definition of Done
 
-- [ ] `NACL_VPS_RESULT: status=READY`.
-- [ ] From outside, the Neo4j bolt/http ports are NOT reachable; only the gateway port is, and only
-      with a valid client cert (a connection without one is refused).
-- [ ] First client bundle delivered; the developer can connect (see the connect runbook).
-- [ ] Endpoint (host/gateway_port/project_scope) recorded in the project's `config.yaml`.
+- [ ] `NACL_VPS_RESULT: status=READY` for the project provision.
+- [ ] The server inventory contains the project gateway under the expected `server_id`.
+- [ ] Neo4j Bolt/HTTP ports are not reachable externally; only mTLS gateway ports are exposed.
+- [ ] The first client bundle was delivered securely and connects through the sidecar.
+- [ ] A test issue or revoke reconciles every registered gateway and reports a verified terminal
+      status rather than partial success.
+- [ ] The repository contains only non-secret route metadata and an opaque secret reference.

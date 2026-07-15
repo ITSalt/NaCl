@@ -23,6 +23,10 @@ export const SUPPORT_DOC_PAIRS = Object.freeze([
   ["docs/skills-guide.md", "docs/skills-guide.ru.md"],
   ["docs/skills-reference.md", "docs/skills-reference.ru.md"],
   ["docs/configuration.md", "docs/configuration.ru.md"],
+  ["docs/runbooks/provision-shared-graph-vps.md", "docs/runbooks/provision-shared-graph-vps.ru.md"],
+  ["docs/runbooks/connect-to-existing-remote-project.md", "docs/runbooks/connect-to-existing-remote-project.ru.md"],
+  ["plugins/nacl/resources/docs/runbooks/provision-shared-graph-vps.md", "plugins/nacl/resources/docs/runbooks/provision-shared-graph-vps.ru.md"],
+  ["plugins/nacl/resources/docs/runbooks/connect-to-existing-remote-project.md", "plugins/nacl/resources/docs/runbooks/connect-to-existing-remote-project.ru.md"],
 ]);
 
 export const SUPPORT_SINGLE_DOCS = Object.freeze([
@@ -31,6 +35,22 @@ export const SUPPORT_SINGLE_DOCS = Object.freeze([
 ]);
 
 export const BUNDLED_DOC_MIRRORS = Object.freeze([
+  [
+    "docs/runbooks/provision-shared-graph-vps.md",
+    "plugins/nacl/resources/docs/runbooks/provision-shared-graph-vps.md",
+  ],
+  [
+    "docs/runbooks/provision-shared-graph-vps.ru.md",
+    "plugins/nacl/resources/docs/runbooks/provision-shared-graph-vps.ru.md",
+  ],
+  [
+    "docs/runbooks/connect-to-existing-remote-project.md",
+    "plugins/nacl/resources/docs/runbooks/connect-to-existing-remote-project.md",
+  ],
+  [
+    "docs/runbooks/connect-to-existing-remote-project.ru.md",
+    "plugins/nacl/resources/docs/runbooks/connect-to-existing-remote-project.ru.md",
+  ],
   [
     "docs/runbooks/upgrade-graph-extensions.md",
     "plugins/nacl/resources/docs/runbooks/upgrade-graph-extensions.md",
@@ -43,6 +63,20 @@ const LEGACY_DOCS = new Set([
 ]);
 
 const ACCEPTED_COUNTS = Object.freeze({ publicSkills: 10, internalWorkflows: 60, mcpTools: 25 });
+
+const PROVISION_RUNBOOKS = new Set([
+  "docs/runbooks/provision-shared-graph-vps.md",
+  "docs/runbooks/provision-shared-graph-vps.ru.md",
+  "plugins/nacl/resources/docs/runbooks/provision-shared-graph-vps.md",
+  "plugins/nacl/resources/docs/runbooks/provision-shared-graph-vps.ru.md",
+]);
+
+const CONNECT_RUNBOOKS = new Set([
+  "docs/runbooks/connect-to-existing-remote-project.md",
+  "docs/runbooks/connect-to-existing-remote-project.ru.md",
+  "plugins/nacl/resources/docs/runbooks/connect-to-existing-remote-project.md",
+  "plugins/nacl/resources/docs/runbooks/connect-to-existing-remote-project.ru.md",
+]);
 
 const regexSlash = String.raw`\/`;
 const markdownTick = String.fromCharCode(96);
@@ -241,6 +275,46 @@ function containsInventoryName(content, name) {
   return new RegExp(`(?<![a-z0-9-])${escaped}(?![a-z0-9-])`, "i").test(content);
 }
 
+function shellInvocations(content, scriptName) {
+  const continuedLines = content.replace(/\\\r?\n[ \t]*/g, " ");
+  const escaped = scriptName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const command = new RegExp(`^(?:sudo\\s+)?(?:sh|bash)\\s+\\S*${escaped}(?:\\s|$)`);
+  return continuedLines.split(/\r?\n/).map((line) => line.trim()).filter((line) => command.test(line));
+}
+
+function checkProvisionRunbookContract(relativeName, content, errors) {
+  if (!/server-wide/i.test(content) || !/(?:registered|зарегистрированн)/i.test(content)) {
+    errors.push(`server-wide registered-gateway grant contract is missing: ${relativeName}`);
+  }
+  for (const scriptName of ["issue-client-cert.sh", "revoke-client-cert.sh"]) {
+    const commands = shellInvocations(content, scriptName);
+    if (commands.length === 0) {
+      errors.push(`certificate command is missing from provision runbook: ${relativeName} -> ${scriptName}`);
+      continue;
+    }
+    for (const command of commands) {
+      if (!/(?:^|\s)--server-id(?:\s|=)/.test(command)) {
+        errors.push(`certificate command requires --server-id: ${relativeName} -> ${scriptName}`);
+      }
+      if (/(?:^|\s)--(?:scope|prefix)(?:\s|=)/.test(command)) {
+        errors.push(`legacy project-scoped certificate command is forbidden: ${relativeName} -> ${scriptName}`);
+      }
+    }
+  }
+}
+
+function checkConnectRunbookContract(relativeName, content, errors) {
+  for (const token of ["graph.remote.secret_source", "env:NEO4J_PASSWORD", "server-route:<id>", ".mcp.json"]) {
+    if (!content.includes(token)) errors.push(`mandatory remote secret contract token is missing: ${relativeName} -> ${token}`);
+  }
+  if (!/(?:opaque|непрозрачн)/i.test(content)) {
+    errors.push(`opaque remote secret-reference contract is missing: ${relativeName}`);
+  }
+  if (/neo4j_graph_dev/.test(content)) {
+    errors.push(`default graph password fallback is forbidden in remote connect runbook: ${relativeName}`);
+  }
+}
+
 async function checkLink({ repoRoot, sourcePath, target, errors, anchorCache }) {
   if (/^(?:[A-Za-z][A-Za-z0-9+.-]*:|\/\/)/.test(target)) return;
   let decoded;
@@ -404,6 +478,8 @@ export async function checkPluginDocs({ repoRoot }) {
     for (const [label, pattern] of EVERYWHERE_FORBIDDEN) {
       if (pattern.test(content)) errors.push(`forbidden documentation pattern ${label}: ${relativeName}`);
     }
+    if (PROVISION_RUNBOOKS.has(relativeName)) checkProvisionRunbookContract(relativeName, content, errors);
+    if (CONNECT_RUNBOOKS.has(relativeName)) checkConnectRunbookContract(relativeName, content, errors);
   }
 
   async function inspectPair(englishRelative, russianRelative, { requireDocKeys, pluginFirst }) {
