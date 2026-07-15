@@ -81,23 +81,39 @@
         "arguments": { "type": "object" }
       }
     },
+    "expectedToolResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tool", "result"],
+      "properties": {
+        "tool": { "type": "string", "pattern": "^nacl_[a-z_]+$" },
+        "result": {
+          "type": "object",
+          "description": "Exact structured result validated against the referenced public tool output schema."
+        }
+      }
+    },
     "positiveCase": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["id", "prompt", "toolCalls", "expectedBehavior", "expectedResult", "requiredSeed"],
+      "required": ["id", "prompt", "toolCalls", "expectedBehavior", "expectedToolResults", "requiredSeed"],
       "properties": {
         "id": { "type": "string", "pattern": "^P[1-5]$" },
         "prompt": { "type": "string", "minLength": 20, "maxLength": 240 },
         "toolCalls": { "type": "array", "minItems": 1, "maxItems": 2, "items": { "$ref": "#/$defs/toolCall" } },
         "expectedBehavior": { "type": "array", "minItems": 2, "items": { "type": "string", "minLength": 10 } },
-        "expectedResult": { "type": "object" },
+        "expectedToolResults": { "type": "array", "minItems": 1, "maxItems": 2, "items": { "$ref": "#/$defs/expectedToolResult" } },
         "requiredSeed": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 3 } }
       }
     },
     "negativeCase": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["id", "scenario", "attemptedTool", "requiredScope", "expectedDenial", "prohibitedReason"],
+      "required": ["id", "scenario", "attemptedTool", "requiredScope", "prohibitedReason"],
+      "oneOf": [
+        { "required": ["expectedDenial"], "not": { "required": ["expectedRefusal"] } },
+        { "required": ["expectedRefusal"], "not": { "required": ["expectedDenial"] } }
+      ],
       "properties": {
         "id": { "type": "string", "pattern": "^N[1-3]$" },
         "scenario": { "type": "string", "minLength": 20, "maxLength": 320 },
@@ -110,6 +126,18 @@
           "properties": {
             "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]+$" },
             "httpStatus": { "type": "integer", "minimum": 400, "maximum": 499 },
+            "graphCall": { "const": false },
+            "safeBehavior": { "type": "array", "minItems": 2, "items": { "type": "string", "minLength": 10 } }
+          }
+        },
+        "expectedRefusal": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["mode", "toolCallCount", "mcpResult", "graphCall", "safeBehavior"],
+          "properties": {
+            "mode": { "const": "CONVERSATIONAL_NO_TOOL_CALL" },
+            "toolCallCount": { "const": 0 },
+            "mcpResult": { "const": null },
             "graphCall": { "const": false },
             "safeBehavior": { "type": "array", "minItems": 2, "items": { "type": "string", "minLength": 10 } }
           }

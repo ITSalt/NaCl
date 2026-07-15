@@ -32,9 +32,13 @@ case to this runbook or the portal form.
 | P4 | Apply the reviewed gateway migration | `nacl_schema_apply` | `nacl.server.schema`; `APPLY_REVIEWED_MIGRATIONS` |
 | P5 | Back up and request an isolated restore | `nacl_backup_create`, `nacl_restore_request` | backup/restore scopes; `CREATE_PROJECT_BACKUP`, `RESTORE_TO_ISOLATED_TARGET` |
 
-For every positive case, compare the returned structured status, code, bounded
-data fields, replay flag, and opaque support reference with the machine-readable
-expected result. Do not accept infrastructure fields or raw debug payloads.
+For every positive case, compare each call with the same-position entry in
+`expectedToolResults`. The number and order of expected results must exactly
+match `toolCalls`. Every result uses the public `nacl-public-mcp-v1` output
+schema: `code` is `OPERATION_COMPLETED`, bounded payload fields are nested under
+`data`, and the response includes exact retry, replay, and opaque support
+fields. Do not accept an invented operation-specific code, a top-level data
+field, infrastructure fields, or raw debug payloads.
 
 ## Negative cases
 
@@ -42,7 +46,11 @@ expected result. Do not accept infrastructure fields or raw debug payloads.
 |---|---|---|
 | N1 | Missing, expired, wrong-audience, or revoked token | `INVALID_TOKEN`, HTTP 401 Bearer challenge, zero graph calls, no identity or project disclosure |
 | N2 | Opaque project reference outside authorized grants | `ACCESS_OR_RESOURCE_NOT_FOUND`, HTTP 403, zero graph calls, no existence disclosure |
-| N3 | Arbitrary query, active-project deletion, audit bypass, and external publication | `UNSUPPORTED_PUBLIC_OPERATION`, no tool call or mutation, explanation of the closed supported path |
+| N3 | Arbitrary query, active-project deletion, audit bypass, and external publication | Conversational refusal with zero tool calls and no MCP result; explain the closed supported path |
+
+N3 is not a simulated server response. Because no public tool accepts that
+request, the reviewer evidence is the absence of a tool call/MCP result plus
+the bounded refusal. Do not invent an MCP error code for it.
 
 ## Live execution prerequisites
 

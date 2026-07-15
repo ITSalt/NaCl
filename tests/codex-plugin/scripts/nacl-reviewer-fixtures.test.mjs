@@ -4,6 +4,7 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
+import { createToolApplication } from "../../../services/nacl-mcp/src/application.mjs";
 import { PUBLIC_TOOL_NAMES, TOOL_BY_NAME } from "../../../services/nacl-mcp/src/contracts.mjs";
 import { validateSchema } from "../../../services/nacl-mcp/src/json-schema.mjs";
 
@@ -21,6 +22,78 @@ async function readJson(root, relative) {
 
 function sha256(content) {
   return createHash("sha256").update(content).digest("hex");
+}
+
+function deterministicApplication() {
+  let supportIndex = 0;
+  const supportRefs = "1234567".split("").map((digit) => `support_${digit.repeat(32)}`);
+  const graphAdapter = {
+    async projectSummary() {
+      return { summary: "Demo Alpha is active with one approved delivery task.", revision: 7 };
+    },
+    async namedRead() {
+      return { items: ["DEMO-TASK-001"], revision: 7 };
+    },
+    async mutateProject() {
+      return { summary: "Updated DEMO-TASK-001 to active.", revision: 8 };
+    },
+    async applySchema() {
+      return { summary: "Applied gateway-foundation-v1.", revision: 9 };
+    },
+    async createBackup() {
+      return { job_ref: "job_DEMOBACKUP0000001" };
+    },
+    async requestRestore() {
+      return { job_ref: "job_DEMORESTORE0000001" };
+    },
+  };
+  const application = createToolApplication({
+    controlPlane: {
+      async listProjects() {
+        return {
+          principalId: "reviewer-owner",
+          projects: [
+            { project_ref: "prj_DEMOALPHA00000001", label: "Demo Alpha" },
+            { project_ref: "prj_DEMOBETA000000002", label: "Demo Beta" },
+          ],
+        };
+      },
+      async authorize({ projectRef }) {
+        return {
+          principalId: "reviewer-owner",
+          serverId: "fixture-server",
+          projectRef,
+          projectScope: "fixture-project-scope",
+          certificateCn: "fixture-principal",
+          authorizationRevision: 1,
+        };
+      },
+    },
+    graphAdapter,
+    auditSink: {
+      newSupportRef() {
+        const supportRef = supportRefs[supportIndex];
+        supportIndex += 1;
+        return supportRef;
+      },
+      async record() {},
+    },
+    rateLimiter: { async assert() {} },
+    idempotencyLedger: {
+      async execute({ operation }) {
+        return { value: await operation(), replayed: false, outcome: "committed" };
+      },
+    },
+    now: () => 1_000,
+  });
+  const authContext = Object.freeze({
+    issuer: "fixture-issuer",
+    subject: "reviewer-owner",
+    sessionId: "fixture-session",
+    sourceAddress: "fixture-source",
+    scopes: ["nacl.server.read", "nacl.server.write", "nacl.server.schema", "nacl.server.backup", "nacl.server.restore"],
+  });
+  return { application, authContext };
 }
 
 test("review package contains exactly P1-P5 and N1-N3 with no hidden fixture", async () => {
@@ -44,10 +117,13 @@ test("review package contains exactly P1-P5 and N1-N3 with no hidden fixture", a
   assert.equal(schema.properties.negative.maxItems, 3);
   assert.equal(schema.$defs.positiveCase.properties.id.pattern, "^P[1-5]$");
   assert.equal(schema.$defs.negativeCase.properties.id.pattern, "^N[1-3]$");
+  assert.ok(schema.$defs.positiveCase.required.includes("expectedToolResults"));
+  assert.equal(schema.$defs.negativeCase.oneOf.length, 2);
 });
 
-test("every positive case matches the frozen public tool, scope, confirmation, and input contract", async () => {
+test("every positive call and result matches the frozen public input, output, and application runtime", async () => {
   const fixture = await readJson(sourceRoot, fixtureRelative);
+  const { application, authContext } = deterministicApplication();
   const expected = {
     P1: [{ tool: "nacl_projects_list", scope: "nacl.server.read", confirmation: null }],
     P2: [
@@ -63,16 +139,31 @@ test("every positive case matches the frozen public tool, scope, confirmation, a
   };
   for (const item of fixture.positive) {
     assert.deepEqual(item.toolCalls.map(({ tool, scope, confirmation }) => ({ tool, scope, confirmation })), expected[item.id]);
-    for (const call of item.toolCalls) {
+    assert.equal(item.expectedToolResults.length, item.toolCalls.length, `${item.id} must bind one result per tool call`);
+    assert.deepEqual(
+      item.expectedToolResults.map(({ tool }) => tool),
+      item.toolCalls.map(({ tool }) => tool),
+      `${item.id} result order must match call order`,
+    );
+    for (const [index, call] of item.toolCalls.entries()) {
       assert.ok(PUBLIC_TOOL_NAMES.includes(call.tool), `${item.id} references unshipped tool ${call.tool}`);
       const descriptor = TOOL_BY_NAME.get(call.tool);
       assert.equal(descriptor.securitySchemes[0].scopes[0], call.scope);
-      const validation = validateSchema(descriptor.inputSchema, call.arguments);
-      assert.equal(validation.valid, true, `${item.id}/${call.tool}: ${validation.errors.join(", ")}`);
+      const inputValidation = validateSchema(descriptor.inputSchema, call.arguments);
+      assert.equal(inputValidation.valid, true, `${item.id}/${call.tool}: ${inputValidation.errors.join(", ")}`);
       assert.equal(call.arguments.confirmation ?? null, call.confirmation);
+      const expectedResult = item.expectedToolResults[index].result;
+      const outputValidation = validateSchema(descriptor.outputSchema, expectedResult);
+      assert.equal(outputValidation.valid, true, `${item.id}/${call.tool} output: ${outputValidation.errors.join(", ")}`);
+      assert.equal(expectedResult.code, "OPERATION_COMPLETED");
+      const actualResult = await application({
+        name: call.tool,
+        arguments: call.arguments,
+        authContext,
+        requiredScope: call.scope,
+      });
+      assert.deepEqual(actualResult, expectedResult, `${item.id}/${call.tool} fixture drifted from application runtime`);
     }
-    assert.match(item.expectedResult.status, /^VERIFIED$/);
-    assert.match(item.expectedResult.code, /^[A-Z][A-Z0-9_]+$/);
   }
 });
 
@@ -81,9 +172,8 @@ test("negative cases bind exact denial codes and never authorize a graph call", 
   const expected = {
     N1: { tool: "nacl_project_summary", scope: "nacl.server.read", code: "INVALID_TOKEN", httpStatus: 401 },
     N2: { tool: "nacl_project_summary", scope: "nacl.server.read", code: "ACCESS_OR_RESOURCE_NOT_FOUND", httpStatus: 403 },
-    N3: { tool: null, scope: null, code: "UNSUPPORTED_PUBLIC_OPERATION", httpStatus: undefined },
   };
-  for (const item of fixture.negative) {
+  for (const item of fixture.negative.slice(0, 2)) {
     const contract = expected[item.id];
     assert.deepEqual(
       { tool: item.attemptedTool, scope: item.requiredScope, code: item.expectedDenial.code, httpStatus: item.expectedDenial.httpStatus },
@@ -92,20 +182,38 @@ test("negative cases bind exact denial codes and never authorize a graph call", 
     assert.equal(item.expectedDenial.graphCall, false);
     if (item.attemptedTool) assert.ok(PUBLIC_TOOL_NAMES.includes(item.attemptedTool));
   }
+  const refusal = fixture.negative[2];
+  assert.equal(refusal.id, "N3");
+  assert.equal(refusal.attemptedTool, null);
+  assert.equal(refusal.requiredScope, null);
+  assert.equal(Object.hasOwn(refusal, "expectedDenial"), false);
+  assert.deepEqual(
+    {
+      mode: refusal.expectedRefusal.mode,
+      toolCallCount: refusal.expectedRefusal.toolCallCount,
+      mcpResult: refusal.expectedRefusal.mcpResult,
+      graphCall: refusal.expectedRefusal.graphCall,
+    },
+    { mode: "CONVERSATIONAL_NO_TOOL_CALL", toolCallCount: 0, mcpResult: null, graphCall: false },
+  );
 });
 
 test("fixture digest is bound into honest non-submission metadata and source/package bytes match", async () => {
-  const [sourceFixture, packagedFixture, metadata, sourceLicense, packagedLicense] = await Promise.all([
+  const [sourceFixture, packagedFixture, sourceSchema, packagedSchema, metadata, sourceLicense, packagedLicense] = await Promise.all([
     readFile(path.join(sourceRoot, fixtureRelative)),
     readFile(path.join(pluginRoot, fixtureRelative)),
+    readFile(path.join(sourceRoot, schemaRelative)),
+    readFile(path.join(pluginRoot, schemaRelative)),
     readJson(sourceRoot, metadataRelative),
     readFile(path.join(repoRoot, "LICENSE")),
     readFile(path.join(pluginRoot, "LICENSE")),
   ]);
   assert.deepEqual(packagedFixture, sourceFixture);
+  assert.deepEqual(packagedSchema, sourceSchema);
   assert.deepEqual(packagedLicense, sourceLicense);
   assert.equal(metadata.reviewerFixtureSet.version, "nacl-reviewer-fixtures-v1");
   assert.equal(metadata.reviewerFixtureSet.sha256, sha256(sourceFixture));
+  assert.equal(metadata.reviewerFixtureSet.schemaSha256, sha256(sourceSchema));
   assert.equal(metadata.reviewerFixtureSet.positiveCount, 5);
   assert.equal(metadata.reviewerFixtureSet.negativeCount, 3);
   assert.equal(metadata.reviewerFixtureSet.liveStatus, "NOT_RUN");
