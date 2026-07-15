@@ -11,16 +11,16 @@
     { "source": "nacl-ba-roles/SKILL.md", "destination": "resources/nacl-ba-roles/SKILL.md" },
     { "source": "nacl-ba-rules/SKILL.md", "destination": "resources/nacl-ba-rules/SKILL.md" },
     { "source": "nacl-ba-sync/SKILL.md", "destination": "resources/nacl-ba-sync/SKILL.md" },
-    { "source": "nacl-core/SKILL.md", "destination": "resources/nacl-core/SKILL.md" },
-    { "source": "nacl-init/SKILL.md", "destination": "resources/nacl-init/SKILL.md" },
-    { "source": "nacl-publish/SKILL.md", "destination": "resources/nacl-publish/SKILL.md" },
+    { "source": "nacl-core/SKILL.md", "destination": "resources/nacl-core/SKILL.md", "transform": "package-nacl-core-links" },
+    { "source": "nacl-init/SKILL.md", "destination": "resources/nacl-init/SKILL.md", "transform": "package-doc-secret-placeholder" },
+    { "source": "nacl-publish/SKILL.md", "destination": "resources/nacl-publish/SKILL.md", "transform": "package-generic-checkout-example" },
     { "source": "nacl-render/SKILL.md", "destination": "resources/nacl-render/SKILL.md" },
     { "source": "nacl-sa-uc/SKILL.md", "destination": "resources/nacl-sa-uc/SKILL.md" },
     { "source": "nacl-sa-ui/SKILL.md", "destination": "resources/nacl-sa-ui/SKILL.md" },
     { "source": "nacl-tl-core/scripts/lib-neo4j-mcp.ps1", "destination": "resources/nacl-tl-core/scripts/lib-neo4j-mcp.ps1" },
     { "source": "nacl-tl-core/scripts/lib-neo4j-mcp.sh", "destination": "resources/nacl-tl-core/scripts/lib-neo4j-mcp.sh" },
-    { "source": "nacl-tl-core/scripts/setup-graph.ps1", "destination": "resources/nacl-tl-core/scripts/setup-graph.ps1" },
-    { "source": "nacl-tl-core/scripts/setup-graph.sh", "destination": "resources/nacl-tl-core/scripts/setup-graph.sh" }
+    { "source": "nacl-tl-core/scripts/setup-graph.ps1", "destination": "resources/nacl-tl-core/scripts/setup-graph.ps1", "transform": "package-powershell-secret-required" },
+    { "source": "nacl-tl-core/scripts/setup-graph.sh", "destination": "resources/nacl-tl-core/scripts/setup-graph.sh", "transform": "package-shell-secret-required" }
   ],
   "nonDirectDispositions": [
     {

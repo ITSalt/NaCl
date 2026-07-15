@@ -8,6 +8,26 @@ import { fileURLToPath } from "node:url";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
 const driftPath = path.join(repoRoot, "codex-plugin-src", "current-main-drift.json");
+const manifestPath = path.join(repoRoot, "scripts", "codex-plugin-manifest.json");
+
+const ALLOWED_TRANSFORMS = Object.freeze({
+  "package-doc-secret-placeholder": (content) => content.replaceAll("neo4j_graph_dev", "<generated-by-nacl-local-init>"),
+  "package-shell-secret-required": (content) => content.replace(
+    'PASSWORD="neo4j_graph_dev"; DATABASE="neo4j"',
+    'PASSWORD="${NEO4J_PASSWORD:-}"; DATABASE="neo4j"',
+  ),
+  "package-powershell-secret-required": (content) => content.replace(
+    '[string]$Password = "neo4j_graph_dev",',
+    '[string]$Password = $env:NEO4J_PASSWORD,',
+  ),
+  "package-nacl-core-links": (content) => content
+    .replaceAll("neo4j_graph_dev", "<generated-by-nacl-local-init>")
+    .replaceAll("(docs/skill-modifiers.md)", "(../docs/skill-modifiers.md)"),
+  "package-generic-checkout-example": (content) => content.replaceAll(
+    "/home/project-owner/projects/NaCl/",
+    "<NaCl-checkout>/",
+  ),
+});
 
 async function buildProjection() {
   const tempRoot = await mkdtemp(path.join(os.tmpdir(), "nacl-drift-projection-"));
@@ -20,18 +40,32 @@ async function buildProjection() {
   return { tempRoot, output };
 }
 
-test("all 17 direct current-main counterparts are projected byte-for-byte", async () => {
-  const drift = JSON.parse(await readFile(driftPath, "utf8"));
+test("all 17 direct current-main counterparts are exact or use a manifest-bound closed transform", async () => {
+  const [drift, manifest] = await Promise.all([
+    readFile(driftPath, "utf8").then(JSON.parse),
+    readFile(manifestPath, "utf8").then(JSON.parse),
+  ]);
   assert.equal(drift.directCounterparts.length, 17);
   assert.equal(new Set(drift.directCounterparts.map((entry) => entry.source)).size, 17);
+  assert.equal(drift.directCounterparts.filter((entry) => entry.transform).length, 5);
+  const manifestTransforms = new Map(manifest.transforms.map((entry) => [entry.path, entry.name]));
   const { tempRoot, output } = await buildProjection();
   try {
     for (const entry of drift.directCounterparts) {
       const [source, packaged] = await Promise.all([
-        readFile(path.join(repoRoot, entry.source)),
-        readFile(path.join(output, entry.destination)),
+        readFile(path.join(repoRoot, entry.source), "utf8"),
+        readFile(path.join(output, entry.destination), "utf8"),
       ]);
-      assert.deepEqual(packaged, source, entry.source);
+      if (!entry.transform) {
+        assert.equal(manifestTransforms.has(entry.destination), false, entry.source);
+        assert.equal(packaged, source, entry.source);
+        continue;
+      }
+      assert.equal(manifestTransforms.get(entry.destination), entry.transform, entry.source);
+      assert.equal(typeof ALLOWED_TRANSFORMS[entry.transform], "function", entry.transform);
+      const expected = ALLOWED_TRANSFORMS[entry.transform](source);
+      assert.notEqual(expected, source, `${entry.source}: transform must change the source`);
+      assert.equal(packaged, expected, entry.source);
     }
   } finally {
     await rm(tempRoot, { recursive: true, force: true });
