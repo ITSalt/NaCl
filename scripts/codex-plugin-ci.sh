@@ -150,12 +150,12 @@ case ${1:-} in
   test:production-mcp)
     npm ci --ignore-scripts --prefix services/nacl-mcp
     npm --prefix services/nacl-mcp test
+    npm --prefix services/nacl-mcp run build
     npm --prefix services/nacl-mcp run check
     npm --prefix services/nacl-mcp audit --omit=dev
-    sbom_file=$(mktemp)
-    trap 'rm -f "$sbom_file"' EXIT
-    npm --prefix services/nacl-mcp sbom --sbom-format cyclonedx > "$sbom_file"
-    node -e 'const fs=require("fs"); const value=JSON.parse(fs.readFileSync(process.argv[1])); if(value.bomFormat!=="CycloneDX" || !Array.isArray(value.components) || value.components.length===0) process.exit(1)' "$sbom_file"
+    npm --prefix services/nacl-mcp run sbom
+    npm --prefix services/nacl-mcp run sbom:check
+    node -e 'const fs=require("fs"),p=require("path"),c=require("crypto"); const root="services/nacl-mcp/dist/sbom"; const m=JSON.parse(fs.readFileSync(p.join(root,"sbom-manifest.json"))); if(!Array.isArray(m.artifacts)||m.artifacts.length!==2||!Array.isArray(m.notRun))process.exit(1); for(const a of m.artifacts){const b=fs.readFileSync(p.join(root,a.path)); if(c.createHash("sha256").update(b).digest("hex")!==a.sha256)process.exit(1); const d=JSON.parse(b); if(d.bomFormat!=="CycloneDX"||!Array.isArray(d.components)||d.components.length===0)process.exit(1)}'
     node --test \
       tests/codex-plugin/scripts/nacl-production-binding.test.mjs \
       tests/codex-plugin/scripts/nacl-public-mcp-bundle.test.mjs
