@@ -70,17 +70,20 @@ try {
   }), "deterministic bundle build");
   const manifest = JSON.parse(await readFile(path.join(bundleRoot, "bundle-manifest.json"), "utf8"));
   const archiveDigest = createHash("sha256").update(await readFile(archive)).digest("hex");
+  const revision = requireSuccess(spawnSync("git", ["rev-parse", "HEAD"], { cwd: repoRoot, encoding: "utf8" }), "VCS revision lookup");
   requireSuccess(docker([
     "build", "--pull=false",
     "--file", path.join(bundleRoot, "services/nacl-mcp/Containerfile"),
     "--build-arg", `SOURCE_DIGEST=${manifest.sourceDigest}`,
     "--build-arg", `ARCHIVE_DIGEST=${archiveDigest}`,
+    "--build-arg", `VCS_REVISION=${revision}`,
     "--tag", image,
     bundleRoot,
   ], { timeout: 300_000 }), "rootless container build");
 
   const labels = JSON.parse(requireSuccess(docker(["image", "inspect", image, "--format", "{{json .Config.Labels}}"]), "container label inspection"));
-  if (labels["org.opencontainers.image.source-digest"] !== manifest.sourceDigest || labels["org.opencontainers.image.archive-digest"] !== archiveDigest) {
+  if (labels["org.opencontainers.image.source-digest"] !== manifest.sourceDigest || labels["org.opencontainers.image.archive-digest"] !== archiveDigest ||
+      labels["org.opencontainers.image.revision"] !== revision) {
     throw new Error("container labels are not bound to the deterministic source and archive digests");
   }
   const configuredUser = requireSuccess(docker(["image", "inspect", image, "--format", "{{.Config.User}}"]), "container user inspection");
