@@ -11,9 +11,16 @@ cd "$tmp_dir"
 git init -q
 git config user.email test@example.invalid
 git config user.name "NaCl Gate Test"
-mkdir -p .claude nacl-example allowed
+mkdir -p .claude .claude-plugin .github/workflows scripts plugin allowed
 printf '%s\n' frozen >.claude/config
-printf '%s\n' frozen >nacl-example/SKILL.md
+printf '%s\n' frozen >.claude-plugin/marketplace.json
+printf '%s\n' frozen >.github/workflows/build-plugin.yml
+cat >scripts/build-plugin.mjs <<'EOF'
+if (process.argv[2] !== "--check") process.exit(1);
+EOF
+printf '%s\n' frozen >scripts/build-plugin.test.mjs
+printf '%s\n' frozen >scripts/plugin-manifest.json
+printf '%s\n' generated >plugin/output.txt
 printf '%s\n' allowed >allowed/file.txt
 git add .
 git commit -qm baseline
@@ -22,6 +29,7 @@ git rev-parse HEAD >frozen-base.txt
 printf '%s\n' changed >allowed/file.txt
 output=$(NACL_CLAUDE_REPO_ROOT="$tmp_dir" NACL_CLAUDE_BASE_FILE="$tmp_dir/frozen-base.txt" bash "$gate")
 grep -q '^Status: VERIFIED$' <<<"$output"
+grep -q '^Generated parity: VERIFIED$' <<<"$output"
 
 printf '%s\n' changed >.claude/config
 set +e
@@ -32,7 +40,26 @@ test "$status" -eq 1
 grep -q '^FAILED frozen path: .claude/config$' <<<"$output"
 grep -q '^Status: FAILED$' <<<"$output"
 
-git add .claude/config allowed/file.txt
+git checkout -q -- .claude/config
+printf '%s\n' changed >.claude-plugin/marketplace.json
+set +e
+output=$(NACL_CLAUDE_REPO_ROOT="$tmp_dir" NACL_CLAUDE_BASE_FILE="$tmp_dir/frozen-base.txt" bash "$gate" 2>&1)
+status=$?
+set -e
+test "$status" -eq 1
+grep -q '^FAILED frozen path: .claude-plugin/marketplace.json$' <<<"$output"
+git checkout -q -- .claude-plugin/marketplace.json
+
+printf '%s\n' changed >scripts/plugin-manifest.json
+set +e
+output=$(NACL_CLAUDE_REPO_ROOT="$tmp_dir" NACL_CLAUDE_BASE_FILE="$tmp_dir/frozen-base.txt" bash "$gate" 2>&1)
+status=$?
+set -e
+test "$status" -eq 1
+grep -q '^FAILED frozen path: scripts/plugin-manifest.json$' <<<"$output"
+git checkout -q -- scripts/plugin-manifest.json
+
+git add allowed/file.txt
 git commit -qm candidate-with-frozen-change
 printf '%s\n' HEAD >symbolic-base.txt
 set +e
@@ -54,4 +81,4 @@ test "$status" -eq 2
 grep -q 'recorded base is not an ancestor of the candidate' <<<"$output"
 grep -q '^Status: BLOCKED$' <<<"$output"
 
-printf '%s\n' "4 passed, 0 failed"
+printf '%s\n' "6 passed, 0 failed"
