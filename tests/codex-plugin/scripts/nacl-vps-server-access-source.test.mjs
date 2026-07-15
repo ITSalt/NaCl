@@ -19,6 +19,8 @@ test("VPS control plane provisions unique ports, inherits server grants and appl
     assert.equal(run(root, "provision", ["--scope", "project-a", "--port", "7443"]).status, "VERIFIED");
     assert.equal(run(root, "grant", ["--cn", "developer.alice"]).status, "VERIFIED");
     assert.equal(run(root, "provision", ["--scope", "project-b", "--port", "7444"]).status, "VERIFIED");
+    const automatic = run(root, "provision", ["--scope", "project-auto"]);
+    assert.equal(automatic.gateway_port, 7687);
     assert.equal(readFileSync(path.join(root, "project-b", "allowed-cns"), "utf8"), "developer.alice\n");
     assert.throws(() => run(root, "provision", ["--scope", "project-c", "--port", "7444"]));
 
@@ -66,4 +68,12 @@ test("VPS provision/issue/revoke use authoritative server control and never muta
   assert.match(revoke, /server-access-control\.mjs/);
   assert.match(revoke, /node "\$ACCESS_CONTROL" revoke/);
   assert.match(revoke, /stop gateway/);
+});
+
+test("provider-neutral and VPS registries project to the same state-dir/scope/allowed-cns layout", () => {
+  const abstractSource = readFileSync(path.join(repo, "codex-plugin-src/package/runtime/graph-gateway/server-access-registry.mjs"), "utf8");
+  const vpsSource = readFileSync(path.join(repo, "graph-infra/vps/server-access-control.mjs"), "utf8");
+  assert.match(abstractSource, /path\.join\(this\.#stateDir, scope, "allowed-cns"\)/);
+  assert.match(vpsSource, /path\.join\(stateDir, id\(scope, "project_scope"\), "allowed-cns"\)/);
+  assert.doesNotMatch(abstractSource, /this\.#stateDir, "projects", scope/);
 });

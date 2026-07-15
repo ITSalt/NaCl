@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { lstat, mkdtemp, readFile, readdir, rm } from "node:fs/promises";
+import { lstat, mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
@@ -60,4 +60,48 @@ test("builder refuses to write to another repository path", () => {
 test("committed plugins/nacl is generated and current", () => {
   const result = spawnSync(process.execPath, [builder, "--check"], { cwd: repoRoot, encoding: "utf8" });
   assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
+});
+
+test("same-filesystem staged swap rolls back the exact prior tree after injected failure", async () => {
+  const tempRoot = await mkdtemp(path.join(os.tmpdir(), "nacl-codex-builder-rollback-"));
+  try {
+    const output = path.join(tempRoot, "candidate");
+    const first = spawnSync(process.execPath, [builder, "--output", output], { cwd: repoRoot, encoding: "utf8" });
+    assert.equal(first.status, 0, `${first.stdout}\n${first.stderr}`);
+    await writeFile(path.join(output, "rollback-sentinel"), "exact-prior-tree\n");
+    const before = await treeDigest(output);
+    const failed = spawnSync(process.execPath, [builder, "--output", output], {
+      cwd: repoRoot,
+      encoding: "utf8",
+      env: { ...process.env, CODEX_BUILDER_TEST_MODE: "1", NACL_CODEX_BUILDER_FAILURE_INJECTION: "after-backup" },
+    });
+    assert.equal(failed.status, 1);
+    assert.match(failed.stderr, /Injected failure after backup/);
+    assert.equal(await treeDigest(output), before);
+    await assert.rejects(lstat(`${output}.codex-build-backup`), /ENOENT/);
+  } finally {
+    await rm(tempRoot, { recursive: true, force: true });
+  }
+});
+
+test("generated package modes are deterministic data modes and all runtime entries name an interpreter", async () => {
+  const tempRoot = await mkdtemp(path.join(os.tmpdir(), "nacl-codex-builder-modes-"));
+  try {
+    const output = path.join(tempRoot, "candidate");
+    const result = spawnSync(process.execPath, [builder, "--output", output], { cwd: repoRoot, encoding: "utf8" });
+    assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
+    async function visit(directory) {
+      for (const entry of await readdir(directory, { withFileTypes: true })) {
+        const filename = path.join(directory, entry.name);
+        if (entry.isDirectory()) await visit(filename);
+        else assert.equal((await lstat(filename)).mode & 0o777, 0o644, path.relative(output, filename));
+      }
+    }
+    await visit(output);
+    const mcp = JSON.parse(await readFile(path.join(output, ".mcp.json"), "utf8"));
+    assert.equal(mcp.mcpServers.nacl.command, "node");
+    assert.match(mcp.mcpServers.nacl.args[0], /\.mjs$/);
+  } finally {
+    await rm(tempRoot, { recursive: true, force: true });
+  }
 });

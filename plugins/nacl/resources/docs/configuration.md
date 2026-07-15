@@ -60,7 +60,7 @@ modules:
 graph:
   neo4j_bolt_port: 3587
   neo4j_http_port: 3574
-  neo4j_password: "neo4j_graph_dev"
+  neo4j_password: "<generated-by-nacl-local-init>"
   container_prefix: "my-project"
   boards_dir: "graph-infra/boards"
 
@@ -415,7 +415,7 @@ modules:
 graph:
   neo4j_bolt_port: 3587
   neo4j_http_port: 3574
-  neo4j_password: "neo4j_graph_dev"
+  neo4j_password: "<generated-by-nacl-local-init>"
   container_prefix: "my-project"
 ```
 

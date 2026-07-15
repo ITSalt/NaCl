@@ -38,7 +38,7 @@ Every graph skill MUST read `config.yaml` at the start to resolve graph settings
 4. Store resolved values for use in error messages and board paths:
    - `$neo4j_bolt_port` = graph.neo4j_bolt_port || 3587
    - `$neo4j_http_port` = graph.neo4j_http_port || 3574
-   - `$neo4j_password` = graph.neo4j_password || "neo4j_graph_dev"
+   - `$neo4j_password` = graph.neo4j_password || "<generated-by-nacl-local-init>"
    - `$excalidraw_port` = graph.excalidraw_port || 3580
    - `$boards_dir` = graph.boards_dir || "graph-infra/boards"
    - `$container_prefix` = graph.container_prefix || project.name || "graph"
@@ -49,7 +49,7 @@ Every graph skill MUST read `config.yaml` at the start to resolve graph settings
 |------|---------------|
 | Neo4j Bolt port | `graph.neo4j_bolt_port` > fallback `3587` |
 | Neo4j HTTP port | `graph.neo4j_http_port` > fallback `3574` |
-| Neo4j password | `graph.neo4j_password` > fallback `"neo4j_graph_dev"` |
+| Neo4j password | `graph.neo4j_password` > fallback `"<generated-by-nacl-local-init>"` |
 | Excalidraw port | `graph.excalidraw_port` > fallback `3580` |
 | Boards directory | `graph.boards_dir` > fallback `"graph-infra/boards"` |
 | Container prefix | `graph.container_prefix` > `project.name` > fallback `"graph"` |
@@ -520,7 +520,7 @@ RETURN 'BP-' + apoc.text.lpad(toString(coalesce(maxNum, 0) + 1), 3, '0') AS next
 
 ## Skill Modifier Conventions
 
-Skills accept **modifiers** — arguments that change behavior. See [Skill Modifiers Reference](docs/skill-modifiers.md) for the full catalog.
+Skills accept **modifiers** — arguments that change behavior. See [Skill Modifiers Reference](../docs/skill-modifiers.md) for the full catalog.
 
 ### Three Paradigms
 

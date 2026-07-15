@@ -155,42 +155,18 @@ docmost:
       space_id: ""      # Docmost space for BA documentation
       root_page_id: ""
 
-# Graph Infrastructure (Neo4j)
+# Graph Infrastructure (Neo4j + Excalidraw)
+# Each project gets its own Docker Compose stack with unique ports.
 # Used by: all nacl-* skills (BA/SA/TL graph analysis)
-#
-# Two modes (see docs/configuration.md → "Graph mode: local vs remote"):
-#   local  (default) — /nacl-init creates a per-project Docker Neo4j on this machine.
-#   remote           — a SHARED Neo4j on a VPS; several developers connect to one graph.
-#                      A teammate cloning a repo with `mode: remote` is AUTO-routed by
-#                      /nacl-init into connect-mode (no Docker, no schema seed).
-#
-# Backward-compatibility: an ABSENT `mode` key is treated as `local`. Existing configs
-# need no edits. Secrets (neo4j_password) are NEVER committed — they live in env
-# (NEO4J_PASSWORD) / a gitignored .env. For remote projects .mcp.json is gitignored too.
+# Setup: /nacl-init creates graph-infra/ with docker-compose.yml + .env + schema + queries
 graph:
-  mode: "local"                  # local | remote
-
-  # --- local mode (mode: local, or key absent) ---
   neo4j_bolt_port: 3587          # Bolt protocol port (MUST be unique per project on same host)
   neo4j_http_port: 3574          # Neo4j Browser UI port
   neo4j_password: "<generated-by-nacl-local-init>"
+  excalidraw_port: 3580          # Excalidraw visual editor port
+  excalidraw_room_port: 3581     # Excalidraw WebSocket collaboration port
   container_prefix: ""           # Docker container name prefix (auto: project name if empty)
-
-  # --- remote mode (mode: remote) — uncomment & fill; commit ONLY the non-secret fields ---
-  # neo4j_uri: "bolt://localhost:3700"   # LOCAL sidecar socket; the mTLS tunnel carries it to the VPS
-  # neo4j_username: "neo4j"
-  # neo4j_database: "neo4j"
-  # project_scope: ""                    # logical project id inside the shared graph = (:Project {id})
-  # remote:                              # VPS endpoint — NOT secret, committed (the joiner's signal)
-  #   host: "graph.example.com"
-  #   gateway_port: 7687
-  #   sidecar_port: 3700                 # local bolt socket the ghostunnel client listens on
-  #   client_cert: "~/.nacl/certs/<project_scope>/client.crt"   # personal cert = your "API key"
-  #   client_key:  "~/.nacl/certs/<project_scope>/client.key"
-  #   ca_cert:     "~/.nacl/certs/<project_scope>/ca.crt"
-  #   tls: true
-
-  boards_dir: "graph-infra/boards"  # Board files directory (relative to project root) — both modes
+  boards_dir: "graph-infra/boards"  # Board files directory (relative to project root)
 
 # Intake self-diagnosis scoring
 # Used by: nacl-tl-intake Step 2a.5 PROBE (hypothesis verification before any

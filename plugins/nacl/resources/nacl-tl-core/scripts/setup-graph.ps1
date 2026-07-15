@@ -31,7 +31,7 @@ param(
   [Parameter(Mandatory=$true)][string]$Prefix,
   [Parameter(Mandatory=$true)][int]$BoltPort,
   [Parameter(Mandatory=$true)][int]$HttpPort,
-  [string]$Password = "neo4j_graph_dev",
+  [string]$Password = $env:NEO4J_PASSWORD,
   [string]$Database = "neo4j"
 )
 

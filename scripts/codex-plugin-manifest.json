@@ -125,5 +125,16 @@
     { "path": "resources/nacl-tl-dev/SKILL.md", "name": "portable-tl-dev-baselines" },
     { "path": "resources/nacl-tl-dev-be/SKILL.md", "name": "portable-tl-dev-be-baseline" },
     { "path": "resources/nacl-tl-dev-fe/SKILL.md", "name": "portable-tl-dev-fe-baseline" }
+    ,{ "path": "resources/docs/configuration.md", "name": "package-doc-secret-placeholder" }
+    ,{ "path": "resources/nacl-init/SKILL.md", "name": "package-doc-secret-placeholder" }
+    ,{ "path": "resources/nacl-tl-core/templates/config-yaml-template.yaml", "name": "package-doc-secret-placeholder" }
+    ,{ "path": "resources/nacl-tl-core/scripts/setup-graph.sh", "name": "package-shell-secret-required" }
+    ,{ "path": "resources/nacl-tl-core/scripts/setup-graph.ps1", "name": "package-powershell-secret-required" }
+    ,{ "path": "resources/nacl-tl-core/templates/graph-docker-compose.yml", "name": "package-compose-secret-required" }
+    ,{ "path": "resources/nacl-core/SKILL.md", "name": "package-nacl-core-links" }
+    ,{ "path": "resources/nacl-publish/SKILL.md", "name": "package-generic-checkout-example" }
+    ,{ "path": "resources/nacl-tl-conductor/SKILL.md", "name": "package-generic-checkout-example" }
+    ,{ "path": "resources/workflows/nacl-tl-core/templates/config-yaml-template.yaml", "name": "package-doc-secret-placeholder" }
+    ,{ "path": "resources/nacl-tl-release/SKILL.md", "name": "package-closed-release-status" }
   ]
 }

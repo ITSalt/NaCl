@@ -22,7 +22,7 @@
 set -u
 
 PROJECT_ROOT=""; SKILLS_DIR=""; PREFIX=""; BOLT_PORT=""; HTTP_PORT=""
-PASSWORD="neo4j_graph_dev"; DATABASE="neo4j"
+PASSWORD="${NEO4J_PASSWORD:-}"; DATABASE="neo4j"
 
 while [ $# -gt 0 ]; do
   case "$1" in

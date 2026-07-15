@@ -116,7 +116,14 @@ function controller(options) {
       return locked(() => {
         const inventory = readInventory();
         const projectScope = id(scope, "project_scope");
-        const port = Number(rawPort);
+        let port;
+        if (rawPort === undefined || rawPort === "auto") {
+          const used = new Set(inventory.gateways.map((entry) => entry.gateway_port));
+          for (let candidate = 7687; candidate <= 7999; candidate += 1) {
+            if (!used.has(candidate)) { port = candidate; break; }
+          }
+          if (port === undefined) die("GATEWAY_PORT_EXHAUSTED", "no gateway port is available");
+        } else port = Number(rawPort);
         if (!Number.isSafeInteger(port) || port < 1024 || port > 65535) die("GATEWAY_PORT_INVALID", "gateway port is invalid");
         const existing = inventory.gateways.find((entry) => entry.project_scope === projectScope);
         if (existing) {

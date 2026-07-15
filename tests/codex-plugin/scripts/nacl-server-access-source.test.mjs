@@ -23,7 +23,7 @@ async function fixture(options = {}) {
 }
 
 async function allowed(stateDir, scope) {
-  const text = await readFile(path.join(stateDir, "projects", scope, "allowed-cns"), "utf8");
+  const text = await readFile(path.join(stateDir, scope, "allowed-cns"), "utf8");
   return text.trim() === "" ? [] : text.trim().split("\n");
 }
 
@@ -103,12 +103,14 @@ test("legacy per-project allow-lists migrate only through reviewed union plan/ap
 
 test("partial grant rolls back; partial revoke disables stale routes and invalidates sessions", async () => {
   let failMode = null;
+  const quarantined = [];
   const f = await fixture({
     async projectionWriter({ projectScope, trustedCns, writeDefault }) {
       if (failMode === "grant" && projectScope === "project-b" && trustedCns.includes("developer.bob")) throw new Error("injected grant failure");
       if (failMode === "revoke" && projectScope === "project-b" && !trustedCns.includes("developer.alice")) throw new Error("injected revoke failure");
       await writeDefault();
     },
+    async quarantineGateway(input) { quarantined.push(input); },
   });
   try {
     await f.registry.provisionGateway({ projectScope: "project-a" });
@@ -129,6 +131,12 @@ test("partial grant rolls back; partial revoke disables stale routes and invalid
     assert.deepEqual(await f.registry.listTrustedPrincipals(), []);
     const gateways = await f.registry.listGateways();
     assert.equal(gateways.find((entry) => entry.project_scope === "project-b").enabled, false);
+    assert.deepEqual(quarantined, [{
+      serverId: "server-a",
+      projectScope: "project-b",
+      gatewayPort: 7444,
+      reason: "authorization-projection-stale",
+    }]);
     await assert.rejects(
       f.registry.resolveRoute({ principalCn: "developer.alice", projectScope: "project-a", sessionRevision: first.authorization_revision }),
       (error) => error.code === "ACCESS_OR_RESOURCE_NOT_FOUND",

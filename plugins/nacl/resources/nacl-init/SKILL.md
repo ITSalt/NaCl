@@ -586,7 +586,7 @@ Add to the existing config.yaml:
 graph:
   neo4j_bolt_port: {bolt_port}
   neo4j_http_port: {http_port}
-  neo4j_password: "neo4j_graph_dev"
+  neo4j_password: "<generated-by-nacl-local-init>"
   container_prefix: "{project_name_slug}"
   boards_dir: "graph-infra/boards"
 ```

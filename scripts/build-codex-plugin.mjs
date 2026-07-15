@@ -3,7 +3,6 @@
 import { createHash } from "node:crypto";
 import {
   chmod,
-  cp,
   lstat,
   mkdir,
   mkdtemp,
@@ -75,7 +74,11 @@ async function filesUnder(root) {
 function isTestResource(relativePath) {
   const segments = relativePath.split("/");
   const basename = segments.at(-1);
-  return segments.includes("tests") || /(?:^|[._-])test(?:[._-]|$)/i.test(basename) || /^test[._-]/i.test(basename);
+  return (
+    segments.some((segment) => segment === "tests" || segment === "__tests__") ||
+    /\.test\.(?:mjs|cjs|js|ts|py|sh|ps1)$/i.test(basename) ||
+    /^test_[A-Za-z0-9_]+\.py$/i.test(basename)
+  );
 }
 
 function replaceExact(content, before, after, label) {
@@ -132,6 +135,47 @@ const TRANSFORMS = {
     "Store output in `/tmp/UC###-fe-baseline.txt`. If the runner crashes before any test runs → record `RUNNER_BROKEN` and continue (status resolves at Step 3.5).",
     "Allocate one safe output path for the whole comparison: POSIX uses `baseline_file=$(mktemp)`; PowerShell uses `$baseline_file = [System.IO.Path]::GetTempFileName()`. Store the output in that same `baseline_file` variable, reuse it for later comparison, and remove it after the final comparison. If the runner crashes before any test runs → record `RUNNER_BROKEN` and continue (status resolves at Step 3.5).",
     "portable-tl-dev-fe-baseline",
+  )),
+  "package-doc-secret-placeholder": (input) => {
+    const content = input.toString("utf8");
+    if (!content.includes("neo4j_graph_dev")) throw new Error("Transform package-doc-secret-placeholder expected a source match");
+    return Buffer.from(content.replaceAll("neo4j_graph_dev", "<generated-by-nacl-local-init>"));
+  },
+  "package-shell-secret-required": (input) => Buffer.from(replaceExact(
+    input.toString("utf8"),
+    'PASSWORD="neo4j_graph_dev"; DATABASE="neo4j"',
+    'PASSWORD="${NEO4J_PASSWORD:-}"; DATABASE="neo4j"',
+    "package-shell-secret-required",
+  )),
+  "package-powershell-secret-required": (input) => Buffer.from(replaceExact(
+    input.toString("utf8"),
+    '[string]$Password = "neo4j_graph_dev",',
+    '[string]$Password = $env:NEO4J_PASSWORD,',
+    "package-powershell-secret-required",
+  )),
+  "package-compose-secret-required": (input) => Buffer.from(replaceExact(
+    input.toString("utf8"),
+    "NEO4J_AUTH: neo4j/${NEO4J_PASSWORD:-neo4j_graph_dev}",
+    "NEO4J_AUTH: neo4j/${NEO4J_PASSWORD:?set NEO4J_PASSWORD through the package secret provider}",
+    "package-compose-secret-required",
+  )),
+  "package-nacl-core-links": (input) => {
+    let content = input.toString("utf8");
+    content = content.replaceAll("neo4j_graph_dev", "<generated-by-nacl-local-init>");
+    content = content.replaceAll("(docs/skill-modifiers.md)", "(../docs/skill-modifiers.md)");
+    if (content === input.toString("utf8")) throw new Error("Transform package-nacl-core-links expected a source match");
+    return Buffer.from(content);
+  },
+  "package-generic-checkout-example": (input) => {
+    const content = input.toString("utf8");
+    if (!content.includes("/home/project-owner/projects/NaCl/")) throw new Error("Transform package-generic-checkout-example expected a source match");
+    return Buffer.from(content.replaceAll("/home/project-owner/projects/NaCl/", "<NaCl-checkout>/"));
+  },
+  "package-closed-release-status": (input) => Buffer.from(replaceExact(
+    input.toString("utf8"),
+    "`Status: FAIL` with at least one finding at `severity: CRITICAL`",
+    "`Status: FAILED` with at least one finding at `severity: CRITICAL`",
+    "package-closed-release-status",
   )),
 };
 
@@ -209,6 +253,13 @@ async function buildInto(destination, manifest) {
     .sort();
   const overlayNames = new Set(manifest.workflowOverlays.map((item) => item.workflow));
   for (const workflow of workflowEntries) {
+    const workflowDirectory = path.join(workflowRoot, workflow);
+    await copyTree(
+      workflowDirectory,
+      `${manifest.workflowDestination}/${workflow}`,
+      `legacy-codex-resources:${workflow}`,
+      (relativePath) => relativePath !== "SKILL.md" && !isTestResource(relativePath),
+    );
     const source = overlayNames.has(workflow)
       ? repoPath(`codex-plugin-src/workflow-overlays/${workflow}/SKILL.md`)
       : path.join(workflowRoot, workflow, "SKILL.md");
@@ -299,7 +350,9 @@ async function main() {
   if (options.output && inside(repoRoot, options.output) && path.resolve(options.output) !== committedOutput) {
     throw new Error(`External build output must not write elsewhere in the repository: ${options.output}`);
   }
-  const temporaryRoot = await mkdtemp(path.join(os.tmpdir(), "nacl-codex-build-"));
+  const destination = options.output ?? committedOutput;
+  if (!options.check) await mkdir(path.dirname(destination), { recursive: true, mode: 0o755 });
+  const temporaryRoot = await mkdtemp(path.join(options.check ? os.tmpdir() : path.dirname(destination), ".nacl-codex-build-"));
   const staging = path.join(temporaryRoot, "nacl");
   try {
     const result = await buildInto(staging, manifest);
@@ -313,14 +366,29 @@ async function main() {
       console.log(`plugins/nacl is up to date (${result.fileCount} files, ${result.publicCount} public skills, ${result.workflowCount} workflows).`);
       return;
     }
-    const destination = options.output ?? committedOutput;
-    await rm(destination, { recursive: true, force: true });
-    await mkdir(path.dirname(destination), { recursive: true, mode: 0o755 });
+    const backup = `${destination}.codex-build-backup`;
+    const destinationExists = await stat(destination).then(() => true, (error) => {
+      if (error.code === "ENOENT") return false;
+      throw error;
+    });
+    const backupExists = await stat(backup).then(() => true, (error) => {
+      if (error.code === "ENOENT") return false;
+      throw error;
+    });
+    if (!destinationExists && backupExists) await rename(backup, destination);
+    else if (destinationExists && backupExists) throw new Error(`Stale builder backup requires review: ${backup}`);
+    const hasDestination = await stat(destination).then(() => true, () => false);
+    if (hasDestination) await rename(destination, backup);
     try {
+      if (process.env.CODEX_BUILDER_TEST_MODE === "1" && process.env.NACL_CODEX_BUILDER_FAILURE_INJECTION === "after-backup") {
+        throw new Error("Injected failure after backup");
+      }
       await rename(staging, destination);
+      if (hasDestination) await rm(backup, { recursive: true, force: true });
     } catch (error) {
-      if (error.code !== "EXDEV") throw error;
-      await cp(staging, destination, { recursive: true, force: false, errorOnExist: true });
+      await rm(destination, { recursive: true, force: true });
+      if (hasDestination) await rename(backup, destination);
+      throw error;
     }
     console.log(`Built ${relativeUnix(repoRoot, destination)} (${result.fileCount} files, ${result.publicCount} public skills, ${result.workflowCount} workflows).`);
   } finally {

@@ -90,8 +90,9 @@ export class FileServerAccessRegistry {
   #serverId;
   #portRange;
   #projectionWriter;
+  #quarantineGateway;
 
-  constructor({ stateDir, serverId, portRange = [7443, 7999], projectionWriter } = {}) {
+  constructor({ stateDir, serverId, portRange = [7443, 7999], projectionWriter, quarantineGateway } = {}) {
     if (typeof stateDir !== "string" || !path.isAbsolute(stateDir)) fail("STATE_DIR_INVALID", "stateDir must be absolute.");
     this.#stateDir = path.resolve(stateDir);
     this.#serverId = validateIdentifier(serverId, "SERVER_ID_INVALID", "serverId");
@@ -104,6 +105,8 @@ export class FileServerAccessRegistry {
     this.#portRange = [...portRange];
     if (projectionWriter !== undefined && typeof projectionWriter !== "function") fail("PROJECTION_WRITER_INVALID", "projectionWriter must be a function.");
     this.#projectionWriter = projectionWriter;
+    if (quarantineGateway !== undefined && typeof quarantineGateway !== "function") fail("QUARANTINE_HANDLER_INVALID", "quarantineGateway must be a function.");
+    this.#quarantineGateway = quarantineGateway;
   }
 
   get #trustedPath() { return path.join(this.#stateDir, "trusted-cns"); }
@@ -112,7 +115,7 @@ export class FileServerAccessRegistry {
 
   #allowedPath(projectScope) {
     const scope = validateIdentifier(projectScope, "PROJECT_SCOPE_INVALID", "projectScope");
-    const filename = path.join(this.#stateDir, "projects", scope, "allowed-cns");
+    const filename = path.join(this.#stateDir, scope, "allowed-cns");
     if (!inside(this.#stateDir, filename)) fail("PROJECT_SCOPE_INVALID", "projectScope escapes stateDir.");
     return filename;
   }
@@ -295,6 +298,16 @@ export class FileServerAccessRegistry {
         } catch {
           gateway.enabled = false;
           gateway.quarantine_reason = "authorization-projection-stale";
+          try {
+            await this.#quarantineGateway?.({
+              serverId: this.#serverId,
+              projectScope: gateway.project_scope,
+              gatewayPort: gateway.gateway_port,
+              reason: gateway.quarantine_reason,
+            });
+          } catch {
+            gateway.quarantine_reason = "authorization-projection-stale-quarantine-hook-failed";
+          }
           failed.push(gateway.project_scope);
         }
       }
