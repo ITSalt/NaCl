@@ -219,6 +219,31 @@ including the post-completion re-check result and any gate-violation attempts lo
 
 Full reference: [docs/guides/goal-command.md](guides/goal-command.md)
 
+## Codex Public Routes and Production Boundary
+
+The full Codex plugin exposes conductors, not the leaf workflows shown in the
+Claude examples above:
+
+| Public skill | Gateway sequence | Internal route |
+|---|---|---|
+| `nacl-init` | `initialize` | project identity, registry, graph lifecycle, schema |
+| `nacl-goal` | `read-preflight` | `nacl-goal` |
+| `nacl-ba` | `ba-resource` | the fourteen `nacl-ba-*` workflows |
+| `nacl-sa` | `sa-resource` | the ten `nacl-sa-*` workflows |
+| `nacl-tl` | `tl-task` | TL planning, development, QA, and delivery |
+| `nacl-fix` | `tl-task` | fix, hotfix, reopened, regression test |
+| `nacl-verify` | `read-preflight` | verify, review, QA, sync, stubs |
+| `nacl-migrate` | `schema-recovery` | migration orchestration and BA/SA adapters |
+| `nacl-diagnose` | `read-preflight` | diagnose, next, status, reconcile, postmortem |
+| `nacl-publish` | `release` | render, publish, ship, release, deploy |
+
+The gateway uses named reads, typed resource claims, and exact confirmations;
+it does not expose arbitrary Cypher or arbitrary shell execution. Neo4j is
+operated separately per project. The server is the current authorization
+boundary, while `project_scope` is routing/provenance. The verified runtime is
+the local installed candidate. Public Streamable HTTP, OAuth deployment,
+release, and marketplace publication are `NOT_RUN`.
+
 ## Next Steps
 
 - [Quick Start](quickstart.md) -- get running in 10 minutes

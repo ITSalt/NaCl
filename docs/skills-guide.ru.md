@@ -98,6 +98,13 @@
 | Мониторинг CI/CD | `/nacl-tl-deploy` |
 | Мерж PR + деплой + релиз | `/nacl-tl-release` |
 
+### Планирование и статус
+
+| Ситуация | Скилл |
+|---|---|
+| План из системного анализа | `/nacl-tl-plan` |
+| Статус и следующий шаг | `/nacl-tl-status`, `/nacl-tl-next` |
+
 ### Исправление и восстановление
 
 | Ситуация | Скилл |
@@ -107,6 +114,13 @@
 | Переоткрытые задачи | `/nacl-tl-reopened` |
 | Диагностика проекта | `/nacl-tl-diagnose` |
 | Синхронизация доков с кодом | `/nacl-tl-reconcile` |
+
+### Визуализация и публикация
+
+| Ситуация | Скилл |
+|---|---|
+| Рендеринг графа в Markdown | `/nacl-render` |
+| Публикация в Docmost | `/nacl-publish` |
 
 ### Рабочие процессы на основе целей
 
@@ -118,6 +132,16 @@
 настоящий `/goal`. Исключение — алиасы `intake` (2.10.1) и `conduct` (2.18.0): они
 autonomy-by-default и выпускают `/goal` без `--start` (отказ через `--plan-only`).
 Полная документация: [docs/guides/goal-command.md](guides/goal-command.md).
+
+## Публичная маршрутизация Codex
+
+В Codex работа начинается с одного из десяти публичных дирижёров: `nacl-ba`,
+`nacl-diagnose`, `nacl-fix`, `nacl-goal`, `nacl-init`, `nacl-migrate`, `nacl-publish`, `nacl-sa`,
+`nacl-tl` или `nacl-verify`. Дирижёр выбирает внутренний workflow и сохраняет plan/confirmation gates.
+Внутренние имена — справочный каталог, а не нормальная Codex UI.
+
+Обычный Codex-канал — полный плагин. Его локальный candidate проверен; публичный HTTP/OAuth и
+релиз остаются `NOT_RUN`.
 
 ## Что дальше
 

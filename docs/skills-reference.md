@@ -4,7 +4,7 @@
 
 # Skills Reference
 
-NaCl provides **59 skills** organized by layer and function. All skills follow the `nacl-{layer}-{action}` naming convention: **BA** = Business Analysis, **SA** = System Analysis, **TL** = TeamLead. Skills are invoked as slash commands (e.g. `/nacl-tl-fix`, `/nacl-ba-full`) via the CLI, or as `/nacl:<name>` namespaced commands through the "nacl" Claude Code plugin (a subset of skills; see [README.md](../README.md#choose-your-channel)), and can delegate to each other through sub-agent orchestration.
+NaCl provides **59 skills** organized by layer and function. All skills follow the `nacl-{layer}-{action}` naming convention: **BA** = Business Analysis, **SA** = System Analysis, **TL** = TeamLead. Skills are invoked as slash commands (e.g. `/nacl-tl-fix`, `/nacl-ba-full`) via the CLI, or as `/nacl:<name>` namespaced commands through the "nacl" Claude Code plugin (a subset of skills; see [README.md](../README.md#choose-the-runtime-channel)), and can delegate to each other through sub-agent orchestration.
 
 > **See also:** [Skill Modifiers Reference](skill-modifiers.md) — full documentation of all flags, modes, and subcommands.
 
@@ -175,6 +175,97 @@ Wraps Anthropic's `/goal` command with NaCl semantics and safety rails.
 | `nacl-postmortem` | Post-mortem of a project built end-to-end via nacl-* skills: for each post-"done" bug, finds which skill gate let it through. Produces `docs/retrospectives/<project>-postmortem.md`. Read-only, RARE. | `/nacl-postmortem` | — |
 
 ---
+
+## Codex Public Skills (10)
+
+The full Codex plugin exposes exactly these conductors:
+
+```text
+nacl-ba
+nacl-diagnose
+nacl-fix
+nacl-goal
+nacl-init
+nacl-migrate
+nacl-publish
+nacl-sa
+nacl-tl
+nacl-verify
+```
+
+They route into the internal catalog and preserve confirmation gates. The
+skills-only Codex layout is compatibility-only; ordinary users install the
+full plugin from the Codex UI.
+
+## Codex Internal Inventory (60)
+
+This generated inventory is defined by `plugins/nacl/resources/package-index.json`:
+
+```text
+nacl-ba-analyze
+nacl-ba-context
+nacl-ba-entities
+nacl-ba-from-board
+nacl-ba-full
+nacl-ba-glossary
+nacl-ba-handoff
+nacl-ba-import-doc
+nacl-ba-process
+nacl-ba-roles
+nacl-ba-rules
+nacl-ba-sync
+nacl-ba-validate
+nacl-ba-workflow
+nacl-core
+nacl-goal
+nacl-init
+nacl-migrate
+nacl-migrate-ba
+nacl-migrate-sa
+nacl-postmortem
+nacl-publish
+nacl-render
+nacl-sa-architect
+nacl-sa-domain
+nacl-sa-feature
+nacl-sa-finalize
+nacl-sa-flags
+nacl-sa-full
+nacl-sa-roles
+nacl-sa-uc
+nacl-sa-ui
+nacl-sa-validate
+nacl-tl-conductor
+nacl-tl-core
+nacl-tl-deliver
+nacl-tl-deploy
+nacl-tl-dev
+nacl-tl-dev-be
+nacl-tl-dev-fe
+nacl-tl-diagnose
+nacl-tl-docs
+nacl-tl-fix
+nacl-tl-full
+nacl-tl-hotfix
+nacl-tl-intake
+nacl-tl-next
+nacl-tl-plan
+nacl-tl-qa
+nacl-tl-reconcile
+nacl-tl-regression-test
+nacl-tl-release
+nacl-tl-reopened
+nacl-tl-review
+nacl-tl-ship
+nacl-tl-status
+nacl-tl-stubs
+nacl-tl-sync
+nacl-tl-verify
+nacl-tl-verify-code
+```
+
+The local Codex candidate is verified. A public Streamable HTTP/OAuth service,
+release, and marketplace publication remain `NOT_RUN`.
 
 ## Next Steps
 

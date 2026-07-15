@@ -161,6 +161,29 @@ Cherry-pick коммита на `hotfix/`-ветку от `main`, PR.
 
 Полная документация: [docs/guides/goal-command.md](guides/goal-command.md)
 
+## Публичные маршруты Codex и production-граница
+
+Полный Codex-плагин показывает дирижёры, а не листовые workflow из Claude-примеров выше:
+
+| Публичный скилл | Gateway sequence | Внутренний маршрут |
+|---|---|---|
+| `nacl-init` | `initialize` | идентичность, реестр, lifecycle графа и схема |
+| `nacl-goal` | `read-preflight` | `nacl-goal` |
+| `nacl-ba` | `ba-resource` | четырнадцать `nacl-ba-*` workflow |
+| `nacl-sa` | `sa-resource` | десять `nacl-sa-*` workflow |
+| `nacl-tl` | `tl-task` | планирование, разработка, QA и поставка |
+| `nacl-fix` | `tl-task` | fix, hotfix, reopened и regression test |
+| `nacl-verify` | `read-preflight` | verify, review, QA, sync и stubs |
+| `nacl-migrate` | `schema-recovery` | оркестрация миграции и BA/SA-адаптеры |
+| `nacl-diagnose` | `read-preflight` | diagnose, next, status, reconcile и postmortem |
+| `nacl-publish` | `release` | render, publish, ship, release и deploy |
+
+Gateway использует именованные reads, типизированные resource claims и точные confirmations;
+он не открывает произвольный Cypher или shell. Neo4j администрируется отдельно для каждого проекта.
+Сервер — текущая граница авторизации, `project_scope` — маршрутизация/provenance. Проверен
+локальный installed candidate. Публичный Streamable HTTP, OAuth deployment, релиз и marketplace-публикация
+остаются `NOT_RUN`.
+
 ## Что дальше
 
 - [Каталог скиллов](skills-reference.ru.md) — полный справочник
