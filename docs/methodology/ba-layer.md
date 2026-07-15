@@ -221,7 +221,7 @@ Parses a client document (DOCX, PDF, XLSX, or plain text) and extracts business-
 
 ### Analyze: nacl-ba-analyze
 
-Reads the board JSON and runs 8 completeness checks: missing performers, orphan entities, disconnected steps, missing decision labels, stereotype coverage, duplicate names, and diff comparison with the last snapshot. If a Neo4j graph already exists, the analysis also diffs the board against the graph to detect divergence.
+Reads the board JSON and runs 8 completeness checks (Phase 2, checks 2.1-2.8): steps without a performer, documents without connections, decisions with fewer than 2 outgoing arrows, broken flow (steps with no incoming/outgoing arrows), duplicate names, low-confidence elements, dangling arrows, and elements without `customData`. Diffing against the previous snapshot is a separate step (Phase 3), not one of the 8 completeness checks. If a Neo4j graph already exists, the analysis also diffs the board against the graph to detect divergence.
 
 ### Sync: nacl-ba-sync
 
@@ -286,7 +286,7 @@ The `nacl-ba-validate` skill runs 8 completeness and consistency checks against 
 | L1 | All BP have owner (OWNS edge) | Process accountability -- every process must have exactly one responsible role |
 | L2 | BP with `has_decomposition: true` has HAS_STEP edges | Workflow coverage -- declared decompositions must actually exist |
 | L3 | Every WorkflowStep has PERFORMED_BY edge | Performer binding -- no step should lack a responsible role |
-| L4 | EntityAttribute has valid types | Data quality -- attribute types must conform to allowed values |
+| L4 | BusinessEntity has attributes; attributes and entities have mandatory properties | Entity attribute completeness -- L4.1 entities without attributes (CRITICAL), L4.2 orphaned attributes (WARNING), L4.3 entity missing id/name (CRITICAL) |
 | L5 | READS/PRODUCES/MODIFIES coverage | Entity-process matrix -- no orphan entities, no untouched data objects |
 | L6 | Role-process matrix completeness | No orphan roles or processes -- every role participates in at least one process |
 | L7 | GlossaryTerm coverage for named nodes | Ubiquitous language -- key domain concepts must have glossary entries |
@@ -297,8 +297,8 @@ The `nacl-ba-validate` skill runs 8 completeness and consistency checks against 
 Each finding is classified into one of three severities:
 
 - **CRITICAL** -- blocks handoff to the SA layer. The model has a structural gap that would propagate errors downstream. Examples: a process with no owner (L1), a decomposed process with no workflow steps (L2).
-- **WARNING** -- should be fixed before handoff but does not strictly block it. Examples: a role that exists but participates in no processes (L6), an entity with no glossary term (L7).
-- **INFO** -- optional improvement. The model is valid without addressing these, but fixing them improves completeness. Example: an entity attribute with a generic type that could be more specific (L4).
+- **WARNING** -- should be fixed before handoff but does not strictly block it. Examples: a role that exists but participates in no processes (L6), an entity with no glossary term (L7), an EntityAttribute not owned by any entity (L4.2).
+- **INFO** -- optional improvement. The model is valid without addressing these, but fixing them improves completeness. Example: a glossary term that DEFINEs nothing (L7.3).
 
 The validation report lists every finding grouped by level, with the specific node IDs and names that triggered each check. This makes remediation straightforward -- the analyst can navigate directly to the problematic nodes and fix them before re-running validation.
 

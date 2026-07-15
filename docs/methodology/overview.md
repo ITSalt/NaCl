@@ -4,7 +4,7 @@
 
 # The NaCl Methodology: Three Layers, One Graph
 
-NaCl is a set of 57 agent skills for Claude Code and Codex that cover the full software development lifecycle -- from business analysis through system specification to TDD development, code review, QA, and release. What makes NaCl different is not the number of skills but the methodology beneath them: a structured pipeline where all business and system analysis artifacts live in a Neo4j graph database, queryable by both humans and AI agents.
+NaCl is a set of 59 agent skills for Claude Code and Codex that cover the full software development lifecycle -- from business analysis through system specification to TDD development, code review, QA, and release. What makes NaCl different is not the number of skills but the methodology beneath them: a structured pipeline where all business and system analysis artifacts live in a Neo4j graph database, queryable by both humans and AI agents.
 
 This document explains the core ideas. The companion pages go deeper into each layer.
 
@@ -136,7 +136,7 @@ NaCl skills are organized into four levels of abstraction, from full-pipeline or
 `nacl-ba-full` (10 phases), `nacl-sa-full` (10 phases), and `nacl-tl-full` (dev lifecycle per UC). Each orchestrator chains Level 2 skills in the correct order, manages confirmation gates, tracks progress, and handles failures with retry-or-skip logic.
 
 **Level 2: Individual skills.**
-The 48 specialized skills that do the actual work: `nacl-ba-context` defines system boundaries, `nacl-tl-dev-be` runs backend TDD, `nacl-tl-qa` executes E2E tests via Playwright, and so on. Each skill reads from and writes to a well-defined slice of the graph or filesystem.
+The 54 specialized skills that do the actual work: `nacl-ba-context` defines system boundaries, `nacl-tl-dev-be` runs backend TDD, `nacl-tl-qa` executes E2E tests via Playwright, and so on. Each skill reads from and writes to a well-defined slice of the graph or filesystem.
 
 **Level 1: Shared references.**
 `nacl-core` provides Neo4j connection conventions, ID format rules, schema file locations, and Cypher query patterns. `nacl-tl-core` provides task file templates, Git conventions, and code review checklists. These are not invoked directly -- they are read by other skills as reference material.

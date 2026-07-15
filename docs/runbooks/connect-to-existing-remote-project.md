@@ -51,11 +51,14 @@ local mTLS tunnel, with `.mcp.json` still pointing at `bolt://localhost:<port>`.
    Get-ScheduledTask -TaskName "NaCl Sidecar acme-billing"
    ```
 
-2. **Connect** (auto-routed if the repo's `config.yaml` has `graph.mode: remote`):
-
-   ```sh
-   /nacl-init --scale=connect          # or just /nacl-init --from .  (auto-detects remote)
-   ```
+2. **Connect** (auto-routed if the repo's `config.yaml` has `graph.mode: remote`). The command
+   prefix depends on your channel — pick one, do not mix (see `plugin/README.md`, "Do not
+   double-install"):
+   - **CLI** (repo-side symlinked skills): `/nacl-init --scale=connect` — or just
+     `/nacl-init --from .` (auto-detects remote).
+   - **Claude Code Desktop plugin** (v2.24.0+): `/nacl:init --scale=connect` — or just
+     `/nacl:init --from=.` (same auto-detection; the flag syntax is unchanged, only the
+     `/nacl-`→`/nacl:` prefix differs).
 
    Under the hood this runs `connect-remote.sh`: it writes `.mcp.json` (localhost sidecar) and the
    `config.yaml` `graph` block, registers the project, and runs a READ-ONLY gate. It ends with
@@ -63,7 +66,8 @@ local mTLS tunnel, with `.mcp.json` still pointing at `bolt://localhost:<port>`.
 
 3. **If FAILED with `project-missing`** — the graph has no `(:Project {id:<scope>})`. Either your
    endpoint/scope is wrong, or the project was never provisioned; the first developer must run
-   `/nacl-init --scale=create` (or the owner runs `provision-vps.sh`). Connect never seeds a graph.
+   `/nacl-init --scale=create` (CLI) or `/nacl:init --scale=create` (Desktop plugin) (or the owner
+   runs `provision-vps.sh`). Connect never seeds a graph.
 
 4. **Restart Claude Code** so the MCP server reconnects to the (now localhost-tunnelled) graph.
 

@@ -54,7 +54,7 @@ Run by `nacl-ba-validate`. All checks are read-only -- they never modify the gra
 
 **L7: Glossary Coverage.** GlossaryTerm nodes should exist for key named artifacts (entities, roles, processes) that use domain-specific terminology. L7 flags significant terms without a DEFINES edge. Common terms like "User" need no entry, but domain terms like "Settlement Period" or "Acceptance Protocol" should have definitions that establish shared meaning. INFO.
 
-**L8: Rule Traceability.** Every BusinessRule must have at least one of: CONSTRAINS (to entity), APPLIES_IN (to process), AFFECTS (to attribute), or APPLIES_AT_STEP (to step). Rules floating without connections describe constraints but do not say what they constrain or where they apply. Unbound rules are often captured during stakeholder interviews as general statements that have not yet been linked to specific artifacts. WARNING.
+**L8: Rule Traceability.** Three sub-checks. L8.1 (BusinessRule with none of CONSTRAINS/APPLIES_IN/AFFECTS/APPLIES_AT_STEP) and L8.2 (BusinessRule missing mandatory `id`/`name`) are CRITICAL -- rules floating without connections describe constraints but do not say what they constrain or where they apply, and both block BA-to-SA handoff. L8.3 (a traceability target with no `id`) is WARNING. Unbound rules are often captured during stakeholder interviews as general statements that have not yet been linked to specific artifacts.
 
 ---
 
@@ -68,15 +68,16 @@ extension layers introduced in 2.15.
 
 **L2: Model Connectivity.** Every Module has at least one DomainEntity or UseCase. Every DomainEntity and UseCase is linked to exactly one Module. No empty modules (they produce empty dev waves) and no floating artifacts. CRITICAL for empty modules, WARNING for unlinked artifacts.
 
-**L3: Requirement Completeness.** Every UseCase has at least one Requirement (via HAS_REQUIREMENT), or is explicitly marked `story_only: true`. Requirements must be categorized. Open questions are tracked. Missing requirements often mean non-functional concerns have not been considered. WARNING.
+**L3: Requirement Completeness.** Nine sub-checks. L3.1 (UseCases without any HAS_REQUIREMENT edge) and L3.5 (ActivitySteps with an empty/missing `actor` property) are CRITICAL. L3.2 (orphaned requirements), L3.3 (UseCases without ActivitySteps), L3.4 (UseCases without an actor SystemRole), and L3.6 (non-canonical `actor` values) are WARNING. L3.7-L3.8, added in 2.21.0, enforce the **outgoing-anchor invariant**: every must-anchor requirement (class `functional`/`validation`/`behavioral`/`interface`) needs a `REALIZED_BY` edge to the step/field/form that implements it (L3.7, CRITICAL); the target's label must agree with the requirement's class (L3.7b, WARNING); and once a project has opted into anchoring, every `System`-actor step should be realized by some requirement (L3.8, opt-in WARNING). Exemptions are class-based, not a `story_only` flag: NFRs (`type: 'nfr'`), ADRs/questions/assumptions, and requirements explicitly marked `anchor_exempt: true` are excluded from L3.7.
 
-**L4: Form-Domain Traceability (Critical).** The most important SA validation check. Every FormField with a data type (text, number, date, select, etc.) must have a MAPS_TO edge to a DomainAttribute. This edge is the contract between UI specification and data model -- it declares that a specific field on a specific form stores its value in a specific attribute of a specific domain entity. Without it, developers guess which attribute to bind a field to, or create attributes ad hoc, producing schema drift between specification and implementation. CRITICAL.
+**L4: Form-Domain Traceability (Critical).** The most important SA validation check. Every input FormField must have a MAPS_TO edge to a DomainAttribute -- display and action fields (`field_category` other than `input`) are exempt. This edge is the contract between UI specification and data model -- it declares that a specific field on a specific form stores its value in a specific attribute of a specific domain entity. Without it, developers guess which attribute to bind a field to, or create attributes ad hoc, producing schema drift between specification and implementation. CRITICAL.
 
 ```cypher
-MATCH (ff:FormField)
-WHERE ff.type IN ['text','number','date','select','checkbox','radio','textarea','email','phone']
-  AND NOT (ff)-[:MAPS_TO]->(:DomainAttribute)
-RETURN ff.id, ff.name, ff.type
+// L4.1 -- Severity: CRITICAL
+MATCH (f:Form)-[:HAS_FIELD]->(ff:FormField)
+WHERE NOT (ff)-[:MAPS_TO]->(:DomainAttribute)
+  AND coalesce(ff.field_category, 'input') = 'input'  -- REQUIRED FILTER: exempt display/action
+RETURN ff.id, ff.name, ff.field_type
 ```
 
 **L5: UC-Form Validation.** Every Primary UC (priority "MVP") with `detail_status: "complete"` has at least one Form. Every Form links to at least one UseCase via USES_FORM. Catches formless UCs (complete but missing UI specification) and orphaned forms (created but never linked to a UC). WARNING.
@@ -113,24 +114,22 @@ Run by `nacl-ba-validate` after the SA layer has data. Checks that BA artifacts 
 | XL4 | BusinessRole without MAPPED_TO edge | Roles not represented in the system |
 | XL5 | GlossaryTerm misalignment with SA nomenclature | Language drift between layers |
 
-XL1 and XL2 are CRITICAL -- functional coverage gaps where the system will not address a documented business need. XL3 and XL4 are WARNING -- rules and roles may be intentionally deferred. XL5 is INFO -- naming inconsistencies are worth resolving but do not create structural gaps.
+XL1 and XL2 are CRITICAL -- functional coverage gaps where the system will not address a documented business need. XL3 (Rule Coverage, XL3.1: BusinessRule not traced to a Requirement via IMPLEMENTED_BY) is also CRITICAL. XL4 (Role Coverage, XL4.1: BusinessRole not mapped to a SystemRole via MAPPED_TO) is WARNING -- roles may be intentionally deferred. XL5 (Glossary Alignment) is split: XL5.1 (DomainEntity with no matching BA GlossaryTerm) is WARNING, XL5.2 (name mismatch between a linked GlossaryTerm and DomainEntity) is INFO.
 
 ---
 
 ## Cross-Layer Validation: SA Side (XL6-XL9)
 
-Run by `nacl-sa-validate`. Reverse checks -- ensuring SA artifacts trace back to BA origins.
+Run by `nacl-sa-validate`. Primarily forward checks -- ensuring BA artifacts got traced into SA -- each with a reverse sub-check for the opposite direction.
 
-| Check | What It Flags |
-|-------|---------------|
-| XL6 | UseCases without a corresponding AUTOMATES_AS source | UCs not traceable to business steps |
-| XL7 | DomainEntities without REALIZED_AS source | Entities not traceable to business objects |
-| XL8 | SystemRoles without MAPPED_TO source | System roles not traceable to business roles |
-| XL9 | Requirements without IMPLEMENTED_BY source | Requirements not traceable to business rules |
+| Check | Forward core (CRITICAL) | Reverse sub-check |
+|-------|--------------------------|--------------------|
+| XL6 (UC Coverage) | XL6.1: automated BA WorkflowStep with no AUTOMATES_AS edge to a UseCase | XL6.2 (WARNING): UseCase not traced from any WorkflowStep and not marked `system_uc: true` |
+| XL7 (Entity Coverage) | XL7.1: BusinessEntity with no REALIZED_AS edge to a DomainEntity | -- (XL7.2/XL7.3/XL7.4 are INFO/WARNING audits, not reverse checks) |
+| XL8 (Role Coverage) | XL8.1: BusinessRole with no MAPPED_TO edge to a SystemRole | XL8.2 (WARNING): SystemRole not mapped from any BusinessRole and not marked `system_only: true` |
+| XL9 (Rule Coverage) | XL9.1: BusinessRule with no IMPLEMENTED_BY edge to a Requirement | -- (XL9.2 out-of-scope audit is INFO; XL9.3, IMPLEMENTED_BY target integrity, is CRITICAL) |
 
-XL6 and XL7 are WARNING. Legitimate SA-only artifacts exist -- technical use cases (system initialization, data migration) and technical entities (audit logs, session records) may not have BA counterparts. The analyst reviews findings and either creates the BA traceability link or marks the artifact as `technical_only: true` to suppress future warnings.
-
-XL8 and XL9 are INFO. System roles often include technical roles (System Administrator, API Client) that have no business-layer counterpart. Requirements may include non-functional constraints (response time, concurrent users) that originate from technical analysis rather than business rules.
+The forward-coverage cores (XL6.1, XL7.1, XL8.1, XL9.1) are CRITICAL -- they are the same gap XL1/XL2 flag from the BA side, re-checked once SA data exists, and any CRITICAL blocks SA finalization. The reverse sub-checks are WARNING and use property-based exemptions for legitimate SA-only artifacts: `system_uc: true` on a UseCase with no BA source step, `system_only: true` on a SystemRole with no BA source role. No `technical_only` property exists.
 
 Together, XL1-XL5 and XL6-XL9 form a bidirectional traceability check. The BA side asks "is every business need covered by the system?" The SA side asks "is every system element justified by a business need?" When both sets pass, the specification has full bidirectional traceability -- every requirement can be traced from business process to system implementation and back.
 
@@ -142,7 +141,7 @@ Validation integrates into the pipeline at four gates.
 
 **1. Before BA handoff** (Phase 8 of nacl-ba-full). Run L1-L8 against the BA graph. Any CRITICAL error blocks Phase 9 (handoff). The orchestrator presents the validation report to the user, listing every finding with its severity, check ID, and the specific node IDs that failed. The typical fix workflow: read the report, navigate to the flagged nodes using the provided IDs, add missing properties or edges, then re-run validation. WARNINGs and INFOs are presented but do not block -- the analyst can address them now or defer.
 
-**2. After SA completion** (Phase 7 of nacl-sa-full). Run L1-L13 (internal SA consistency) + XL6-XL9 (reverse cross-layer traceability). CRITICAL errors in L1-L13 block finalization. The SA analyst must resolve structural issues -- duplicate IDs, circular module dependencies, FormFields without domain mappings, anchorless slices, unraisable errors -- before the specification can be finalized. L10-L13 pass vacuously when the project has not adopted the extension layers; the explicit skip recorded by nacl-sa-full Phase 6b makes that vacuous pass a documented choice. XL6-XL9 findings are presented as advisory; the analyst reviews them and either creates the missing BA traceability or documents the technical justification for SA-only artifacts.
+**2. After SA completion** (Phase 7 of nacl-sa-full). Run L1-L13 (internal SA consistency) + XL6-XL9 (forward BA-to-SA coverage, re-checked from the SA side). CRITICAL errors in L1-L13 and in the XL6-XL9 forward cores (XL6.1, XL7.1, XL8.1, XL9.1) block finalization. The SA analyst must resolve structural issues -- duplicate IDs, circular module dependencies, FormFields without domain mappings, anchorless slices, unraisable errors, uncovered BA steps/entities/roles/rules -- before the specification can be finalized. L10-L13 pass vacuously when the project has not adopted the extension layers; the explicit skip recorded by nacl-sa-full Phase 6b makes that vacuous pass a documented choice. The reverse sub-checks (XL6.2, XL8.2) are WARNING and advisory; the analyst reviews them and either creates the missing BA traceability or marks the artifact `system_uc`/`system_only` to document SA-only intent.
 
 **3. Cross-layer check** (post-SA). Run XL1-XL5 from the BA side after SA data exists. This verifies bidirectional coverage: every automatable BA step has a corresponding UseCase, every business entity has a domain model counterpart, every business rule has a system requirement. This gate runs separately from Gate 1 because XL1-XL5 require SA data that does not exist during the BA phase. Can be triggered manually at any time for incremental verification as the SA layer grows.
 

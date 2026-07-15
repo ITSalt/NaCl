@@ -12,13 +12,13 @@ How and why NaCl organizes business analysis, system analysis, and development i
 | [BA Layer](ba-layer.md) | 10 phases, 13 node types, visual-first workflow |
 | [SA Layer](sa-layer.md) | 10 phases, 12 node types, form-domain mapping |
 | [Handoff](handoff.md) | Cross-layer traceability, 4 edge types, coverage stats |
-| [Validation](validation.md) | L1--L8, L1--L6, XL1--XL9: keeping the graph honest |
+| [Validation](validation.md) | L1--L8 (BA), L1--L13 (SA), XL1--XL9: keeping the graph honest |
 | [Graph-First Philosophy](graph-philosophy.md) | Why a graph, not markdown files |
 
 ## How This Relates to Other Docs
 
 - **[Architecture](../architecture.md)** covers the pipeline at a high level and the skill anatomy.
-- **[Agent Architecture](../agents.md)** explains model selection, the 6 cognitive agent profiles, and delegation patterns.
+- **[Agent Architecture](../agents.md)** explains model selection, the 7 cognitive agent profiles, and delegation patterns.
 - **[Workflows](../workflows.md)** shows the exact slash commands for 9 end-to-end scenarios.
 - **[Skills Reference](../skills-reference.md)** lists every skill with its parameters.
 - **Methodology** (this section) explains the *why* behind the design decisions and the internal mechanics of the BA and SA layers.

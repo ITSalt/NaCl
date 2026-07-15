@@ -144,7 +144,7 @@ Each category has its own coverage percentage. The target is **95% or higher** a
 
 Uncovered items are not silently ignored. They are surfaced by specific validation checks:
 
-- **XL1--XL5** (BA-side cross-validation): Detect BA nodes that should have SA counterparts but do not. For example, XL1 finds WorkflowSteps with the automation stereotype that lack an `AUTOMATES_AS` edge. XL3 finds BusinessRoles that perform automated steps but have no `MAPPED_TO` edge to a SystemRole.
+- **XL1--XL5** (BA-side cross-validation): Detect BA nodes that should have SA counterparts but do not. For example, XL1 finds WorkflowSteps with the automation stereotype that lack an `AUTOMATES_AS` edge. XL4 finds BusinessRoles that have no `MAPPED_TO` edge to a SystemRole.
 
 - **XL6--XL9** (SA-side cross-validation): Detect SA nodes that claim BA origins but have broken or missing backlinks. For example, XL6 finds UseCases with no `AUTOMATES_AS` edge coming in -- an SA artifact with no BA lineage, which may indicate a use case that was created ad hoc rather than derived from business analysis.
 

@@ -41,8 +41,12 @@ claude login
 ```
 
 NaCl skills also work with the [Claude Desktop app](https://claude.ai/download),
-Claude Code IDE extensions, and Codex. Use the skill install guide below for
-the runtime-specific skill package.
+Claude Code IDE extensions, and Codex. **Claude Code Desktop installs via the
+`nacl` plugin** (`/plugin marketplace add ITSalt/NaCl` then `/plugin install
+nacl@nacl` inside Desktop) — not the symlink script below. Pick one channel per
+machine; do not install both. See
+[Skill Installation § Choose your channel](install-skills.md) for the full
+channel matrix.
 
 ## Installation
 

@@ -2,7 +2,7 @@
 
 # NaCl Analyst Tool
 
-A local web wrapper around Excalidraw that lists every board in `graph-infra/boards/`, shows its sync status with the Neo4j graph, and provides one-click **Regenerate**, **Sync**, and **Analyze** buttons that invoke the existing NaCl skills via the `itsalt-pinch` task runner.
+A local web wrapper around Excalidraw that lists every board in `graph-infra/boards/`, shows its sync status with the Neo4j graph, and provides one-click **Regenerate**, **Sync**, and **Analyze** buttons. Sync and Analyze invoke the existing NaCl skills via the `itsalt-pinch` task runner; Regenerate renders the board locally, in-process, without spawning a skill.
 
 ---
 
@@ -17,7 +17,7 @@ Previously an analyst opened a bare Excalidraw instance at `localhost:3580`. Tha
 | Requirement | Notes |
 |---|---|
 | **Node.js 20+** | The server uses native `node:crypto` and ES modules |
-| **`claude` CLI** | Installed and authenticated; without it the Regenerate / Sync / Analyze buttons cannot spawn a skill run |
+| **`claude` CLI** | Installed and authenticated; without it the Sync / Analyze buttons cannot spawn a skill run (Regenerate renders locally and does not need it) |
 | **Neo4j running** | `docker compose -f graph-infra/docker-compose.yml up -d` -- search degrades to board-only mode if Neo4j is unreachable, but skill runs still require the graph |
 
 ---
@@ -158,7 +158,7 @@ The sidecar schema is documented in `nacl-core/SKILL.md` under "Board Meta Sidec
 
 ### Regenerate
 
-Invokes `nacl-render` to re-export the board from the Neo4j graph. The exact skill command depends on the board kind (domain-model, context-map, activity, process). Import boards cannot be regenerated -- use Sync instead. After a successful run the server updates `lastGeneratedAt` and resets `contentHashAtLastSync` to reflect the freshly generated content.
+Re-exports the board from the Neo4j graph by calling `renderBoard()` in-process, directly in the analyst-tool backend (`analyst-tool/server/src/render/`) -- it does not invoke the `nacl-render` skill and does not spawn `claude`. Import boards cannot be regenerated -- use Sync instead. After a successful run the server updates `lastGeneratedAt` and resets `contentHashAtLastSync` to reflect the freshly generated content.
 
 **Enabled when:** the board is not currently running and its kind supports regeneration.
 
@@ -178,7 +178,7 @@ Invokes `/nacl-ba-analyze <filepath>` to run a validation and analysis pass agai
 
 ## Pinch and the skill runner
 
-All three skill buttons go through `itsalt-pinch` ([github.com/ITSalt/pinch](https://github.com/ITSalt/pinch)), a programmatic Node.js wrapper around `claude -p` that enforces rate and concurrency limits. The hard caps are:
+Sync and Analyze go through `itsalt-pinch` ([github.com/ITSalt/pinch](https://github.com/ITSalt/pinch)), a programmatic Node.js wrapper around `claude -p` that enforces rate and concurrency limits. Regenerate does not use Pinch or `claude -p` at all -- it renders locally via `renderBoard()` and is not subject to the limits below. The hard caps (for Sync and Analyze) are:
 
 - **≥ 15 s** minimum delay between consecutive `claude` spawns.
 - **≥ 120 s** wave cooldown between batches.
@@ -269,8 +269,6 @@ Fastify :3583  (127.0.0.1 only)
 ```
 
 The backend listens exclusively on `127.0.0.1` -- no remote access. Skills are the single source of truth for graph writes; the tool calls them rather than duplicating their logic.
-
-For the full design rationale see the plan file at `.claude/plans/image-1-starry-anchor.md`.
 
 ---
 

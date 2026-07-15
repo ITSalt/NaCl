@@ -78,9 +78,13 @@ Full reference for both runtimes:
 [Skill Installation](install-skills.md).
 
 > Skills and agents linked to `%USERPROFILE%\.claude\` on native Windows
-> (or `~/.claude/` in WSL2) are automatically available in all local Claude
-> Code platforms: CLI, Desktop app, and IDE extensions. Codex uses
-> `%USERPROFILE%\.agents\skills`.
+> (or `~/.claude/` in WSL2) are available on the CLI and IDE extensions.
+> For **Claude Code Desktop**, the current channel (v2.24.0+) is the
+> `nacl` plugin, not this symlink install — run `/plugin marketplace add
+> ITSalt/NaCl` then `/plugin install nacl@nacl` inside Desktop, and pick
+> one channel per machine (do not install both; see
+> [Skill Installation § Choose your channel](install-skills.md)). Codex
+> uses `%USERPROFILE%\.agents\skills`.
 
 > Note: Creating symlinks on Windows requires either Administrator
 > privileges or Developer Mode enabled
@@ -135,7 +139,11 @@ which:
    automatically against the loaded schema).
 3. The resolved `neo4j-mcp.exe` answers an `initialize` + `tools/list` JSON-RPC handshake
    (the setup script runs this as gate 3).
-4. After restarting Claude Code, `/mcp` shows `neo4j` **connected on the first try**.
+4. Start a **new session** (not an in-session restart) and run one smoke-test call:
+   `mcp__neo4j__read-cypher "RETURN 1"` succeeds on the first try. Note: on Claude
+   Code Desktop, typing `/mcp` opens the connector directory — it does not show the
+   project `neo4j` server as connected — so this smoke-test call is the reliable check
+   on both CLI and Desktop.
 
 If setup fails it prints `NACL_GRAPH_RESULT: status=FAILED` with the failing check — it never
 reports a half-configured graph as ready. The graph step is idempotent, so re-run `/nacl-init`

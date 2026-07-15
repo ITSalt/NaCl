@@ -30,6 +30,10 @@ author. We (ITSalt) never see your data.
   binary from GitHub releases (`github.com` / `objects.githubusercontent.com`),
   pinned to a specific version and verified by SHA-256 checksum. Telemetry in
   that binary is explicitly disabled (`NEO4J_TELEMETRY=false`).
+- During project initialization, NaCl also pulls the `neo4j:5-community` Docker
+  image from Docker Hub the first time it starts your project's graph
+  container. This is a routine image pull, not telemetry — it carries no
+  project or usage data.
 - Nothing else. No update pings, no usage reporting, no crash reporting.
 
 ## Optional integrations you configure yourself

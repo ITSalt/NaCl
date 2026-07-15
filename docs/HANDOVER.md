@@ -6,7 +6,7 @@
 
 One-shot encrypted transfer of a project's Neo4j graph between machines. Use this when handing a project over to another developer or moving to a new workstation. It exports the full graph, compresses and encrypts it, commits the artifact to git, and replays it verbatim on the receiving machine.
 
-Not suitable for simultaneous multi-developer work against a shared graph — that is a planned future capability.
+Not suitable for simultaneous multi-developer work against a shared graph. For that, use the opt-in `graph.mode: remote` (shared Neo4j on a VPS, per-developer mTLS certs, claim locks) — see [`docs/runbooks/provision-shared-graph-vps.md`](runbooks/provision-shared-graph-vps.md) and [`docs/runbooks/connect-to-existing-remote-project.md`](runbooks/connect-to-existing-remote-project.md). This document covers the local, one-shot transfer mode only.
 
 ## Prerequisites
 
@@ -41,11 +41,15 @@ docker compose -f graph-infra/docker-compose.yml up -d
 Container detection priority:
 1. `NACL_CONTAINER` env var
 2. `--container=NAME` flag
-3. `CONTAINER_PREFIX` from `graph-infra/.env` → `${CONTAINER_PREFIX}-neo4j`
-4. Single running `*-neo4j` container (auto-detect)
-5. Fail with a list of candidates
+3. `CONTAINER_PREFIX` from `graph-infra/.env` (or `.env.example` if no `.env` exists) →
+   `${CONTAINER_PREFIX}-neo4j`
 
-If you have more than one `*-neo4j` container running, set `NACL_CONTAINER` explicitly:
+In practice step 3 always resolves: `graph-infra/.env.example` ships a `CONTAINER_PREFIX` default,
+and `graph-infra/scripts/_lib.sh` falls back to `CONTAINER_PREFIX=graph` even with no env file at
+all. Single-container auto-detection and the "fail with a list of candidates" error path exist in
+`_lib.sh` but are unreachable while `CONTAINER_PREFIX` resolves to something — which it always
+does. On a machine with more than one project's graph running, do not rely on auto-detection: set
+`NACL_CONTAINER` explicitly:
 
 ```bash
 export NACL_CONTAINER=myproject-neo4j
@@ -188,7 +192,7 @@ Artifacts land in `graph-infra/handover/`. The `.gitattributes` in that director
 
 ### S3 (`--to=s3://…`)
 
-Not available in this release. The scripts reject `--to=s3://…` and `--from=s3://…` with an explanatory message. S3/MinIO support is planned for a future release alongside shared infrastructure.
+Not available in this release. The scripts reject `--to=s3://…` and `--from=s3://…` with an explanatory message. S3/MinIO support for handover artifacts is planned but not yet implemented (independent of the shared-VPS graph mode, which has already shipped — see above).
 
 ## Limitations
 

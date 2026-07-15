@@ -23,6 +23,7 @@ graph-based `nacl-*` workflow.
 | Python 3.11+ | `brew install python@3.11` on macOS |
 | Docker | Required to run the Neo4j container via `graph-infra/` |
 | Claude Code + NaCl skills | Skills must be installed and `$NACL_HOME` resolvable |
+| Repo-checkout / CLI-symlink channel | `nacl-migrate*` skills are excluded from the Claude Code Desktop plugin (rare/repo-checkout-only); migration cannot run from the Desktop plugin channel — see [Skill Setup](setup/install-skills.md) |
 | Clean git state | Strongly recommended; commit or stash before migrating |
 
 The orchestrator auto-resolves `$NACL_HOME` by searching `~/projects/NaCl`,
@@ -62,13 +63,15 @@ skips the rest. A project with only SA folders and no BA folders is valid.
 Parsing is **deterministic Python with no LLM involvement**. The pipeline is:
 
 1. **Detect format** — auto-detects which adapter matches the project's
-   Markdown conventions (`inline-table-v1` currently; `frontmatter-v1` planned).
+   Markdown conventions. Both `inline-table-v1` and `frontmatter-v1` are
+   implemented and registered for BA and SA layers.
 2. **Parse to IR** — Python scripts under `nacl-migrate-ba/scripts/` and
    `nacl-migrate-sa/scripts/` read your Markdown files and produce structured
    intermediate representation (IR) as JSON.
 3. **Validate IR** — schema and referential-integrity checks run before any
    write; blockers stop the pipeline with a clear message and remediation hint.
-4. **Generate Cypher** — `nacl-migrate-core` templates render `MERGE`-based
+4. **Generate Cypher** — `nacl-migrate-ba/scripts/generate_ba_cypher.py` and
+   `nacl-migrate-sa/scripts/generate_sa_cypher.py` render `MERGE`-based
    Cypher from the validated IR.
 5. **Execute in Neo4j** — the skill sends Cypher via `mcp__neo4j__write-cypher`.
    All writes are idempotent; re-running is safe.
@@ -120,7 +123,7 @@ phase. No phase executes without explicit approval.
 | Adapter | Status | Description |
 |---|---|---|
 | `inline-table-v1` | Current | Markdown tables with inline properties |
-| `frontmatter-v1` | Planned | YAML frontmatter per file |
+| `frontmatter-v1` | Current | YAML frontmatter per file |
 | `llm-freeform-v1` | Planned | Skill-driven parsing for loosely structured prose |
 
 The auto-detector runs `detect_ba.py` against your `docs/` tree. Use
@@ -147,10 +150,14 @@ Once `MIGRATION-REPORT.md` shows no blockers:
 
 If your project uses a Markdown convention not covered by the built-in adapters:
 
-1. Subclass `BaseBaAdapter` or `BaseSaAdapter` from
-   `nacl-migrate-core/nacl_migrate_core/adapters/base.py`.
-2. Implement the required abstract methods to produce the shared IR dataclasses
-   defined in `ir_ba.py` / `ir_sa.py`.
+1. For a BA adapter, subclass `BaseBaAdapter` from
+   `nacl-migrate-core/nacl_migrate_core/adapters/base.py` and implement its
+   abstract `detect()` and `parse()` methods to produce a `BaIR`
+   (`ir_ba.py`). For an SA adapter there is no ABC to subclass — SA adapters
+   are plain classes with the same `detect()`/`parse()` shape, but `parse()`
+   returns a `(SaIR, HandoffIR)` tuple (see `ir_sa.py` / `ir_handoff.py`) and
+   they live in the separate `SA_ADAPTERS` registry.
+2. Implement `detect()` and `parse()` to produce the shared IR dataclasses.
 3. Register the adapter in `nacl_migrate_core/adapters/__init__.py`.
 4. Add a fixture and tests under `nacl-migrate-core/tests/`.
 5. Run `python3 -m unittest discover -s tests -v` from `nacl-migrate-core/` to

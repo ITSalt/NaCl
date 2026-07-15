@@ -37,6 +37,7 @@ See `nacl-init/SKILL.md` § Auto-migrate Legacy Artefacts for the full procedura
 
 ```yaml
 project:
+  id: "my-project"
   name: "My Project"
   stack: "Next.js + Fastify + PostgreSQL"
 
@@ -44,6 +45,7 @@ git:
   strategy: "feature-branch"
   main_branch: "main"
   branch_prefix: "feature/"
+  merge_method: "squash"
 
 modules:
   frontend:
@@ -63,8 +65,9 @@ graph:
   boards_dir: "graph-infra/boards"
 
 yougile:
-  token: "your-yougile-api-token"
+  api_base: "https://yougile.com/api-v2"
   project_id: "your-project-id"
+  board_id: "your-board-id"
   columns:
     dev_done: "column-id-for-dev-done"
     done: "column-id-for-done"
@@ -101,8 +104,10 @@ vps:
 
 | Field | Type | Required | Default | Description |
 |---|---|---|---|---|
+| `id` | string | no | auto-slugified from `name` | Stable project identifier (lowercased, spaces→hyphens, `[a-z0-9_-]` only). Registered in the analyst-tool project registry (Step 2d). If `config.yaml` exists but lacks `id`, `/nacl-init` injects it automatically (Migration check E) |
 | `name` | string | yes | — | Human-readable project name, used in reports and YouGile messages |
 | `stack` | string | no | — | Technology stack description, included in context for dev skills |
+| `description` | string | no | — | Short project description, included in context for dev skills |
 
 ---
 
@@ -115,6 +120,7 @@ Controls how `nacl-tl-ship` commits and pushes code.
 | `strategy` | string | yes | `feature-branch` | `feature-branch` — always commit to a feature branch and create a PR. `direct` — commit directly to the base branch |
 | `main_branch` | string | no | `main` | Name of the base/main branch |
 | `branch_prefix` | string | no | `feature/` | Prefix for auto-created feature branches |
+| `merge_method` | string | no | `squash` | PR merge method used by `nacl-tl-release` (`gh pr merge --{merge_method}`): `squash`, `merge`, or `rebase` |
 
 **`feature-branch` strategy** creates a branch per UC/FR, opens a PR, and never commits to `main_branch`. **`direct` strategy** commits directly to `main_branch` — suitable for solo projects or hotfix workflows.
 
@@ -136,9 +142,22 @@ Defines frontend and backend modules. Each module key is arbitrary — common na
 
 ---
 
-### `graph` (required for BA/SA skills)
+### `credentials` (optional)
 
-Connection settings for Neo4j. Only needed if you use `nacl-ba-*` or `nacl-sa-*` skills.
+Infrastructure access and test users for QA/debugging. Used by `nacl-tl-qa` (E2E login), `nacl-tl-verify` (delegates to `nacl-tl-qa`), and `nacl-tl-fix` (bug reproduction).
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `db.host` / `db.port` / `db.user` / `db.database` | string/int | no | — | Infrastructure/service access for debugging. `db.password` should come from env (`DB_PASSWORD`), not be committed |
+| `[role].email` / `[role].phone` | string | no | — | Login identifier for a named test-user role (e.g. `admin`, `user`) |
+| `[role].password` | string | no | — | Password for the test-user role |
+| `[role].role` | string | no | — | Role label used by `nacl-tl-qa` E2E scripts |
+
+---
+
+### `graph` (required for graph-aware skills)
+
+Connection settings for Neo4j. Used by all `nacl-*` skills that read or write the spec graph — not just `nacl-ba-*`/`nacl-sa-*`, but also graph-aware TL skills such as `nacl-tl-plan`, `nacl-tl-full`, `nacl-tl-status`, `nacl-tl-next`, `nacl-tl-intake`, and `nacl-tl-conductor`.
 
 | Field | Type | Required | Default | Description |
 |---|---|---|---|---|
@@ -168,6 +187,12 @@ Connection settings for Neo4j. Only needed if you use `nacl-ba-*` or `nacl-sa-*`
 | `remote.client_cert` / `client_key` / `ca_cert` | string | yes | — | Paths to the developer's personal client certificate (the revocable "API key"), key, and CA. |
 | `remote.tls` | bool | no | `true` | Whether the gateway link uses TLS (it must). |
 
+**Developer identity** (`developer.id`, optional, any mode):
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `developer.id` | string | no | auto (`<git user.email \| $USER>/<machine-key>`) | Committed/per-clone override for the identity stamped on remote-mode claim-locks (`claimed_by`) and provenance (`updated_by`). Resolution precedence: `$NACL_DEVELOPER_ID` env > `developer.id` in `config.yaml` > auto per-machine derivation. See `nacl-core/scripts/resolve-developer-id.mjs`. |
+
 #### Graph mode: local vs remote
 
 By default every project runs **local** — `/nacl-init` provisions a per-project Neo4j Docker
@@ -195,12 +220,28 @@ committed `mode: remote`.
 
 YouGile integration for task tracking. If omitted, ship/deploy skills skip task moves and just report locally.
 
+The API token is **not** a config.yaml key — it is supplied via the `YOUGILE_API_KEY` environment variable to the YouGile MCP server (`nacl-init` locates it with `grep -r "YOUGILE_API_KEY" ~/.claude.json`).
+
 | Field | Type | Required | Default | Description |
 |---|---|---|---|---|
-| `token` | string | yes | — | YouGile API token |
+| `api_base` | string | no | `https://yougile.com/api-v2` | YouGile API base URL |
 | `project_id` | string | yes | — | YouGile project identifier |
+| `board_id` | string | yes | — | YouGile board identifier; `nacl-init` checks this to decide whether YouGile is configured |
+| `columns.user_requests` | string | no | — | Column where the user/client creates cards |
+| `columns.backlog` | string | no | — | Column where the agent decomposes cards into tasks |
+| `columns.in_work` | string | no | — | Column for tasks picked up for development |
 | `columns.dev_done` | string | no | — | Column ID to move tasks to after `nacl-tl-ship` |
+| `columns.ready_to_test` | string | no | — | Column for tasks ready for verification |
+| `columns.testing` | string | no | — | Column for tasks under agent verification |
+| `columns.to_release` | string | no | — | Column for verified tasks ready to deploy |
+| `columns.reopened` | string | no | — | Column for tasks that failed verification |
 | `columns.done` | string | no | — | Column ID to move tasks to after successful production deploy |
+| `stickers.task_type` | object | no | — | Sticker id + states (`task`/`bug`/`feature`) for classifying card type |
+| `stickers.module` | object | no | — | Sticker id + per-module states (e.g. `{ frontend: "id", backend: "id" }`) — read by `nacl-tl-reopened` |
+| `stickers.source` | object | no | — | Sticker id + states (`user`/`agent`) for tracking card origin |
+| `auto_create_bugs.critical` | boolean | no | `true` | Always create a bug task on critical QA findings (cannot disable) |
+| `auto_create_bugs.major` | boolean | no | `true` | Create a bug task (Reopened column) on major QA findings |
+| `auto_create_bugs.minor` | boolean | no | `false` | Create a bug task on minor QA findings |
 
 ---
 
@@ -234,6 +275,33 @@ SSH access for VPS diagnostics. Used by `nacl-tl-deploy` when a health check fai
 | `production.ip` | string | no | — | Production server IP |
 | `production.user` | string | no | — | SSH user |
 | `production.ssh_key` | string | no | — | Path to SSH private key |
+
+---
+
+### `reports` (optional)
+
+Test report storage/publishing, read by `nacl-tl-qa`. If the section is empty, reports default to local storage under `.tl/reports/`.
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `mode` | string | no | `local` | `local` — reports saved under `local_path` only. `remote` — reports also published via rsync |
+| `local_path` | string | no | `.tl/reports` | Path (relative to project root) where reports are saved |
+| `ssh_host` | string | no (required if `mode: remote`) | — | `user@ip` for rsync target |
+| `remote_path` | string | no | `/srv/reports` | Remote path reports are rsynced to |
+| `domain` | string | no | — | Public domain reports are served under (e.g. `reports.example.com`) |
+| `retention_days` | integer | no | `30` | Days to retain published reports |
+
+---
+
+### `docmost` (optional)
+
+Docmost documentation-publishing connection settings, read by `nacl-publish` (and `sa-publish`/`ba-publish`). Manifest files under `docs/.docmost-sync*.json` track page-level sync state only — `space_id`/`root_page_id` live here.
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `api_url` | string | no | — | Docmost API base URL (e.g. `https://docs.example.com/api`). Credentials come from env: `DOCMOST_EMAIL`, `DOCMOST_PASSWORD` |
+| `spaces.sa.space_id` / `spaces.sa.root_page_id` | string | no | — | Docmost space and root page for SA documentation |
+| `spaces.ba.space_id` / `spaces.ba.root_page_id` | string | no | — | Docmost space and root page for BA documentation |
 
 ---
 
@@ -288,7 +356,7 @@ Skills use the following priority order when looking up values:
 | Health endpoint | `deploy.[env].health_endpoint` > fallback `/api/health` |
 | Intake scoring | `intake.route_threshold` / `intake.high_confidence` / `intake.scores.*` > per-key fallback to `nacl-tl-core/references/intake-scoring.md` defaults |
 
-If `config.yaml` is missing entirely, all fields fall back to their defaults. Skills that require `graph.*` (BA/SA layer) or `deploy.*` (deploy monitoring) will report an error when those sections are absent — there is no sensible default for a database URL or server address.
+If `config.yaml` is missing entirely, all fields fall back to their defaults. Skills that require `graph.*` (BA/SA and graph-aware TL skills) or `deploy.*` (deploy monitoring) will report an error when those sections are absent — there is no sensible default for a database URL or server address.
 
 ### Branch-name discipline (for skill authors)
 
@@ -297,7 +365,7 @@ If `config.yaml` is missing entirely, all fields fall back to their defaults. Sk
 - **Never hardcode a branch name** (`main`, `master`, `develop`, …) in a `git`/`gh` command. Always resolve and use the variable — `{main_branch}` (or `<git_base_branch>` for per-module flows) — from the resolution chain above. The fallback default *being* `"main"` masks the bug: a literal `main` works on default projects and silently breaks the moment a project sets `git.main_branch`/`git_base_branch` to anything else.
 - **Never duplicate config values into a convenience table** inside a skill (e.g. a per-module "Base branch" column listing literal branch names). That table becomes a second source of truth and goes stale the instant someone renames a branch in `config.yaml`. Reference the config key instead — point the reader at `config.yaml → modules.[name].git_base_branch`.
 
-A literal branch name in a git command inside a shell code fence is rejected by CI (`scripts/check-branch-literals.sh`, wired into `Lint Skills`). Prose, output blocks, and prohibition rules ("never `git checkout main`") are not flagged; if a literal is genuinely intentional, append `# branch-literal-ok` to that line. The runtime counterpart of this rule — what to do when you *find* such a hardcoded value in an existing skill — is in `nacl-tl-core/references/tl-protocol.md` ("Skill / framework defects").
+A literal branch name in a git command inside a shell code fence is rejected by CI (`scripts/check-branch-literals.sh`, wired into `Lint Skills`). Prose, output blocks, and prohibition rules ("never `git checkout main`") are not flagged; if a literal is genuinely intentional, append `# branch-literal-ok` to that line. The runtime counterpart of this rule — what to do when you *find* such a hardcoded value in an existing skill — is in `nacl-tl-core/references/tl-protocol.md`, § 8 "Дефекты в глобальных скиллах (выноси и жди)" ("Skill / framework defects — surface and wait").
 
 ---
 
@@ -369,3 +437,39 @@ Controls the directory where NaCl stores its per-user registry file (`projects.j
 | **Read by** | `nacl-init` (when registering a project) and the NaCl Analyst Tool (when listing projects in the UI) |
 
 Use cases: per-user override on shared machines where `$HOME` is a network drive, or pointing at a test directory during development. The full registry path resolves to `$NACL_HOME/projects.json`. Canonical implementation: `analyst-tool/server/src/services/project-registry.ts`, function `getRegistryPath()`.
+
+---
+
+### `NEO4J_MCP_VERSION`
+
+Pins (or overrides) the `neo4j-mcp` binary version resolved by `graph-setup.sh`.
+
+| | |
+|---|---|
+| **Default** | pinned version from `neo4j-mcp.pin` |
+| **Override** | `export NEO4J_MCP_VERSION=<tag>` (or `=latest` to resolve the newest release, **skipping checksum verification** — a warning is printed) |
+| **Read by** | `nacl-tl-core/scripts/setup-graph.sh` |
+
+---
+
+### `NACL_DEVELOPER_ID`
+
+Explicit override for the identity stamped on remote-mode claim-locks (`claimed_by`) and provenance (`updated_by`). Highest-precedence source ahead of `config.yaml → developer.id` and the auto per-machine derivation.
+
+| | |
+|---|---|
+| **Default** | unset — falls back to `config.yaml → developer.id`, then auto `<git user.email \| $USER>/<machine-key>` |
+| **Override** | `export NACL_DEVELOPER_ID=<id>` |
+| **Read by** | `nacl-core/scripts/resolve-developer-id.mjs` |
+
+---
+
+### `NACL_ALLOW_DUAL`
+
+Opts out of the plugin/symlink coexistence warning (v2.24.0+). By default, if both the Claude Code Desktop plugin and repo-side symlinked skills are detected on the same machine, the plugin's SessionStart hook warns to avoid duplicate/conflicting skills.
+
+| | |
+|---|---|
+| **Default** | unset — coexistence warning is active |
+| **Override** | `export NACL_ALLOW_DUAL=1` |
+| **Read by** | `plugin/scripts/check-coexistence.sh` |

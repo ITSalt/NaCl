@@ -69,9 +69,9 @@ What do you need?
 | Add a feature incrementally | `/nacl-sa-feature` | |
 | Design modules (bounded contexts) | `/nacl-sa-architect` | |
 | Create domain model | `/nacl-sa-domain IMPORT_BA` | Modes: `IMPORT_BA`, `CREATE`, `MODIFY`, `FULL` |
-| Define use cases | `/nacl-sa-uc stories` | Also: `detail UC-ID`, `list` |
+| Define use cases | `/nacl-sa-uc stories` | Also: `detail UC-ID`, `slices`, `errors`, `resilience`, `list` |
 | Define system roles | `/nacl-sa-roles IMPORT_BA` | Modes: `IMPORT_BA`, `CREATE`, `MODIFY`, `FULL` |
-| Design UI architecture | `/nacl-sa-ui verify` | Also: `components`, `navigation`, `full` |
+| Design UI architecture | `/nacl-sa-ui verify` | Also: `components`, `navigation`, `state-machine`, `full` |
 | Validate specification | `/nacl-sa-validate` | Modes: `internal`, `ba-cross`; `--scope` |
 | Finalize specification | `/nacl-sa-finalize` | Modes: `full`, `module`, `stats-only` |
 
@@ -79,7 +79,7 @@ What do you need?
 
 | Situation | Skill | Key modifiers |
 |-----------|-------|---------------|
-| Full lifecycle (BE+FE+QA+docs) | `/nacl-tl-full --task UC001` | `--wave`, `--feature`, `--skip-plan`, `--skip-qa`, `--yes` |
+| Full lifecycle (BE+FE+QA+docs) | `/nacl-tl-full --task UC001` | `--wave`, `--feature`, `--yes` |
 | Backend TDD | `/nacl-tl-dev-be UC001` | `--continue`, `--dry-run` |
 | Frontend TDD | `/nacl-tl-dev-fe UC001` | `--continue`, `--dry-run` |
 | TECH/infrastructure task | `/nacl-tl-dev TECH001` | `--continue`, `--dry-run` |
@@ -94,10 +94,10 @@ What do you need?
 | Situation | Skill | Key modifiers |
 |-----------|-------|---------------|
 | Commit + push + PR | `/nacl-tl-ship` | `--deploy`, `--feature` |
-| Emergency hotfix to production | `/nacl-tl-hotfix --apply` | `--cherry-pick`, `--force-push`, `--rebase-feature`, `--dry-run`, `--yes` |
-| Full delivery (push → CI → staging → verify) | `/nacl-tl-deliver` | `--feature`, `--env`, `--skip-verify`, `--skip-deploy` |
+| Emergency hotfix to production | `/nacl-tl-hotfix --apply` | `--cherry-pick`, `--push-direct-to-main`, `--rebase-feature`, `--dry-run`, `--yes` |
+| Full delivery (push → CI → staging → verify) | `/nacl-tl-deliver` | `--feature`, `--env` |
 | Monitor CI/CD deployment | `/nacl-tl-deploy` | `--staging`, `--production`, `--watch` |
-| Merge PRs + deploy verify + release tag | `/nacl-tl-release` | `--major\|--minor\|--patch`, `--skip-merge`, `--pr N,N`, `--dry-run`, `--yes` |
+| Merge PRs + deploy verify + release tag | `/nacl-tl-release` | `--major\|--minor\|--patch`, `--pr N,N`, `--dry-run`, `--yes` |
 
 ### Planning & Status
 
@@ -105,7 +105,7 @@ What do you need?
 |-----------|-------|---------------|
 | Create development plan from SA | `/nacl-tl-plan` | `--feature FR-NNN` |
 | Triage user requests | `/nacl-tl-intake` | |
-| Full batch workflow | `/nacl-tl-conductor` | `--items`, `--feature`, `--skip-deliver`, `--skip-qa`, `--yes` |
+| Full batch workflow | `/nacl-tl-conductor` | `--items`, `--feature`, `--yes` |
 | Project status | `/nacl-tl-status` | `--waves`, `--be\|--fe\|--tech`, `--qa`, `--blocked`, `--compact` |
 | Next task recommendation | `/nacl-tl-next` | `--be\|--fe\|--tech`, `--wave N`, `--list`, `--review\|--sync\|--qa` |
 
@@ -114,17 +114,17 @@ What do you need?
 | Situation | Skill | Key modifiers |
 |-----------|-------|---------------|
 | Fix a bug (spec-first) | `/nacl-tl-fix "description"` | `--dry-run`, `--l1`, `--auto-ship` |
-| Emergency hotfix (bypass feature branch) | `/nacl-tl-hotfix` | `--apply`, `--cherry-pick`, `--force-push` |
+| Emergency hotfix (bypass feature branch) | `/nacl-tl-hotfix` | `--apply`, `--cherry-pick`, `--push-direct-to-main` |
 | Fix reopened tasks (QA failures) | `/nacl-tl-reopened` | `--task`, `--all`, `--yes`, `--auto-ship`, `--dry-run` |
 | Diagnose project health | `/nacl-tl-diagnose` | `--since`, `--focus` |
-| Reconcile docs with code | `/nacl-tl-reconcile` | `--report`, `--scope`, `--dry-run`, `--force` |
+| Reconcile docs with code | `/nacl-tl-reconcile` | `--report`, `--scope`, `--dry-run` |
 | Verify implementation correctness | `/nacl-tl-verify-code UC001` | `--task`, `--files` |
 
 ### Visualization & Publishing
 
 | Situation | Skill | Key modifiers |
 |-----------|-------|---------------|
-| Render graph to Markdown/Excalidraw | `/nacl-render md uc UC-101` | Namespaces: `md`, `excalidraw`; `--output` |
+| Render graph to Markdown | `/nacl-render md uc UC-101` | Namespace: `md`; `--output` (Excalidraw board rendering moved to analyst-tool) |
 | Publish to Docmost | `/nacl-publish docmost` | Also: `boards`, `full`, `docmost-incremental` |
 
 ### Goal-driven workflows
@@ -133,8 +133,10 @@ Use `/nacl-goal` when you want an alias-driven autonomous loop instead of runnin
 manually turn by turn. It wraps Anthropic's `/goal` with NaCl gate enforcement and the
 GOAL_PROOF protocol so the transcript-only evaluator has something deterministic to judge.
 Run without `--start` for a full preview (tier, soft budget, check script, denylist); add
-`--start` to issue the real `/goal`. See [docs/guides/goal-command.md](guides/goal-command.md)
-for the complete reference.
+`--start` to issue the real `/goal`. The `intake` (2.10.1) and `conduct` (2.18.0) aliases are
+the exception: they are autonomy-by-default and issue `/goal` without `--start` (opt out with
+`--plan-only`). See [docs/guides/goal-command.md](guides/goal-command.md) for the complete
+reference.
 
 ## Next Steps
 

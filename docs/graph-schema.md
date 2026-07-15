@@ -93,7 +93,8 @@ System Analysis nodes capture the "how the system is built" level — modules, u
 | `EnumValue` | A value within an `Enumeration` | `id`, `value` |
 | `Form` | A UI form used in a use case | `id`, `name` |
 | `FormField` | A field within a `Form` | `id`, `name` |
-| `Requirement` | A functional or non-functional requirement | `id`, `description` |
+| `Requirement` | A functional or non-functional requirement | `id`, `description`, `anchor_exempt` |
+| `FeatureRequest` | A graph-native change anchor (scope for a set of UCs/decisions) | `id`, `slug`, `title`, `description`, `status`, `created_at`, `source_skill`, `markdown_path` |
 | `SystemRole` | A system-level actor with CRUD permissions | `id`, `name` |
 | `Component` | A reusable UI component | `id`, `name` |
 | `Decision` | A graph-native design-decision / rationale record (provenance) | `id`, `title`, `chosen`, `rationale`, `source`, `status`, `created_at`, `created_by`, `level` |
@@ -134,6 +135,7 @@ System Analysis nodes capture the "how the system is built" level — modules, u
 | `HAS_STEP` | `UseCase` → `ActivityStep` | `order: Int` |
 | `USES_FORM` | `UseCase` → `Form` | Use case references form |
 | `HAS_REQUIREMENT` | `UseCase` → `Requirement` | Use case governed by requirement |
+| `REALIZED_BY` | `Requirement` → `ActivityStep`/`FormField`/`Form`/`Screen` | `provenance: 'authored'|'backfill'`, `anchor_kind: 'functional'|'behavioral'|'validation'|'interface'` — the outgoing anchor from a requirement to what implements it; target label must match `anchor_kind` (validator L3.7b). Many-valued. Exempt (no edge required): NFR/ADR/question/assumption-class requirements, or any requirement flagged `anchor_exempt=true`. Hard L3.7 CRITICAL gate |
 | `DEPENDS_ON` | `UseCase` → `UseCase` | Use case dependency |
 | `ACTOR` | `UseCase` → `SystemRole` | Role that performs use case |
 | `HAS_ATTRIBUTE` | `DomainEntity` → `DomainAttribute` | Entity owns attribute |
@@ -145,8 +147,12 @@ System Analysis nodes capture the "how the system is built" level — modules, u
 | `HAS_PERMISSION` | `SystemRole` → `DomainEntity` | `crud: String` |
 | `USED_IN` | `Component` → `Form` | UI component used in form |
 | `EXPOSES` | `UseCase` → `APIEndpoint` | Use case exposed via API |
-| `JUSTIFIES` | `Decision` → `UseCase`/`DomainEntity`/`Module`/`Requirement`/`Form`/`Component`/`Enumeration`/`APIEndpoint`/`Screen`/`Slice` | `role: 'creates'|'shapes'|'constrains'` — decision shaped artifact |
+| `JUSTIFIES` | `Decision` → `UseCase`/`DomainEntity`/`Module`/`Requirement`/`Form`/`Component`/`Enumeration`/`APIEndpoint`/`Screen`/`Slice`/`DomainError`/`CachePolicy`/`DegradationRule` | `role: 'creates'|'shapes'|'constrains'` — decision shaped artifact |
 | `SUPERSEDES` | `Decision` → `Decision` | Newer decision replaces older (sets older `status='superseded'`) — the evolving-rationale chain |
+| `INCLUDES_UC` | `FeatureRequest` → `UseCase` | `kind: 'new'|'modified'` — FR scopes a use case |
+| `AFFECTS_MODULE` | `FeatureRequest` → `Module` | FR impacts a module (architectural touchpoint) |
+| `AFFECTS_ENTITY` | `FeatureRequest` → `DomainEntity` | FR impacts a domain entity (new or modified) |
+| `RAISES_REQUIREMENT` | `FeatureRequest` → `Requirement` | FR introduces or updates a requirement (optional) |
 | `IMPLEMENTS` | `FeatureRequest` → `Decision` | FR is the change anchor that carried out the decision |
 | `HAS_SCREEN` | `UseCase` → `Screen` | Required parent of every screen |
 | `RENDERS` | `Screen` → `Form` | Required bridge: domain changes reach the screen through it (exempt: `formless=true`) |
@@ -179,8 +185,19 @@ System Analysis nodes capture the "how the system is built" level — modules, u
 | Type | Target | Field |
 |---|---|---|
 | Unique constraint | All SA node labels | `id` |
-| Index | All SA node labels | `name` / `description` / `value` |
+| Index | Most SA node labels | `name` / `description` / `value` (the label's primary lookup property) |
 | Index | `DomainEntity` | `module` (additional) |
+| Index | `FeatureRequest` | `status`, `created_at` |
+| Index | `Decision` | `status`, `created_at`; full-text index on `title`, `context`, `rationale` |
+| Index | `ScreenState` | `state_kind` |
+| Index | `ScreenEvent` | `event_kind` |
+| Index | `ScreenEffect` | `effect_kind` |
+| Index | `Slice` | `slice_kind` (in addition to `name`) |
+| Index | `DomainError` | `code`, `error_kind` |
+| Index | `ErrorPresentation` | `presentation_kind` |
+| Index | `CachePolicy` | `invalidation_kind` (in addition to `name`) |
+| Index | `DegradationRule` | `trigger_kind` (in addition to `name`) |
+| — | `Transition` | No index defined (unique `id` constraint only) |
 
 ---
 

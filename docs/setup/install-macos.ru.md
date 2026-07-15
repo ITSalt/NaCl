@@ -13,7 +13,11 @@
    `npm install -g @anthropic-ai/claude-code && claude login`
 
 Скиллы NaCl работают с Claude Code CLI, десктоп-приложением Claude,
-расширениями IDE и Codex. Установите пакет скиллов под вашу среду.
+расширениями IDE и Codex. **Claude Code Desktop ставится через плагин
+`nacl`** (`/plugin marketplace add ITSalt/NaCl`, затем `/plugin install
+nacl@nacl` внутри Desktop) — не через симлинк-скрипт ниже. На одной
+машине выбирайте один канал, не устанавливайте оба. Полную матрицу
+каналов см. [Установка скиллов, раздел «Выберите канал»](install-skills.ru.md).
 
 ## Установка
 

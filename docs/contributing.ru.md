@@ -69,7 +69,7 @@ description: |
 
 ## Языковые конвенции
 
-- **BA/SA скиллы** (`nacl-ba-*`, `nacl-sa-*`): на русском. Язык скилла определяет язык работы Claude с пользователем.
+- **BA/SA скиллы** (`nacl-ba-*`, `nacl-sa-*`): написаны на английском (многие SKILL.md вообще не содержат кириллицы). Язык работы с пользователем определяется **не** языком самого файла скилла, а разрешением `--lang` флаг > `config.yaml` `project.lang` > дефолт `ru`, см. [nacl-core/lang-directive.md](../nacl-core/lang-directive.md). По умолчанию (без `--lang=en`) вывод BA/SA — на русском.
 - **TL скиллы** (`nacl-tl-*`): на английском.
 - **CLAUDE.md файлы**: всегда на английском.
 - **Документация (docs/)**: английский основной, русский как `*.ru.md`.
@@ -109,6 +109,19 @@ sh skills-for-codex/scripts/check-root-codex-sync.sh origin/main HEAD
 
 Frontmatter у Codex SKILL.md отличается от Claude-скиллов:
 `skills-for-codex/*/SKILL.md` использует только `name` и `description`.
+
+### Синхронизация Desktop-плагина
+
+Если меняются `nacl-*/**` или `.claude/agents/**`, перегенерируйте
+закоммиченный артефакт `plugin/`:
+
+```sh
+node scripts/build-plugin.mjs
+```
+
+CI (`.github/workflows/build-plugin.yml`) запускает
+`node scripts/build-plugin.mjs --check` на каждом PR, затрагивающем эти пути,
+и падает, если `plugin/` устарел.
 
 ## Стиль кода (CLI-инструменты)
 

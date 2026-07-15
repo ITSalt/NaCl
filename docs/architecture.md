@@ -47,7 +47,7 @@ This enables:
 Level 4: nacl-tl-conductor          (full pipeline: intake → dev → staging)
 Level 3: nacl-ba-full / nacl-sa-full / nacl-tl-full   (layer orchestrators)
 Level 2: nacl-ba-context / nacl-tl-dev-be / nacl-tl-qa      (individual skills)
-Level 1: nacl-core / tl-core                       (shared references)
+Level 1: nacl-core / nacl-tl-core                   (shared references)
 ```
 
 **Level 4** orchestrates the entire workflow — from user requests to deployed code.
@@ -117,16 +117,15 @@ graph:                          # only if using graph skills
   neo4j_bolt_port: 3587
   neo4j_http_port: 3574
   neo4j_password: "neo4j_graph_dev"
-  excalidraw_port: 3580
   container_prefix: "my-project"
-  boards_dir: "graph-infra/boards"
+  boards_dir: "graph-infra/boards"  # Excalidraw boards, managed by the analyst-tool
 ```
 
 Skills read `config.yaml` at runtime to adapt behavior to the project.
 
 ## Next Steps
 
-- [Agent Architecture](agents.md) — model selection, 6 cognitive profiles, delegation patterns
+- [Agent Architecture](agents.md) — model selection, 7 cognitive profiles, delegation patterns
 - [Skills Reference](skills-reference.md) — complete catalog of all skills
 - [Workflows](workflows.md) — end-to-end scenarios
 - [Quick Start](quickstart.md) — get started in 10 minutes
