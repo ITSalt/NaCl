@@ -27,7 +27,7 @@ whole-tree restore, merge/rebase старой integration, массовый cher
 | Актуальный локальный `main` | `d828e54dc3329c5b2664df5e388badb83fc5d83e` |
 | Проверенный `origin/main` | `d828e54dc3329c5b2664df5e388badb83fc5d83e` |
 | Старая accepted Codex integration | `c959879c2b6270d41da0c5d4bc4eb0b00bf9bbc7` |
-| Результирующее дерево пробного `git merge-tree --write-tree` | `01cc452cf96d3b1f6159fd64686944a2a56bdeb4` (с конфликтами, не кандидат) |
+| Результирующее дерево пробного `git merge-tree --write-tree` | `d75384357e6d8fc3676f9e486c297dbb77951888` (с конфликтами, не кандидат) |
 
 Непосредственно перед этим аудитом orchestrator выполнил `git fetch origin
 main`; локальные `main` и `origin/main` совпали. Эта проверка имеет срок жизни
