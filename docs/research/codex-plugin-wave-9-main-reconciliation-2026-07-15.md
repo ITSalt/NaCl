@@ -29,6 +29,20 @@ whole-tree restore, merge/rebase старой integration, массовый cher
 | Старая accepted Codex integration | `c959879c2b6270d41da0c5d4bc4eb0b00bf9bbc7` |
 | Результирующее дерево пробного `git merge-tree --write-tree` | `d75384357e6d8fc3676f9e486c297dbb77951888` (с конфликтами, не кандидат) |
 
+Точный воспроизводящий вызов:
+
+```bash
+git merge-tree --write-tree main codex/desktop-plugin-integration
+```
+
+При разрешении `main=d828e54dc3329c5b2664df5e388badb83fc5d83e` и
+`codex/desktop-plugin-integration=c959879c2b6270d41da0c5d4bc4eb0b00bf9bbc7`
+первая строка ожидаемо равна `d75384357e6d8fc3676f9e486c297dbb77951888`.
+Tree SHA зависит от branch-versus-exact-SHA labels внутри conflict-marker blobs,
+поэтому сравнивать его допустимо только для идентичной команды. Acceptance
+сравнивает прежде всего общий base SHA, множество 25 пересечений и множество 24
+конфликтов; один tree SHA без этих множеств доказательством не является.
+
 Непосредственно перед этим аудитом orchestrator выполнил `git fetch origin
 main`; локальные `main` и `origin/main` совпали. Эта проверка имеет срок жизни
 только до следующего изменения remote и обязательно повторяется перед любым
@@ -216,6 +230,13 @@ merge, rebase, pull, clean или генерации. На момент ауди
 | `.codex/` | 7 TOML-файлов, 13,755 bytes; SHA-256 хеш отсортированного hash-manifest: `927c01ea051446f362bae8c9afb71ba47263c49a3e76c1f8ee00af880657855e` |
 | `docs/presentations/ba-sa-live-demo/client-brief.md` | 7,752 bytes; SHA-256 `0ff11f5b1bcf87fe81719536a2946bb764be497455bd22c5cdbfb6fb3f1e32ab` |
 | `docs/runbooks/codex-desktop-plugin-orchestrator.md` | 1,490 lines, 51,364 bytes; SHA-256 `3ed49c33f90e252e7892b08630dd046a3304ad72fe5e4b759dd3d957d8023899` |
+
+Hash-manifest `.codex/` получен из точного cwd исходного checkout:
+
+```bash
+cd /Users/maxnikitin/projects/NaCl
+find .codex -type f -print0 | sort -z | xargs -0 shasum -a 256 | shasum -a 256
+```
 
 Tracked runbook из `c959879` имеет 1,725 lines и SHA-256
 `134c6562ec5dfd944d142c49fd9334e5626231eed5ceb844fcf5e89fb5e8eec4`.
