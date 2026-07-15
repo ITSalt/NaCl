@@ -154,8 +154,39 @@ render_gateway_allowlist() {
   local gdir="$1"
   local compose="$gdir/docker-compose.yml"
   local allow="$gdir/allowed-cns"
-  local frag="$gdir/.allow-cn.frag"
-  [ -f "$compose" ] || _ca_die "no compose at $compose"
+  local start_marker='# >>> NACL allow-cn (managed)'
+  local end_marker='# <<< NACL allow-cn (managed)'
+  local start_count end_count start_line end_line work frag rendered candidate actual
+  if [ ! -f "$compose" ]; then
+    _ca_log "ERROR: no compose at $compose"
+    return 1
+  fi
+  start_count=$(awk -v marker="$start_marker" '
+    { rest=$0; while ((position=index(rest, marker)) > 0) { count++; rest=substr(rest, position + length(marker)); } }
+    END { print count + 0 }
+  ' "$compose")
+  end_count=$(awk -v marker="$end_marker" '
+    { rest=$0; while ((position=index(rest, marker)) > 0) { count++; rest=substr(rest, position + length(marker)); } }
+    END { print count + 0 }
+  ' "$compose")
+  if [ "$start_count" -ne 1 ] || [ "$end_count" -ne 1 ]; then
+    _ca_log "ERROR: compose must contain exactly one managed allow-cn marker pair: $compose"
+    return 1
+  fi
+  start_line=$(grep -F -n -- "$start_marker" "$compose" | cut -d: -f1)
+  end_line=$(grep -F -n -- "$end_marker" "$compose" | cut -d: -f1)
+  if [ "$start_line" -ge "$end_line" ]; then
+    _ca_log "ERROR: managed allow-cn markers are misordered: $compose"
+    return 1
+  fi
+  work=$(mktemp -d "$gdir/.allow-cn.render.XXXXXX") || {
+    _ca_log "ERROR: cannot allocate allow-cn render workspace in $gdir"
+    return 1
+  }
+  frag="$work/expected"
+  rendered="$work/rendered"
+  candidate="$work/docker-compose.yml"
+  actual="$work/actual"
   : > "$frag"
   if [ -s "$allow" ]; then
     while IFS= read -r cn; do
@@ -170,7 +201,35 @@ render_gateway_allowlist() {
     /# >>> NACL allow-cn \(managed\)/ { print; printf "%s", frag; inblock=1; next }
     /# <<< NACL allow-cn \(managed\)/ { inblock=0; print; next }
     !inblock { print }
-  ' "$compose" > "$compose.tmp" && mv "$compose.tmp" "$compose"
-  rm -f "$frag"
+  ' "$compose" > "$rendered" || {
+    rm -rf "$work"
+    _ca_log "ERROR: failed to render managed allow-cn block in $compose"
+    return 1
+  }
+  if ! cp -p "$compose" "$candidate" || ! cat "$rendered" > "$candidate"; then
+    rm -rf "$work"
+    _ca_log "ERROR: failed to preserve compose metadata for managed allow-cn projection in $compose"
+    return 1
+  fi
+  awk '
+    /# >>> NACL allow-cn \(managed\)/ { inblock=1; next }
+    /# <<< NACL allow-cn \(managed\)/ { inblock=0; next }
+    inblock { print }
+  ' "$candidate" > "$actual" || {
+    rm -rf "$work"
+    _ca_log "ERROR: failed to read back managed allow-cn block in $compose"
+    return 1
+  }
+  if ! cmp -s "$frag" "$actual"; then
+    rm -rf "$work"
+    _ca_log "ERROR: managed allow-cn projection read-back mismatch in $compose"
+    return 1
+  fi
+  if ! mv "$candidate" "$compose"; then
+    rm -rf "$work"
+    _ca_log "ERROR: failed to commit managed allow-cn projection in $compose"
+    return 1
+  fi
+  rm -rf "$work"
   _ca_log "rendered $( [ -s "$allow" ] && wc -l < "$allow" || echo 0 ) allowed CN(s) into $compose"
 }

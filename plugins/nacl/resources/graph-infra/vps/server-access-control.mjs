@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 import { createHash, randomBytes } from "node:crypto";
 import {
-  chmodSync, existsSync, lstatSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync,
+  accessSync, chmodSync, constants, existsSync, lstatSync, mkdirSync, readFileSync, readdirSync,
+  renameSync, rmSync, writeFileSync,
 } from "node:fs";
 import path from "node:path";
 
@@ -94,6 +95,22 @@ function controller(options) {
   function locked(operation) {
     try { mkdirSync(lockPath, { mode: 0o700 }); } catch { die("STATE_LOCKED", "server access state is locked"); }
     try { return operation(); } finally { rmSync(lockPath, { recursive: true, force: true }); }
+  }
+  function preflightArtifactTree(root) {
+    try { accessSync(path.dirname(root), constants.W_OK | constants.X_OK); } catch {
+      die("OWNED_ARTIFACT_CLEANUP_FAILED", "project state parent is not renameable");
+    }
+    function visit(filename) {
+      const metadata = lstatSync(filename);
+      if (metadata.isSymbolicLink()) die("OWNED_ARTIFACT_CLEANUP_FAILED", "owned project artifacts cannot contain symlinks");
+      if (metadata.isDirectory()) {
+        try { accessSync(filename, constants.R_OK | constants.W_OK | constants.X_OK); } catch {
+          die("OWNED_ARTIFACT_CLEANUP_FAILED", "owned project artifact directory is not fully accessible");
+        }
+        for (const name of readdirSync(filename).sort()) visit(path.join(filename, name));
+      } else if (!metadata.isFile()) die("OWNED_ARTIFACT_CLEANUP_FAILED", "owned project artifacts contain an unsupported file type");
+    }
+    visit(root);
   }
   function reconcileGrant(next, successCode) {
     const inventory = readInventory();
@@ -216,15 +233,42 @@ function controller(options) {
         const gateway = inventory.gateways[index];
         if (!gateway || gateway.provisioning !== true || gateway.release_pending !== true || gateway.reservation_token !== reservationToken) die("RESERVATION_MISMATCH", "gateway release is missing or stale");
         const projectDir = path.dirname(projectFile(projectScope));
-        try {
-          rmSync(projectDir, { recursive: true, force: true });
-        } catch (error) {
-          die("OWNED_ARTIFACT_CLEANUP_FAILED", `owned project artifacts could not be removed: ${error.message}`);
+        const tokenDigest = createHash("sha256").update(reservationToken).digest("hex").slice(0, 16);
+        const tombstone = path.join(stateDir, `.nacl-release-${projectScope}-${tokenDigest}`);
+        const projectExists = existsSync(projectDir);
+        const tombstoneExists = existsSync(tombstone);
+        if (projectExists && tombstoneExists) die("OWNED_ARTIFACT_CLEANUP_FAILED", "project state and its release tombstone both exist");
+        let artifactsMoved = false;
+        if (projectExists) {
+          preflightArtifactTree(projectDir);
+          try { renameSync(projectDir, tombstone); } catch (error) {
+            die("OWNED_ARTIFACT_CLEANUP_FAILED", `owned project artifacts could not be tombstoned: ${error.message}`);
+          }
+          artifactsMoved = true;
+        } else if (tombstoneExists) {
+          preflightArtifactTree(tombstone);
+          artifactsMoved = true;
         }
-        if (existsSync(projectDir)) die("OWNED_ARTIFACT_CLEANUP_FAILED", "owned project artifacts still exist after cleanup");
         inventory.gateways.splice(index, 1);
-        writeInventory(inventory);
-        return { status: "VERIFIED", code: "GATEWAY_RESERVATION_RELEASED", project_scope: projectScope, gateway_port: gateway.gateway_port };
+        try {
+          writeInventory(inventory);
+        } catch (error) {
+          inventory.gateways.splice(index, 0, gateway);
+          if (artifactsMoved && !existsSync(projectDir) && existsSync(tombstone)) {
+            try { renameSync(tombstone, projectDir); } catch (rollbackError) {
+              die("OWNED_ARTIFACT_CLEANUP_ROLLBACK_FAILED", `inventory commit failed and artifact rename rollback failed: ${rollbackError.message}`);
+            }
+          }
+          die("OWNED_ARTIFACT_CLEANUP_FAILED", `inventory commit failed after artifact tombstone: ${error.message}`);
+        }
+        return {
+          status: "VERIFIED",
+          code: "GATEWAY_RESERVATION_RELEASED",
+          project_scope: projectScope,
+          gateway_port: gateway.gateway_port,
+          artifact_gc_status: artifactsMoved ? "RETAINED" : "NOT_REQUIRED",
+          ...(artifactsMoved ? { artifact_tombstone: tombstone } : {}),
+        };
       });
     },
     grant(value) {

@@ -15,7 +15,14 @@ reload_all_registered_gateways() {
     process.stdin.on("end", () => {
       const value = JSON.parse(text);
       for (const gateway of value.gateways ?? []) {
-        const active = gateway.enabled === true || (gateway.provisioning === true && gateway.release_pending !== true);
+        const releasePending = gateway.release_pending === true;
+        const quarantined = gateway.quarantine_reason !== null && gateway.quarantine_reason !== "provisioning";
+        const enabledActive = gateway.enabled === true && gateway.provisioning !== true
+          && !releasePending && gateway.quarantine_reason === null;
+        const pristineProvisioning = gateway.enabled === false && gateway.provisioning === true
+          && !releasePending && gateway.quarantine_reason === "provisioning"
+          && /^[0-9a-f]{32}$/.test(gateway.reservation_token ?? "");
+        const active = !releasePending && !quarantined && (enabledActive || pristineProvisioning);
         process.stdout.write(`${gateway.project_scope}:${active ? "up" : "stop"}\n`);
       }
     });
