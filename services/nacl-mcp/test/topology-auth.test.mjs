@@ -61,9 +61,9 @@ async function fixture({ rateLimit = 100 } = {}) {
   });
   const control = createServerControlPlane({
     routes: [
-      { project_ref: PROJECT_A1, server_id: "server-a", project_scope: "scope-a1", enabled: true },
-      { project_ref: PROJECT_A2, server_id: "server-a", project_scope: "scope-a2", enabled: true },
-      { project_ref: PROJECT_B1, server_id: "server-b", project_scope: "scope-b1", enabled: true },
+      { project_ref: PROJECT_A1, server_id: "server-a", project_scope: "scope-a1", label: "Alpha", enabled: true },
+      { project_ref: PROJECT_A2, server_id: "server-a", project_scope: "scope-a2", label: "Beta", enabled: true },
+      { project_ref: PROJECT_B1, server_id: "server-b", project_scope: "scope-b1", label: "Gamma", enabled: true },
     ],
     serverRegistries: new Map([["server-a", registryA], ["server-b", registryB]]),
   });
@@ -118,6 +118,32 @@ test("verified OAuth context maps one principal to both projects on server A and
   assert.equal(ctx.graph.calls.length, before);
 });
 
+test("project discovery returns only opaque refs and labels from authorized servers, supports two grants, and hides revoked server routes", async () => {
+  const ctx = await fixture();
+  const initial = await ctx.context("token-alice-session-one");
+  const beforeCalls = ctx.graph.calls.length;
+  const listed = await ctx.app({ name: "nacl_projects_list", arguments: {}, authContext: initial, requiredScope: "nacl.server.read" });
+  assert.deepEqual(listed.data.projects, [
+    { project_ref: PROJECT_A1, label: "Alpha" },
+    { project_ref: PROJECT_A2, label: "Beta" },
+  ]);
+  assert.equal(ctx.graph.calls.length, beforeCalls);
+  assert.doesNotMatch(JSON.stringify(listed), /server-a|server-b|scope-a|scope-b/);
+
+  await ctx.control.grantServer({ subject: "subject-alice", serverId: "server-b" });
+  ctx.tokens.set("token-alice-two-servers", token("subject-alice", "session-alice-both", ctx.control.currentTokenEpoch("subject-alice"), ctx.allScopes));
+  const both = await ctx.context("token-alice-two-servers");
+  const across = await ctx.app({ name: "nacl_projects_list", arguments: {}, authContext: both, requiredScope: "nacl.server.read" });
+  assert.deepEqual(across.data.projects.map((project) => project.label), ["Alpha", "Beta", "Gamma"]);
+
+  await ctx.control.revokeServer({ subject: "subject-alice", serverId: "server-b" });
+  await assert.rejects(ctx.app({ name: "nacl_projects_list", arguments: {}, authContext: both, requiredScope: "nacl.server.read" }), (error) => error.code === "REAUTHORIZATION_REQUIRED");
+  ctx.tokens.set("token-alice-after-revoke", token("subject-alice", "session-alice-after", ctx.control.currentTokenEpoch("subject-alice"), ctx.allScopes));
+  const after = await ctx.context("token-alice-after-revoke");
+  const filtered = await ctx.app({ name: "nacl_projects_list", arguments: {}, authContext: after, requiredScope: "nacl.server.read" });
+  assert.deepEqual(filtered.data.projects.map((project) => project.label), ["Alpha", "Beta"]);
+});
+
 test("two principals stay on their granted servers and token claims cannot assert a principal", async () => {
   const ctx = await fixture();
   const alice = await ctx.context("token-alice-session-one");
@@ -148,6 +174,65 @@ test("scope, exact confirmation mapping, idempotency replay, and payload mismatc
   assert.equal(second.replayed, true);
   assert.equal(ctx.graph.calls.filter(([name]) => name === "mutate").length, 1);
   await assert.rejects(ctx.app({ name: "nacl_project_mutate", arguments: { ...args, status: "verified" }, authContext: auth, requiredScope: "nacl.server.write" }), (error) => error.code === "IDEMPOTENCY_CONFLICT");
+});
+
+test("all seven public handlers reach only their mapped capability adapters with bounded results", async () => {
+  const ctx = await fixture();
+  const auth = await ctx.context("token-alice-session-one");
+  const cases = [
+    ["nacl_projects_list", "nacl.server.read", {}, null],
+    ["nacl_project_summary", "nacl.server.read", { project_ref: PROJECT_A1 }, "summary"],
+    ["nacl_named_read", "nacl.server.read", { project_ref: PROJECT_A1, query: "schema-status" }, "schema-status"],
+    ["nacl_project_mutate", "nacl.server.write", { project_ref: PROJECT_A1, resource_type: "Task", resource_ref: "TASK-2", status: "verified", idempotency_key: "idempotency-mutate-0002", confirmation: "APPLY_PROJECT_MUTATION" }, "mutate"],
+    ["nacl_schema_apply", "nacl.server.schema", { project_ref: PROJECT_A1, migration_set: "gateway-foundation-v1", idempotency_key: "idempotency-schema-0001", confirmation: "APPLY_REVIEWED_MIGRATIONS" }, "schema"],
+    ["nacl_backup_create", "nacl.server.backup", { project_ref: PROJECT_A1, idempotency_key: "idempotency-backup-0001", confirmation: "CREATE_PROJECT_BACKUP" }, "backup"],
+    ["nacl_restore_request", "nacl.server.restore", { project_ref: PROJECT_A1, backup_ref: "backup_AAAAAAAAAAAAA", idempotency_key: "idempotency-restore-0001", confirmation: "RESTORE_TO_ISOLATED_TARGET" }, "restore"],
+  ];
+  for (const [name, scope, args, expectedCall] of cases) {
+    const before = ctx.graph.calls.length;
+    const result = await ctx.app({ name, arguments: args, authContext: auth, requiredScope: scope });
+    assert.equal(result.status, "VERIFIED", name);
+    if (expectedCall === null) assert.equal(ctx.graph.calls.length, before, name);
+    else assert.equal(ctx.graph.calls.at(-1)[0], expectedCall, name);
+    assert.doesNotMatch(JSON.stringify(result), /server-a|scope-a1|cn-alice|internal_host/, name);
+  }
+});
+
+test("in-flight idempotency is atomic, conflicts immediately, and failed operations can be retried", async () => {
+  const ledger = createIdempotencyLedger();
+  let release;
+  const gate = new Promise((resolve) => { release = resolve; });
+  let calls = 0;
+  const operation = async () => { calls += 1; await gate; return { revision: 1 }; };
+  const input = { principalId: "principal-alice", tool: "nacl_project_mutate", key: "idempotency-concurrent-1", payload: { value: 1 }, operation };
+  const first = ledger.execute(input);
+  const replay = ledger.execute(input);
+  await assert.rejects(
+    ledger.execute({ ...input, payload: { value: 2 } }),
+    (error) => error.code === "IDEMPOTENCY_CONFLICT",
+  );
+  release();
+  const [firstResult, replayResult] = await Promise.all([first, replay]);
+  assert.equal(calls, 1);
+  assert.equal(firstResult.replayed, false);
+  assert.equal(replayResult.replayed, true);
+
+  let attempts = 0;
+  const retryInput = {
+    principalId: "principal-alice",
+    tool: "nacl_schema_apply",
+    key: "idempotency-retry-0001",
+    payload: { value: 3 },
+    async operation() {
+      attempts += 1;
+      if (attempts === 1) throw new Error("transient");
+      return { revision: 2 };
+    },
+  };
+  await assert.rejects(ledger.execute(retryInput), /transient/);
+  const retried = await ledger.execute(retryInput);
+  assert.equal(attempts, 2);
+  assert.equal(retried.replayed, false);
 });
 
 test("principal rotation and full-server revoke invalidate stale sessions; partial revoke is still fail-closed", async () => {
@@ -185,6 +270,18 @@ test("new same-server project inherits the authoritative principal set in the di
   assert.equal(ctx.registryA.projects.get("scope-a3").has("cn-bob-v1"), false);
 });
 
+test("one certificate CN cannot alias two OAuth subjects or be rotated onto another principal", async () => {
+  const ctx = await fixture();
+  assert.throws(
+    () => ctx.control.registerSubject({ subject: "subject-charlie", principalId: "principal-charlie", certificateCn: "cn-alice-v1" }),
+    /certificate.*already exists/,
+  );
+  await assert.rejects(
+    ctx.control.rotatePrincipal({ subject: "subject-bob", nextCertificateCn: "cn-alice-v1" }),
+    /already bound/,
+  );
+});
+
 test("audit and responses are minimized and contain no raw subject, principal, certificate, server, scope, token, host, or graph result extras", async () => {
   const ctx = await fixture();
   const auth = await ctx.context("token-alice-session-one");
@@ -215,6 +312,7 @@ test("token verifier rejects wrong issuer, audience, expiry, not-before, unverif
     expired: { ...base, expires_at: 1499 },
     future: { ...base, not_before: 1501 },
     unverified: { ...base, verified: false },
+    missingNotBefore: Object.fromEntries(Object.entries(base).filter(([key]) => key !== "not_before")),
   };
   for (const [name, claims] of Object.entries(cases)) {
     const raw = `negative-token-${name}`;
@@ -222,4 +320,10 @@ test("token verifier rejects wrong issuer, audience, expiry, not-before, unverif
     await assert.rejects(ctx.verify(`Bearer ${raw}`), (error) => error.code === "INVALID_TOKEN", name);
   }
   await assert.rejects(ctx.verify("Bearer invalid token whitespace"), (error) => error.code === "INVALID_TOKEN");
+  assert.throws(() => createInjectedTokenContextVerifier({
+    resourceUrl: RESOURCE,
+    trustedIssuers: ["http://idp.example.test/"],
+    supportedScopes: ["nacl.server.read"],
+    resolveVerifiedToken: async () => base,
+  }), /issuer must use HTTPS/);
 });

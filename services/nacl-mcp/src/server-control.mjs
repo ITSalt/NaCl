@@ -22,12 +22,14 @@ function subjectIdentifier(value) {
 
 function routeRecord(value) {
   if (value === null || typeof value !== "object" || Array.isArray(value) ||
-      Object.keys(value).some((key) => !["project_ref", "server_id", "project_scope", "enabled"].includes(key)) ||
-      !PROJECT_REF.test(value.project_ref) || typeof value.enabled !== "boolean") throw new TypeError("project route is invalid.");
+      Object.keys(value).some((key) => !["project_ref", "server_id", "project_scope", "label", "enabled"].includes(key)) ||
+      !PROJECT_REF.test(value.project_ref) || typeof value.enabled !== "boolean" ||
+      typeof value.label !== "string" || !/^[A-Za-z0-9][A-Za-z0-9 ._()-]{0,79}$/.test(value.label)) throw new TypeError("project route is invalid.");
   return Object.freeze({
     project_ref: value.project_ref,
     server_id: identifier(value.server_id, "server_id"),
     project_scope: identifier(value.project_scope, "project_scope"),
+    label: value.label,
     enabled: value.enabled === true,
   });
 }
@@ -87,12 +89,30 @@ export function createServerControlPlane({ routes, serverRegistries = new Map() 
     binding.revision += 1;
   }
 
+  function activeSession(tokenContext) {
+    if (tokenContext?.verified !== true) throw new ReauthorizationRequired({ error: "invalid_token" });
+    const binding = bindingFor(tokenContext.subject);
+    if (tokenContext.tokenEpoch !== binding.epoch) throw new ReauthorizationRequired({ error: "invalid_token" });
+    let session = sessions.get(tokenContext.sessionId);
+    if (!session) {
+      session = { subject: binding.subject, principal_id: binding.principal_id, binding_revision: binding.revision, token_epoch: binding.epoch, revoked: false };
+      sessions.set(tokenContext.sessionId, session);
+    }
+    if (session.revoked || session.subject !== binding.subject || session.principal_id !== binding.principal_id ||
+        session.binding_revision !== binding.revision || session.token_epoch !== binding.epoch) {
+      throw new ReauthorizationRequired({ error: "invalid_token" });
+    }
+    return { binding, session };
+  }
+
   return Object.freeze({
     registerSubject({ subject, principalId, certificateCn }) {
       subjectIdentifier(subject);
       identifier(principalId, "principalId");
       identifier(certificateCn, "certificateCn");
-      if (bindings.has(subject) || [...bindings.values()].some((item) => item.principal_id === principalId)) throw new TypeError("subject or principal already exists");
+      if (bindings.has(subject) || [...bindings.values()].some((item) => item.principal_id === principalId || item.certificate_cn === certificateCn)) {
+        throw new TypeError("subject, principal, or certificate already exists");
+      }
       bindings.set(subject, { subject, principal_id: principalId, certificate_cn: certificateCn, active: true, epoch: 0, revision: 1, grants: new Map() });
     },
     async grantServer({ subject, serverId, role = "project_admin" }) {
@@ -111,6 +131,9 @@ export function createServerControlPlane({ routes, serverRegistries = new Map() 
     async rotatePrincipal({ subject, nextCertificateCn }) {
       const binding = bindingFor(subject);
       identifier(nextCertificateCn, "nextCertificateCn");
+      if (nextCertificateCn === binding.certificate_cn || [...bindings.values()].some((item) => item !== binding && item.certificate_cn === nextCertificateCn)) {
+        throw new TypeError("nextCertificateCn is already bound");
+      }
       const active = [...binding.grants.entries()].filter(([, grant]) => grant.active);
       const results = await Promise.all(active.map(async ([serverId]) => {
         const registry = serverRegistries.get(serverId);
@@ -148,19 +171,21 @@ export function createServerControlPlane({ routes, serverRegistries = new Map() 
       if (session?.subject === subject) session.revoked = true;
     },
     currentTokenEpoch(subject) { return bindingFor(subject).epoch; },
+    listProjects({ tokenContext }) {
+      const { binding } = activeSession(tokenContext);
+      const projects = [...routeMap.values()]
+        .filter((route) => route.enabled && binding.grants.get(route.server_id)?.active)
+        .sort((left, right) => left.label.localeCompare(right.label) || left.project_ref.localeCompare(right.project_ref))
+        .slice(0, 50)
+        .map(({ project_ref, label }) => Object.freeze({ project_ref, label }));
+      return Object.freeze({
+        principalId: binding.principal_id,
+        sessionId: tokenContext.sessionId,
+        projects: Object.freeze(projects),
+      });
+    },
     async authorize({ tokenContext, projectRef, capability, toolClass, confirmation }) {
-      if (tokenContext?.verified !== true) throw new ReauthorizationRequired({ error: "invalid_token" });
-      const binding = bindingFor(tokenContext.subject);
-      if (tokenContext.tokenEpoch !== binding.epoch) throw new ReauthorizationRequired({ error: "invalid_token" });
-      let session = sessions.get(tokenContext.sessionId);
-      if (!session) {
-        session = { subject: binding.subject, principal_id: binding.principal_id, binding_revision: binding.revision, token_epoch: binding.epoch, revoked: false };
-        sessions.set(tokenContext.sessionId, session);
-      }
-      if (session.revoked || session.subject !== binding.subject || session.principal_id !== binding.principal_id ||
-          session.binding_revision !== binding.revision || session.token_epoch !== binding.epoch) {
-        throw new ReauthorizationRequired({ error: "invalid_token" });
-      }
+      const { binding } = activeSession(tokenContext);
       const decision = await authorizer.authorizeProjectOperation({
         project_id: projectRef,
         identity: internalIdentity(binding.principal_id, tokenContext),

@@ -18,6 +18,12 @@ function canonicalAudience(value) {
   return url.href;
 }
 
+function canonicalIssuer(value) {
+  const issuer = canonicalAudience(value);
+  if (new URL(issuer).protocol !== "https:") throw new Error("issuer must use HTTPS");
+  return issuer;
+}
+
 function invalidToken() {
   return new PublicMcpError("INVALID_TOKEN", "The access token is invalid or expired.", { httpStatus: 401 });
 }
@@ -32,7 +38,7 @@ export function createInjectedTokenContextVerifier({
 } = {}) {
   const resource = canonicalAudience(resourceUrl);
   if (!Array.isArray(trustedIssuers) || trustedIssuers.length === 0) throw new TypeError("trustedIssuers are required.");
-  const issuers = new Set(trustedIssuers.map((value) => canonicalAudience(value)));
+  const issuers = new Set(trustedIssuers.map((value) => canonicalIssuer(value)));
   if (!Array.isArray(supportedScopes) || supportedScopes.some((value) => typeof value !== "string" || !SCOPE.test(value))) {
     throw new TypeError("supportedScopes are invalid.");
   }
@@ -52,10 +58,10 @@ export function createInjectedTokenContextVerifier({
       exactObject(
         claims,
         ["verified", "issuer", "subject", "audiences", "scopes", "session_id", "issued_at", "not_before", "expires_at", "token_epoch"],
-        ["verified", "issuer", "subject", "audiences", "scopes", "session_id", "issued_at", "expires_at", "token_epoch"],
+        ["verified", "issuer", "subject", "audiences", "scopes", "session_id", "issued_at", "not_before", "expires_at", "token_epoch"],
         "verified token context",
       );
-      if (claims.verified !== true || !issuers.has(canonicalAudience(claims.issuer))) throw invalidToken();
+      if (claims.verified !== true || !issuers.has(canonicalIssuer(claims.issuer))) throw invalidToken();
       if (!SUBJECT.test(claims.subject) || claims.subject.includes("..") || claims.subject.includes("//") || /[./:@|-]$/.test(claims.subject)) throw invalidToken();
       if (!SESSION.test(claims.session_id) || claims.session_id.includes("..") || /[.:-]$/.test(claims.session_id)) throw invalidToken();
       if (!Array.isArray(claims.audiences) || !claims.audiences.map(canonicalAudience).includes(resource)) throw invalidToken();

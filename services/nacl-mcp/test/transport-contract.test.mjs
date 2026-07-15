@@ -167,8 +167,30 @@ test("schema rejects forged routing, identity, host, URI, path, certificate, pas
   assert.equal(ctx.graphCalls(), 0);
 });
 
+test("HTTP tool schema rejects an incorrect destructive confirmation before the handler", async (t) => {
+  const ctx = await fixture();
+  t.after(() => ctx.server.close());
+  const response = await post(ctx.base, {
+    jsonrpc: "2.0",
+    id: 4,
+    method: "tools/call",
+    params: {
+      name: "nacl_restore_request",
+      arguments: {
+        project_ref: "prj_AAAAAAAAAAAAAAAA",
+        backup_ref: "backup_AAAAAAAAAAAAA",
+        idempotency_key: "idempotency-restore-0001",
+        confirmation: "OVERWRITE_ACTIVE_PROJECT",
+      },
+    },
+  }, "Bearer valid-fixture");
+  const body = await response.json();
+  assert.equal(body.error.code, -32602);
+  assert.equal(ctx.graphCalls(), 0);
+});
+
 test("output schemas stay closed and annotations match the conservative audit classification", () => {
-  assert.equal(PUBLIC_TOOLS.length, 6);
+  assert.equal(PUBLIC_TOOLS.length, 7);
   for (const tool of PUBLIC_TOOLS) {
     assert.equal(tool.outputSchema.properties.data.additionalProperties, false);
     assert.equal(tool.annotations.readOnlyHint, false);

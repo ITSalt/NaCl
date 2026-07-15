@@ -1,5 +1,6 @@
 export const CONTRACT_VERSION = "nacl-public-mcp-v1";
 export const PUBLIC_TOOL_NAMES = Object.freeze([
+  "nacl_projects_list",
   "nacl_project_summary",
   "nacl_named_read",
   "nacl_project_mutate",
@@ -42,6 +43,14 @@ const outputSchema = strictObject({
     items: { type: "array", maxItems: 50, items: { type: "string", maxLength: 500 } },
     revision: { type: "integer", minimum: 0 },
     job_ref: { type: "string", pattern: "^job_[A-Za-z0-9_-]{16,76}$" },
+    projects: {
+      type: "array",
+      maxItems: 50,
+      items: strictObject({
+        project_ref: projectRef,
+        label: { type: "string", minLength: 1, maxLength: 80, pattern: "^[A-Za-z0-9][A-Za-z0-9 ._()-]{0,79}$" },
+      }, ["project_ref", "label"]),
+    },
   }, []),
   retryable: { type: "boolean" },
   replayed: { type: "boolean" },
@@ -76,6 +85,13 @@ function descriptor({ name, title, description, scope, inputSchema, destructiveH
 }
 
 export const PUBLIC_TOOLS = Object.freeze([
+  descriptor({
+    name: "nacl_projects_list",
+    title: "List authorized NaCl projects",
+    description: "List at most 50 opaque project references and safe labels from every graph server authorized for the verified principal; no server selector or internal route is accepted or returned.",
+    scope: "nacl.server.read",
+    inputSchema: strictObject({}, []),
+  }),
   descriptor({
     name: "nacl_project_summary",
     title: "Read a NaCl project summary",

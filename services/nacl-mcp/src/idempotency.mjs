@@ -18,11 +18,20 @@ export function createIdempotencyLedger() {
       const existing = records.get(recordKey);
       if (existing) {
         if (existing.digest !== digest) throw new PublicMcpError("IDEMPOTENCY_CONFLICT", "The idempotency key was reused for a different operation.");
-        return { value: structuredClone(existing.value), outcome: "replayed", replayed: true };
+        const value = existing.state === "committed" ? existing.value : await existing.promise;
+        return { value: structuredClone(value), outcome: "replayed", replayed: true };
       }
-      const value = await operation();
-      records.set(recordKey, Object.freeze({ digest, value: structuredClone(value) }));
-      return { value, outcome: "committed", replayed: false };
+      const promise = Promise.resolve().then(operation);
+      const pending = Object.freeze({ digest, state: "pending", promise });
+      records.set(recordKey, pending);
+      try {
+        const value = await promise;
+        records.set(recordKey, Object.freeze({ digest, state: "committed", value: structuredClone(value) }));
+        return { value, outcome: "committed", replayed: false };
+      } catch (error) {
+        if (records.get(recordKey) === pending) records.delete(recordKey);
+        throw error;
+      }
     },
   });
 }
