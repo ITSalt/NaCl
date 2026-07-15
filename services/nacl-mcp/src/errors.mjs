@@ -1,10 +1,11 @@
 export class PublicMcpError extends Error {
-  constructor(code, message, { httpStatus = 400, retryable = false } = {}) {
+  constructor(code, message, { httpStatus = 400, retryable = false, supportRef } = {}) {
     super(message);
     this.name = "PublicMcpError";
     this.code = code;
     this.httpStatus = httpStatus;
     this.retryable = retryable;
+    this.supportRef = supportRef;
   }
 }
 

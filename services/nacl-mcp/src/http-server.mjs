@@ -1,7 +1,10 @@
 import http from "node:http";
+import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { transportChallenge } from "./oauth-challenge.mjs";
 
+export const STABLE_PROTOCOL_VERSION = "2025-11-25";
 const MAX_BODY_BYTES = 256 * 1024;
+const MCP_ACCEPT = ["application/json", "text/event-stream"];
 
 function json(response, status, value, headers = {}) {
   const body = Buffer.from(`${JSON.stringify(value)}\n`);
@@ -47,26 +50,53 @@ function canonicalUrl(value, label, { requireHttps = false } = {}) {
   return parsed.href;
 }
 
+function jsonRpcMethodNotAllowed(response) {
+  return json(response, 405, {
+    jsonrpc: "2.0",
+    error: { code: -32000, message: "Method not allowed." },
+    id: null,
+  }, { allow: "POST" });
+}
+
+function hasRequiredAccept(header) {
+  if (typeof header !== "string") return false;
+  const values = header.toLowerCase().split(",").map((value) => value.split(";", 1)[0].trim());
+  return MCP_ACCEPT.every((value) => values.includes(value));
+}
+
+function isInitialization(message) {
+  return message !== null && typeof message === "object" && !Array.isArray(message) && message.method === "initialize";
+}
+
 export function createStreamableHttpServer({
   resourceUrl,
   resourceMetadataUrl,
   authorizationServers,
   scopesSupported,
+  allowedOrigins,
   verifyAuthorization,
-  protocol,
+  createMcpServer,
 } = {}) {
   const resource = canonicalUrl(resourceUrl, "resourceUrl");
   const metadataUrl = canonicalUrl(resourceMetadataUrl, "resourceMetadataUrl");
+  const resourceParsed = new URL(resource);
   if (!Array.isArray(authorizationServers) || authorizationServers.length === 0) throw new TypeError("authorizationServers are required.");
   const authServers = authorizationServers.map((value) => canonicalUrl(value, "authorizationServer", { requireHttps: true }));
   if (!Array.isArray(scopesSupported) || scopesSupported.length === 0) throw new TypeError("scopesSupported are required.");
-  if (typeof verifyAuthorization !== "function" || typeof protocol?.handle !== "function") throw new TypeError("authorization and protocol adapters are required.");
+  if (!Array.isArray(allowedOrigins) || allowedOrigins.length === 0) throw new TypeError("allowedOrigins are required.");
+  const origins = new Set(allowedOrigins.map((value) => new URL(value).origin));
+  if (typeof verifyAuthorization !== "function" || typeof createMcpServer !== "function") throw new TypeError("authorization and MCP server factories are required.");
   const challenge = transportChallenge({ resourceMetadataUrl: metadataUrl });
 
   return http.createServer(async (request, response) => {
+    let transport;
+    let mcpServer;
     try {
-      const origin = request.headers.host ? `http://${request.headers.host}` : "http://invalid";
-      const url = new URL(request.url ?? "/", origin);
+      const host = request.headers.host;
+      if (host !== resourceParsed.host) return empty(response, 421);
+      const origin = request.headers.origin;
+      if (origin !== undefined && !origins.has(origin)) return empty(response, 403);
+      const url = new URL(request.url ?? "/", resourceParsed.origin);
       if (request.method === "GET" && url.pathname === new URL(metadataUrl).pathname) {
         return json(response, 200, {
           resource,
@@ -75,25 +105,64 @@ export function createStreamableHttpServer({
           bearer_methods_supported: ["header"],
         });
       }
-      if (request.method === "GET" && ["/healthz", "/readyz"].includes(url.pathname)) {
-        return json(response, 200, { status: "ok" });
-      }
-      if (url.pathname !== new URL(resource).pathname || request.method !== "POST") return empty(response, 404);
+      if (request.method === "GET" && ["/healthz", "/readyz"].includes(url.pathname)) return json(response, 200, { status: "ok" });
+      if (url.pathname !== resourceParsed.pathname) return empty(response, 404);
+      if (["GET", "DELETE"].includes(request.method ?? "")) return jsonRpcMethodNotAllowed(response);
+      if (request.method !== "POST") return jsonRpcMethodNotAllowed(response);
 
-      let authContext;
+      let verified;
       try {
-        authContext = await verifyAuthorization(request.headers.authorization);
+        verified = await verifyAuthorization(request.headers.authorization);
       } catch {
         return empty(response, 401, { "www-authenticate": challenge });
       }
+      if (!hasRequiredAccept(request.headers.accept)) {
+        return json(response, 406, { jsonrpc: "2.0", error: { code: -32000, message: "Not Acceptable." }, id: null });
+      }
+      if (request.headers["content-type"]?.split(";", 1)[0].trim().toLowerCase() !== "application/json") {
+        return json(response, 415, { jsonrpc: "2.0", error: { code: -32000, message: "Unsupported Media Type." }, id: null });
+      }
+      if (request.headers["mcp-session-id"] !== undefined) {
+        return json(response, 400, { jsonrpc: "2.0", error: { code: -32000, message: "This endpoint uses stateless MCP transport." }, id: null });
+      }
       const message = await readJson(request);
-      const result = await protocol.handle(message, authContext);
-      if (result === null) return empty(response, 202);
-      return json(response, 200, result);
-    } catch (error) {
-      return json(response, error.status ?? 500, {
-        error: error.status === 400 ? "invalid_request" : error.status === 413 ? "request_too_large" : "internal_error",
+      const protocolVersion = request.headers["mcp-protocol-version"];
+      if (isInitialization(message) && message.params?.protocolVersion !== STABLE_PROTOCOL_VERSION) {
+        return json(response, 400, { jsonrpc: "2.0", error: { code: -32000, message: "Unsupported MCP protocol version." }, id: message.id ?? null });
+      }
+      if (!isInitialization(message) && protocolVersion !== STABLE_PROTOCOL_VERSION) {
+        return json(response, 400, { jsonrpc: "2.0", error: { code: -32000, message: protocolVersion === undefined ? "MCP-Protocol-Version is required after initialization." : "Unsupported MCP protocol version." }, id: message.id ?? null });
+      }
+      const authContext = Object.freeze({
+        ...verified,
+        sourceAddress: request.socket.remoteAddress ?? "unknown",
       });
+      mcpServer = createMcpServer({ authContext });
+      transport = new StreamableHTTPServerTransport({
+        sessionIdGenerator: undefined,
+        enableJsonResponse: true,
+        allowedHosts: [resourceParsed.host],
+        allowedOrigins: [...origins],
+        enableDnsRebindingProtection: true,
+      });
+      await mcpServer.connect(transport);
+      response.once("close", () => {
+        transport?.close().catch(() => {});
+        mcpServer?.close().catch(() => {});
+      });
+      await transport.handleRequest(request, response, message);
+    } catch (error) {
+      if (!response.headersSent) {
+        return json(response, error.status ?? 500, {
+          jsonrpc: "2.0",
+          error: {
+            code: error.status === 400 ? -32700 : -32603,
+            message: error.status === 400 ? "Invalid JSON." : error.status === 413 ? "Request too large." : "Internal server error.",
+          },
+          id: null,
+        });
+      }
+      response.end();
     }
   });
 }

@@ -1,11 +1,12 @@
 import assert from "node:assert/strict";
 import { once } from "node:events";
+import http from "node:http";
 import net from "node:net";
 import test from "node:test";
 import { CONTRACT_VERSION, PUBLIC_TOOL_NAMES, PUBLIC_TOOLS } from "../src/contracts.mjs";
 import { ReauthorizationRequired } from "../src/errors.mjs";
-import { createStreamableHttpServer } from "../src/http-server.mjs";
-import { createProtocolRuntime } from "../src/protocol.mjs";
+import { createStreamableHttpServer, STABLE_PROTOCOL_VERSION } from "../src/http-server.mjs";
+import { createSdkMcpServer } from "../src/sdk-server.mjs";
 
 async function fixture(callTool = async () => ({
   contract: CONTRACT_VERSION,
@@ -26,43 +27,69 @@ async function fixture(callTool = async () => ({
   const base = `http://127.0.0.1:${reservedPort}`;
   const metadataUrl = `${base}/.well-known/oauth-protected-resource`;
   let graphCalls = 0;
-  let protocol;
   let server;
   server = createStreamableHttpServer({
     resourceUrl: `${base}/mcp`,
     resourceMetadataUrl: metadataUrl,
     authorizationServers: [authServer],
     scopesSupported: ["nacl.server.read", "nacl.server.write"],
+    allowedOrigins: ["https://chatgpt.com"],
     async verifyAuthorization(header) {
       if (header !== "Bearer valid-fixture") throw new Error("invalid");
       return Object.freeze({ verified: true, subject: "subject-alice", sessionId: "session-alice" });
     },
-    protocol: {
-      async handle(message, auth) {
-        return protocol.handle(message, auth);
-      },
+    createMcpServer({ authContext }) {
+      return createSdkMcpServer({
+        resourceMetadataUrl: metadataUrl,
+        authContext,
+        async callTool(input) {
+          graphCalls += 1;
+          return callTool(input);
+        },
+      });
     },
   });
   server.listen(reservedPort, "127.0.0.1");
   await once(server, "listening");
-  protocol = createProtocolRuntime({
-    resourceMetadataUrl: metadataUrl,
-    async callTool(input) {
-      graphCalls += 1;
-      return callTool(input);
-    },
-  });
   return { server, base, metadataUrl, authServer, graphCalls: () => graphCalls };
 }
 
-async function post(base, body, token) {
+async function post(base, body, token, headers = {}) {
   return fetch(`${base}/mcp`, {
     method: "POST",
     headers: {
       "content-type": "application/json",
+      accept: "application/json, text/event-stream",
       ...(token ? { authorization: token } : {}),
+      ...(body.method === "initialize" ? {} : { "mcp-protocol-version": STABLE_PROTOCOL_VERSION }),
+      ...headers,
     },
     body: JSON.stringify(body),
+  });
+}
+
+function rawRequest(base, { method = "POST", path = "/mcp", headers = {}, body } = {}) {
+  const target = new URL(base);
+  const normalizedHeaders = Object.fromEntries(Object.entries(headers).filter(([, value]) => value !== undefined));
+  return new Promise((resolve, reject) => {
+    const request = http.request({
+      hostname: target.hostname,
+      port: target.port,
+      method,
+      path,
+      headers: normalizedHeaders,
+    }, (response) => {
+      const chunks = [];
+      response.on("data", (chunk) => chunks.push(chunk));
+      response.on("end", () => resolve({
+        status: response.statusCode,
+        headers: response.headers,
+        body: Buffer.concat(chunks).toString("utf8"),
+      }));
+    });
+    request.on("error", reject);
+    if (body !== undefined) request.write(body);
+    request.end();
   });
 }
 
@@ -148,4 +175,73 @@ test("output schemas stay closed and annotations match the conservative audit cl
   }
   assert.equal(PUBLIC_TOOLS.find((tool) => tool.name === "nacl_schema_apply").annotations.destructiveHint, true);
   assert.equal(PUBLIC_TOOLS.find((tool) => tool.name === "nacl_restore_request").annotations.destructiveHint, true);
+});
+
+test("official SDK negotiates stable 2025-11-25 stateless initialize with no session or resumability claim", async (t) => {
+  const ctx = await fixture();
+  t.after(() => ctx.server.close());
+  const response = await post(ctx.base, {
+    jsonrpc: "2.0",
+    id: 10,
+    method: "initialize",
+    params: {
+      protocolVersion: STABLE_PROTOCOL_VERSION,
+      capabilities: {},
+      clientInfo: { name: "nacl-conformance", version: "1.0.0" },
+    },
+  }, "Bearer valid-fixture");
+  assert.equal(response.status, 200);
+  assert.equal(response.headers.get("content-type"), "application/json");
+  assert.equal(response.headers.get("mcp-session-id"), null);
+  const body = await response.json();
+  assert.equal(body.result.protocolVersion, STABLE_PROTOCOL_VERSION);
+  assert.equal(body.result.serverInfo.name, "nacl-public-mcp");
+
+  for (const method of ["GET", "DELETE"]) {
+    const unsupported = await fetch(`${ctx.base}/mcp`, { method });
+    assert.equal(unsupported.status, 405, method);
+    assert.equal(unsupported.headers.get("allow"), "POST", method);
+    assert.equal(unsupported.headers.get("mcp-session-id"), null, method);
+  }
+});
+
+test("protocol conformance rejects missing Accept, wrong Content-Type, missing/unsupported version, and fake session before tool execution", async (t) => {
+  const ctx = await fixture();
+  t.after(() => ctx.server.close());
+  const body = JSON.stringify({ jsonrpc: "2.0", id: 11, method: "tools/list", params: {} });
+  const baseHeaders = {
+    host: new URL(ctx.base).host,
+    authorization: "Bearer valid-fixture",
+    "content-type": "application/json",
+    accept: "application/json, text/event-stream",
+    "mcp-protocol-version": STABLE_PROTOCOL_VERSION,
+  };
+  const missingAccept = await rawRequest(ctx.base, { headers: { ...baseHeaders, accept: undefined }, body });
+  assert.equal(missingAccept.status, 406);
+  const wrongContent = await rawRequest(ctx.base, { headers: { ...baseHeaders, "content-type": "text/plain" }, body });
+  assert.equal(wrongContent.status, 415);
+  const missingVersion = await rawRequest(ctx.base, { headers: { ...baseHeaders, "mcp-protocol-version": undefined }, body });
+  assert.equal(missingVersion.status, 400);
+  const unsupportedVersion = await rawRequest(ctx.base, { headers: { ...baseHeaders, "mcp-protocol-version": "2026-07-28" }, body });
+  assert.equal(unsupportedVersion.status, 400);
+  const fakeSession = await rawRequest(ctx.base, { headers: { ...baseHeaders, "mcp-session-id": "forged-session" }, body });
+  assert.equal(fakeSession.status, 400);
+  assert.equal(ctx.graphCalls(), 0);
+});
+
+test("DNS-rebinding controls reject forged Host and Origin before auth or MCP parsing", async (t) => {
+  const ctx = await fixture();
+  t.after(() => ctx.server.close());
+  const body = JSON.stringify({ jsonrpc: "2.0", id: 12, method: "tools/list", params: {} });
+  const common = {
+    authorization: "Bearer valid-fixture",
+    "content-type": "application/json",
+    accept: "application/json, text/event-stream",
+    "mcp-protocol-version": STABLE_PROTOCOL_VERSION,
+  };
+  const forgedHost = await rawRequest(ctx.base, { headers: { ...common, host: "attacker.example" }, body });
+  assert.equal(forgedHost.status, 421);
+  const forgedOrigin = await rawRequest(ctx.base, { headers: { ...common, host: new URL(ctx.base).host, origin: "https://attacker.example" }, body });
+  assert.equal(forgedOrigin.status, 403);
+  assert.equal(ctx.graphCalls(), 0);
 });
