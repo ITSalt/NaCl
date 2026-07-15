@@ -103,10 +103,12 @@ test("transaction rejects malformed MCP and malformed or duplicate graph state b
   const cases = [
     { config: "graph:\n  mode: local\n", mcp: "{not-json\n", pattern: /existing \.mcp\.json is malformed/ },
     { config: "graph:\n  mode: local\n", mcp: '{"mcpServers":{},"mcpServers":{}}\n', pattern: /existing \.mcp\.json is malformed or ambiguous/ },
+    { config: "graph:\n  mode: local\n", mcp: '{"mcpServers":{"neo4j":{"command":"one","command":"two"}}}\n', pattern: /existing \.mcp\.json is malformed or ambiguous/ },
     { config: "project: [unterminated\ngraph:\n  mode: local\n", mcp: "{}\n", pattern: /strict YAML state is malformed/ },
     { config: "project: one\nproject: two\ngraph:\n  mode: local\n", mcp: "{}\n", pattern: /strict YAML state is ambiguous/ },
     { config: "project:\n  id: one\n  id: two\ngraph:\n  mode: local\n", mcp: "{}\n", pattern: /strict YAML state is ambiguous/ },
     { config: "project: {id: one, id: two}\ngraph:\n  mode: local\n", mcp: "{}\n", pattern: /strict YAML state is ambiguous/ },
+    { config: "project: one\n---\nproject: two\ngraph:\n  mode: local\n", mcp: "{}\n", pattern: /multiple documents are unsupported/ },
     { config: "graph: [invalid]\n", mcp: "{}\n", pattern: /graph block is malformed/ },
     { config: " graph:\n  mode: local\n", mcp: "{}\n", pattern: /strict YAML state is outside the supported top-level mapping grammar/ },
     { config: "graph:\n  mode: local\ngraph:\n  mode: remote\n", mcp: "{}\n", pattern: /strict YAML state is ambiguous/ },
@@ -120,6 +122,33 @@ test("transaction rejects malformed MCP and malformed or duplicate graph state b
       assert.equal(await readFile(path.join(root, ".mcp.json"), "utf8"), entry.mcp);
     } finally { await rm(root, { recursive: true, force: true }); }
   }
+});
+
+test("strict state guard accepts representative nested NaCl config syntax", async () => {
+  const config = [
+    "---",
+    "project:",
+    "  id: sample",
+    "  description: \"colon: and # remain quoted\"",
+    "modules:",
+    "  - name: first",
+    "    commands: [\"test\", \"build\"]",
+    "  - name: second",
+    "    metadata: {owner: team, enabled: true}",
+    "notes: |",
+    "  free-form: [text is not YAML here",
+    "graph:",
+    "  mode: local",
+    "",
+  ].join("\n");
+  const root = await fixture(config, "{}\n");
+  try {
+    const result = await writeRemoteRouteTransaction({ projectRoot: root, route, launcher });
+    assert.equal(result.status, "VERIFIED");
+    const next = await readFile(path.join(root, "config.yaml"), "utf8");
+    assert.match(next, /commands: \["test", "build"\]/);
+    assert.match(next, /free-form: \[text is not YAML here/);
+  } finally { await rm(root, { recursive: true, force: true }); }
 });
 
 test("readback binds the exact launcher command, script, and binary", async () => {

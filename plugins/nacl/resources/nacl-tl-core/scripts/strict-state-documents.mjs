@@ -213,7 +213,11 @@ export function assertStrictYamlMappingDocument(input) {
       if (raw.trim() === "" || indent > blockScalarParent) continue;
       blockScalarParent = null;
     }
-    if (raw.trim() === "" || /^\s*#/.test(raw) || (indent === 0 && /^(?:---|\.\.\.)\s*(?:#.*)?$/.test(raw))) continue;
+    if (raw.trim() === "" || /^\s*#/.test(raw)) continue;
+    if (indent === 0 && /^(?:---|\.\.\.)\s*(?:#.*)?$/.test(raw)) {
+      if (meaningful > 0 || raw.trimStart().startsWith("...")) stateError("YAML", "ambiguous because multiple documents are unsupported");
+      continue;
+    }
     meaningful += 1;
     const content = raw.slice(indent);
     const sequence = content === "-" || /^-\s+/.test(content);
