@@ -4,7 +4,12 @@ Date: 2026-07-15
 Branch: `codex/plugin-09-stage2-refresh`  
 Stage base: `da004829c12906945c6f0cdb6310856270f07fe9`  
 Reviewed candidate: `24c11c91d4aa7980f88c824cc4deb820b7b99348`  
-Status: `PARTIALLY_VERIFIED` — implementation gates pass; independent Stage 2 review is pending
+Status: `SUPERSEDED` — historical pre-correction checkpoint
+
+> This file preserves the first Stage 2 refresh evidence only. Its candidate
+> SHA, file counts, review state, and non-claim totals are not current. The
+> accepted combined result is recorded in
+> `docs/research/codex-plugin-wave-9-stage-2-correction-round-2026-07-15.md`.
 
 This checkpoint is local-only. It does not authorize or perform a push, PR,
 merge to `main`, tag, release, VPS/DNS/certificate/credential mutation,

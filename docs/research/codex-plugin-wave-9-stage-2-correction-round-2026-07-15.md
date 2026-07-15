@@ -1,115 +1,115 @@
-# Wave 9 Stage 2 — adversarial correction round
+# Wave 9 Stage 2 — final package and server-authorization acceptance
 
-Date: 2026-07-15  
-Original reviewed candidate: `5e4609b9b06aa6c901cf95ffb4a1f08ba02ad4ec`  
-F-02..F-05 corrected candidate: `99534ab`  
-Branch: `codex/plugin-09-stage2-corrections`  
-Status: `PARTIALLY_VERIFIED` — F-02..F-05 are locally verified; F-01 is owned by a separate correction and is not included here
+Date: 2026-07-15
+Stage 2 implementation SHA: `9463c74e731011db9f229e07a7a4852f5dd8a931`
+Correction base: `1324c0ba`
+Branch: `codex/plugin-09-stage2-final`
+Status: `VERIFIED` for local Stage 2 scope
 
-This is a local correction checkpoint. It does not authorize or perform a push,
-PR, merge to `main`, tag, release, VPS/DNS/TLS/certificate/credential mutation,
-deployment, portal submission, or publication.
+This acceptance is local-only. It does not authorize or perform a push, PR,
+merge to `main`, tag, release, VPS/DNS/TLS/certificate/credential mutation,
+deployment, portal submission, or publication. Production and clean-machine
+claims remain later-stage gates.
 
-## Verifier BLOCK and ownership
+## Accepted result
 
-The adversarial review blocked candidate `5e4609b` on five findings:
+The deterministic Codex package now contains 379 files, 10 public skills, and
+60 internal workflows. It is generated from reviewed root sources, rejects
+symlinked package inputs, and is byte-current with the root route/VPS sources.
 
-| Finding | Original gap | Correction ownership in this checkpoint |
-|---|---|---|
-| F-01 | Codex package sources could traverse repository symlinks before copying | Separate commit `996db04`; intentionally not included in this branch or evidence commit |
-| F-02 | Metadata disable/quarantine could be reported while physical gateway stop was absent or failed; grant rollback omitted a writer that committed and then threw | `5064c56` |
-| F-03 | VPS scope/port collision was detected after project directory, CA, password, `.env`, and Compose mutation; no token-bound reservation rollback existed | `5064c56` |
-| F-04 | Secret-source grammar differed across components; `server-route:<id>` was not a working opaque provider path; route-owned files could become a mixed stale pair | `99534ab` |
-| F-05 | Validated project/developer marker values were still interpolated into Cypher query text | `57c3c03` |
+Neo4j 5 Community retains one container and independent data/log volumes per
+project. The server is the authorization boundary: `trusted-cns` is the
+authoritative canonical principal set and every project `allowed-cns` is only
+its revision-bound, digest-bound projection. `project_scope` is routing and
+provenance, not a grant. Cross-server access needs a separate grant.
 
-F-01 must be integrated and rechecked by the Stage 2 owner before an aggregate
-Stage 2 acceptance claim. This branch neither duplicates nor rewrites that
-separate change.
+Provisioning and release are fail-closed:
 
-## Corrected behavior
+- gateway scope and port are reserved before project, CA, secret, Compose,
+  container, or volume mutation;
+- authorization is verified immediately before every render and gateway
+  action; wildcard, duplicate, unsorted, stale, or tampered CN state globally
+  quarantines uncertain gateways;
+- a possible start requires an explicit successful `down` before reservation
+  release; missing Compose retains the project, port, and `release_pending`;
+- one atomic inventory commit both removes the gateway and writes a mode-0600,
+  token-digest-bound durable release receipt; exact-token lost-ACK replay is
+  idempotent, while wrong tokens and corrupt/symlinked state are rejected;
+- owned artifacts move through an exact, token-bound tombstone. Critical-path
+  recursive deletion is absent; retained tombstones are honestly reported for
+  later out-of-band garbage collection.
 
-### F-02 — physical fail-closed quarantine
+Remote create/connect use one atomic route transaction for `config.yaml` and
+`.mcp.json`. Duplicate or malformed JSON/YAML, multiple YAML documents,
+repeated document markers, unsupported scalar ambiguity, stale mixed routes,
+or read-back drift preserve the original files byte-for-byte. Opaque secrets
+remain out of files and argv; bounded child environments are restored and MCP
+errors/results are redacted. POSIX and PowerShell source paths use explicit
+`--param-string` for JSON-looking identifiers.
 
-- Provider-neutral grant rollback now retries **every** gateway projection,
-  including the writer that may have committed before throwing.
-- Any uncertain projection is disabled for routing and must pass the physical
-  quarantine hook. Hook absence/failure remains `BLOCKED` with an explicit
-  `*_CRITICAL` code and `critical_projects`; it is never downgraded to a logical
-  metadata success.
-- VPS issue/revoke/reload failure paths use one inventory-driven physical
-  quarantine helper. Every `docker compose stop gateway` result is checked;
-  no `|| true` stop path may claim that all gateways were stopped.
+## Correction chronology
 
-### F-03 — pre-mutation reservation
+| Finding | Closed behavior |
+|---|---|
+| F-01 | Package builder rejects symlinked roots, shared trees, and shared files before reading. |
+| F-02 | Logical disable/quarantine is never reported as physical success without a verified gateway stop. |
+| F-03 | Scope/port reservation precedes all project-side mutation and is released only by an exact token. |
+| F-04 | One opaque secret-source contract and one two-file transaction replace mixed route state. |
+| F-05 | Dynamic project/developer markers remain MCP parameters and never enter Cypher text. |
+| CR-01 | Server-wide authorization is canonical, revision/digest-bound, rechecked before action, and fail-closed under projection drift. |
+| CR-02 | Release cleanup uses a durable atomic receipt, exact tombstone binding, safe retry, and proven-down port retention. |
+| CR-03 | Duplicate/malformed route state is rejected without rewriting user bytes. |
+| CR-04 | Secret transport is argv-free, bounded, restored, and output-redacted on downstream failure. |
+| CR-05 | Multi-document, repeated-marker, and unsupported YAML scalar ambiguity are rejected; identifiers remain strings. |
+| CR-06 | The historical refresh evidence is explicitly superseded and this file records the exact combined result. |
 
-- VPS provisioning reserves `(project_scope, gateway_port)` under the server
-  inventory lock before project directory, CA, password, `.env`, Compose,
-  container, or volume mutation.
-- The reservation is inventory-only and bound to a random token. Exact-token
-  `activate` commits the route only after readiness gates; exact-token `release`
-  removes both reservation and failed-attempt project artifacts.
-- Duplicate scope/port fails before project artifacts exist. A later failure
-  triggers Compose cleanup plus reservation release.
+## Verification evidence
 
-### F-04 — one opaque route transaction
+| Gate | Exact result |
+|---|---|
+| Independent combined review | `ACCEPT` on exact SHA `9463c74e731011db9f229e07a7a4852f5dd8a931`; read-only |
+| Combined route/VPS | `46/46` pass; focused adversarial expansion `38/38`; merged source assertions `8/8` |
+| Codex and Claude builders | both `--check` current; regression `37/37` |
+| Generated Codex package | 379 files; 10 public skills; 60 workflows |
+| Current-main source drift | `3/3` pass |
+| Package suite | `83/83` pass |
+| Workflow integration | `38/38` pass |
+| Graph unit | `89/89` pass |
+| Manifest and public skills | `VERIFIED`; exact `10/10` public skills |
+| Strict package closure | `VERIFIED`; 379 files, 301 inline paths, 59 descriptive source paths |
+| Cache-only CLI | `VERIFIED`; installed-cache execution, source unavailable, 10 entry skills |
+| Legacy coexistence | `VERIFIED`; 60 created and 60 idempotent links; expected doctor modes |
+| Static changed-path scan | clear of personal/host-temp paths, private-key headers, OpenAI-key patterns, and AWS-key patterns |
+| Diff hygiene | `git diff --check 1324c0ba..9463c74` pass; worktree clean |
 
-- `secret-source-contract.mjs` is the single grammar/resolver for
-  `env:NEO4J_PASSWORD` and `server-route:<id>`.
-- `server-route:<id>` resolves only through an injected provider or the explicit
-  `NACL_SERVER_ROUTE_SECRET_PROVIDER` process boundary. Provider absence blocks
-  before handshake or configuration writes.
-- `.mcp.json` persists only the opaque reference and Node launcher metadata.
-  The launcher resolves the secret at process start and passes it through the
-  child environment; password bytes are absent from route files and argv.
-- POSIX and PowerShell create/connect flows call one transactional writer for
-  both `config.yaml` and `.mcp.json`. Both files are staged, the exact pair is
-  validated, stale local/remote route-owned fields are replaced, both files are
-  read back, and either original pair is restored on a write/readback failure.
+Independent VPS review also exercised misordered managed markers, inventory
+commit failure with exact tree restoration, crash-after-tombstone retry,
+tombstone symlink substitution, committed-grant-then-error rollback,
+authorization TOCTOU, exact-token lost-ACK replay, wrong-token rejection, and
+missing Compose after a simulated physical start.
 
-### F-05 — parameterized marker Cypher
+## Expected downstream failures and non-claims
 
-- Create/verify queries contain only `$projectScope` and `$developerId`
-  placeholders.
-- POSIX passes repeated `--param`; the PowerShell helper now accepts `-Params`
-  and emits the same repeated MCP arguments. Dynamic marker values never enter
-  query text.
+These do not downgrade Stage 2, but they block aggregate Wave 9 acceptance:
 
-The topology remains unchanged: one Neo4j Community container and independent
-data/log volume lineage per project.
-
-## RED to GREEN evidence
-
-| Scope | RED | GREEN |
-|---|---|---|
-| F-02/F-03 provider-neutral + VPS | 5 failures: rollback critical code, revoke stop failure, missing reservation actions, missing physical helper, stale source contract | `13/13` pass after `5064c56` |
-| F-05 POSIX/PowerShell marker query | 1 failure: direct `$SCOPE`/`$DEV` and `$ProjectScope`/`$DeveloperId` interpolation | marker regression pass; combined MCP/VPS set `18/18` after `57c3c03` |
-| F-04 opaque transaction | missing shared modules plus POSIX/PowerShell single-writer assertion failure | stale local/remote replacement, opaque ref, exact readback and injected rollback pass; focused set `33/33` after `99534ab` |
-| Final combined F-02..F-05 | n/a | `53/53` source tests; generated Claude transaction `3/3` |
-| Claude builder | n/a | `--check` pass; builder regression `31/31` |
-| Codex builder | n/a | `plugins/nacl` current at 377 files, 10 public skills, 60 workflows; builder regression `5/5` |
-| Syntax/hygiene | n/a | Bash/POSIX syntax, Node syntax, and `git diff --check` pass |
-
-PowerShell source parity is asserted, but `pwsh` is unavailable on this host;
-PowerShell runtime execution remains `NOT_RUN`.
-
-## Remaining Stage 3-5 failures and non-claims
-
-These correction results do not close aggregate Wave 9:
-
-1. F-01 must be integrated from its separately owned correction and the exact
-   combined successor must receive independent review.
-2. The documented `test:plugin-docs` current-main/Wave 8 overlap remains Stage 4
-   manual documentation composition work.
-3. The generic repository contract glob still needs Stage 5 ownership cleanup
-   so generated Claude and Codex suites run only under their dedicated
-   prerequisites, without double-owning `plugin/**` or `tests/codex-plugin/**`.
-4. Stage 3/5 must retain a fresh-main-bound isolation rule that permits only
-   reviewed root sources plus generated Claude/Codex projections.
+1. Raw `test:contracts` is exactly 640 total: 630 pass, 5 fail, and 5 opt-in
+   Docker skips. All five failures are the already documented generic ownership
+   of generated `plugin/**`: one absent packaged fixture and four symlink-target
+   baselines. Stage 5 must split CI ownership and prerequisites.
+2. `test:plugin-docs` reports only the documented current-main/Wave 8 overlap:
+   README/quickstart plugin-first composition, RU/EN structure and doc keys,
+   configuration, anchors, password examples, and skills inventory. Stage 4
+   owns manual composition, including the later `main` documentation changes.
+3. The fresh-main Claude isolation guard remains Stage 3/5 work. The Claude
+   generator and current generated tree are green, but the missing guard is not
+   represented as a successful isolation claim.
+4. PowerShell source parity is verified; PowerShell runtime execution is
+   `NOT_RUN` on this host.
 5. Exact Node 20, hosted CI, dependency/SBOM/vulnerability scans, disposable
-   Docker topology, PowerShell runtime, live Desktop, public Streamable HTTP MCP,
-   OAuth provider, real VPS/DNS/TLS, real users/machines, backup/restore drills,
-   Git release portability, and OpenAI portal submission remain `NOT_RUN` or
-   separately authorized later-stage work.
+   live Docker topology, live Desktop, public Streamable HTTP MCP, OAuth,
+   VPS/DNS/TLS, real users/machines, backup/restore drills, Git-release
+   portability, OpenAI portal submission, and publication remain `NOT_RUN` or
+   separately authorized later stages.
 
-No local result in this correction round is production, deployment, publication,
-or aggregate Wave 9 verification evidence.
+Stage 3 may start from this accepted local implementation. Stage 2 is not a
+release candidate and does not change Wave 8's `PARTIALLY_VERIFIED` status.
