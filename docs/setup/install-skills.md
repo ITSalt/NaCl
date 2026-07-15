@@ -43,7 +43,9 @@ Inside Claude Code Desktop, run:
 This installs 53 of the 59 skills as `/nacl:<name>` slash commands and 7
 agent profiles as `@nacl:<name>`. `nacl-goal` is excluded (it wraps the CLI-only
 `/goal` command, which Desktop cannot run); `nacl-postmortem` and the three
-`nacl-migrate*` skills are excluded as rare/repo-checkout-only. The neo4j MCP
+`nacl-migrate*` skills are excluded as rare/repo-checkout-only; `nacl-core` is
+excluded as a shared library shipped whole at the plugin root, not as an
+invocable skill (6 exclusions total: 59 − 6 = 53). The neo4j MCP
 server is still configured per-project by `/nacl:init`, not by the plugin.
 See [Graph Setup](graph-setup.md) for the Desktop graph-infrastructure
 specifics (Docker Desktop detection, sidecar autostart, the pinned
@@ -138,7 +140,7 @@ If Codex is running on a machine where NaCl is not installed, send this prompt:
 ```text
 Install NaCl Codex skills globally on this machine.
 
-Clone https://github.com/ITSalt/NaCl.git into $HOME/NaCl if it is not already present. If it is present, run git pull --ff-only there. Then run the Codex installer from $HOME/NaCl/skills-for-codex/scripts and verify that $HOME/.agents/skills contains 59 NaCl skill links and that each linked directory has SKILL.md. Use network or escalated permission if needed.
+Clone https://github.com/ITSalt/NaCl.git into $HOME/NaCl if it is not already present. If it is present, run git pull --ff-only there. Then run the Codex installer from $HOME/NaCl/skills-for-codex/scripts and verify that $HOME/.agents/skills contains 60 NaCl skill links (skills-for-codex/ ships 60 SKILL.md directories, including nacl-tl-core, which is not among the 59 root skills) and that each linked directory has SKILL.md. Use network or escalated permission if needed.
 ```
 
 ### Verify Codex

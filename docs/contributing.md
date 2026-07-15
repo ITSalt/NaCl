@@ -69,7 +69,7 @@ All NaCl skills follow the pattern `nacl-{layer}-{action}` with hyphens as separ
 
 ## Language Conventions
 
-- **BA/SA skills** (`nacl-ba-*`, `nacl-sa-*`): Written in Russian. The skill language controls Claude's output language with the user. BA/SA artifacts are typically in Russian.
+- **BA/SA skills** (`nacl-ba-*`, `nacl-sa-*`): Authored in English (many SKILL.md files have no Russian at all). Output language with the user is **not** controlled by the skill file's own language — it is resolved via `--lang` flag > `config.yaml` `project.lang` > default `ru`, per [nacl-core/lang-directive.md](../nacl-core/lang-directive.md). BA/SA artifacts default to Russian output unless `--lang=en` (or `project.lang: en`) is set.
 - **TL skills** (`nacl-tl-*`): Written in English.
 - **CLAUDE.md files**: Always in English.
 - **Documentation (docs/)**: English primary, Russian as `*.ru.md`.
@@ -110,6 +110,19 @@ sh skills-for-codex/scripts/check-root-codex-sync.sh origin/main HEAD
 Codex SKILL.md frontmatter is intentionally different from Claude skills:
 `skills-for-codex/*/SKILL.md` uses `name` and `description` only.
 
+### Desktop Plugin Sync
+
+For changes under `nacl-*/**` or `.claude/agents/**`, regenerate the
+committed `plugin/` artifact:
+
+```sh
+node scripts/build-plugin.mjs
+```
+
+CI (`.github/workflows/build-plugin.yml`) runs
+`node scripts/build-plugin.mjs --check` on every PR touching those paths and
+fails if `plugin/` is stale.
+
 ## Code Style (CLI Tools)
 
 For changes to `docmost-sync/` or `yougile-setup/`:
@@ -128,9 +141,10 @@ Use [GitHub Issues](https://github.com/ITSalt/NaCl/issues) with the appropriate 
 
 ## Translating Skills
 
-BA/SA skills (`nacl-ba-*`, `nacl-sa-*`) are written in Russian by default. The
-`--lang` flag lets users request output in a different language without modifying
-the skill itself.
+BA/SA skills (`nacl-ba-*`, `nacl-sa-*`) default to Russian **output** (most
+SKILL.md files themselves are authored in English). The `--lang` flag lets
+users request output in a different language without modifying the skill
+itself.
 
 ### The `--lang` flag pattern
 

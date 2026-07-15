@@ -191,7 +191,7 @@ This eliminates the "find all references" problem that plagues document-based sp
 
 **Code generation.** Development agents (`nacl-tl-dev-be`, `nacl-tl-dev-fe`) read the form-domain mapping to generate correct DTOs, validation schemas, API endpoints, and UI form components in the project's stack. The mapping is not documentation -- it is the source of truth that drives code.
 
-Validation check L4 enforces the mapping: every FormField with a data-carrying field_type (text, textarea, number, date, select, multiselect, checkbox, file) MUST have a MAPS_TO edge. Button and table fields are exempt. No orphaned data fields are allowed.
+Validation check L4.1 enforces the mapping: every FormField whose `field_category` is `input` (the default when unset) MUST have a MAPS_TO edge -- `coalesce(ff.field_category, 'input') = 'input'`. Fields explicitly categorized as display or action are exempt; a button field with no `field_category` set is not automatically exempt and will be flagged (`nacl-sa-flags` backfills `field_category` to close this gap). No orphaned input fields are allowed.
 
 The mapping also resolves the common specification gap where a form shows a "Status" dropdown but nobody documented which values it should contain. With MAPS_TO pointing to a DomainAttribute of type Enum, the associated Enumeration node and its EnumValue children define the exact list of options. There is no ambiguity left for the developer to resolve.
 

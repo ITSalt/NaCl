@@ -14,7 +14,7 @@ Claude models differ in reasoning depth and cost:
 | **Sonnet** | Balanced speed and quality | $15 | Code generation, structured content, testing |
 | **Haiku** | Fast, low-latency | $5 | Status queries, quick lookups, sync |
 
-Running all 57 skills on Opus wastes budget on tasks that Sonnet handles equally well. Running everything on Haiku loses quality where reasoning matters. The agent architecture routes each skill to the right model.
+Running all 59 skills on Opus wastes budget on tasks that Sonnet handles equally well. Running everything on Haiku loses quality where reasoning matters. The agent architecture routes each skill to the right model.
 
 ## Skill Frontmatter
 
@@ -67,7 +67,7 @@ The bug-fix reasoner. Diagnoses a bug and authors the specification that fixes i
 
 **Why it has Write (unlike the strategist):** it authors *specifications* — docs, `.tl/*` artifacts, graph nodes — not production code, and it does not commit. The firewall the framework depends on is "the spec author ≠ the code author"; that holds, because the sonnet core (Phase B) writes and commits the code. See Design Principle 1 below.
 
-### analyst -- Sonnet, medium effort (13 skills)
+### analyst -- Sonnet, medium effort (11 skills)
 
 The domain modeler. Creates structured BA/SA artifacts from domain knowledge.
 
@@ -76,17 +76,16 @@ The domain modeler. Creates structured BA/SA artifacts from domain knowledge.
 **Skills:**
 - BA phase skills: `nacl-ba-context`, `nacl-ba-process`, `nacl-ba-workflow`, `nacl-ba-entities`, `nacl-ba-roles`, `nacl-ba-glossary`, `nacl-ba-rules`, `nacl-ba-handoff`
 - SA content: `nacl-sa-roles`, `nacl-sa-ui`, `nacl-sa-finalize`
-- Migration: `nacl-migrate-ba`, `nacl-migrate-sa`
 
 **Why Sonnet:** These skills fill structured templates with domain knowledge provided by the user. The reasoning challenge is formalization, not invention.
 
-### developer -- Sonnet, medium effort (6 skills)
+### developer -- Sonnet, medium effort (7 skills)
 
 The code generator. Implements features via TDD from specifications.
 
 **Tools:** Read, Write, Edit, Grep, Glob, Bash
 
-**Skills:** `nacl-tl-dev`, `nacl-tl-dev-be`, `nacl-tl-dev-fe`, `nacl-tl-fix`, `nacl-tl-docs`, `nacl-tl-reopened`
+**Skills:** `nacl-tl-dev`, `nacl-tl-dev-be`, `nacl-tl-dev-fe`, `nacl-tl-fix`, `nacl-tl-regression-test`, `nacl-tl-docs`, `nacl-tl-reopened`
 
 **Why Sonnet:** Code generation from complete specifications is a translation task. Sonnet matches Opus quality here within 2-3% while running faster and cheaper.
 
@@ -102,13 +101,13 @@ The quality gate. Tests, verifies, and reports without modifying code.
 
 **Why Sonnet:** Verification is systematic: trace data flows, match API contracts, run E2E scripts. Pattern matching, not creative reasoning.
 
-### operator -- Sonnet, low effort (8 skills)
+### operator -- Sonnet, low effort (7 skills)
 
 The shipping arm. Git operations, CI/CD monitoring, publishing.
 
 **Tools:** Read, Grep, Bash
 
-**Skills:** `nacl-tl-ship`, `nacl-tl-deploy`, `nacl-tl-deliver`, `nacl-tl-release`, `nacl-render`, `nacl-publish`, `nacl-ba-from-board`, `nacl-migrate`
+**Skills:** `nacl-tl-ship`, `nacl-tl-deploy`, `nacl-tl-deliver`, `nacl-tl-release`, `nacl-render`, `nacl-publish`, `nacl-ba-from-board`
 
 **Why Sonnet + low effort:** These skills follow rigid scripts defined in `config.yaml`. No judgment calls -- just execute and report.
 
@@ -142,18 +141,18 @@ Skills are **not** preloaded into agents. The orchestrator passes the specific s
 ## Model Distribution Summary
 
 ```
-                opus (16)             sonnet (32)           haiku (6)
+                opus (18)             sonnet (34)           haiku (6)
               ┌─────────────┐    ┌──────────────────┐    ┌──────────┐
   effort:high │ strategist  │    │                  │    │          │
               │ (12 skills) │    │                  │    │          │
               │ orchestrator│    │                  │    │          │
               │ (4 skills)  │    │                  │    │          │
               ├─────────────┤    ├──────────────────┤    │          │
-effort:medium │             │    │ analyst (13)     │    │          │
-              │             │    │ developer (6)    │    │          │
+effort:medium │             │    │ analyst (11)     │    │          │
+              │             │    │ developer (7)    │    │          │
               │             │    │ verifier (5)     │    │          │
               ├─────────────┤    ├──────────────────┤    ├──────────┤
-  effort:low  │             │    │ operator (8)     │    │ scout(6) │
+  effort:low  │             │    │ operator (7)     │    │ scout(6) │
               └─────────────┘    └──────────────────┘    └──────────┘
 ```
 
@@ -161,7 +160,10 @@ The seventh agent, **`diagnostician`** (Opus, high effort), is not in the skill 
 
 ## Installation
 
-Agents are installed alongside skills using symlinks:
+Two channels ship agents, same as skills:
+
+- **Claude Code Desktop (plugin):** `/plugin marketplace add ITSalt/NaCl` then `/plugin install nacl@nacl` installs `plugin/agents/` (all 7 agent files) alongside the plugin's skills -- no manual symlinking.
+- **Claude Code CLI:** run `scripts/install-claude-code-skills.sh`, which symlinks both `.claude/agents/*.md` -> `~/.claude/agents/<name>` and the skills in one pass. The manual loops below do the same thing by hand, for environments where running the script isn't an option.
 
 ```bash
 # Unix/macOS/Linux

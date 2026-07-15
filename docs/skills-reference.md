@@ -4,7 +4,7 @@
 
 # Skills Reference
 
-NaCl provides **57 skills** organized by layer and function. All skills follow the `nacl-{layer}-{action}` naming convention: **BA** = Business Analysis, **SA** = System Analysis, **TL** = TeamLead. Skills are invoked as slash commands (e.g. `/nacl-tl-fix`, `/nacl-ba-full`) and can delegate to each other through sub-agent orchestration.
+NaCl provides **59 skills** organized by layer and function. All skills follow the `nacl-{layer}-{action}` naming convention: **BA** = Business Analysis, **SA** = System Analysis, **TL** = TeamLead. Skills are invoked as slash commands (e.g. `/nacl-tl-fix`, `/nacl-ba-full`) via the CLI, or as `/nacl:<name>` namespaced commands through the "nacl" Claude Code plugin (a subset of skills; see [README.md](../README.md#choose-your-channel)), and can delegate to each other through sub-agent orchestration.
 
 > **See also:** [Skill Modifiers Reference](skill-modifiers.md) — full documentation of all flags, modes, and subcommands.
 
@@ -18,8 +18,8 @@ These skills manage multi-step workflows end-to-end. Start here for batch operat
 |-------|-------------|-------------------|---------------|
 | `nacl-ba-full` | Full BA model creation in Neo4j via 10-phase orchestration. Chains all nacl-ba-* skills sequentially with user confirmation gates. | `/nacl-ba-full` | — |
 | `nacl-sa-full` | Full SA specification in Neo4j via 10-phase orchestration. Chains all nacl-sa-* skills with user confirmation gates. | `/nacl-sa-full` | — |
-| `nacl-tl-conductor` | Batch process manager: intake to staging. Delegates planning to nacl-tl-plan, dev to nacl-tl-full. Reads waves/tasks from Neo4j. | `/nacl-tl-conductor` | `--items`, `--feature`, `--skip-deliver`, `--yes` |
-| `nacl-tl-full` | Full lifecycle orchestrator. Reads waves/tasks from Neo4j, coordinates planning, development (BE+FE), sync, stubs, review, QA, and docs across execution waves. | `/nacl-tl-full` | `--wave`, `--task`, `--feature`, `--skip-plan`, `--yes` |
+| `nacl-tl-conductor` | Batch process manager: intake to staging. Delegates planning to nacl-tl-plan, dev to nacl-tl-full. Reads waves/tasks from Neo4j. | `/nacl-tl-conductor` | `--items`, `--feature`, `--yes` |
+| `nacl-tl-full` | Full lifecycle orchestrator. Reads waves/tasks from Neo4j, coordinates planning, development (BE+FE), sync, stubs, review, QA, and docs across execution waves. | `/nacl-tl-full` | `--wave`, `--task`, `--feature`, `--yes` |
 
 ---
 
@@ -55,9 +55,9 @@ System analysis skills that produce technical specifications as Neo4j graph stru
 | `nacl-sa-full` | Full SA specification in Neo4j via 10-phase orchestration with user confirmation gates. | `/nacl-sa-full` | — |
 | `nacl-sa-architect` | System decomposition into modules (Bounded Contexts), Context Map, and NFR. Reads BA data from Neo4j, writes Module/Requirement nodes. | `/nacl-sa-architect` | — |
 | `nacl-sa-domain` | Domain Model through Neo4j: DomainEntity, DomainAttribute, Enumeration, relationships. Modes: IMPORT_BA, CREATE, MODIFY, FULL. | `/nacl-sa-domain IMPORT_BA` | Modes: `IMPORT_BA`, `CREATE`, `MODIFY`, `FULL` |
-| `nacl-sa-uc` | Use Case registry from BA automation scope + UC detail (Activity, forms, requirements) via Neo4j graph. | `/nacl-sa-uc stories` | Subcommands: `stories`, `detail`, `list` |
+| `nacl-sa-uc` | Use Case registry from BA automation scope + UC detail (Activity, forms, requirements) via Neo4j graph. | `/nacl-sa-uc stories` | Subcommands: `stories`, `detail`, `slices`, `errors`, `resilience`, `list` |
 | `nacl-sa-roles` | System roles and permission matrix through Neo4j: SystemRole, HAS_PERMISSION, MAPPED_TO. Modes: IMPORT_BA, CREATE, MODIFY, FULL. | `/nacl-sa-roles IMPORT_BA` | Modes: `IMPORT_BA`, `CREATE`, `MODIFY`, `FULL` |
-| `nacl-sa-ui` | UI architecture through Neo4j: navigation, components, form-domain mapping verification. | `/nacl-sa-ui verify` | Subcommands: `verify`, `components`, `navigation`, `full` |
+| `nacl-sa-ui` | UI architecture through Neo4j: navigation, components, form-domain mapping verification. | `/nacl-sa-ui verify` | Subcommands: `verify`, `components`, `navigation`, `state-machine`, `full` |
 | `nacl-sa-feature` | Incremental feature specification via Neo4j. Impact analysis through Cypher traversal, selective SA skill invocation, FeatureRequest artifact. | `/nacl-sa-feature "Add payment support"` | — |
 | `nacl-sa-flags` | Audit and backfill SA validation exemption properties such as `has_ui`, `system_only`, `shared`, `internal`, and `field_category`. | `/nacl-sa-flags` | — |
 | `nacl-sa-validate` | Validate specification consistency through Cypher queries. Internal (L1-L13, incl. the 2.15+ extension layers: staleness, provenance, screens, slices, errors, resilience) and cross-validation BA to SA (XL6-XL9). | `/nacl-sa-validate` | Modes: `internal`, `ba-cross`; `--scope` |
@@ -72,7 +72,7 @@ Shared libraries, rendering, and project scaffolding.
 | Skill | Description | Example invocation | Key modifiers |
 |-------|-------------|-------------------|---------------|
 | `nacl-core` | Shared references, templates, and utilities for all nacl-* skills. Provides Neo4j connection conventions, schema references, ID format rules, and Excalidraw standards. | *(not directly invocable)* | — |
-| `nacl-render` | Convert Neo4j graph data into Markdown documents with Mermaid diagrams and Excalidraw visual boards. | `/nacl-render md uc UC-101` | Namespaces: `md`, `excalidraw`; `--output` |
+| `nacl-render` | Convert Neo4j graph data into Markdown documents with Mermaid diagrams. Excalidraw board rendering moved to the analyst-tool backend. | `/nacl-render md uc UC-101` | Namespace: `md`; `--output` |
 | `nacl-publish` | Publish graph to Docmost and generate Excalidraw boards. | `/nacl-publish docmost` | Subcommands: `docmost`, `boards`, `full` [+3](skill-modifiers.md#nacl-publish) |
 | `nacl-init` | Initialize a new project with CLAUDE.md containing development rules, skill routing, bug fix protocol, and documentation discipline. | `/nacl-init "Name"` | `--from=.`, `--dry-run` |
 
@@ -107,7 +107,7 @@ TeamLead skills for the full development lifecycle -- from planning through rele
 | `nacl-tl-sync` | Verifies BE/FE synchronization for a UC task. Checks API contract compliance, shared types, endpoint matching, DTO consistency. | `/nacl-tl-sync UC101` | — |
 | `nacl-tl-stubs` | Scans codebase for stubs, mocks, and placeholder code. Maintains stub-registry.json with severity tracking. | `/nacl-tl-stubs UC101` | `--final` |
 | `nacl-tl-verify` | Verification orchestrator: code analysis + E2E testing + YouGile reporting. Runs nacl-tl-verify-code first, then nacl-tl-qa if needed. | `/nacl-tl-verify UC101` | `--task`, `--all` |
-| `nacl-tl-verify-code` | Static code analysis to verify implementation correctness. Traces data flow: DB -> service -> route -> hook -> component -> UI. Returns PASS / PASS_NEEDS_E2E / FAIL. | `/nacl-tl-verify-code UC101` | `--task`, `--files` |
+| `nacl-tl-verify-code` | Static code analysis to verify implementation correctness. Traces data flow: DB -> service -> route -> hook -> component -> UI. Returns PASS / PASS_NEEDS_E2E / UNVERIFIED / NO_INFRA / RUNNER_BROKEN / BLOCKED / REGRESSION / FAIL. | `/nacl-tl-verify-code UC101` | `--task`, `--files` |
 | `nacl-tl-qa` | E2E QA testing for UC tasks using MCP Playwright. Acts as a real user: navigates pages, fills forms, clicks buttons, verifies results. | `/nacl-tl-qa UC101` | — |
 
 ### Shipping
@@ -116,8 +116,8 @@ TeamLead skills for the full development lifecycle -- from planning through rele
 |-------|-------------|-------------------|---------------|
 | `nacl-tl-ship` | Commit, push, create PR, and update YouGile after development. Reads git strategy from config.yaml (direct vs feature-branch). | `/nacl-tl-ship` | `--deploy`, `--feature` |
 | `nacl-tl-deploy` | Monitor CI/CD deployment (GitHub Actions), run health checks, update YouGile. Deployment is triggered by git push (nacl-tl-ship), this skill monitors the result. | `/nacl-tl-deploy` | `--staging`, `--production`, `--watch` |
-| `nacl-tl-deliver` | Delivery orchestrator: push feature branch, wait for CI, verify on staging, health check. Chains nacl-tl-ship, nacl-tl-verify, and nacl-tl-deploy into a single continuous pipeline. | `/nacl-tl-deliver` | `--feature`, `--env`, `--skip-verify`, `--skip-deploy` |
-| `nacl-tl-release` | Version bump, git tag, changelog aggregation, release notes, YouGile notification. Run after successful production deployment. | `/nacl-tl-release` | `--major`, `--minor`, `--patch`, `--skip-merge`, `--dry-run`, `--yes` |
+| `nacl-tl-deliver` | Delivery orchestrator: push feature branch, wait for CI, verify on staging, health check. Chains nacl-tl-ship, nacl-tl-verify, and nacl-tl-deploy into a single continuous pipeline. | `/nacl-tl-deliver` | `--feature`, `--env` |
+| `nacl-tl-release` | Version bump, git tag, changelog aggregation, release notes, YouGile notification. Run after successful production deployment. | `/nacl-tl-release` | `--major`, `--minor`, `--patch`, `--dry-run`, `--yes` |
 
 ### Fix & Recovery
 
@@ -127,8 +127,8 @@ TeamLead skills for the full development lifecycle -- from planning through rele
 | `nacl-tl-regression-test` | Independent regression-test author. Writes a single test against currently-broken code; the test must be RED. Touches only test files, never production code. Refuses on `NO_INFRA`. Invoked by `nacl-tl-fix` Step 6d, but also callable directly. | `/nacl-tl-regression-test "POST /activate returns 400 on empty body"` | — |
 | `nacl-tl-reopened` | Process tasks from YouGile Reopened column (failed verification/QA). Reads tester feedback, diagnoses root cause, fixes via nacl-tl-fix, ships via nacl-tl-ship. | `/nacl-tl-reopened` | `--task`, `--all`, `--yes`, `--auto-ship`, `--dry-run` |
 | `nacl-tl-diagnose` | Project health diagnostic -- analyzes git history, documentation drift, code health, and regression patterns. Produces DIAGNOSTIC-REPORT.md. | `/nacl-tl-diagnose` | `--since`, `--focus` |
-| `nacl-tl-hotfix` | Emergency hotfix to main: stash/cherry-pick changes, create hotfix branch from main, validate, open PR with auto-merge, restore source branch. | `/nacl-tl-hotfix --apply` | `--apply`, `--cherry-pick`, `--force-push`, `--rebase-feature`, `--dry-run`, `--yes` |
-| `nacl-tl-reconcile` | Emergency documentation-code reconciliation. Brings all docs in sync with current code state using nacl-tl-diagnose report and SA skills. | `/nacl-tl-reconcile` | `--report`, `--scope`, `--dry-run`, `--force` |
+| `nacl-tl-hotfix` | Emergency hotfix to main: stash/cherry-pick changes, create hotfix branch from main, validate, open PR with auto-merge, restore source branch. | `/nacl-tl-hotfix --apply` | `--apply`, `--cherry-pick`, `--push-direct-to-main`, `--rebase-feature`, `--dry-run`, `--yes` |
+| `nacl-tl-reconcile` | Emergency documentation-code reconciliation. Brings all docs in sync with current code state using nacl-tl-diagnose report and SA skills. | `/nacl-tl-reconcile` | `--report`, `--scope`, `--dry-run` |
 
 ### Documentation
 
@@ -140,8 +140,8 @@ TeamLead skills for the full development lifecycle -- from planning through rele
 
 | Skill | Description | Example invocation | Key modifiers |
 |-------|-------------|-------------------|---------------|
-| `nacl-tl-full` | Autonomous full lifecycle orchestrator. Coordinates planning, development (BE+FE), sync, stubs, review, QA, and docs across execution waves. | `/nacl-tl-full --task UC001` | `--wave`, `--task`, `--feature`, `--skip-plan`, `--skip-qa`, `--yes` |
-| `nacl-tl-conductor` | Process manager for the full development workflow: intake to staging. Creates feature branches, dispatches sub-agents, commits per UC atomically. | `/nacl-tl-conductor --items FR-001` | `--items`, `--feature`, `--branch`, `--skip-deliver`, `--skip-qa`, `--yes` |
+| `nacl-tl-full` | Autonomous full lifecycle orchestrator. Coordinates planning, development (BE+FE), sync, stubs, review, QA, and docs across execution waves. | `/nacl-tl-full --task UC001` | `--wave`, `--task`, `--feature`, `--yes` |
+| `nacl-tl-conductor` | Process manager for the full development workflow: intake to staging. Creates feature branches, dispatches sub-agents, commits per UC atomically. | `/nacl-tl-conductor --items FR-001` | `--items`, `--feature`, `--branch`, `--yes` |
 
 ---
 
@@ -164,7 +164,15 @@ Wraps Anthropic's `/goal` command with NaCl semantics and safety rails.
 
 | Skill | Description | Example invocation | Key modifiers |
 |-------|-------------|-------------------|---------------|
-| `nacl-goal` | Resolves a NaCl alias into a `/goal` completion condition that the transcript-only evaluator can verify via the GOAL_PROOF wire format. Preview mode by default; `--start` issues the real `/goal`. Refuses Tier-C gates (BA-SA handoff, SA phase confirmation, hotfix judgment). See `docs/guides/goal-command.md`. | `/nacl-goal wave:5` | `--start`, `--tier=<S\|M\|L\|XL>`, `--check-script=<path>`, `--description` |
+| `nacl-goal` | Resolves a NaCl alias into a `/goal` completion condition that the transcript-only evaluator can verify via the GOAL_PROOF wire format. Preview mode by default for the 2.10.0 aliases (e.g. `wave`, `fix`, `validate`, `resume`); `--start` issues the real `/goal`. The `intake` (2.10.1) and `conduct` (2.18.0) aliases are autonomy-by-default instead (opt out with `--plan-only`). Refuses Tier-C gates (BA-SA handoff, SA phase confirmation, hotfix judgment). See `docs/guides/goal-command.md`. | `/nacl-goal wave:5` | `--start`, `--tier=<S\|M\|L\|XL>`, `--check-script=<path>`, `--description` |
+
+---
+
+## Diagnostics (1)
+
+| Skill | Description | Example invocation | Key modifiers |
+|-------|-------------|-------------------|---------------|
+| `nacl-postmortem` | Post-mortem of a project built end-to-end via nacl-* skills: for each post-"done" bug, finds which skill gate let it through. Produces `docs/retrospectives/<project>-postmortem.md`. Read-only, RARE. | `/nacl-postmortem` | — |
 
 ---
 

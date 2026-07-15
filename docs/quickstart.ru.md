@@ -11,7 +11,7 @@
 - Claude Code или Codex установлен и аутентифицирован
 - [Docker](https://docs.docker.com/get-docker/) установлен и запущен
 - [Git](https://git-scm.com/)
-- [Node.js 18+](https://nodejs.org/) (только для опциональных CLI-инструментов)
+- [Node.js 18+](https://nodejs.org/) -- обязателен: `/nacl-init` и детерминированные skill-tools запускают node-скрипты
 
 ## Шаг 1: Клонировать репозиторий
 
@@ -23,34 +23,17 @@ git clone https://github.com/ITSalt/NaCl.git ~/NaCl
 
 ## Шаг 2: Установить скиллы для вашей агентской среды
 
-NaCl поддерживает Claude Code и Codex. У них разные пользовательские директории
-для скиллов, поэтому выберите раздел под вашу среду:
+У Claude Code два канала установки — CLI (симлинки на скиллы) и Desktop (плагин,
+устанавливаемый из встроенного маркетплейса). У Codex — свой адаптированный пакет.
+Выберите один канал под вашу среду и машину (никогда не устанавливайте оба канала
+Claude Code на одной машине):
 
-- [Установка для Claude Code](setup/install-skills.ru.md#claude-code)
+- [Установка для Claude Code](setup/install-skills.ru.md#выберите-канал)
 - [Установка для Codex](setup/install-skills.ru.md#codex)
 
 В инструкции есть команды для macOS, Linux, Windows WSL2 и Windows PowerShell.
 
-## Шаг 3: Запустить графовую инфраструктуру
-
-```bash
-cd ~/NaCl
-cp graph-infra/.env.example graph-infra/.env
-docker compose -f graph-infra/docker-compose.yml up -d
-```
-
-Подождите ~30 секунд, пока Neo4j стартует, затем загрузите схему:
-
-```bash
-CONTAINER=$(docker ps --format '{{.Names}}' | grep neo4j | head -1)
-NEO4J_PASS=$(grep NEO4J_PASSWORD graph-infra/.env | cut -d= -f2)
-
-for f in graph-infra/schema/ba-schema.cypher graph-infra/schema/sa-schema.cypher graph-infra/schema/tl-schema.cypher; do
-  docker exec -i "$CONTAINER" cypher-shell -u neo4j -p "$NEO4J_PASS" < "$f"
-done
-```
-
-## Шаг 4: Настроить MCP-сервер Neo4j
+## Шаг 3: Настроить MCP-сервер Neo4j
 
 Здесь ничего не нужно устанавливать вручную — `/nacl-init` (следующий шаг) сам скачивает
 версия-запиненный, проверенный по контрольной сумме бинарник `neo4j-mcp` и записывает
@@ -58,7 +41,7 @@ done
 для ручного способа установки (если исходящий доступ заблокирован) и заметок про Claude Code
 Desktop.
 
-## Шаг 5: Инициализировать первый проект
+## Шаг 4: Инициализировать первый проект
 
 Откройте вашу агентскую среду в директории проекта (в основной рабочей копии, не в
 связанном worktree):
@@ -67,9 +50,12 @@ Desktop.
 /nacl-init "Название проекта"
 ```
 
-Создаст `CLAUDE.md`, `config.yaml` и настроит `.mcp.json` для MCP-сервера Neo4j.
-Выполните `/mcp` и начните новую сессию, если `neo4j` ещё нет в списке — MCP-серверы
-подхватываются только при старте сессии. Затем запустите полный пайплайн:
+`/nacl-init` сам разворачивает граф Neo4j: копирует графовую инфраструктуру в ваш
+проект, поднимает Docker Compose стек, дожидается его готовности, загружает схему и
+настраивает `.mcp.json` для MCP-сервера Neo4j. Запускать `docker compose up` из этого
+checkout вручную не нужно. Выполните `/mcp` и начните новую сессию, если `neo4j` ещё нет
+в списке — MCP-серверы подхватываются только при старте сессии. Затем запустите полный
+пайплайн:
 
 ```
 /nacl-ba-full

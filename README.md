@@ -2,7 +2,7 @@
 
 # NaCl
 
-**NaCl** (Na + Cl) is a set of 57 agent skills for Claude Code and Codex that cover the entire software development lifecycle -- from business analysis and system specification to TDD development, code review, QA, and release. Business and system analysis artifacts live in a Neo4j graph database, so every requirement is queryable, traceable, and never lost in a wall of Markdown.
+**NaCl** (Na + Cl) is a set of 59 agent skills for Claude Code and Codex that cover the entire software development lifecycle -- from business analysis and system specification to TDD development, code review, QA, and release. Business and system analysis artifacts live in a Neo4j graph database, so every requirement is queryable, traceable, and never lost in a wall of Markdown.
 
 ## How It Works
 
@@ -34,7 +34,7 @@ Each use case is committed atomically. QA runs at two levels: locally during dev
 
 - **Graph-first analysis.** Business processes, entities, roles, and rules are stored as Neo4j nodes and edges -- not flat files. This makes impact analysis, traceability, and validation a matter of Cypher queries rather than manual cross-referencing.
 
-- **Skill language controls output language.** BA and SA skill prompts are written in Russian, so Claude produces Russian-language artifacts. TL skills are in English and produce English output. This is intentional -- analysis documents are for stakeholders, code is for developers.
+- **Configurable output language.** BA and SA skills default to Russian-language artifacts (analysis documents are for stakeholders); TL skills default to English (code and commits are for developers). The actual language is resolved per invocation: an explicit `--lang=en`/`--lang=ru` flag wins, then `project.lang` in `config.yaml`, then the layer default. See `nacl-core/lang-directive.md`.
 
 - **Atomic commits per use case.** Each UC (use case) is developed, tested, reviewed, and shipped as a single unit. No half-done features in the repository.
 
@@ -68,9 +68,9 @@ All skills use the `nacl-{layer}-{action}` naming convention: **BA** = Business 
 | **Business Analysis** | `nacl-ba-*` | 14 | Business processes, entities, roles, rules, glossary, validation. Output in Russian. |
 | **System Analysis** | `nacl-sa-*` | 10 | Architecture, domain model, use cases, UI, roles, validation. Output in Russian. |
 | **TeamLead** | `nacl-tl-*` | 26 | Full dev lifecycle: planning, TDD (BE/FE), code review, QA, deploy, release, hotfix, diagnostics. |
-| **Utilities** | `nacl-*` | 4 | `nacl-core` (Cypher helpers), `nacl-render` (export), `nacl-publish` (Docmost sync), `nacl-init` (scaffolding). |
+| **Utilities** | `nacl-*` | 6 | `nacl-core` (Cypher helpers), `nacl-render` (export), `nacl-publish` (Docmost sync), `nacl-init` (scaffolding), `nacl-goal`, `nacl-postmortem`. |
 | **Migration** | `nacl-migrate-*` | 3 | Deterministic Markdown → Neo4j graph migration with adapter pattern. |
-| | | **57** | |
+| | | **59** | |
 
 ## Prerequisites
 
@@ -118,22 +118,16 @@ autostart, the pinned `neo4j-mcp` binary).
 1. **Clone the repository**
 
    ```bash
-   git clone https://github.com/itsalt/NaCl.git
+   git clone https://github.com/ITSalt/NaCl.git
    cd NaCl
    ```
 
-2. **Start infrastructure**
-
-   ```bash
-   docker compose -f graph-infra/docker-compose.yml up -d    # Neo4j
-   ```
-
-3. **Install skills for your agent runtime**
+2. **Install skills for your agent runtime**
 
    Choose Claude Code or Codex and follow
    [docs/setup/install-skills.md](docs/setup/install-skills.md).
 
-4. **Initialize your project**
+3. **Initialize your project**
 
    Open your agent runtime in the target project directory, then run:
 
@@ -141,7 +135,11 @@ autostart, the pinned `neo4j-mcp` binary).
    /nacl-init "My Project"
    ```
 
-5. **Run the pipeline**
+   `/nacl-init` provisions the Neo4j graph for you -- it starts a per-project Docker
+   Compose stack, waits for it to become healthy, loads the schema, and writes
+   `.mcp.json`. You don't run `docker compose up` yourself from this checkout.
+
+4. **Run the pipeline**
 
    Start with business analysis, then proceed through the workflow:
 
@@ -193,7 +191,7 @@ Transferring a project's Neo4j graph between machines is a one-shot, encrypted e
 | [docs/quickstart.md](docs/quickstart.md) | Step-by-step setup and first run |
 | [docs/HANDOVER.md](docs/HANDOVER.md) | Runbook for exporting and importing a graph between machines |
 | [docs/architecture.md](docs/architecture.md) | Graph schema, skill interaction model, data flow |
-| [docs/skills-reference.md](docs/skills-reference.md) | Full catalog of all 57 skills with parameters and examples |
+| [docs/skills-reference.md](docs/skills-reference.md) | Full catalog of all 59 skills with parameters and examples |
 | [docs/graph-schema.md](docs/graph-schema.md) | Neo4j node/edge types, constraints, indexes |
 | [docs/configuration.md](docs/configuration.md) | `config.yaml` reference and environment variables |
 | [docs/methodology/](docs/methodology/) | BA/SA methodology deep dive: graph philosophy, validation, traceability |
@@ -217,11 +215,16 @@ NaCl/
   nacl-tl-*/          26 development lifecycle skills
   nacl-migrate-*/      3 Markdown → Graph migration skills
   nacl-core/          shared Cypher helpers and graph utilities
-  nacl-render/        Markdown and Excalidraw rendering
+  nacl-render/        Markdown and Mermaid rendering (Excalidraw rendering moved to analyst-tool)
   nacl-publish/       Docmost publishing
   nacl-init/          project scaffolding
+  nacl-goal/          /goal command wrapper
+  nacl-postmortem/    skill post-mortem tooling
   nacl-tl-core/       shared TL templates and references
-  graph-infra/        Neo4j Docker infrastructure
+  graph-infra/        Neo4j Docker infrastructure (template copied into each project by /nacl-init)
+  plugin/             committed Claude Code Desktop plugin artifact (built by scripts/build-plugin.mjs)
+  .claude-plugin/     marketplace manifest for the Desktop plugin channel
+  skills-for-codex/   adapted skill package for the Codex channel
   analyst-tool/       Local web tool for Excalidraw boards (run separately: `cd analyst-tool && npm install && npm run dev`)
   docs/               documentation
 ```

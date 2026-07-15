@@ -109,8 +109,10 @@ The core migration pipeline becomes schema-driven:
 
 ### What stays the same
 
-- All existing BA/SA adapters (`inline_table_v1`, `frontmatter_v1`,
-  `llm_freeform_v1`) continue to subclass `BaseBaAdapter` and return `BaIR`.
+- All existing BA/SA adapters (`inline_table_v1`, `frontmatter_v1`) continue
+  to subclass `BaseBaAdapter` and return `BaIR` (BA layer) or the equivalent
+  `(SaIR, HandoffIR)` shape (SA layer). `llm_freeform_v1` does not exist yet —
+  it remains a future, skill-driven adapter.
 - JSON serialisation convention (`dataclasses.asdict + json`) is unchanged.
 - The `Warning` dataclass is shared between both IR paths.
 

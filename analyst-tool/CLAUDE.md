@@ -43,7 +43,7 @@ This tool follows a **deterministic, test-first lifecycle**:
    - Renderers are built from explicit Cypher → Excalidraw transforms — never approximated.
 
 2. **TDD development** (`/nacl-tl-dev-be`, `/nacl-tl-dev-fe`)
-   - Write failing test (server: vitest; web: Playwright; e2e: Playwright).
+   - Write failing test (server: Node's built-in test runner via `node --test`; web has no unit-test suite yet; e2e: Playwright).
    - Implement minimal code to pass.
    - Refactor with tests green.
 

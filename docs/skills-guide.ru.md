@@ -115,7 +115,9 @@
 и протоколом GOAL_PROOF, чтобы transcript-only эвалюатор получал детерминированное
 основание для вердикта. Запуск без `--start` показывает полный предпросмотр (tier,
 мягкий бюджет, скрипт проверки, denylist); добавьте `--start`, чтобы выпустить
-настоящий `/goal`. Полная документация: [docs/guides/goal-command.md](guides/goal-command.md).
+настоящий `/goal`. Исключение — алиасы `intake` (2.10.1) и `conduct` (2.18.0): они
+autonomy-by-default и выпускают `/goal` без `--start` (отказ через `--plan-only`).
+Полная документация: [docs/guides/goal-command.md](guides/goal-command.md).
 
 ## Что дальше
 

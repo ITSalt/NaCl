@@ -11,7 +11,7 @@ Get from zero to your first skill run in 10 minutes.
 - Claude Code or Codex installed and authenticated
 - [Docker](https://docs.docker.com/get-docker/) installed and running
 - [Git](https://git-scm.com/)
-- [Node.js 18+](https://nodejs.org/) (only for optional CLI tools)
+- [Node.js 18+](https://nodejs.org/) -- required: `/nacl-init` and the deterministic skill-tools run Node scripts
 
 ## Step 1: Clone the repository
 
@@ -23,41 +23,24 @@ git clone https://github.com/ITSalt/NaCl.git ~/NaCl
 
 ## Step 2: Install skills for your agent runtime
 
-NaCl supports Claude Code and Codex. They use different user-level skill
-directories, so choose the section that matches your runtime:
+Claude Code has two install channels -- CLI (symlinked skills) and Desktop (a
+plugin installed from the in-app marketplace). Codex has its own adapted
+package. Pick the one channel that matches your runtime and machine (never
+install both Claude Code channels on the same machine):
 
-- [Claude Code installation](setup/install-skills.md#claude-code)
+- [Claude Code installation](setup/install-skills.md#choose-your-channel)
 - [Codex installation](setup/install-skills.md#codex)
 
 The guide includes macOS, Linux, Windows WSL2, and Windows PowerShell commands.
 
-## Step 3: Start the graph infrastructure
-
-```bash
-cd ~/NaCl
-cp graph-infra/.env.example graph-infra/.env
-docker compose -f graph-infra/docker-compose.yml up -d
-```
-
-Wait ~30 seconds for Neo4j to start, then load the schema:
-
-```bash
-CONTAINER=$(docker ps --format '{{.Names}}' | grep neo4j | head -1)
-NEO4J_PASS=$(grep NEO4J_PASSWORD graph-infra/.env | cut -d= -f2)
-
-for f in graph-infra/schema/ba-schema.cypher graph-infra/schema/sa-schema.cypher graph-infra/schema/tl-schema.cypher; do
-  docker exec -i "$CONTAINER" cypher-shell -u neo4j -p "$NEO4J_PASS" < "$f"
-done
-```
-
-## Step 4: Configure the Neo4j MCP server
+## Step 3: Configure the Neo4j MCP server
 
 There's nothing to install manually here — `/nacl-init` (next step) downloads a
 version-pinned, checksum-verified `neo4j-mcp` binary and writes your project's `.mcp.json`
 for you. See [Graph Setup](setup/graph-setup.md#step-3-install-the-neo4j-mcp-server) for
 the manual-download fallback (blocked egress) and the Claude Code Desktop notes.
 
-## Step 5: Initialize your first project
+## Step 4: Initialize your first project
 
 Open your agent runtime in the target project directory (the main checkout, not a linked
 worktree):
@@ -66,9 +49,12 @@ worktree):
 /nacl-init "My Project Name"
 ```
 
-This creates `CLAUDE.md` and `config.yaml`, and sets up `.mcp.json` for the Neo4j MCP
-server. Run `/mcp` afterward and start a new session if `neo4j` isn't listed yet — MCP
-servers are only picked up at session start. Then start the full pipeline:
+`/nacl-init` provisions the Neo4j graph for you: it copies the graph infrastructure
+into your project, starts a per-project Docker Compose stack, waits for it to become
+healthy, loads the schema, and sets up `.mcp.json` for the Neo4j MCP server. You don't
+run `docker compose up` from the NaCl checkout yourself. Run `/mcp` afterward and start
+a new session if `neo4j` isn't listed yet — MCP servers are only picked up at session
+start. Then start the full pipeline:
 
 ```
 /nacl-ba-full

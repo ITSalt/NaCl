@@ -46,11 +46,20 @@ private key never leaves the VPS/admin host. Secrets are generated, never commit
 ## Issuing / revoking access
 
 ```sh
-# add a developer
-sh <NaCl>/graph-infra/vps/issue-client-cert.sh bob@example.com --host graph.example.com --gateway-port 7687
-# revoke instantly (CRL + gateway reload; no password change, others unaffected)
+# add a developer — --scope/--prefix are REQUIRED here: they add the new CN to the gateway
+# allow-list and recreate the gateway. Without them the cert is minted but NOT added to the
+# allow-list, and the developer cannot connect.
+sh <NaCl>/graph-infra/vps/issue-client-cert.sh bob@example.com --host graph.example.com \
+  --gateway-port 7687 --scope acme-billing --prefix acme-billing
+# revoke instantly (allow-list removal + gateway reload — ghostunnel has no CRL; no password
+# change, others unaffected)
 sh <NaCl>/graph-infra/vps/revoke-client-cert.sh bob@example.com --scope acme-billing --prefix acme-billing
 ```
+
+> **Warning.** A cert issued without `--scope`/`--prefix` is valid cryptographically but grants no
+> access: the gateway's ghostunnel `--allow-cn` list is the actual access control, and the
+> developer's CN is only added to it when `--scope`/`--prefix` are passed (and the graph directory
+> exists at `<state-dir>/<scope>`). Add the CN later with the same flags if you minted without them.
 
 ## Definition of Done
 

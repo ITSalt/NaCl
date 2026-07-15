@@ -4,7 +4,7 @@
 
 # Workflows
 
-9 end-to-end scenarios. Each shows the exact sequence of slash commands you run in Claude Code and what happens at every step.
+10 end-to-end scenarios, plus a status-check bonus. Each shows the exact sequence of slash commands you run in Claude Code and what happens at every step. Commands are given in the `/nacl-*` form used by the CLI install; on the Claude Code Desktop plugin channel the same skills are namespaced `/nacl:<name>` instead (see [Agent Architecture > Installation](agents.md#installation)).
 
 ---
 
@@ -128,10 +128,11 @@ To merge specific PRs:
 /nacl-tl-release --pr 42,45
 ```
 
-To skip merge and only tag (old behavior):
-```
-/nacl-tl-release --skip-merge
-```
+Tag-only mode needs no flag: when discovery finds no verified PRs to merge
+(code already merged manually or via `git.strategy: direct`), the skill skips
+the merge steps automatically and proceeds to tag + release. The old
+`--skip-merge` flag was removed; bulk bypasses go through signed exceptions
+or emergency mode.
 
 ---
 
@@ -199,7 +200,7 @@ without manual prompting between turns. Use `/nacl-goal` instead of `/goal` dire
 it enforces NaCl gate rules and writes a structured run file.
 
 **Choose `/nacl-goal` when:**
-- The task maps to a built-in alias (`wave`, `fix`, `validate`, `reopened-drain`).
+- The task maps to a built-in alias (`wave`, `fix`, `validate`, `reopened-drain`, `intake`, `conduct`).
 - The finish line is objectively verifiable by a script (not a human judgment call).
 - You are comfortable leaving the session running for Tier S (up to 2 h) or Tier M (up to 6 h).
 

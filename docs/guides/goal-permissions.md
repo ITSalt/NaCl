@@ -64,16 +64,18 @@ The `conduct` multi-cluster orchestrator inherits the full universal denylist an
 
 ---
 
-## `migrate-canary` specific rules
+## `migrate-canary` specific rules (deferred — not shipped)
 
-The `migrate-canary` alias (2.10.1) has additional restrictions beyond the universal denylist:
+The `migrate-canary` alias remains **deferred**: it is listed in `nacl-goal/aliases.md` as a future alias with no contract section, `SKILL.md` marks its check script `# deferred`, and `nacl-goal/checks/migrate-canary.sh` is currently a placeholder that emits a stub `GOAL_PROOF` (`TODO: wire to graph`). Invoking `/nacl-goal migrate-canary` today is a dead path — it does not exist as a runnable alias.
 
-- **DENY** any action belonging to a post-canary migration phase. The alias runs only up to the retrospective gate.
+The rules below describe the restrictions this alias is **designed** to enforce once shipped; they are not yet live:
+
+- **DENY** any action belonging to a post-canary migration phase. The alias would run only up to the retrospective gate.
 - **DENY** any database-mutating migration step that has not been pre-approved by the user in the current session's interactive setup.
-- The check script (`nacl-goal/checks/migrate-canary.sh`) must verify on every turn that the retrospective gate has NOT been crossed for the current project. If it has, the script returns `GOAL_BLOCKED` with reason `retrospective_gate_already_passed_use_interactive_skill`.
-- If the gate is crossed mid-run (e.g. another terminal crossed it concurrently), the runtime gate detector emits `GATE_VIOLATION_DETECTED`, the proof script returns `GOAL_BLOCKED` on the next probe, and the run file records the event in `gate_violation_attempts[]`.
+- The check script (`nacl-goal/checks/migrate-canary.sh`) would need to verify on every turn that the retrospective gate has NOT been crossed for the current project. If it has, the script would return `GOAL_BLOCKED` with reason `retrospective_gate_already_passed_use_interactive_skill`.
+- If the gate were crossed mid-run (e.g. another terminal crossed it concurrently), the runtime gate detector would emit `GATE_VIOLATION_DETECTED`, the proof script would return `GOAL_BLOCKED` on the next probe, and the run file would record the event in `gate_violation_attempts[]`.
 
-For the retrospective gate requirement, see `feedback_migration_retrospective_gate` memory: after the canary project, a mandatory 3-sub-agent audit and explicit user approval are required before proceeding with any further migration.
+Until `migrate-canary` ships, the retrospective gate requirement is enforced interactively — see `feedback_migration_retrospective_gate` memory: after the canary project, a mandatory 3-sub-agent audit and explicit user approval are required before proceeding with any further migration.
 
 ---
 
@@ -92,14 +94,6 @@ Full refusal catalog with message text: `nacl-goal/refusal-catalog.md`.
 
 ## Enabling hooks
 
-If `/nacl-goal` refuses with `REFUSE_HOOKS_DISABLED`, check `.claude/settings.json`:
+If `/nacl-goal` refuses with `REFUSE_HOOKS_DISABLED`, hooks have been disabled globally or for this workspace (Claude Code's `hooks` setting in `.claude/settings.json` is event-keyed — e.g. a `PostToolUse` array — not a single `enabled` boolean; there is no flag that flips it back on). Re-enable hooks the way you disabled them (workspace settings UI, or by restoring the `PostToolUse` hook entries removed from `.claude/settings.json`), then re-run.
 
-```json
-{
-  "hooks": {
-    "enabled": true
-  }
-}
-```
-
-Re-enable hooks and re-run. The runtime gate detector installs its PostToolUse hook at `--start` prelude and removes it at exit; it does not leave permanent hook configuration.
+The runtime gate detector installs its own `PostToolUse` hook at `--start` prelude and removes it at exit; it does not leave permanent hook configuration.

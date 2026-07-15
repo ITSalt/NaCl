@@ -26,7 +26,7 @@ nacl-<name>/
 
 ## When to move content out of SKILL.md
 
-Apply the **reference test** from [anatomy-of-claude-skills post]:
+Apply the **reference test** (from the "anatomy of Claude skills" pattern):
 
 > If a block works standalone → make it a separate skill.
 > If it's meaningless without the parent `SKILL.md` but loads into context on every call while only relevant sometimes → it belongs in `references/`.

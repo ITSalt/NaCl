@@ -61,7 +61,7 @@ git clone https://github.com/ITSalt/NaCl.git ~/NaCl
 
 ### Install skills
 
-For Claude Code, one command installs both skills and agents:
+For Claude Code **CLI**, one command installs both skills and agents:
 
 ```bash
 sh ~/NaCl/scripts/install-claude-code-skills.sh
@@ -70,6 +70,13 @@ sh ~/NaCl/scripts/install-claude-code-skills.sh
 The script runs `git pull --ff-only` first, then refreshes symlinks for
 every `nacl-*` skill with a `SKILL.md` and every agent profile under
 `.claude/agents/`. Pass `--no-pull` to skip git.
+
+For **Claude Code Desktop**, the current channel (v2.24.0+) is the `nacl`
+plugin instead of this symlink script: `/plugin marketplace add ITSalt/NaCl`
+then `/plugin install nacl@nacl` inside Desktop. Pick one channel per
+machine — do not install both the symlinked skills and the plugin. See
+[Skill Installation § Choose your channel](install-skills.md) for the full
+channel matrix.
 
 For Codex, see [Skill Installation](install-skills.md#codex).
 

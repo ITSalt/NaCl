@@ -32,9 +32,13 @@ another secure channel agreed with the receiving developer.
 
 ## Cleanup policy
 
-Artifacts committed here bloat git history. When S2 (shared VPS Neo4j with
-MinIO/S3 backup) ships, these files will migrate to object storage and this
-folder will be scrubbed from history:
+Artifacts committed here bloat git history. The shared VPS Neo4j mode itself
+already shipped (v2.23.0, `graph.mode: remote` — see
+`docs/runbooks/provision-shared-graph-vps.md`), but MinIO/S3 backup for
+handover artifacts has not: `--to=s3://…`/`--from=s3://…` are still rejected
+(see `docs/HANDOVER.md`). When S3/MinIO support for handover artifacts ships,
+these files will migrate to object storage and this folder will be scrubbed
+from history:
 
 ```
 git filter-repo --path graph-infra/handover --invert-paths

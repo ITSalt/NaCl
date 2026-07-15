@@ -24,3 +24,5 @@
 - [ ] No credentials or API keys in code
 - [ ] Follows naming conventions (`nacl-{layer}-{action}`, e.g. `nacl-ba-context`)
 - [ ] Documentation updated if needed
+- [ ] If a root `nacl-*/SKILL.md` changed: mirrored the same change in `skills-for-codex/` (or the sync exemption applies) — see `skills-for-codex/scripts/check-root-codex-sync.sh`
+- [ ] If `nacl-*/**`, `.claude/agents/**`, or `graph-infra/**` changed: rebuilt the committed `plugin/` artifact (`node scripts/build-plugin.mjs`) and committed the result

@@ -11,7 +11,8 @@ Run the auto-detector first:
 
 ```bash
 cd "$NACL_HOME/nacl-migrate-ba"
-python3 scripts/detect_ba.py /path/to/project
+python3 scripts/detect_ba.py --project /path/to/project --output /tmp/detect-ba.json
+cat /tmp/detect-ba.json
 ```
 
 If the result is `"chosen": null` or `"ambiguous": true`, your project's Markdown
@@ -42,7 +43,7 @@ project/docs/
     Validator  (deep ID + ref checks)
           │
           ▼
-    Cypher plan  (cypher.py)
+    Cypher plan  (generate_ba_cypher.py / generate_sa_cypher.py)
           │
           ▼
     nacl-migrate-ba SKILL.md       ← executes Cypher via MCP Neo4j tool

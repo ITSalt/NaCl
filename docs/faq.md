@@ -6,13 +6,13 @@
 
 **Can I use NaCl without Neo4j?**
 
-Partially. The TL layer skills (`nacl-tl-*`) work standalone — they read from task files in `.tl/tasks/` and operate entirely on the local filesystem. The BA and SA layers require a running Neo4j instance because all analysis artifacts are stored as graph nodes. If you only need planning, TDD development, code review, QA, and deployment, you can skip Neo4j entirely.
+Partially. Some TL layer skills — `nacl-tl-dev-be`, `nacl-tl-dev-fe`, `nacl-tl-review`, `nacl-tl-qa`, `nacl-tl-ship`, `nacl-tl-deploy` — work standalone: they read from task files in `.tl/tasks/` and operate entirely on the local filesystem. `nacl-tl-plan` is not one of them: it is graph-based and hard-stops without SA data in Neo4j, and several other TL skills (`nacl-tl-status`, `nacl-tl-next`, `nacl-tl-intake`, `nacl-tl-conductor`, `nacl-tl-full`) are graph-aware too. The BA and SA layers require a running Neo4j instance because all analysis artifacts are stored as graph nodes. If you only need TDD development, code review, QA, and deployment on tasks someone else already planned, you can skip Neo4j for that subset — but planning itself needs the graph.
 
 ---
 
 **Does it work with the Claude Code Desktop app and IDE extensions?**
 
-Yes. Skills are installed into `~/.claude/skills/` and are shared across all local Claude Code interfaces: the CLI, the Desktop app (Mac/Windows), and IDE extensions (VS Code, JetBrains). Install once, use everywhere. The one exception is the claude.ai web app — it runs in a sandbox without local filesystem access, so slash commands that invoke skills are not available there.
+Yes, but Claude Code Desktop has its own install channel since v2.24.0: the `nacl` plugin, installed from the in-app marketplace (`/plugin marketplace add ITSalt/NaCl` then `/plugin install nacl@nacl`), with skills namespaced as `/nacl:<name>`. The Claude Code CLI and IDE extensions use the symlinked-skills channel (`~/.claude/skills/`) instead. Pick **one** channel per machine — do not install both; the plugin's SessionStart hook detects a symlinked install and warns if it finds one. See [Skill Installation](setup/install-skills.md) for the full channel matrix. The one unsupported surface is the claude.ai web app — it runs in a sandbox without local filesystem access, so slash commands that invoke skills are not available there.
 
 ---
 
@@ -24,7 +24,7 @@ Yes. The TL layer is fully independent. You can write task files in `.tl/tasks/`
 
 **BA and SA skills output Russian text. What if I need English?**
 
-This is intentional. BA and SA skill prompts are written in Russian because those artifacts (process maps, entity models, use case specs) are consumed by Russian-speaking business stakeholders and analysts. TL layer prompts and outputs are in English because code, commit messages, and PRs are consumed by developers. If your team needs English BA/SA output, community-contributed English skill variants are welcome — see [docs/contributing.md](contributing.md).
+This is the default, not a hardcoded behavior. BA and SA artifacts (process maps, entity models, use case specs) default to Russian because they are typically consumed by Russian-speaking business stakeholders and analysts; TL layer prompts and outputs default to English because code, commit messages, and PRs are consumed by developers. The actual output language is resolved per invocation — an explicit `--lang=en`/`--lang=ru` flag wins, then `project.lang` in `config.yaml`, then the layer default (see `nacl-core/lang-directive.md`) — so you don't need an English skill variant: pass `--lang=en` or set `project.lang: en` in `config.yaml`.
 
 ---
 
@@ -48,4 +48,4 @@ Cost depends entirely on model usage and task volume. Scout/Haiku-tier skills (d
 
 **Can I use NaCl with an existing project?**
 
-Yes, in two ways. For a project with no prior analysis docs, run `/nacl-init "My Project"` in your project directory — it scaffolds `config.yaml`, `.tl/`, and the Docker infrastructure config. For a project that already has Markdown-based requirements, specs, or architecture docs, run `/nacl-migrate` — it reads your existing documents and imports them into the graph as properly typed nodes, so you can use BA/SA query and validation skills from that point forward.
+Yes, in two ways. For a project with no prior analysis docs, run `/nacl-init "My Project"` in your project directory — it creates `CLAUDE.md`, `config.yaml`, and the Docker infrastructure config (`.tl/` and `docs/` are created later, on demand, by `sa-full`, `ba-full`, and `nacl-tl-plan` when you actually invoke them). For a project that already has Markdown-based requirements, specs, or architecture docs, run `/nacl-migrate` — it reads your existing documents and imports them into the graph as properly typed nodes, so you can use BA/SA query and validation skills from that point forward.
