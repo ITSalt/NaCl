@@ -4,7 +4,8 @@ name: Test Skill Tools
 # replace inline procedural prose). Node `.mjs` tools use `node --test`; bash tools
 # use a self-asserting `*.test.sh` plus a `bash -n` syntax check. This job also
 # retro-covers nacl-tl-verify-code/scripts/classify-status.test.mjs, which existed
-# before any CI ran Node tests.
+# before any CI ran Node tests. The `pwsh-syntax` job parses every tracked `.ps1`
+# with the PowerShell .NET parser (pwsh is preinstalled on ubuntu runners).
 
 on:
   pull_request:
@@ -14,6 +15,7 @@ on:
       - '**/scripts/*.sh'
       - 'scripts/*.mjs'
       - 'scripts/*.sh'
+      - '**.ps1'
       - '.github/workflows/test-tools.yml'
   push:
     branches: [main]
@@ -22,6 +24,7 @@ on:
       - '**/scripts/*.sh'
       - 'scripts/*.mjs'
       - 'scripts/*.sh'
+      - '**.ps1'
       - '.github/workflows/test-tools.yml'
 
 jobs:
@@ -61,3 +64,30 @@ jobs:
             bash -n "$s" || { echo "SYNTAX FAIL: $s"; failed=1; }
           done
           exit "$failed"
+
+  pwsh-syntax:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: PowerShell syntax check
+        shell: pwsh
+        run: |
+          # plugin/ copies of .ps1 scripts are byte-identical build artifacts:
+          # excluded here like the other plugin globs in this workflow.
+          $files = @(git ls-files '*.ps1' ':!plugin/**')
+          if ($files.Count -eq 0) { Write-Output 'No PowerShell scripts found.'; exit 0 }
+          $failed = 0
+          foreach ($f in $files) {
+            $errs = $null
+            $full = (Resolve-Path -LiteralPath $f).ProviderPath
+            [void][System.Management.Automation.Language.Parser]::ParseFile($full, [ref]$null, [ref]$errs)
+            if ($errs) {
+              Write-Output "FAIL: $f"
+              $errs | ForEach-Object { Write-Output "  line $($_.Extent.StartLineNumber): $($_.Message)" }
+              $failed = 1
+            } else {
+              Write-Output "OK: $f"
+            }
+          }
+          exit $failed
