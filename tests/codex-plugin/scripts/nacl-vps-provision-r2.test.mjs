@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { execFileSync, spawnSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import {
   chmodSync,
   copyFileSync,
@@ -9,7 +10,9 @@ import {
   mkdtempSync,
   readFileSync,
   readdirSync,
+  renameSync,
   rmSync,
+  symlinkSync,
   writeFileSync,
 } from "node:fs";
 import os from "node:os";
@@ -55,20 +58,36 @@ function fixture() {
   const bin = path.join(root, "bin");
   const log = path.join(root, "docker.log");
   const controlLog = path.join(root, "control.log");
+  const physicalLive = path.join(root, "physical-live");
   mkdirSync(vps, { recursive: true });
   mkdirSync(templateDir, { recursive: true });
   mkdirSync(bin, { recursive: true });
   const realController = path.join(vps, "server-access-control.real.mjs");
   copyFileSync(controllerSource, realController);
   writeFileSync(path.join(vps, "server-access-control.mjs"), `
-import { appendFileSync } from "node:fs";
+import { appendFileSync, readFileSync, writeFileSync } from "node:fs";
+import path from "node:path";
 import { spawnSync } from "node:child_process";
 const args = process.argv.slice(2);
 const action = args[0] ?? "missing";
 const cnIndex = args.indexOf("--cn");
+const stateIndex = args.indexOf("--state-dir");
+const stateDir = stateIndex >= 0 ? args[stateIndex + 1] : "";
 if (process.env.FAKE_CONTROL_LOG) appendFileSync(process.env.FAKE_CONTROL_LOG, \`${'${action}'}:${'${cnIndex >= 0 ? args[cnIndex + 1] : "-"}'}\\n\`);
 if (action === "grant" && process.env.FAIL_GRANT_COMMAND === "1") process.exit(37);
 const result = spawnSync(process.execPath, [${JSON.stringify(realController)}, ...args], { stdio: "inherit", env: process.env });
+if (result.status === 0 && action === "grant" && process.env.TAMPER_AFTER_GRANT_SCOPE) {
+  writeFileSync(path.join(stateDir, process.env.TAMPER_AFTER_GRANT_SCOPE, "allowed-cns"), process.env.TAMPER_ALLOWED_CNS ?? "");
+}
+if (result.status === 0 && action === "grant" && process.env.TAMPER_TRUSTED_AFTER_GRANT) {
+  writeFileSync(path.join(stateDir, "trusted-cns"), process.env.TAMPER_TRUSTED_AFTER_GRANT);
+}
+if (result.status === 0 && action === "authorization-snapshot" && process.env.STALE_AFTER_AUTHORIZATION_SNAPSHOT === "1") {
+  const inventoryPath = path.join(stateDir, "gateways.json");
+  const inventory = JSON.parse(readFileSync(inventoryPath, "utf8"));
+  inventory.authorization_revision += 1;
+  writeFileSync(inventoryPath, \`${'${JSON.stringify(inventory, null, 2)}'}\\n\`);
+}
 process.exit(result.status ?? 1);
 `);
   copyFileSync(path.join(repo, "graph-infra/vps/lib-gateway-quarantine.sh"), path.join(vps, "lib-gateway-quarantine.sh"));
@@ -109,6 +128,11 @@ case "$1:$2" in
   compose:version) exit 0 ;;
   compose:up)
     printf 'up:%s\\n' "$scope" >> "$FAKE_DOCKER_LOG"
+    if [ "\${DELETE_COMPOSE_ON_UP_SCOPE:-}" = "$scope" ]; then
+      rm -f "$PWD/docker-compose.yml"
+      : > "$FAKE_PHYSICAL_LIVE"
+      exit 37
+    fi
     [ "\${FAIL_UP_SCOPE:-}" != "$scope" ]
     exit $?
     ;;
@@ -140,7 +164,7 @@ exit 0
     control(cli, state, "provision", ["--scope", scope, "--port", port]);
     writeFileSync(path.join(state, scope, "docker-compose.yml"), "services:\n  gateway: {}\n");
   }
-  return { root, state, skills, vps, cli, bin, log, controlLog };
+  return { root, state, skills, vps, cli, bin, log, controlLog, physicalLive };
 }
 
 function runProvision(ctx, extraEnv = {}) {
@@ -160,6 +184,7 @@ function runProvision(ctx, extraEnv = {}) {
       ...process.env,
       PATH: `${ctx.bin}:${process.env.PATH}`,
       FAKE_DOCKER_LOG: ctx.log,
+      FAKE_PHYSICAL_LIVE: ctx.physicalLive,
       FAKE_LISTEN_PORT: "7445",
       ...extraEnv,
     },
@@ -200,7 +225,23 @@ function validCompose(inner = '      - "--allow-cn=old"') {
   ].join("\n");
 }
 
-function runGrantHelper(ctx, principal = "developer.bob") {
+function useRealAuthorizationRenderer(ctx) {
+  copyFileSync(path.join(repo, "graph-infra/vps/lib-ca.sh"), path.join(ctx.vps, "lib-ca.sh"));
+  for (const scope of ["project-a", "project-b"]) {
+    writeFileSync(path.join(ctx.state, scope, "docker-compose.yml"), validCompose());
+  }
+}
+
+function assertNoUpAndGlobalQuarantine(ctx) {
+  const lines = logLines(ctx);
+  for (const scope of ["project-a", "project-b"]) {
+    assert.ok(lines.includes(`stop:${scope}`), `missing global quarantine for ${scope}: ${lines.join(", ")}`);
+    assert.equal(lines.includes(`up:${scope}`), false, `unexpected up for ${scope}: ${lines.join(", ")}`);
+  }
+  assert.ok(control(ctx.cli, ctx.state, "inventory").gateways.every((entry) => entry.enabled === false));
+}
+
+function runGrantHelper(ctx, principal = "developer.bob", extraEnv = {}) {
   const script = [
     `. ${JSON.stringify(path.join(ctx.vps, "lib-ca.sh"))}`,
     `. ${JSON.stringify(path.join(ctx.vps, "lib-gateway-quarantine.sh"))}`,
@@ -213,7 +254,7 @@ function runGrantHelper(ctx, principal = "developer.bob") {
   ].join("\n");
   return spawnSync("/bin/bash", ["-c", script], {
     encoding: "utf8",
-    env: { ...process.env, PATH: `${ctx.bin}:${process.env.PATH}`, FAKE_DOCKER_LOG: ctx.log },
+    env: { ...process.env, PATH: `${ctx.bin}:${process.env.PATH}`, FAKE_DOCKER_LOG: ctx.log, ...extraEnv },
   });
 }
 
@@ -398,6 +439,53 @@ test("real allowlist renderer writes and verifies the exact managed projection",
   }
 });
 
+test("tamper after grant cannot render wildcard, duplicate, unsorted or stale project authorization", () => {
+  const ctx = fixture();
+  try {
+    useRealAuthorizationRenderer(ctx);
+    rmSync(ctx.log, { force: true });
+    const result = runGrantHelper(ctx, "developer.zed", {
+      TAMPER_AFTER_GRANT_SCOPE: "project-a",
+      TAMPER_ALLOWED_CNS: "developer.zed\n*\ndeveloper.zed\ndeveloper.aaa\n",
+    });
+    assert.notEqual(result.status, 0);
+    assertNoUpAndGlobalQuarantine(ctx);
+    const compose = readFileSync(path.join(ctx.state, "project-a", "docker-compose.yml"), "utf8");
+    assert.doesNotMatch(compose, /--allow-cn=\*/);
+    assert.equal((compose.match(/--allow-cn=developer\.zed/g) ?? []).length <= 1, true);
+  } finally {
+    rmSync(ctx.root, { recursive: true, force: true });
+  }
+});
+
+test("non-canonical authoritative trusted-cns fails closed before every gateway action", () => {
+  const ctx = fixture();
+  try {
+    useRealAuthorizationRenderer(ctx);
+    rmSync(ctx.log, { force: true });
+    const result = runGrantHelper(ctx, "developer.zed", {
+      TAMPER_TRUSTED_AFTER_GRANT: "developer.zed\n*\ndeveloper.zed\ndeveloper.aaa\n",
+    });
+    assert.notEqual(result.status, 0);
+    assertNoUpAndGlobalQuarantine(ctx);
+  } finally {
+    rmSync(ctx.root, { recursive: true, force: true });
+  }
+});
+
+test("authorization revision drift after snapshot prevents render and up and globally quarantines", () => {
+  const ctx = fixture();
+  try {
+    useRealAuthorizationRenderer(ctx);
+    rmSync(ctx.log, { force: true });
+    const result = runGrantHelper(ctx, "developer.zed", { STALE_AFTER_AUTHORIZATION_SNAPSHOT: "1" });
+    assert.notEqual(result.status, 0);
+    assertNoUpAndGlobalQuarantine(ctx);
+  } finally {
+    rmSync(ctx.root, { recursive: true, force: true });
+  }
+});
+
 for (const malformed of [
   { name: "missing managed markers", compose: "services:\n  gateway: {}\n" },
   { name: "duplicate managed markers", compose: validCompose().replace("      # <<< NACL allow-cn (managed)", "      # >>> NACL allow-cn (managed)\n      # <<< NACL allow-cn (managed)") },
@@ -444,6 +532,25 @@ test("failed docker down retains the disabled reservation and prevents later por
   }
 });
 
+test("start attempt that loses compose cannot release a physically live gateway or its port", () => {
+  const ctx = fixture();
+  try {
+    const result = runProvision(ctx, { DELETE_COMPOSE_ON_UP_SCOPE: "project-c" });
+    assert.notEqual(result.status, 0);
+    assert.equal(existsSync(ctx.physicalLive), true, "fixture must prove that a physical start was attempted");
+    assert.equal(existsSync(path.join(ctx.state, "project-c", "docker-compose.yml")), false);
+    const gateway = control(ctx.cli, ctx.state, "inventory").gateways.find((entry) => entry.project_scope === "project-c");
+    assert.ok(gateway, "unverified shutdown must retain the reservation");
+    assert.equal(gateway.release_pending, true);
+    assert.equal(existsSync(path.join(ctx.state, "project-c")), true);
+    const collision = tryControl(ctx.cli, ctx.state, "reserve", ["--scope", "project-d", "--port", "7445"]);
+    assert.notEqual(collision.status, 0);
+    assert.match(collision.stderr, /GATEWAY_COLLISION/);
+  } finally {
+    rmSync(ctx.root, { recursive: true, force: true });
+  }
+});
+
 test("failed owned-artifact cleanup is retryable and keeps the port reserved until commit", () => {
   const root = mkdtempSync(path.join(os.tmpdir(), "nacl-vps-release-r2-"));
   const state = path.join(root, "state");
@@ -478,11 +585,56 @@ test("failed owned-artifact cleanup is retryable and keeps the port reserved unt
     assert.equal(committed.code, "GATEWAY_RESERVATION_RELEASED");
     assert.equal(committed.artifact_gc_status, "RETAINED");
     assert.ok(path.isAbsolute(committed.artifact_tombstone));
-    assert.deepEqual(control(controllerSource, state, "inventory").gateways, []);
+    const replayed = control(controllerSource, state, "release-commit", ["--scope", "project-a", "--reservation-token", reserved.reservation_token]);
+    assert.deepEqual(replayed, committed, "lost-ACK retry must return the exact durable result");
+    const wrongToken = tryControl(controllerSource, state, "release-commit", ["--scope", "project-a", "--reservation-token", "0".repeat(32)]);
+    assert.notEqual(wrongToken.status, 0);
+    assert.match(wrongToken.stderr, /RESERVATION_MISMATCH/);
+    const committedInventory = control(controllerSource, state, "inventory");
+    assert.deepEqual(committedInventory.gateways, []);
+    assert.equal(committedInventory.release_receipts.length, 1);
+    assert.equal(JSON.stringify(committedInventory.release_receipts).includes(reserved.reservation_token), false, "receipt must never retain the raw token");
+    assert.equal(lstatSync(path.join(state, "gateways.json")).mode & 0o777, 0o600);
     assert.equal(existsSync(project), false);
     assert.deepEqual(treeSnapshot(committed.artifact_tombstone), beforeCommit);
   } finally {
     if (existsSync(path.join(project, "z-locked"))) chmodSync(path.join(project, "z-locked"), 0o700);
     rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("release commit resumes after tombstone rename and rejects corrupt or symlinked durable state", () => {
+  for (const corruption of ["receipt", "inventory-symlink"]) {
+    const root = mkdtempSync(path.join(os.tmpdir(), `nacl-vps-release-${corruption}-`));
+    const state = path.join(root, "state");
+    const project = path.join(state, "project-a");
+    try {
+      const reserved = control(controllerSource, state, "reserve", ["--scope", "project-a", "--port", "7443"]);
+      mkdirSync(project, { recursive: true });
+      writeFileSync(path.join(project, "owned-artifact"), "durable\n", { mode: 0o640 });
+      control(controllerSource, state, "release", ["--scope", "project-a", "--reservation-token", reserved.reservation_token]);
+      const tokenDigest = createHash("sha256").update(reserved.reservation_token).digest("hex");
+      const tombstone = path.join(state, `.nacl-release-project-a-${tokenDigest.slice(0, 16)}`);
+      renameSync(project, tombstone);
+      const committed = control(controllerSource, state, "release-commit", ["--scope", "project-a", "--reservation-token", reserved.reservation_token]);
+      assert.equal(committed.artifact_tombstone, tombstone);
+      assert.deepEqual(control(controllerSource, state, "release-commit", ["--scope", "project-a", "--reservation-token", reserved.reservation_token]), committed);
+
+      const inventoryPath = path.join(state, "gateways.json");
+      if (corruption === "receipt") {
+        const inventory = JSON.parse(readFileSync(inventoryPath, "utf8"));
+        inventory.release_receipts[0].token_digest = "corrupt";
+        writeFileSync(inventoryPath, `${JSON.stringify(inventory, null, 2)}\n`, { mode: 0o600 });
+      } else {
+        const target = path.join(state, "gateways.backing.json");
+        renameSync(inventoryPath, target);
+        symlinkSync(target, inventoryPath);
+      }
+      const failed = tryControl(controllerSource, state, "inventory");
+      assert.notEqual(failed.status, 0);
+      assert.match(failed.stderr, /INVENTORY_INVALID/);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
   }
 });
