@@ -1,0 +1,121 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/ITSalt/NaCl/blob/main/codex-plugin-src/package/submission/reviewer-fixtures.schema.json",
+  "title": "NaCl plugin reviewer fixture set",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "fixtureSetVersion",
+    "status",
+    "executionEvidence",
+    "seed",
+    "positive",
+    "negative"
+  ],
+  "properties": {
+    "$schema": { "const": "./reviewer-fixtures.schema.json" },
+    "schemaVersion": { "const": 1 },
+    "fixtureSetVersion": { "const": "nacl-reviewer-fixtures-v1" },
+    "status": { "const": "LOCAL_CONTRACT_ONLY" },
+    "executionEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["localSimulation", "liveReviewer"],
+      "properties": {
+        "localSimulation": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["status", "scope"],
+          "properties": {
+            "status": { "const": "VERIFIED_CONTRACT_ONLY" },
+            "scope": { "type": "string", "minLength": 20 }
+          }
+        },
+        "liveReviewer": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["status", "reason"],
+          "properties": {
+            "status": { "const": "NOT_RUN" },
+            "reason": { "type": "string", "minLength": 20 }
+          }
+        }
+      }
+    },
+    "seed": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["version", "status", "projects", "actors", "authorization", "backup"],
+      "properties": {
+        "version": { "const": "nacl-reviewer-seed-v1" },
+        "status": { "const": "LOCAL_SIMULATION_ONLY" },
+        "projects": { "type": "array", "minItems": 3, "maxItems": 3 },
+        "actors": { "type": "array", "minItems": 2, "maxItems": 2 },
+        "authorization": { "type": "array", "minItems": 2, "maxItems": 2 },
+        "backup": { "type": "object" }
+      }
+    },
+    "positive": {
+      "type": "array",
+      "minItems": 5,
+      "maxItems": 5,
+      "items": { "$ref": "#/$defs/positiveCase" }
+    },
+    "negative": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": { "$ref": "#/$defs/negativeCase" }
+    }
+  },
+  "$defs": {
+    "toolCall": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tool", "scope", "arguments"],
+      "properties": {
+        "tool": { "type": "string", "pattern": "^nacl_[a-z_]+$" },
+        "scope": { "type": "string", "pattern": "^nacl\\.server\\.(read|write|schema|backup|restore)$" },
+        "confirmation": { "type": ["string", "null"] },
+        "arguments": { "type": "object" }
+      }
+    },
+    "positiveCase": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "prompt", "toolCalls", "expectedBehavior", "expectedResult", "requiredSeed"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^P[1-5]$" },
+        "prompt": { "type": "string", "minLength": 20, "maxLength": 240 },
+        "toolCalls": { "type": "array", "minItems": 1, "maxItems": 2, "items": { "$ref": "#/$defs/toolCall" } },
+        "expectedBehavior": { "type": "array", "minItems": 2, "items": { "type": "string", "minLength": 10 } },
+        "expectedResult": { "type": "object" },
+        "requiredSeed": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 3 } }
+      }
+    },
+    "negativeCase": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "scenario", "attemptedTool", "requiredScope", "expectedDenial", "prohibitedReason"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^N[1-3]$" },
+        "scenario": { "type": "string", "minLength": 20, "maxLength": 320 },
+        "attemptedTool": { "type": ["string", "null"] },
+        "requiredScope": { "type": ["string", "null"] },
+        "expectedDenial": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["code", "graphCall", "safeBehavior"],
+          "properties": {
+            "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]+$" },
+            "httpStatus": { "type": "integer", "minimum": 400, "maximum": 499 },
+            "graphCall": { "const": false },
+            "safeBehavior": { "type": "array", "minItems": 2, "items": { "type": "string", "minLength": 10 } }
+          }
+        },
+        "prohibitedReason": { "type": "string", "minLength": 20 }
+      }
+    }
+  }
+}

@@ -1,0 +1,75 @@
+{
+  "schemaVersion": 1,
+  "artifact": "nacl-wave9-release-candidate-metadata",
+  "status": "NOT_READY_FOR_SUBMISSION",
+  "submissionType": "WITH_MCP_APP_PLUS_SKILLS",
+  "portal": {
+    "draftStatus": "NOT_CREATED",
+    "submissionAuthorized": false,
+    "appBinding": {
+      "active": false,
+      "appIdStatus": "NOT_PROVIDED",
+      "appId": null
+    }
+  },
+  "reviewerFixtureSet": {
+    "version": "nacl-reviewer-fixtures-v1",
+    "path": "./submission/reviewer-fixtures.json",
+    "sha256": "1b630187c39c9a70f4afeaa5a96a05fa5a4b3b2cc6afd1cccbf5414223370cbc",
+    "schemaPath": "./submission/reviewer-fixtures.schema.json",
+    "schemaSha256": "450bf164ab2b258c647f654da72a6fc5037a5e058262111bfcd3bed954dbd695",
+    "positiveCount": 5,
+    "negativeCount": 3,
+    "localStatus": "VERIFIED_CONTRACT_ONLY",
+    "liveStatus": "NOT_RUN",
+    "reviewerCredentialsStatus": "NOT_PROVIDED"
+  },
+  "releaseBindings": {
+    "sourceSha": { "status": "NOT_BOUND", "value": null },
+    "mcpRevision": { "status": "NOT_BOUND", "value": null },
+    "publicEndpoint": { "status": "NOT_VERIFIED", "value": null },
+    "artifactDigests": { "status": "NOT_BOUND", "value": null }
+  },
+  "publicMetadata": {
+    "publisherIdentity": {
+      "status": "NOT_VERIFIED",
+      "value": null
+    },
+    "website": {
+      "status": "REPOSITORY_URL_ONLY",
+      "value": "https://github.com/ITSalt/NaCl",
+      "submissionStatus": "NOT_VERIFIED"
+    },
+    "support": {
+      "status": "REPOSITORY_URL_ONLY",
+      "value": "https://github.com/ITSalt/NaCl/issues",
+      "submissionStatus": "NOT_VERIFIED"
+    },
+    "privacyPolicy": {
+      "status": "NOT_VERIFIED",
+      "value": null,
+      "reason": "The repository policy describes the local framework and does not yet disclose the public MCP service."
+    },
+    "termsOfService": {
+      "status": "NOT_VERIFIED",
+      "value": null
+    },
+    "repository": {
+      "status": "VERIFIED_REPOSITORY",
+      "value": "https://github.com/ITSalt/NaCl"
+    },
+    "license": {
+      "status": "VERIFIED_REPOSITORY",
+      "spdx": "MIT",
+      "path": "./LICENSE"
+    }
+  },
+  "availability": {
+    "status": "NOT_VERIFIED",
+    "regions": []
+  },
+  "screenshots": {
+    "status": "NOT_RUN",
+    "items": []
+  }
+}
