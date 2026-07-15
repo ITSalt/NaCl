@@ -111,21 +111,67 @@
       "additionalProperties": false,
       "required": ["id", "scenario", "attemptedTool", "requiredScope", "prohibitedReason"],
       "oneOf": [
-        { "required": ["expectedDenial"], "not": { "required": ["expectedRefusal"] } },
-        { "required": ["expectedRefusal"], "not": { "required": ["expectedDenial"] } }
+        { "required": ["expectedTransportRejection", "expectedSessionReauthorization"] },
+        { "required": ["expectedMcpDenial"] },
+        { "required": ["expectedRefusal"] }
       ],
       "properties": {
         "id": { "type": "string", "pattern": "^N[1-3]$" },
         "scenario": { "type": "string", "minLength": 20, "maxLength": 320 },
         "attemptedTool": { "type": ["string", "null"] },
         "requiredScope": { "type": ["string", "null"] },
-        "expectedDenial": {
+        "expectedTransportRejection": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["code", "graphCall", "safeBehavior"],
+          "required": ["cases", "wireHttpStatus", "body", "wwwAuthenticate", "mcpResult", "graphCall", "internalAuditCode", "safeBehavior"],
           "properties": {
-            "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]+$" },
-            "httpStatus": { "type": "integer", "minimum": 400, "maximum": 499 },
+            "cases": { "type": "array", "minItems": 3, "maxItems": 3, "items": { "enum": ["missing", "expired", "wrong-audience"] } },
+            "wireHttpStatus": { "const": 401 },
+            "body": { "const": "EMPTY" },
+            "wwwAuthenticate": { "$ref": "#/$defs/transportChallenge" },
+            "mcpResult": { "const": null },
+            "graphCall": { "const": false },
+            "internalAuditCode": { "const": "INVALID_TOKEN" },
+            "safeBehavior": { "type": "array", "minItems": 2, "items": { "type": "string", "minLength": 10 } }
+          }
+        },
+        "expectedSessionReauthorization": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["cases", "wireHttpStatus", "isError", "expectedMcpResults", "wwwAuthenticate", "graphCall", "safeBehavior"],
+          "properties": {
+            "cases": { "type": "array", "minItems": 2, "maxItems": 2, "items": { "enum": ["stale-rotation", "revoked-session"] } },
+            "wireHttpStatus": { "const": 200 },
+            "isError": { "const": true },
+            "expectedMcpResults": {
+              "type": "array",
+              "minItems": 2,
+              "maxItems": 2,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["case", "structuredContent"],
+                "properties": {
+                  "case": { "enum": ["stale-rotation", "revoked-session"] },
+                  "structuredContent": { "type": "object" }
+                }
+              }
+            },
+            "wwwAuthenticate": { "$ref": "#/$defs/toolChallenge" },
+            "graphCall": { "const": false },
+            "safeBehavior": { "type": "array", "minItems": 2, "items": { "type": "string", "minLength": 10 } }
+          }
+        },
+        "expectedMcpDenial": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["wireHttpStatus", "applicationHttpStatus", "isError", "structuredContent", "wwwAuthenticate", "graphCall", "safeBehavior"],
+          "properties": {
+            "wireHttpStatus": { "const": 200 },
+            "applicationHttpStatus": { "const": 403 },
+            "isError": { "const": true },
+            "structuredContent": { "type": "object" },
+            "wwwAuthenticate": { "const": null },
             "graphCall": { "const": false },
             "safeBehavior": { "type": "array", "minItems": 2, "items": { "type": "string", "minLength": 10 } }
           }
@@ -143,6 +189,28 @@
           }
         },
         "prohibitedReason": { "type": "string", "minLength": 20 }
+      }
+    },
+    "transportChallenge": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["scheme", "resourceMetadata", "scope"],
+      "properties": {
+        "scheme": { "const": "Bearer" },
+        "resourceMetadata": { "const": "RUNTIME_PROTECTED_RESOURCE_METADATA_URL" },
+        "scope": { "type": "string", "pattern": "^nacl\\.server\\.(read|write|schema|backup|restore)$" }
+      }
+    },
+    "toolChallenge": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["scheme", "resourceMetadata", "error", "errorDescription", "scope"],
+      "properties": {
+        "scheme": { "const": "Bearer" },
+        "resourceMetadata": { "const": "RUNTIME_PROTECTED_RESOURCE_METADATA_URL" },
+        "error": { "const": "insufficient_scope" },
+        "errorDescription": { "const": "Authorization is required for this capability." },
+        "scope": { "type": "string", "pattern": "^nacl\\.server\\.(read|write|schema|backup|restore)$" }
       }
     }
   }

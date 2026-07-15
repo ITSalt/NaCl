@@ -314,32 +314,95 @@
   "negative": [
     {
       "id": "N1",
-      "scenario": "Attempt to summarize Demo Alpha with a missing, expired, wrong-audience, or revoked access token.",
+      "scenario": "Attempt to summarize Demo Alpha with missing, expired, or wrong-audience transport authorization, then with a stale or revoked accepted session.",
       "attemptedTool": "nacl_project_summary",
       "requiredScope": "nacl.server.read",
-      "expectedDenial": {
-        "code": "INVALID_TOKEN",
-        "httpStatus": 401,
+      "expectedTransportRejection": {
+        "cases": ["missing", "expired", "wrong-audience"],
+        "wireHttpStatus": 401,
+        "body": "EMPTY",
+        "wwwAuthenticate": {
+          "scheme": "Bearer",
+          "resourceMetadata": "RUNTIME_PROTECTED_RESOURCE_METADATA_URL",
+          "scope": "nacl.server.read"
+        },
+        "mcpResult": null,
         "graphCall": false,
+        "internalAuditCode": "INVALID_TOKEN",
         "safeBehavior": [
           "Return a canonical Bearer challenge for the protected resource.",
-          "Return no project, actor, route, or credential details.",
+          "Return an empty HTTP body with no MCP or JSON error code.",
+          "Return no project, actor, route, or credential details."
+        ]
+      },
+      "expectedSessionReauthorization": {
+        "cases": ["stale-rotation", "revoked-session"],
+        "wireHttpStatus": 200,
+        "isError": true,
+        "expectedMcpResults": [
+          {
+            "case": "stale-rotation",
+            "structuredContent": {
+              "contract": "nacl-public-mcp-v1",
+              "status": "FAILED",
+              "code": "REAUTHORIZATION_REQUIRED",
+              "data": {},
+              "retryable": true,
+              "replayed": false,
+              "support_ref": "support_88888888888888888888888888888888"
+            }
+          },
+          {
+            "case": "revoked-session",
+            "structuredContent": {
+              "contract": "nacl-public-mcp-v1",
+              "status": "FAILED",
+              "code": "REAUTHORIZATION_REQUIRED",
+              "data": {},
+              "retryable": true,
+              "replayed": false,
+              "support_ref": "support_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            }
+          }
+        ],
+        "wwwAuthenticate": {
+          "scheme": "Bearer",
+          "resourceMetadata": "RUNTIME_PROTECTED_RESOURCE_METADATA_URL",
+          "error": "insufficient_scope",
+          "errorDescription": "Authorization is required for this capability.",
+          "scope": "nacl.server.read"
+        },
+        "graphCall": false,
+        "safeBehavior": [
+          "Return an MCP error result over HTTP 200 for an already accepted transport token.",
           "Require linking or reauthorization before retry."
         ]
       },
-      "prohibitedReason": "Authentication is absent, invalid, expired, revoked, or bound to another resource audience."
+      "prohibitedReason": "Transport authentication is absent or invalid, or an accepted session no longer carries current authorization."
     },
     {
       "id": "N2",
       "scenario": "Reviewer Collaborator supplies the opaque reference for Demo Restricted, which is outside every authorized server grant.",
       "attemptedTool": "nacl_project_summary",
       "requiredScope": "nacl.server.read",
-      "expectedDenial": {
-        "code": "ACCESS_OR_RESOURCE_NOT_FOUND",
-        "httpStatus": 403,
+      "expectedMcpDenial": {
+        "wireHttpStatus": 200,
+        "applicationHttpStatus": 403,
+        "isError": true,
+        "structuredContent": {
+          "contract": "nacl-public-mcp-v1",
+          "status": "FAILED",
+          "code": "ACCESS_OR_RESOURCE_NOT_FOUND",
+          "data": {},
+          "retryable": false,
+          "replayed": false,
+          "support_ref": "support_99999999999999999999999999999999"
+        },
+        "wwwAuthenticate": null,
         "graphCall": false,
         "safeBehavior": [
-          "Return the same generic denial used for an unknown project reference.",
+          "Return the same generic MCP denial used for an unknown project reference over HTTP 200.",
+          "Do not expose the internal application HTTP status as the wire status.",
           "Do not reveal whether the project, server, or route exists.",
           "Persist only a redacted denial audit event."
         ]

@@ -1,12 +1,17 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
+import { once } from "node:events";
 import { readFile } from "node:fs/promises";
+import net from "node:net";
 import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
 import { createToolApplication } from "../../../services/nacl-mcp/src/application.mjs";
 import { PUBLIC_TOOL_NAMES, TOOL_BY_NAME } from "../../../services/nacl-mcp/src/contracts.mjs";
+import { PublicMcpError, ReauthorizationRequired } from "../../../services/nacl-mcp/src/errors.mjs";
+import { createStreamableHttpServer, STABLE_PROTOCOL_VERSION } from "../../../services/nacl-mcp/src/http-server.mjs";
 import { validateSchema } from "../../../services/nacl-mcp/src/json-schema.mjs";
+import { createSdkMcpServer } from "../../../services/nacl-mcp/src/sdk-server.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
 const sourceRoot = path.join(repoRoot, "codex-plugin-src", "package");
@@ -96,6 +101,114 @@ function deterministicApplication() {
   return { application, authContext };
 }
 
+async function deterministicNegativeWireFixture() {
+  const reservation = net.createServer();
+  reservation.listen(0, "127.0.0.1");
+  await once(reservation, "listening");
+  const port = reservation.address().port;
+  reservation.close();
+  await once(reservation, "close");
+  const base = `http://127.0.0.1:${port}`;
+  const metadataUrl = `${base}/.well-known/oauth-protected-resource`;
+  let authenticationRejections = 0;
+  let graphCalls = 0;
+  let supportIndex = 0;
+  const supportRefs = [
+    "support_88888888888888888888888888888888",
+    "support_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "support_99999999999999999999999999999999",
+  ];
+  const accepted = new Set(["Bearer stale-fixture", "Bearer revoked-fixture", "Bearer cross-server-fixture"]);
+  const graphAdapter = Object.fromEntries([
+    "projectSummary", "namedRead", "mutateProject", "applySchema", "createBackup", "requestRestore",
+  ].map((method) => [method, async () => {
+    graphCalls += 1;
+    throw new Error("negative fixture reached graph adapter");
+  }]));
+  const callTool = createToolApplication({
+    controlPlane: {
+      async listProjects() {
+        throw new Error("negative fixture reached project listing");
+      },
+      async authorize({ tokenContext, projectRef }) {
+        if (["stale-fixture", "revoked-fixture"].includes(tokenContext.sessionId)) {
+          throw new ReauthorizationRequired({ scope: "nacl.server.read" });
+        }
+        if (projectRef === "prj_DEMORESTRICTED0001") {
+          throw new PublicMcpError("ACCESS_OR_RESOURCE_NOT_FOUND", "Access or project route was not found.", { httpStatus: 403 });
+        }
+        throw new Error("negative fixture accepted an unexpected route");
+      },
+    },
+    graphAdapter,
+    auditSink: {
+      newSupportRef() {
+        const supportRef = supportRefs[supportIndex];
+        supportIndex += 1;
+        return supportRef;
+      },
+      async record() {},
+    },
+    rateLimiter: { async assert() {} },
+    idempotencyLedger: {
+      async execute({ operation }) {
+        return { value: await operation(), replayed: false, outcome: "committed" };
+      },
+    },
+    now: () => 1_000,
+  });
+  const server = createStreamableHttpServer({
+    resourceUrl: `${base}/mcp`,
+    resourceMetadataUrl: metadataUrl,
+    authorizationServers: ["https://identity.invalid/"],
+    scopesSupported: ["nacl.server.read", "nacl.server.write", "nacl.server.schema", "nacl.server.backup", "nacl.server.restore"],
+    allowedOrigins: ["https://chatgpt.com"],
+    async verifyAuthorization(header) {
+      if (!accepted.has(header)) throw new Error("transport authorization rejected");
+      return Object.freeze({ issuer: "https://identity.invalid/", subject: "reviewer", sessionId: header.slice(7), scopes: ["nacl.server.read"] });
+    },
+    async auditAuthenticationRejection() {
+      authenticationRejections += 1;
+    },
+    createMcpServer({ authContext }) {
+      return createSdkMcpServer({
+        authContext,
+        resourceMetadataUrl: metadataUrl,
+        async auditRejection() {},
+        callTool,
+      });
+    },
+  });
+  server.listen(port, "127.0.0.1");
+  await once(server, "listening");
+  return {
+    base,
+    metadataUrl,
+    server,
+    authenticationRejections: () => authenticationRejections,
+    toolCalls: () => supportIndex,
+    graphCalls: () => graphCalls,
+  };
+}
+
+async function postTool(base, token, projectRef) {
+  return fetch(`${base}/mcp`, {
+    method: "POST",
+    headers: {
+      ...(token ? { authorization: token } : {}),
+      "content-type": "application/json",
+      accept: "application/json, text/event-stream",
+      "mcp-protocol-version": STABLE_PROTOCOL_VERSION,
+    },
+    body: JSON.stringify({
+      jsonrpc: "2.0",
+      id: token ?? "missing",
+      method: "tools/call",
+      params: { name: "nacl_project_summary", arguments: { project_ref: projectRef } },
+    }),
+  });
+}
+
 test("review package contains exactly P1-P5 and N1-N3 with no hidden fixture", async () => {
   const fixture = await readJson(sourceRoot, fixtureRelative);
   assert.equal(fixture.fixtureSetVersion, "nacl-reviewer-fixtures-v1");
@@ -118,7 +231,7 @@ test("review package contains exactly P1-P5 and N1-N3 with no hidden fixture", a
   assert.equal(schema.$defs.positiveCase.properties.id.pattern, "^P[1-5]$");
   assert.equal(schema.$defs.negativeCase.properties.id.pattern, "^N[1-3]$");
   assert.ok(schema.$defs.positiveCase.required.includes("expectedToolResults"));
-  assert.equal(schema.$defs.negativeCase.oneOf.length, 2);
+  assert.equal(schema.$defs.negativeCase.oneOf.length, 3);
 });
 
 test("every positive call and result matches the frozen public input, output, and application runtime", async () => {
@@ -167,22 +280,69 @@ test("every positive call and result matches the frozen public input, output, an
   }
 });
 
-test("negative cases bind exact denial codes and never authorize a graph call", async () => {
+test("negative cases match the actual transport and MCP wire contracts without graph access", async (t) => {
   const fixture = await readJson(sourceRoot, fixtureRelative);
-  const expected = {
-    N1: { tool: "nacl_project_summary", scope: "nacl.server.read", code: "INVALID_TOKEN", httpStatus: 401 },
-    N2: { tool: "nacl_project_summary", scope: "nacl.server.read", code: "ACCESS_OR_RESOURCE_NOT_FOUND", httpStatus: 403 },
-  };
-  for (const item of fixture.negative.slice(0, 2)) {
-    const contract = expected[item.id];
-    assert.deepEqual(
-      { tool: item.attemptedTool, scope: item.requiredScope, code: item.expectedDenial.code, httpStatus: item.expectedDenial.httpStatus },
-      contract,
+  const [authentication, crossServer, refusal] = fixture.negative;
+  const wire = await deterministicNegativeWireFixture();
+  t.after(() => new Promise((resolve) => wire.server.close(resolve)));
+
+  assert.equal(authentication.id, "N1");
+  assert.equal(authentication.attemptedTool, "nacl_project_summary");
+  assert.equal(authentication.requiredScope, "nacl.server.read");
+  assert.deepEqual(authentication.expectedTransportRejection.cases, ["missing", "expired", "wrong-audience"]);
+  const transportTokens = [null, "Bearer expired-fixture", "Bearer wrong-audience-fixture"];
+  for (const token of transportTokens) {
+    const response = await postTool(wire.base, token, "prj_DEMOALPHA00000001");
+    assert.equal(response.status, authentication.expectedTransportRejection.wireHttpStatus);
+    assert.equal(await response.text(), "");
+    const challenge = authentication.expectedTransportRejection.wwwAuthenticate;
+    assert.equal(
+      response.headers.get("www-authenticate"),
+      `${challenge.scheme} resource_metadata="${wire.metadataUrl}", scope="${challenge.scope}"`,
     );
-    assert.equal(item.expectedDenial.graphCall, false);
-    if (item.attemptedTool) assert.ok(PUBLIC_TOOL_NAMES.includes(item.attemptedTool));
   }
-  const refusal = fixture.negative[2];
+  assert.equal(authentication.expectedTransportRejection.body, "EMPTY");
+  assert.equal(authentication.expectedTransportRejection.mcpResult, null);
+  assert.equal(authentication.expectedTransportRejection.internalAuditCode, "INVALID_TOKEN");
+  assert.equal(wire.authenticationRejections(), 3);
+  const summaryOutputSchema = TOOL_BY_NAME.get("nacl_project_summary").outputSchema;
+
+  assert.deepEqual(authentication.expectedSessionReauthorization.cases, ["stale-rotation", "revoked-session"]);
+  assert.deepEqual(
+    authentication.expectedSessionReauthorization.expectedMcpResults.map((item) => item.case),
+    authentication.expectedSessionReauthorization.cases,
+  );
+  for (const [index, token] of ["Bearer stale-fixture", "Bearer revoked-fixture"].entries()) {
+    const response = await postTool(wire.base, token, "prj_DEMOALPHA00000001");
+    assert.equal(response.status, authentication.expectedSessionReauthorization.wireHttpStatus);
+    const body = await response.json();
+    assert.equal(body.result.isError, authentication.expectedSessionReauthorization.isError);
+    const expectedStructuredContent = authentication.expectedSessionReauthorization.expectedMcpResults[index].structuredContent;
+    assert.equal(validateSchema(summaryOutputSchema, expectedStructuredContent).valid, true);
+    assert.deepEqual(body.result.structuredContent, expectedStructuredContent);
+    const challenge = authentication.expectedSessionReauthorization.wwwAuthenticate;
+    assert.equal(
+      body.result._meta["mcp/www_authenticate"],
+      `${challenge.scheme} resource_metadata="${wire.metadataUrl}", error="${challenge.error}", error_description="${challenge.errorDescription}", scope="${challenge.scope}"`,
+    );
+  }
+
+  assert.equal(crossServer.id, "N2");
+  assert.equal(crossServer.attemptedTool, "nacl_project_summary");
+  assert.equal(crossServer.requiredScope, "nacl.server.read");
+  const crossResponse = await postTool(wire.base, "Bearer cross-server-fixture", "prj_DEMORESTRICTED0001");
+  assert.equal(crossResponse.status, crossServer.expectedMcpDenial.wireHttpStatus);
+  const crossBody = await crossResponse.json();
+  assert.equal(crossBody.result.isError, crossServer.expectedMcpDenial.isError);
+  assert.deepEqual(crossBody.result.structuredContent, crossServer.expectedMcpDenial.structuredContent);
+  assert.equal(crossBody.result._meta, undefined);
+  assert.equal(crossServer.expectedMcpDenial.applicationHttpStatus, 403);
+  assert.equal(crossServer.expectedMcpDenial.wwwAuthenticate, null);
+  assert.equal(validateSchema(summaryOutputSchema, crossServer.expectedMcpDenial.structuredContent).valid, true);
+  assert.doesNotMatch(JSON.stringify(crossBody), /Demo Restricted|fixture-server|fixture-project-scope/);
+  assert.equal(wire.toolCalls(), 3);
+  assert.equal(wire.graphCalls(), 0);
+
   assert.equal(refusal.id, "N3");
   assert.equal(refusal.attemptedTool, null);
   assert.equal(refusal.requiredScope, null);
