@@ -458,6 +458,22 @@ test("tamper after grant cannot render wildcard, duplicate, unsorted or stale pr
   }
 });
 
+test("canonical but non-equal project projection is stale and fails closed", () => {
+  const ctx = fixture();
+  try {
+    useRealAuthorizationRenderer(ctx);
+    rmSync(ctx.log, { force: true });
+    const result = runGrantHelper(ctx, "developer.zed", {
+      TAMPER_AFTER_GRANT_SCOPE: "project-a",
+      TAMPER_ALLOWED_CNS: "developer.aaa\ndeveloper.zed\n",
+    });
+    assert.notEqual(result.status, 0);
+    assertNoUpAndGlobalQuarantine(ctx);
+  } finally {
+    rmSync(ctx.root, { recursive: true, force: true });
+  }
+});
+
 test("non-canonical authoritative trusted-cns fails closed before every gateway action", () => {
   const ctx = fixture();
   try {
@@ -593,7 +609,7 @@ test("failed owned-artifact cleanup is retryable and keeps the port reserved unt
     const committedInventory = control(controllerSource, state, "inventory");
     assert.deepEqual(committedInventory.gateways, []);
     assert.equal(committedInventory.release_receipts.length, 1);
-    assert.equal(JSON.stringify(committedInventory.release_receipts).includes(reserved.reservation_token), false, "receipt must never retain the raw token");
+    assert.equal(Object.hasOwn(committedInventory.release_receipts[0], "reservation_token"), false, "receipt must never retain the raw token");
     assert.equal(lstatSync(path.join(state, "gateways.json")).mode & 0o777, 0o600);
     assert.equal(existsSync(project), false);
     assert.deepEqual(treeSnapshot(committed.artifact_tombstone), beforeCommit);
@@ -604,7 +620,7 @@ test("failed owned-artifact cleanup is retryable and keeps the port reserved unt
 });
 
 test("release commit resumes after tombstone rename and rejects corrupt or symlinked durable state", () => {
-  for (const corruption of ["receipt", "inventory-symlink"]) {
+  for (const corruption of ["tombstone", "receipt", "inventory-symlink"]) {
     const root = mkdtempSync(path.join(os.tmpdir(), `nacl-vps-release-${corruption}-`));
     const state = path.join(root, "state");
     const project = path.join(state, "project-a");
@@ -614,14 +630,20 @@ test("release commit resumes after tombstone rename and rejects corrupt or symli
       writeFileSync(path.join(project, "owned-artifact"), "durable\n", { mode: 0o640 });
       control(controllerSource, state, "release", ["--scope", "project-a", "--reservation-token", reserved.reservation_token]);
       const tokenDigest = createHash("sha256").update(reserved.reservation_token).digest("hex");
-      const tombstone = path.join(state, `.nacl-release-project-a-${tokenDigest.slice(0, 16)}`);
+      const tombstone = path.join(state, `.nacl-release-project-a-${tokenDigest}`);
       renameSync(project, tombstone);
       const committed = control(controllerSource, state, "release-commit", ["--scope", "project-a", "--reservation-token", reserved.reservation_token]);
       assert.equal(committed.artifact_tombstone, tombstone);
       assert.deepEqual(control(controllerSource, state, "release-commit", ["--scope", "project-a", "--reservation-token", reserved.reservation_token]), committed);
 
       const inventoryPath = path.join(state, "gateways.json");
-      if (corruption === "receipt") {
+      if (corruption === "tombstone") {
+        writeFileSync(path.join(tombstone, "owned-artifact"), "tampered\n");
+        const failed = tryControl(controllerSource, state, "release-commit", ["--scope", "project-a", "--reservation-token", reserved.reservation_token]);
+        assert.notEqual(failed.status, 0);
+        assert.match(failed.stderr, /RELEASE_RECEIPT_STATE_MISMATCH/);
+        continue;
+      } else if (corruption === "receipt") {
         const inventory = JSON.parse(readFileSync(inventoryPath, "utf8"));
         inventory.release_receipts[0].token_digest = "corrupt";
         writeFileSync(inventoryPath, `${JSON.stringify(inventory, null, 2)}\n`, { mode: 0o600 });

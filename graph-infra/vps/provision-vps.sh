@@ -59,6 +59,7 @@ GATEWAY_PORT=$(printf '%s' "$RESERVATION_JSON" | node -e 'let s="";process.stdin
 RESERVATION_TOKEN=$(printf '%s' "$RESERVATION_JSON" | node -e 'let s="";process.stdin.on("data",c=>s+=c);process.stdin.on("end",()=>process.stdout.write(String(JSON.parse(s).reservation_token)))') || fail server-reserve-readback
 [ -n "$RESERVATION_TOKEN" ] || fail server-reserve-readback
 RESERVATION_ACTIVE=1
+GATEWAY_START_ATTEMPTED=0
 rollback_reservation() {
   _nacl_status=$?
   if [ "$_nacl_status" -ne 0 ] && [ "${RESERVATION_ACTIVE:-0}" -eq 1 ]; then
@@ -68,12 +69,24 @@ rollback_reservation() {
       echo "CRITICAL: failed to prepare gateway reservation release for $SCOPE" >&2
       _nacl_release_prepared=0
     fi
-    _nacl_down_verified=1
-    if [ "$_nacl_release_prepared" -eq 1 ] && [ -f "${GRAPH_DIR:-}/docker-compose.yml" ]; then
-      if ! (cd "$GRAPH_DIR" && $DC down --volumes --remove-orphans >/dev/null 2>&1); then
-        echo "CRITICAL: failed to stop gateway reservation for $SCOPE; reservation and port retained" >&2
-        _nacl_down_verified=0
+    _nacl_down_verified=0
+    if [ "$_nacl_release_prepared" -eq 1 ]; then
+      if [ -f "${GRAPH_DIR:-}/docker-compose.yml" ]; then
+        if (cd "$GRAPH_DIR" && $DC down --volumes --remove-orphans >/dev/null 2>&1); then
+          _nacl_down_verified=1
+        else
+          echo "CRITICAL: failed to stop gateway reservation for $SCOPE; reservation and port retained" >&2
+        fi
+      elif [ "${GATEWAY_START_ATTEMPTED:-0}" -eq 0 ]; then
+        echo "rollback: no gateway start was attempted and no compose file exists" >&2
+        _nacl_down_verified=1
+      else
+        echo "CRITICAL: gateway start was attempted but compose is missing; shutdown is unverified and reservation is retained" >&2
       fi
+    fi
+    if [ "${NACL_CRITICAL_UNRESOLVED:-no}" = "yes" ]; then
+      echo "CRITICAL: authorization quarantine remains unresolved; reservation and port retained" >&2
+      _nacl_down_verified=0
     fi
     if [ "$_nacl_release_prepared" -eq 1 ] && [ "$_nacl_down_verified" -eq 1 ]; then
       node "$ACCESS_CONTROL" release-commit --state-dir "$STATE_DIR" --server-id "$HOST" \
@@ -121,6 +134,7 @@ CONTAINER="$PREFIX-neo4j"
 # Grant the first principal at the SERVER boundary. Success requires projection
 # render and compose reload for every registered gateway, including this reserved
 # gateway. Any grant/reload uncertainty physically quarantines every gateway.
+GATEWAY_START_ATTEMPTED=1
 if ! grant_and_reload_all_gateways "$FIRST_DEV"; then
   echo "CRITICAL: server-wide grant boundary failed ($NACL_AUTHORIZATION_FAILURE); critical_unresolved=$NACL_CRITICAL_UNRESOLVED" >&2
   fail server-grant-reload

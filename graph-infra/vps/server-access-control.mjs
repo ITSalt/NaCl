@@ -29,6 +29,10 @@ function cns(text) {
   return [...new Set(text.split(/\r?\n/).filter(Boolean).map(cn))].sort();
 }
 
+function serializeCns(values) {
+  return values.length ? `${values.join("\n")}\n` : "";
+}
+
 function atomic(filename, content) {
   const temporary = `${filename}.${process.pid}.${randomBytes(6).toString("hex")}.tmp`;
   writeFileSync(temporary, content, { mode: 0o600, flag: "wx" });
@@ -59,16 +63,72 @@ function controller(options) {
   const trustedPath = path.join(stateDir, "trusted-cns");
   const inventoryPath = path.join(stateDir, "gateways.json");
   const lockPath = path.join(stateDir, ".server-access.lock");
-  if (!existsSync(trustedPath)) atomic(trustedPath, "");
-  if (!existsSync(inventoryPath)) atomic(inventoryPath, `${JSON.stringify({ version: 1, server_id: serverId, authorization_revision: 0, gateways: [] }, null, 2)}\n`);
+  function entryExists(filename) {
+    try { lstatSync(filename); return true; } catch (error) {
+      if (error.code === "ENOENT") return false;
+      throw error;
+    }
+  }
+  if (!entryExists(trustedPath)) atomic(trustedPath, "");
+  if (!entryExists(inventoryPath)) atomic(inventoryPath, `${JSON.stringify({ version: 1, server_id: serverId, authorization_revision: 0, gateways: [], release_receipts: [] }, null, 2)}\n`);
+
+  function requireRegularFile(filename, code, label) {
+    let metadata;
+    try { metadata = lstatSync(filename); } catch { die(code, `${label} is unavailable`); }
+    if (!metadata.isFile() || metadata.isSymbolicLink()) die(code, `${label} must be a regular non-symlink file`);
+  }
+
+  function validReceipt(receipt) {
+    if (!receipt || typeof receipt !== "object" || Array.isArray(receipt)) return false;
+    const scope = receipt.project_scope;
+    const tokenDigest = receipt.token_digest;
+    if (receipt.server_id !== serverId || typeof scope !== "string" || !ID.test(scope) || scope.includes("..") || /[._-]$/.test(scope)) return false;
+    if (!/^[0-9a-f]{64}$/.test(tokenDigest ?? "") || !Number.isSafeInteger(receipt.gateway_port) || receipt.gateway_port < 1024 || receipt.gateway_port > 65535) return false;
+    if (receipt.status !== "VERIFIED" || receipt.code !== "GATEWAY_RESERVATION_RELEASED") return false;
+    if (!['RETAINED', 'NOT_REQUIRED'].includes(receipt.artifact_gc_status)) return false;
+    const expectedTombstone = path.join(stateDir, `.nacl-release-${scope}-${tokenDigest}`);
+    if (receipt.artifact_gc_status === "RETAINED") {
+      if (receipt.artifact_tombstone !== expectedTombstone || !/^[0-9a-f]{64}$/.test(receipt.artifact_tombstone_digest ?? "")) return false;
+    } else if (receipt.artifact_tombstone !== null || receipt.artifact_tombstone_digest !== null) return false;
+    return !Object.hasOwn(receipt, "reservation_token");
+  }
 
   function readInventory() {
-    const value = JSON.parse(readFileSync(inventoryPath, "utf8"));
-    if (value.version !== 1 || value.server_id !== serverId || !Array.isArray(value.gateways)) die("INVENTORY_INVALID", "gateway inventory is invalid");
+    requireRegularFile(inventoryPath, "INVENTORY_INVALID", "gateway inventory");
+    let value;
+    try { value = JSON.parse(readFileSync(inventoryPath, "utf8")); } catch { die("INVENTORY_INVALID", "gateway inventory is not valid JSON"); }
+    if (value.version !== 1 || value.server_id !== serverId || !Number.isSafeInteger(value.authorization_revision) || value.authorization_revision < 0 || !Array.isArray(value.gateways)) die("INVENTORY_INVALID", "gateway inventory is invalid");
+    const scopes = [];
+    const ports = [];
+    for (const gateway of value.gateways) {
+      if (!gateway || typeof gateway !== "object" || Array.isArray(gateway)) die("INVENTORY_INVALID", "gateway entry is invalid");
+      const scope = gateway.project_scope;
+      if (typeof scope !== "string" || !ID.test(scope) || scope.includes("..") || /[._-]$/.test(scope)) die("INVENTORY_INVALID", "gateway scope is invalid");
+      if (!Number.isSafeInteger(gateway.gateway_port) || gateway.gateway_port < 1024 || gateway.gateway_port > 65535) die("INVENTORY_INVALID", "gateway port is invalid");
+      if (typeof gateway.enabled !== "boolean" || !(gateway.quarantine_reason === null || typeof gateway.quarantine_reason === "string")) die("INVENTORY_INVALID", "gateway authorization metadata is invalid");
+      if (gateway.provisioning !== undefined && typeof gateway.provisioning !== "boolean") die("INVENTORY_INVALID", "gateway provisioning metadata is invalid");
+      if (gateway.release_pending !== undefined && typeof gateway.release_pending !== "boolean") die("INVENTORY_INVALID", "gateway release metadata is invalid");
+      if (gateway.reservation_token !== undefined && !/^[0-9a-f]{32}$/.test(gateway.reservation_token)) die("INVENTORY_INVALID", "gateway reservation metadata is invalid");
+      scopes.push(scope);
+      ports.push(gateway.gateway_port);
+    }
+    if (new Set(scopes).size !== scopes.length || new Set(ports).size !== ports.length || scopes.join("\n") !== [...scopes].sort().join("\n")) die("INVENTORY_INVALID", "gateway inventory must be sorted and unique");
+    if (value.release_receipts === undefined) value.release_receipts = [];
+    if (!Array.isArray(value.release_receipts) || value.release_receipts.some((receipt) => !validReceipt(receipt))) die("INVENTORY_INVALID", "release receipt inventory is invalid");
+    const receiptKeys = value.release_receipts.map((receipt) => `${receipt.project_scope}:${receipt.token_digest}`);
+    if (new Set(receiptKeys).size !== receiptKeys.length) die("INVENTORY_INVALID", "release receipt inventory contains duplicates");
     return value;
   }
-  function readTrusted() { return cns(readFileSync(trustedPath, "utf8")); }
-  function writeTrusted(values) { atomic(trustedPath, values.length ? `${values.join("\n")}\n` : ""); }
+  function readTrustedState() {
+    requireRegularFile(trustedPath, "TRUSTED_CNS_INVALID", "trusted-cns");
+    const content = readFileSync(trustedPath, "utf8");
+    let values;
+    try { values = cns(content); } catch { die("TRUSTED_CNS_INVALID", "trusted-cns contains a malformed CN"); }
+    if (content !== serializeCns(values)) die("TRUSTED_CNS_INVALID", "trusted-cns must be canonical, sorted, and unique");
+    return { values, content, sha256: createHash("sha256").update(content).digest("hex") };
+  }
+  function readTrusted() { return readTrustedState().values; }
+  function writeTrusted(values) { atomic(trustedPath, serializeCns(values)); }
   function writeInventory(value) { atomic(inventoryPath, `${JSON.stringify(value, null, 2)}\n`); }
   function projectFile(scope) {
     const filename = path.join(stateDir, id(scope, "project_scope"), "allowed-cns");
@@ -78,7 +138,7 @@ function controller(options) {
   function project(values, gateway) {
     const filename = projectFile(gateway.project_scope);
     mkdirSync(path.dirname(filename), { recursive: true, mode: 0o700 });
-    atomic(filename, values.length ? `${values.join("\n")}\n` : "");
+    atomic(filename, serializeCns(values));
   }
   function selectPort(inventory, rawPort) {
     let port;
@@ -96,21 +156,76 @@ function controller(options) {
     try { mkdirSync(lockPath, { mode: 0o700 }); } catch { die("STATE_LOCKED", "server access state is locked"); }
     try { return operation(); } finally { rmSync(lockPath, { recursive: true, force: true }); }
   }
-  function preflightArtifactTree(root) {
+  function artifactTreeDigest(root) {
     try { accessSync(path.dirname(root), constants.W_OK | constants.X_OK); } catch {
       die("OWNED_ARTIFACT_CLEANUP_FAILED", "project state parent is not renameable");
     }
-    function visit(filename) {
+    const digest = createHash("sha256");
+    function visit(filename, relative) {
       const metadata = lstatSync(filename);
       if (metadata.isSymbolicLink()) die("OWNED_ARTIFACT_CLEANUP_FAILED", "owned project artifacts cannot contain symlinks");
+      const mode = metadata.mode & 0o7777;
       if (metadata.isDirectory()) {
         try { accessSync(filename, constants.R_OK | constants.W_OK | constants.X_OK); } catch {
           die("OWNED_ARTIFACT_CLEANUP_FAILED", "owned project artifact directory is not fully accessible");
         }
-        for (const name of readdirSync(filename).sort()) visit(path.join(filename, name));
-      } else if (!metadata.isFile()) die("OWNED_ARTIFACT_CLEANUP_FAILED", "owned project artifacts contain an unsupported file type");
+        digest.update(`D\0${relative}\0${mode}\0`);
+        for (const name of readdirSync(filename).sort()) visit(path.join(filename, name), relative ? `${relative}/${name}` : name);
+      } else if (metadata.isFile()) {
+        digest.update(`F\0${relative}\0${mode}\0${metadata.size}\0`);
+        digest.update(readFileSync(filename));
+        digest.update("\0");
+      } else die("OWNED_ARTIFACT_CLEANUP_FAILED", "owned project artifacts contain an unsupported file type");
     }
-    visit(root);
+    visit(root, ".");
+    return digest.digest("hex");
+  }
+  function gatewayAction(gateway) {
+    id(gateway.project_scope, "project_scope");
+    const releasePending = gateway.release_pending === true;
+    const quarantined = gateway.quarantine_reason !== null && gateway.quarantine_reason !== "provisioning";
+    const enabledActive = gateway.enabled === true && gateway.provisioning !== true
+      && !releasePending && gateway.quarantine_reason === null;
+    const pristineProvisioning = gateway.enabled === false && gateway.provisioning === true
+      && !releasePending && gateway.quarantine_reason === "provisioning"
+      && /^[0-9a-f]{32}$/.test(gateway.reservation_token ?? "");
+    return !releasePending && !quarantined && (enabledActive || pristineProvisioning) ? "up" : "stop";
+  }
+  function authorizationState() {
+    const inventory = readInventory();
+    const trusted = readTrustedState();
+    const binding = createHash("sha256").update(JSON.stringify({ inventory, trusted_content: trusted.content })).digest("hex");
+    return {
+      inventory,
+      trusted,
+      binding,
+      gateways: inventory.gateways.map((gateway) => ({ project_scope: gateway.project_scope, action: gatewayAction(gateway) })),
+    };
+  }
+  function verifyAuthorizationProjection(scope, expectedRevision, expectedBinding) {
+    const projectScope = id(scope, "project_scope");
+    const revision = Number(expectedRevision);
+    if (!Number.isSafeInteger(revision) || revision < 0) die("AUTHORIZATION_REVISION_INVALID", "authorization revision is invalid");
+    if (!/^[0-9a-f]{64}$/.test(expectedBinding ?? "")) die("AUTHORIZATION_BINDING_INVALID", "authorization binding is invalid");
+    const state = authorizationState();
+    if (state.inventory.authorization_revision !== revision) die("AUTHORIZATION_REVISION_STALE", "authorization revision changed during reconciliation");
+    if (state.binding !== expectedBinding) die("AUTHORIZATION_BINDING_STALE", "authorization inventory changed during reconciliation");
+    const gateway = state.inventory.gateways.find((entry) => entry.project_scope === projectScope);
+    if (!gateway) die("GATEWAY_NOT_FOUND", "gateway was not found");
+    const projection = projectFile(projectScope);
+    requireRegularFile(projection, "AUTHORIZATION_PROJECTION_INVALID", "project allowed-cns projection");
+    const content = readFileSync(projection, "utf8");
+    let values;
+    try { values = cns(content); } catch { die("AUTHORIZATION_PROJECTION_INVALID", "project allowed-cns contains a malformed CN"); }
+    if (content !== serializeCns(values) || content !== state.trusted.content) die("AUTHORIZATION_PROJECTION_STALE", "project allowed-cns is not the authoritative canonical projection");
+    return {
+      status: "VERIFIED",
+      code: "AUTHORIZATION_PROJECTION_VERIFIED",
+      project_scope: projectScope,
+      action: gatewayAction(gateway),
+      authorization_revision: revision,
+      authorization_binding: expectedBinding,
+    };
   }
   function reconcileGrant(next, successCode) {
     const inventory = readInventory();
@@ -150,6 +265,31 @@ function controller(options) {
     const proposed = [...new Set(inputs.flatMap((entry) => entry.values))].sort();
     const digest = createHash("sha256").update(JSON.stringify({ server_id: serverId, inputs: inputs.map(({ path: filename, sha256 }) => ({ path: filename, sha256 })), proposed })).digest("hex");
     return { status: "PLANNED", code: "LEGACY_UNION_PLANNED", proposed_trusted_cns: proposed, confirmation: `MIGRATE_SERVER_TRUST:${digest}` };
+  }
+  function releaseResult(receipt) {
+    return {
+      status: receipt.status,
+      code: receipt.code,
+      project_scope: receipt.project_scope,
+      gateway_port: receipt.gateway_port,
+      artifact_gc_status: receipt.artifact_gc_status,
+      ...(receipt.artifact_gc_status === "RETAINED" ? {
+        artifact_tombstone: receipt.artifact_tombstone,
+        artifact_tombstone_digest: receipt.artifact_tombstone_digest,
+      } : {}),
+    };
+  }
+  function verifyReleaseReceipt(receipt) {
+    const expectedTombstone = path.join(stateDir, `.nacl-release-${receipt.project_scope}-${receipt.token_digest}`);
+    if (receipt.artifact_gc_status === "RETAINED") {
+      if (receipt.artifact_tombstone !== expectedTombstone || !existsSync(expectedTombstone)) die("RELEASE_RECEIPT_STATE_MISMATCH", "release tombstone is missing or moved");
+      let digest;
+      try { digest = artifactTreeDigest(expectedTombstone); } catch {
+        die("RELEASE_RECEIPT_STATE_MISMATCH", "release tombstone cannot be verified");
+      }
+      if (digest !== receipt.artifact_tombstone_digest) die("RELEASE_RECEIPT_STATE_MISMATCH", "release tombstone digest changed");
+    } else if (existsSync(expectedTombstone)) die("RELEASE_RECEIPT_STATE_MISMATCH", "unexpected release tombstone exists");
+    return releaseResult(receipt);
   }
   return {
     provision(scope, rawPort) {
@@ -229,30 +369,48 @@ function controller(options) {
       return locked(() => {
         const inventory = readInventory();
         const projectScope = id(scope, "project_scope");
+        if (!/^[0-9a-f]{32}$/.test(reservationToken ?? "")) die("RESERVATION_MISMATCH", "gateway release is missing or stale");
+        const tokenDigest = createHash("sha256").update(reservationToken).digest("hex");
+        const priorReceipt = inventory.release_receipts.find((receipt) => receipt.project_scope === projectScope && receipt.token_digest === tokenDigest);
+        if (priorReceipt) return verifyReleaseReceipt(priorReceipt);
         const index = inventory.gateways.findIndex((entry) => entry.project_scope === projectScope);
         const gateway = inventory.gateways[index];
         if (!gateway || gateway.provisioning !== true || gateway.release_pending !== true || gateway.reservation_token !== reservationToken) die("RESERVATION_MISMATCH", "gateway release is missing or stale");
         const projectDir = path.dirname(projectFile(projectScope));
-        const tokenDigest = createHash("sha256").update(reservationToken).digest("hex").slice(0, 16);
         const tombstone = path.join(stateDir, `.nacl-release-${projectScope}-${tokenDigest}`);
         const projectExists = existsSync(projectDir);
         const tombstoneExists = existsSync(tombstone);
         if (projectExists && tombstoneExists) die("OWNED_ARTIFACT_CLEANUP_FAILED", "project state and its release tombstone both exist");
         let artifactsMoved = false;
+        let artifactTombstoneDigest = null;
         if (projectExists) {
-          preflightArtifactTree(projectDir);
+          artifactTombstoneDigest = artifactTreeDigest(projectDir);
           try { renameSync(projectDir, tombstone); } catch (error) {
             die("OWNED_ARTIFACT_CLEANUP_FAILED", `owned project artifacts could not be tombstoned: ${error.message}`);
           }
           artifactsMoved = true;
         } else if (tombstoneExists) {
-          preflightArtifactTree(tombstone);
+          artifactTombstoneDigest = artifactTreeDigest(tombstone);
           artifactsMoved = true;
         }
+        const receipt = {
+          server_id: serverId,
+          project_scope: projectScope,
+          token_digest: tokenDigest,
+          gateway_port: gateway.gateway_port,
+          status: "VERIFIED",
+          code: "GATEWAY_RESERVATION_RELEASED",
+          artifact_gc_status: artifactsMoved ? "RETAINED" : "NOT_REQUIRED",
+          artifact_tombstone: artifactsMoved ? tombstone : null,
+          artifact_tombstone_digest: artifactTombstoneDigest,
+        };
         inventory.gateways.splice(index, 1);
+        inventory.release_receipts.push(receipt);
+        inventory.release_receipts.sort((left, right) => `${left.project_scope}:${left.token_digest}`.localeCompare(`${right.project_scope}:${right.token_digest}`));
         try {
           writeInventory(inventory);
         } catch (error) {
+          inventory.release_receipts.splice(inventory.release_receipts.indexOf(receipt), 1);
           inventory.gateways.splice(index, 0, gateway);
           if (artifactsMoved && !existsSync(projectDir) && existsSync(tombstone)) {
             try { renameSync(tombstone, projectDir); } catch (rollbackError) {
@@ -261,14 +419,7 @@ function controller(options) {
           }
           die("OWNED_ARTIFACT_CLEANUP_FAILED", `inventory commit failed after artifact tombstone: ${error.message}`);
         }
-        return {
-          status: "VERIFIED",
-          code: "GATEWAY_RESERVATION_RELEASED",
-          project_scope: projectScope,
-          gateway_port: gateway.gateway_port,
-          artifact_gc_status: artifactsMoved ? "RETAINED" : "NOT_REQUIRED",
-          ...(artifactsMoved ? { artifact_tombstone: tombstone } : {}),
-        };
+        return releaseResult(receipt);
       });
     },
     grant(value) {
@@ -314,6 +465,23 @@ function controller(options) {
         return reconcileGrant(plan.proposed_trusted_cns, "LEGACY_UNION_MIGRATED");
       });
     },
+    authorizationSnapshot() {
+      return locked(() => {
+        const state = authorizationState();
+        return {
+          status: "VERIFIED",
+          code: "AUTHORIZATION_SNAPSHOT_READY",
+          authorization_revision: state.inventory.authorization_revision,
+          authorization_binding: state.binding,
+          trusted_cns: state.trusted.values,
+          trusted_cns_sha256: state.trusted.sha256,
+          gateways: state.gateways,
+        };
+      });
+    },
+    authorizationVerify(scope, revision, binding) {
+      return locked(() => verifyAuthorizationProjection(scope, revision, binding));
+    },
     inventory() { return readInventory(); },
   };
 }
@@ -332,6 +500,8 @@ try {
   else if (action === "quarantine") result = api.quarantine(options.scope, options.reason);
   else if (action === "migration-plan") result = api.migrationPlan(options.legacy);
   else if (action === "migration-apply") result = api.migrationApply(options.legacy, options.confirmation);
+  else if (action === "authorization-snapshot") result = api.authorizationSnapshot();
+  else if (action === "authorization-verify") result = api.authorizationVerify(options.scope, options["authorization-revision"], options["authorization-binding"]);
   else if (action === "inventory") result = api.inventory();
   else die("ACTION_INVALID", "unknown action");
   process.stdout.write(`${JSON.stringify(result)}\n`);

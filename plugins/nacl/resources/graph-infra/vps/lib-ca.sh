@@ -153,12 +153,32 @@ gen_crl() {
 render_gateway_allowlist() {
   local gdir="$1"
   local compose="$gdir/docker-compose.yml"
-  local allow="$gdir/allowed-cns"
+  local allow="${2:-$gdir/allowed-cns}"
+  local expected_allow_sha256="${3:-}"
   local start_marker='# >>> NACL allow-cn (managed)'
   local end_marker='# <<< NACL allow-cn (managed)'
   local start_count end_count start_line end_line work frag rendered candidate actual
   if [ ! -f "$compose" ]; then
     _ca_log "ERROR: no compose at $compose"
+    return 1
+  fi
+  if ! node -e '
+    const { createHash } = require("node:crypto");
+    const { lstatSync, readFileSync } = require("node:fs");
+    const filename = process.argv[1];
+    const expectedHash = process.argv[2];
+    const metadata = lstatSync(filename);
+    if (!metadata.isFile() || metadata.isSymbolicLink()) process.exit(2);
+    const content = readFileSync(filename, "utf8");
+    const cn = /^[A-Za-z0-9][A-Za-z0-9._:@-]{2,127}$/;
+    const values = content.split(/\r?\n/).filter(Boolean);
+    if (values.some((value) => !cn.test(value) || value.includes("..") || /[.:@-]$/.test(value))) process.exit(3);
+    const canonical = [...new Set(values)].sort();
+    const serialized = canonical.length ? `${canonical.join("\n")}\n` : "";
+    if (content !== serialized) process.exit(4);
+    if (expectedHash && createHash("sha256").update(content).digest("hex") !== expectedHash) process.exit(5);
+  ' "$allow" "$expected_allow_sha256"; then
+    _ca_log "ERROR: allow-cn source is not a canonical authoritative snapshot: $allow"
     return 1
   fi
   start_count=$(awk -v marker="$start_marker" '
