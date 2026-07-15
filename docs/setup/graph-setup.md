@@ -161,6 +161,29 @@ node "$HOME/.claude/skills/nacl-core/scripts/graph-doctor.mjs" --fix
 `nacl-*` skills now call this automatically and offer to run `--fix` for you when the graph
 is unreachable, instead of failing outright.
 
+## Mid-Session Watcher (Plugin Channel)
+
+Plugin installs (`/plugin install nacl@nacl`) also arm a background monitor
+(`monitors/monitors.json` → `graph-doctor.mjs --watch`): a long-running process, started
+with the session, that re-probes the graph port every 30 seconds. It complements the
+SessionStart hook — the hook catches a graph that is already down when the session starts;
+the watcher catches a container that dies *after* the session began (previously invisible
+until the next graph call failed).
+
+The watcher is silent while the state is stable and prints a single `NACL_GRAPH_WATCH:`
+line only on an UP→DOWN or DOWN→UP transition. Per the official plugin docs, every stdout
+line from a monitor is delivered to Claude as a notification mid-conversation — so on
+container death Claude learns the graph is DOWN (with the `--fix` remedy at hand) without
+being asked, and on recovery it learns `mcp__neo4j__*` tools are safe again. In non-NaCl
+projects (no `graph:` block in `config.yaml`) the watcher exits immediately and never
+notifies.
+
+> **Live Desktop verification pending.** The notification UX above follows the official
+> plugin monitors documentation plus a local end-to-end run of `--watch` (real TCP
+> transitions, one line per flip); the UP→DOWN notification has **not yet been observed in
+> a live Claude Code Desktop session**. Owner step: stop the project's Neo4j container
+> mid-session (`docker stop <container>`) and confirm the notification arrives.
+
 ## Platform Notes
 
 ### macOS

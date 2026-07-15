@@ -15,6 +15,8 @@
 //   graph-doctor.mjs                 → NACL_GRAPH_DOCTOR: status=UP|DOWN|NOT_NACL mode=.. port=.. root=..
 //   graph-doctor.mjs --fix           → start/repair, then NACL_GRAPH_FIX: status=UP|FAILED [failed_check=..]
 //   graph-doctor.mjs --hook          → SessionStart hook JSON on stdout when DOWN, silent otherwise
+//   graph-doctor.mjs --watch         → long-running (plugin monitor): one NACL_GRAPH_WATCH line per
+//                                       UP→DOWN / DOWN→UP transition, silent otherwise; NOT_NACL exits 0
 //   graph-doctor.mjs --scan-ports    → NACL_GRAPH_PORTS: bolt=<csv> http=<csv>
 //                                       NACL_GRAPH_PORTS_SUGGEST: bolt=<n> http=<n>
 
@@ -374,6 +376,49 @@ export function suggestFreeBlock(used, { boltBase = 3587, httpBase = 3574, step 
 }
 
 // ---------------------------------------------------------------------------
+// --watch helpers — mid-session transition watcher (fed by the plugin's
+// monitors/monitors.json; every stdout line a monitor emits is delivered to
+// Claude as a user-visible notification, so silence-when-stable is a contract)
+// ---------------------------------------------------------------------------
+
+/**
+ * One-line transition messages for --watch. Wording deliberately mirrors the
+ * --hook additionalContext (same --fix remedy, no new graph-down variant).
+ * @param {boolean} up          new state after the transition
+ * @param {object} cfg          readGraphConfig() result
+ * @param {string} scriptPath   absolute path to this script, for the --fix hint
+ * @returns {string} single line, no trailing newline
+ */
+export function formatWatchLine(up, cfg, scriptPath) {
+  const where = `mode=${cfg.mode} port=${cfg.probe.port}`;
+  if (up) {
+    return `NACL_GRAPH_WATCH: status=UP ${where} — NaCl graph (${cfg.probe.host}:${cfg.probe.port}) is reachable again; mcp__neo4j__* tools are safe to use.`;
+  }
+  return `NACL_GRAPH_WATCH: status=DOWN ${where} — NaCl graph (${cfg.probe.host}:${cfg.probe.port}) went DOWN mid-session. Do not call mcp__neo4j__* tools. If the user asks for graph work, offer to run: node ${scriptPath} --fix (starts the graph; for local mode Docker Desktop must be running).`;
+}
+
+/**
+ * Long-running transition loop. Establishes the initial state SILENTLY — a
+ * session that starts with the graph already down is the SessionStart hook's
+ * job, not the watcher's — then calls onTransition('up'|'down') ONLY when the
+ * probed state flips. Injectable probe/sleep/iterations keep the loop testable
+ * without real 30s waits (same seam style as deepCheckWithRetry).
+ * @param {() => Promise<boolean>} probe
+ * @param {(state:'up'|'down') => void} onTransition
+ * @param {{intervalMs?:number, iterations?:number, sleep?:(ms:number)=>Promise<void>}} [opts]
+ */
+export async function watchTransitions(probe, onTransition, { intervalMs = 30000, iterations = Infinity, sleep } = {}) {
+  const doSleep = sleep || ((ms) => new Promise((r) => setTimeout(r, ms)));
+  let last = await probe();
+  for (let i = 0; i < iterations; i++) {
+    await doSleep(intervalMs);
+    const now = await probe();
+    if (now !== last) onTransition(now ? 'up' : 'down');
+    last = now;
+  }
+}
+
+// ---------------------------------------------------------------------------
 // CLI modes
 // ---------------------------------------------------------------------------
 
@@ -529,6 +574,19 @@ async function runHook() {
   }
 }
 
+async function runWatch() {
+  const cwd = process.env.CLAUDE_PROJECT_DIR || process.cwd();
+  const { root } = resolveProjectRoot(cwd);
+  const cfg = readGraphConfig(root);
+  if (!cfg) return 0; // NOT_NACL → exit immediately, monitor stays silent
+  const scriptPath = fileURLToPath(import.meta.url);
+  await watchTransitions(
+    () => probeTcp(cfg.probe.host, cfg.probe.port),
+    (state) => process.stdout.write(formatWatchLine(state === 'up', cfg, scriptPath) + '\n'),
+  );
+  return 0;
+}
+
 // CLI — symlink-safe main check (skills invoke via the ~/.claude/skills symlink).
 if (process.argv[1] && realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const args = process.argv.slice(2);
@@ -538,6 +596,15 @@ if (process.argv[1] && realpathSync(process.argv[1]) === fileURLToPath(import.me
     runHook().then(() => { clearTimeout(guard); process.exit(0); }).catch(() => { clearTimeout(guard); process.exit(0); });
   } else if (args.includes('--fix')) {
     runFix().then((code) => process.exit(code)).catch(() => process.exit(1));
+  } else if (args.includes('--watch')) {
+    // Long-running by design: resolves (exit 0) only for NOT_NACL dirs. A
+    // watcher crash must never surface as a notification, hence exit 0 — but
+    // monitors deliver stdout only, so a stderr diagnostic is free and keeps a
+    // dead watcher distinguishable from a healthy-silent one in the task panel.
+    runWatch().then((code) => process.exit(code)).catch((err) => {
+      process.stderr.write(`nacl-graph-watch: watcher crashed: ${err?.message || err}\n`);
+      process.exit(0);
+    });
   } else if (args.includes('--scan-ports')) {
     const docker = resolveDocker();
     const used = docker.status === 'ok' ? scanUsedPorts(docker.path) : { bolt: [], http: [] };

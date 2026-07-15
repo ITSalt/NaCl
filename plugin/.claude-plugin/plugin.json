@@ -6,5 +6,8 @@
     "name": "ITSalt"
   },
   "homepage": "https://github.com/ITSalt/NaCl",
-  "license": "MIT"
+  "license": "MIT",
+  "experimental": {
+    "monitors": "./monitors/monitors.json"
+  }
 }
