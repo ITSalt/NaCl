@@ -177,7 +177,7 @@ RETURN phase1, phase2, phase3, phase4, phase5, phase6, phase7, phase8, phase9
    - Phase 3 (workflow):  DONE
    - Phase 4 (entities):  NOT STARTED  <-- resuming here
    - Phase 5-10:          NOT STARTED
-   
+
    Continue from Phase 4?
    ```
 4. After user confirmation, start from the detected phase

@@ -46,6 +46,7 @@ fail() { FAILED_CHECK="$1"; echo "FAILED at: $1" >&2; emit FAILED; exit 1; }
 command -v docker >/dev/null 2>&1 || fail need-docker
 docker compose version >/dev/null 2>&1 || docker-compose version >/dev/null 2>&1 || fail need-compose
 command -v openssl >/dev/null 2>&1 || fail need-openssl
+command -v node >/dev/null 2>&1 || fail need-node
 DC="docker compose"; docker compose version >/dev/null 2>&1 || DC="docker-compose"
 
 GRAPH_DIR="$STATE_DIR/$SCOPE"
@@ -73,9 +74,13 @@ EOF
 chmod 600 "$GRAPH_DIR/.env"
 cp "$SKILLS_DIR/nacl-tl-core/templates/graph-docker-compose.vps.yml" "$GRAPH_DIR/docker-compose.yml" || fail copy-compose
 
-# seed the gateway CN allow-list with the first developer and render `--allow-cn` lines into the
-# compose copy (ghostunnel has no CRL — access is an explicit allow-list managed by issue/revoke).
-allowlist_add "$GRAPH_DIR" "$FIRST_DEV"
+# Register the project/port atomically, then grant the first principal at the SERVER boundary.
+# trusted-cns is authoritative; every project allowed-cns file is only its generated projection.
+ACCESS_CONTROL="$SKILLS_DIR/graph-infra/vps/server-access-control.mjs"
+node "$ACCESS_CONTROL" provision --state-dir "$STATE_DIR" --server-id "$HOST" \
+  --scope "$SCOPE" --port "$GATEWAY_PORT" >/dev/null || fail server-register
+node "$ACCESS_CONTROL" grant --state-dir "$STATE_DIR" --server-id "$HOST" \
+  --cn "$FIRST_DEV" >/dev/null || fail server-grant
 render_gateway_allowlist "$GRAPH_DIR" || fail render-allowlist
 
 CONTAINER="$PREFIX-neo4j"

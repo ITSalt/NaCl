@@ -1,0 +1,200 @@
+#!/usr/bin/env node
+import { createHash, randomBytes } from "node:crypto";
+import {
+  chmodSync, existsSync, lstatSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync,
+} from "node:fs";
+import path from "node:path";
+
+const CN = /^[A-Za-z0-9][A-Za-z0-9._:@-]{2,127}$/;
+const ID = /^[A-Za-z0-9][A-Za-z0-9._-]{2,127}$/;
+
+function die(code, message) {
+  const error = new Error(message);
+  error.code = code;
+  throw error;
+}
+
+function id(value, label) {
+  if (typeof value !== "string" || !ID.test(value) || value.includes("..") || /[._-]$/.test(value)) die(`${label.toUpperCase()}_INVALID`, `${label} is malformed`);
+  return value;
+}
+
+function cn(value) {
+  if (typeof value !== "string" || !CN.test(value) || value.includes("..") || /[.:@-]$/.test(value)) die("CN_INVALID", "CN is malformed");
+  return value;
+}
+
+function cns(text) {
+  return [...new Set(text.split(/\r?\n/).filter(Boolean).map(cn))].sort();
+}
+
+function atomic(filename, content) {
+  const temporary = `${filename}.${process.pid}.${randomBytes(6).toString("hex")}.tmp`;
+  writeFileSync(temporary, content, { mode: 0o600, flag: "wx" });
+  chmodSync(temporary, 0o600);
+  renameSync(temporary, filename);
+}
+
+function parse(argv) {
+  const [action, ...rest] = argv;
+  const options = { legacy: [] };
+  for (let index = 0; index < rest.length; index += 1) {
+    const key = rest[index];
+    if (!key.startsWith("--")) die("ARGUMENT_INVALID", `unknown argument ${key}`);
+    const name = key.slice(2);
+    const value = rest[++index];
+    if (name === "legacy") options.legacy.push(value);
+    else options[name] = value;
+  }
+  return { action, options };
+}
+
+function controller(options) {
+  const stateDir = path.resolve(options["state-dir"] ?? "");
+  if (!path.isAbsolute(options["state-dir"] ?? "")) die("STATE_DIR_INVALID", "state-dir must be absolute");
+  const serverId = id(options["server-id"], "server_id");
+  mkdirSync(stateDir, { recursive: true, mode: 0o700 });
+  if (lstatSync(stateDir).isSymbolicLink()) die("STATE_DIR_INVALID", "state-dir cannot be a symlink");
+  const trustedPath = path.join(stateDir, "trusted-cns");
+  const inventoryPath = path.join(stateDir, "gateways.json");
+  const lockPath = path.join(stateDir, ".server-access.lock");
+  if (!existsSync(trustedPath)) atomic(trustedPath, "");
+  if (!existsSync(inventoryPath)) atomic(inventoryPath, `${JSON.stringify({ version: 1, server_id: serverId, authorization_revision: 0, gateways: [] }, null, 2)}\n`);
+
+  function readInventory() {
+    const value = JSON.parse(readFileSync(inventoryPath, "utf8"));
+    if (value.version !== 1 || value.server_id !== serverId || !Array.isArray(value.gateways)) die("INVENTORY_INVALID", "gateway inventory is invalid");
+    return value;
+  }
+  function readTrusted() { return cns(readFileSync(trustedPath, "utf8")); }
+  function writeTrusted(values) { atomic(trustedPath, values.length ? `${values.join("\n")}\n` : ""); }
+  function writeInventory(value) { atomic(inventoryPath, `${JSON.stringify(value, null, 2)}\n`); }
+  function projectFile(scope) {
+    const filename = path.join(stateDir, id(scope, "project_scope"), "allowed-cns");
+    if (!filename.startsWith(`${stateDir}${path.sep}`)) die("PROJECT_SCOPE_INVALID", "project scope escapes state-dir");
+    return filename;
+  }
+  function project(values, gateway) {
+    const filename = projectFile(gateway.project_scope);
+    mkdirSync(path.dirname(filename), { recursive: true, mode: 0o700 });
+    atomic(filename, values.length ? `${values.join("\n")}\n` : "");
+  }
+  function locked(operation) {
+    try { mkdirSync(lockPath, { mode: 0o700 }); } catch { die("STATE_LOCKED", "server access state is locked"); }
+    try { return operation(); } finally { rmSync(lockPath, { recursive: true, force: true }); }
+  }
+  function reconcileGrant(next, successCode) {
+    const inventory = readInventory();
+    const previous = readTrusted();
+    const changed = [];
+    try {
+      for (const gateway of inventory.gateways) { project(next, gateway); changed.push(gateway); }
+      writeTrusted(next);
+      inventory.authorization_revision += 1;
+      writeInventory(inventory);
+      return { status: "VERIFIED", code: successCode, authorization_revision: inventory.authorization_revision };
+    } catch (error) {
+      for (const gateway of changed) { try { project(previous, gateway); } catch { gateway.enabled = false; gateway.quarantine_reason = "grant-rollback-incomplete"; } }
+      writeTrusted(previous);
+      writeInventory(inventory);
+      return { status: "BLOCKED", code: "GRANT_ROLLED_BACK", error_code: error.code ?? "PROJECTION_FAILED" };
+    }
+  }
+  function migrationPlan(files) {
+    if (!files.length) die("MIGRATION_INPUT_INVALID", "legacy inputs are required");
+    const inputs = files.map((filename) => {
+      if (!path.isAbsolute(filename) || lstatSync(filename).isSymbolicLink()) die("MIGRATION_INPUT_INVALID", "legacy input must be an absolute regular file");
+      const content = readFileSync(filename, "utf8");
+      return { path: path.resolve(filename), sha256: createHash("sha256").update(content).digest("hex"), values: cns(content) };
+    });
+    const proposed = [...new Set(inputs.flatMap((entry) => entry.values))].sort();
+    const digest = createHash("sha256").update(JSON.stringify({ server_id: serverId, inputs: inputs.map(({ path: filename, sha256 }) => ({ path: filename, sha256 })), proposed })).digest("hex");
+    return { status: "PLANNED", code: "LEGACY_UNION_PLANNED", proposed_trusted_cns: proposed, confirmation: `MIGRATE_SERVER_TRUST:${digest}` };
+  }
+  return {
+    provision(scope, rawPort) {
+      return locked(() => {
+        const inventory = readInventory();
+        const projectScope = id(scope, "project_scope");
+        const port = Number(rawPort);
+        if (!Number.isSafeInteger(port) || port < 1024 || port > 65535) die("GATEWAY_PORT_INVALID", "gateway port is invalid");
+        const existing = inventory.gateways.find((entry) => entry.project_scope === projectScope);
+        if (existing) {
+          if (existing.gateway_port !== port) die("GATEWAY_COLLISION", "project scope is already allocated to another port");
+          project(readTrusted(), existing);
+          return { status: "VERIFIED", code: "GATEWAY_ALREADY_PROVISIONED", ...existing };
+        }
+        if (inventory.gateways.some((entry) => entry.gateway_port === port)) die("GATEWAY_COLLISION", "gateway port is already allocated");
+        const gateway = { project_scope: projectScope, gateway_port: port, enabled: true, quarantine_reason: null };
+        project(readTrusted(), gateway);
+        inventory.gateways.push(gateway);
+        inventory.gateways.sort((left, right) => left.project_scope.localeCompare(right.project_scope));
+        writeInventory(inventory);
+        return { status: "VERIFIED", code: "GATEWAY_PROVISIONED", ...gateway };
+      });
+    },
+    grant(value) {
+      return locked(() => {
+        const principal = cn(value);
+        const previous = readTrusted();
+        return reconcileGrant([...new Set([...previous, principal])].sort(), "PRINCIPAL_GRANTED");
+      });
+    },
+    revoke(value) {
+      return locked(() => {
+        const principal = cn(value);
+        const inventory = readInventory();
+        const next = readTrusted().filter((entry) => entry !== principal);
+        writeTrusted(next);
+        const quarantined = [];
+        for (const gateway of inventory.gateways) {
+          try { project(next, gateway); } catch { gateway.enabled = false; gateway.quarantine_reason = "revoke-projection-stale"; quarantined.push(gateway.project_scope); }
+        }
+        inventory.authorization_revision += 1;
+        writeInventory(inventory);
+        return quarantined.length ? { status: "BLOCKED", code: "REVOKE_QUARANTINED", quarantined } : { status: "VERIFIED", code: "PRINCIPAL_REVOKED", authorization_revision: inventory.authorization_revision };
+      });
+    },
+    quarantine(scope, reason) {
+      return locked(() => {
+        const inventory = readInventory();
+        const gateway = inventory.gateways.find((entry) => entry.project_scope === id(scope, "project_scope"));
+        if (!gateway) die("GATEWAY_NOT_FOUND", "gateway was not found");
+        gateway.enabled = false;
+        gateway.quarantine_reason = reason || "reload-failed";
+        writeInventory(inventory);
+        return { status: "BLOCKED", code: "GATEWAY_QUARANTINED", project_scope: gateway.project_scope };
+      });
+    },
+    migrationPlan(files) {
+      return migrationPlan(files);
+    },
+    migrationApply(files, confirmation) {
+      return locked(() => {
+        const plan = migrationPlan(files);
+        if (confirmation !== plan.confirmation) die("CONFIRMATION_MISMATCH", "migration confirmation is stale or incorrect");
+        return reconcileGrant(plan.proposed_trusted_cns, "LEGACY_UNION_MIGRATED");
+      });
+    },
+    inventory() { return readInventory(); },
+  };
+}
+
+const { action, options } = parse(process.argv.slice(2));
+try {
+  const api = controller(options);
+  let result;
+  if (action === "provision") result = api.provision(options.scope, options.port);
+  else if (action === "grant") result = api.grant(options.cn);
+  else if (action === "revoke") result = api.revoke(options.cn);
+  else if (action === "quarantine") result = api.quarantine(options.scope, options.reason);
+  else if (action === "migration-plan") result = api.migrationPlan(options.legacy);
+  else if (action === "migration-apply") result = api.migrationApply(options.legacy, options.confirmation);
+  else if (action === "inventory") result = api.inventory();
+  else die("ACTION_INVALID", "unknown action");
+  process.stdout.write(`${JSON.stringify(result)}\n`);
+  if (result.status === "BLOCKED") process.exitCode = 1;
+} catch (error) {
+  process.stderr.write(`${JSON.stringify({ status: "BLOCKED", code: error.code ?? "SERVER_ACCESS_FAILED", message: error.message })}\n`);
+  process.exitCode = 1;
+}

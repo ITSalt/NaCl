@@ -201,7 +201,7 @@ Only offer Phase 6b on resume when it is `false` AND Phase 7 has not run yet
    - Phase 3 (roles):       DONE
    - Phase 4 (uc stories):  NOT STARTED  <-- resuming here
    - Phase 5-10:            NOT STARTED
-   
+
    Continue from Phase 4?
    ```
 4. After user confirmation, start from the detected phase

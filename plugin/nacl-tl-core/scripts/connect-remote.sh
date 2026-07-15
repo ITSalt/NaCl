@@ -17,10 +17,13 @@
 # Usage:
 #   connect-remote.sh --project-root DIR --skills-dir DIR --uri bolt://localhost:3700 \
 #       --project-scope SCOPE --id ID --name "NAME" \
-#       [--user neo4j] [--password PW] [--database neo4j]
+#       --host HOST --gateway-port PORT --sidecar-port PORT \
+#       --client-cert FILE --client-key FILE --ca-cert FILE \
+#       [--user neo4j] [--database neo4j] [--secret-source env:NEO4J_PASSWORD]
 set -u
 
 PROJECT_ROOT=""; SKILLS_DIR=""; URI=""; SCOPE=""; PID=""; PNAME=""
+HOST=""; GATEWAY_PORT=""; SIDECAR_PORT=""; CLIENT_CERT=""; CLIENT_KEY=""; CA_CERT=""; TLS="true"; SECRET_SOURCE="env:NEO4J_PASSWORD"
 USER_="neo4j"; PASSWORD="${NEO4J_PASSWORD:-}"; DATABASE="neo4j"
 
 while [ $# -gt 0 ]; do
@@ -31,13 +34,21 @@ while [ $# -gt 0 ]; do
     --project-scope) SCOPE="$2"; shift 2 ;;
     --id)           PID="$2"; shift 2 ;;
     --name)         PNAME="$2"; shift 2 ;;
+    --host)         HOST="$2"; shift 2 ;;
+    --gateway-port) GATEWAY_PORT="$2"; shift 2 ;;
+    --sidecar-port) SIDECAR_PORT="$2"; shift 2 ;;
+    --client-cert)  CLIENT_CERT="$2"; shift 2 ;;
+    --client-key)   CLIENT_KEY="$2"; shift 2 ;;
+    --ca-cert)      CA_CERT="$2"; shift 2 ;;
+    --tls)          TLS="$2"; shift 2 ;;
+    --secret-source) SECRET_SOURCE="$2"; shift 2 ;;
     --user)         USER_="$2"; shift 2 ;;
-    --password)     PASSWORD="$2"; shift 2 ;;
+    --password)     echo "--password is forbidden; use --secret-source env:NEO4J_PASSWORD" >&2; exit 2 ;;
     --database)     DATABASE="$2"; shift 2 ;;
     *) echo "Unknown argument: $1" >&2; exit 2 ;;
   esac
 done
-for v in PROJECT_ROOT SKILLS_DIR URI SCOPE PID PNAME; do
+for v in PROJECT_ROOT SKILLS_DIR URI SCOPE PID PNAME HOST GATEWAY_PORT SIDECAR_PORT CLIENT_CERT CLIENT_KEY CA_CERT; do
   eval "val=\$$v"; [ -n "$val" ] || { echo "Missing required argument for connect-remote (--$v)" >&2; exit 2; }
 done
 
@@ -53,6 +64,12 @@ fail() { FAILED_CHECK="$1"; echo "FAILED at: $1" >&2; emit FAILED; exit 1; }
 
 NODE=$(command -v node 2>/dev/null || command -v nodejs 2>/dev/null)
 [ -n "$NODE" ] || fail node-missing
+[ "$SECRET_SOURCE" != "env:NEO4J_PASSWORD" ] || [ -n "$PASSWORD" ] || fail secret-source-unavailable
+"$NODE" "$SKILLS_DIR/nacl-tl-core/scripts/remote-route-contract.mjs" \
+  --mode connect --host "$HOST" --gateway-port "$GATEWAY_PORT" --sidecar-port "$SIDECAR_PORT" \
+  --project-scope "$SCOPE" --client-cert "$CLIENT_CERT" --client-key "$CLIENT_KEY" \
+  --ca-cert "$CA_CERT" --tls "$TLS" --uri "$URI" --username "$USER_" --database "$DATABASE" \
+  --secret-source "$SECRET_SOURCE" >/dev/null || fail route-contract
 resolve_neo4j_mcp_bin || fail resolve-binary
 [ -x "$STABLE_BIN" ] || fail resolve-binary
 
@@ -72,12 +89,18 @@ fi
 # Write client-side config (no graph writes). .mcp.json points at the LOCAL sidecar socket.
 "$NODE" "$SKILLS_DIR/nacl-tl-core/scripts/write-mcp-config.mjs" \
   --project-root "$PROJECT_ROOT" --command "$STABLE_BIN" \
-  --uri "$URI" --username "$USER_" --password "$PASSWORD" --database "$DATABASE" >/dev/null || fail write-mcp
+  --uri "$URI" --username "$USER_" --database "$DATABASE" --secret-source "$SECRET_SOURCE" >/dev/null || fail write-mcp
 
 "$NODE" "$SKILLS_DIR/nacl-tl-core/scripts/write-graph-config.mjs" \
   --project-root "$PROJECT_ROOT" --mode remote \
   --set "neo4j_uri=\"$URI\"" --set "neo4j_username=\"$USER_\"" \
   --set "neo4j_database=\"$DATABASE\"" --set "project_scope=\"$SCOPE\"" >/dev/null || fail write-config
+"$NODE" "$SKILLS_DIR/nacl-tl-core/scripts/write-graph-config.mjs" \
+  --project-root "$PROJECT_ROOT" --mode remote \
+  --set "remote.host=\"$HOST\"" --set "remote.gateway_port=$GATEWAY_PORT" \
+  --set "remote.sidecar_port=$SIDECAR_PORT" --set "remote.client_cert=\"$CLIENT_CERT\"" \
+  --set "remote.client_key=\"$CLIENT_KEY\"" --set "remote.ca_cert=\"$CA_CERT\"" \
+  --set "remote.tls=$TLS" --set "remote.secret_source=\"$SECRET_SOURCE\"" >/dev/null || fail write-route
 
 "$NODE" "$SKILLS_DIR/nacl-tl-core/scripts/register-project.mjs" \
   --id "$PID" --name "$PNAME" --root "$PROJECT_ROOT" >/dev/null || fail register

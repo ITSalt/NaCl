@@ -174,14 +174,3 @@ render_gateway_allowlist() {
   rm -f "$frag"
   _ca_log "rendered $( [ -s "$allow" ] && wc -l < "$allow" || echo 0 ) allowed CN(s) into $compose"
 }
-
-# allowlist_add <graph_dir> <cn> ; allowlist_remove <graph_dir> <cn> — idempotent line edits.
-allowlist_add() {
-  local allow="$1/allowed-cns"; touch "$allow"
-  grep -qxF "$2" "$allow" 2>/dev/null || echo "$2" >> "$allow"
-}
-allowlist_remove() {
-  local allow="$1/allowed-cns"; [ -f "$allow" ] || return 0
-  grep -vxF "$2" "$allow" > "$allow.tmp" 2>/dev/null || : > "$allow.tmp"
-  mv "$allow.tmp" "$allow"
-}

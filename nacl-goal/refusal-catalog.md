@@ -569,4 +569,3 @@ does the check script emit run-level `GOAL_BLOCKED` with sub-reason
    (which is itself a bug to be fixed in the check script).
 3. New block codes added in future point releases (2.10.2+, etc.) MUST be
    documented here in the same PR.
-
