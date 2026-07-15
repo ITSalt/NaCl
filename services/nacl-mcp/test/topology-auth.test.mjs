@@ -249,10 +249,11 @@ test("an out-of-band authoritative principal revoke removes discovery and author
 test("project discovery never sends a principal CN to or depends on an ungranted server", async () => {
   const ctx = await fixture();
   ctx.registryB.failVerify = true;
+  const beforeVerify = ctx.registryB.verifyCalls;
   const auth = await ctx.context("token-alice-session-one");
   const listed = await ctx.app({ name: "nacl_projects_list", arguments: {}, authContext: auth, requiredScope: "nacl.server.read" });
   assert.deepEqual(listed.data.projects.map((project) => project.label), ["Alpha", "Beta"]);
-  assert.equal(ctx.registryB.verifyCalls, 0);
+  assert.equal(ctx.registryB.verifyCalls, beforeVerify);
 });
 
 test("scope, exact confirmation mapping, idempotency replay, and payload mismatch are enforced", async () => {
@@ -470,6 +471,23 @@ test("a durable grant intent can be reconciled after a transient projection fail
   const auth = await ctx.context("token-alice-reconciled");
   const listed = await ctx.app({ name: "nacl_projects_list", arguments: {}, authContext: auth, requiredScope: "nacl.server.read" });
   assert.deepEqual(listed.data.projects.map((project) => project.label), ["Alpha", "Beta", "Gamma"]);
+});
+
+test("revoke reconciliation never treats missing authoritative verification as absence", async () => {
+  const ctx = await fixture();
+  const originalVerify = ctx.registryA.verifyPrincipal;
+  ctx.registryA.verifyPrincipal = undefined;
+  await assert.rejects(
+    ctx.control.revokeServer({ issuer: ISSUER, subject: "subject-alice", serverId: "server-a" }),
+    /verifyPrincipal/,
+  );
+  const pending = await ctx.control.reconcileTransition({ issuer: ISSUER, subject: "subject-alice" });
+  assert.equal(pending.status, "BLOCKED");
+  assert.equal(pending.code, "PRINCIPAL_TRANSITION_PENDING");
+  ctx.registryA.verifyPrincipal = originalVerify;
+  const recovered = await ctx.control.reconcileTransition({ issuer: ISSUER, subject: "subject-alice" });
+  assert.equal(recovered.status, "VERIFIED");
+  assert.equal(recovered.code, "SERVER_REVOKE_RECONCILED");
 });
 
 test("audit and responses are minimized and contain no raw subject, principal, certificate, server, scope, token, host, or graph result extras", async () => {

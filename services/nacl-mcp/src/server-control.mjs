@@ -168,6 +168,12 @@ export function createServerControlPlane({
     throw new TypeError("an authorization-state registry is required.");
   }
   if (typeof principalLinkVerifier?.verifyAndConsume !== "function") throw new TypeError("a principal-link proof verifier is required.");
+  for (const [serverId, registry] of serverRegistries) {
+    identifier(serverId, "serverId");
+    if (["grantPrincipal", "rotatePrincipal", "revokePrincipal", "verifyPrincipal"].some((method) => typeof registry?.[method] !== "function")) {
+      throw new TypeError("every server registry must implement grant, rotate, revoke, and authoritative verification.");
+    }
+  }
   const authorizer = createServerOperationAuthorizer({
     async resolveProjectRoute({ project_ref }) {
       const route = routeMap.get(project_ref);
@@ -300,11 +306,12 @@ export function createServerControlPlane({
         return { certificateCn: persisted.certificate_cn };
       });
       const result = await registry.grantPrincipal(prepared.certificateCn);
+      const authoritative = await registry.verifyPrincipal(prepared.certificateCn);
       return persistAuthorizationState((next) => {
         const persisted = next.get(key);
         if (persisted?.transition?.id !== intent) throw new ReauthorizationRequired({ error: "temporarily_unavailable" });
         const grant = persisted.grants.get(serverId);
-        grant.active = result?.status === "VERIFIED";
+        grant.active = result?.status === "VERIFIED" && authoritative?.status === "VERIFIED";
         persisted.transition = null;
         invalidate(persisted);
         return Object.freeze({
@@ -336,7 +343,9 @@ export function createServerControlPlane({
       });
       const results = await Promise.all(prepared.serverIds.map(async (serverId) => {
         const registry = serverRegistries.get(serverId);
-        return registry?.rotatePrincipal?.(prepared.previousCertificateCn, nextCertificateCn);
+        const projected = await registry.rotatePrincipal(prepared.previousCertificateCn, nextCertificateCn);
+        const authoritative = await registry.verifyPrincipal(nextCertificateCn);
+        return { status: projected?.status === "VERIFIED" && authoritative?.status === "VERIFIED" ? "VERIFIED" : "BLOCKED" };
       }));
       const finalized = await persistAuthorizationState((next) => {
         const persisted = next.get(key);
@@ -385,15 +394,17 @@ export function createServerControlPlane({
         invalidate(persisted);
         return { epoch: persisted.epoch, certificateCn: persisted.certificate_cn };
       });
-      const result = await serverRegistries.get(serverId)?.revokePrincipal?.(revoked.certificateCn);
+      const registry = serverRegistries.get(serverId);
+      const result = await registry.revokePrincipal(revoked.certificateCn);
+      const authoritative = await registry.verifyPrincipal(revoked.certificateCn);
       return persistAuthorizationState((next) => {
         const persisted = next.get(key);
         if (persisted?.transition?.id !== intent) throw new ReauthorizationRequired({ error: "temporarily_unavailable" });
         persisted.transition = null;
         invalidate(persisted);
         return Object.freeze({
-          status: result?.status === "VERIFIED" ? "VERIFIED" : "BLOCKED",
-          code: result?.status === "VERIFIED" ? "SERVER_REVOKED" : "SERVER_REVOKE_NOT_RECONCILED",
+          status: result?.status === "VERIFIED" && authoritative?.status === "BLOCKED" ? "VERIFIED" : "BLOCKED",
+          code: result?.status === "VERIFIED" && authoritative?.status === "BLOCKED" ? "SERVER_REVOKED" : "SERVER_REVOKE_NOT_RECONCILED",
           token_epoch: persisted.epoch,
         });
       });
@@ -462,7 +473,7 @@ export function createServerControlPlane({
           if (!registry) return pending;
           await registry.revokePrincipal?.(binding.certificate_cn);
           const authoritative = await registry.verifyPrincipal?.(binding.certificate_cn);
-          if (authoritative?.status === "VERIFIED") return pending;
+          if (authoritative?.status !== "BLOCKED") return pending;
           return persistAuthorizationState((next) => {
             const persisted = next.get(key);
             if (persisted?.transition?.id !== transition.id) throw new ReauthorizationRequired({ error: "temporarily_unavailable" });
