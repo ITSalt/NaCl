@@ -1,7 +1,7 @@
 {
   "name": "nacl-local",
   "interface": {
-    "displayName": "NaCl Local Candidate"
+    "displayName": "NaCl"
   },
   "plugins": [
     {

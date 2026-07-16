@@ -71,7 +71,7 @@ test("manifest, marketplace, and MCP companion describe the real nacl package", 
   await lstat(resolveInside(pluginRoot, manifest.mcpServers));
 
   assert.equal(marketplace.name, "nacl-local");
-  assert.equal(marketplace.interface?.displayName, "NaCl Local Candidate");
+  assert.equal(marketplace.interface?.displayName, "NaCl");
   assert.equal(marketplace.plugins.length, 1);
   assert.equal(marketplace.plugins[0].name, "nacl");
   assert.equal(resolveInside(repoRoot, marketplace.plugins[0].source.path), pluginRoot);

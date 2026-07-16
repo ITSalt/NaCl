@@ -18,7 +18,7 @@
 <!-- doc-key: choose-channel -->
 ## Выбор канала установки
 
-Для **Codex Desktop** установите полный плагин NaCl из доверенной карточки в **Plugins**. Полностью перезапустите Codex и откройте новую задачу. Сейчас проверен локальный candidate; публичная карточка, Streamable HTTP MCP, OAuth и релиз имеют статус `NOT_RUN`. См. [установку Codex-плагина](setup/install-codex-plugin.ru.md).
+Для **Codex Desktop** установите полный плагин NaCl из immutable GitHub Release через repo marketplace, затем полностью перезапустите Codex и откройте новую задачу. Публичная карточка Plugins Directory, production Streamable HTTP MCP и OAuth ещё не выпущены. См. [установку Codex-плагина](setup/install-codex-plugin.ru.md).
 
 Для **Claude Code Desktop или CLI** используйте [инструкцию по установке](setup/install-skills.ru.md). Сохраните GUI-проход 2.24.0 и выберите только один Claude-канал на машину.
 

@@ -18,7 +18,7 @@ Repository development additionally needs Git 2.30+ and Node.js 18+, but an ordi
 <!-- doc-key: choose-channel -->
 ## Choose the installation channel
 
-For **Codex Desktop**, install the full NaCl plugin from a trusted NaCl card in **Plugins**. Fully restart Codex and open a new task. The verified artifact is currently a local candidate; a public card, public Streamable HTTP MCP endpoint, OAuth flow, and release are `NOT_RUN`. See [Install the Codex plugin](setup/install-codex-plugin.md).
+For **Codex Desktop**, install the full NaCl plugin from the immutable GitHub Release through the repo marketplace, then fully restart Codex and open a new task. The public Plugins Directory card, production Streamable HTTP MCP endpoint, and OAuth flow have not been released. See [Install the Codex plugin](setup/install-codex-plugin.md).
 
 For **Claude Code Desktop or CLI**, follow [Skill Installation](setup/install-skills.md). Keep the 2.24.0 GUI walkthrough and use only one Claude installation channel per machine.
 

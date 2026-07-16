@@ -9,9 +9,9 @@ This is the ordinary NaCl installation path for Codex users. Installation, updat
 <!-- doc-key: availability -->
 ## Availability
 
-The owner should provide a NaCl plugin card or share/install link. Private workspace sharing is the intended distribution path, but it has not yet been verified for NaCl. There is no supported public-directory card or public install URL; submission and publication are future Wave 10 work.
+The verified Git channel is available as the immutable [`codex-plugin-v0.1.0`](https://github.com/ITSalt/NaCl/releases/tag/codex-plugin-v0.1.0) GitHub Release. It is a public source artifact for installation through a repo marketplace, not an official Plugins Directory card. OpenAI submission and publication remain future Wave 10 work.
 
-In a workspace, the author shares from the section for items they created, and recipients look in the section for items shared with them. The labels can vary by Codex version. An owner-provided card is authoritative for the name, version, publisher, connections, and permissions you are about to install.
+The GitHub tag fixes the exact source version. The installed card remains authoritative for the plugin name, plugin version, connections, and permissions. Do not install an archive or marketplace from a fork, branch, or tag that this guide does not name.
 
 <!-- doc-key: requirements -->
 ## Requirements
@@ -24,13 +24,23 @@ In a workspace, the author shares from the section for items they created, and r
 Installation verification and the first dry run do not require the graph.
 
 <!-- doc-key: install -->
-## Install
+## Install through the UI from the GitHub Release
 
-1. Open the owner-provided NaCl card or share/install link in Codex Desktop.
-2. Select **Install** or the **+** action.
-3. If Codex asks for connections or permissions, compare them with the card and grant only what is displayed. The current bundle declares **Read** and **Write**; do not approve a broader or unexplained request.
-4. Wait until NaCl appears as installed.
-5. Fully quit Codex Desktop, reopen it, and start a new task.
+1. Open the [`codex-plugin-v0.1.0` release](https://github.com/ITSalt/NaCl/releases/tag/codex-plugin-v0.1.0) and download **Source code (zip)** from **Assets**.
+2. Extract the ZIP into a permanent folder. Do not move or rename the nested `.agents/plugins/marketplace.json` or `plugins/nacl` paths.
+3. In Codex Desktop, open a local folder/project and select the extracted `NaCl-codex-plugin-v0.1.0` root, not its nested `plugins/nacl` folder.
+4. Open **Plugins**, select the **NaCl** marketplace, open the **NaCl** card, and choose **Install** or **+**.
+5. If Codex asks for connections or permissions, compare them with the card and grant only what is displayed. The current bundle declares **Read** and **Write**; do not approve a broader or unexplained request.
+6. Wait until NaCl appears as installed.
+7. Fully quit Codex Desktop, reopen it, and start a new task.
+
+If your Codex version does not show the repo marketplace after you open the folder, register the same immutable Git tag with one command, then return to the UI and complete steps 4-7:
+
+```text
+codex plugin marketplace add ITSalt/NaCl --ref codex-plugin-v0.1.0
+```
+
+The command only registers the Git marketplace. Installation, permissions, and enablement still happen in **Plugins**.
 
 A new task is required for discovery. The full restart is part of the verified NaCl trial and also prevents a previous task from keeping stale plugin state.
 
@@ -58,10 +68,10 @@ Do not hardcode or infer the expected version. If any field differs, stop before
 Open **Plugins**, select the installed NaCl card, and use the action Codex displays.
 
 - **Update:** choose **Update** when offered, then fully restart, open a new task, and verify the reported version against the updated card.
-- **Reinstall:** uninstall the bundle, reopen the same trusted owner-provided card, install it again, fully restart, and verify in a new task.
+- **Reinstall:** uninstall the bundle, reopen the repo marketplace from the same GitHub tag, install the card again, fully restart, and verify in a new task.
 - **Disable / enable:** toggle NaCl from its card. After enabling it again, fully restart and verify in a new task.
 - **Uninstall:** choose **Uninstall plugin** on the card. This removes the bundle. It does not delete NaCl’s durable project graph, registry, audit, profile, or Keychain state. Connectors are managed separately by Codex and are not removed merely because a plugin bundle is uninstalled.
-- **Roll back:** obtain an older trusted card or share/install link from the owner. Record the current card version, uninstall it, install the owner-provided rollback card, fully restart, and verify that the doctor reports the version shown on that card. Never reuse a guessed or saved package location.
+- **Roll back:** select an older explicitly published `codex-plugin-v*` release, record the current card version, uninstall it, install the marketplace from that immutable tag, fully restart, and verify that the doctor reports the version shown on that card. Never use a random branch or fork.
 
 If an update or rollback is unavailable in the card, stop and ask the owner for the intended card; do not invent an install URL.
 
@@ -93,7 +103,7 @@ If state changes after planning, request a fresh plan. `BLOCKED`, `FAILED`, `PAR
 
 | Symptom | Safe response |
 |---|---|
-| Card or share is missing | Confirm you are signed into the intended workspace and check the section for items shared with you. Ask the owner to share the card again. Do not substitute a public URL. |
+| Marketplace or card is missing | Confirm that Codex opened the extracted release root containing `.agents/plugins/marketplace.json`. If the repo marketplace still does not appear, use the exact tagged command above. Do not substitute a branch or fork. |
 | NaCl is disabled | Enable it from the installed card, fully restart, and use a new task. |
 | Old version is reported | Compare with the card, run the UI update or reinstall, fully restart, and use a new task. |
 | Doctor reports `both` | Stop all workflows. Use the [legacy migration appendix](codex-legacy-compatibility.md); never remove unknown artifacts. |
