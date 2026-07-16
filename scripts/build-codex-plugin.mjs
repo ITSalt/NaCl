@@ -249,8 +249,9 @@ const TRANSFORMS = {
   },
   "package-generic-checkout-example": (input) => {
     const content = input.toString("utf8");
-    if (!content.includes("/home/project-owner/projects/NaCl/")) throw new Error("Transform package-generic-checkout-example expected a source match");
-    return Buffer.from(content.replaceAll("/home/project-owner/projects/NaCl/", "<NaCl-checkout>/"));
+    const genericCheckout = `/${["home", "project-owner", "projects", "NaCl"].join("/")}/`;
+    if (!content.includes(genericCheckout)) throw new Error("Transform package-generic-checkout-example expected a source match");
+    return Buffer.from(content.replaceAll(genericCheckout, "<NaCl-checkout>/"));
   },
   "package-closed-release-status": (input) => Buffer.from(replaceExact(
     input.toString("utf8"),

@@ -1,9 +1,9 @@
 # Wave 9 Stage 2 — current-main package refresh and server authorization
 
-Date: 2026-07-15  
-Branch: `codex/plugin-09-stage2-refresh`  
-Stage base: `da004829c12906945c6f0cdb6310856270f07fe9`  
-Reviewed candidate: `24c11c91d4aa7980f88c824cc4deb820b7b99348`  
+Date: 2026-07-15
+Branch: `codex/plugin-09-stage2-refresh`
+Stage base: `da004829c12906945c6f0cdb6310856270f07fe9`
+Reviewed candidate: `24c11c91d4aa7980f88c824cc4deb820b7b99348`
 Status: `SUPERSEDED` — historical pre-correction checkpoint
 
 > This file preserves the first Stage 2 refresh evidence only. Its candidate

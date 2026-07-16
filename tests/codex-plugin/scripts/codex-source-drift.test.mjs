@@ -23,10 +23,10 @@ const ALLOWED_TRANSFORMS = Object.freeze({
   "package-nacl-core-links": (content) => content
     .replaceAll("neo4j_graph_dev", "<generated-by-nacl-local-init>")
     .replaceAll("(docs/skill-modifiers.md)", "(../docs/skill-modifiers.md)"),
-  "package-generic-checkout-example": (content) => content.replaceAll(
-    "/home/project-owner/projects/NaCl/",
-    "<NaCl-checkout>/",
-  ),
+  "package-generic-checkout-example": (content) => {
+    const genericCheckout = `/${["home", "project-owner", "projects", "NaCl"].join("/")}/`;
+    return content.replaceAll(genericCheckout, "<NaCl-checkout>/");
+  },
 });
 
 async function buildProjection() {

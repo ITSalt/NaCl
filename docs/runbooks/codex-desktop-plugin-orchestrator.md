@@ -4,7 +4,7 @@ Last audited: 2026-07-15
 
 Repository: `https://github.com/ITSalt/NaCl`
 
-Audited local checkout: `/Users/maxnikitin/projects/NaCl`
+Audited local checkout: `$ORIGINAL_CHECKOUT`
 
 Audited commit: `d98f7399e7b9941341421321407ad27ee895d221` (`main`)
 
@@ -1818,7 +1818,7 @@ Public release: PLANNED FOR WAVE 10; NOT_AUTHORIZED
 Status: PARTIALLY_VERIFIED — DOCUMENTS ACCEPTED; PRIVATE SHARE UI NOT_RUN
 Integration SHA: 4ea3a1e6ebb464818fa0deed3ccd78bf9d59a4ba
 Plugin version: 0.1.0+codex.20260715094133
-Marketplace path/name: /Users/maxnikitin/projects/NaCl-worker-plugin-08-candidate/.agents/plugins/marketplace.json / nacl-local
+Marketplace path/name: $WAVE8_WORKTREE/.agents/plugins/marketplace.json / nacl-local
 Install command: UI deeplink codex://plugins/nacl?marketplacePath=%2FUsers%2Fmaxnikitin%2Fprojects%2FNaCl-worker-plugin-08-candidate%2F.agents%2Fplugins%2Fmarketplace.json
 Share command: UI deeplink codex://plugins/nacl?marketplacePath=%2FUsers%2Fmaxnikitin%2Fprojects%2FNaCl-worker-plugin-08-candidate%2F.agents%2Fplugins%2Fmarketplace.json&mode=share
 Reinstall command: UI Uninstall nacl@nacl-local, reopen the install deeplink, and press Install

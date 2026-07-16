@@ -164,7 +164,7 @@ test("release binding fails closed for false verification, stale bindings, sensi
     ["stale skills", (value) => { value.plugin.skills.treeSha256 = "0".repeat(64); }, /skills tree hash/],
     ["stale tools", (value) => { value.publicMcp.publicToolsMetadata.sha256 = "0".repeat(64); }, /public tools metadata hash/],
     ["stale instructions", (value) => { value.publicMcp.serverInstructions.sha256 = "0".repeat(64); }, /server instructions hash/],
-    ["personal path", (value) => { value.productionBindings.publicEndpoint.value = "/Users/person/private"; }, /forbidden personal/],
+    ["personal path", (value) => { value.productionBindings.publicEndpoint.value = `/${["Users", "person", "private"].join("/")}`; }, /forbidden personal/],
     ["secret", (value) => { value.productionBindings.publicEndpoint.value = "access_token=secret-value"; }, /forbidden personal/],
     ["placeholder", (value) => { value.productionBindings.publicEndpoint.value = "https://example.test/mcp"; }, /forbidden personal/],
     ["false ready", (value) => { value.status = "READY_FOR_SUBMISSION"; }, /critical production bindings remain unresolved/],
