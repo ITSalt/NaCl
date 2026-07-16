@@ -40,7 +40,7 @@ journey будет проверен на другой машине из замо
 Точный воспроизводящий вызов:
 
 ```bash
-git merge-tree --write-tree main codex/desktop-plugin-integration
+git merge-tree --write-tree main codex/desktop-plugin-integration # branch-literal-ok
 ```
 
 При разрешении `main=d828e54dc3329c5b2664df5e388badb83fc5d83e` и

@@ -645,7 +645,7 @@ The `Regression test:` line is **mandatory** when Status ∈ {PASS, UNVERIFIED, 
 
 Value selection is workflow-determined, not free-form:
 
-- **Workflow A PASS** → the regression-test path written by `/nacl:tl-regression-test`.
+- **Workflow A PASS** → the regression-test path written by the `nacl-tl-regression-test` skill.
 - **Workflow B PASS** → `verification: <repo-relative path>` pointing at the committed
   verification record from B.3.5 (orchestrators derive `verify-GREEN:<path>` from it).
 - Any other value on a PASS report — including improvised forms like `n/a — Workflow B` —
