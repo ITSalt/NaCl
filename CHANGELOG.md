@@ -4,6 +4,39 @@ All notable changes to NaCl (Natural Agent Control Language) will be documented 
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [2.25.0] — 2026-07-17
+
+**Infrastructure tasks can reach `done` again.** A verification-based infra TECH PASS
+(`nacl-tl-dev` Workflow B — Docker, CI/CD, environment config) had no valid value for the
+mandatory `Regression test:` line: the enumerated set was `<path> | "none — UNVERIFIED" |
+"n/a — NO_INFRA"`, none of which fits a verified-but-untested infra PASS. Since the
+W4-blocking-release removal of `'no-test'` evidence, `nacl-tl-conductor` and `nacl-tl-full`
+HALTed every such PASS as a contract violation — so a Wave-0 infra wave could never be
+carried to `done`. Found by a live conductor run that correctly halted and surfaced the
+contradiction instead of improvising evidence.
+
+### Added
+- **`verify-GREEN:<path>` evidence value** for Workflow-B (infrastructure) PASS, alongside
+  `test-GREEN:<path>`. `nacl-tl-dev` Workflow B gains step **B.3.5**: on a clean re-run of
+  the documented verification command it writes and commits a durable verification record
+  (`.tl/tasks/TECH-###/verification.md` — command, baseline output, post-change output,
+  resources confirmed) and reports `Regression test: verification: <path>`. Orchestrators
+  (`nacl-tl-conductor` Phase 3, `nacl-tl-full` TECH aggregation) derive
+  `verify-GREEN:<path>` from that line and write `t.status = 'done'`. `nacl-tl-release`
+  parses the new prefix; `verify-GREEN` is NOT a verification gap.
+
+### Fixed
+- **Conductor internal inconsistency**: a code comment still advertised `'no-test'` as a
+  valid evidence value that the same skill's prose declared no longer producible.
+- **Stale `no-test` taxonomy row** in `nacl-core` § Task.verification_evidence: now marked
+  legacy (readers keep parsing it for pre-W4 graphs; no skill produces it).
+- Workflow A (TDD), `NO_INFRA`, `RUNNER_BROKEN`, and `UNVERIFIED` semantics are unchanged;
+  UC (BE/FE) aggregation remains test-only.
+
+### Docs
+- `skills-for-codex` mirrors synced (`nacl-tl-dev`, `nacl-tl-full`,
+  `references/verification-evidence.md`); plugin artifact rebuilt.
+
 ## [2.24.0] — 2026-07-14
 
 **NaCl now works as a native Claude Code Desktop citizen.** Until this release the graph

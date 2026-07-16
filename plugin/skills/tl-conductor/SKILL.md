@@ -472,6 +472,7 @@ prefix). The value of `$evidence` follows this table:
 |---|---|---|
 | PASS | `<repo-relative path>` | `'test-GREEN:' + <path>` |
 | PASS | `"covered by existing test: <path>"` | `'test-GREEN:' + <path>` (path extracted from the suffix) |
+| PASS | `"verification: <path>"` (Workflow-B infrastructure PASS — path of the committed verification record, e.g. `.tl/tasks/TECH-013/verification.md`) | `'verify-GREEN:' + <path>` |
 | PASS | `"none — UNVERIFIED"` or missing | **HALT** — `CONDUCTOR HALTED — UNVERIFIED (PASS report missing Regression test line: <taskId>)`. Do NOT write `done`. |
 | PASS (the NO-TEST flag was REMOVED in W4-blocking-release; the `'no-test'` evidence string is no longer producible by this skill — see "Removed Flags" note below) | (n/a) | (n/a) |
 | UNVERIFIED | any | `'test-UNVERIFIED'` |
@@ -480,7 +481,8 @@ prefix). The value of `$evidence` follows this table:
 
 `<repo-relative path>` must be a forward-slash path without a leading `./`.
 If the sub-skill returned an absolute path, normalise to repo-relative
-(strip the project root prefix) before composing `$evidence`.
+(strip the project root prefix) before composing `$evidence`. The same
+normalisation applies to the path inside a `verification: <path>` value.
 
 ##### Graph writes
 
@@ -490,7 +492,7 @@ MATCH (t:Task {id: $taskId})
 SET t.status = 'done',
     t.commit = $commitHash,
     t.completed_at = datetime(),
-    t.verification_evidence = $evidence  // 'test-GREEN:<path>' or 'no-test'
+    t.verification_evidence = $evidence  // 'test-GREEN:<path>' or 'verify-GREEN:<path>'
 ```
 
 ```cypher
@@ -529,12 +531,13 @@ This keeps the graph in sync with the actual verification state.
 
 **Evidence rule:** `t.verification_evidence` is written for every terminal
 state EXCEPT `failed`. A PASS report that does not carry a parseable
-`Regression test: <path>` line is treated as a contract violation — the
-conductor HALTs rather than write `done` without evidence. The NO-TEST
-flag (which used to permit `'no-test'` evidence on PASS reports) was
-REMOVED in W4-blocking-release; `'no-test'` evidence is no longer
-producible by this skill. Bare PASS reports must produce `test-GREEN`
-or the conductor HALTs.
+`Regression test:` line — either a `<path>` (test-based) or
+`verification: <path>` (Workflow-B infrastructure record) — is treated as
+a contract violation — the conductor HALTs rather than write `done`
+without evidence. The NO-TEST flag (which used to permit `'no-test'`
+evidence on PASS reports) was REMOVED in W4-blocking-release; `'no-test'`
+evidence is no longer producible by this skill. Bare PASS reports must
+produce `test-GREEN` or `verify-GREEN` or the conductor HALTs.
 
 ### Removed Flags (W4-blocking-release)
 

@@ -139,26 +139,29 @@ Schema files: `graph-infra/schema/`
 | Value | When to write | Written by |
 |---|---|---|
 | `test-GREEN:<artifact_path>` | PASS + regression test ran RED→GREEN. `<artifact_path>` is a repo-relative path to the test file (e.g. `apps/web/src/__tests__/funnel.spec.ts`) or to the task's regression-test record (`.tl/tasks/<TASK_ID>/regression-test.md`). | conductor Phase 3, tl-full Phase 7, tl-fix terminal step, tl-deliver, tl-hotfix |
+| `verify-GREEN:<artifact_path>` | Workflow-B (infrastructure) PASS: the documented verification command re-ran cleanly after the change and all expected resources were confirmed. `<artifact_path>` is a repo-relative path to the committed verification record (`.tl/tasks/<TASK_ID>/verification.md`, written by `nacl-tl-dev` step B.3.5). Derived from the sub-skill report line `Regression test: verification: <path>`. | conductor Phase 3, tl-full Phase 1 (TECH tasks) |
 | `test-UNVERIFIED` | Code applied but RED→GREEN not confirmed (no regression test, or sub-skill returned `UNVERIFIED`). Paired with `t.status = 'verified-pending'`. | Same writers as above |
-| `no-test` | PASS under explicit user `--no-test` (or equivalent) override. Paired with `t.status = 'done'`. | Same writers as above |
+| `no-test` | **Legacy — no current producer.** Was: PASS under the explicit user NO-TEST override; the flag was REMOVED in W4-blocking-release, so no skill writes this value anymore. Readers keep parsing it for graphs written before W4. | (none since W4) |
 | `null` (unset) | Reserved for `t.status ∈ {'failed', 'blocked'}` — those tasks are excluded from release scope, so an evidence string would be misleading. | n/a |
 
 ### Format rules
 
 - Single string, no JSON.
-- `test-GREEN` payload after `:` is a forward-slash repo-relative path; no quoting, no scheme.
-- Use the test file path when one exists, otherwise the `.tl/tasks/<TASK_ID>/regression-test.md` artifact path.
+- `test-GREEN` and `verify-GREEN` payloads after `:` are forward-slash repo-relative paths; no quoting, no scheme.
+- For `test-GREEN`, use the test file path when one exists, otherwise the `.tl/tasks/<TASK_ID>/regression-test.md` artifact path.
+- For `verify-GREEN`, the payload is always the `.tl/tasks/<TASK_ID>/verification.md` record path.
 - `test-UNVERIFIED` and `no-test` carry no payload — exactly those literal strings.
 
 ### Reader contract
 
 `nacl-tl-release` parses `verification_evidence` like this:
 - Prefix `test-GREEN:` → `Evidence level = test-GREEN`, path extracted for the report column.
+- Prefix `verify-GREEN:` → `Evidence level = verify-GREEN`, path extracted for the report column. NOT a verification gap.
 - Literal `test-UNVERIFIED` → `Evidence level = test-UNVERIFIED`.
-- Literal `no-test` → `Evidence level = no-test`.
+- Literal `no-test` → `Evidence level = no-test` (legacy graphs only).
 - `NULL` / empty / unrecognised → `Evidence level = unknown` → "Verification gap" footer.
 
-Sources: `nacl-tl-release/SKILL.md:183`, `:615-622`.
+Sources: `nacl-tl-release/SKILL.md` § Output → "Per-UC evidence-level values".
 
 ### Writer obligation
 
