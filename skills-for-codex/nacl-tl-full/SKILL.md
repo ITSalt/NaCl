@@ -74,8 +74,11 @@ Downstream consumers:
 - When writing a terminal `Task.status` to the graph, also write
   `Task.verification_evidence` per `../references/verification-evidence.md`.
   Compose evidence from the downstream report's regression-test path
-  (`test-GREEN:<path>`), or use `test-UNVERIFIED` / `no-test` per the
-  taxonomy. A terminal `done` write without parseable evidence is a writer
+  (`test-GREEN:<path>`), or from a `Regression test: verification: <path>`
+  line on an infrastructure item (`verify-GREEN:<path>` — the committed
+  `.tl/tasks/<TASK_ID>/verification.md` record), or use `test-UNVERIFIED`
+  per the taxonomy (`no-test` is legacy — no current producer). A terminal
+  `done` write without parseable evidence is a writer
   contract violation; report `Status: BLOCKED` rather than write empty.
 - A review or verification phase cannot be marked `VERIFIED` unless its check
   actually ran and the result was inspected.
