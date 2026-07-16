@@ -203,8 +203,8 @@ const TRANSFORMS = {
     );
     content = replaceExact(
       content,
-      "Store in `/tmp/TECH-###-baseline.txt`. This is the reference for comparison after the change.",
-      "Allocate one safe output path for the whole comparison: POSIX uses `baseline_file=$(mktemp)`; PowerShell uses `$baseline_file = [System.IO.Path]::GetTempFileName()`. Store the output in that same `baseline_file` variable, reuse it for the comparison after the change, and remove it after that comparison.",
+      "Store in `/tmp/TECH-###-baseline.txt`. This is the reference for comparison after the change, and it feeds the verification record written in B.3.5 — do not discard it before that step.",
+      "Allocate one safe output path for the whole comparison: POSIX uses `baseline_file=$(mktemp)`; PowerShell uses `$baseline_file = [System.IO.Path]::GetTempFileName()`. Store the output in that same `baseline_file` variable and reuse it for the comparison after the change. It also feeds the verification record written in B.3.5 — remove it only after that record is written.",
       "portable-tl-dev-baselines second",
     );
     return Buffer.from(content);
