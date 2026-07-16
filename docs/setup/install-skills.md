@@ -158,64 +158,45 @@ Start Claude Code in a project and run:
 
 ## Codex
 
-Codex uses the `skills-for-codex/` package from a normal git checkout. Do not
-install Codex skills from copied archives: links must point to the repository so
-`git pull` updates the skills for every project on the machine.
+Codex normally uses the full NaCl plugin. The plugin packages the application
+surface, ten public skills, sixty internal skills, and twenty-five bounded MCP
+tools together. Installation, update, disablement, and removal happen in the
+Codex **Plugins** UI; the ordinary user does not need a source checkout, a
+terminal, a local marketplace folder, or a machine-specific package path.
 
-### macOS
+### Full Codex plugin (normal channel)
 
-```sh
-git clone https://github.com/ITSalt/NaCl.git "$HOME/NaCl"
-sh "$HOME/NaCl/skills-for-codex/scripts/install-user-symlinks.sh"
-```
+1. Open **Plugins** in Codex Desktop.
+2. Open the trusted NaCl card supplied for the intended workspace and choose
+   **Install** or the **+** action.
+3. Grant only the permissions shown by Codex.
+4. Fully quit and reopen Codex, then create a new task.
 
-### Linux
-
-```sh
-git clone https://github.com/ITSalt/NaCl.git "$HOME/NaCl"
-sh "$HOME/NaCl/skills-for-codex/scripts/install-user-symlinks.sh"
-```
-
-### Windows WSL2
-
-Run the Linux command inside WSL2. The install target is the WSL user's
-`$HOME/.agents/skills/`.
-
-### Windows PowerShell
-
-The installer creates directory symlinks when Windows allows it. If symlink
-creation is unavailable, it falls back to directory junctions.
-
-```powershell
-git clone https://github.com/ITSalt/NaCl.git "$HOME\NaCl"
-& "$HOME\NaCl\skills-for-codex\scripts\install-user-symlinks.ps1"
-```
-
-### Ask Codex To Install NaCl Skills
-
-If Codex is running on a machine where NaCl is not installed, send this prompt:
-
-```text
-Install NaCl Codex skills globally on this machine.
-
-Clone https://github.com/ITSalt/NaCl.git into $HOME/NaCl if it is not already present. If it is present, run git pull --ff-only there. Then run the Codex installer from $HOME/NaCl/skills-for-codex/scripts and verify that $HOME/.agents/skills contains 60 NaCl skill links (skills-for-codex/ ships 60 SKILL.md directories, including nacl-tl-core, which is not among the 59 root skills) and that each linked directory has SKILL.md. Use network or escalated permission if needed.
-```
+The local candidate has been verified from Codex's installed cache. A public
+card or install URL is not yet available: the public Streamable HTTP MCP
+endpoint, OAuth flow, release, and marketplace submission remain `NOT_RUN`.
+Do not reuse a saved package path from another computer. See the
+[Codex plugin installation guide](install-codex-plugin.md) for the current
+verified boundary.
 
 ### Verify Codex
 
-macOS / Linux / WSL2:
+In the new task, send:
 
-```sh
-find "$HOME/.agents/skills" -maxdepth 1 -type l -name 'nacl-*' | wc -l
-test -f "$HOME/.agents/skills/nacl-core/SKILL.md"
+```text
+Call nacl_installation_doctor exactly once with no arguments. Report status, mode, pluginVersion, and executionLocation. Continue only if status=VERIFIED and mode=plugin-only.
 ```
 
-Windows PowerShell:
+Confirm that the version matches the installed card and that
+`executionLocation=installed-cache`. Stop if any field differs.
 
-```powershell
-(Get-ChildItem "$HOME\.agents\skills" -Filter "nacl-*").Count
-Test-Path "$HOME\.agents\skills\nacl-core\SKILL.md"
-```
+### Legacy Codex skills (compatibility only)
+
+The former skills-only installation remains documented for existing machines
+and controlled migration, but it is not the normal Codex path. Do not combine
+it with the full plugin. If the doctor reports `mode=both`, stop and use the
+[legacy compatibility appendix](codex-legacy-compatibility.md) to plan an
+evidence-preserving migration.
 
 ## Update Claude Code Skills
 
@@ -238,16 +219,10 @@ sh "$HOME/NaCl/scripts/install-claude-code-skills.sh"
 Add `--no-pull` (sh) or `-NoPull` (PowerShell) to refresh symlinks without
 pulling new commits.
 
-## Update Codex Skills
+## Update the Codex plugin
 
-Update the repository checkout:
-
-```sh
-cd "$HOME/NaCl"
-git pull --ff-only
-sh skills-for-codex/scripts/install-user-symlinks.sh
-```
-
-The skill links continue to point to the same checkout, so existing skills update
-as soon as `git pull` completes. Re-running the installer is only needed to add
-new skill directories or repair missing links.
+Open the installed NaCl card in **Plugins** and choose **Update** when Codex
+offers it. Fully restart Codex, create a new task, and repeat the doctor check.
+The reported version must match the updated card. If no update is offered, stop
+and ask the plugin owner for the intended release; do not invent an install URL
+or package location.

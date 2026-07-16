@@ -68,7 +68,9 @@ single command both installs and updates. Pass `-NoPull` to skip the git
 step. Falls back to directory junctions for skills if symlink creation is
 unavailable; agents require true symlinks.
 
-For Codex (separate distribution), use the matching script:
+For Codex, the normal path is the full plugin in the **Plugins** UI. The
+following skills-only installer is retained for legacy compatibility and must
+not be combined with the full plugin:
 
 ```powershell
 & "$HOME\NaCl\skills-for-codex\scripts\install-user-symlinks.ps1"
@@ -148,6 +150,25 @@ which:
 If setup fails it prints `NACL_GRAPH_RESULT: status=FAILED` with the failing check — it never
 reports a half-configured graph as ready. The graph step is idempotent, so re-run `/nacl-init`
 after addressing the cause.
+
+## Codex Desktop
+
+### UI installation
+
+Install the trusted full NaCl plugin from **Plugins**, grant only the displayed
+permissions, fully restart Codex, and create a new task. Call
+`nacl_installation_doctor` exactly once and continue only with
+`status=VERIFIED`, `mode=plugin-only`, and
+`executionLocation=installed-cache`. No PowerShell command or repository path
+is required for this normal installation.
+
+### Graph and authorization
+
+Local mode uses the per-project Neo4j 5 Community container through Docker
+Desktop's WSL2 backend. Remote mode connects to a separately operated VPS.
+Access to a server currently implies access to every project database hosted
+there; `project_scope` is routing and provenance, not authorization. Public
+HTTP/OAuth and release remain `NOT_RUN`.
 
 ## Next Steps
 

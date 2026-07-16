@@ -161,66 +161,43 @@ ls "$HOME/.claude/skills" | wc -l
 
 ## Codex
 
-Codex использует адаптированный пакет `skills-for-codex/` из обычного git
-checkout. Не устанавливайте Codex-скиллы из скопированных архивов: ссылки
-должны указывать в репозиторий, чтобы `git pull` обновлял скиллы для всех
-проектов на машине.
+Codex в нормальном режиме использует полный плагин NaCl. Плагин
+объединяет интерфейс, десять публичных скиллов, шестьдесят внутренних
+скиллов и двадцать пять ограниченных MCP-инструментов. Установка, обновление,
+отключение и удаление выполняются в UI **Plugins**. Обычному пользователю не
+нужны исходный checkout, терминал, локальная папка marketplace или путь к пакету
+на конкретной машине.
 
-### macOS
+### Полный Codex-плагин (нормальный канал)
 
-```sh
-git clone https://github.com/ITSalt/NaCl.git "$HOME/NaCl"
-sh "$HOME/NaCl/skills-for-codex/scripts/install-user-symlinks.sh"
-```
+1. Откройте **Plugins** в Codex Desktop.
+2. Откройте доверенную карточку NaCl для нужного workspace и выберите
+   **Install** или действие **+**.
+3. Выдайте только те права, которые показал Codex.
+4. Полностью закройте и снова откройте Codex, затем создайте новую задачу.
 
-### Linux
-
-```sh
-git clone https://github.com/ITSalt/NaCl.git "$HOME/NaCl"
-sh "$HOME/NaCl/skills-for-codex/scripts/install-user-symlinks.sh"
-```
-
-### Windows WSL2
-
-Выполните Linux-команду внутри WSL2. Скиллы будут установлены в
-`$HOME/.agents/skills/` пользователя WSL.
-
-### Windows PowerShell
-
-Инсталлятор создаёт directory symlink, если Windows это позволяет. Если
-создание symlink недоступно, он использует directory junction.
-
-```powershell
-git clone https://github.com/ITSalt/NaCl.git "$HOME\NaCl"
-& "$HOME\NaCl\skills-for-codex\scripts\install-user-symlinks.ps1"
-```
-
-### Команда для Codex
-
-Если Codex запущен на машине, где NaCl еще не установлен, отправьте ему такой
-запрос:
-
-```text
-Install NaCl Codex skills globally on this machine.
-
-Clone https://github.com/ITSalt/NaCl.git into $HOME/NaCl if it is not already present. If it is present, run git pull --ff-only there. Then run the Codex installer from $HOME/NaCl/skills-for-codex/scripts and verify that $HOME/.agents/skills contains 60 NaCl skill links (skills-for-codex/ ships 60 SKILL.md directories, including nacl-tl-core, which is not among the 59 root skills) and that each linked directory has SKILL.md. Use network or escalated permission if needed.
-```
+Локальный candidate проверен из installed cache Codex. Публичной карточки или install URL пока
+нет: публичный Streamable HTTP MCP, OAuth, релиз и подача в marketplace остаются
+`NOT_RUN`. Не используйте сохранённый путь к пакету с другого компьютера. Текущая
+проверенная граница описана в [инструкции по Codex-плагину](install-codex-plugin.ru.md).
 
 ### Проверка Codex
 
-macOS / Linux / WSL2:
+В новой задаче отправьте:
 
-```sh
-find "$HOME/.agents/skills" -maxdepth 1 -type l -name 'nacl-*' | wc -l
-test -f "$HOME/.agents/skills/nacl-core/SKILL.md"
+```text
+Вызови nacl_installation_doctor ровно один раз без аргументов. Сообщи status, mode, pluginVersion и executionLocation. Продолжай, только если status=VERIFIED и mode=plugin-only.
 ```
 
-Windows PowerShell:
+Версия должна совпадать с установленной карточкой, а `executionLocation` должен быть
+`installed-cache`. При любом отличии остановитесь.
 
-```powershell
-(Get-ChildItem "$HOME\.agents\skills" -Filter "nacl-*").Count
-Test-Path "$HOME\.agents\skills\nacl-core\SKILL.md"
-```
+### Legacy Codex-скиллы (только совместимость)
+
+Прежняя установка только скиллов остаётся задокументированной для существующих
+машин и управляемой миграции, но это не нормальный Codex-путь. Не совмещайте её с
+полным плагином. Если doctor вернул `mode=both`, остановитесь и составьте план миграции с
+сохранением свидетельств по [legacy-приложению](codex-legacy-compatibility.ru.md).
 
 ## Обновление Claude-Code-скиллов
 
@@ -243,16 +220,10 @@ sh "$HOME/NaCl/scripts/install-claude-code-skills.sh"
 Добавьте `--no-pull` (sh) или `-NoPull` (PowerShell), чтобы обновить
 симлинки без подтягивания новых коммитов.
 
-## Обновление Codex-скиллов
+## Обновление Codex-плагина
 
-Обновите checkout репозитория:
-
-```sh
-cd "$HOME/NaCl"
-git pull --ff-only
-sh skills-for-codex/scripts/install-user-symlinks.sh
-```
-
-Ссылки продолжают указывать на тот же checkout, поэтому существующие скиллы
-обновляются сразу после `git pull`. Повторный запуск installer нужен только
-для новых директорий скиллов или восстановления отсутствующих ссылок.
+Откройте установленную карточку NaCl в **Plugins** и выберите **Update**, когда Codex его
+предложит. Полностью перезапустите Codex, создайте новую задачу и повторите doctor-
+проверку. Версия должна совпадать с обновлённой карточкой. Если обновление не
+предложено, остановитесь и запросите у владельца плагина нужный релиз; не выдумывайте
+install URL или путь к пакету.

@@ -1,0 +1,33 @@
+FROM node@sha256:09e2b3d9726018aecf269bd35325f46bf75046a643a66d28360ec71132750ec8 AS dependencies
+WORKDIR /opt/nacl/services/nacl-mcp
+COPY services/nacl-mcp/package.json services/nacl-mcp/package-lock.json ./
+RUN npm ci --omit=dev --ignore-scripts \
+    && npm cache clean --force
+
+FROM node@sha256:09e2b3d9726018aecf269bd35325f46bf75046a643a66d28360ec71132750ec8 AS runtime
+ARG SOURCE_DIGEST
+ARG ARCHIVE_DIGEST
+ARG VCS_REVISION
+RUN printf '%s\n' "${SOURCE_DIGEST}" | grep -Eq '^[0-9a-f]{64}$' \
+    && printf '%s\n' "${ARCHIVE_DIGEST}" | grep -Eq '^[0-9a-f]{64}$' \
+    && printf '%s\n' "${VCS_REVISION}" | grep -Eq '^[0-9a-f]{40}$'
+LABEL org.opencontainers.image.title="NaCl public MCP" \
+      org.opencontainers.image.source-digest="${SOURCE_DIGEST}" \
+      org.opencontainers.image.archive-digest="${ARCHIVE_DIGEST}" \
+      org.opencontainers.image.revision="${VCS_REVISION}"
+WORKDIR /opt/nacl
+COPY --from=dependencies --chown=node:node /opt/nacl/services/nacl-mcp/node_modules ./services/nacl-mcp/node_modules
+COPY --chown=node:node services/nacl-mcp/package.json services/nacl-mcp/package-lock.json services/nacl-mcp/README.md ./services/nacl-mcp/
+COPY --chown=node:node services/nacl-mcp/src ./services/nacl-mcp/src
+COPY --chown=node:node codex-plugin-src/package/runtime/graph-gateway/authorization.mjs \
+     codex-plugin-src/package/runtime/graph-gateway/errors.mjs \
+     codex-plugin-src/package/runtime/graph-gateway/identity.mjs \
+     codex-plugin-src/package/runtime/graph-gateway/server-operation-authorization.mjs \
+     ./codex-plugin-src/package/runtime/graph-gateway/
+COPY --chown=node:node LICENSE ./LICENSE
+ENV NODE_ENV=production
+USER node
+EXPOSE 8080
+HEALTHCHECK --interval=5s --timeout=3s --start-period=5s --retries=6 \
+  CMD ["node", "/opt/nacl/services/nacl-mcp/src/healthcheck.mjs"]
+ENTRYPOINT ["node", "/opt/nacl/services/nacl-mcp/src/entrypoint.mjs"]

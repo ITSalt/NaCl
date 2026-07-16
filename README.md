@@ -2,237 +2,202 @@
 
 # NaCl
 
-**NaCl** (Na + Cl) is a set of 59 agent skills for Claude Code and Codex that cover the entire software development lifecycle -- from business analysis and system specification to TDD development, code review, QA, and release. Business and system analysis artifacts live in a Neo4j graph database, so every requirement is queryable, traceable, and never lost in a wall of Markdown.
+NaCl is a graph-first software-delivery framework for Claude Code and Codex. Business analysis, system specifications, delivery evidence, and traceability live in a Neo4j knowledge graph instead of a disconnected document pile.
 
-## How It Works
+<!-- doc-key: runtime-channels -->
+## Choose the runtime channel
 
-```
-/nacl-init "My Project"
-     |
-     v
-/nacl-ba-full                 Business Analysis --> Neo4j graph
-     |
-     v
-/nacl-sa-full                 System Specification --> Neo4j graph
-     |
-     v
-/nacl-tl-conductor            Planning + Development orchestration
-     |--- /nacl-tl-plan       Create tasks from graph
-     |--- /nacl-tl-dev-be           Backend TDD
-     |--- /nacl-tl-dev-fe           Frontend TDD
-     |--- /nacl-tl-review           Code review
-     |--- /nacl-tl-qa               E2E testing (Playwright)
-     |--- /nacl-tl-ship             Commit, push, PR
-     |
-     v
-/nacl-tl-deliver --> /nacl-tl-release    Staging --> Production
-```
-
-Each use case is committed atomically. QA runs at two levels: locally during development and on staging after push.
-
-## Key Concepts
-
-- **Graph-first analysis.** Business processes, entities, roles, and rules are stored as Neo4j nodes and edges -- not flat files. This makes impact analysis, traceability, and validation a matter of Cypher queries rather than manual cross-referencing.
-
-- **Configurable output language.** BA and SA skills default to Russian-language artifacts (analysis documents are for stakeholders); TL skills default to English (code and commits are for developers). The actual language is resolved per invocation: an explicit `--lang=en`/`--lang=ru` flag wins, then `project.lang` in `config.yaml`, then the layer default. See `nacl-core/lang-directive.md`.
-
-- **Atomic commits per use case.** Each UC (use case) is developed, tested, reviewed, and shipped as a single unit. No half-done features in the repository.
-
-- **Two-level QA.** `/nacl-tl-verify-code` runs static analysis locally during development. `/nacl-tl-qa` runs E2E tests via Playwright on staging after push.
-
-- **Config-driven workflow.** Each project has a `config.yaml` that controls git strategy (direct vs feature-branch), Neo4j connection, Docmost space, YouGile board, and other project-specific settings.
-
-## 2.10.0 — goal-protocol-foundation (2026-05-25)
-
-NaCl wraps Anthropic's `/goal` command (Claude Code 2.1.139, approx. May 2026) via the new `/nacl-goal` skill. Safety rails ship first: the GOAL_PROOF wire format, four aliases (`wave`, `fix`, `validate`, `reopened-drain`), a structured refusal catalog, and a permissions denylist. Autonomous execution (`--start` fully enabled, concurrent lock, crash/resume, runtime gate detector) follows in 2.10.1. See [docs/guides/goal-command.md](docs/guides/goal-command.md).
-
-## Strict mode (since 2.8.0)
-
-NaCl 2.8.0 transitions the skill chain from **evidence-descriptive** to **evidence-blocking** gates. Missing evidence — a `BLOCKED` task, an `UNVERIFIED` sub-skill, an unanswered external-contract gap, a stale graph — halts the chain instead of being downgraded to "explained." Eight skip flags were removed (`--skip-merge`, `--skip-verify`, `--skip-deploy`, `--skip-qa`, `--skip-deliver`, `--skip-plan`, `--no-test`, `--force`); only `--skip-e2e` is retained with explicit scope. Closure skills (`nacl-tl-release`, `nacl-tl-conductor`, `nacl-tl-deliver`) refuse to declare success on any task with terminal state in `{UNVERIFIED, BLOCKED, FAILED, NOT_RUN}`. The only sanctioned overrides are signed exceptions under `.tl/exceptions/` and one-shot emergency mode under `.tl/emergencies/`.
-
-The rules live in long-form references under `nacl-tl-core/references/`:
-[`strict-mode-changes.md`](nacl-tl-core/references/strict-mode-changes.md) (what changed),
-[`gate-fire-catalog.md`](nacl-tl-core/references/gate-fire-catalog.md) (the eleven canonical gate-fires),
-[`project-gap-closure.md`](nacl-tl-core/references/project-gap-closure.md) (planning runbook for upgrading a pre-2.8 project),
-[`config-schema.md`](nacl-tl-core/references/config-schema.md) (`config.yaml` schema with strict-mode keys),
-and [`emergency-mode.md`](nacl-tl-core/references/emergency-mode.md) (entering/exiting emergency mode safely).
-
-Pre-2.8 projects should start at `project-gap-closure.md` — expect immediate gate fires on first run and use signed exceptions to schedule remediation across waves.
-
-## What's Inside
-
-All skills use the `nacl-{layer}-{action}` naming convention: **BA** = Business Analysis, **SA** = System Analysis, **TL** = TeamLead.
-
-| Category | Prefix | Count | Description |
-|---|---|---|---|
-| **Business Analysis** | `nacl-ba-*` | 14 | Business processes, entities, roles, rules, glossary, validation. Output in Russian. |
-| **System Analysis** | `nacl-sa-*` | 10 | Architecture, domain model, use cases, UI, roles, validation. Output in Russian. |
-| **TeamLead** | `nacl-tl-*` | 26 | Full dev lifecycle: planning, TDD (BE/FE), code review, QA, deploy, release, hotfix, diagnostics. |
-| **Utilities** | `nacl-*` | 6 | `nacl-core` (Cypher helpers), `nacl-render` (export), `nacl-publish` (Docmost sync), `nacl-init` (scaffolding), `nacl-goal`, `nacl-postmortem`. |
-| **Migration** | `nacl-migrate-*` | 3 | Deterministic Markdown → Neo4j graph migration with adapter pattern. |
-| | | **59** | |
-
-## Prerequisites
-
-- **Claude Code** or **Codex** as the agent runtime
-- **Docker** and **Docker Compose** -- for Neo4j
-- **Git** 2.30+
-- **Node.js** 18+
-
-### Optional integrations
-
-- **Docmost** -- wiki for publishing analysis and specification artifacts (`nacl-publish`)
-- **YouGile** -- project management board for task tracking (`yougile-setup`)
-
-### Runtime compatibility
-
-NaCl ships skill packages for both Claude Code and Codex.
-
-- Claude Code uses root-level `nacl-*` skill folders installed into
-  `~/.claude/skills/`.
-- Codex uses the adapted `skills-for-codex/` package installed into
-  `$HOME/.agents/skills/`.
-
-See [Skill Installation](docs/setup/install-skills.md) for runtime-specific and
-OS-specific commands.
-
-> Skills do **not** work on claude.ai/code (web app) because it runs in a sandbox without local filesystem access. Claude Code **Desktop** (the native app) is fully supported through both channels below; only cloud/web sessions are unsupported.
-
-### Choose your channel
-
-| You use | Install as | Command |
+| Runtime | Ordinary installation | Status |
 |---|---|---|
-| Claude Code CLI | Symlinked skills (this repo checkout) | `sh scripts/install-claude-code-skills.sh` |
-| Claude Code Desktop | Plugin | `/plugin marketplace add ITSalt/NaCl` then `/plugin install nacl@nacl` |
-| Codex | `skills-for-codex/` (unchanged) | `sh skills-for-codex/scripts/install-user-symlinks.sh` |
+| Codex Desktop | Full NaCl plugin from the **Plugins** UI | Local candidate verified; public HTTP/OAuth service, public listing, and release are `NOT_RUN` |
+| Claude Code Desktop | NaCl marketplace plugin | Supported by the current 2.24.0 package |
+| Claude Code CLI | Repository-backed Claude skills | Supported compatibility channel |
 
-Pick one Claude Code channel per machine -- do not install both the symlinked skills and
-the plugin at the same time. Both work technically, but they duplicate the same skills
-under different names, and the plugin's SessionStart hook will warn if it detects the
-other channel already installed. See [Graph Setup](docs/setup/graph-setup.md) for the
-graph-infrastructure specifics Desktop needs (Docker Desktop autodetection, sidecar
-autostart, the pinned `neo4j-mcp` binary).
+For Codex, the full plugin is the normal path: one UI install supplies the application surface, ten public skills, sixty internal skills, and twenty-five bounded MCP tools. The old skills-only Codex layout is compatibility-only. See [Skill Installation](docs/setup/install-skills.md).
 
-## Quick Start
+<!-- doc-key: codex-installation -->
+## Install in Codex Desktop
 
-1. **Clone the repository**
+Open **Plugins**, select the trusted NaCl card supplied for your workspace, install it, grant only the permissions shown by Codex, fully restart the app, and open a new task. Do not use a saved package path from another computer.
 
-   ```bash
-   git clone https://github.com/ITSalt/NaCl.git
-   cd NaCl
-   ```
+The local candidate has been verified from Codex's installed cache. A portable public card or URL is not yet available: the public Streamable HTTP MCP endpoint, OAuth flow, release, and marketplace submission remain `NOT_RUN`. Follow [the Codex installation guide](docs/setup/install-codex-plugin.md) for the current verified boundary.
 
-2. **Install skills for your agent runtime**
+<!-- doc-key: first-check -->
+## Verify before project work
 
-   Choose Claude Code or Codex and follow
-   [docs/setup/install-skills.md](docs/setup/install-skills.md).
+In a new Codex task, ask NaCl to call `nacl_installation_doctor` exactly once. Continue only when it reports:
 
-3. **Initialize your project**
+- `status=VERIFIED`;
+- `mode=plugin-only`;
+- the version shown by the installed card;
+- `executionLocation=installed-cache`.
 
-   Open your agent runtime in the target project directory, then run:
+Then use the [Quick Start](docs/quickstart.md) for the first dry run and project initialization.
 
-   ```
-   /nacl-init "My Project"
-   ```
+<!-- doc-key: graph-model -->
+## Graph model
 
-   `/nacl-init` provisions the Neo4j graph for you -- it starts a per-project Docker
-   Compose stack, waits for it to become healthy, loads the schema, and writes
-   `.mcp.json`. You don't run `docker compose up` yourself from this checkout.
+Each project gets its own Neo4j 5 Community container and durable volumes. `/nacl-init` can create it locally, connect to a project container on a reachable VPS, or register an existing connection. Local Docker remains the default.
 
-4. **Run the pipeline**
+The server is the current authorization boundary: a developer who has access to a Neo4j server is treated as able to access every project database hosted there. `project_scope` selects and records the logical project; it is routing and provenance, not an authorization control. A future public Codex service must authenticate the user with OAuth, map that principal to an allowed server, and reject cross-server routing. NaCl does not provide a managed graph service.
 
-   Start with business analysis, then proceed through the workflow:
+<!-- doc-key: key-concepts -->
+## Key concepts
 
-   ```
-   > /nacl-ba-full           # analyze business domain
-   > /nacl-sa-full           # create system specification
-   > /nacl-tl-conductor      # plan and develop
-   ```
+- **Graph-first analysis.** Processes, entities, roles, rules, and use cases are Neo4j nodes and relationships, so impact analysis and traceability are queryable.
+- **Configurable language.** An explicit `--lang=en` or `--lang=ru` wins, then `project.lang` in `config.yaml`, then the layer default. BA and SA default to Russian; TL defaults to English.
+- **Atomic delivery.** Each use case is developed, tested, reviewed, and shipped as one bounded unit.
+- **Two-level QA.** Local code verification precedes staging E2E verification.
+- **Config-driven operation.** `config.yaml` controls Git strategy, graph connection, project identity, and optional integrations.
 
-   Each orchestrator skill (`*_full`, `*_conductor`) guides you through its phases with confirmation gates -- you stay in control at every step.
+<!-- doc-key: release-and-strict-mode -->
+## Release foundation and strict mode
 
-See [docs/quickstart.md](docs/quickstart.md) for a detailed walkthrough.
+The 2.10.0 goal-protocol foundation added `nacl-goal`, the `GOAL_PROOF` wire format, the `wave`, `fix`, `validate`, and `reopened-drain` aliases, structured refusals, and a permissions denylist. See the [goal command guide](docs/guides/goal-command.md).
 
-## Agent Architecture
+Since 2.8.0, NaCl has used evidence-blocking gates instead of treating missing evidence as explanatory prose. Closure refuses terminal states in `{UNVERIFIED, BLOCKED, FAILED, NOT_RUN}`. Removed skip flags cannot bypass this rule; the retained `--skip-e2e` has explicit scope. Older projects should start with [`project-gap-closure.md`](nacl-tl-core/references/project-gap-closure.md) and use only signed exceptions or the bounded emergency procedure.
 
-NaCl routes each skill to one of 6 cognitive agents, matching task complexity to the right Claude model:
+<!-- doc-key: root-inventory -->
+## What's inside the framework
 
-| Agent | Model | Skills | Responsibility |
-|---|---|---|---|
-| **strategist** | Opus | 12 | Architecture, validation, deep review |
-| **analyst** | Sonnet | 13 | Domain modeling, structured content, migration parsing |
-| **developer** | Sonnet | 6 | TDD code generation, bug fixes |
-| **verifier** | Sonnet | 5 | Testing, verification, contract matching |
-| **operator** | Sonnet | 8 | Git operations, CI/CD, publishing, migration orchestration |
-| **scout** | Haiku | 6 | Fast lookups, status queries |
+Root skills follow `nacl-{layer}-{action}`:
 
-A 7th agent, **diagnostician** (Opus), is not routed a top-level skill — it is invoked as a sub-agent to run the diagnose-and-spec phase of `/nacl-tl-fix` (Steps 1–5), so the bug-fix skill's reasoning runs on Opus while its code generation stays on Sonnet.
+| Category | Prefix | Count | Responsibility |
+|---|---|---:|---|
+| Business analysis | `nacl-ba-*` | 14 | Processes, entities, roles, rules, glossary, and validation |
+| System analysis | `nacl-sa-*` | 10 | Architecture, domain model, use cases, UI, roles, and validation |
+| TeamLead | `nacl-tl-*` | 26 | Planning, TDD, review, QA, deployment, release, and recovery |
+| Utilities | `nacl-*` | 6 | Core helpers, rendering, publishing, initialization, goals, and postmortems |
+| Migration | `nacl-migrate-*` | 3 | Deterministic Markdown-to-graph migration |
+| **Total** |  | **59** | Root Claude/repository inventory |
 
-Agent definitions live in `.claude/agents/`. See [docs/agents.md](docs/agents.md) for the full model selection rationale.
+The host packages intentionally expose different surfaces: Claude Desktop has 53 invocable skills, while Codex has 10 public conductors over a generated 60-skill internal catalog.
 
+<!-- doc-key: workflow -->
+## Workflow
+
+The ten Codex public skills are `nacl-ba`, `nacl-diagnose`, `nacl-fix`, `nacl-goal`, `nacl-init`, `nacl-migrate`, `nacl-publish`, `nacl-sa`, `nacl-tl`, and `nacl-verify`. They route work to the internal skill catalog rather than exposing implementation leaves as the primary UI.
+
+```text
+nacl-init → nacl-ba → nacl-sa → nacl-tl → nacl-verify
+```
+
+Strict mode is evidence-blocking: `BLOCKED`, `FAILED`, `NOT_RUN`, and `UNVERIFIED` halt closure. The only sanctioned exceptions are signed project exceptions and the bounded emergency process described in the strict-mode references.
+
+<!-- doc-key: claude-channel -->
+## Claude Code 2.24.0
+
+The current Claude package remains fully supported. Claude Code Desktop installs the marketplace plugin from the app UI or Claude plugin commands; Claude Code CLI can use the repository-backed compatibility channel. Choose one Claude channel per machine so duplicate skills do not shadow one another. The 2.24.0 SessionStart check warns about a dual install.
+
+Claude Desktop ships 53 invocable skills and seven agent profiles. Repository-backed Claude Code retains the complete 59 root skills. The `/goal` wrapper and repository-only migration/postmortem utilities remain outside the Desktop bundle where their host assumptions do not apply.
+
+<!-- doc-key: optional-integrations -->
+## Optional integrations
+
+- **Docmost** publishes analysis and specification artifacts with `nacl-publish`.
+- **YouGile** supplies an optional project-management board and task integration.
+
+Neither integration replaces the Neo4j graph as the analysis source of truth.
+
+<!-- doc-key: architecture -->
+## Architecture and packages
+
+NaCl keeps host-specific packaging separate from methodology:
+
+- root `nacl-*` sources and `plugin/` build the Claude package;
+- `plugins/nacl/` is the generated Codex bundle;
+- `plugins/nacl/resources/package-index.json` is the Codex inventory contract;
+- `graph-infra/` is copied per project by initialization;
+- `docs/` contains the shared operational contract.
+
+See [Architecture](docs/architecture.md), [Configuration](docs/configuration.md), and [Workflows](docs/workflows.md).
+
+<!-- doc-key: agent-architecture -->
+## Agent architecture
+
+Claude packaging routes work to six cognitive profiles and one diagnostic sub-agent:
+
+| Agent | Model | Responsibility |
+|---|---|---|
+| strategist | Opus | Architecture, validation, and deep review |
+| analyst | Sonnet | Domain modelling and structured content |
+| developer | Sonnet | TDD code generation and fixes |
+| verifier | Sonnet | Testing and contract verification |
+| operator | Sonnet | Git, CI/CD, publishing, and migration orchestration |
+| scout | Haiku | Fast lookups and status queries |
+| diagnostician | Opus | Diagnose-and-spec phase of bounded fixes |
+
+The Codex package does not promise Claude model identities; its public conductors preserve the same responsibility boundaries. See [Agent Architecture](docs/agents.md).
+
+<!-- doc-key: markdown-migration -->
 ## Migration from Markdown
 
-Already have a project with Markdown-based BA/SA documentation? The migration pipeline converts it into the graph:
+Existing BA/SA Markdown can be converted into the graph through the public `nacl-migrate` conductor. The underlying migration uses deterministic parsing with adapters for supported document layouts; it does not ask an LLM to invent graph facts. See [Migration](docs/migration.md).
 
-```
-/nacl-migrate [project_path]
-```
+<!-- doc-key: graph-handover -->
+## Graph handover
 
-The migration uses deterministic Python parsing (no LLM) with an adapter pattern for different Markdown formats. See [docs/migration.md](docs/migration.md) for details.
+Moving a project graph to another machine is a one-shot encrypted export/import operation. It is separate from plugin installation and preserves the per-project graph boundary. See [Handover](docs/HANDOVER.md).
 
-## Handover
-
-Transferring a project's Neo4j graph between machines is a one-shot, encrypted export/import. Useful when handing the project over to another developer or moving to a new workstation. See [docs/HANDOVER.md](docs/HANDOVER.md).
-
-## Documentation
-
-| Document | Description |
-|---|---|
-| [docs/quickstart.md](docs/quickstart.md) | Step-by-step setup and first run |
-| [docs/HANDOVER.md](docs/HANDOVER.md) | Runbook for exporting and importing a graph between machines |
-| [docs/architecture.md](docs/architecture.md) | Graph schema, skill interaction model, data flow |
-| [docs/skills-reference.md](docs/skills-reference.md) | Full catalog of all 59 skills with parameters and examples |
-| [docs/graph-schema.md](docs/graph-schema.md) | Neo4j node/edge types, constraints, indexes |
-| [docs/configuration.md](docs/configuration.md) | `config.yaml` reference and environment variables |
-| [docs/methodology/](docs/methodology/) | BA/SA methodology deep dive: graph philosophy, validation, traceability |
-| [docs/contributing.md](docs/contributing.md) | How to add or modify skills |
-| [docs/faq.md](docs/faq.md) | Common questions and troubleshooting |
-| [docs/analyst-tool.md](docs/analyst-tool.md) | Analyst Tool — local Excalidraw board browser and skill runner |
-
+<!-- doc-key: analyst-tool -->
 ## NaCl Analyst Tool
 
-The **NaCl Analyst Tool** is a local web application that replaces the bare Excalidraw Docker service. It lists all boards in `graph-infra/boards/`, shows each board's sync status with the Neo4j graph, and provides one-click **Regenerate**, **Sync**, and **Analyze** buttons that invoke NaCl skills via `itsalt-pinch`. The old `excalidraw` and `excalidraw-room` containers from `graph-infra/` are no longer required. Run it with `cd analyst-tool && npm install && npm run dev` -- the UI opens at `http://localhost:3582`.
+The Analyst Tool is a local web application for boards in `graph-infra/boards/`. It shows graph synchronization state and provides **Regenerate**, **Sync**, and **Analyze** actions through `itsalt-pinch`. The old standalone `excalidraw` and `excalidraw-room` containers are no longer required.
 
-The tool supports multiple projects from a single daemon: initialize each project with `/nacl-init "<Project Name>"` from its directory (this registers it in `~/.nacl/projects.json`), then use the project dropdown in the header to switch between them without restarting the server. See [docs/analyst-tool.md](docs/analyst-tool.md) and the [Multi-project setup](docs/analyst-tool.md#multi-project-setup) section for the full guide.
+A single daemon can serve multiple initialized projects registered in the NaCl project registry; the UI project selector changes the active project without restarting the daemon. See [Analyst Tool](docs/analyst-tool.md) and its [multi-project setup](docs/analyst-tool.md#multi-project-setup).
 
-## Project Structure
+<!-- doc-key: project-structure -->
+## Project structure
 
-```
+```text
 NaCl/
-  .claude/agents/     7 cognitive agent definitions (strategist, diagnostician, analyst, developer, ...)
-  nacl-ba-*/          14 business analysis skills
-  nacl-sa-*/          10 system analysis skills
-  nacl-tl-*/          26 development lifecycle skills
-  nacl-migrate-*/      3 Markdown → Graph migration skills
-  nacl-core/          shared Cypher helpers and graph utilities
-  nacl-render/        Markdown and Mermaid rendering (Excalidraw rendering moved to analyst-tool)
-  nacl-publish/       Docmost publishing
-  nacl-init/          project scaffolding
-  nacl-goal/          /goal command wrapper
-  nacl-postmortem/    skill post-mortem tooling
-  nacl-tl-core/       shared TL templates and references
-  graph-infra/        Neo4j Docker infrastructure (template copied into each project by /nacl-init)
-  plugin/             committed Claude Code Desktop plugin artifact (built by scripts/build-plugin.mjs)
-  .claude-plugin/     marketplace manifest for the Desktop plugin channel
-  skills-for-codex/   adapted skill package for the Codex channel
-  analyst-tool/       Local web tool for Excalidraw boards (run separately: `cd analyst-tool && npm install && npm run dev`)
-  docs/               documentation
+  .claude/agents/       Claude cognitive profiles
+  nacl-ba-*/            14 BA root skills
+  nacl-sa-*/            10 SA root skills
+  nacl-tl-*/            26 TL root skills
+  nacl-migrate-*/       3 deterministic migration skills
+  nacl-core/            shared graph and language helpers
+  nacl-render/          Markdown and Mermaid rendering
+  nacl-publish/         Docmost publishing
+  nacl-init/            per-project initialization
+  graph-infra/          Neo4j template copied per project
+  plugin/               generated Claude Desktop artifact
+  .claude-plugin/       Claude marketplace manifest
+  plugins/nacl/         generated Codex plugin artifact
+  analyst-tool/         local board and graph UI
+  docs/                 shared documentation
 ```
 
-## Contributing
+<!-- doc-key: inventory -->
+## Inventory
 
-Contributions are welcome. Please read [docs/contributing.md](docs/contributing.md) before opening a pull request.
+The repository contains 59 root NaCl skills. The Codex package exposes 10 public conductors, contains 60 internal skills including `nacl-tl-core`, and provides 25 bounded MCP tools. Generated inventories are validated against the package index; see [Skills Reference](docs/skills-reference.md).
 
-## License
+<!-- doc-key: requirements -->
+## Requirements
 
-[MIT](LICENSE) -- Copyright 2026 ITSalt
+- Codex Desktop or Claude Code;
+- Docker and Docker Compose for a local graph;
+- access to a separately operated VPS when using a remote graph;
+- Git 2.30+ and Node.js 18+ for repository-backed development and tooling.
+
+The ordinary Codex plugin install itself is a UI operation. A user should not need a source checkout, terminal command, local marketplace folder, or machine-specific path.
+
+<!-- doc-key: documentation -->
+## Documentation
+
+| Document | Purpose |
+|---|---|
+| [Quick Start](docs/quickstart.md) | Installation choice, dry run, and first project |
+| [Codex plugin](docs/codex-plugin.md) | Public surface, permissions, and limits |
+| [Graph Setup](docs/setup/graph-setup.md) | Local and VPS Neo4j modes |
+| [Skills Guide](docs/skills-guide.md) | Choose the correct public conductor |
+| [Skills Reference](docs/skills-reference.md) | Exact public and internal inventory |
+| [Configuration](docs/configuration.md) | `config.yaml`, routing, and secrets |
+| [Migration](docs/migration.md) | Deterministic Markdown-to-graph migration |
+| [Handover](docs/HANDOVER.md) | Encrypted graph transfer between machines |
+
+<!-- doc-key: contributing -->
+## Contributing and license
+
+Read [Contributing](docs/contributing.md) before opening a pull request. NaCl is released under the [MIT License](LICENSE), copyright ITSalt 2026.

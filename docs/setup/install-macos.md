@@ -93,11 +93,28 @@ See [Graph Setup](graph-setup.md) for Docker + Neo4j configuration. Excalidraw b
 # Claude Code
 ls ~/.claude/skills/ | wc -l
 
-# Codex
+# Codex legacy compatibility channel only
 find ~/.agents/skills -maxdepth 1 -type l -name 'nacl-*' | wc -l
 ```
 
 Then open your agent runtime in a project and run `/nacl-init --dry-run`.
+
+## Codex Desktop
+
+### UI installation
+
+The normal Codex path is the full NaCl plugin from **Plugins**. Install the
+trusted card for the intended workspace, grant only displayed permissions,
+fully restart Codex, and verify `status=VERIFIED`, `mode=plugin-only`, and
+`executionLocation=installed-cache` with `nacl_installation_doctor` in a new
+task. No source checkout or terminal is needed for this installation.
+
+### Graph and authorization
+
+Use Docker Desktop for the default per-project Neo4j 5 Community container, or
+connect to a separately operated VPS. Server access currently implies access
+to all project databases hosted there; `project_scope` routes a project but is
+not an authorization boundary. Public HTTP/OAuth and release remain `NOT_RUN`.
 
 ## Next Steps
 

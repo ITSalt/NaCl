@@ -112,11 +112,16 @@
 | `nacl-tl-reconcile` | Синхронизация доков с кодом |
 | `nacl-tl-hotfix` | Экстренный hotfix в production/main |
 
-### Документация и оркестрация
+### Документация
 
 | Скилл | Описание |
 |-------|----------|
 | `nacl-tl-docs` | Обновление документации |
+
+### Оркестрация
+
+| Скилл | Описание |
+|-------|----------|
 | `nacl-tl-full` | Полный цикл одного UC |
 | `nacl-tl-conductor` | Пакетный workflow |
 
@@ -144,6 +149,96 @@
 | Скилл | Описание | Пример |
 |-------|----------|--------|
 | `nacl-goal` | Разрешает NaCl-алиас в условие завершения для `/goal`, которое может проверить transcript-only эвалюатор через протокол GOAL_PROOF. По умолчанию работает в режиме предпросмотра для алиасов 2.10.0 (`wave`, `fix`, `validate`, `resume` и др.); `--start` запускает реальный `/goal`. Алиасы `intake` (2.10.1) и `conduct` (2.18.0) — исключение: они autonomy-by-default (отказ через `--plan-only`). Отказывает при попытке пройти через Tier-C ворота (BA-SA handoff, подтверждение фаз SA, hotfix). Документация: `docs/guides/goal-command.md`. | `/nacl-goal wave:5` |
+
+## Публичные Codex-скиллы (10)
+
+Полный Codex-плагин показывает ровно эти дирижёры:
+
+```text
+nacl-ba
+nacl-diagnose
+nacl-fix
+nacl-goal
+nacl-init
+nacl-migrate
+nacl-publish
+nacl-sa
+nacl-tl
+nacl-verify
+```
+
+Они маршрутизируют работу во внутренний каталог и сохраняют confirmation gates. Codex-схема
+только со скиллами — legacy-совместимость; обычный путь идёт через полный плагин в UI.
+
+## Внутренний Codex-inventory (60)
+
+Этот сгенерированный inventory задан в `plugins/nacl/resources/package-index.json`:
+
+```text
+nacl-ba-analyze
+nacl-ba-context
+nacl-ba-entities
+nacl-ba-from-board
+nacl-ba-full
+nacl-ba-glossary
+nacl-ba-handoff
+nacl-ba-import-doc
+nacl-ba-process
+nacl-ba-roles
+nacl-ba-rules
+nacl-ba-sync
+nacl-ba-validate
+nacl-ba-workflow
+nacl-core
+nacl-goal
+nacl-init
+nacl-migrate
+nacl-migrate-ba
+nacl-migrate-sa
+nacl-postmortem
+nacl-publish
+nacl-render
+nacl-sa-architect
+nacl-sa-domain
+nacl-sa-feature
+nacl-sa-finalize
+nacl-sa-flags
+nacl-sa-full
+nacl-sa-roles
+nacl-sa-uc
+nacl-sa-ui
+nacl-sa-validate
+nacl-tl-conductor
+nacl-tl-core
+nacl-tl-deliver
+nacl-tl-deploy
+nacl-tl-dev
+nacl-tl-dev-be
+nacl-tl-dev-fe
+nacl-tl-diagnose
+nacl-tl-docs
+nacl-tl-fix
+nacl-tl-full
+nacl-tl-hotfix
+nacl-tl-intake
+nacl-tl-next
+nacl-tl-plan
+nacl-tl-qa
+nacl-tl-reconcile
+nacl-tl-regression-test
+nacl-tl-release
+nacl-tl-reopened
+nacl-tl-review
+nacl-tl-ship
+nacl-tl-status
+nacl-tl-stubs
+nacl-tl-sync
+nacl-tl-verify
+nacl-tl-verify-code
+```
+
+Локальный Codex candidate проверен. Публичный Streamable HTTP/OAuth-сервис, релиз и публикация в
+marketplace остаются `NOT_RUN`.
 
 ## Что дальше
 

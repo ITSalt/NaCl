@@ -52,6 +52,12 @@ test('username/database overridable, default to neo4j', () => {
   assert.equal(doc.mcpServers.neo4j.env.NEO4J_DATABASE, 'billing');
 });
 
+test('remote secret source is inherited and never serialized as plaintext', () => {
+  const doc = mergeMcpConfig({}, { ...CONN, password: undefined, secretSource: 'env:NEO4J_PASSWORD' });
+  assert.equal(Object.hasOwn(doc.mcpServers.neo4j.env, 'NEO4J_PASSWORD'), false);
+  assert.equal(JSON.stringify(doc).includes('sekret'), false);
+});
+
 test('missing required args throw', () => {
   assert.throws(() => mergeMcpConfig({}, { uri: 'bolt://x' }), /--command/);
   assert.throws(() => mergeMcpConfig({}, { command: 'x' }), /--uri/);

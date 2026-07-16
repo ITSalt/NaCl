@@ -8,10 +8,11 @@
 #     (and which are signed by our private CA), then forwards plaintext bolt to neo4j.
 #   * The DB password is project-unique and injected from .env (never the shared dev default).
 #
-# Revocation model: ghostunnel (>=1.x) has no CRL flag, so access is an explicit CN allow-list.
-# provision/issue/revoke-client-cert.sh manage <state>/<scope>/allowed-cns and re-render the
-# `--allow-cn` lines between the managed markers below, then restart the gateway. Revoking a
-# developer = drop their CN + restart (instant, no password rotation, others unaffected).
+# Revocation model: ghostunnel (>=1.x) has no CRL flag. <state>/trusted-cns is the authoritative
+# server access set; each <state>/<scope>/allowed-cns is only its generated projection.
+# provision/issue/revoke-client-cert.sh reconcile every registered gateway and re-render the
+# managed `--allow-cn` lines. A partial revoke quarantines/stops stale gateways and cannot report
+# success. The project Neo4j password remains a distinct server-side route secret.
 #
 # One stack per project (CONTAINER_PREFIX) — Community Edition is one DB per instance, so
 # project isolation = one container per project (mirrors the existing per-project model).
@@ -66,7 +67,7 @@ services:
       - "--cert=/certs/server.crt"
       - "--key=/certs/server.key"
       - "--cacert=/certs/ca.crt"          # trust anchor for verifying CLIENT certs
-      # >>> NACL allow-cn (managed) — generated from <state>/<scope>/allowed-cns by provision/issue/revoke
+      # >>> NACL allow-cn (managed) — generated projection of <state>/trusted-cns
       - "--allow-cn=__none__"
       # <<< NACL allow-cn (managed)
       - "--connect-timeout=10s"

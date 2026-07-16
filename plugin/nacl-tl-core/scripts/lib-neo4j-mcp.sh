@@ -137,8 +137,8 @@ mcp_cypher_read() {
   _skills="$1"; _uri="$2"; _user="$3"; _pw="$4"; _db="$5"; _query="$6"; shift 6
   _node=$(_nacl_node); [ -n "$_node" ] || { echo "node not found (required for mcp-cypher)" >&2; return 1; }
   set -- "$_node" "$_skills/nacl-tl-core/scripts/mcp-cypher.mjs" \
-    --binary "$STABLE_BIN" --uri "$_uri" --user "$_user" --password "$_pw" --database "$_db" --query "$_query" "$@"
-  "$@"
+    --binary "$STABLE_BIN" --uri "$_uri" --user "$_user" --database "$_db" --query "$_query" "$@"
+  NEO4J_PASSWORD="$_pw" "$@"
 }
 
 # mcp_cypher_write  <skills-dir> <uri> <user> <pw> <db> <query> [param ...]
@@ -146,6 +146,6 @@ mcp_cypher_write() {
   _skills="$1"; _uri="$2"; _user="$3"; _pw="$4"; _db="$5"; _query="$6"; shift 6
   _node=$(_nacl_node); [ -n "$_node" ] || { echo "node not found (required for mcp-cypher)" >&2; return 1; }
   set -- "$_node" "$_skills/nacl-tl-core/scripts/mcp-cypher.mjs" \
-    --binary "$STABLE_BIN" --uri "$_uri" --user "$_user" --password "$_pw" --database "$_db" --query "$_query" --write "$@"
-  "$@"
+    --binary "$STABLE_BIN" --uri "$_uri" --user "$_user" --database "$_db" --query "$_query" --write "$@"
+  NEO4J_PASSWORD="$_pw" "$@"
 }

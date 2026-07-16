@@ -116,12 +116,33 @@ modules:
 graph:                          # only if using graph skills
   neo4j_bolt_port: 3587
   neo4j_http_port: 3574
-  neo4j_password: "neo4j_graph_dev"
+  neo4j_password: "${NEO4J_PASSWORD}"
   container_prefix: "my-project"
   boards_dir: "graph-infra/boards"  # Excalidraw boards, managed by the analyst-tool
 ```
 
 Skills read `config.yaml` at runtime to adapt behavior to the project.
+
+## Codex Runtime and Service Boundary
+
+The generated Codex artifact under `plugins/nacl/` exposes ten public
+conductor skills, keeps sixty internal workflows, and starts a bounded Node.js
+MCP server with twenty-five tools. Its package index is the inventory contract;
+the root Claude sources remain the methodology source.
+
+The verified local candidate runs from Codex's installed cache. The intended
+production transport is Streamable HTTP with OAuth, but the public endpoint,
+OAuth deployment, domain, release, and marketplace submission are `NOT_RUN`.
+Local stdio is a development and installed-candidate transport, not the public
+service architecture.
+
+Neo4j 5 Community remains separately operated per project, locally or on a
+reachable VPS. The server is the current authorization boundary: access to a
+server implies access to all project databases hosted there. `project_scope`
+provides routing and provenance, not authorization. A public gateway must map
+the authenticated OAuth principal to a server grant, allow same-server project
+selection, and reject cross-server routing. Credentials are resolved at
+runtime and are never embedded in the package or committed configuration.
 
 ## Next Steps
 

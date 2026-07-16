@@ -347,7 +347,7 @@ Step 4 proceeds as below in every standard delivery:
    ```
    Execute /nacl:tl-verify UC###
    ```
-   
+
    nacl-tl-verify internally runs:
    - `/nacl:tl-verify-code` (static analysis, fast)
    - `/nacl:tl-qa` (E2E on staging, only if code analysis says PASS_NEEDS_E2E)

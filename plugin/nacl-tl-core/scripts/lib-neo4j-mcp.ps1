@@ -104,14 +104,28 @@ function Invoke-McpCypher {
     [string]$Password = "",
     [string]$Database = "neo4j",
     [Parameter(Mandatory)][string]$Query,
+    [hashtable]$Params = @{},
     [switch]$Write
   )
   $node = Get-NodeExe
   $script = Join-Path $SkillsDir "nacl-tl-core\scripts\mcp-cypher.mjs"
   $args = @($script, "--binary", $script:StableBin, "--uri", $Uri, "--user", $User,
-            "--password", $Password, "--database", $Database, "--query", $Query)
+            "--database", $Database, "--query", $Query)
+  foreach ($key in ($Params.Keys | Sort-Object)) {
+    if (-not ($Params[$key] -is [string])) { throw "MCP parameter '$key' must be an explicit string" }
+    $args += @("--param-string", "$key=$($Params[$key])")
+  }
   if ($Write) { $args += "--write" }
-  $out = & $node @args 2>$null
-  if ($LASTEXITCODE -ne 0) { throw "mcp-cypher failed (exit $LASTEXITCODE)" }
+  $previousPassword = $env:NEO4J_PASSWORD
+  $childExit = 1
+  try {
+    $env:NEO4J_PASSWORD = $Password
+    $out = & $node @args 2>$null
+    $childExit = $LASTEXITCODE
+  } finally {
+    if ($null -eq $previousPassword) { Remove-Item Env:NEO4J_PASSWORD -ErrorAction SilentlyContinue }
+    else { $env:NEO4J_PASSWORD = $previousPassword }
+  }
+  if ($childExit -ne 0) { throw "mcp-cypher failed (exit $childExit)" }
   return ($out -join "`n")
 }

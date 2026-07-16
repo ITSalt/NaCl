@@ -138,6 +138,17 @@ the exception: they are autonomy-by-default and issue `/goal` without `--start` 
 `--plan-only`). See [docs/guides/goal-command.md](guides/goal-command.md) for the complete
 reference.
 
+## Codex Public Routing
+
+Codex users start with one of ten public conductors: `nacl-ba`,
+`nacl-diagnose`, `nacl-fix`, `nacl-goal`, `nacl-init`, `nacl-migrate`,
+`nacl-publish`, `nacl-sa`, `nacl-tl`, or `nacl-verify`. The conductor selects
+the internal leaf workflow and preserves plan/confirmation gates. Internal
+skill names are reference material, not the normal Codex UI.
+
+The full plugin is the ordinary Codex channel. Its local candidate is verified;
+public HTTP/OAuth and release are `NOT_RUN`.
+
 ## Next Steps
 
 - [Skills Reference](skills-reference.md) — complete catalog with descriptions

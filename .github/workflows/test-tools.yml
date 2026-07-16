@@ -43,7 +43,7 @@ jobs:
           # plugin/ is a generated artifact: its copied tests reference
           # repo-root-relative paths/fixtures and must not run from the
           # plugin tree.
-          tests=$(git ls-files '*/scripts/*.test.mjs' 'scripts/*.test.mjs' ':!plugin/**')
+          tests=$(git ls-files '*/scripts/*.test.mjs' 'scripts/*.test.mjs' ':!plugin/**' ':!tests/codex-plugin/**')
           if [ -z "$tests" ]; then
             echo "No Node tool tests found."
           else
@@ -56,11 +56,11 @@ jobs:
         shell: bash
         run: |
           failed=0
-          for t in $(git ls-files '*/scripts/*.test.sh' 'scripts/*.test.sh' ':!plugin/**'); do
+          for t in $(git ls-files '*/scripts/*.test.sh' 'scripts/*.test.sh' ':!plugin/**' ':!tests/codex-plugin/**'); do
             echo "== run $t =="
             bash "$t" || failed=1
           done
-          for s in $(git ls-files '*/scripts/*.sh' 'scripts/*.sh' ':!plugin/**'); do
+          for s in $(git ls-files '*/scripts/*.sh' 'scripts/*.sh' ':!plugin/**' ':!tests/codex-plugin/**'); do
             bash -n "$s" || { echo "SYNTAX FAIL: $s"; failed=1; }
           done
           exit "$failed"
@@ -75,7 +75,7 @@ jobs:
         run: |
           # plugin/ copies of .ps1 scripts are byte-identical build artifacts:
           # excluded here like the other plugin globs in this workflow.
-          $files = @(git ls-files '*.ps1' ':!plugin/**')
+          $files = @(git ls-files '*.ps1' ':!plugin/**' ':!tests/codex-plugin/**')
           if ($files.Count -eq 0) { Write-Output 'No PowerShell scripts found.'; exit 0 }
           $failed = 0
           foreach ($f in $files) {

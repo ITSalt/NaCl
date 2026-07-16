@@ -1,0 +1,974 @@
+# Example: Full TeamLead Workflow
+
+This example demonstrates the complete end-to-end workflow using all TL skills: `nacl-tl-plan` -> `nacl-tl-dev` -> `nacl-tl-review` -> `nacl-tl-docs`. We follow the implementation of UC001 (Create Order) through all phases.
+
+---
+
+## Workflow Overview
+
+```
+                     TL WORKFLOW
+   ┌──────────────────────────────────────────────────┐
+   │                                                  │
+   │  docs/         nacl-tl-plan        .tl/              │
+   │  ┌─────┐       ┌─────┐       ┌─────────────┐    │
+   │  │ SA  │ ───►  │     │ ───►  │ master-plan │    │
+   │  │docs │       │     │       │ status.json │    │
+   │  └─────┘       │     │       │ changelog   │    │
+   │                └─────┘       │ tasks/UC001/│    │
+   │                              └─────────────┘    │
+   │                       │                          │
+   │                       ▼                          │
+   │               .tl/tasks/UC001/                   │
+   │               ┌────────────────┐                 │
+   │  nacl-tl-dev  ───► │ task.md        │                 │
+   │               │ test-spec.md   │ ◄─── nacl-tl-review  │
+   │               │ impl-brief.md  │                 │
+   │               │ acceptance.md  │                 │
+   │               │ result.md      │ ◄─── nacl-tl-dev     │
+   │               │ review.md      │ ◄─── nacl-tl-review  │
+   │               └────────────────┘                 │
+   │                       │                          │
+   │                       ▼                          │
+   │               nacl-tl-docs updates:                   │
+   │               - README.md                        │
+   │               - API docs                         │
+   │               - status.json -> done              │
+   │                                                  │
+   └──────────────────────────────────────────────────┘
+```
+
+---
+
+## Phase 1: Planning (`nacl-tl-plan`)
+
+### 1.1 Trigger
+
+```
+User: /nacl-tl-plan
+```
+
+### 1.2 Agent Actions
+
+The `nacl-tl-plan` skill:
+
+1. Reads SA artifacts from `docs/` directory
+2. Creates `.tl/` directory structure
+3. Generates task files for each Use Case
+4. Creates master-plan.md with development schedule
+5. Initializes status.json for tracking
+
+### 1.3 Directory Structure Created
+
+```
+.tl/
+├── master-plan.md        # Overall development plan
+├── changelog.md          # Change history (append-only)
+├── status.json           # Machine-readable status
+└── tasks/
+    ├── UC001/
+    │   ├── task.md       # Task description
+    │   ├── test-spec.md  # Test specification
+    │   ├── impl-brief.md # Implementation brief
+    │   └── acceptance.md # Acceptance criteria
+    ├── UC002/
+    │   └── ...
+    └── UC003/
+        └── ...
+```
+
+### 1.4 Generated Files
+
+#### .tl/status.json
+
+```json
+{
+  "project": "Order Management System",
+  "created": "2025-01-30T10:00:00Z",
+  "updated": "2025-01-30T10:00:00Z",
+  "summary": {
+    "total": 10,
+    "pending": 10,
+    "in_progress": 0,
+    "ready_for_review": 0,
+    "approved": 0,
+    "done": 0,
+    "blocked": 0
+  },
+  "tasks": [
+    {
+      "id": "UC001",
+      "title": "Create Order",
+      "status": "pending",
+      "priority": "high",
+      "depends_on": [],
+      "blocks": ["UC002", "UC003"]
+    },
+    {
+      "id": "UC002",
+      "title": "View Order",
+      "status": "pending",
+      "priority": "high",
+      "depends_on": ["UC001"],
+      "blocks": []
+    },
+    {
+      "id": "UC003",
+      "title": "Update Order",
+      "status": "pending",
+      "priority": "medium",
+      "depends_on": ["UC001"],
+      "blocks": []
+    }
+  ]
+}
+```
+
+#### .tl/master-plan.md
+
+```markdown
+# Development Plan: Order Management System
+
+## Project Overview
+
+- **Total Tasks**: 10
+- **Estimated Duration**: 2 weeks
+- **Tech Stack**: Node.js, TypeScript, Express, PostgreSQL
+
+## Development Order
+
+| Priority | Task ID | Title | Dependencies | Blocked By |
+|----------|---------|-------|--------------|------------|
+| 1 | UC001 | Create Order | None | - |
+| 2 | UC002 | View Order | UC001 | - |
+| 3 | UC003 | Update Order | UC001 | - |
+| 4 | UC004 | Cancel Order | UC001 | - |
+| 5 | UC005 | Create Client | None | - |
+| ... | ... | ... | ... | ... |
+
+## Critical Path
+
+```
+UC005 (Client) ──┐
+                 ├──► UC001 (Create Order) ──► UC002 (View)
+UC006 (Product) ─┘                         ──► UC003 (Update)
+                                           ──► UC004 (Cancel)
+```
+
+## Next Task
+
+**UC001. Create Order** - High priority, no dependencies
+
+```bash
+/nacl-tl-dev UC001
+```
+```
+
+#### .tl/changelog.md
+
+```markdown
+# Changelog
+
+## [2025-01-30]
+
+### PLAN
+
+- **10:00** - Development plan created
+  - Tasks: 10 total (UC001-UC010)
+  - Priority order established
+  - Dependencies mapped
+  - Generated by: nacl-tl-plan
+```
+
+#### .tl/tasks/UC001/task.md
+
+See [task-example.md](./task-example.md) for the complete task file content.
+
+---
+
+## Phase 2: Development (`nacl-tl-dev UC001`)
+
+### 2.1 Trigger
+
+```
+User: /nacl-tl-dev UC001
+```
+
+### 2.2 Agent Actions
+
+The `nacl-tl-dev` skill:
+
+1. Reads task files from `.tl/tasks/UC001/`
+2. Updates status.json to `in_progress`
+3. Executes TDD workflow (RED -> GREEN -> REFACTOR)
+4. Creates result.md with development summary
+5. Updates status.json to `ready_for_review`
+
+### 2.3 Status Update: in_progress
+
+```json
+{
+  "tasks": [
+    {
+      "id": "UC001",
+      "status": "in_progress",
+      "started_at": "2025-01-30T10:30:00Z"
+    }
+  ]
+}
+```
+
+### 2.4 TDD Execution
+
+See [tdd-cycle-example.md](./tdd-cycle-example.md) for the complete TDD cycle.
+
+#### Summary:
+
+```
+🔴 RED Phase (10:30 - 10:45)
+   - Created tests/orders/create-order.test.ts
+   - 7 test cases written
+   - All tests FAILING (expected)
+   - Commit: test(orders): add create order test cases
+
+🟢 GREEN Phase (10:45 - 11:30)
+   - Implemented OrderService, OrderController, OrderRepository
+   - Created DTO and database schema
+   - All tests PASSING
+   - Commit: feat(orders): implement create order service
+
+🔵 REFACTOR Phase (11:30 - 12:00)
+   - Extracted order number generation
+   - Improved error handling
+   - Added validation decorators
+   - All tests still PASSING
+   - Commit: refactor(orders): extract order number generation
+```
+
+### 2.5 Generated: .tl/tasks/UC001/result.md
+
+```markdown
+---
+task_id: UC001
+title: "Development Result: Create Order"
+developer: nacl-tl-dev
+started: 2025-01-30T10:30:00Z
+completed: 2025-01-30T12:00:00Z
+tdd_phases: [RED, GREEN, REFACTOR]
+status: ready_for_review
+---
+
+# Development Result: UC001 Create Order
+
+## Summary
+
+Implemented order creation functionality following TDD workflow.
+All tests pass. Ready for review.
+
+## TDD Phases Completed
+
+### RED Phase (15 min)
+
+- Created test file: `tests/orders/create-order.test.ts`
+- Defined 7 test cases (5 unit, 2 integration)
+- All tests FAILING as expected
+- Verified failure is due to missing implementation
+
+### GREEN Phase (45 min)
+
+- Created `src/orders/order.service.ts` (OrderService class)
+- Created `src/orders/order.controller.ts` (POST /api/orders endpoint)
+- Created `src/orders/order.repository.ts` (database operations)
+- Created `src/orders/dto/create-order.dto.ts` (input validation)
+- Modified `src/app.ts` (registered routes)
+- Modified `src/database/schema.ts` (added tables)
+- All tests PASSING
+
+### REFACTOR Phase (30 min)
+
+- Extracted `generateOrderNumber()` to separate method
+- Added `@Transform()` and `@Sanitize()` decorators to DTO
+- Improved error messages (e.g., "Client not found" instead of "Not found")
+- Added JSDoc comments to public methods
+- All tests still PASSING
+
+## Files Changed
+
+| File | Action | Lines |
+|------|--------|-------|
+| src/orders/order.service.ts | Created | +95 |
+| src/orders/order.controller.ts | Created | +48 |
+| src/orders/order.repository.ts | Created | +67 |
+| src/orders/dto/create-order.dto.ts | Created | +32 |
+| tests/orders/create-order.test.ts | Created | +135 |
+| src/app.ts | Modified | +5 |
+| src/database/schema.ts | Modified | +28 |
+| **Total** | | **+410** |
+
+## Test Results
+
+```
+npm test -- tests/orders/
+
+PASS tests/orders/create-order.test.ts
+  OrderService
+    createOrder
+      ✓ should create order with valid data (48ms)
+      ✓ should reject order without items (12ms)
+      ✓ should reject invalid client (18ms)
+      ✓ should generate correct order number (9ms)
+      ✓ should calculate total correctly (11ms)
+    integration
+      ✓ POST /api/orders returns 201 (156ms)
+      ✓ persists order to database (89ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       7 passed, 7 total
+Snapshots:   0 total
+Time:        2.847s
+
+----------|---------|----------|---------|---------|
+File      | % Stmts | % Branch | % Funcs | % Lines |
+----------|---------|----------|---------|---------|
+All files |   87.23 |    82.14 |   91.67 |   87.23 |
+ service  |   92.31 |    85.71 |  100.00 |   92.31 |
+ repo     |   83.33 |    75.00 |   80.00 |   83.33 |
+----------|---------|----------|---------|---------|
+```
+
+## Commits Made
+
+1. `test(orders): add create order test cases`
+   - Added test suite with 7 test cases
+   - Tests initially failing
+
+2. `feat(orders): implement create order service`
+   - OrderService, Controller, Repository, DTO
+   - Database schema for orders/order_items
+   - All tests passing
+
+3. `refactor(orders): extract order number generation`
+   - Cleaner separation of concerns
+   - Better error messages
+   - Documentation added
+
+## Dependencies Used
+
+- `class-validator` - Input validation
+- `class-transformer` - DTO transformation
+- `pg` - PostgreSQL driver
+
+## Known Issues
+
+None.
+
+## Ready for Review Checklist
+
+- [x] All tests pass
+- [x] Code coverage above target (87% > 80%)
+- [x] No console.log statements
+- [x] Proper error handling with specific messages
+- [x] Follows project code patterns
+- [x] TypeScript strict mode compliant
+- [x] No security vulnerabilities detected
+```
+
+### 2.6 Status Update: ready_for_review
+
+```json
+{
+  "tasks": [
+    {
+      "id": "UC001",
+      "status": "ready_for_review",
+      "started_at": "2025-01-30T10:30:00Z",
+      "dev_completed_at": "2025-01-30T12:00:00Z"
+    }
+  ]
+}
+```
+
+### 2.7 Changelog Update
+
+```markdown
+### DEV
+
+- **12:00** - UC001 Create Order - Development completed
+  - TDD cycle: RED (15min) -> GREEN (45min) -> REFACTOR (30min)
+  - Files: 7 changed (+410 lines)
+  - Tests: 7 passed, coverage 87%
+  - Commits: 3
+  - Status: ready_for_review
+  - Generated by: nacl-tl-dev
+```
+
+---
+
+## Phase 3: Code Review (`nacl-tl-review UC001`)
+
+### 3.1 Trigger
+
+```
+User: /nacl-tl-review UC001
+```
+
+### 3.2 Agent Actions
+
+The `nacl-tl-review` skill:
+
+1. Reads `.tl/tasks/UC001/acceptance.md` (criteria)
+2. Reads `.tl/tasks/UC001/result.md` (what was done)
+3. Runs tests to verify they pass
+4. Checks each acceptance criterion
+5. Reviews code quality
+6. Creates review.md with verdict
+7. Updates status.json
+
+### 3.3 Status Update: in_review
+
+```json
+{
+  "tasks": [
+    {
+      "id": "UC001",
+      "status": "in_review",
+      "review_started_at": "2025-01-30T14:00:00Z"
+    }
+  ]
+}
+```
+
+### 3.4 Review Process
+
+```
+📋 Acceptance Criteria Check
+   - AC01: Order creation ✅
+   - AC02: Order number format ✅
+   - AC03: Total calculation ✅
+   - AC04: Status set to NEW ✅
+   - AC05: Empty items rejected ✅
+   - AC06: Invalid client rejected ✅
+   - AC07: Negative quantity rejected ✅
+   - AC08: Response time < 200ms ✅ (actual: ~48ms)
+   - AC09: Transaction atomicity ✅
+   - AC10: Clear error messages ✅
+   - AC11: All tests pass ✅
+   - AC12: Coverage > 80% ✅ (actual: 87%)
+
+🔍 Code Quality Check
+   - Follows project patterns ✅
+   - No debugging statements ✅
+   - Proper error handling ✅
+   - Type safety ✅
+   - No security issues ✅
+   - Performance acceptable ✅
+
+⚠️ Issues Found
+   - Issue #1: Missing input sanitization (Low) - RESOLVED
+   - Issue #2: Generic error message (Low) - RESOLVED
+
+✅ Verdict: APPROVED
+```
+
+### 3.5 Generated: .tl/tasks/UC001/review.md
+
+```markdown
+---
+task_id: UC001
+title: "Review Result: Create Order"
+reviewer: nacl-tl-review
+reviewed_at: 2025-01-30T14:30:00Z
+verdict: approved
+issues_found: 2
+issues_resolved: 2
+blocking_issues: 0
+---
+
+# Review Result: UC001 Create Order
+
+## Summary
+
+Code review completed. Implementation meets all acceptance criteria.
+
+**Verdict: APPROVED** :white_check_mark:
+
+## Review Scope
+
+- **Task**: UC001 Create Order
+- **Developer**: nacl-tl-dev
+- **Development Time**: 1.5 hours
+- **Files Changed**: 7 files, +410 lines
+
+## Acceptance Criteria Verification
+
+| ID | Criterion | Status | Notes |
+|----|-----------|--------|-------|
+| AC01 | Order creation with valid data | :white_check_mark: PASS | Verified via test + manual |
+| AC02 | Order number format ORD-YYYYMMDD-NNNN | :white_check_mark: PASS | Regex validated |
+| AC03 | Total calculated from items | :white_check_mark: PASS | Test coverage |
+| AC04 | Status set to NEW | :white_check_mark: PASS | Verified |
+| AC05 | Empty items rejected | :white_check_mark: PASS | Error: "Order must have at least one item" |
+| AC06 | Invalid client rejected | :white_check_mark: PASS | Error: "Client not found" |
+| AC07 | Negative quantity rejected | :white_check_mark: PASS | DTO validation |
+| AC08 | Response time < 200ms | :white_check_mark: PASS | Avg 48ms |
+| AC09 | Transaction atomicity | :white_check_mark: PASS | Rollback tested |
+| AC10 | Clear error messages | :white_check_mark: PASS | Specific messages |
+| AC11 | All tests pass | :white_check_mark: PASS | 7/7 passing |
+| AC12 | Coverage > 80% | :white_check_mark: PASS | 87.23% |
+
+**Result: 12/12 criteria passed**
+
+## Code Quality Review
+
+### Correctness
+- [x] Implements all requirements from task.md
+- [x] Business rules correctly applied
+- [x] Edge cases handled
+
+### Code Quality
+- [x] Follows project naming conventions
+- [x] No code duplication
+- [x] Functions have single responsibility
+- [x] Classes properly structured
+
+### Error Handling
+- [x] All errors have specific messages
+- [x] Validation errors return 400
+- [x] Not found errors return 404
+- [x] No unhandled promise rejections
+
+### Testing
+- [x] All tests follow AAA pattern
+- [x] Tests cover happy path
+- [x] Tests cover error cases
+- [x] Coverage meets target
+
+### Security
+- [x] Input validation in place
+- [x] SQL injection prevented (parameterized queries)
+- [x] XSS prevention (after fix)
+- [x] No sensitive data logged
+
+### Performance
+- [x] No N+1 queries
+- [x] Appropriate indexes created
+- [x] Response time acceptable
+
+## Issues Found
+
+### Issue #1: Missing Input Sanitization
+
+- **Location**: `src/orders/dto/create-order.dto.ts:15`
+- **Severity**: Low
+- **Description**: The `notes` field was not sanitized for XSS
+- **Code Before**:
+  ```typescript
+  @IsOptional()
+  @MaxLength(500)
+  notes?: string;
+  ```
+- **Code After**:
+  ```typescript
+  @IsOptional()
+  @MaxLength(500)
+  @Transform(({ value }) => sanitizeHtml(value))
+  notes?: string;
+  ```
+- **Status**: :white_check_mark: RESOLVED by developer
+
+### Issue #2: Generic Error Message
+
+- **Location**: `src/orders/order.service.ts:28`
+- **Severity**: Low
+- **Description**: Error message was generic "Not found"
+- **Code Before**:
+  ```typescript
+  throw new NotFoundException('Not found');
+  ```
+- **Code After**:
+  ```typescript
+  throw new NotFoundException(`Client with ID ${dto.clientId} not found`);
+  ```
+- **Status**: :white_check_mark: RESOLVED by developer
+
+## Test Verification
+
+```
+$ npm test -- tests/orders/ --coverage
+
+PASS tests/orders/create-order.test.ts
+  OrderService
+    createOrder
+      ✓ should create order with valid data (48ms)
+      ✓ should reject order without items (12ms)
+      ✓ should reject invalid client (18ms)
+      ✓ should generate correct order number (9ms)
+      ✓ should calculate total correctly (11ms)
+    integration
+      ✓ POST /api/orders returns 201 (156ms)
+      ✓ persists order to database (89ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       7 passed, 7 total
+Coverage:    87.23%
+Time:        2.847s
+```
+
+## TDD Compliance
+
+- [x] Tests written before implementation (RED)
+- [x] Minimal implementation to pass (GREEN)
+- [x] Refactoring with tests passing (REFACTOR)
+- [x] Commit per phase with conventional format
+
+## Final Decision
+
+:white_check_mark: **APPROVED**
+
+The implementation meets all acceptance criteria. All issues found were resolved.
+Task is ready for documentation phase.
+
+## Recommendations for Future
+
+1. Consider adding rate limiting to POST /api/orders (separate task)
+2. Add audit logging for order creation (compliance requirement)
+3. Consider pagination for order list endpoints
+
+## Next Step
+
+```bash
+/nacl-tl-docs UC001
+```
+```
+
+### 3.6 Status Update: approved
+
+```json
+{
+  "tasks": [
+    {
+      "id": "UC001",
+      "status": "approved",
+      "review_completed_at": "2025-01-30T14:30:00Z",
+      "review_verdict": "approved"
+    }
+  ]
+}
+```
+
+### 3.7 Changelog Update
+
+```markdown
+### REVIEW
+
+- **14:30** - UC001 Create Order - Review completed
+  - Verdict: APPROVED
+  - Criteria: 12/12 passed
+  - Issues: 2 found, 2 resolved
+  - Blocking issues: 0
+  - Status: approved
+  - Generated by: nacl-tl-review
+```
+
+---
+
+## Phase 4: Documentation (`nacl-tl-docs UC001`)
+
+### 4.1 Trigger
+
+```
+User: /nacl-tl-docs UC001
+```
+
+### 4.2 Agent Actions
+
+The `nacl-tl-docs` skill:
+
+1. Reads `.tl/tasks/UC001/review.md` (confirms approval)
+2. Reads `.tl/tasks/UC001/result.md` (implementation details)
+3. Updates API documentation
+4. Updates README if needed
+5. Updates status.json to `done`
+6. Updates changelog.md
+
+### 4.3 Documentation Updates
+
+#### API Documentation Update
+
+**File**: `docs/api/orders.md`
+
+```markdown
+## POST /api/orders
+
+Create a new order.
+
+### Request
+
+```json
+{
+  "clientId": "uuid",
+  "items": [
+    {
+      "productId": "uuid",
+      "quantity": 2
+    }
+  ],
+  "notes": "Optional order notes"
+}
+```
+
+### Response (201 Created)
+
+```json
+{
+  "id": "550e8400-e29b-41d4-a716-446655440000",
+  "orderNumber": "ORD-20250130-0001",
+  "status": "NEW",
+  "total": 450.00,
+  "createdAt": "2025-01-30T12:00:00Z"
+}
+```
+
+### Error Responses
+
+| Status | Error | Description |
+|--------|-------|-------------|
+| 400 | VALIDATION_ERROR | Invalid input data |
+| 404 | CLIENT_NOT_FOUND | Client ID doesn't exist |
+| 401 | UNAUTHORIZED | Missing or invalid token |
+
+### Example
+
+```bash
+curl -X POST http://localhost:3000/api/orders \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <token>" \
+  -d '{
+    "clientId": "client-uuid",
+    "items": [
+      {"productId": "prod-uuid", "quantity": 2}
+    ]
+  }'
+```
+```
+
+#### README Update
+
+**File**: `README.md` (Features section)
+
+```markdown
+## Features
+
+- [x] **Order Management**
+  - [x] Create Order (UC001) - Create new customer orders
+  - [ ] View Order (UC002) - View order details
+  - [ ] Update Order (UC003) - Modify existing orders
+  - [ ] Cancel Order (UC004) - Cancel orders
+```
+
+### 4.4 Status Update: done
+
+```json
+{
+  "summary": {
+    "total": 10,
+    "pending": 9,
+    "in_progress": 0,
+    "ready_for_review": 0,
+    "approved": 0,
+    "done": 1,
+    "blocked": 0
+  },
+  "tasks": [
+    {
+      "id": "UC001",
+      "status": "done",
+      "completed_at": "2025-01-30T15:00:00Z"
+    },
+    {
+      "id": "UC002",
+      "status": "pending",
+      "unblocked": true
+    },
+    {
+      "id": "UC003",
+      "status": "pending",
+      "unblocked": true
+    }
+  ]
+}
+```
+
+### 4.5 Changelog Update (Final)
+
+```markdown
+### DOCS
+
+- **15:00** - UC001 Create Order - Documentation completed
+  - Updated: docs/api/orders.md
+  - Updated: README.md (features checklist)
+  - Status: done
+  - Task completed in 5 hours total
+  - Generated by: nacl-tl-docs
+```
+
+---
+
+## Complete Timeline
+
+```
+10:00  [nacl-tl-plan]   Development plan created
+                   - 10 tasks identified
+                   - Dependencies mapped
+                   - .tl/ structure created
+
+10:30  [nacl-tl-dev]    UC001 development started
+                   - Status: in_progress
+
+10:30  [nacl-tl-dev]    RED phase
+       - 10:45     - Tests written, all failing
+
+10:45  [nacl-tl-dev]    GREEN phase
+       - 11:30     - Implementation completed
+                   - All tests passing
+
+11:30  [nacl-tl-dev]    REFACTOR phase
+       - 12:00     - Code improved
+                   - Tests still passing
+
+12:00  [nacl-tl-dev]    UC001 development completed
+                   - Status: ready_for_review
+                   - result.md created
+
+14:00  [nacl-tl-review] UC001 review started
+                   - Status: in_review
+
+14:30  [nacl-tl-review] UC001 review completed
+                   - 12/12 criteria passed
+                   - 2 issues found & resolved
+                   - Status: approved
+                   - review.md created
+
+15:00  [nacl-tl-docs]   UC001 documentation completed
+                   - API docs updated
+                   - README updated
+                   - Status: done
+
+15:00  [nacl-tl-status] Current project status:
+                   - Done: 1/10 (10%)
+                   - Next: UC002 (View Order)
+```
+
+---
+
+## Auxiliary Commands
+
+### Check Status: `/nacl-tl-status`
+
+```
+📊 Project Status: Order Management System
+═══════════════════════════════════════════
+
+Progress: [████░░░░░░░░░░░░░░░░] 10% (1/10)
+
+📈 By Status:
+   ✅ Done:           1  (UC001)
+   ⏳ Pending:        9  (UC002-UC010)
+   🚧 In Progress:    0
+   🔍 In Review:      0
+   🚫 Blocked:        0
+
+📋 Recently Completed:
+   • UC001 Create Order - 2025-01-30
+
+🎯 Suggested Next:
+   UC002 View Order (high priority, unblocked)
+   Run: /nacl-tl-dev UC002
+```
+
+### Get Next Task: `/nacl-tl-next`
+
+```
+🎯 Next Available Task
+═══════════════════════════════════════════
+
+Task: UC002. View Order
+Priority: High
+Dependencies: UC001 ✅ (completed)
+Blocks: UC007, UC008
+
+Description:
+Display detailed order information including
+customer details, line items, and order history.
+
+Launch development:
+  /nacl-tl-dev UC002
+```
+
+---
+
+## Key Points Demonstrated
+
+1. **Phase Isolation**: Each skill reads only from `.tl/` files, not original SA artifacts
+2. **File-Based Synchronization**: status.json and changelog.md track all changes
+3. **TDD Workflow**: Development follows strict RED -> GREEN -> REFACTOR cycle
+4. **Traceability**: Every change is logged with timestamps and attribution
+5. **Self-Sufficient Tasks**: task.md contains all info needed for development
+6. **Clear Handoffs**: Each phase creates files consumed by the next phase
+7. **Dependency Tracking**: status.json tracks which tasks are unblocked
+8. **Complete Audit Trail**: changelog.md provides human-readable history
+
+---
+
+## Error Scenarios
+
+### Scenario: Review Rejection
+
+If `nacl-tl-review` finds blocking issues:
+
+```json
+{
+  "id": "UC001",
+  "status": "review_rejected",
+  "rejection_reason": "Tests failing after refactoring",
+  "blocking_issues": 1
+}
+```
+
+The task returns to development:
+
+```
+/nacl-tl-dev UC001  # Developer fixes issues
+/nacl-tl-review UC001  # Re-review
+```
+
+### Scenario: Blocked Task
+
+If a dependency is not complete:
+
+```
+/nacl-tl-dev UC002
+
+⚠️ Cannot start UC002: Dependencies not met
+
+Missing:
+  - UC001 (Create Order) - Status: in_progress
+
+Wait for UC001 to complete or run:
+  /nacl-tl-status
+
+To check what's blocking progress.
+```
+
+---
+
+## Summary
+
+The TeamLead workflow provides:
+
+- **Structured Development**: Clear phases with defined inputs/outputs
+- **Quality Gates**: Review must pass before documentation
+- **Full Traceability**: Every action logged to changelog.md
+- **Progress Visibility**: status.json enables accurate reporting
+- **Context Isolation**: Each skill works with limited, relevant context
+- **TDD Enforcement**: Development follows test-first methodology
