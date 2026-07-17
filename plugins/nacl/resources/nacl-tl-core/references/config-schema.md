@@ -344,3 +344,40 @@ intake:
 - **Effect:** controls only intake routing and the question gate.
   Hard-refuse triggers (billing, auth, schema migration, destructive ops,
   product decisions) are score-independent and never auto-route.
+
+## `repo_checks: {lint, typecheck, test}`
+
+Declares the project's **repo-wide** check commands consumed by the
+`nacl-tl-review` Repo-wide Check Gate (run on the wave-tip commit before
+any quality review).
+
+### Specification
+
+```yaml
+repo_checks:
+  lint: "npm run lint --workspaces"
+  typecheck: "npm run typecheck --workspaces"
+  test: "npm run test --workspaces"
+```
+
+- **Type:** strings (shell commands, run from the repository root).
+- **Optional:** each key independently. A key that is present is used
+  verbatim; a missing key falls through to package-manager autodetect.
+- **Priority chain (per stage):** `repo_checks.<stage>` > autodetect
+  from the root `package.json` `packageManager` field, else lockfile
+  (`pnpm-lock.yaml` → `pnpm -r <stage>`; `package-lock.json` →
+  `npm run <stage> --workspaces`; `yarn.lock` →
+  `yarn workspaces run <stage>`) > `unrunnable`.
+- **Strictness is not configurable:** the chain selects *which* commands
+  run, never *whether* they run. A missing script still fails the stage
+  (`unrunnable`, not `pass`); red checks still refuse VERIFIED; there is
+  no inline operator override at the gate. Do not point these keys at
+  no-op commands — the review gate treats a command that cannot fail as
+  a contract violation.
+- **Distinct from `modules.[name].test_cmd`:** module-level commands
+  drive the per-task dev/fix inner loop; `repo_checks.*` drives the
+  repo-wide review gate. They may differ (e.g. module `test_cmd` runs
+  one workspace, `repo_checks.test` runs all).
+- **Seeded by:** `nacl-init` from the detected package manager when it
+  creates `config.yaml`.
+- **Where read:** `nacl-tl-review` § Repo-wide Check Gate → Commands.

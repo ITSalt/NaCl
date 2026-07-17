@@ -79,7 +79,7 @@
     {
       "workflow": "nacl-tl-fix",
       "packagedSha256": "7bacbca6e67d2194ad5ae283b4157b34e7ecaecc1032c5d3f0725473b783ae74",
-      "codexRootSha256": "ac95a0be29379b672bba73b48f6915d31bb0ddede35bcea26cbdd88f63470449",
+      "codexRootSha256": "1e7746158415dfcc1fc139542b8fe6ef14e2a29c55fada6c686cfc5a0030ff61",
       "reason": "Uses an internal goal reference and replaces inline graph triage with an explicit capability gap."
     },
     {
@@ -121,7 +121,7 @@
     {
       "workflow": "nacl-tl-review",
       "packagedSha256": "c3bafec1c2c94902c981c140fb1ed825e7460cca90ae7ed18bac1a029a432f38",
-      "codexRootSha256": "00e9d2a617cfc8c4c7921222079c849b93739883788ee5b68547b1dd4d7fc4be",
+      "codexRootSha256": "6ff309ff7fc00d568549d79eb130960e38c279a4c6f34127928de9530e29f5be",
       "reason": "Uses package-local deterministic review commands and evidence classification."
     },
     {

@@ -55,8 +55,10 @@ model tier.
 - **Phase B — EXECUTE (Steps 6–8).** Runs inline in this skill (sonnet, the
   developer tier). This is the **honest-execution core**: capture baseline →
   RED-first regression test (itself delegated to a separate test-author sub-agent
-  at 6d) → apply fix → six-status determination → impact survey → report. This same
-  core is what `nacl-tl-dev-be/fe --continue`, `nacl-tl-reopened`, and
+  at 6d; infrastructure fixes take the verification-based Path C instead) →
+  apply fix → six-status determination → impact survey → report. This same
+  core is what `nacl-tl-dev --continue` (TECH), `nacl-tl-dev-be/fe --continue`,
+  `nacl-tl-reopened`, and
   `nacl-tl-hotfix` delegate into — they are thin wrappers over Phase B, not peers.
 
 ### Why this split
@@ -159,7 +161,9 @@ change ship without auditing consumers):
 - Six-status vocabulary: `PASS | BLOCKED | UNVERIFIED | NO_INFRA | RUNNER_BROKEN | REGRESSION`
 - Step 8 report header strings (see Step 8 table)
 - The authoritative `Status:` line
-- The regression-test seam block (`Tests > Regression test`, `Tests > RED→GREEN`)
+- The regression-test seam block (`Tests > Regression test`, `Tests > RED→GREEN`),
+  including the Path C value `verification: <path>` that orchestrators map to
+  `verify-GREEN:<path>` evidence
 
 **Downstream consumers:**
 - `nacl-tl-dev-be` (`--continue` delegates here)
@@ -1066,11 +1070,25 @@ Trust the DB, not the exit code. Claims need evidence; exit codes are not eviden
     (see Step 7.1) and run it once. Record:
       - the exact failing-test set (file + test name) → "baseline_failures"
       - whether the runner started cleanly, collected tests, exited 0 or non-zero
-    If scripts.test is missing / runner is broken / suite empty after sanity
-    check, capture that as a flag and continue without baseline (status will
-    resolve to NO_INFRA or RUNNER_BROKEN at Step 7).
+    If scripts.test is missing BUT the fix targets an infrastructure TECH
+    task with a documented verification command (Path C trigger — see 6c),
+    run that verification command once instead and record its output as the
+    pre-fix baseline state.
+    Otherwise, if scripts.test is missing / runner is broken / suite empty
+    after sanity check, capture that as a flag and continue without baseline
+    (status will resolve to NO_INFRA or RUNNER_BROKEN at Step 7).
 
 6c  PICK PATH.
+      - **Zeroth anchor — infrastructure fixes take Path C.** If the
+        affected workspace has no scripts.test AND the fix addresses an
+        infrastructure TECH task that carries a documented verification
+        command — the task.md Verification section, or the "Verification
+        command" section of an existing committed
+        `.tl/tasks/<TASK_ID>/verification.md` record — the path is
+        **Path C** (verification-based; mirrors the nacl-tl-dev Workflow-B
+        semantics sanctioned in the verify-GREEN release). Only when
+        neither a test seam nor a verification command exists does the
+        status resolve to NO_INFRA.
       - **First anchor — brand-new files force Path A.** If ANY file the
         fix is about to add did not exist in the git tree before this fix
         (check via `git ls-files` or `git status` — untracked / newly-staged
@@ -1105,6 +1123,14 @@ Trust the DB, not the exit code. Claims need evidence; exit codes are not eviden
     stop and ask the user to refine Step 4. Do NOT proceed to apply the fix
     until the test is RED.
 
+    (Path C) NO REGRESSION TEST IS WRITTEN — 6d/6e are skipped. RED-first
+    is not achievable for configuration defects by nature; the sanctioned
+    analogue (per Workflow B) is the pre-fix baseline captured at 6b plus
+    an explicit written statement of the defect. Before 6f, append to the
+    task's verification record the defect being fixed (review issue IDs or
+    bug description) so the record shows WHAT was wrong before the re-run
+    shows it fixed.
+
 6f  APPLY THE FIX. Modify production code only.
       - L1: code matches existing spec.
       - L2/L3: code matches the spec updated in Step 5 (which already passed
@@ -1117,6 +1143,14 @@ Trust the DB, not the exit code. Claims need evidence; exit codes are not eviden
       - "postfix_failures" — full failing-test set after the fix
       - (Path A) whether the new regression test transitioned RED→GREEN
       - (Path B) which baseline_failures cleared (= "transitioned" set)
+    (Path C) RE-RUN THE VERIFICATION COMMAND from 6b instead. It must run
+    cleanly with all expected resources present — if expected resources are
+    missing, return to 6f. Then update the committed verification record
+    `.tl/tasks/<TASK_ID>/verification.md`: append a "Fix re-verification"
+    section with the date, the review issues / bug fixed, the 6b baseline
+    output, the post-fix output, and the resources re-confirmed. Commit the
+    record together with the fix. Record "verification_reran_cleanly" for
+    Step 7.
 
 6h  HAND OFF TO STEP 7 for status determination.
 ```
@@ -1141,7 +1175,7 @@ A GREEN regression test proves the **symptom** is gone, not that the **root caus
 
 Locate the workspace owning the changed files (the nearest `package.json` walking up from a changed file). Read its `scripts.test`. Run **exactly that command** at every test step (6b, 6e, 6g). Do NOT substitute another runner — do not invent `npx vitest`, `npx jest`, etc., even if `npm test` looks unfamiliar. The runner is whatever the workspace declares.
 
-If `scripts.test` is missing → the affected layer has no test infrastructure; status will resolve to `NO_INFRA`.
+If `scripts.test` is missing → check for the Path C trigger (6c zeroth anchor): an infrastructure TECH task with a documented verification command (task.md Verification section, or the "Verification command" section of an existing `.tl/tasks/<TASK_ID>/verification.md`). If present, the "runner" is that verification command (Path C). Only when neither exists does the affected layer have no verification infrastructure — status will resolve to `NO_INFRA`.
 
 #### 7.2 Sanity-check the runner if the suite reported zero tests
 
@@ -1161,12 +1195,15 @@ Compute from Step 6's recorded data:
 - **new_failures** = postfix_failures − baseline_failures (tests failing now that weren't before)
 - **transitioned** = baseline_failures − postfix_failures (tests that were failing, now pass)
 - **regression_test_red_to_green** = true iff Path A and the test written in 6d was RED at 6e and GREEN at 6g
+- **verification_reran_cleanly** = true iff Path C and the verification command at 6g ran cleanly with all expected resources present, and the verification record was updated and committed
 
 Apply these rules in order — first match wins:
 
 | # | Condition | Status | Step 8 header |
 |---|---|---|---|
-| 1 | `scripts.test` was missing (6b flagged NO_INFRA). | `NO_INFRA` | `FIX APPLIED — UNVERIFIED` |
+| 0 | Path C and `verification_reran_cleanly` is true. | `PASS` | `FIX COMPLETE` |
+| 0b | Path C and the verification command crashed or produced empty output at 6g. | `RUNNER_BROKEN` | `FIX APPLIED — UNVERIFIED` |
+| 1 | `scripts.test` was missing AND no verification command exists (6b flagged NO_INFRA; Path C trigger absent). | `NO_INFRA` | `FIX APPLIED — UNVERIFIED` |
 | 2 | Runner failed to start, exited non-zero before any test ran, or 7.2 confirmed misconfiguration. | `RUNNER_BROKEN` | `FIX APPLIED — UNVERIFIED` |
 | 3 | `new_failures` is non-empty (the fix introduced failures that didn't exist in baseline). | `REGRESSION` | `FIX INCOMPLETE` — return to 6f |
 | 4 | Path A and `regression_test_red_to_green` is false (the test we wrote against the bug is still RED — the fix didn't fix it). | `REGRESSION` | `FIX INCOMPLETE` — return to 6f |
@@ -1175,6 +1212,7 @@ Apply these rules in order — first match wins:
 | 7 | No test transitioned RED→GREEN (Path B, and no baseline_failures cleared). The fix was applied, the suite runs, but nothing in the suite gives evidence the fix did anything. | `UNVERIFIED` | `FIX APPLIED — UNVERIFIED` (no test exercises the change) |
 
 Notes:
+- Rules 0/0b are the only rules reachable from Path C (infrastructure verification). PASS here mirrors the Workflow-B semantics of the verify-GREEN release: the honest evidence is baseline → post-fix verification output in the committed record, not a RED→GREEN test. Downstream orchestrators derive `verify-GREEN:<record path>` from the report's `Regression test: verification: <path>` line.
 - Rule 5 is the "happy path" — applies in both Path A (the new regression test transitions RED→GREEN) and Path B (an existing baseline-failing test transitions).
 - Rule 6 (`BLOCKED`) is reachable from both paths: Path A when the new regression test transitions but unrelated baseline failures persist; Path B when an existing baseline-failing test transitions but unrelated baseline failures persist.
 - Rule 7 (`UNVERIFIED`) is only reachable from Path B and indicates the import-grep heuristic at 6c was a false positive — a test imports the file but doesn't actually cover the bug. Recommend invoking `/nacl-tl-regression-test` retroactively (it will fail-then-pass against the now-fixed code, which is weaker than RED-first but better than nothing).
@@ -1217,7 +1255,7 @@ If any item in 1–4 cannot be answered with a concrete file path and a stated v
 - **Stale (to re-plan):** [N tasks stamped review_status='stale' → `/nacl-tl-plan` clears] or "none"
 - **Docs updated:** [list] or "none (L0/L1)"
 - **Code changed:** [file list]
-- **Tests:** [new test path if Path A] or "existing test transitioned: [path]" or "none (status BLOCKED/UNVERIFIED/NO_INFRA)"
+- **Tests:** [new test path if Path A] or "existing test transitioned: [path]" or "verification record updated: [path] (Path C)" or "none (status BLOCKED/UNVERIFIED/NO_INFRA)"
 - **Pre-existing failures (baseline-confirmed unrelated):** [list, only if BLOCKED]
 - **Invocation source:** review   ← include this line ONLY when --from-review was passed; omit otherwise
 ```
@@ -1264,11 +1302,11 @@ Changes applied:
    "Applied 13 pending migrations to test DB"]
 
 Tests:
-  Runner:           [exact scripts.test command actually run, or "none — NO_INFRA"]
-  Baseline (6b):    [N tests collected, K failing] or "skipped (NO_INFRA / RUNNER_BROKEN)"
-  Regression test:  [path of new test (Path A) | "covered by existing test: [path]" (Path B) | "none — UNVERIFIED" | "n/a — NO_INFRA"]
-  RED→GREEN:        [✓ confirmed at 6e and 6g (Path A) | ✓ existing test transitioned (Path B) | ✗ no transition observed (UNVERIFIED) | n/a]
-  Postfix (6g):     [N tests collected, K failing] or "skipped"
+  Runner:           [exact scripts.test command actually run | exact verification command (Path C) | "none — NO_INFRA"]
+  Baseline (6b):    [N tests collected, K failing] or [pre-fix verification state (Path C)] or "skipped (NO_INFRA / RUNNER_BROKEN)"
+  Regression test:  [path of new test (Path A) | "covered by existing test: [path]" (Path B) | "verification: <repo-relative path>" (Path C — the updated committed verification record) | "none — UNVERIFIED" | "n/a — NO_INFRA"]
+  RED→GREEN:        [✓ confirmed at 6e and 6g (Path A) | ✓ existing test transitioned (Path B) | ✓ verification re-ran cleanly, record updated (Path C) | ✗ no transition observed (UNVERIFIED) | n/a]
+  Postfix (6g):     [N tests collected, K failing] or [post-fix verification state (Path C)] or "skipped"
   New failures:     [list — only if REGRESSION; otherwise "none"]
   Pre-existing failures (baseline-confirmed unrelated):
                     [list — only if BLOCKED; otherwise "none"]

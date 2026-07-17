@@ -102,18 +102,37 @@ prevent.
 
 ### Commands
 
-Run all three on the wave-tip commit, in this order:
+Resolve the repo-wide command triple (lint / typecheck / test) through
+this priority chain, then run all three on the wave-tip commit, in this
+order:
 
-```
-pnpm -r lint
-pnpm -r typecheck
-pnpm -r test
-```
+1. **`config.yaml` → `repo_checks.lint` / `repo_checks.typecheck` /
+   `repo_checks.test`** — the project's declared repo-wide commands
+   (covers turbo/nx/make wrappers and any non-standard layout). Each
+   key that is present is used verbatim.
+2. **Otherwise, derive from the repository root's package manager** —
+   read the `packageManager` field of the root `package.json`; if
+   absent, detect by lockfile:
 
-The commands are **literal**. Do not substitute `npm` for `pnpm`, do
-not drop the `-r` (recursive across workspaces), do not skip a stage
-because "the project doesn't have that script." Each missing script
-counts as `unrunnable`, not as `pass`.
+   | Detected | lint | typecheck | test |
+   |---|---|---|---|
+   | pnpm (`pnpm-lock.yaml`) | `pnpm -r lint` | `pnpm -r typecheck` | `pnpm -r test` |
+   | npm (`package-lock.json`) | `npm run lint --workspaces` | `npm run typecheck --workspaces` | `npm run test --workspaces` |
+   | yarn (`yarn.lock`) | `yarn workspaces run lint` | `yarn workspaces run typecheck` | `yarn workspaces run test` |
+
+   Do NOT add `--if-present` or any flag that turns a missing script
+   into silent success — a missing script MUST fail the command.
+3. **Neither source resolves** (no `repo_checks.*` keys, no
+   `packageManager`, no recognised lockfile) → the triple is
+   `unrunnable` (see Gate Decision below).
+
+Once resolved, the three commands are **literal**. Do not swap in a
+different runner mid-review, do not drop the workspace-recursive flag,
+do not skip a stage because "the project doesn't have that script."
+Each missing script counts as `unrunnable`, not as `pass`. The chain
+above selects the project's own commands (per the config-first
+discipline of the stack-de-prescription release); it is NOT a license
+to substitute a runner the project did not declare or detectably use.
 
 ### Gate Decision
 
@@ -122,7 +141,7 @@ counts as `unrunnable`, not as `pass`.
 | All three commands run AND all three exit 0 | **PROCEED** to stub gate; record `repo-checks-GREEN:<wave-tip-commit>` as evidence |
 | Any command exits non-zero (red checks) | **REFUSE** VERIFIED — emit `REVIEW APPLIED — BLOCKED (repo-checks-RED)` |
 | Any command did not run (unrun, missing script, runner crash) | **REFUSE** VERIFIED — emit `REVIEW APPLIED — BLOCKED (repo-checks-UNRUN)` |
-| Any command is unrunnable on this workspace (e.g. no pnpm, no workspace root) | **REFUSE** VERIFIED — emit `REVIEW APPLIED — BLOCKED (repo-checks-UNRUNNABLE)` |
+| Any command is unrunnable on this workspace (e.g. resolved package manager not installed, no workspace root, no resolvable command source per the priority chain) | **REFUSE** VERIFIED — emit `REVIEW APPLIED — BLOCKED (repo-checks-UNRUNNABLE)` |
 
 **VERIFIED refused if repo checks are red/unrun on wave-tip — override
 requires signed exception (W4).** The signed-exception schema is
@@ -134,10 +153,13 @@ through it the same way.
 
 ### Recording the Evidence
 
-When all three commands pass on the wave-tip commit, write the literal
-string `repo-checks-GREEN:<commit-sha>` to the review artifact (the
-`Evidence` section) and to `Task.verification_evidence` alongside any
-test-GREEN payload already written. The evidence taxonomy entry is in
+When all three resolved commands pass on the wave-tip commit, write the
+literal string `repo-checks-GREEN:<commit-sha>` to the review artifact
+(the `Evidence` section) and to `Task.verification_evidence` alongside
+any test-GREEN payload already written. The evidence means "the
+project's resolved repo-wide lint/typecheck/test triple all exited 0 on
+this commit" — it is not tied to any particular package manager. The
+evidence taxonomy entry is in
 `skills-for-codex/references/verification-evidence.md`.
 
 When the gate refuses VERIFIED, write the closed Codex `Status: BLOCKED`
@@ -152,7 +174,7 @@ PASS-family headline.
 `project_kind: prototype`. **The repo-wide check gate applies in both
 modes.** `project_kind: prototype` only governs the W4 PR/CI carve-outs
 for direct-strategy releases; it does NOT relax local repo-check
-expectations. A prototype with red `pnpm -r typecheck` still has
+expectations. A prototype with a red repo-wide typecheck still has
 VERIFIED refused at this gate.
 
 See `nacl-tl-core/references/config-schema.md` for the `project_kind`
@@ -1085,9 +1107,9 @@ Before deep review, verify these first:
 - [ ] Result file exists; status is `ready_for_review`
 
 ### Repo-wide Check Gate
-- [ ] `pnpm -r lint` run on wave-tip commit; exit 0 captured
-- [ ] `pnpm -r typecheck` run on wave-tip commit; exit 0 captured
-- [ ] `pnpm -r test` run on wave-tip commit; exit 0 captured
+- [ ] Resolved repo-wide lint command run on wave-tip commit; exit 0 captured
+- [ ] Resolved repo-wide typecheck command run on wave-tip commit; exit 0 captured
+- [ ] Resolved repo-wide test command run on wave-tip commit; exit 0 captured
 - [ ] `repo-checks-GREEN:<commit-sha>` recorded as evidence OR `REVIEW APPLIED — BLOCKED (repo-checks-*)` emitted
 - [ ] No signed-exception override accepted at this layer without W4 schema validation
 

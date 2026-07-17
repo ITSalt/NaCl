@@ -370,6 +370,7 @@ IF config.yaml DOES NOT EXIST:
 | Project name & stack | CLAUDE.md, package.json |
 | Module paths | Subdirectories with package.json (frontend/, backend/, etc.) |
 | Build/test commands | package.json → scripts.build, scripts.test in each module |
+| Repo-wide check commands (`repo_checks.*`) | Root package.json `packageManager` field, else lockfile (`pnpm-lock.yaml` / `package-lock.json` / `yarn.lock`) → seed the lint/typecheck/test triple for the detected manager; leave commented placeholders when no manager is detectable |
 | Git strategy | Branch history: if `feature/*` branches exist → `"feature-branch"`, else → `"direct"` |
 | Git main branch | `git symbolic-ref refs/remotes/origin/HEAD` or default `"main"` |
 | Git branch prefix | Default `"feature/"` |

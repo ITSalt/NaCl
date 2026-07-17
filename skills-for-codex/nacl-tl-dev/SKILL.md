@@ -106,8 +106,13 @@ Reason: infrastructure verification command is not documented
 When continuing a rejected TECH item, read the review findings, group them by
 severity, and repair through the same spec-first fix discipline used by
 `nacl-tl-fix`. Preserve RED, GREEN, REFACTOR evidence for testable fixes.
-For infrastructure-only findings, preserve baseline and post-change command
-evidence.
+For infrastructure-only findings, follow the fix workflow's verification path
+(Path C): re-run the item's documented verification command (baseline → fix →
+clean re-run), append a "Fix re-verification" section to the committed
+`.tl/tasks/<TASK_ID>/verification.md`, and report
+`Regression test: verification: <path>` so the orchestrator derives
+`verify-GREEN:<path>`. `NO_INFRA` is honest only when the item has no
+documented verification command at all.
 
 Do not promote the work item unless the repair report contains explicit
 evidence. Silence is `UNVERIFIED`.

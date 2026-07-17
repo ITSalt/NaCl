@@ -147,17 +147,23 @@ this gate. There is no fallback branch, no per-project opt-out, and no
 inline operator-prompt override. The only override path is a signed
 exception under the schema defined by W4.
 
-Commands, in this order, all on the wave-tip commit:
+Resolve the repo-wide command triple (lint / typecheck / test) per stage,
+then run all three on the wave-tip commit, in this order:
 
-```text
-pnpm -r lint
-pnpm -r typecheck
-pnpm -r test
-```
+1. `config.yaml` → `repo_checks.lint` / `repo_checks.typecheck` /
+   `repo_checks.test` — used verbatim when present.
+2. Otherwise autodetect from the repository root: the `packageManager`
+   field of the root `package.json`, else the lockfile —
+   `pnpm-lock.yaml` → `pnpm -r <stage>`; `package-lock.json` →
+   `npm run <stage> --workspaces`; `yarn.lock` →
+   `yarn workspaces run <stage>`. Never add `--if-present` or any flag
+   that turns a missing script into silent success.
+3. Neither source resolves → the triple is unrunnable (see Outcomes).
 
-The commands are literal. Do not substitute `npm`, do not drop `-r`, do not
-skip a stage because a workspace lacks the script. A missing script counts
-as `unrunnable`, not as `pass`.
+Once resolved, the commands are literal. Do not swap in a different runner
+mid-review, do not drop the workspace-recursive flag, do not skip a stage
+because a workspace lacks the script. A missing script counts as
+`unrunnable`, not as `pass`.
 
 Outcomes:
 
@@ -169,8 +175,9 @@ Outcomes:
   `scripts.test`, or runner crash before any check completes) — report
   `Status: BLOCKED` with workflow detail `repo-checks-UNRUN`. VERIFIED is
   refused.
-- The toolchain is unrunnable on this workspace (no `pnpm` available, no
-  workspace root, no `pnpm-workspace.yaml`) — report `Status: BLOCKED` with
+- The toolchain is unrunnable on this workspace (resolved package manager
+  not installed, no workspace root, no resolvable command source per the
+  priority chain) — report `Status: BLOCKED` with
   workflow detail `repo-checks-UNRUNNABLE`. VERIFIED is refused.
 
 **VERIFIED refused if repo checks are red/unrun on wave-tip — override
