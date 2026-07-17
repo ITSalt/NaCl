@@ -86,8 +86,9 @@ truth.
 | L2 | Docs exist but describe outdated or incorrect behavior. | Update docs before code. |
 | L3 | No docs exist for the affected area. | Create the smallest missing contract before code. |
 
-Missing `scripts.test` is not L0. It is a verification outcome
-`Fix outcome: NO_INFRA`.
+Missing `scripts.test` is not L0. It routes to Path C when the item has a
+documented verification command (infrastructure), otherwise it is a
+verification outcome `Fix outcome: NO_INFRA`.
 
 **Decision + change provenance (L2 / L3-spec-gap only).** A behavior-shape fix
 must record *why*, graph-natively, as part of the spec-update commit: write a
@@ -422,10 +423,21 @@ Then follow this order:
 2. Discover the owning workspace by walking up from affected files to the
    nearest `package.json`. Read `scripts.test`. Do not invent fallback runners.
 3. Capture baseline by running exactly that test command. Record collected
-   tests, failing tests, and whether the runner started cleanly. Missing
-   `scripts.test` flags `Fix outcome: NO_INFRA`; runner startup/collection
+   tests, failing tests, and whether the runner started cleanly. If
+   `scripts.test` is missing but the fix targets an infrastructure TECH item
+   with a documented verification command (task Verification section, or the
+   "Verification command" section of an existing committed
+   `.tl/tasks/<TASK_ID>/verification.md`), run that verification command
+   instead and record its output as the pre-fix baseline (Path C). Missing
+   `scripts.test` with no verification command flags
+   `Fix outcome: NO_INFRA`; runner startup/collection
    failure flags `Fix outcome: RUNNER_BROKEN`.
 4. Pick path:
+   - Path C if the affected workspace has no `scripts.test` and the item
+     carries a documented verification command (infrastructure,
+     verification-based; no regression test is written — RED-first is not
+     achievable for configuration defects; the evidence is the baseline and
+     post-fix output in the committed verification record).
    - Path B if an existing test imports or covers the target module.
    - Path A if no useful existing test covers the target.
 5. Path A only: run the `nacl-tl-regression-test` procedure before production
@@ -454,7 +466,9 @@ Determine the workflow-specific fix outcome from the captured evidence:
 |---|---|---|
 | Step 6 entry gate refused: spec-first-prerequisite-missing (no signed exception). | `SPEC_FIRST_MISSING` | `BLOCKED` |
 | Step 6 entry gate refused: graph-delta-unobservable (no signed exception). | `GRAPH_DELTA_UNOBSERVABLE` | `BLOCKED` |
-| `scripts.test` missing. | `NO_INFRA` | `BLOCKED` |
+| Path C: verification command re-ran cleanly after the fix, all expected resources present, verification record updated ("Fix re-verification" section) and committed. Report `Regression test: verification: <record path>`. | `PASS` | `VERIFIED` |
+| Path C: verification command crashed or produced empty output after the fix. | `RUNNER_BROKEN` | `BLOCKED` |
+| `scripts.test` missing and no verification command exists. | `NO_INFRA` | `BLOCKED` |
 | Runner failed before tests or zero-test sanity check confirms misconfiguration. | `RUNNER_BROKEN` | `BLOCKED` |
 | New failures appeared compared with baseline. | `REGRESSION` | `FAILED` |
 | Path A regression test did not turn RED to GREEN. | `REGRESSION` | `FAILED` |

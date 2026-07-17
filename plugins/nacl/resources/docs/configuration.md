@@ -142,6 +142,27 @@ Defines frontend and backend modules. Each module key is arbitrary — common na
 
 ---
 
+### `repo_checks` (optional — repo-wide review gate commands)
+
+Declares the repo-wide lint / typecheck / test commands run by the
+`nacl-tl-review` Repo-wide Check Gate on the wave-tip commit. Each key is
+optional and used verbatim; missing keys fall through to package-manager
+autodetect (`packageManager` field, else lockfile). Distinct from
+`modules.[name].test_cmd`, which drives the per-task dev/fix inner loop.
+The chain selects *which* commands run, never *whether* they run — a
+missing script still fails the stage, and red checks still refuse
+VERIFIED. Full semantics: `nacl-tl-core/references/config-schema.md`
+§ `repo_checks`.
+
+```yaml
+repo_checks:
+  lint: "npm run lint --workspaces"
+  typecheck: "npm run typecheck --workspaces"
+  test: "npm run test --workspaces"
+```
+
+---
+
 ### `credentials` (optional)
 
 Infrastructure access and test users for QA/debugging. Used by `nacl-tl-qa` (E2E login), `nacl-tl-verify` (delegates to `nacl-tl-qa`), and `nacl-tl-fix` (bug reproduction).
@@ -361,6 +382,7 @@ Skills use the following priority order when looking up values:
 | Base branch | `git.main_branch` > `modules.[name].git_base_branch` > fallback `main` |
 | Branch prefix | `git.branch_prefix` > fallback `feature/` |
 | Test command | `modules.[name].test_cmd` > fallback `npm test` |
+| Repo-wide checks (review gate) | `repo_checks.<stage>` > package-manager autodetect (`packageManager` / lockfile) > `unrunnable` |
 | Build command | `modules.[name].build_cmd` > fallback `npm run build` |
 | Module path | `modules.[name].path` > auto-detect from `package.json` |
 | Deploy method | `deploy.staging.method` > `deploy.method` > fallback `github-actions` |

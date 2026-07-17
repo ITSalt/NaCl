@@ -4,6 +4,46 @@ All notable changes to NaCl (Natural Agent Control Language) will be documented 
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [2.26.0] — 2026-07-17
+
+**Two conductor dead-ends removed: the review gate works on any package manager, and
+rejected infrastructure tasks can be re-worked back to PASS.** Both defects were found by a
+live conductor run on a 2.25.0 project that correctly halted and surfaced exact
+contradictions per the framework-defect protocol.
+
+### Fixed
+- **Repo-wide Check Gate is now stack-aware** (`nacl-tl-review`). The gate hardcoded literal
+  `pnpm -r lint/typecheck/test` with an explicit "do not substitute npm" rule and no operator
+  override — in an npm-workspaces project every review resolved to `repo-checks-UNRUNNABLE`
+  and VERIFIED was refused forever, contradicting the stack-de-prescription release (config
+  is the source of truth for commands). The command triple now resolves per stage:
+  `config.yaml repo_checks.{lint,typecheck,test}` → package-manager autodetect
+  (`packageManager` field, else lockfile: pnpm `-r` / npm `--workspaces` / yarn
+  `workspaces run`; never `--if-present`) → `unrunnable`. Strictness is unchanged: the chain
+  picks *which* commands run, never *whether* — a missing script still fails the stage, red
+  checks still refuse VERIFIED, and there is still no inline operator override.
+  `repo-checks-GREEN:<sha>` evidence semantics generalised accordingly.
+- **Workflow-B rework seam** (`nacl-tl-fix` **Path C**). A review-rejected infrastructure
+  TECH task had no sanctioned way back to PASS: `tl-dev --continue` delegates to `tl-fix`,
+  which resolved `NO_INFRA` for any layer without `scripts.test`, and the conductor sends
+  `NO_INFRA` to `failed`. 2.25.0 covered only the first pass. `tl-fix` gains Path C
+  (verification-based, mirrors Workflow B): when the affected layer has no test seam but the
+  TECH task carries a documented verification command, the fix runs baseline → fix → clean
+  re-run, appends a "Fix re-verification" section to the committed
+  `.tl/tasks/<ID>/verification.md`, and returns `PASS` with
+  `Regression test: verification: <path>` — which orchestrators already map to
+  `verify-GREEN:<path>` since 2.25.0. `NO_INFRA` now means "no tests AND no verification
+  command". Conductor and `tl-full` needed no changes.
+
+### Added
+- **`config.yaml` `repo_checks:` block** (`lint` / `typecheck` / `test`, each optional) —
+  documented in `nacl-tl-core/references/config-schema.md` and `docs/configuration.md`,
+  seeded by `nacl-init` from the detected package manager.
+
+### Docs
+- `skills-for-codex` mirrors synced (`nacl-tl-review`, `nacl-tl-fix`,
+  `references/verification-evidence.md`); both plugin artifacts rebuilt.
+
 ## [2.25.0] — 2026-07-17
 
 **Infrastructure tasks can reach `done` again.** A verification-based infra TECH PASS

@@ -44,6 +44,18 @@ modules:
   #   git_strategy: "direct"
   #   git_base_branch: "main"
 
+# Repo-wide review-gate commands (nacl-tl-review Repo-wide Check Gate).
+# Distinct from modules.*.test_cmd (per-task inner loop): these run across
+# the whole repo on the wave-tip commit. Each key is optional — missing keys
+# fall back to package-manager autodetect (packageManager field / lockfile).
+# The chain picks WHICH commands run, never WHETHER they run: a missing
+# script still fails the stage, red checks still refuse VERIFIED.
+# See nacl-tl-core/references/config-schema.md § repo_checks.
+# repo_checks:
+#   lint: "<your repo-wide lint command>"
+#   typecheck: "<your repo-wide typecheck command>"
+#   test: "<your repo-wide test command>"
+
 # Git strategy (top-level default, modules can override with git_strategy per module)
 git:
   strategy: "feature-branch"   # "direct" or "feature-branch"

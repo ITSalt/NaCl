@@ -2,7 +2,7 @@
 
 # NaCl (Claude Code plugin)
 
-Version 2.25.0. NaCl's BA/SA/TL spec-graph methodology, packaged as a Claude Code Desktop plugin.
+Version 2.26.0. NaCl's BA/SA/TL spec-graph methodology, packaged as a Claude Code Desktop plugin.
 
 ## Install
 
