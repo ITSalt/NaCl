@@ -290,7 +290,7 @@ Run the verification command once **before applying any change**. Capture:
 - Current running state (container names, statuses, exit codes)
 - Relevant config diff if applicable (e.g., `docker compose config`, `terraform show`)
 
-Allocate one safe output path for the whole comparison: POSIX uses `baseline_file=$(mktemp)`; PowerShell uses `$baseline_file = [System.IO.Path]::GetTempFileName()`. Store the output in that same `baseline_file` variable, reuse it for the comparison after the change, and remove it after that comparison.
+Allocate one safe output path for the whole comparison: POSIX uses `baseline_file=$(mktemp)`; PowerShell uses `$baseline_file = [System.IO.Path]::GetTempFileName()`. Store the output in that same `baseline_file` variable and reuse it for the comparison after the change. It also feeds the verification record written in B.3.5 — remove it only after that record is written.
 
 ### B.2: Implement Configuration (formerly B1)
 
@@ -321,13 +321,51 @@ If verification reveals problems, fix configuration, re-run verification, repeat
 git commit -m "fix(TECH-###): resolve [issue] in [component]"
 ```
 
+### B.3.5: WRITE VERIFICATION RECORD (PASS only)
+
+When B.3 completes cleanly (all expected resources present), write a durable
+verification record **before** producing the report. Console output alone is
+not evidence — the record is what the orchestrator forwards into the graph.
+
+Path: `.tl/tasks/TECH-###/verification.md` (repo-relative, committed).
+
+Content (all four sections mandatory):
+
+```markdown
+# TECH-### — Infrastructure Verification Record
+
+## Verification command
+[the exact command from B.0, verbatim]
+
+## Baseline (before change)
+[output captured in B.1 — trim to the relevant resource lines]
+
+## Post-change (after change)
+[output from the final B.3 run — trim to the relevant resource lines]
+
+## Resources verified
+- [resource / container / service]: [expected state] — confirmed
+- ...
+```
+
+**Commit** the record together with (or immediately after) the configuration:
+
+```bash
+git add .tl/tasks/TECH-###/verification.md
+git commit -m "docs(TECH-###): verification record"
+```
+
+The repo-relative path of this file is the value the `Regression test:` line
+carries for a Workflow-B PASS (see the report contract below). If the record
+was not written, the task is NOT a PASS — return to B.3.
+
 ### B.4: STATUS-AWARE OUTPUT
 
 Determine status from B.3 result:
 
 | Result | Status | Headline |
 |--------|--------|----------|
-| Verification command ran cleanly, all expected resources present | `PASS` | `DEV COMPLETE` |
+| Verification command ran cleanly, all expected resources present, verification record committed (B.3.5) | `PASS` | `DEV COMPLETE` |
 | Verification command ran but expected resources missing / config mismatch | Investigate and fix | Return to B.2 |
 | Verification command crashed or produced empty output | `RUNNER_BROKEN` | `DEV APPLIED — RUNNER_BROKEN` |
 | No verification command was documented | `NO_INFRA` | `DEV APPLIED — NO_INFRA` |
@@ -596,12 +634,22 @@ Verification:
   Runner:           [exact scripts.test command or verification command, or "none — NO_INFRA"]
   Baseline:         [N tests collected, K failing] or [service states] or "skipped (NO_INFRA)"
   Regression test:  [repo-relative path of test written by /nacl-tl-regression-test
-                     mode=feature-dev | "none — UNVERIFIED" | "n/a — NO_INFRA"]
+                     mode=feature-dev | "verification: <repo-relative path>" (Workflow B
+                     PASS only — path of the committed verification record from B.3.5)
+                     | "none — UNVERIFIED" | "n/a — NO_INFRA"]
   Postfix:          [N tests collected, K failing] or [service states] or "skipped"
   Baseline diff:    [list of transitions, or "none — UNVERIFIED", or "pre-existing: [list] — BLOCKED"]
   New failures:     [list — only if REGRESSION; otherwise "none"]
 
 The `Regression test:` line is **mandatory** when Status ∈ {PASS, UNVERIFIED, BLOCKED}. Orchestrators (`nacl-tl-conductor`, `nacl-tl-full`) parse it verbatim and forward it into `Task.verification_evidence` in the graph (see `nacl-core/SKILL.md` § Task.verification_evidence). The path must be repo-relative.
+
+Value selection is workflow-determined, not free-form:
+
+- **Workflow A PASS** → the regression-test path written by the `nacl-tl-regression-test` skill.
+- **Workflow B PASS** → `verification: <repo-relative path>` pointing at the committed
+  verification record from B.3.5 (orchestrators derive `verify-GREEN:<path>` from it).
+- Any other value on a PASS report — including improvised forms like `n/a — Workflow B` —
+  is a contract violation: the orchestrator will HALT rather than write `done`.
 
 Commits: N
   - feat(infra): description

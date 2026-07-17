@@ -88,6 +88,11 @@ or ask for direction and report `BLOCKED` or `UNVERIFIED` honestly.
 3. Implement the requested configuration or infrastructure change.
 4. Re-run the same command and verify the expected services, resources, schema,
    or CI checks are present.
+5. On a clean re-run, write and commit a durable verification record at
+   `.tl/tasks/<TASK_ID>/verification.md` containing the exact command, the
+   baseline output, the post-change output, and the list of resources
+   confirmed. Console output alone is not evidence; without the committed
+   record the item is not `VERIFIED`.
 
 If no command is documented, report:
 
@@ -116,9 +121,12 @@ Create or return `result.md` with:
 - files changed;
 - command run and baseline comparison;
 - RED, GREEN, REFACTOR evidence when applicable;
-- a canonical line `Regression test: <repo-relative path>` (or
-  `Regression test: none — UNVERIFIED` / `Regression test: n/a — BLOCKED`)
-  so the orchestrator can forward it into `Task.verification_evidence`
+- a canonical line `Regression test: <repo-relative path>` (TDD path), or
+  `Regression test: verification: <repo-relative path>` (verification path —
+  the committed `.tl/tasks/<TASK_ID>/verification.md` record from Step 3B.5;
+  the orchestrator derives `verify-GREEN:<path>` from it), or
+  `Regression test: none — UNVERIFIED` / `Regression test: n/a — BLOCKED`;
+  the orchestrator forwards this into `Task.verification_evidence`
   per `../references/verification-evidence.md`;
 - final `Status: <VALUE>` using only the closed vocabulary.
 

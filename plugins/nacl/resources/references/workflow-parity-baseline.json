@@ -85,7 +85,7 @@
     {
       "workflow": "nacl-tl-full",
       "packagedSha256": "203cdc6bc52a1ff63b069afdc877d092a2b53f95719e06994c9a8ab9c7e1b3ca",
-      "codexRootSha256": "34fa4564cdff340ca3b6dc7a175354b9d8e3b99ccd317fad56e557dabc701391",
+      "codexRootSha256": "5dce9c8881980faf7e8f8755f1d6668d280aab55fadcade661de5e0b868e1b0d",
       "reason": "Uses exact MCP Task lease and evidence operations without project-cwd package commands."
     },
     {

@@ -16,8 +16,9 @@ is Codex-adapted.
 | Value | When to write |
 |---|---|
 | `test-GREEN:<artifact_path>` | Status `VERIFIED` + regression test transitioned RED→GREEN. `<artifact_path>` is a repo-relative path (forward slashes, no leading `./`) of the test file or `.tl/tasks/<TASK_ID>/regression-test.md`. |
+| `verify-GREEN:<artifact_path>` | Status `VERIFIED` on a Workflow-B (infrastructure) work item: the documented verification command re-ran cleanly after the change and all expected resources were confirmed. `<artifact_path>` is a repo-relative path (forward slashes, no leading `./`) of the committed verification record `.tl/tasks/<TASK_ID>/verification.md`. Derived from the report line `Regression test: verification: <path>`. |
 | `test-UNVERIFIED` | Status `UNVERIFIED` or `PARTIALLY_VERIFIED` — change applied but RED→GREEN not confirmed. |
-| `no-test` | Status `VERIFIED` under an explicit user override (e.g. `--skip-verify` at delivery). |
+| `no-test` | **Legacy — no current producer** (the user-override flag was removed in W4-blocking-release). Readers keep parsing it for graphs written before W4. |
 | `repo-checks-GREEN:<commit>` | Repo-wide gate evidence written by `nacl-tl-review` when `pnpm -r lint`, `pnpm -r typecheck`, and `pnpm -r test` all exit 0 on the wave-tip commit. `<commit>` is the full or short SHA of that commit (forward slash not used; the sha follows `:` directly). This evidence is required for `nacl-tl-review` to emit Status `VERIFIED`; absence of a recorded repo-checks run is `NOT_RUN`, which is not VERIFIED-equivalent downstream. May be recorded alongside a `test-GREEN:` value (separated by a single space) when both apply. |
 | `wire-evidence:fixture:<path>` | Wire-Evidence Gate evidence written by `nacl-tl-sync` when a runnable test loads a recorded response fixture (HTTP body, headers, status) and asserts BE/FE code parses/produces it without mocking. `<path>` is a forward-slash, repo-relative path to the fixture file or the test that drives it. The fixture file MUST be a real captured response — not a synthetic shape implied by the TS type. Required for `nacl-tl-sync` to emit Status `VERIFIED` on any UC with `actor != SYSTEM`, unless one of the other two `wire-evidence:*` shapes is present. |
 | `wire-evidence:contract-test:<path>` | Wire-Evidence Gate evidence written by `nacl-tl-sync` when a runnable contract test asserts the wire-format contract against the live provider in a sandboxed environment (provider sandbox endpoint, test API key, or provider-supplied mock server hosted by the provider — not an in-repo mock). `<path>` is a forward-slash, repo-relative path to the test file. Required-with-alternatives same as `wire-evidence:fixture:`. |
@@ -59,6 +60,8 @@ as anything other than `UNVERIFIED`.
 
 - Single string. No JSON. No quoting.
 - `test-GREEN` payload after `:` is a forward-slash, repo-relative path.
+- `verify-GREEN` payload after `:` is a forward-slash, repo-relative path
+  of the committed `.tl/tasks/<TASK_ID>/verification.md` record.
 - `test-UNVERIFIED` and `no-test` carry no payload.
 - `wire-evidence:fixture:<path>` and `wire-evidence:contract-test:<path>`
   carry a forward-slash, repo-relative path payload (path follows
@@ -111,7 +114,9 @@ SET t.status = $terminalStatus,
 ```
 
 If the upstream report does not carry a parseable `Regression test:` line
-under a `VERIFIED` outcome, the orchestrator MUST report
+under a `VERIFIED` outcome — either a `<path>` (test-based, →
+`test-GREEN:<path>`) or `verification: <path>` (infrastructure record, →
+`verify-GREEN:<path>`) — the orchestrator MUST report
 `Status: BLOCKED` with reason "no regression test path" rather than write a
 terminal status with empty evidence.
 
@@ -120,6 +125,9 @@ terminal status with empty evidence.
 The release workflow reads the property and classifies:
 
 - Prefix `test-GREEN:` → `test-GREEN` (path extracted for the report).
+- Prefix `verify-GREEN:` → `verify-GREEN` (path extracted for the report).
+  Indicates a Workflow-B infrastructure PASS backed by a committed
+  verification record; NOT a verification gap.
 - Prefix `repo-checks-GREEN:` → `repo-checks-GREEN` (commit SHA extracted for the report). A valid `repo-checks-GREEN:<commit>` value identifies the wave-tip commit on which `pnpm -r lint`, `pnpm -r typecheck`, and `pnpm -r test` all exited 0 — it is the only shape that makes the entry valid.
 - Prefix `wire-evidence:fixture:` → `wire-evidence-fixture` (path
   extracted for the report). Indicates that `nacl-tl-sync` confirmed a
@@ -151,8 +159,9 @@ The release workflow reads the property and classifies:
   (release-report-only; the gate fires at `nacl-tl-stubs`, not at
   release).
 - Literal `test-UNVERIFIED` → `test-UNVERIFIED`.
-- Literal `no-test` → `no-test`.
+- Literal `no-test` → `no-test` (legacy graphs only).
 - Empty / unrecognised → `unknown` → release report's "Verification gap" footer.
+  (`verify-GREEN` does NOT trigger this footer.)
 
 A single `verification_evidence` value MAY combine any of
 `repo-checks-GREEN:<commit>`, `test-GREEN:<path>`, one or more

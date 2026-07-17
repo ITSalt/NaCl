@@ -924,6 +924,7 @@ Merge:
   ---  ---------------------------------  -------  -----------  ---------------
   #42  feat: UC-028 Funnel event tracking squash   PASS         test-GREEN (regression test path: .tl/tasks/UC028/regression-test.md)
   #45  feat: UC-029 Scene prompt display  squash   PASS         test-GREEN (regression test path: .tl/tasks/UC029/regression-test.md)
+  #46  feat: TECH-013 Docker Compose stack squash  PASS         verify-GREEN (verification record: .tl/tasks/TECH013/verification.md)
 
 Deploy:
   CI: passed (4m 22s)
@@ -952,11 +953,17 @@ YouGile:
 | Evidence level | Meaning |
 |----------------|---------|
 | `test-GREEN` | Regression test ran RED→GREEN; path recorded in graph |
+| `verify-GREEN` | Infrastructure verification command re-ran cleanly post-change (Workflow B); verification record path recorded in graph. NOT a verification gap. |
 | `test-UNVERIFIED` | Tests passed but no RED→GREEN artifact in graph |
-| `no-test` | No test file found; UC shipped under explicit user override |
+| `no-test` | Legacy (pre-W4 graphs only): shipped under the since-removed user override |
 | `unknown` | Graph node existed but `verification_evidence` field is null/empty |
 
-If any UC in the merged set has evidence level `no-test` or `unknown`, append a footer line:
+Parsing: prefix `test-GREEN:` → `test-GREEN` (path extracted); prefix `verify-GREEN:` →
+`verify-GREEN` (path extracted); literal `test-UNVERIFIED` / `no-test` → as-is;
+null/empty/unrecognised → `unknown`.
+
+If any UC in the merged set has evidence level `no-test` or `unknown`, append a footer line
+(`verify-GREEN` does NOT trigger this footer):
 ```
 Verification gaps: UC-029 (no-test), UC-031 (unknown) — review before next release.
 ```

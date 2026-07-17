@@ -403,8 +403,12 @@ Your job:
       - Read the `Regression test:` line from /nacl-tl-dev's six-status report.
         Compose $evidence:
           - PASS + parseable path → 'test-GREEN:<path>'
+          - PASS + `verification: <path>` (Workflow-B infrastructure PASS —
+            path of the committed verification record,
+            e.g. `.tl/tasks/TECH-013/verification.md`) → 'verify-GREEN:<path>'
           - PASS + missing/unparseable `Regression test:` → HALT
-            ("FULL HALTED — UNVERIFIED (TECH-###: PASS without Regression test path)")
+            ("FULL HALTED — UNVERIFIED (TECH-###: PASS without Regression test
+            path or verification record)")
           (The NO-TEST flag that previously emitted 'no-test'
           evidence was REMOVED in W4-blocking-release. The literal
           token is scrubbed from this skill's prose. Bulk-bypass
