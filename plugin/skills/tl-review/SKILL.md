@@ -570,7 +570,26 @@ Verify:
 3. Run `git log --format="%ae" -- <production_file>` for each production source file to collect author emails.
 4. Compute overlap: what fraction of test-file commits share an author with production-file commits for the same UC?
 
-**Classification:**
+**Single-identity pre-check (before computing overlap):** run
+`git log --format="%ae" | sort -u` for the whole repository. If every
+commit shares one author identity — the normal case for agent-driven
+development, where all agents commit as the same git user — the overlap
+metric is trivially 100% and carries no signal. Do NOT raise the MAJOR
+flag from it. Instead record in the review artifact:
+
+```
+Test author independence: uninformative (single-identity repo)
+```
+
+and verify the **structural seam** in its place: the dev result
+(`result-be.md` / `result-fe.md` / `result.md`) must show the regression
+test was written through the test-author sub-agent seam (the
+`nacl-tl-regression-test` skill, invoked as a separate sub-agent — the
+fix/feature author is never the test author). Missing seam evidence on a
+single-identity repo IS a **MAJOR flag** (same report block and Recommend
+line as below).
+
+**Classification (multi-identity repos):**
 
 | Overlap | Action |
 |---------|--------|
@@ -599,6 +618,21 @@ Recommend: `/nacl:tl-regression-test --retroactive UC###`
 
 This check is non-blocking at the review layer. A MAJOR flag does not prevent REVIEW COMPLETE or APPROVED, but it must appear in the review artifact and is visible to downstream consumers.
 
+**Relation to the Step 8b headline and P4:** the test-author flag does NOT
+change the headline. The headline reflects the completeness of the
+verification (per 8b's preamble), and an author-overlap flag does not make
+the verification incomplete — the tests ran, passed, and carry RED→GREEN
+evidence. With everything else green the headline remains `REVIEW COMPLETE`
+and `APPROVED` remains reachable under P4. This is NOT the removed
+"proceed but flag in report" loophole returning: P4 is untouched — a
+non-`REVIEW COMPLETE` headline still forbids `APPROVED`; the author-overlap
+signal simply is not a headline condition. Its enforcement surface is the
+review artifact (the MAJOR block + the mandatory Recommend line) and the
+downstream ship/deliver gates described above. Rationale for non-blocking:
+author overlap is a git-history fact — re-running the dev agent cannot
+clear it, so a blocking reading has no terminating path through the
+orchestrator retry loops.
+
 ### Step 7: Document Issues
 
 Categorize by severity: **Blocker** (must fix), **Critical** (should fix), **Major** (should fix), **Minor** (nice to have). For each issue document file, line, description, recommended fix, rationale. A finding's severity may be lowered, or the finding dropped, **only on positive evidence it is a non-issue** (you read the guard/handler/consumer/requirement that resolves it); on uncertainty keep it at its assessed severity and flag the open question (QUESTION) rather than silently dropping or downgrading it (`adversarial-verify-needs-context`).
@@ -626,7 +660,6 @@ The headline is independent of the APPROVED / CHANGES REQUESTED verdict. It refl
 | Repo-wide gate RED / UNRUN / UNRUNNABLE on wave-tip | `REVIEW APPLIED — BLOCKED (repo-checks-*)` | no — VERIFIED refused; override requires signed exception (W4) |
 | Nav-actions check fails (Condition 1: missing HAS_INBOUND_ACTION on non-exempt affected UC) | `REVIEW APPLIED — BLOCKED (nav-actions-missing)` | no — VERIFIED refused; override requires signed exception (W4) |
 | Nav-actions check fails (Condition 2: QA evidence has no natural-entrypoint path) | `REVIEW APPLIED — BLOCKED (nav-actions-no-natural-entrypoint-evidence)` | no — VERIFIED refused; override requires signed exception (W4) |
-| Tests ran AND passed AND test author independence flag (MAJOR) | `REVIEW APPLIED — UNVERIFIED` | no |
 | Tests ran AND passed AND no test imports the changed file(s) | `REVIEW APPLIED — UNVERIFIED` | no |
 | Tests ran AND postfix has failures BUT baseline could not be resolved | `REVIEW APPLIED — UNVERIFIED (no baseline)` | no |
 | `scripts.test` missing | `REVIEW HALTED — NO_INFRA` | no — `APPROVED` forbidden |
@@ -650,10 +683,18 @@ or when issues exist:
 Workflow status: `REVIEW COMPLETE`. Code judgment: `CHANGES REQUESTED`. Action required: address 3 BE-3 stub-justifications.
 ```
 
-or when the runner could not fully verify:
+or when the runner could not fully verify (P4: a non-`REVIEW COMPLETE`
+headline forbids `APPROVED`):
 
 ```
-Workflow status: `REVIEW APPLIED — UNVERIFIED (test author overlap 80%)`. Code judgment: `APPROVED`. Action required: `/nacl:tl-regression-test --retroactive UC###`.
+Workflow status: `REVIEW APPLIED — UNVERIFIED (no test imports the changed files)`. Code judgment: `CHANGES REQUESTED`. Action required: `/nacl:tl-regression-test --retroactive UC###`.
+```
+
+or when everything is green but the test-author flag was raised (the flag
+does not change the headline — see Step 6b):
+
+```
+Workflow status: `REVIEW COMPLETE`. Code judgment: `APPROVED`. Action required: recommended — retroactive regression test (see Next Steps).
 ```
 
 The "Action required" field summarises the most urgent next step. If there are none, write `none`. This line MUST appear as the first content line of the review artifact's summary section.

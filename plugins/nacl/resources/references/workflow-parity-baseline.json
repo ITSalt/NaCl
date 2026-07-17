@@ -121,7 +121,7 @@
     {
       "workflow": "nacl-tl-review",
       "packagedSha256": "c3bafec1c2c94902c981c140fb1ed825e7460cca90ae7ed18bac1a029a432f38",
-      "codexRootSha256": "6ff309ff7fc00d568549d79eb130960e38c279a4c6f34127928de9530e29f5be",
+      "codexRootSha256": "bb6ff6e30db1ec287a7f12a5ee8d1ef019fdd6de00d0c7eaa0dfe592484ba037",
       "reason": "Uses package-local deterministic review commands and evidence classification."
     },
     {
