@@ -4,6 +4,38 @@ All notable changes to NaCl (Natural Agent Control Language) will be documented 
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [2.26.1] — 2026-07-17
+
+**The test-author-independence flag is unambiguously non-blocking.** A live UC review halted
+on a three-way contradiction inside `nacl-tl-review`: Step 6b declared the MAJOR flag
+non-blocking ("does not prevent REVIEW COMPLETE or APPROVED"), a Step 8b headline-table row
+mapped the same flag to `REVIEW APPLIED — UNVERIFIED` with APPROVED forbidden, and the worked
+example paired that UNVERIFIED headline with `APPROVED` — violating rule P4 on its own terms.
+
+### Fixed
+- **6b (non-blocking) wins; the 8b row is removed.** The headline reflects verification
+  completeness per 8b's own preamble, and author overlap does not make verification
+  incomplete — tests ran, passed, and carry RED→GREEN evidence. The blocking reading also
+  had no terminating path: orchestrator retry loops re-run the same dev agent, which can
+  never change git authorship, and never invoke the prescribed retroactive regression test.
+  **P4 is untouched** — a non-`REVIEW COMPLETE` headline still forbids `APPROVED`; the flag's
+  enforcement surface is the review artifact (MAJOR block + mandatory Recommend line) and the
+  declared ship/deliver gates.
+- **P4-violating worked example replaced** with a compliant UNVERIFIED → CHANGES REQUESTED
+  example plus a green-with-flag example (`REVIEW COMPLETE` + `APPROVED` + recommended
+  retroactive test).
+
+### Added
+- **Single-identity pre-check in 6b.** On repositories where every commit shares one author
+  identity (the normal agent-driven case), the git overlap metric is trivially 100% and
+  carries no signal: it is now recorded as "uninformative (single-identity repo)" instead of
+  MAJOR, and the reviewer verifies the structural seam in its place — the dev result must
+  show the regression test was authored through the separate test-author sub-agent. Missing
+  seam evidence on a single-identity repo is the MAJOR finding.
+
+### Docs
+- `skills-for-codex/nacl-tl-review` mirror synced; both plugin artifacts rebuilt.
+
 ## [2.26.0] — 2026-07-17
 
 **Two conductor dead-ends removed: the review gate works on any package manager, and

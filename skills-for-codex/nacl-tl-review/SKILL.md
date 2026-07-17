@@ -203,6 +203,15 @@ mirror at `nacl-tl-core/references/config-schema.md`).
   changed files for `TODO`, `FIXME`, `STUB`, `MOCK`, and `HACK`.
 - Review TDD evidence, test output, acceptance criteria, API contracts,
   persistence, security, error handling, and test author independence.
+  The test-author-independence flag is non-blocking: it must appear in the
+  review artifact (with the retroactive-regression-test recommendation) but
+  does not change the workflow status or forbid approval — enforcement lives
+  in downstream ship/deliver gates. On a single-identity repository (every
+  commit shares one author identity, the normal agent-driven case) the git
+  overlap metric is uninformative; record it as such and verify the
+  structural seam instead (the regression test was authored through the
+  separate test-author sub-agent, per the dev result file). Missing seam
+  evidence on a single-identity repo is the MAJOR finding.
 - A review approval is not verification of runtime behavior. Missing test
   output, missing result files, or missing task specs blocks or downgrades the
   review.
