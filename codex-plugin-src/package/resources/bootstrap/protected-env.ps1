@@ -53,16 +53,12 @@ function Write-ProtectedEnv {
     $principal = "*$currentSid"
     & $IcaclsPath $stage /inheritance:r /grant:r "${principal}:(OI)(CI)(F)" *> $null
     if ($LASTEXITCODE -ne 0) { throw [System.Exception]::new("GRAPH_ENV_ACL_STAGE_FAILED") }
-    & $IcaclsPath $stage /setowner $principal *> $null
-    if ($LASTEXITCODE -ne 0) { throw [System.Exception]::new("GRAPH_ENV_OWNER_STAGE_FAILED") }
     $stagedEnv = Join-Path $stage ".env"
     [System.IO.File]::WriteAllText($stagedEnv, $Content, (New-Object System.Text.UTF8Encoding($false)))
     # The secret was protected at creation by the secured staging directory.
     # Freeze the inherited user-only ACE as an explicit file ACL before move.
     & $IcaclsPath $stagedEnv /inheritance:r /grant:r "${principal}:(R,W)" *> $null
     if ($LASTEXITCODE -ne 0) { throw [System.Exception]::new("GRAPH_ENV_ACL_FINALIZE_FAILED") }
-    & $IcaclsPath $stagedEnv /setowner $principal *> $null
-    if ($LASTEXITCODE -ne 0) { throw [System.Exception]::new("GRAPH_ENV_OWNER_FINALIZE_FAILED") }
     Assert-ProtectedEnvAcl -Path $stagedEnv -IcaclsPath $IcaclsPath
     Move-Item -LiteralPath $stagedEnv -Destination $Target
     Assert-ProtectedEnvAcl -Path $Target -IcaclsPath $IcaclsPath
