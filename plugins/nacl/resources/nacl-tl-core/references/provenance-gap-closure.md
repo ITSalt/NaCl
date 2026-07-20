@@ -37,7 +37,49 @@ SET t.planned_from_version = coalesce(uc.spec_version, 0)
 ```
 
 After this, only a real `spec_version` bump or a `review_status='stale'` stamp
-marks a task for regeneration. The rest of this runbook is about L9.
+marks a task for regeneration.
+
+---
+
+## The pfv-advance contract (who may clear `stale`)
+
+`planned_from_version` (pfv) is the Task-side half of Signal 1: `nacl-tl-plan`
+Step 1.5b flags a task as drifted when `uc.spec_version > t.planned_from_version`.
+The invariant that keeps Signal 1 honest:
+
+> **Any skill that rewrites a task's `.tl/tasks/` files to match
+> `spec_version = N` AND clears that task's `review_status='stale'` flag MUST,
+> in the same write, `SET t.planned_from_version = N` on the affected Task
+> nodes. A skill that defers file regeneration to the planning skill MUST
+> leave both the stale flag and `planned_from_version` alone.**
+
+Clearing the flag without advancing pfv silences Signal 2 while Signal 1 keeps
+firing on every future plan run — a permanent false-positive drift that either
+churns regeneration or trains operators to ignore the drift report. Advancing
+pfv without current files does the opposite: it hides real drift.
+
+Sanctioned clear paths (all bound by the invariant):
+
+| Path | Skill | When |
+|---|---|---|
+| Plan regen (canonical) | `nacl-tl-plan` Step 2.4 | Every regeneration |
+| Fix self-sync (rare) | `nacl-tl-fix` Step 7 | The fix's own change fully re-synced the task's files |
+| Emergency reconcile | `nacl-tl-reconcile` Step 3.4b | Reconcile brought the task's files fully current |
+
+Acceptance check (read-only; run after any reconcile or fix self-sync — expect
+zero rows):
+
+```cypher
+// Tasks whose files claim currency (not stale) but whose provenance lags the spec.
+MATCH (uc:UseCase)-[:GENERATES]->(t:Task)
+WHERE t.planned_from_version IS NOT NULL
+  AND coalesce(uc.spec_version, 0) > t.planned_from_version
+  AND coalesce(t.review_status, 'current') <> 'stale'
+RETURN uc.id AS uc_id, uc.spec_version AS spec_version,
+       t.id AS task_id, t.planned_from_version AS pfv
+```
+
+The rest of this runbook is about L9.
 
 ---
 

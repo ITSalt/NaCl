@@ -35,6 +35,11 @@ It should not change code.
 - Validation must include a rerun gap check when graph validators or build/test
   commands are unavailable. Missing validators or runners downgrade status;
   they do not become success.
+- When reconciliation brings a task's `.tl/tasks/` files fully current and graph
+  writes are available, advance `Task.planned_from_version` to the UC's
+  `spec_version` and clear the stale flag in the same write (pfv-advance
+  contract); otherwise leave provenance for the planning skill and report the
+  deferral.
 - If graph and file state diverge after reconciliation, report
   `Status: UNVERIFIED` until the divergence is inspected.
 

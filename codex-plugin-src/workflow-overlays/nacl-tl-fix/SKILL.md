@@ -95,7 +95,12 @@ must record *why*, graph-natively, as part of the spec-update commit: write a
 `:Decision` (`DEC-NNN`, `created_by:'nacl-tl-fix'`, non-empty `rationale` from the
 root cause + corrected behavior) linked to the affected UCs via `JUSTIFIES`; bump
 `spec_version` on those UCs and stamp `review_status='stale'` on their `GENERATES`
-Tasks so `nacl-tl-plan` re-plans them. `Decision` is in the spec-update label
+Tasks so `nacl-tl-plan` re-plans them. A fix that itself re-syncs a task's files
+to the current spec must, when clearing that task's stale flag, also set
+`planned_from_version = spec_version` in the same write (pfv-advance contract);
+a fix that defers regen to planning leaves both alone — clearing the flag
+without advancing pfv leaves a permanent false-positive version drift.
+`Decision` is in the spec-update label
 list, so this satisfies the spec-first gate; `nacl-sa-validate` L9 enforces it.
 L0/L1 fixes record no Decision (no new "why").
 

@@ -860,8 +860,29 @@ UNWIND ucs AS uc
 
 > If this fix reverses an earlier decision, also write `(:Decision)-[:SUPERSEDES]->(:Decision)`
 > and set the old one's `status='superseded'` (see `nacl-sa-feature` step 6.2ter).
-> If the fix's own code change in Step 6 fully re-syncs a task (rare — usually
-> planning does), clear that task's flag at Step 7; otherwise leave it for `nacl-tl-plan`.
+
+If the fix's own code + file changes in Step 6 fully re-sync a task to the
+current spec (rare — usually planning does), clear that task's flag at Step 7
+**and advance its provenance in the same write**. Clearing the flag alone
+silences Signal 2 while Signal 1 (`spec_version > planned_from_version`) keeps
+firing forever — see the pfv-advance contract in `provenance-gap-closure.md`
+(TL-core references):
+
+```cypher
+// mcp__neo4j__write-cypher — ONLY for tasks whose files this fix made current
+// Params: $syncedTaskIds — Task ids fully re-synced by this fix's own change
+MATCH (uc:UseCase)-[:GENERATES]->(t:Task)
+WHERE t.id IN $syncedTaskIds
+SET t.planned_from_version = coalesce(uc.spec_version, 0)
+REMOVE t.review_status, t.stale_reason, t.stale_since, t.stale_origin
+WITH DISTINCT uc
+WHERE NOT EXISTS { (uc)-[:GENERATES]->(x:Task) WHERE coalesce(x.review_status, 'current') = 'stale' }
+REMOVE uc.review_status, uc.stale_reason, uc.stale_since, uc.stale_origin
+```
+
+Otherwise leave the flag for `nacl-tl-plan` and do NOT touch
+`planned_from_version` — the un-advanced pfv is exactly what keeps Signal 1
+pointing at the task until planning regenerates it.
 
 **If the root cause is a missing or wrong domain-error branch** (the
 Project-Alpha class: restart returned 200 instead of `409 TASK_NOT_RESTARTABLE`
