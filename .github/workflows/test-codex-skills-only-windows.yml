@@ -3,10 +3,12 @@ name: Test Codex Skills-only Windows Security
 on:
   pull_request:
     paths:
+      - '.gitattributes'
       - '.github/workflows/test-codex-skills-only-windows.yml'
       - 'codex-plugin-src/package/resources/bootstrap/**'
       - 'codex-plugin-src/package/skills/**'
       - 'scripts/build-codex-plugin.mjs'
+      - 'scripts/build-codex-plugin.test.mjs'
       - 'scripts/build-codex-skills-only.mjs'
       - 'scripts/check-skills-only-bundle.mjs'
       - 'scripts/codex-plugin-manifest.json'
@@ -16,10 +18,12 @@ on:
       - main
       - 'codex/plugin-*'
     paths:
+      - '.gitattributes'
       - '.github/workflows/test-codex-skills-only-windows.yml'
       - 'codex-plugin-src/package/resources/bootstrap/**'
       - 'codex-plugin-src/package/skills/**'
       - 'scripts/build-codex-plugin.mjs'
+      - 'scripts/build-codex-plugin.test.mjs'
       - 'scripts/build-codex-skills-only.mjs'
       - 'scripts/check-skills-only-bundle.mjs'
       - 'scripts/codex-plugin-manifest.json'
