@@ -178,7 +178,7 @@ Wraps Anthropic's `/goal` command with NaCl semantics and safety rails.
 
 ## Codex Public Skills (10)
 
-The full Codex plugin exposes exactly these conductors:
+The official Codex Skills-only bundle exposes exactly these conductors:
 
 ```text
 nacl-ba
@@ -193,13 +193,21 @@ nacl-tl
 nacl-verify
 ```
 
-They route into the internal catalog and preserve confirmation gates. The
-skills-only Codex layout is compatibility-only; ordinary users install the
-full plugin from the Codex UI.
+Each public skill carries the complete workflow/reference/script closure it
+needs; none requires the Git/full-plugin package MCP before initialization.
+`nacl-init` is the bootstrap entry: after an exact plan and confirmation it
+creates or connects the project graph and writes the no-secret project MCP
+entry to `.codex/config.toml`. The current task stops, and a new task in the
+same project must verify that MCP before graph-backed conductors proceed.
+GitHub is not a second installation step.
 
 ## Codex Internal Inventory (60)
 
-This generated inventory is defined by `plugins/nacl/resources/package-index.json`:
+This generated inventory is defined by
+`plugins/nacl/resources/package-index.json`. It documents the methodology and
+Git/full-plugin compatibility package; the public builder copies each
+conductor's required transitive closure into its self-contained Skills-only
+upload tree.
 
 ```text
 nacl-ba-analyze
@@ -264,8 +272,12 @@ nacl-tl-verify
 nacl-tl-verify-code
 ```
 
-The local Codex candidate is verified. A public Streamable HTTP/OAuth service,
-release, and marketplace publication remain `NOT_RUN`.
+The official Skills-only card is not published yet. The public architecture
+requires no hosted MCP or managed graph service: after one card installation,
+the project-local MCP is created by `nacl-init` and picked up from
+`.codex/config.toml` by a new task. A root `.mcp.json` and the package MCP tool
+inventory belong only to Claude or explicitly documented Git/full-plugin
+compatibility paths.
 
 ## Next Steps
 

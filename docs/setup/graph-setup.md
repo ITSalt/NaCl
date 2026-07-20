@@ -51,7 +51,9 @@ docker exec "$CONTAINER" cypher-shell -u neo4j -p "$NEO4J_PASS" "SHOW CONSTRAINT
 
 ## Step 3: Install the Neo4j MCP Server
 
-The Neo4j MCP server lets Claude Code communicate with your graph database. There is no
+The Neo4j MCP server lets Claude Code communicate with your graph database. The
+`.mcp.json` flow in Steps 3-4 is Claude Code/full-plugin compatibility only;
+Codex uses trusted-project `.codex/config.toml` as described below. There is no
 npm package for this anymore — `@anthropic/neo4j-mcp` was an early npm launcher and was
 abandoned (cold start over 30s regularly blew past the MCP connect timeout, and its stdout
 banner corrupted the stdio JSON-RPC stream). `/nacl-init` now downloads the official Go
@@ -63,7 +65,7 @@ binary from the `neo4j/mcp` GitHub releases directly:
 
 This downloads a **version-pinned, sha256-verified** release asset (pin + checksums live
 in `nacl-tl-core/scripts/neo4j-mcp.pin`) to `~/.neo4j-mcp-bin/neo4j-mcp`, and writes
-`.mcp.json` at the project root pointing straight at that binary — no `PATH` lookup, no
+Claude-compatible `.mcp.json` at the project root pointing straight at that binary — no `PATH` lookup, no
 global install. To track a different release, set `NEO4J_MCP_VERSION=<tag>` before running
 `/nacl-init` (or `NEO4J_MCP_VERSION=latest` to skip pinning, which also skips checksum
 verification — a loud warning is printed).
@@ -138,7 +140,7 @@ Each project gets its own Docker stack with different ports. The `nacl-init` ski
 
 ## Parallel Sessions and Worktrees
 
-Config (`config.yaml`, `.mcp.json`) and graph infra (`graph-infra/`) live at the **main
+Config (`config.yaml`, Claude `.mcp.json`, and Codex `.codex/config.toml`) and graph infra (`graph-infra/`) live at the **main
 checkout** — always run `/nacl-init` from there, never from a linked worktree (a worktree
 has no `.mcp.json` of its own). Parallel Claude Code sessions, including multiple Desktop
 windows, all talk to the same one graph for a given project: run at most one *writing*
@@ -209,7 +211,7 @@ notifies.
 
 **Schema won't load**: Resolve the project secret through its configured runtime source before retrying the verified schema loader. Local mode requires `NEO4J_PASSWORD` in the current runtime environment; remote mode requires `graph.remote.secret_source` (`env:NEO4J_PASSWORD` or `server-route:<id>`). If the environment variable or external provider is unavailable, stop and repair that provider — do not try a demo/default password or copy a raw password into project files.
 
-**MCP connection fails**: Run `node "$HOME/.claude/skills/nacl-core/scripts/graph-doctor.mjs"` (CLI symlink channel) or `node "$(nacl-home)/nacl-core/scripts/graph-doctor.mjs"` (Desktop plugin channel) to check liveness first. Verify the binary exists and is executable (`ls -l ~/.neo4j-mcp-bin/neo4j-mcp`), `.mcp.json` is at the project root and points at that path, then start a new session — MCP servers are only picked up at session start, not by an in-session restart, and `/mcp reconnect` does not see newly added `.mcp.json` entries.
+**MCP connection fails**: Run `node "$HOME/.claude/skills/nacl-core/scripts/graph-doctor.mjs"` (CLI symlink channel) or `node "$(nacl-home)/nacl-core/scripts/graph-doctor.mjs"` (Desktop plugin channel) to check liveness first. For Claude, verify `.mcp.json` is at the project root and points at the executable binary, then start a new session. For Codex, verify the task uses the canonical trusted project root and `.codex/config.toml` contains stable `[mcp_servers.nacl_neo4j]`: `command` is the resolved Node executable, `args` name the project launcher, `--binary`, and verified binary, while `env` contains only non-secret connection values. Start a new task and require handshake/read evidence. A Claude `.mcp.json` never proves Codex pickup.
 
 ## Codex Graph Modes
 
@@ -217,8 +219,37 @@ notifies.
 
 The default Codex path uses one Neo4j 5 Community container and durable volumes
 per project. `nacl-init` plans and creates the stack, waits for health, loads the
-schema, and records the project route. The full Codex plugin uses its bounded
-gateway tools; the stdio example above remains the Claude/repository channel.
+schema, installs the pinned `neo4j-mcp`, generates a no-secret launcher, merges
+`[mcp_servers.nacl_neo4j]` into trusted-project `.codex/config.toml`, and records
+the project route. The current Git/full-plugin compatibility channel can also
+use its bounded package gateway. The target official Skills-only channel uses
+the installed `nacl-init` scripts and then requires a new task to load the
+project-local MCP; it does not require a public NaCl MCP or a second Git install.
+
+```toml
+[mcp_servers.nacl_neo4j]
+command = "<machine-local absolute path to the resolved Node executable>"
+args = [
+  "<machine-local absolute path to the project NaCl launcher>",
+  "--binary",
+  "<machine-local absolute path to the verified neo4j-mcp binary>",
+]
+
+[mcp_servers.nacl_neo4j.env]
+NEO4J_URI = "bolt://127.0.0.1:<project-port>"
+NEO4J_USERNAME = "neo4j"
+NEO4J_DATABASE = "neo4j"
+NEO4J_TELEMETRY = "false"
+```
+
+TOML carries only non-secret connection values. At process start the project
+launcher reads `NEO4J_PASSWORD` only from protected `graph-infra/.env` and
+validates the binary plus its install receipt. The raw secret is forbidden in
+`command`, `args`, `env`, and logs. All three absolute paths are generated per
+machine and must not point into a developer checkout or plugin cache. Codex
+loads this project layer only after the canonical project root is trusted. If a new task sees only global MCP
+servers, check the canonical root/trust boundary; on support-capable systems,
+`codex mcp list --json` is the read-only diagnostic.
 
 ### VPS connection and authorization
 
@@ -227,10 +258,10 @@ NaCl does not provide a managed graph. The server is currently the authorization
 boundary: access to it implies access to all project databases hosted there.
 Each project has a separate Neo4j 5 Community container and independent durable
 volumes. `project_scope` selects its route and records provenance; it does not
-grant access or represent a shared-graph `(:Project)` authorization marker. A
-future public Streamable HTTP gateway must map OAuth principals
-to server grants and deny cross-server routing. That public deployment and its
-release remain `NOT_RUN`.
+grant access or represent a shared-graph `(:Project)` authorization marker. The
+optional remote create/connect scripts retain the existing mTLS server-access
+boundary and deny cross-server routing. The Skills-only public product does not
+add a hosted Streamable HTTP or OAuth gateway.
 
 ## Next Steps
 

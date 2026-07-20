@@ -1,0 +1,51 @@
+name: Test Codex Skills-only Windows Security
+
+on:
+  pull_request:
+    paths:
+      - '.gitattributes'
+      - '.github/workflows/test-codex-skills-only-windows.yml'
+      - 'codex-plugin-src/package/resources/bootstrap/**'
+      - 'codex-plugin-src/package/skills/**'
+      - 'scripts/build-codex-plugin.mjs'
+      - 'scripts/build-codex-plugin.test.mjs'
+      - 'scripts/build-codex-skills-only.mjs'
+      - 'scripts/check-skills-only-bundle.mjs'
+      - 'scripts/codex-plugin-manifest.json'
+      - 'tests/codex-plugin/scripts/nacl-skills-only-*.test.mjs'
+  push:
+    branches:
+      - main
+      - 'codex/plugin-*'
+    paths:
+      - '.gitattributes'
+      - '.github/workflows/test-codex-skills-only-windows.yml'
+      - 'codex-plugin-src/package/resources/bootstrap/**'
+      - 'codex-plugin-src/package/skills/**'
+      - 'scripts/build-codex-plugin.mjs'
+      - 'scripts/build-codex-plugin.test.mjs'
+      - 'scripts/build-codex-skills-only.mjs'
+      - 'scripts/check-skills-only-bundle.mjs'
+      - 'scripts/codex-plugin-manifest.json'
+      - 'tests/codex-plugin/scripts/nacl-skills-only-*.test.mjs'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  windows-security-runtime:
+    name: Windows PowerShell and launcher security runtime
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20.19.4'
+
+      - name: Verify generated package parity
+        run: node scripts/build-codex-plugin.mjs --check
+
+      - name: Execute native Windows Skills-only security tests
+        run: node --test tests/codex-plugin/scripts/nacl-skills-only-windows.test.mjs

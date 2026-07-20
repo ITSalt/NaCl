@@ -10,6 +10,7 @@ import { fileURLToPath } from "node:url";
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
 const pluginRoot = path.join(repoRoot, "plugins", "nacl");
 const manifestPath = path.join(pluginRoot, ".codex-plugin", "plugin.json");
+const sourceManifestPath = path.join(repoRoot, "codex-plugin-src", "package", ".codex-plugin", "plugin.json");
 const marketplacePath = path.join(repoRoot, ".agents", "plugins", "marketplace.json");
 const indexPath = path.join(pluginRoot, "resources", "package-index.json");
 const validatorVendorRoot = path.join(
@@ -55,13 +56,14 @@ async function skillHashes(root) {
 }
 
 test("manifest, marketplace, and MCP companion describe the real nacl package", async () => {
-  const [manifest, marketplace, mcp] = await Promise.all([
+  const [manifest, sourceManifest, marketplace, mcp] = await Promise.all([
     readJson(manifestPath),
+    readJson(sourceManifestPath),
     readJson(marketplacePath),
     readJson(path.join(pluginRoot, ".mcp.json")),
   ]);
   assert.equal(manifest.name, "nacl");
-  assert.match(manifest.version, /^0\.1\.0\+codex\.[0-9A-Za-z.-]+$/);
+  assert.equal(manifest.version, sourceManifest.version);
   assert.equal(manifest.description.includes("compatibility spike"), false);
   assert.equal(manifest.skills, "./skills/");
   assert.equal(manifest.mcpServers, "./.mcp.json");
@@ -113,8 +115,25 @@ test("public discovery stays within the bounded ten-skill routing budget", async
     assert.equal(descriptions.has(frontmatter.description), false);
     descriptions.add(frontmatter.description);
     descriptionBytes += Buffer.byteLength(frontmatter.description);
-    assert.match(content, /nacl_installation_doctor/);
-    assert.match(content, /resources\/workflows/);
+    assert.doesNotMatch(content, /nacl_installation_doctor/);
+    assert.match(content, /skills-only-runtime-contract\.md/);
+    if (directory === "nacl-init") {
+      assert.match(content, /setup-project-graph\.(?:sh|ps1)/);
+      assert.match(content, /plan-project-graph\.mjs/);
+      assert.match(content, /INIT_LOCAL_GRAPH:<project-id>:<sha256>/);
+      assert.match(content, /PARTIALLY_VERIFIED[\s\S]*RESTART_REQUIRED/);
+      assert.match(content, /VERIFY_NACL_INITIALIZATION/);
+      assert.match(content, /tools\/list/);
+      assert.match(content, /sa_statistics_extensions/);
+      assert.match(content, /read-cypher[\s\S]*write-cypher/);
+      assert.match(content, /writeReadback/);
+    } else assert.match(content, /PROJECT_MCP_NOT_CONFIGURED/);
+    if (directory === "nacl-diagnose") {
+      assert.match(content, /--diagnose-only/);
+      assert.match(content, /UNINITIALIZED/);
+      assert.match(content, /INITIALIZED_LOCAL_FILES/);
+    }
+    if (directory !== "nacl-init") assert.match(content, /resources\/workflows/);
     assert.doesNotMatch(content, /\bmodel\s*:/i);
   }
   assert.ok(descriptionBytes <= 2048, `description budget is ${descriptionBytes} bytes`);

@@ -113,17 +113,23 @@ Then open your agent runtime in a project and run `/nacl-init --dry-run`.
 
 ### UI installation
 
-The normal Codex path is the full NaCl plugin from **Plugins**. Install the
-trusted card, grant only displayed permissions, fully restart Codex, and in a
-new task verify `status=VERIFIED`, `mode=plugin-only`, and
-`executionLocation=installed-cache` through `nacl_installation_doctor`.
+After public release, the normal Codex path is the official NaCl Skills-only
+card from **Plugins**. Install it once, grant only displayed permissions, open
+a new project task, and run the `nacl-init` read-only preflight. After confirmed
+bootstrap creates the no-secret launcher and merges project
+`.codex/config.toml`, open another new task at the same canonical trusted root
+for project MCP pickup. Project `.mcp.json` is Claude/compatibility-only. No
+public MCP or Git reinstall is required. Until publication, use the
+separately documented immutable Git/full-plugin compatibility channel and its
+installation doctor.
 
 ### Graph and authorization
 
 Use a per-project Neo4j 5 Community container through Docker Engine/Desktop or
 connect to a separately operated VPS. Server access currently implies access
 to every project database hosted there; `project_scope` is routing, not
-authorization. Public HTTP/OAuth and release remain `NOT_RUN`.
+authorization. The Skills-only path uses local/project MCP and does not add
+public HTTP/OAuth.
 
 ## Next Steps
 

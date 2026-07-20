@@ -5,24 +5,15 @@ description: Route NaCl team-lead work across intake, planning, development, rev
 
 # NaCl Team Lead
 
-Call `nacl_installation_doctor` once and stop unless it returns
-`status=VERIFIED`.
+Read [the Skills-only runtime contract](../../resources/references/skills-only-runtime-contract.md),
+[the TL core](../../resources/workflows/nacl-tl-core/SKILL.md), and
+[the TL contract](../../resources/workflows/nacl-tl-core/references/tl-codex-contract.md).
+Require a loaded project `nacl_neo4j` MCP and verified read canary; otherwise return
+`BLOCKED/PROJECT_MCP_NOT_CONFIGURED` and route to `nacl-init`.
 
-Read
-[the TL core](../../resources/workflows/nacl-tl-core/SKILL.md),
-[the TL Codex contract](../../resources/workflows/nacl-tl-core/references/tl-codex-contract.md),
-and [the gateway binding](../../resources/references/workflow-gateway-contract.md).
-
-Route to one packaged leaf under `../../resources/workflows/`, beginning with
-`nacl-tl-conductor`, `nacl-tl-full`, `nacl-tl-intake`, `nacl-tl-plan`,
-`nacl-tl-deliver`, `nacl-tl-status`, or the narrower leaf named by the request.
-Load no unrelated leaf.
-
-Run the mapped TL preflight. Protected `Task` work uses allocate or claim,
-heartbeat for long work, the live fence and expected revision, mutation with
-`APPROVE_TL_WRITE`, read-back, and release or explicit handoff. Preserve user
-gates, test evidence, and author/reviewer separation. A `done` or
-`verified-pending` write must carry parseable `verification_evidence` in the
-same mutation. A `no-test` override additionally requires
-`evidence_confirmation: CONFIRM_NO_TEST_EVIDENCE`. Missing Task-level named reads block graph-backed status or
-release instead of falling back to local state.
+Select one packaged TL leaf and load no unrelated leaf. Use only project-local
+Neo4j MCP Cypher tools. Protected Task work keeps the exact project and worker
+identity, allocate-or-claim, heartbeat, live fence, expected revision,
+`APPROVE_TL_WRITE`, idempotency, same-mutation evidence, read-back and release
+or explicit handoff. Missing concurrency or Task evidence is `BLOCKED`, never
+an unfenced write or local-status fallback.

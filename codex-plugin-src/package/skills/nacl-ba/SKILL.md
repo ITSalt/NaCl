@@ -5,24 +5,21 @@ description: Route NaCl business analysis across context, processes, entities, r
 
 # NaCl Business Analysis
 
-Call `nacl_installation_doctor` once and stop unless it returns
-`status=VERIFIED`.
+Read [the Skills-only runtime contract](../../resources/references/skills-only-runtime-contract.md),
+[the BA contract](../../resources/workflows/references/ba-codex-contract.md), and
+[the core methodology](../../resources/workflows/nacl-core/SKILL.md).
 
-Read
-[the BA contract](../../resources/workflows/references/ba-codex-contract.md),
-[the core contract](../../resources/workflows/nacl-core/SKILL.md), and
-[the gateway binding](../../resources/references/workflow-gateway-contract.md).
+Require a loaded project `nacl_neo4j` MCP and verified read canary. Otherwise return
+`BLOCKED/PROJECT_MCP_NOT_CONFIGURED` and route to `nacl-init`.
 
-Choose exactly the relevant packaged leaf under `../../resources/workflows/`:
+Choose exactly one relevant packaged leaf under `../../resources/workflows/`:
 `nacl-ba-full`, `nacl-ba-context`, `nacl-ba-import-doc`,
 `nacl-ba-from-board`, `nacl-ba-roles`, `nacl-ba-process`, `nacl-ba-entities`,
 `nacl-ba-rules`, `nacl-ba-glossary`, `nacl-ba-workflow`, `nacl-ba-analyze`,
-`nacl-ba-validate`, `nacl-ba-sync`, or `nacl-ba-handoff`.
+`nacl-ba-validate`, `nacl-ba-sync`, or `nacl-ba-handoff`. State the leaf.
 
-State the selected leaf. Run the mapped BA preflight with explicit project and
-identity. Only `Board` metadata currently has a protected BA resource route:
-allocate or claim, retain lease/fence, mutate with revision CAS and
-`APPROVE_BA_WRITE`, read back, then release. Required BA domain labels,
-relationships, and named reads are not exposed by this pilot. A graph-complete
-claim that needs them is `BLOCKED/BA_DOMAIN_RESOURCE_UNAVAILABLE`; useful
-confirmed file-only preparation may still report its own honest status.
+Use only project-local Neo4j MCP Cypher tools. Preserve explicit project
+identity, BA write approval, parameterization, lease/fence/revision rules,
+transaction/idempotency, and read-back from the leaf and runtime contract.
+Missing graph primitives stay `BLOCKED`; confirmed file-only preparation may
+report only its own honest status.

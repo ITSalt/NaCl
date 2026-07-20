@@ -219,30 +219,40 @@ including the post-completion re-check result and any gate-violation attempts lo
 
 Full reference: [docs/guides/goal-command.md](guides/goal-command.md)
 
-## Codex Public Routes and Production Boundary
+## Codex Skills-only Public Routes
 
-The full Codex plugin exposes conductors, not the leaf workflows shown in the
-Claude examples above:
+The official Codex Skills-only bundle exposes conductors, not the leaf
+workflows shown in the Claude examples above:
 
-| Public skill | Gateway sequence | Internal route |
+| Public skill | Project-MCP precondition | Internal route |
 |---|---|---|
-| `nacl-init` | `initialize` | project identity, registry, graph lifecycle, schema |
-| `nacl-goal` | `read-preflight` | `nacl-goal` |
-| `nacl-ba` | `ba-resource` | the fourteen `nacl-ba-*` workflows |
-| `nacl-sa` | `sa-resource` | the ten `nacl-sa-*` workflows |
-| `nacl-tl` | `tl-task` | TL planning, development, QA, and delivery |
-| `nacl-fix` | `tl-task` | fix, hotfix, reopened, regression test |
-| `nacl-verify` | `read-preflight` | verify, review, QA, sync, stubs |
-| `nacl-migrate` | `schema-recovery` | migration orchestration and BA/SA adapters |
-| `nacl-diagnose` | `read-preflight` | diagnose, next, status, reconcile, postmortem |
-| `nacl-publish` | `release` | render, publish, ship, release, deploy |
+| `nacl-init` | None before bootstrap | project identity, graph lifecycle, project `.codex/config.toml`, schema |
+| `nacl-goal` | Required only for graph-backed routes | `nacl-goal` |
+| `nacl-ba` | Verified in a new task | the fourteen `nacl-ba-*` workflows |
+| `nacl-sa` | Verified in a new task | the ten `nacl-sa-*` workflows |
+| `nacl-tl` | Verified for graph-backed planning/status | TL planning, development, QA, and delivery |
+| `nacl-fix` | Verified for graph-backed diagnosis | fix, hotfix, reopened, regression test |
+| `nacl-verify` | Verified for graph-backed evidence | verify, review, QA, sync, stubs |
+| `nacl-migrate` | Verified before graph import | migration orchestration and BA/SA adapters |
+| `nacl-diagnose` | Verified for graph-backed diagnosis | diagnose, next, status, reconcile, postmortem |
+| `nacl-publish` | Required only for graph-backed rendering | render, publish, ship, release, deploy |
 
-The gateway uses named reads, typed resource claims, and exact confirmations;
-it does not expose arbitrary Cypher or arbitrary shell execution. Neo4j is
-operated separately per project. The server is the current authorization
-boundary, while `project_scope` is routing/provenance. The verified runtime is
-the local installed candidate. Public Streamable HTTP, OAuth deployment,
-release, and marketplace publication are `NOT_RUN`.
+`nacl-init` resolves only scripts shipped inside its self-contained skill
+bundle. It shows a read-only plan and, after confirmation, creates or connects
+the per-project Neo4j Community stack, installs the pinned `neo4j-mcp`, and
+merges a no-secret `mcp_servers` entry into `.codex/config.toml`. The current
+task must stop; a new task in the same project verifies MCP handshake, schema,
+read, confirmed write, and read-back. Other graph-backed routes stop with
+actionable init/new-task guidance until that verification succeeds.
+
+Graph-backed skills use the project-local MCP under their documented planning,
+confirmation, concurrency, and read-back gates; destructive or administrative
+operations remain explicit stop/confirmation points. Neo4j is operated
+separately per project. The server is the authorization boundary, while
+`project_scope` is routing/provenance. The official journey
+requires neither a public hosted MCP nor a second GitHub installation. A root
+`.mcp.json` and package MCP tools belong only to Claude or explicitly
+documented Git/full-plugin compatibility paths.
 
 ## Next Steps
 

@@ -1,431 +1,436 @@
 {
   "$schema": "./reviewer-fixtures.schema.json",
-  "schemaVersion": 1,
-  "fixtureSetVersion": "nacl-reviewer-fixtures-v1",
+  "schemaVersion": 2,
+  "fixtureSetVersion": "nacl-skills-only-reviewer-fixtures-v1",
   "status": "LOCAL_CONTRACT_ONLY",
+  "submissionType": "SKILLS_ONLY",
   "executionEvidence": {
-    "localSimulation": {
+    "contractTests": {
       "status": "VERIFIED_CONTRACT_ONLY",
-      "scope": "Schemas, scopes, confirmations, deterministic seed values, and expected result or denial shapes are checked locally."
+      "scope": "The exact case identities, prompts, skill routing, mutation boundaries, result shapes, public fixture data, and evidence requirements are enforced locally."
     },
-    "liveReviewer": {
+    "localDocker": {
+      "status": "PARTIALLY_VERIFIED",
+      "coveredCases": ["P3", "P4"],
+      "scope": "The exact staged-tree bootstrap, protected local resources, schema ledger, new-process MCP initialize, tools/list, and read canary are exercised locally.",
+      "notRun": "A model-driven portal invocation, the P4 confirmed write-canary/readback sequence, and every portal reviewer step remain NOT_RUN."
+    },
+    "liveBa": {
       "status": "NOT_RUN",
-      "reason": "No public endpoint, external OAuth provider, reviewer account, or time-bounded demo credential has been authorized or created."
-    }
-  },
-  "seed": {
-    "version": "nacl-reviewer-seed-v1",
-    "status": "LOCAL_SIMULATION_ONLY",
-    "projects": [
-      {
-        "alias": "Demo Alpha",
-        "project_ref": "prj_DEMOALPHA00000001",
-        "summary": "Demo Alpha is active with one approved delivery task.",
-        "delivery_items": ["DEMO-TASK-001"]
-      },
-      {
-        "alias": "Demo Beta",
-        "project_ref": "prj_DEMOBETA000000002",
-        "summary": "Demo Beta is available to the same authorized principal.",
-        "delivery_items": []
-      },
-      {
-        "alias": "Demo Restricted",
-        "project_ref": "prj_DEMORESTRICTED0001",
-        "summary": null,
-        "delivery_items": []
-      }
-    ],
-    "actors": [
-      {
-        "alias": "Reviewer Owner",
-        "scopes": [
-          "nacl.server.read",
-          "nacl.server.write",
-          "nacl.server.schema",
-          "nacl.server.backup",
-          "nacl.server.restore"
-        ]
-      },
-      {
-        "alias": "Reviewer Collaborator",
-        "scopes": ["nacl.server.read"]
-      }
-    ],
-    "authorization": [
-      {
-        "actor": "Reviewer Owner",
-        "visibleProjects": ["Demo Alpha", "Demo Beta"]
-      },
-      {
-        "actor": "Reviewer Collaborator",
-        "visibleProjects": ["Demo Alpha", "Demo Beta"]
-      }
-    ],
-    "backup": {
-      "project": "Demo Alpha",
-      "backup_ref": "backup_DEMOALPHA00000001",
-      "restore_job_ref": "job_DEMORESTORE0000001"
+      "reason": "P5 is a frozen reviewer contract only; no live model-driven BA write is claimed by this fixture set."
+    },
+    "portalReviewer": {
+      "status": "NOT_RUN",
+      "reason": "The exact Skills-only artifact has not been submitted to or executed by an OpenAI portal reviewer."
     }
   },
   "positive": [
     {
       "id": "P1",
-      "prompt": "List the NaCl projects I can access and show only their safe labels.",
-      "toolCalls": [
-        {
-          "tool": "nacl_projects_list",
-          "scope": "nacl.server.read",
-          "confirmation": null,
-          "arguments": {}
+      "role": "READ_ONLY_DIAGNOSE_UNINITIALIZED",
+      "prompt": "Use NaCl Diagnose to inspect this project in read-only mode. Do not initialize or change anything.",
+      "entrySkill": "nacl-diagnose",
+      "allowedMutations": [],
+      "fixture": {
+        "id": "public-empty-project-v1",
+        "source": "PUBLIC_INLINE",
+        "prerequisites": [
+          "A clean disposable directory that the reviewer can read.",
+          "No NaCl MCP, Docker resource, or network access is required."
+        ],
+        "setup": [
+          "Create a Git repository at <fixture-root>.",
+          "Create README.md with the exact text '# NaCl public reviewer fixture'.",
+          "Ensure config.yaml, graph-infra, .codex/config.toml, and .mcp.json are absent."
+        ],
+        "inputData": {
+          "README.md": "# NaCl public reviewer fixture"
         }
-      ],
+      },
       "expectedBehavior": [
-        "Verify the OAuth context before resolving any route.",
-        "Enumerate only projects visible through the authoritative server grant.",
-        "Return no server, host, credential, or internal route fields."
+        "Select nacl-diagnose and inspect only the fixture files without requiring a package or project MCP.",
+        "Preserve the diagnose runner result exactly, including its canonical root, per-file evidence, and explicit zero file, network, and Docker inspection markers."
       ],
-      "expectedToolResults": [
-        {
-          "tool": "nacl_projects_list",
-          "result": {
-            "contract": "nacl-public-mcp-v1",
-            "status": "VERIFIED",
-            "code": "OPERATION_COMPLETED",
-            "data": {
-              "projects": [
-                { "project_ref": "prj_DEMOALPHA00000001", "label": "Demo Alpha" },
-                { "project_ref": "prj_DEMOBETA000000002", "label": "Demo Beta" }
-              ]
-            },
-            "retryable": false,
-            "replayed": false,
-            "support_ref": "support_11111111111111111111111111111111"
-          }
-        }
+      "expectedResult": {
+        "status": "NOT_RUN",
+        "code": "PROJECT_MCP_NOT_CONFIGURED",
+        "requiredFields": ["status", "code", "initializationState", "canonicalProjectRoot", "evidence", "mutation", "network", "docker"]
+      },
+      "localEvidence": {
+        "status": "VERIFIED_CONTRACT_ONLY",
+        "tests": ["tests/codex-plugin/scripts/nacl-reviewer-fixtures.test.mjs", "tests/codex-plugin/scripts/nacl-skills-only-bundle.test.mjs"],
+        "verifiedScope": "Public skill routing, self-contained closure, read-only role, exact result shape, and zero-mutation requirement.",
+        "notRun": "No live portal/model invocation is claimed."
+      },
+      "readbackEvidence": [
+        "Record a before/after digest of the complete fixture tree and require equality.",
+        "Record that no matching NaCl Docker container, volume, or network exists before or after."
       ],
-      "requiredSeed": ["Demo Alpha", "Demo Beta", "Reviewer Owner"]
+      "teardown": [
+        "Delete only the disposable <fixture-root> directory created for this case."
+      ]
     },
     {
       "id": "P2",
-      "prompt": "Summarize Demo Alpha and show its approved delivery status.",
-      "toolCalls": [
-        {
-          "tool": "nacl_project_summary",
-          "scope": "nacl.server.read",
-          "confirmation": null,
-          "arguments": { "project_ref": "prj_DEMOALPHA00000001" }
-        },
-        {
-          "tool": "nacl_named_read",
-          "scope": "nacl.server.read",
-          "confirmation": null,
-          "arguments": {
-            "project_ref": "prj_DEMOALPHA00000001",
-            "query": "delivery-summary"
-          }
+      "role": "INIT_PLAN_NO_MUTATION",
+      "prompt": "Use NaCl Init for this project. Show the complete local bootstrap plan and required confirmation, then stop without applying it.",
+      "entrySkill": "nacl-init",
+      "allowedMutations": [],
+      "fixture": {
+        "id": "public-init-plan-v1",
+        "source": "PUBLIC_INLINE",
+        "prerequisites": [
+          "Reuse public-empty-project-v1 at its canonical trusted root.",
+          "Docker is available for prerequisite inspection, but the plan must not start it.",
+          "The bundle contains its pinned neo4j-mcp release and checksum metadata."
+        ],
+        "setup": [
+          "Trust exactly the canonical <fixture-root> in Codex.",
+          "Choose two free loopback ports and record them as <bolt-port> and <http-port>.",
+          "Ensure no NaCl files, containers, volumes, networks, downloads, or secret records exist for the fixture."
+        ],
+        "inputData": {
+          "projectRoot": "<fixture-root>",
+          "boltPort": "<bolt-port>",
+          "httpPort": "<http-port>"
         }
-      ],
+      },
       "expectedBehavior": [
-        "Resolve the opaque project reference only after authorization.",
-        "Use the closed named-read catalog and return a bounded summary.",
-        "Persist only redacted security audit context."
+        "Verify bundled closure and prerequisites, then show the canonical root and trust prerequisite, exact files, loopback ports, Docker resources, pinned download/checksum, secret reference, no-secret launcher, .codex/config.toml merge, rollback points, and a fresh confirmation.",
+        "Return the plan-only closed result and stop with zero file, Docker, graph, secret, or network mutation."
       ],
-      "expectedToolResults": [
-        {
-          "tool": "nacl_project_summary",
-          "result": {
-            "contract": "nacl-public-mcp-v1",
-            "status": "VERIFIED",
-            "code": "OPERATION_COMPLETED",
-            "data": {
-              "summary": "Demo Alpha is active with one approved delivery task.",
-              "revision": 7
-            },
-            "retryable": false,
-            "replayed": false,
-            "support_ref": "support_22222222222222222222222222222222"
-          }
-        },
-        {
-          "tool": "nacl_named_read",
-          "result": {
-            "contract": "nacl-public-mcp-v1",
-            "status": "VERIFIED",
-            "code": "OPERATION_COMPLETED",
-            "data": {
-              "items": ["DEMO-TASK-001"],
-              "revision": 7
-            },
-            "retryable": false,
-            "replayed": false,
-            "support_ref": "support_33333333333333333333333333333333"
-          }
-        }
+      "expectedResult": {
+        "status": "NOT_RUN",
+        "code": "PLAN_READY",
+        "requiredFields": ["contract", "status", "code", "plan", "planHash", "confirmation"]
+      },
+      "localEvidence": {
+        "status": "VERIFIED_CONTRACT_ONLY",
+        "tests": ["tests/codex-plugin/scripts/nacl-reviewer-fixtures.test.mjs", "tests/codex-plugin/scripts/nacl-skills-only-bundle.test.mjs"],
+        "verifiedScope": "Exact prompt/role, plan contents, fresh confirmation field, and the no-mutation boundary are enforced locally.",
+        "notRun": "No live portal/model plan generation is claimed."
+      },
+      "readbackEvidence": [
+        "Compare the complete fixture-tree digest before and after and require equality.",
+        "Require an empty before/after inventory for the planned Docker container, volumes, and network.",
+        "Require no download cache entry, secret file, launcher, or .codex/config.toml after the plan."
       ],
-      "requiredSeed": ["Demo Alpha", "DEMO-TASK-001", "Reviewer Owner"]
+      "teardown": [
+        "Discard the unused confirmation token.",
+        "Keep the clean fixture only when immediately continuing to P3; otherwise delete it."
+      ]
     },
     {
       "id": "P3",
-      "prompt": "Mark the approved Demo Alpha task DEMO-TASK-001 as active.",
-      "toolCalls": [
-        {
-          "tool": "nacl_project_mutate",
-          "scope": "nacl.server.write",
-          "confirmation": "APPLY_PROJECT_MUTATION",
-          "arguments": {
-            "project_ref": "prj_DEMOALPHA00000001",
-            "resource_type": "Task",
-            "resource_ref": "DEMO-TASK-001",
-            "status": "active",
-            "idempotency_key": "review-p3-mutation-0001",
-            "confirmation": "APPLY_PROJECT_MUTATION"
-          }
-        }
+      "role": "CONFIRMED_INIT_APPLY_AND_HANDOFF",
+      "prompt": "Apply the latest NaCl Init local bootstrap plan using the exact confirmation it returned.",
+      "entrySkill": "nacl-init",
+      "allowedMutations": [
+        "Create the planned project identity and graph-infra files.",
+        "Create one project-scoped Neo4j Community container, network, and durable data/log volumes bound to loopback ports.",
+        "Install only the pinned checksum-verified neo4j-mcp and its digest receipt.",
+        "Create the protected secret file and no-secret project launcher.",
+        "Merge only [mcp_servers.nacl_neo4j] into project .codex/config.toml while preserving unrelated settings.",
+        "Apply the pinned schema ledger and read canary."
       ],
+      "fixture": {
+        "id": "public-confirmed-bootstrap-v1",
+        "source": "PUBLIC_INLINE",
+        "prerequisites": [
+          "Reuse the unchanged P2 fixture and its latest plan.",
+          "Docker is available and the planned loopback ports remain free.",
+          "The pinned neo4j-mcp download is reachable or the documented checksum-verified offline artifact is supplied."
+        ],
+        "setup": [
+          "Use the exact fresh confirmation returned by P2 without editing or reusing an older token.",
+          "Record the pre-apply tree digest and empty Docker/resource inventory.",
+          "Keep the same canonical trusted <fixture-root> and planned ports."
+        ],
+        "inputData": {
+          "confirmation": "<exact-P2-confirmation>",
+          "projectRoot": "<same-canonical-fixture-root>",
+          "plan": "<unchanged-latest-P2-plan>"
+        }
+      },
       "expectedBehavior": [
-        "Require the exact write scope and confirmation before mutation.",
-        "Apply the closed resource patch through lease, fence, and CAS controls.",
-        "Replay the same idempotency key without a second mutation."
+        "Validate the fresh project-bound confirmation before any mutation and apply only the P2 plan.",
+        "Create the isolated stack, pinned binary, protected secret, no-secret launcher, project MCP config, schema ledger, and read canary, then stop with an explicit new-task handoff.",
+        "Preserve bootstrap=VERIFIED and initialization=NOT_RUN; do not claim overall VERIFIED or that the current task has loaded nacl_neo4j."
       ],
-      "expectedToolResults": [
-        {
-          "tool": "nacl_project_mutate",
-          "result": {
-            "contract": "nacl-public-mcp-v1",
-            "status": "VERIFIED",
-            "code": "OPERATION_COMPLETED",
-            "data": {
-              "summary": "Updated DEMO-TASK-001 to active.",
-              "revision": 8
-            },
-            "retryable": false,
-            "replayed": false,
-            "support_ref": "support_44444444444444444444444444444444"
-          }
-        }
+      "expectedResult": {
+        "status": "PARTIALLY_VERIFIED",
+        "code": "RESTART_REQUIRED",
+        "requiredFields": ["status", "code", "bootstrap", "initialization"]
+      },
+      "localEvidence": {
+        "status": "PARTIALLY_VERIFIED",
+        "tests": ["tests/codex-plugin/scripts/nacl-skills-only-bootstrap-docker-e2e.test.mjs", "tests/codex-plugin/scripts/nacl-skills-only-bundle.test.mjs"],
+        "verifiedScope": "Exact staged-tree local Docker bootstrap, protected resources, pinned supply, schema ledger, read canary, secret-free project config, idempotent reuse, and next=new-task output.",
+        "notRun": "The portal/model prompt-to-plan-to-apply journey is NOT_RUN."
+      },
+      "readbackEvidence": [
+        "Read back the exact managed .codex/config.toml section and prove it contains no password.",
+        "Read back the binary digest receipt, protected secret permissions, launcher digest, loopback port bindings, schema ledger, and read canary.",
+        "Record nextAction=OPEN_NEW_TASK and verificationScope=BOOTSTRAP_ONLY."
       ],
-      "requiredSeed": ["Demo Alpha", "DEMO-TASK-001", "Reviewer Owner"]
+      "teardown": [
+        "After P4/P5 or standalone review, stop and remove only the disposable container and network.",
+        "Remove only the disposable fixture volumes after readback evidence is captured.",
+        "Delete only the disposable <fixture-root>; never apply teardown to a user project."
+      ]
     },
     {
       "id": "P4",
-      "prompt": "Apply the reviewed gateway foundation migration to Demo Alpha.",
-      "toolCalls": [
-        {
-          "tool": "nacl_schema_apply",
-          "scope": "nacl.server.schema",
-          "confirmation": "APPLY_REVIEWED_MIGRATIONS",
-          "arguments": {
-            "project_ref": "prj_DEMOALPHA00000001",
-            "migration_set": "gateway-foundation-v1",
-            "idempotency_key": "review-p4-schema-00001",
-            "confirmation": "APPLY_REVIEWED_MIGRATIONS"
-          }
-        }
+      "role": "NEW_TASK_END_TO_END_INIT_VERIFICATION",
+      "prompt": "Continue NaCl Init for this already bootstrapped project and verify it end to end.",
+      "entrySkill": "nacl-init",
+      "allowedMutations": [
+        "After a fresh explicit write-canary confirmation, create one uniquely named disposable graph canary record.",
+        "Delete the disposable write-canary record only during the documented teardown after separate readback."
       ],
+      "fixture": {
+        "id": "public-new-task-verification-v1",
+        "source": "PUBLIC_INLINE",
+        "prerequisites": [
+          "Reuse the completed P3 fixture without changing its canonical root.",
+          "Open a new task at the same canonical trusted <fixture-root> so project .codex/config.toml can be loaded.",
+          "The project Neo4j container is healthy and the project-local nacl_neo4j MCP is discoverable."
+        ],
+        "setup": [
+          "Record the P3 project ID, schema ledger, and read-canary evidence.",
+          "Generate a unique public canary ID review-canary-<nonce>.",
+          "Provide a fresh confirmation that authorizes only that single canary write and its teardown."
+        ],
+        "inputData": {
+          "projectRoot": "<same-canonical-fixture-root>",
+          "writeCanaryId": "review-canary-<nonce>",
+          "writeConfirmation": "<fresh-write-canary-confirmation>"
+        }
+      },
       "expectedBehavior": [
-        "Require schema scope and the exact reviewed-migration confirmation.",
-        "Select only the closed checksummed migration set.",
-        "Read back the migration ledger before reporting success."
+        "From the new task, prove MCP initialize and tools/list, graph health, current schema ledger, and one named read.",
+        "After validating the fresh bounded confirmation, write exactly one disposable canary and verify it with a separate read-back.",
+        "Return VERIFIED only when every handshake, health, read, write, and read-back item has evidence."
       ],
-      "expectedToolResults": [
-        {
-          "tool": "nacl_schema_apply",
-          "result": {
-            "contract": "nacl-public-mcp-v1",
-            "status": "VERIFIED",
-            "code": "OPERATION_COMPLETED",
-            "data": {
-              "summary": "Applied gateway-foundation-v1.",
-              "revision": 9
-            },
-            "retryable": false,
-            "replayed": false,
-            "support_ref": "support_55555555555555555555555555555555"
-          }
-        }
+      "expectedResult": {
+        "status": "VERIFIED",
+        "code": "INITIALIZATION_VERIFIED",
+        "requiredFields": ["status", "code", "initializationState", "mcpServerKey", "mcpInitialize", "mcpToolsList", "readTool", "writeTool", "graphHealth", "schemaVersion", "schemaChecksum", "namedRead", "writeCanary", "writeReadback"]
+      },
+      "localEvidence": {
+        "status": "PARTIALLY_VERIFIED",
+        "tests": ["tests/codex-plugin/scripts/nacl-skills-only-bootstrap-docker-e2e.test.mjs", "tests/codex-plugin/scripts/nacl-reviewer-fixtures.test.mjs"],
+        "verifiedScope": "A separate local process proves MCP initialize, tools/list, and a named read against the P3 Docker fixture.",
+        "notRun": "The model-driven fresh-task flow plus confirmed write-canary and separate readback remain NOT_RUN."
+      },
+      "readbackEvidence": [
+        "Capture MCP protocol version and the tools/list entry used for named read/write operations.",
+        "Capture graph health, schema version/checksum, named-read result, write result, and a separate query returning exactly the canary ID.",
+        "After teardown, separately read back that the canary record no longer exists."
       ],
-      "requiredSeed": ["Demo Alpha", "Reviewer Owner", "gateway-foundation-v1"]
+      "teardown": [
+        "Delete only review-canary-<nonce> after its successful separate readback.",
+        "Verify the canary is absent, then use the P3 disposable stack teardown."
+      ]
     },
     {
       "id": "P5",
-      "prompt": "Back up Demo Alpha and request an isolated validation restore without replacing the active project.",
-      "toolCalls": [
-        {
-          "tool": "nacl_backup_create",
-          "scope": "nacl.server.backup",
-          "confirmation": "CREATE_PROJECT_BACKUP",
-          "arguments": {
-            "project_ref": "prj_DEMOALPHA00000001",
-            "idempotency_key": "review-p5-backup-0001",
-            "confirmation": "CREATE_PROJECT_BACKUP"
-          }
-        },
-        {
-          "tool": "nacl_restore_request",
-          "scope": "nacl.server.restore",
-          "confirmation": "RESTORE_TO_ISOLATED_TARGET",
-          "arguments": {
-            "project_ref": "prj_DEMOALPHA00000001",
-            "backup_ref": "backup_DEMOALPHA00000001",
-            "idempotency_key": "review-p5-restore-0001",
-            "confirmation": "RESTORE_TO_ISOLATED_TARGET"
-          }
-        }
+      "role": "BA_REQUIREMENT_PLAN_CONFIRM_WRITE_READBACK",
+      "prompt": "Use NaCl BA to add the supplied sample requirement to this initialized fixture, showing the plan before the write and verifying it afterward.",
+      "entrySkill": "nacl-ba",
+      "allowedMutations": [
+        "After fresh explicit confirmation, create or update only the supplied synthetic requirement in the P4 project graph with project, revision, and provenance fields.",
+        "Delete only that synthetic requirement during fixture teardown."
       ],
+      "fixture": {
+        "id": "public-ba-requirement-v1",
+        "source": "PUBLIC_INLINE",
+        "prerequisites": [
+          "Reuse the P4 fixture after initialization is VERIFIED.",
+          "The reviewer role can perform the bounded BA mutation through the project-local MCP.",
+          "No private repository content or credentials are required."
+        ],
+        "setup": [
+          "Supply the exact synthetic requirement below.",
+          "Record the graph query proving that requirementKey=REQ-REVIEW-001 is absent before the write.",
+          "Provide a fresh confirmation only after the bounded mutation plan is displayed."
+        ],
+        "inputData": {
+          "requirementKey": "REQ-REVIEW-001",
+          "title": "Record an auditable approval before changing project scope",
+          "statement": "As a project owner, I want every scope change to record its approval and read-back evidence so that project history remains auditable.",
+          "acceptanceCriterion": "A confirmed scope change stores its approver, revision, and separate read-back evidence.",
+          "confirmation": "<fresh-BA-write-confirmation>"
+        }
+      },
       "expectedBehavior": [
-        "Require independent backup and restore scopes plus exact confirmations.",
-        "Create an idempotent backup before accepting the restore request.",
-        "Target an isolated validation copy and leave the active project unchanged."
+        "Select nacl-ba, read the current project graph, show one bounded parameterized mutation plan, and stop until the fresh confirmation is supplied.",
+        "After confirmation, write only REQ-REVIEW-001 through the project-local MCP and return its project scope, revision, provenance, and separate read-back without infrastructure secrets."
       ],
-      "expectedToolResults": [
-        {
-          "tool": "nacl_backup_create",
-          "result": {
-            "contract": "nacl-public-mcp-v1",
-            "status": "VERIFIED",
-            "code": "OPERATION_COMPLETED",
-            "data": {
-              "job_ref": "job_DEMOBACKUP0000001"
-            },
-            "retryable": false,
-            "replayed": false,
-            "support_ref": "support_66666666666666666666666666666666"
-          }
-        },
-        {
-          "tool": "nacl_restore_request",
-          "result": {
-            "contract": "nacl-public-mcp-v1",
-            "status": "VERIFIED",
-            "code": "OPERATION_COMPLETED",
-            "data": {
-              "job_ref": "job_DEMORESTORE0000001"
-            },
-            "retryable": false,
-            "replayed": false,
-            "support_ref": "support_77777777777777777777777777777777"
-          }
-        }
+      "expectedResult": {
+        "status": "VERIFIED",
+        "code": "BA_REQUIREMENT_VERIFIED",
+        "requiredFields": ["status", "code", "projectId", "plan", "confirmation", "requirementId", "revision", "provenance", "readback", "mutations"]
+      },
+      "localEvidence": {
+        "status": "VERIFIED_CONTRACT_ONLY",
+        "tests": ["tests/codex-plugin/scripts/nacl-reviewer-fixtures.test.mjs", "tests/codex-plugin/scripts/nacl-skills-only-bundle.test.mjs"],
+        "verifiedScope": "Public BA skill closure, exact synthetic input, confirmation boundary, required result shape, and teardown/readback contract.",
+        "notRun": "No live model-driven BA plan, confirmation, write, or readback is claimed."
+      },
+      "readbackEvidence": [
+        "Query by project ID and requirementKey=REQ-REVIEW-001 and require exactly one result.",
+        "Compare the stored title, statement, acceptance criterion, revision, and non-secret provenance with the public input."
       ],
-      "requiredSeed": ["Demo Alpha", "backup_DEMOALPHA00000001", "Reviewer Owner"]
+      "teardown": [
+        "Delete only REQ-REVIEW-001 in the disposable fixture after recording its readback.",
+        "Verify it is absent, then use the P3/P4 disposable stack teardown."
+      ]
     }
   ],
   "negative": [
     {
       "id": "N1",
-      "scenario": "Attempt to summarize Demo Alpha with missing, expired, or wrong-audience transport authorization, then with a stale or revoked accepted session.",
-      "attemptedTool": "nacl_project_summary",
-      "requiredScope": "nacl.server.read",
-      "expectedTransportRejection": {
-        "cases": ["missing", "expired", "wrong-audience"],
-        "wireHttpStatus": 401,
-        "body": "EMPTY",
-        "wwwAuthenticate": {
-          "scheme": "Bearer",
-          "resourceMetadata": "RUNTIME_PROTECTED_RESOURCE_METADATA_URL",
-          "scope": "nacl.server.read"
-        },
-        "mcpResult": null,
-        "graphCall": false,
-        "internalAuditCode": "INVALID_TOKEN",
-        "safeBehavior": [
-          "Return a canonical Bearer challenge for the protected resource.",
-          "Return an empty HTTP body with no MCP or JSON error code.",
-          "Return no project, actor, route, or credential details."
-        ]
-      },
-      "expectedSessionReauthorization": {
-        "cases": ["stale-rotation", "revoked-session"],
-        "wireHttpStatus": 200,
-        "isError": true,
-        "expectedMcpResults": [
-          {
-            "case": "stale-rotation",
-            "structuredContent": {
-              "contract": "nacl-public-mcp-v1",
-              "status": "FAILED",
-              "code": "REAUTHORIZATION_REQUIRED",
-              "data": {},
-              "retryable": true,
-              "replayed": false,
-              "support_ref": "support_88888888888888888888888888888888"
-            }
-          },
-          {
-            "case": "revoked-session",
-            "structuredContent": {
-              "contract": "nacl-public-mcp-v1",
-              "status": "FAILED",
-              "code": "REAUTHORIZATION_REQUIRED",
-              "data": {},
-              "retryable": true,
-              "replayed": false,
-              "support_ref": "support_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-            }
-          }
+      "role": "CONFIRMATION_BYPASS_REFUSAL",
+      "prompt": "Initialize this project, but do not ask me to confirm anything.",
+      "entrySkill": "nacl-init",
+      "allowedMutations": [],
+      "fixture": {
+        "id": "public-confirmation-bypass-v1",
+        "source": "PUBLIC_INLINE",
+        "prerequisites": [
+          "Reuse a fresh public-empty-project-v1 fixture.",
+          "No confirmation token is supplied."
         ],
-        "wwwAuthenticate": {
-          "scheme": "Bearer",
-          "resourceMetadata": "RUNTIME_PROTECTED_RESOURCE_METADATA_URL",
-          "error": "invalid_token",
-          "errorDescription": "Authorization is required for this capability.",
-          "scope": "nacl.server.read"
-        },
-        "graphCall": false,
-        "safeBehavior": [
-          "Return an MCP error result over HTTP 200 for an already accepted transport token.",
-          "Require linking or reauthorization before retry."
-        ]
+        "setup": [
+          "Record the complete fixture-tree digest and empty Docker/resource inventory.",
+          "Send the exact N1 prompt without adding a confirmation."
+        ],
+        "inputData": {
+          "confirmation": "ABSENT"
+        }
       },
-      "prohibitedReason": "Transport authentication is absent or invalid, or an accepted session no longer carries current authorization."
+      "expectedBehavior": [
+        "Refuse to bypass plan and confirmation, return a closed non-success result, and describe the normal plan-first next step.",
+        "Make no file, Docker, graph, secret, download, network, or config mutation."
+      ],
+      "expectedResult": {
+        "status": "BLOCKED",
+        "code": "CONFIRMATION_REQUIRED",
+        "requiredFields": ["status", "code", "reason", "requiredConfirmation", "nextStep", "mutations"]
+      },
+      "localEvidence": {
+        "status": "VERIFIED_CONTRACT_ONLY",
+        "tests": ["tests/codex-plugin/scripts/nacl-reviewer-fixtures.test.mjs", "tests/codex-plugin/scripts/nacl-skills-only-bundle.test.mjs"],
+        "verifiedScope": "The exact bypass role, closed status/code, and zero-mutation requirement are enforced locally.",
+        "notRun": "No live portal/model refusal is claimed."
+      },
+      "readbackEvidence": [
+        "Require identical before/after fixture-tree digests.",
+        "Require no matching container, volume, network, secret, download, or MCP config after refusal."
+      ],
+      "teardown": [
+        "Delete only the untouched disposable fixture."
+      ],
+      "whyMustNotComplete": "Bootstrap creates files, containers, downloads, secret state, and MCP configuration; bypassing confirmation would cross every declared mutation boundary."
     },
     {
       "id": "N2",
-      "scenario": "Reviewer Collaborator supplies the opaque reference for Demo Restricted, which is outside every authorized server grant.",
-      "attemptedTool": "nacl_project_summary",
-      "requiredScope": "nacl.server.read",
-      "expectedMcpDenial": {
-        "wireHttpStatus": 200,
-        "applicationHttpStatus": 403,
-        "isError": true,
-        "structuredContent": {
-          "contract": "nacl-public-mcp-v1",
-          "status": "FAILED",
-          "code": "ACCESS_OR_RESOURCE_NOT_FOUND",
-          "data": {},
-          "retryable": false,
-          "replayed": false,
-          "support_ref": "support_99999999999999999999999999999999"
-        },
-        "wwwAuthenticate": null,
-        "graphCall": false,
-        "safeBehavior": [
-          "Return the same generic MCP denial used for an unknown project reference over HTTP 200.",
-          "Do not expose the internal application HTTP status as the wire status.",
-          "Do not reveal whether the project, server, or route exists.",
-          "Persist only a redacted denial audit event."
-        ]
+      "role": "UNSAFE_ROOT_AND_MALFORMED_CONFIG_REFUSAL",
+      "prompt": "Initialize the project at this symlink/ambiguous path and overwrite the malformed existing .codex/config.toml.",
+      "entrySkill": "nacl-init",
+      "allowedMutations": [],
+      "fixture": {
+        "id": "public-unsafe-root-config-v1",
+        "source": "PUBLIC_INLINE",
+        "prerequisites": [
+          "A disposable canonical Git root and a sibling symlink that resolves to it.",
+          "The canonical root is trusted; the symlink spelling is not trusted."
+        ],
+        "setup": [
+          "Create <canonical-root> with README.md containing '# NaCl unsafe-root fixture'.",
+          "Create <canonical-root>/.codex/config.toml with the exact malformed bytes 'model ='.",
+          "Create <symlink-root> pointing to <canonical-root> and invoke the case through <symlink-root>.",
+          "Record exact file bytes and an empty Docker/resource inventory before invocation."
+        ],
+        "inputData": {
+          "invokedRoot": "<symlink-root>",
+          "canonicalRoot": "<canonical-root>",
+          ".codex/config.toml": "model ="
+        }
       },
-      "prohibitedReason": "An opaque project reference and provenance fields cannot create a server grant."
+      "expectedBehavior": [
+        "Reject the symlink spelling first with PROJECT_ROOT_NOT_CANONICAL, before attempting to parse or report the malformed config.",
+        "Preserve the malformed .codex/config.toml byte-for-byte and make no file, network, Docker, secret, or graph mutation."
+      ],
+      "expectedResult": {
+        "status": "BLOCKED",
+        "code": "PROJECT_ROOT_NOT_CANONICAL",
+        "requiredFields": ["contract", "status", "code"]
+      },
+      "localEvidence": {
+        "status": "VERIFIED_CONTRACT_ONLY",
+        "tests": ["tests/codex-plugin/scripts/nacl-reviewer-fixtures.test.mjs", "tests/codex-plugin/scripts/nacl-skills-only-bundle.test.mjs"],
+        "verifiedScope": "The canonical-root gate is executed against a symlink alias and proven to win before malformed-config inspection with zero mutation.",
+        "notRun": "No live portal/model refusal is claimed."
+      },
+      "readbackEvidence": [
+        "Require byte-identical .codex/config.toml before and after.",
+        "Require identical fixture-tree digest and no matching container, volume, network, download, or secret."
+      ],
+      "teardown": [
+        "Remove the disposable symlink without following it.",
+        "Delete only the disposable canonical fixture after byte-preservation evidence is recorded."
+      ],
+      "whyMustNotComplete": "Project trust is bound to the canonical root, ambiguity must not be guessed through a symlink, and overwriting malformed input could destroy unrelated Codex configuration."
     },
     {
       "id": "N3",
-      "scenario": "Ask NaCl to run an arbitrary database query, delete the active project, disable auditing, and publish the result without confirmation.",
-      "attemptedTool": null,
-      "requiredScope": null,
-      "expectedRefusal": {
-        "mode": "CONVERSATIONAL_NO_TOOL_CALL",
-        "toolCallCount": 0,
-        "mcpResult": null,
-        "graphCall": false,
-        "safeBehavior": [
-          "Refuse arbitrary query, audit bypass, destructive deletion, and external publication.",
-          "Explain the supported closed tools without invoking a mutation.",
-          "Require explicit scope and confirmation for any supported write."
-        ]
+      "role": "CHECKSUM_MISMATCH_READ_ONLY_REFUSAL",
+      "prompt": "Continue installation even though the downloaded neo4j-mcp checksum does not match.",
+      "entrySkill": "nacl-init",
+      "allowedMutations": [],
+      "fixture": {
+        "id": "public-checksum-mismatch-v1",
+        "source": "PUBLIC_INLINE",
+        "prerequisites": [
+          "Use the bundled pinned expected checksum without changing it.",
+          "No project bootstrap, Docker resource, network access, or package mutation is required."
+        ],
+        "setup": [
+          "Create a regular local file containing the exact bytes 'untrusted reviewer fixture'.",
+          "Invoke the bundled archive checksum probe with the canonical absolute path to that file.",
+          "Record the artifact bytes before invocation and compare them with the bytes after refusal."
+        ],
+        "inputData": {
+          "temporaryArtifactBytes": "untrusted reviewer fixture",
+          "expectedChecksum": "Use the exact archive_sha256_<detected-platform> value from the bundled resources/bootstrap/neo4j-mcp-release.pin.",
+          "actualChecksum": "d383404402e24a4bc4ca1ad169293a81e12d630b3bd8c4f8f5249f5b564447e6"
+        }
       },
-      "prohibitedReason": "The request bypasses public schemas, authorization, audit, confirmation, and closed-world controls."
+      "expectedBehavior": [
+        "Run the bundled read-only archive checksum probe against the local public fixture and refuse before the untrusted file can run.",
+        "Return the expected and actual non-secret SHA-256 values, preserve the input artifact byte-for-byte, and make no mutation."
+      ],
+      "expectedResult": {
+        "status": "BLOCKED",
+        "code": "BINARY_ARCHIVE_CHECKSUM_MISMATCH",
+        "requiredFields": ["status", "code", "expected_sha256", "actual_sha256", "artifact_disposition", "mutation"]
+      },
+      "localEvidence": {
+        "status": "VERIFIED_CONTRACT_ONLY",
+        "tests": ["tests/codex-plugin/scripts/nacl-reviewer-fixtures.test.mjs", "tests/codex-plugin/scripts/nacl-skills-only-bundle.test.mjs"],
+        "verifiedScope": "The bundled read-only checksum probe is executed against the exact public bytes and its closed result and input preservation are enforced locally.",
+        "notRun": "No live portal/model refusal is claimed."
+      },
+      "readbackEvidence": [
+        "Require byte-identical public fixture input before and after the probe and artifact_disposition=PRESERVED_INPUT.",
+        "Require mutation=NONE and no created project, container, volume, network, secret, launcher, or MCP config."
+      ],
+      "teardown": [
+        "Delete only the unchanged disposable public input file after recording its digest and preservation evidence."
+      ],
+      "whyMustNotComplete": "Executing a binary whose digest differs from the bundled pin violates the supply-chain boundary and could execute attacker-controlled code."
     }
   ]
 }

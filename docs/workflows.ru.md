@@ -161,28 +161,40 @@ Cherry-pick коммита на `hotfix/`-ветку от `main`, PR.
 
 Полная документация: [docs/guides/goal-command.md](guides/goal-command.md)
 
-## Публичные маршруты Codex и production-граница
+## Публичные маршруты Codex Skills-only
 
-Полный Codex-плагин показывает дирижёры, а не листовые workflow из Claude-примеров выше:
+Официальный Codex Skills-only bundle показывает дирижёры, а не листовые
+workflow из Claude-примеров выше:
 
-| Публичный скилл | Gateway sequence | Внутренний маршрут |
+| Публичный скилл | Предусловие проектного MCP | Внутренний маршрут |
 |---|---|---|
-| `nacl-init` | `initialize` | идентичность, реестр, lifecycle графа и схема |
-| `nacl-goal` | `read-preflight` | `nacl-goal` |
-| `nacl-ba` | `ba-resource` | четырнадцать `nacl-ba-*` workflow |
-| `nacl-sa` | `sa-resource` | десять `nacl-sa-*` workflow |
-| `nacl-tl` | `tl-task` | планирование, разработка, QA и поставка |
-| `nacl-fix` | `tl-task` | fix, hotfix, reopened и regression test |
-| `nacl-verify` | `read-preflight` | verify, review, QA, sync и stubs |
-| `nacl-migrate` | `schema-recovery` | оркестрация миграции и BA/SA-адаптеры |
-| `nacl-diagnose` | `read-preflight` | diagnose, next, status, reconcile и postmortem |
-| `nacl-publish` | `release` | render, publish, ship, release и deploy |
+| `nacl-init` | Не требуется до bootstrap | идентичность, lifecycle графа, проектный `.codex/config.toml` и схема |
+| `nacl-goal` | Только для graph-backed маршрутов | `nacl-goal` |
+| `nacl-ba` | Проверен в новой задаче | четырнадцать `nacl-ba-*` workflow |
+| `nacl-sa` | Проверен в новой задаче | десять `nacl-sa-*` workflow |
+| `nacl-tl` | Проверен для graph-backed планирования/status | планирование, разработка, QA и поставка |
+| `nacl-fix` | Проверен для graph-backed диагностики | fix, hotfix, reopened и regression test |
+| `nacl-verify` | Проверен для graph-backed evidence | verify, review, QA, sync и stubs |
+| `nacl-migrate` | Проверен до импорта в граф | оркестрация миграции и BA/SA-адаптеры |
+| `nacl-diagnose` | Проверен для graph-backed диагностики | diagnose, next, status, reconcile и postmortem |
+| `nacl-publish` | Только для graph-backed рендеринга | render, publish, ship, release и deploy |
 
-Gateway использует именованные reads, типизированные resource claims и точные confirmations;
-он не открывает произвольный Cypher или shell. Neo4j администрируется отдельно для каждого проекта.
-Сервер — текущая граница авторизации, `project_scope` — маршрутизация/provenance. Проверен
-локальный installed candidate. Публичный Streamable HTTP, OAuth deployment, релиз и marketplace-публикация
-остаются `NOT_RUN`.
+`nacl-init` разрешает только скрипты из своего self-contained skill bundle. Он
+показывает read-only план, а после подтверждения создаёт или подключает
+Neo4j Community проекта, устанавливает запиненный `neo4j-mcp` и объединяет
+безопасную запись `mcp_servers` в `.codex/config.toml`. Текущая задача должна
+остановиться; новая задача в том же проекте проверяет MCP handshake, схему,
+чтение, подтверждённую запись и read-back. Другие graph-backed маршруты до
+этой проверки останавливаются с точной инструкцией про init или новую задачу.
+
+Graph-backed скиллы используют проектный локальный MCP только в рамках своих
+документированных планов, confirmations, concurrency и read-back gates;
+destructive и administrative операции остаются явными точками остановки или
+подтверждения. Neo4j администрируется отдельно для каждого проекта. Сервер —
+граница авторизации, `project_scope` — маршрутизация/provenance. Официальный путь не
+требует публичного hosted MCP или второй установки из GitHub. Корневой
+`.mcp.json` и пакетные MCP tools относятся только к Claude или явно
+документированным Git/full-plugin compatibility-сценариям.
 
 ## Что дальше
 

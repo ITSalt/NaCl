@@ -1,217 +1,202 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/ITSalt/NaCl/blob/main/codex-plugin-src/package/submission/reviewer-fixtures.schema.json",
-  "title": "NaCl plugin reviewer fixture set",
+  "title": "NaCl Skills-only reviewer fixture set",
   "type": "object",
   "additionalProperties": false,
-  "required": [
-    "schemaVersion",
-    "fixtureSetVersion",
-    "status",
-    "executionEvidence",
-    "seed",
-    "positive",
-    "negative"
-  ],
+  "required": ["$schema", "schemaVersion", "fixtureSetVersion", "status", "submissionType", "executionEvidence", "positive", "negative"],
   "properties": {
     "$schema": { "const": "./reviewer-fixtures.schema.json" },
-    "schemaVersion": { "const": 1 },
-    "fixtureSetVersion": { "const": "nacl-reviewer-fixtures-v1" },
+    "schemaVersion": { "const": 2 },
+    "fixtureSetVersion": { "const": "nacl-skills-only-reviewer-fixtures-v1" },
     "status": { "const": "LOCAL_CONTRACT_ONLY" },
+    "submissionType": { "const": "SKILLS_ONLY" },
     "executionEvidence": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["localSimulation", "liveReviewer"],
+      "required": ["contractTests", "localDocker", "liveBa", "portalReviewer"],
       "properties": {
-        "localSimulation": {
-          "type": "object",
-          "additionalProperties": false,
-          "required": ["status", "scope"],
-          "properties": {
-            "status": { "const": "VERIFIED_CONTRACT_ONLY" },
-            "scope": { "type": "string", "minLength": 20 }
-          }
-        },
-        "liveReviewer": {
-          "type": "object",
-          "additionalProperties": false,
-          "required": ["status", "reason"],
-          "properties": {
-            "status": { "const": "NOT_RUN" },
-            "reason": { "type": "string", "minLength": 20 }
-          }
-        }
-      }
-    },
-    "seed": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["version", "status", "projects", "actors", "authorization", "backup"],
-      "properties": {
-        "version": { "const": "nacl-reviewer-seed-v1" },
-        "status": { "const": "LOCAL_SIMULATION_ONLY" },
-        "projects": { "type": "array", "minItems": 3, "maxItems": 3 },
-        "actors": { "type": "array", "minItems": 2, "maxItems": 2 },
-        "authorization": { "type": "array", "minItems": 2, "maxItems": 2 },
-        "backup": { "type": "object" }
+        "contractTests": { "$ref": "#/$defs/evidence" },
+        "localDocker": { "$ref": "#/$defs/evidence" },
+        "liveBa": { "$ref": "#/$defs/evidence" },
+        "portalReviewer": { "$ref": "#/$defs/evidence" }
       }
     },
     "positive": {
       "type": "array",
       "minItems": 5,
       "maxItems": 5,
-      "items": { "$ref": "#/$defs/positiveCase" }
+      "prefixItems": [
+        { "$ref": "#/$defs/P1" },
+        { "$ref": "#/$defs/P2" },
+        { "$ref": "#/$defs/P3" },
+        { "$ref": "#/$defs/P4" },
+        { "$ref": "#/$defs/P5" }
+      ],
+      "items": false
     },
     "negative": {
       "type": "array",
       "minItems": 3,
       "maxItems": 3,
-      "items": { "$ref": "#/$defs/negativeCase" }
+      "prefixItems": [
+        { "$ref": "#/$defs/N1" },
+        { "$ref": "#/$defs/N2" },
+        { "$ref": "#/$defs/N3" }
+      ],
+      "items": false
     }
   },
   "$defs": {
-    "toolCall": {
+    "evidence": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["tool", "scope", "arguments"],
+      "required": ["status"],
       "properties": {
-        "tool": { "type": "string", "pattern": "^nacl_[a-z_]+$" },
-        "scope": { "type": "string", "pattern": "^nacl\\.server\\.(read|write|schema|backup|restore)$" },
-        "confirmation": { "type": ["string", "null"] },
-        "arguments": { "type": "object" }
+        "status": { "enum": ["VERIFIED", "VERIFIED_CONTRACT_ONLY", "PARTIALLY_VERIFIED", "NOT_RUN"] },
+        "coveredCases": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "enum": ["P1", "P2", "P3", "P4", "P5", "N1", "N2", "N3"] }
+        },
+        "scope": { "type": "string", "minLength": 20 },
+        "reason": { "type": "string", "minLength": 20 },
+        "notRun": { "type": "string", "minLength": 20 }
       }
     },
-    "expectedToolResult": {
+    "fixture": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["tool", "result"],
+      "required": ["id", "source", "prerequisites", "setup", "inputData"],
       "properties": {
-        "tool": { "type": "string", "pattern": "^nacl_[a-z_]+$" },
-        "result": {
+        "id": { "type": "string", "pattern": "^public-[a-z0-9-]+-v1$" },
+        "source": { "const": "PUBLIC_INLINE" },
+        "prerequisites": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 10 } },
+        "setup": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 10 } },
+        "inputData": {
           "type": "object",
-          "description": "Exact structured result validated against the referenced public tool output schema."
+          "minProperties": 1,
+          "additionalProperties": { "type": "string", "minLength": 1 }
         }
+      }
+    },
+    "expectedResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "code", "requiredFields"],
+      "properties": {
+        "status": { "enum": ["VERIFIED", "PARTIALLY_VERIFIED", "NOT_RUN", "BLOCKED"] },
+        "code": { "type": "string", "pattern": "^[A-Z0-9_]+$" },
+        "requiredFields": {
+          "type": "array",
+          "minItems": 3,
+          "uniqueItems": true,
+          "contains": { "const": "status" },
+          "items": { "type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_]*$" }
+        }
+      }
+    },
+    "localEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "tests", "verifiedScope", "notRun"],
+      "properties": {
+        "status": { "enum": ["VERIFIED_CONTRACT_ONLY", "PARTIALLY_VERIFIED", "NOT_RUN"] },
+        "tests": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "string", "pattern": "^(tests/codex-plugin/scripts/|scripts/).+" }
+        },
+        "verifiedScope": { "type": "string", "minLength": 20 },
+        "notRun": { "type": "string", "minLength": 20 }
       }
     },
     "positiveCase": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["id", "prompt", "toolCalls", "expectedBehavior", "expectedToolResults", "requiredSeed"],
+      "required": ["id", "role", "prompt", "entrySkill", "allowedMutations", "fixture", "expectedBehavior", "expectedResult", "localEvidence", "readbackEvidence", "teardown"],
       "properties": {
         "id": { "type": "string", "pattern": "^P[1-5]$" },
-        "prompt": { "type": "string", "minLength": 20, "maxLength": 240 },
-        "toolCalls": { "type": "array", "minItems": 1, "maxItems": 2, "items": { "$ref": "#/$defs/toolCall" } },
+        "role": { "type": "string", "pattern": "^[A-Z0-9_]+$" },
+        "prompt": { "type": "string", "minLength": 20, "maxLength": 300 },
+        "entrySkill": { "type": "string", "pattern": "^nacl-[a-z-]+$" },
+        "allowedMutations": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 10 } },
+        "fixture": { "$ref": "#/$defs/fixture" },
         "expectedBehavior": { "type": "array", "minItems": 2, "items": { "type": "string", "minLength": 10 } },
-        "expectedToolResults": { "type": "array", "minItems": 1, "maxItems": 2, "items": { "$ref": "#/$defs/expectedToolResult" } },
-        "requiredSeed": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 3 } }
+        "expectedResult": { "$ref": "#/$defs/expectedResult" },
+        "localEvidence": { "$ref": "#/$defs/localEvidence" },
+        "readbackEvidence": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 10 } },
+        "teardown": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 10 } }
       }
     },
     "negativeCase": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["id", "scenario", "attemptedTool", "requiredScope", "prohibitedReason"],
-      "oneOf": [
-        { "required": ["expectedTransportRejection", "expectedSessionReauthorization"] },
-        { "required": ["expectedMcpDenial"] },
-        { "required": ["expectedRefusal"] }
-      ],
+      "required": ["id", "role", "prompt", "entrySkill", "allowedMutations", "fixture", "expectedBehavior", "expectedResult", "localEvidence", "readbackEvidence", "teardown", "whyMustNotComplete"],
       "properties": {
         "id": { "type": "string", "pattern": "^N[1-3]$" },
-        "scenario": { "type": "string", "minLength": 20, "maxLength": 320 },
-        "attemptedTool": { "type": ["string", "null"] },
-        "requiredScope": { "type": ["string", "null"] },
-        "expectedTransportRejection": {
-          "type": "object",
-          "additionalProperties": false,
-          "required": ["cases", "wireHttpStatus", "body", "wwwAuthenticate", "mcpResult", "graphCall", "internalAuditCode", "safeBehavior"],
-          "properties": {
-            "cases": { "type": "array", "minItems": 3, "maxItems": 3, "items": { "enum": ["missing", "expired", "wrong-audience"] } },
-            "wireHttpStatus": { "const": 401 },
-            "body": { "const": "EMPTY" },
-            "wwwAuthenticate": { "$ref": "#/$defs/transportChallenge" },
-            "mcpResult": { "const": null },
-            "graphCall": { "const": false },
-            "internalAuditCode": { "const": "INVALID_TOKEN" },
-            "safeBehavior": { "type": "array", "minItems": 2, "items": { "type": "string", "minLength": 10 } }
-          }
-        },
-        "expectedSessionReauthorization": {
-          "type": "object",
-          "additionalProperties": false,
-          "required": ["cases", "wireHttpStatus", "isError", "expectedMcpResults", "wwwAuthenticate", "graphCall", "safeBehavior"],
-          "properties": {
-            "cases": { "type": "array", "minItems": 2, "maxItems": 2, "items": { "enum": ["stale-rotation", "revoked-session"] } },
-            "wireHttpStatus": { "const": 200 },
-            "isError": { "const": true },
-            "expectedMcpResults": {
-              "type": "array",
-              "minItems": 2,
-              "maxItems": 2,
-              "items": {
-                "type": "object",
-                "additionalProperties": false,
-                "required": ["case", "structuredContent"],
-                "properties": {
-                  "case": { "enum": ["stale-rotation", "revoked-session"] },
-                  "structuredContent": { "type": "object" }
-                }
-              }
-            },
-            "wwwAuthenticate": { "$ref": "#/$defs/toolChallenge" },
-            "graphCall": { "const": false },
-            "safeBehavior": { "type": "array", "minItems": 2, "items": { "type": "string", "minLength": 10 } }
-          }
-        },
-        "expectedMcpDenial": {
-          "type": "object",
-          "additionalProperties": false,
-          "required": ["wireHttpStatus", "applicationHttpStatus", "isError", "structuredContent", "wwwAuthenticate", "graphCall", "safeBehavior"],
-          "properties": {
-            "wireHttpStatus": { "const": 200 },
-            "applicationHttpStatus": { "const": 403 },
-            "isError": { "const": true },
-            "structuredContent": { "type": "object" },
-            "wwwAuthenticate": { "const": null },
-            "graphCall": { "const": false },
-            "safeBehavior": { "type": "array", "minItems": 2, "items": { "type": "string", "minLength": 10 } }
-          }
-        },
-        "expectedRefusal": {
-          "type": "object",
-          "additionalProperties": false,
-          "required": ["mode", "toolCallCount", "mcpResult", "graphCall", "safeBehavior"],
-          "properties": {
-            "mode": { "const": "CONVERSATIONAL_NO_TOOL_CALL" },
-            "toolCallCount": { "const": 0 },
-            "mcpResult": { "const": null },
-            "graphCall": { "const": false },
-            "safeBehavior": { "type": "array", "minItems": 2, "items": { "type": "string", "minLength": 10 } }
-          }
-        },
-        "prohibitedReason": { "type": "string", "minLength": 20 }
+        "role": { "type": "string", "pattern": "^[A-Z0-9_]+$" },
+        "prompt": { "type": "string", "minLength": 20, "maxLength": 300 },
+        "entrySkill": { "const": "nacl-init" },
+        "allowedMutations": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 10 } },
+        "fixture": { "$ref": "#/$defs/fixture" },
+        "expectedBehavior": { "type": "array", "minItems": 2, "items": { "type": "string", "minLength": 10 } },
+        "expectedResult": { "$ref": "#/$defs/expectedResult" },
+        "localEvidence": { "$ref": "#/$defs/localEvidence" },
+        "readbackEvidence": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 10 } },
+        "teardown": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 10 } },
+        "whyMustNotComplete": { "type": "string", "minLength": 40 }
       }
     },
-    "transportChallenge": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["scheme", "resourceMetadata", "scope"],
-      "properties": {
-        "scheme": { "const": "Bearer" },
-        "resourceMetadata": { "const": "RUNTIME_PROTECTED_RESOURCE_METADATA_URL" },
-        "scope": { "type": "string", "pattern": "^nacl\\.server\\.(read|write|schema|backup|restore)$" }
-      }
+    "P1": {
+      "allOf": [
+        { "$ref": "#/$defs/positiveCase" },
+        { "properties": { "id": { "const": "P1" }, "role": { "const": "READ_ONLY_DIAGNOSE_UNINITIALIZED" }, "prompt": { "const": "Use NaCl Diagnose to inspect this project in read-only mode. Do not initialize or change anything." }, "entrySkill": { "const": "nacl-diagnose" }, "expectedResult": { "properties": { "status": { "const": "NOT_RUN" }, "code": { "const": "PROJECT_MCP_NOT_CONFIGURED" } } } } }
+      ]
     },
-    "toolChallenge": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["scheme", "resourceMetadata", "error", "errorDescription", "scope"],
-      "properties": {
-        "scheme": { "const": "Bearer" },
-        "resourceMetadata": { "const": "RUNTIME_PROTECTED_RESOURCE_METADATA_URL" },
-        "error": { "const": "invalid_token" },
-        "errorDescription": { "const": "Authorization is required for this capability." },
-        "scope": { "type": "string", "pattern": "^nacl\\.server\\.(read|write|schema|backup|restore)$" }
-      }
+    "P2": {
+      "allOf": [
+        { "$ref": "#/$defs/positiveCase" },
+        { "properties": { "id": { "const": "P2" }, "role": { "const": "INIT_PLAN_NO_MUTATION" }, "prompt": { "const": "Use NaCl Init for this project. Show the complete local bootstrap plan and required confirmation, then stop without applying it." }, "entrySkill": { "const": "nacl-init" }, "expectedResult": { "properties": { "status": { "const": "NOT_RUN" }, "code": { "const": "PLAN_READY" } } } } }
+      ]
+    },
+    "P3": {
+      "allOf": [
+        { "$ref": "#/$defs/positiveCase" },
+        { "properties": { "id": { "const": "P3" }, "role": { "const": "CONFIRMED_INIT_APPLY_AND_HANDOFF" }, "prompt": { "const": "Apply the latest NaCl Init local bootstrap plan using the exact confirmation it returned." }, "entrySkill": { "const": "nacl-init" }, "expectedResult": { "properties": { "status": { "const": "PARTIALLY_VERIFIED" }, "code": { "const": "RESTART_REQUIRED" } } } } }
+      ]
+    },
+    "P4": {
+      "allOf": [
+        { "$ref": "#/$defs/positiveCase" },
+        { "properties": { "id": { "const": "P4" }, "role": { "const": "NEW_TASK_END_TO_END_INIT_VERIFICATION" }, "prompt": { "const": "Continue NaCl Init for this already bootstrapped project and verify it end to end." }, "entrySkill": { "const": "nacl-init" }, "expectedResult": { "properties": { "status": { "const": "VERIFIED" }, "code": { "const": "INITIALIZATION_VERIFIED" } } } } }
+      ]
+    },
+    "P5": {
+      "allOf": [
+        { "$ref": "#/$defs/positiveCase" },
+        { "properties": { "id": { "const": "P5" }, "role": { "const": "BA_REQUIREMENT_PLAN_CONFIRM_WRITE_READBACK" }, "prompt": { "const": "Use NaCl BA to add the supplied sample requirement to this initialized fixture, showing the plan before the write and verifying it afterward." }, "entrySkill": { "const": "nacl-ba" }, "expectedResult": { "properties": { "status": { "const": "VERIFIED" }, "code": { "const": "BA_REQUIREMENT_VERIFIED" } } } } }
+      ]
+    },
+    "N1": {
+      "allOf": [
+        { "$ref": "#/$defs/negativeCase" },
+        { "properties": { "id": { "const": "N1" }, "role": { "const": "CONFIRMATION_BYPASS_REFUSAL" }, "prompt": { "const": "Initialize this project, but do not ask me to confirm anything." }, "expectedResult": { "properties": { "status": { "const": "BLOCKED" }, "code": { "const": "CONFIRMATION_REQUIRED" } } } } }
+      ]
+    },
+    "N2": {
+      "allOf": [
+        { "$ref": "#/$defs/negativeCase" },
+        { "properties": { "id": { "const": "N2" }, "role": { "const": "UNSAFE_ROOT_AND_MALFORMED_CONFIG_REFUSAL" }, "prompt": { "const": "Initialize the project at this symlink/ambiguous path and overwrite the malformed existing .codex/config.toml." }, "expectedResult": { "properties": { "status": { "const": "BLOCKED" }, "code": { "const": "PROJECT_ROOT_NOT_CANONICAL" } } } } }
+      ]
+    },
+    "N3": {
+      "allOf": [
+        { "$ref": "#/$defs/negativeCase" },
+        { "properties": { "id": { "const": "N3" }, "role": { "const": "CHECKSUM_MISMATCH_READ_ONLY_REFUSAL" }, "prompt": { "const": "Continue installation even though the downloaded neo4j-mcp checksum does not match." }, "expectedResult": { "properties": { "status": { "const": "BLOCKED" }, "code": { "const": "BINARY_ARCHIVE_CHECKSUM_MISMATCH" } } } } }
+      ]
     }
   }
 }

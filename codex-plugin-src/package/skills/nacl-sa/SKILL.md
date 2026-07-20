@@ -5,22 +5,18 @@ description: Route NaCl system analysis across architecture, domains, roles, use
 
 # NaCl System Analysis
 
-Call `nacl_installation_doctor` once and stop unless it returns
-`status=VERIFIED`.
+Read [the Skills-only runtime contract](../../resources/references/skills-only-runtime-contract.md),
+[the core methodology](../../resources/workflows/nacl-core/SKILL.md), and
+[the migration rules](../../resources/workflows/references/migration-rules.md).
+Require a loaded project `nacl_neo4j` MCP and verified read canary; otherwise return
+`BLOCKED/PROJECT_MCP_NOT_CONFIGURED` and route to `nacl-init`.
 
-Read
-[the core contract](../../resources/workflows/nacl-core/SKILL.md),
-[the migration rules](../../resources/workflows/references/migration-rules.md),
-and [the gateway binding](../../resources/references/workflow-gateway-contract.md).
-
-Choose exactly the relevant packaged leaf under `../../resources/workflows/`:
+Choose exactly one relevant packaged leaf under `../../resources/workflows/`:
 `nacl-sa-full`, `nacl-sa-architect`, `nacl-sa-domain`, `nacl-sa-roles`,
 `nacl-sa-uc`, `nacl-sa-ui`, `nacl-sa-feature`, `nacl-sa-flags`,
-`nacl-sa-validate`, or `nacl-sa-finalize`.
+`nacl-sa-validate`, or `nacl-sa-finalize`. State the leaf and intended writes.
 
-State the selected leaf and intended mutations. Run the mapped SA preflight.
-`Module`, `FeatureRequest`, and `UseCase` use allocate-or-claim, live
-lease/fence, revision-CAS mutation with `APPROVE_SA_WRITE`, read-back, and
-release. Required relations, roles, UI records, or validation queries not in
-the map return the exact SA gap code with `BLOCKED`; never substitute another
-tool or a stale file snapshot for graph evidence.
+Use only project-local Neo4j MCP Cypher tools. Preserve SA approval,
+parameterization, identity, allocate-or-claim, lease/fence, revision CAS,
+idempotency and read-back. Required relations or validation evidence that
+cannot be produced safely stay `BLOCKED`; never substitute a stale file.

@@ -25,8 +25,10 @@ wsl --install -d Ubuntu
 
 ### 3. В WSL2 следовать Linux-инструкции
 
-Продолжите по [инструкции для Linux](install-linux.ru.md). Пути будут Linux-формата. Для обычной
-Codex-установки используйте полный плагин из UI.
+Продолжите по [инструкции для Linux](install-linux.ru.md). Пути будут
+Linux-формата. После публикации обычный Codex-путь — официальная Skills-only
+карточка в UI; до публикации используйте отдельно описанный immutable
+Git/full-plugin канал совместимости.
 
 ## Вариант B: Нативный Windows (PowerShell)
 
@@ -58,9 +60,19 @@ git clone https://github.com/ITSalt/NaCl.git $HOME\NaCl
 Скрипт связывает `nacl-*` с `%USERPROFILE%\.claude\skills`, а профили агентов — с
 `%USERPROFILE%\.claude\agents`. Для скиллов есть fallback на directory junction; агентам нужны symlink.
 
-Полный Codex-плагин устанавливается из **Plugins**. Skills-only PowerShell installer остаётся
-только legacy-каналом и не должен совмещаться с полным плагином. См.
+После публичного релиза целевой нормальный Codex-путь — официальная Skills-only
+карточка в **Plugins**. Приведённый PowerShell installer через symlink остаётся
+только legacy-каналом, не является официальной карточкой и не должен
+совмещаться с текущим полным Git-плагином. См.
 [Установку скиллов](install-skills.ru.md).
+
+```powershell
+& "$HOME\NaCl\skills-for-codex\scripts\install-user-symlinks.ps1"
+```
+
+Этот installer нужен только существующим legacy Codex-машинам. Для symlink
+требуются права Administrator или Developer Mode; не запускайте его после
+установки полной Git-карточки или официальной Skills-only карточки.
 
 ### После `git pull`
 
@@ -91,8 +103,16 @@ NaCl Analyst Tool, работающий вне Docker.
 `/nacl-init` запускает `nacl-tl-core\scripts\setup-graph.ps1`, который:
 
 - скачивает официальный `neo4j-mcp.exe` и распаковывает его через `Expand-Archive`;
-- пишет `.mcp.json` прямо на бинарник, не используя npm-лаунчер с лишним STDOUT;
-- пишет `.env`, `.mcp.json` и схему в UTF-8 без BOM;
+- для Claude/full-plugin compatibility пишет `.mcp.json` прямо на бинарник, не
+  используя npm-лаунчер с лишним STDOUT;
+- для планируемого Codex Skills-only пути создаёт launcher без секрета и
+  объединяет `[mcp_servers.nacl_neo4j]` в доверенном проектном
+  `.codex/config.toml`: абсолютный путь к найденному Node в `command`, launcher/`--binary`/
+  проверенный бинарник в `args` и только несекретные параметры Neo4j в `env`;
+  launcher читает секрет только из защищённого `graph-infra/.env` и проверяет
+  binary/install receipt; эта адаптация Wave 9 ещё не доказана текущим скриптом;
+- пишет `.env`, Claude `.mcp.json`, Codex `.codex/config.toml` и схему в UTF-8
+  без BOM;
 - запускает Docker, загружает схему и отказывается сообщать об успехе до прохода жёстких gates.
 
 Приёмка: контейнер `healthy`, `SHOW CONSTRAINTS` возвращает ожидаемое число,
@@ -100,21 +120,33 @@ NaCl Analyst Tool, работающий вне Docker.
 `/mcp` в Claude Code Desktop открывает каталог коннекторов, поэтому рабочий smoke-запрос надёжнее.
 При сбое setup печатает `NACL_GRAPH_RESULT: status=FAILED`; после устранения причины шаг можно безопасно повторить.
 
+Для Codex `.mcp.json` не является свидетельством приёмки. Откройте новую
+задачу в том же каноническом доверенном корне и потребуйте обнаружения
+`nacl_neo4j` из `.codex/config.toml`, затем тот же handshake/read check.
+Абсолютные пути этой машины к Node, launcher и бинарнику допустимы, но в них не
+должно быть секрета, developer checkout или plugin cache. Сырой секрет запрещён
+в `command`, `args` и `env`.
+
 ## Codex Desktop
 
 ### Установка в UI
 
-Установите доверенный полный плагин NaCl из **Plugins**, выдайте только показанные права,
-перезапустите Codex и в новой задаче вызовите `nacl_installation_doctor` ровно один раз.
-Продолжайте только при `status=VERIFIED`, `mode=plugin-only` и `executionLocation=installed-cache`.
-Для этой нормальной установки PowerShell и путь к репозиторию не нужны.
+После публичного релиза один раз установите официальную Skills-only карточку
+NaCl из **Plugins**, выдайте только показанные права, откройте новую задачу
+проекта и запустите read-only preflight `nacl-init`. После подтверждённого
+bootstrap, создания launcher без секрета и записи проектного
+`.codex/config.toml` откройте ещё одну новую задачу в том же каноническом
+доверенном корне для загрузки проектного MCP. Проектный `.mcp.json` относится
+только к Claude/compatibility. PowerShell setup, путь к репозиторию, публичный MCP и
+повторная Git-установка не нужны. До публикации используйте отдельно описанный
+immutable Git/full-plugin канал совместимости и его installation doctor.
 
 ### Граф и авторизация
 
 Локальный режим использует контейнер Neo4j 5 Community проекта через WSL2 backend Docker Desktop;
 удалённый режим подключается к отдельно администрируемому VPS. Доступ к серверу означает доступ
-ко всем базам проектов на нём; `project_scope` — маршрутизация и provenance, а не авторизация. Публичный HTTP/OAuth
-и релиз остаются `NOT_RUN`.
+ко всем базам проектов на нём; `project_scope` — маршрутизация и provenance, а не авторизация.
+Skills-only путь использует локальный/проектный MCP и не добавляет публичный HTTP/OAuth.
 
 ## Дальше
 

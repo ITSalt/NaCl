@@ -6,7 +6,7 @@ import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
-import { transformPackageDocSecretPlaceholder } from "./build-codex-plugin.mjs";
+import { transformPackageDocSecretPlaceholder, transformPortablePythonTempLog } from "./build-codex-plugin.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const builder = path.join(repoRoot, "scripts", "build-codex-plugin.mjs");
@@ -33,6 +33,45 @@ test("package doc secret transform accepts only exact safe placeholders and fail
     () => transformPackageDocSecretPlaceholder(Buffer.from('neo4j_password: "${NEO4J_PASSWORD:-demo}"\n')),
     /unsafe environment-secret near-match/,
   );
+});
+
+test("portable Python transform preserves LF or CRLF and rejects mixed line endings", () => {
+  const source = [
+    "import re",
+    "from pathlib import Path",
+    "# dropped; non-matching tokens are warn-logged to /tmp/ko-sa-parse.log so",
+    "# sentinel characters",
+    '_SA_PARSE_LOG = "/tmp/ko-sa-parse.log"',
+    "",
+  ].join("\n");
+  const expected = [
+    "import re",
+    "import tempfile",
+    "from pathlib import Path",
+    "# dropped; non-matching tokens are warn-logged under the platform's safe",
+    "# temporary directory so",
+    "# sentinel characters",
+    '_SA_PARSE_LOG = Path(tempfile.gettempdir()) / "ko-sa-parse.log"',
+    "",
+  ].join("\n");
+
+  assert.equal(transformPortablePythonTempLog(Buffer.from(source)).toString("utf8"), expected);
+  assert.equal(
+    transformPortablePythonTempLog(Buffer.from(source.replaceAll("\n", "\r\n"))).toString("utf8"),
+    expected.replaceAll("\n", "\r\n"),
+  );
+  assert.throws(
+    () => transformPortablePythonTempLog(Buffer.from(source.replace("import re\n", "import re\r\n"))),
+    /mixed line endings/,
+  );
+  assert.throws(
+    () => transformPortablePythonTempLog(Buffer.from(source.replace("import re\n", "import re\r"))),
+    /lone carriage return/,
+  );
+});
+
+test("repository checkout policy keeps generated plugin bytes platform-independent", async () => {
+  assert.equal(await readFile(path.join(repoRoot, ".gitattributes"), "utf8"), "* text=auto eol=lf\n");
 });
 
 async function treeDigest(root) {

@@ -242,9 +242,13 @@ creates a shared-graph `(:Project)` authorization boundary. See the
 **Secrets are never committed.** Remote mode requires `graph.remote.secret_source`. The exact
 `env:NEO4J_PASSWORD` reference reads `NEO4J_PASSWORD` only from the current runtime environment;
 `server-route:<id>` delegates resolution to the external provider configured by
-`NACL_SERVER_ROUTE_SECRET_PROVIDER`. `.mcp.json` stores only that opaque reference plus launcher and
-route metadata, never a raw or shared password. If the selected environment variable or provider is
-unavailable, initialization and connection fail closed; there is no demo/default password fallback.
+`NACL_SERVER_ROUTE_SECRET_PROVIDER`. In the Codex Skills-only path, the project
+`.codex/config.toml` stores only a launcher command and non-secret MCP metadata;
+the launcher resolves the exact secret source at runtime. A root `.mcp.json`
+stores only an opaque reference in Claude or documented full-plugin
+compatibility flows; it is not the Codex project pickup file. If the selected
+environment variable or provider is unavailable, initialization and connection
+fail closed; there is no demo/default password fallback.
 
 ---
 
@@ -400,28 +404,34 @@ If `config.yaml` is missing entirely, all fields fall back to their defaults. Sk
 
 A literal branch name in a git command inside a shell code fence is rejected by CI (`scripts/check-branch-literals.sh`, wired into `Lint Skills`). Prose, output blocks, and prohibition rules ("never `git checkout main`") are not flagged; if a literal is genuinely intentional, append `# branch-literal-ok` to that line. The runtime counterpart of this rule — what to do when you *find* such a hardcoded value in an existing skill — is in `nacl-tl-core/references/tl-protocol.md`, § 8 "Дефекты в глобальных скиллах (выноси и жди)" ("Skill / framework defects — surface and wait").
 
-## Codex Plugin and Public Service
+## Codex Skills-only and Project-local MCP
 
-### Local installed candidate
+### Public Skills-only path
 
-The full Codex plugin reads the same project `config.yaml`; it does not add a
-second project configuration schema. The verified local candidate resolves a
-project, then uses named gateway operations and runtime-resolved credentials.
-Local stdio is an installed-candidate and development transport. The normal
-user installs the full plugin through the Codex UI, while the skills-only
-layout is compatibility-only.
+The official Codex product is one Skills-only UI installation. It reads the
+same project `config.yaml`; it does not add a second NaCl project schema.
+`nacl-init` first presents an exact plan and then, after confirmation, creates
+or connects the project's Neo4j Community stack, installs the pinned
+`neo4j-mcp`, and merges one no-secret `mcp_servers` entry into the project
+`.codex/config.toml`. It preserves unrelated MCP entries and stops after the
+write. A new task in the same project is required before MCP handshake, schema,
+read, confirmed-write, and read-back verification.
 
-### Production boundary
+### Compatibility and authorization boundary
 
-No public-only Codex settings are active yet. The Streamable HTTP endpoint,
-OAuth deployment, domain, release, and marketplace submission are `NOT_RUN`,
-so this reference does not invent fields for them. The production gateway must
-authenticate an OAuth principal, map it to an allowed Neo4j server, allow
-same-server project selection, and deny cross-server routing. The current
-authorization boundary is the server: access to it implies access to all
-project databases hosted there. `graph.project_scope` is routing/provenance,
-not authorization. Secrets remain in runtime secret stores or environment;
-they are never package data or committed config.
+The Git/full-plugin package and root `.mcp.json` remain development, Claude,
+and explicitly documented compatibility paths; neither is required after the
+official Skills-only installation. The authorization boundary is the Neo4j
+server: access to it implies access to every project database hosted there,
+while another server requires a separate grant. `graph.project_scope` is
+routing/provenance, not authorization.
+
+For local bootstrap, the generated password is stored only in the project's
+gitignored, owner-only `graph-infra/.env`. The project-local launcher validates
+that file and supplies the password to its child process through the child
+environment. `.codex/config.toml`, logs, tool arguments, the uploaded bundle,
+and committed configuration contain no raw secret. The official path requires
+no public MCP endpoint, hosted gateway, or managed graph service.
 
 ---
 

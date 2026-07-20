@@ -174,19 +174,31 @@ export function transformPackageDocSecretPlaceholder(input) {
   throw new Error("Transform package-doc-secret-placeholder expected an exact secret placeholder source match");
 }
 
+export function transformPortablePythonTempLog(input) {
+  const source = input.toString("utf8");
+  if (/\r(?!\n)/.test(source)) {
+    throw new Error("Transform portable-python-temp-log rejected a lone carriage return");
+  }
+  const withoutCrLf = source.replaceAll("\r\n", "");
+  const usesCrLf = source.includes("\r\n");
+  if (usesCrLf && withoutCrLf.includes("\n")) {
+    throw new Error("Transform portable-python-temp-log rejected mixed line endings");
+  }
+
+  let content = source.replaceAll("\r\n", "\n");
+  content = replaceExact(content, "import re\nfrom pathlib import Path", "import re\nimport tempfile\nfrom pathlib import Path", "portable-python-temp-log import");
+  content = replaceExact(
+    content,
+    "# dropped; non-matching tokens are warn-logged to /tmp/ko-sa-parse.log so\n# sentinel characters",
+    "# dropped; non-matching tokens are warn-logged under the platform's safe\n# temporary directory so\n# sentinel characters",
+    "portable-python-temp-log comment",
+  );
+  content = replaceExact(content, '_SA_PARSE_LOG = "/tmp/ko-sa-parse.log"', '_SA_PARSE_LOG = Path(tempfile.gettempdir()) / "ko-sa-parse.log"', "portable-python-temp-log path");
+  return Buffer.from(usesCrLf ? content.replaceAll("\n", "\r\n") : content);
+}
+
 const TRANSFORMS = {
-  "portable-python-temp-log": (input) => {
-    let content = input.toString("utf8");
-    content = replaceExact(content, "import re\nfrom pathlib import Path", "import re\nimport tempfile\nfrom pathlib import Path", "portable-python-temp-log import");
-    content = replaceExact(
-      content,
-      "# dropped; non-matching tokens are warn-logged to /tmp/ko-sa-parse.log so\n# sentinel characters",
-      "# dropped; non-matching tokens are warn-logged under the platform's safe\n# temporary directory so\n# sentinel characters",
-      "portable-python-temp-log comment",
-    );
-    content = replaceExact(content, '_SA_PARSE_LOG = "/tmp/ko-sa-parse.log"', '_SA_PARSE_LOG = Path(tempfile.gettempdir()) / "ko-sa-parse.log"', "portable-python-temp-log path");
-    return Buffer.from(content);
-  },
+  "portable-python-temp-log": transformPortablePythonTempLog,
   "generic-home-path": (input) => Buffer.from(replaceExact(
     input.toString("utf8"),
     "Never include local `/Users/` paths or dump metadata in the artifact body.",

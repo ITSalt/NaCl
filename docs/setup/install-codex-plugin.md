@@ -9,7 +9,15 @@ This is the ordinary NaCl installation path for Codex users. Installation, updat
 <!-- doc-key: availability -->
 ## Availability
 
-The verified Git channel is available as the immutable [`codex-plugin-v0.1.0`](https://github.com/ITSalt/NaCl/releases/tag/codex-plugin-v0.1.0) GitHub Release. It is a public source artifact for installation through a repo marketplace, not an official Plugins Directory card. OpenAI submission and publication remain future Wave 10 work.
+The verified Git channel is available as the immutable [`codex-plugin-v0.1.0`](https://github.com/ITSalt/NaCl/releases/tag/codex-plugin-v0.1.0) GitHub Release. It is a public source artifact for installation through a repo marketplace, not an official Plugins Directory card.
+
+The official target is one **NaCl Skills-only** card in the Plugins Directory.
+It is not published yet. After publication, an ordinary user will install that
+card once, run `nacl-init`, allow the packaged scripts to create the selected
+project's Neo4j Community stack, project-local `neo4j-mcp`, no-secret launcher,
+and trusted-project `.codex/config.toml`, and open a new task. GitHub remains
+the source, audit, release, and support channel;
+it will not be a mandatory second installation.
 
 The GitHub tag fixes the exact source version. The installed card remains authoritative for the plugin name, plugin version, connections, and permissions. Do not install an archive or marketplace from a fork, branch, or tag that this guide does not name.
 
@@ -22,6 +30,44 @@ The GitHub tag fixes the exact source version. The installed card remains author
 - macOS Keychain only for the current optional local-graph pilot. Live Keychain bootstrap is `NOT_RUN`.
 
 Installation verification and the first dry run do not require the graph.
+
+<!-- doc-key: official-skills-only -->
+## Official Skills-only journey after publication
+
+This section describes the approved target, not a currently available card.
+Do not substitute a similarly named card until this page links the official
+listing.
+
+1. In **Plugins**, find the official **NaCl** Skills-only card and choose
+   **Install**.
+2. Review and grant only the displayed permissions, then open a new task in the
+   project you want to initialize. Trust that exact canonical project root when
+   Codex asks; a path alias or another worktree is a different trust boundary.
+3. Invoke `nacl-init`. It must begin with a read-only prerequisite and mutation
+   plan; denying the confirmation must change nothing.
+4. After confirmation, packaged scripts create or connect the project graph,
+   install the pinned checksum-verified `neo4j-mcp`, generate a project launcher
+   that reads the secret only from protected `graph-infra/.env`, and merge
+   `[mcp_servers.nacl_neo4j]` into project `.codex/config.toml` without
+   overwriting unrelated settings. Its `command` is the resolved Node
+   executable; `args` contain the launcher, `--binary`, and verified binary;
+   `env` contains only non-secret connection values.
+5. When init says `.codex/config.toml` was written and read back, stop the current task and open a
+   **new task in the same project**. This reload boundary is mandatory for the
+   project MCP; it is not a second plugin installation.
+6. Continue init only after the new task verifies MCP handshake, graph/schema
+   health, a named read, a separately confirmed write canary, and read-back.
+
+The generated TOML contains per-machine absolute Node, launcher, and binary
+paths, but never a raw secret, developer checkout, or plugin-cache path. Raw
+secrets are forbidden in `command`, `args`, and `env`. Project `.mcp.json` is
+Claude Code/full-plugin compatibility only and does not prove Codex pickup. If
+the new task cannot see `nacl_neo4j`, confirm the task opened the same canonical
+trusted root; support diagnostics may compare `codex mcp list --json`, but that
+terminal check is not part of the ordinary install journey.
+
+The final exact prompts and card URL will be added only after the same uploaded
+skill tree passes OpenAI review and post-publication installation smoke.
 
 <!-- doc-key: install -->
 ## Install through the UI from the GitHub Release
@@ -67,6 +113,10 @@ Do not hardcode or infer the expected version. If any field differs, stop before
 
 Open **Plugins**, select the installed NaCl card, and use the action Codex displays.
 
+The steps below are verified for the current immutable Git/full-plugin channel.
+The official Skills-only card must pass its own update, uninstall-persistence,
+and rollback smoke before this guide marks that public lifecycle verified.
+
 - **Update:** choose **Update** when offered, then fully restart, open a new task, and verify the reported version against the updated card.
 - **Reinstall:** uninstall the bundle, reopen the repo marketplace from the same GitHub tag, install the card again, fully restart, and verify in a new task.
 - **Disable / enable:** toggle NaCl from its card. After enabling it again, fully restart and verify in a new task.
@@ -87,7 +137,16 @@ Replaceable plugin code is separate from durable state. Uninstall, reinstall, up
 
 The current plugin card declares **Read** and **Write**. Read access supports project inspection and evidence collection. Write access is used only when a selected workflow needs an approved file or graph mutation; NaCl’s own confirmation gates do not replace the Codex permission prompt.
 
-The package starts a local Node.js MCP process and exposes ten public skills plus bounded tools. Without the optional graph, project reads and approved project writes remain in the Codex task and project permission boundary. With the graph enabled, NaCl routes only an explicitly resolved project to a loopback Neo4j endpoint. The macOS pilot resolves the credential from Keychain in memory; the secret is not returned, logged, placed in tool arguments, or stored in the plugin cache. Graph queries are named and parameterized; arbitrary graph statements are not accepted.
+The current Git/full-plugin package starts a local Node.js MCP process and
+exposes ten public skills plus bounded tools. The planned official Skills-only
+card does not use that package MCP: `nacl-init` runs packaged scripts and writes
+the selected project's local MCP configuration. Without the optional graph,
+project reads and approved project writes remain in the Codex task and project
+permission boundary. With the graph enabled, NaCl routes only an explicitly
+resolved project to a loopback Neo4j endpoint. The macOS pilot resolves the
+credential from Keychain in memory; the secret is not returned, logged, placed
+in tool arguments, or stored in the plugin cache. Graph queries are named and
+parameterized; arbitrary graph statements are not accepted.
 
 Do not approve unexpected network, secret-value, unrelated-folder, or destructive-data requests. Stop and collect support evidence instead.
 
