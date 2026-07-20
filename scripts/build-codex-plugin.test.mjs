@@ -70,6 +70,10 @@ test("portable Python transform preserves LF or CRLF and rejects mixed line endi
   );
 });
 
+test("repository checkout policy keeps generated plugin bytes platform-independent", async () => {
+  assert.equal(await readFile(path.join(repoRoot, ".gitattributes"), "utf8"), "* text=auto eol=lf\n");
+});
+
 async function treeDigest(root) {
   const records = [];
   async function visit(directory) {
