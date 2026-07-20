@@ -138,7 +138,11 @@ which:
   the stdio JSON-RPC stream, so it is not used);
 - for the planned Codex Skills-only path, generates a no-secret launcher and
   merges `[mcp_servers.nacl_neo4j]` into trusted-project
-  `.codex/config.toml`; this Wave 9 adaptation is not current-script evidence;
+  `.codex/config.toml` with resolved Node in `command`, launcher/`--binary`/
+  verified binary in `args`, and only non-secret Neo4j connection values in
+  `env`; the launcher reads the secret only from protected `graph-infra/.env`
+  and validates the binary/install receipt; this Wave 9 adaptation is not
+  current-script evidence;
 - writes `.env`, Claude `.mcp.json`, Codex `.codex/config.toml`, and schema as
   **UTF-8 without a BOM** (`cypher-shell` rejects a
   BOM on line 1);
@@ -160,8 +164,9 @@ which:
 For Codex, `.mcp.json` is not acceptance evidence. Open a new task at the same
 canonical trusted project root and require discovery of `nacl_neo4j` from
 `.codex/config.toml`, followed by the same handshake/read check. The generated
-launcher path may be absolute for this machine, but must contain no secret and
-must not point into a developer checkout or plugin cache.
+Node, launcher, and binary paths may be absolute for this machine, but must
+contain no secret and must not point into a developer checkout or plugin cache.
+The raw secret is forbidden in `command`, `args`, and `env`.
 
 If setup fails it prints `NACL_GRAPH_RESULT: status=FAILED` with the failing check — it never
 reports a half-configured graph as ready. The graph step is idempotent, so re-run `/nacl-init`

@@ -97,7 +97,8 @@ The first supported graph topology remains:
 - a generated per-project secret that is never committed, printed, placed in
   a skill bundle, or serialized as a raw value in Codex or Claude MCP config;
 - a pinned, checksum-verified `neo4j-mcp` binary;
-- a generated machine-local launcher that resolves the secret at runtime and
+- a generated machine-local project launcher that reads the secret only from
+  protected `graph-infra/.env`, validates the binary plus install receipt, and
   starts the pinned binary without exposing the secret in argv or config;
 - a trusted-project `<project>/.codex/config.toml` with a stable
   `[mcp_servers.nacl_neo4j]` table merged without overwriting unrelated Codex
@@ -137,21 +138,32 @@ discover a newly written project `.codex/config.toml`. The project must be
 trusted at its canonical path; a spelling alias or different worktree path is
 not equivalent. This is a trust/reload boundary, not a second installation.
 
-The generated Codex entry has this shape; the concrete `command` is a
-per-machine path created and read back by bootstrap, never a developer checkout
-or plugin-cache path:
+The generated Codex entry has this verified shape. Bootstrap resolves all three
+machine-local paths and reads them back; none may point into a developer
+checkout or plugin cache:
 
 ```toml
 [mcp_servers.nacl_neo4j]
-command = "<machine-local absolute path to the generated NaCl launcher>"
-args = []
+command = "<machine-local absolute path to the resolved Node executable>"
+args = [
+  "<machine-local absolute path to the project NaCl launcher>",
+  "--binary",
+  "<machine-local absolute path to the verified neo4j-mcp binary>",
+]
+
+[mcp_servers.nacl_neo4j.env]
+NEO4J_URI = "bolt://127.0.0.1:<project-port>"
+NEO4J_USERNAME = "neo4j"
+NEO4J_DATABASE = "neo4j"
+NEO4J_TELEMETRY = "false"
 ```
 
-The launcher resolves URI, username, database, and the secret reference from
-durable machine/project state at process start. Raw credentials are forbidden
-in `command`, `args`, `env`, logs, or the submitted tree. A project-root
-`.mcp.json` may still be generated for Claude Code compatibility, but it is
-never evidence that Codex loaded the project MCP.
+Only non-secret connection values are allowed in the TOML `env` table. The
+launcher reads `NEO4J_PASSWORD` only from protected `graph-infra/.env`, then
+validates the pinned binary and its install receipt before execution. The raw
+secret is forbidden in `command`, `args`, `env`, logs, or the submitted tree. A
+project-root `.mcp.json` may still be generated for Claude Code compatibility,
+but it is never evidence that Codex loaded the project MCP.
 
 ### Package boundary
 

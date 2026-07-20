@@ -46,17 +46,21 @@ listing.
 3. Invoke `nacl-init`. It must begin with a read-only prerequisite and mutation
    plan; denying the confirmation must change nothing.
 4. After confirmation, packaged scripts create or connect the project graph,
-   install the pinned checksum-verified `neo4j-mcp`, generate a launcher that
-   resolves credentials at runtime, and merge `[mcp_servers.nacl_neo4j]` into
-   project `.codex/config.toml` without overwriting unrelated settings.
+   install the pinned checksum-verified `neo4j-mcp`, generate a project launcher
+   that reads the secret only from protected `graph-infra/.env`, and merge
+   `[mcp_servers.nacl_neo4j]` into project `.codex/config.toml` without
+   overwriting unrelated settings. Its `command` is the resolved Node
+   executable; `args` contain the launcher, `--binary`, and verified binary;
+   `env` contains only non-secret connection values.
 5. When init says `.codex/config.toml` was written and read back, stop the current task and open a
    **new task in the same project**. This reload boundary is mandatory for the
    project MCP; it is not a second plugin installation.
 6. Continue init only after the new task verifies MCP handshake, graph/schema
    health, a named read, a separately confirmed write canary, and read-back.
 
-The generated TOML may contain a per-machine absolute launcher path, but never
-a raw secret, developer checkout, or plugin-cache path. Project `.mcp.json` is
+The generated TOML contains per-machine absolute Node, launcher, and binary
+paths, but never a raw secret, developer checkout, or plugin-cache path. Raw
+secrets are forbidden in `command`, `args`, and `env`. Project `.mcp.json` is
 Claude Code/full-plugin compatibility only and does not prove Codex pickup. If
 the new task cannot see `nacl_neo4j`, confirm the task opened the same canonical
 trusted root; support diagnostics may compare `codex mcp list --json`, but that

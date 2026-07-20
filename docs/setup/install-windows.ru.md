@@ -107,7 +107,10 @@ NaCl Analyst Tool, работающий вне Docker.
   используя npm-лаунчер с лишним STDOUT;
 - для планируемого Codex Skills-only пути создаёт launcher без секрета и
   объединяет `[mcp_servers.nacl_neo4j]` в доверенном проектном
-  `.codex/config.toml`; эта адаптация Wave 9 ещё не доказана текущим скриптом;
+  `.codex/config.toml`: абсолютный путь к найденному Node в `command`, launcher/`--binary`/
+  проверенный бинарник в `args` и только несекретные параметры Neo4j в `env`;
+  launcher читает секрет только из защищённого `graph-infra/.env` и проверяет
+  binary/install receipt; эта адаптация Wave 9 ещё не доказана текущим скриптом;
 - пишет `.env`, Claude `.mcp.json`, Codex `.codex/config.toml` и схему в UTF-8
   без BOM;
 - запускает Docker, загружает схему и отказывается сообщать об успехе до прохода жёстких gates.
@@ -120,8 +123,9 @@ NaCl Analyst Tool, работающий вне Docker.
 Для Codex `.mcp.json` не является свидетельством приёмки. Откройте новую
 задачу в том же каноническом доверенном корне и потребуйте обнаружения
 `nacl_neo4j` из `.codex/config.toml`, затем тот же handshake/read check.
-Абсолютный путь этой машины к сгенерированному launcher допустим, но в нём не
-должно быть секрета, developer checkout или plugin cache.
+Абсолютные пути этой машины к Node, launcher и бинарнику допустимы, но в них не
+должно быть секрета, developer checkout или plugin cache. Сырой секрет запрещён
+в `command`, `args` и `env`.
 
 ## Codex Desktop
 

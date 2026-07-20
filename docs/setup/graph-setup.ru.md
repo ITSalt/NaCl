@@ -185,7 +185,7 @@ Docker Engine и Docker Desktop поддерживаются; для Engine по
   runtime; для remote обязателен `graph.remote.secret_source` (`env:NEO4J_PASSWORD` или
   `server-route:<id>`). Если env или внешний провайдер недоступен, остановитесь и исправьте провайдер:
   не используйте demo/default пароль и не записывайте сырой пароль в файлы проекта
-- **MCP не подключается**: сначала выполните `node "$HOME/.claude/skills/nacl-core/scripts/graph-doctor.mjs"` (CLI-канал) или `node "$(nacl-home)/nacl-core/scripts/graph-doctor.mjs"` (канал плагина Desktop) для проверки живости. Для Claude проверьте, что `.mcp.json` в корне проекта указывает на исполняемый бинарник, затем начните новую сессию. Для Codex проверьте канонический доверенный корень и стабильную запись `[mcp_servers.nacl_neo4j]` в `.codex/config.toml`, указывающую на сгенерированный launcher без секрета; откройте новую задачу и потребуйте handshake/read evidence. Claude `.mcp.json` никогда не доказывает pickup в Codex
+- **MCP не подключается**: сначала выполните `node "$HOME/.claude/skills/nacl-core/scripts/graph-doctor.mjs"` (CLI-канал) или `node "$(nacl-home)/nacl-core/scripts/graph-doctor.mjs"` (канал плагина Desktop) для проверки живости. Для Claude проверьте, что `.mcp.json` в корне проекта указывает на исполняемый бинарник, затем начните новую сессию. Для Codex проверьте канонический доверенный корень и стабильную запись `[mcp_servers.nacl_neo4j]` в `.codex/config.toml`: `command` — абсолютный путь к найденному Node executable, `args` содержат project launcher, `--binary` и проверенный бинарник, а `env` — только несекретные параметры подключения. Откройте новую задачу и потребуйте handshake/read evidence. Claude `.mcp.json` никогда не доказывает pickup в Codex
 
 ## Режимы графа Codex
 
@@ -203,14 +203,26 @@ Git/full-plugin канал совместимости также может ис
 
 ```toml
 [mcp_servers.nacl_neo4j]
-command = "<абсолютный путь этой машины к сгенерированному NaCl launcher>"
-args = []
+command = "<абсолютный путь этой машины к найденному Node executable>"
+args = [
+  "<абсолютный путь этой машины к project NaCl launcher>",
+  "--binary",
+  "<абсолютный путь этой машины к проверенному neo4j-mcp binary>",
+]
+
+[mcp_servers.nacl_neo4j.env]
+NEO4J_URI = "bolt://127.0.0.1:<порт-проекта>"
+NEO4J_USERNAME = "neo4j"
+NEO4J_DATABASE = "neo4j"
+NEO4J_TELEMETRY = "false"
 ```
 
-URI и ссылку на credential при запуске получает launcher, а не TOML или argv.
-Путь регенерируется на каждой машине и не должен указывать в developer checkout
-или plugin cache. Codex загружает проектный слой только после доверия
-каноническому корню. Если новая задача видит только глобальные MCP, проверьте
+В TOML разрешены только несекретные параметры подключения. При запуске project
+launcher читает `NEO4J_PASSWORD` только из защищённого `graph-infra/.env` и
+проверяет binary вместе с install receipt. Сырой секрет запрещён в `command`,
+`args`, `env` и логах. Все три абсолютных пути генерируются на каждой машине и
+не должны указывать в developer checkout или plugin cache. Codex загружает
+проектный слой только после доверия каноническому корню. Если новая задача видит только глобальные MCP, проверьте
 канонический root/trust; на support-машине read-only диагностикой служит
 `codex mcp list --json`.
 

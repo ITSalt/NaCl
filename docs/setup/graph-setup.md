@@ -211,7 +211,7 @@ notifies.
 
 **Schema won't load**: Resolve the project secret through its configured runtime source before retrying the verified schema loader. Local mode requires `NEO4J_PASSWORD` in the current runtime environment; remote mode requires `graph.remote.secret_source` (`env:NEO4J_PASSWORD` or `server-route:<id>`). If the environment variable or external provider is unavailable, stop and repair that provider — do not try a demo/default password or copy a raw password into project files.
 
-**MCP connection fails**: Run `node "$HOME/.claude/skills/nacl-core/scripts/graph-doctor.mjs"` (CLI symlink channel) or `node "$(nacl-home)/nacl-core/scripts/graph-doctor.mjs"` (Desktop plugin channel) to check liveness first. For Claude, verify `.mcp.json` is at the project root and points at the executable binary, then start a new session. For Codex, verify the task uses the canonical trusted project root and `.codex/config.toml` contains the stable `[mcp_servers.nacl_neo4j]` entry pointing at the generated no-secret launcher; start a new task and require handshake/read evidence. A Claude `.mcp.json` never proves Codex pickup.
+**MCP connection fails**: Run `node "$HOME/.claude/skills/nacl-core/scripts/graph-doctor.mjs"` (CLI symlink channel) or `node "$(nacl-home)/nacl-core/scripts/graph-doctor.mjs"` (Desktop plugin channel) to check liveness first. For Claude, verify `.mcp.json` is at the project root and points at the executable binary, then start a new session. For Codex, verify the task uses the canonical trusted project root and `.codex/config.toml` contains stable `[mcp_servers.nacl_neo4j]`: `command` is the resolved Node executable, `args` name the project launcher, `--binary`, and verified binary, while `env` contains only non-secret connection values. Start a new task and require handshake/read evidence. A Claude `.mcp.json` never proves Codex pickup.
 
 ## Codex Graph Modes
 
@@ -228,14 +228,26 @@ project-local MCP; it does not require a public NaCl MCP or a second Git install
 
 ```toml
 [mcp_servers.nacl_neo4j]
-command = "<machine-local absolute path to the generated NaCl launcher>"
-args = []
+command = "<machine-local absolute path to the resolved Node executable>"
+args = [
+  "<machine-local absolute path to the project NaCl launcher>",
+  "--binary",
+  "<machine-local absolute path to the verified neo4j-mcp binary>",
+]
+
+[mcp_servers.nacl_neo4j.env]
+NEO4J_URI = "bolt://127.0.0.1:<project-port>"
+NEO4J_USERNAME = "neo4j"
+NEO4J_DATABASE = "neo4j"
+NEO4J_TELEMETRY = "false"
 ```
 
-The launcher, not TOML or argv, resolves the URI and credential reference at
-process start. The path is regenerated per machine and must not point into a
-developer checkout or plugin cache. Codex loads this project layer only after
-the canonical project root is trusted. If a new task sees only global MCP
+TOML carries only non-secret connection values. At process start the project
+launcher reads `NEO4J_PASSWORD` only from protected `graph-infra/.env` and
+validates the binary plus its install receipt. The raw secret is forbidden in
+`command`, `args`, `env`, and logs. All three absolute paths are generated per
+machine and must not point into a developer checkout or plugin cache. Codex
+loads this project layer only after the canonical project root is trusted. If a new task sees only global MCP
 servers, check the canonical root/trust boundary; on support-capable systems,
 `codex mcp list --json` is the read-only diagnostic.
 

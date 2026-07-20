@@ -494,9 +494,9 @@ execution in a clean local home; official-card proof remains Wave 10. Use a
 self-contained per-skill closure, invoke scripts through a documented available
 interpreter, present permissions to the user, and require a new task. Do not compensate with a
 developer-authored/source-checkout absolute path, a stale installed-cache path,
-Git checkout, package `.mcp.json`, or public MCP service. A user-machine
-absolute launcher/binary path generated and read back by `nacl-init` for that
-machine is allowed in project `.codex/config.toml` when it contains no secret,
+Git checkout, package `.mcp.json`, or public MCP service. User-machine absolute
+Node/launcher/binary paths generated and read back by `nacl-init` for that
+machine are allowed in project `.codex/config.toml` when they contain no secret,
 does not point into a developer checkout or plugin cache, and is regenerated
 portably on another machine. Project-root `.mcp.json` is Claude/compatibility
 output only and never satisfies Codex pickup.
@@ -1435,12 +1435,16 @@ controlling decision and package-risk inventory.
 5. Adapt `nacl-init` to a bootstrap-first plan/apply/read-back contract. The
    read-only plan states the exact project root, files, Docker resources, ports,
    downloads/checksums, secret references, canonical trust prerequisite,
-   no-secret launcher, `.codex/config.toml` merge, schema actions, rollback
-   points, and confirmation. Denial causes zero mutation.
+   protected `graph-infra/.env`, the exact Node/launcher/`--binary`/binary
+   launch shape and allowed non-secret env, `.codex/config.toml` merge, schema
+   actions, rollback points, and confirmation. Denial causes zero mutation.
 6. Reuse and harden the packaged POSIX and PowerShell graph setup: pinned
    checksum-verified `neo4j-mcp`, one project Community stack, loopback ports,
-   durable volumes, strict secret handling, a generated machine-local launcher,
-   non-clobbering trusted-project `.codex/config.toml`, schema migration,
+   durable volumes, strict secret handling, a generated machine-local launcher
+   that reads only protected `graph-infra/.env` and validates the binary/install
+   receipt, non-clobbering trusted-project `.codex/config.toml` with resolved
+   Node in `command`, launcher/`--binary`/binary in `args`, and only non-secret
+   Neo4j connection values in `env`, schema migration,
    health/read canary, backup, and idempotent rerun. A Claude `.mcp.json` may be
    emitted only as explicit compatibility output. Do not add a public endpoint
    or managed graph dependency.
@@ -1626,7 +1630,8 @@ publish.
 
 - Loopback-only local ports.
 - Secret scan clean.
-- No credentials in manifest/config/log/argv/repo.
+- No raw secret in manifest/config/log/argv/repo. Project MCP `env` may contain
+  only non-secret URI, username, database, and telemetry values.
 - Reads/writes/admin operations have distinct policies.
 
 ### G6 — Multi-project isolation
@@ -1813,7 +1818,7 @@ Do not:
   compatibility only;
 - trust a noncanonical spelling alias or a different worktree path and assume
   Codex will load the canonical project's config;
-- reject a portable absolute launcher/binary path that `nacl-init` generated
+- reject portable absolute Node/launcher/binary paths that `nacl-init` generated
   and read back for that user's machine; reject only developer-authored,
   checkout-bound, secret-bearing, or stale-cache absolute paths.
 

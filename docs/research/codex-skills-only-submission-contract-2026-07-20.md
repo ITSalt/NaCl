@@ -133,6 +133,13 @@ submission closure.
 - Merge `[mcp_servers.nacl_neo4j]` into trusted-project
   `.codex/config.toml` without clobbering unrelated settings. Treat project
   `.mcp.json` only as Claude/compatibility output.
+- Require the verified Codex launch shape: absolute resolved Node executable in
+  `command`; absolute project launcher, `--binary`, and absolute verified
+  binary in `args`; only `NEO4J_URI`, `NEO4J_USERNAME=neo4j`,
+  `NEO4J_DATABASE`, and `NEO4J_TELEMETRY=false` in `env`. The launcher reads
+  the secret only from protected `graph-infra/.env` and validates the binary
+  plus install receipt. Raw secrets are forbidden in `command`, `args`, and
+  `env`.
 - Stop after creating project config; require a new task for tool pickup.
 - In the new task, prove MCP initialize/tools-list, graph health, schema/read
   canary, confirmed write, and separate read-back.
@@ -191,8 +198,8 @@ closed status/code, result fields, and teardown/read-back evidence.
 | ID | User prompt | Expected behavior and result shape | Fixture |
 |---|---|---|---|
 | P1 | “Use NaCl Diagnose to inspect this project in read-only mode. Do not initialize or change anything.” | Select `nacl-diagnose`; inspect files without requiring a package MCP; report initialized/uninitialized state, evidence and a closed status; zero file, Docker, graph, or network mutation. | Clean small repository with no NaCl config. |
-| P2 | “Use NaCl Init for this project. Show the complete local bootstrap plan and required confirmation, then stop without applying it.” | Select `nacl-init`; verify bundled closure/prerequisites; show the canonical project root and trust prerequisite, files, ports, Docker resources, pinned download/checksum, secret reference, no-secret launcher, `.codex/config.toml` merge, rollback points and fresh confirmation; return plan-only `NOT_RUN` or the implementation's documented equivalent; zero mutation. | Clean small trusted repository; Docker available; no existing NaCl resources. |
-| P3 | “Apply the latest NaCl Init local bootstrap plan using the exact confirmation it returned.” | Validate the fresh token; create one project Community stack and durable volumes; install only the pinned checksum-verified `neo4j-mcp`; generate the no-secret launcher; merge `[mcp_servers.nacl_neo4j]` into project `.codex/config.toml`; load schema/read canary; stop with a closed “new task required” handoff and no false claim that MCP is loaded. | P2 fixture and its fresh exact token; disposable Docker namespace. |
+| P2 | “Use NaCl Init for this project. Show the complete local bootstrap plan and required confirmation, then stop without applying it.” | Select `nacl-init`; verify bundled closure/prerequisites; show the canonical project root and trust prerequisite, files, ports, Docker resources, pinned download/checksum, protected secret file, exact Node/launcher/`--binary`/binary launch shape, allowed non-secret env, `.codex/config.toml` merge, rollback points and fresh confirmation; return plan-only `NOT_RUN` or the implementation's documented equivalent; zero mutation. | Clean small trusted repository; Docker available; no existing NaCl resources. |
+| P3 | “Apply the latest NaCl Init local bootstrap plan using the exact confirmation it returned.” | Validate the fresh token; create one project Community stack and durable volumes; install only the pinned checksum-verified `neo4j-mcp`; generate the launcher; merge the verified Node/launcher/`--binary`/binary shape and non-secret env under `[mcp_servers.nacl_neo4j]`; make the launcher read the secret only from protected `graph-infra/.env` and validate the install receipt; load schema/read canary; stop with a closed “new task required” handoff and no false claim that MCP is loaded. | P2 fixture and its fresh exact token; disposable Docker namespace. |
 | P4 | “Continue NaCl Init for this already bootstrapped project and verify it end to end.” | In a new task at the canonical trusted root, discover `nacl_neo4j` from project `.codex/config.toml`; prove initialize/tools-list, health, schema ledger, named read, fresh confirmed write canary and separate read-back; return `VERIFIED` only with evidence. | P3 fixture reopened at the same canonical trusted root; fresh write-canary confirmation. |
 | P5 | “Use NaCl BA to add the supplied sample requirement to this initialized fixture, showing the plan before the write and verifying it afterward.” | Select `nacl-ba`; read current graph, show bounded mutation plan, wait for fresh confirmation, perform the parameterized project-local MCP write, and return status plus read-back/provenance without infrastructure secrets. | P4 fixture plus a public synthetic requirement and fresh confirmation. |
 
