@@ -49,14 +49,20 @@ function Write-ProtectedEnv {
   $stage = Join-Path $parent (".nacl-env-stage-" + [Guid]::NewGuid().ToString("N"))
   New-Item -ItemType Directory -Path $stage | Out-Null
   try {
-    $currentSid = [System.Security.Principal.WindowsIdentity]::GetCurrent().User.Value
+    $identity = [System.Security.Principal.WindowsIdentity]::GetCurrent()
+    $currentSid = $identity.User.Value
     $principal = "*$currentSid"
     & $IcaclsPath $stage /inheritance:r /grant:r "${principal}:(OI)(CI)(F)" *> $null
     if ($LASTEXITCODE -ne 0) { throw [System.Exception]::new("GRAPH_ENV_ACL_STAGE_FAILED") }
+    & $IcaclsPath $stage /setowner $identity.Name *> $null
+    if ($LASTEXITCODE -ne 0) { throw [System.Exception]::new("GRAPH_ENV_OWNER_STAGE_FAILED") }
     $stagedEnv = Join-Path $stage ".env"
     [System.IO.File]::WriteAllText($stagedEnv, $Content, (New-Object System.Text.UTF8Encoding($false)))
     # The secret was protected at creation by the secured staging directory.
-    # Freeze the inherited user-only ACE as an explicit file ACL before move.
+    # Bind ownership while the inherited full-control ACE is still present,
+    # then freeze the inherited user-only ACE as an explicit file ACL.
+    & $IcaclsPath $stagedEnv /setowner $identity.Name *> $null
+    if ($LASTEXITCODE -ne 0) { throw [System.Exception]::new("GRAPH_ENV_OWNER_FINALIZE_FAILED") }
     & $IcaclsPath $stagedEnv /inheritance:r /grant:r "${principal}:(R,W)" *> $null
     if ($LASTEXITCODE -ne 0) { throw [System.Exception]::new("GRAPH_ENV_ACL_FINALIZE_FAILED") }
     Assert-ProtectedEnvAcl -Path $stagedEnv -IcaclsPath $IcaclsPath
