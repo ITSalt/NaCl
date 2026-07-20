@@ -170,12 +170,15 @@ folder, public MCP service, or second Git installation.
 2. Open the trusted NaCl card supplied for the intended workspace and choose
    **Install** or the **+** action.
 3. Grant only the permissions shown by Codex.
-4. Open a new task in the project and run `nacl-init`.
+4. Open a new task at the canonical project root, trust that project when Codex
+   asks, and run `nacl-init`.
 
 A public card or install URL is not yet available. After a confirmed init
-writes project `.mcp.json`, start another new task in the same project so Codex
-can load the project-local `neo4j-mcp`; this is not a second installation. Do
-not reuse a saved package path from another computer. The current immutable
+creates the no-secret launcher and merges `[mcp_servers.nacl_neo4j]` into
+project `.codex/config.toml`, start another new task at the same canonical
+trusted root so Codex can load the project-local `neo4j-mcp`; this is not a
+second installation. Do not reuse a saved package path from another computer.
+Project `.mcp.json` is Claude/compatibility-only. The current immutable
 Git/full-plugin channel remains the verified development/compatibility path.
 See the [Codex plugin installation guide](install-codex-plugin.md) for both
 boundaries.
@@ -229,7 +232,17 @@ pulling new commits.
 ## Update the Codex plugin
 
 Open the installed NaCl card in **Plugins** and choose **Update** when Codex
-offers it. Fully restart Codex, create a new task, and repeat the doctor check.
-The reported version must match the updated card. If no update is offered, stop
-and ask the plugin owner for the intended release; do not invent an install URL
-or package location.
+offers it. If no update is offered, stop and ask the plugin owner for the
+intended release; do not invent an install URL or package location.
+
+For the official Skills-only channel, fully restart Codex, open a **new task at
+the same canonical trusted project root**, invoke installed `nacl-init`, and
+run only its read-only prerequisite/closure preflight. If bootstrap already
+created project `.codex/config.toml`, verify `nacl_neo4j` in that new task and
+repeat graph/schema read checks without mutating data. Do **not** call
+`nacl_installation_doctor`: the Skills-only bundle has no package MCP doctor.
+
+For the Git/full-plugin compatibility channel, fully restart Codex, create a
+new task, and repeat the package doctor check above. Its reported
+`pluginVersion` must match the updated card and
+`executionLocation=installed-cache`.

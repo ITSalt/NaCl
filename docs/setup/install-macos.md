@@ -106,8 +106,10 @@ Then open your agent runtime in a project and run `/nacl-init --dry-run`.
 After public release, the normal Codex path is the official NaCl Skills-only
 card from **Plugins**. Install it once, grant only displayed permissions, open
 a new project task, and run the `nacl-init` read-only preflight. After confirmed
-bootstrap writes project `.mcp.json`, open another new task for project MCP
-pickup. No source checkout, terminal, public MCP, or Git reinstall is required.
+bootstrap creates the no-secret launcher and merges project
+`.codex/config.toml`, open another new task at the same canonical trusted root
+for project MCP pickup. Project `.mcp.json` is Claude/compatibility-only. No
+source checkout, terminal, public MCP, or Git reinstall is required.
 Until that card is published, use the separately documented immutable
 Git/full-plugin compatibility channel and its installation doctor.
 

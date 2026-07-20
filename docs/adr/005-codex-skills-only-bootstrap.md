@@ -11,8 +11,8 @@
 ## Context
 
 NaCl already has ten public conductor skills and packaged deterministic graph
-setup scripts. The current Git-distributed Codex plugin also starts a package
-MCP from `.mcp.json`; every public skill requires its
+setup scripts. The current Git-distributed full-plugin compatibility channel
+also starts a package MCP from its plugin-level `.mcp.json`; every public skill requires its
 `nacl_installation_doctor` before doing work. That is a valid local plugin
 shape, but it is not the required public architecture.
 
@@ -23,7 +23,7 @@ Plugins Directory Install
   -> nacl-init from the installed skills bundle
   -> reviewed and confirmed packaged bootstrap scripts
   -> one project-local Neo4j Community stack
-  -> pinned project-local neo4j-mcp plus project .mcp.json
+  -> pinned project-local neo4j-mcp plus trusted project .codex/config.toml
   -> new task
   -> graph-backed NaCl workflows
 ```
@@ -39,6 +39,8 @@ Official OpenAI sources were fetched and reviewed on **2026-07-20**:
 - [Build skills](https://learn.chatgpt.com/docs/build-skills)
 - [Build plugins](https://learn.chatgpt.com/docs/build-plugins)
 - [Submit plugins](https://learn.chatgpt.com/docs/submit-plugins)
+- [Connect Codex to an MCP server](https://learn.chatgpt.com/docs/extend/mcp#connect-codex-to-an-mcp-server)
+- [Codex configuration reference](https://learn.chatgpt.com/docs/config-file/config-reference#configtoml)
 - [Plugin submission portal](https://platform.openai.com/plugins)
 
 The documented contract establishes that:
@@ -54,7 +56,9 @@ The documented contract establishes that:
    tool annotations, and reviewer credentials are described for plugins that
    contain an app/MCP submission, not as inputs to the documented Skills-only
    form;
-6. all submission types still require listing metadata, a verified publisher,
+6. Codex reads project-scoped `.codex/config.toml` only for trusted projects,
+   and each project MCP server is declared as `[mcp_servers.<server-name>]`;
+7. all submission types still require listing metadata, a verified publisher,
    public website/support/privacy/terms URLs, starter prompts, availability,
    release notes, exactly five positive tests, and exactly three negative tests.
 
@@ -81,8 +85,9 @@ MCP service requirement.
 The installed `nacl-init` skill is the sole bootstrap entry point. Before any
 mutation it must inspect prerequisites and present an exact plan covering the
 project root, files, Docker resources, network downloads, generated secret
-references, and project `.mcp.json`. It mutates only after fresh explicit
-confirmation and verifies every result by read-back.
+references, the canonical trust boundary, and project `.codex/config.toml`.
+It mutates only after fresh explicit confirmation and verifies every result by
+read-back.
 
 The first supported graph topology remains:
 
@@ -90,9 +95,13 @@ The first supported graph topology remains:
 - one container and independent durable volumes per project;
 - loopback-only local Neo4j ports;
 - a generated per-project secret that is never committed, printed, placed in
-  a skill bundle, or serialized as a raw value in `.mcp.json`;
+  a skill bundle, or serialized as a raw value in Codex or Claude MCP config;
 - a pinned, checksum-verified `neo4j-mcp` binary;
-- a project-root `.mcp.json` merged without overwriting unrelated servers;
+- a generated machine-local launcher that resolves the secret at runtime and
+  starts the pinned binary without exposing the secret in argv or config;
+- a trusted-project `<project>/.codex/config.toml` with a stable
+  `[mcp_servers.nacl_neo4j]` table merged without overwriting unrelated Codex
+  settings or MCP servers;
 - schema/migration, health, read canary, confirmed write canary, and separate
   read-back verification.
 
@@ -113,8 +122,9 @@ bootstrap modes. They do not require or create a public NaCl MCP service.
 4. The skill presents the exact bootstrap plan and confirmation. Denial or any
    unknown prerequisite stops without mutation.
 5. After confirmation, packaged scripts create or connect the project graph,
-   install the pinned `neo4j-mcp`, merge project `.mcp.json`, load and verify
-   schema, and preserve durable state outside the replaceable skill bundle.
+   install the pinned `neo4j-mcp`, generate a no-secret launcher, merge project
+   `.codex/config.toml`, load and verify schema, and preserve durable state
+   outside the replaceable skill bundle.
 6. The current task stops with a closed status that says the MCP configuration
    was created but is not yet loaded.
 7. The user opens a **new task in the same project**. That task verifies the
@@ -123,8 +133,25 @@ bootstrap modes. They do not require or create a public NaCl MCP service.
    reported `VERIFIED`.
 
 The new-task step is mandatory because a running task cannot be assumed to
-discover a newly written project `.mcp.json`. It is a reload boundary, not a
-second installation.
+discover a newly written project `.codex/config.toml`. The project must be
+trusted at its canonical path; a spelling alias or different worktree path is
+not equivalent. This is a trust/reload boundary, not a second installation.
+
+The generated Codex entry has this shape; the concrete `command` is a
+per-machine path created and read back by bootstrap, never a developer checkout
+or plugin-cache path:
+
+```toml
+[mcp_servers.nacl_neo4j]
+command = "<machine-local absolute path to the generated NaCl launcher>"
+args = []
+```
+
+The launcher resolves URI, username, database, and the secret reference from
+durable machine/project state at process start. Raw credentials are forbidden
+in `command`, `args`, `env`, logs, or the submitted tree. A project-root
+`.mcp.json` may still be generated for Claude Code compatibility, but it is
+never evidence that Codex loaded the project MCP.
 
 ### Package boundary
 
@@ -156,15 +183,17 @@ checks. Size and duplicate-file limits must be measured against the live form.
 - `nacl-init` performs plan, explicit confirmation, atomic/rollback-aware
   apply, and read-back.
 - Download URLs and versions are pinned; checksums are verified before use.
-- Existing `.mcp.json`, config, profiles, Docker resources, and graph data are
-  never overwritten or deleted silently.
+- Existing `.codex/config.toml`, Claude-only `.mcp.json`, profiles, Docker
+  resources, and graph data are never overwritten or deleted silently.
 - Secrets do not enter Git, the uploaded skill bundle, Markdown, logs, command
   arguments, support evidence, or tool results.
 - Unsupported OS/architecture, unavailable Docker, blocked network, checksum
-  mismatch, malformed `.mcp.json`, port collision, stale schema, or partial
-  apply returns an honest closed non-success status.
+  mismatch, malformed `.codex/config.toml`, untrusted/noncanonical project
+  root, port collision, stale schema, or partial apply returns an honest closed
+  non-success status.
 - Uninstalling or updating the Skills-only plugin does not delete project graph
-  volumes, project `.mcp.json`, project config, backups, or secret state.
+  volumes, project `.codex/config.toml`, Claude compatibility config, backups,
+  or secret state.
 - Claude Code distribution and root `nacl-*` packages stay independently
   generated and verified.
 
@@ -182,7 +211,8 @@ Wave 9 must produce and independently verify:
   platform limitation in listing copy;
 - denial/no-mutation, missing prerequisite, offline/manual-download,
   checksum-failure, malformed existing config, collision, idempotent rerun,
-  uninstall persistence, and new-task MCP pickup tests;
+  uninstall persistence, canonical trusted-project config pickup, and new-task
+  MCP tests;
 - secret/privacy/license/dependency scans;
 - current Claude isolation and repository regressions;
 - public listing, legal/support URLs, starter prompts, release notes, and
@@ -204,5 +234,6 @@ the official novice journey.
 - **Upload the current plugin tree unchanged:** rejected until the portal and
   clean-install tests prove that its shared paths and package MCP are part of
   the Skills-only artifact.
-- **Claim hot reload after writing `.mcp.json`:** rejected; a new task is the
-  mandatory pickup boundary.
+- **Use project `.mcp.json` as Codex pickup evidence:** rejected; that file is
+  Claude/compatibility-only. Codex success requires trusted project
+  `.codex/config.toml` and a new-task MCP handshake.

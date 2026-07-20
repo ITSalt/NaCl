@@ -14,8 +14,9 @@ The verified Git channel is available as the immutable [`codex-plugin-v0.1.0`](h
 The official target is one **NaCl Skills-only** card in the Plugins Directory.
 It is not published yet. After publication, an ordinary user will install that
 card once, run `nacl-init`, allow the packaged scripts to create the selected
-project's Neo4j Community stack and project-local `neo4j-mcp`/`.mcp.json`, and
-open a new task. GitHub remains the source, audit, release, and support channel;
+project's Neo4j Community stack, project-local `neo4j-mcp`, no-secret launcher,
+and trusted-project `.codex/config.toml`, and open a new task. GitHub remains
+the source, audit, release, and support channel;
 it will not be a mandatory second installation.
 
 The GitHub tag fixes the exact source version. The installed card remains authoritative for the plugin name, plugin version, connections, and permissions. Do not install an archive or marketplace from a fork, branch, or tag that this guide does not name.
@@ -40,17 +41,26 @@ listing.
 1. In **Plugins**, find the official **NaCl** Skills-only card and choose
    **Install**.
 2. Review and grant only the displayed permissions, then open a new task in the
-   project you want to initialize.
+   project you want to initialize. Trust that exact canonical project root when
+   Codex asks; a path alias or another worktree is a different trust boundary.
 3. Invoke `nacl-init`. It must begin with a read-only prerequisite and mutation
    plan; denying the confirmation must change nothing.
 4. After confirmation, packaged scripts create or connect the project graph,
-   install the pinned checksum-verified `neo4j-mcp`, and merge the project
-   `.mcp.json` without overwriting unrelated servers.
-5. When init says `.mcp.json` was written, stop the current task and open a
+   install the pinned checksum-verified `neo4j-mcp`, generate a launcher that
+   resolves credentials at runtime, and merge `[mcp_servers.nacl_neo4j]` into
+   project `.codex/config.toml` without overwriting unrelated settings.
+5. When init says `.codex/config.toml` was written and read back, stop the current task and open a
    **new task in the same project**. This reload boundary is mandatory for the
    project MCP; it is not a second plugin installation.
 6. Continue init only after the new task verifies MCP handshake, graph/schema
    health, a named read, a separately confirmed write canary, and read-back.
+
+The generated TOML may contain a per-machine absolute launcher path, but never
+a raw secret, developer checkout, or plugin-cache path. Project `.mcp.json` is
+Claude Code/full-plugin compatibility only and does not prove Codex pickup. If
+the new task cannot see `nacl_neo4j`, confirm the task opened the same canonical
+trusted root; support diagnostics may compare `codex mcp list --json`, but that
+terminal check is not part of the ordinary install journey.
 
 The final exact prompts and card URL will be added only after the same uploaded
 skill tree passes OpenAI review and post-publication installation smoke.

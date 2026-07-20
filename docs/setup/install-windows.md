@@ -48,6 +48,9 @@ and choose Claude Code or Codex.
 
 ### 2. Clone the repository
 
+This step is for Claude Code CLI and development, not the ordinary Codex UI
+installation.
+
 ```powershell
 git clone https://github.com/ITSalt/NaCl.git $HOME\NaCl
 ```
@@ -86,8 +89,9 @@ Full reference for both runtimes:
 > `nacl` plugin, not this symlink install — run `/plugin marketplace add
 > ITSalt/NaCl` then `/plugin install nacl@nacl` inside Desktop, and pick
 > one channel per machine (do not install both; see
-> [Skill Installation § Choose your channel](install-skills.md)). Codex
-> uses `%USERPROFILE%\.agents\skills`.
+> [Skill Installation § Choose your channel](install-skills.md)). The legacy
+> Codex symlink channel uses `%USERPROFILE%\.agents\skills`; the official
+> Skills-only card does not.
 
 > Note: Creating symlinks on Windows requires either Administrator
 > privileges or Developer Mode enabled
@@ -129,9 +133,14 @@ which:
 - downloads the **official** `neo4j-mcp` binary directly from GitHub and extracts it with
   `Expand-Archive` to `%USERPROFILE%\.neo4j-mcp-bin\neo4j-mcp.exe` (no download-on-start,
   no `unzip` dependency);
-- writes `.mcp.json` pointing **directly at that binary** (the npm launcher prints a banner
-  to STDOUT that corrupts the stdio JSON-RPC stream, so it is not used);
-- writes `.env` / `.mcp.json` / schema as **UTF-8 without a BOM** (`cypher-shell` rejects a
+- for Claude/full-plugin compatibility, writes `.mcp.json` pointing **directly
+  at that binary** (the npm launcher prints a banner to STDOUT that corrupts
+  the stdio JSON-RPC stream, so it is not used);
+- for the planned Codex Skills-only path, generates a no-secret launcher and
+  merges `[mcp_servers.nacl_neo4j]` into trusted-project
+  `.codex/config.toml`; this Wave 9 adaptation is not current-script evidence;
+- writes `.env`, Claude `.mcp.json`, Codex `.codex/config.toml`, and schema as
+  **UTF-8 without a BOM** (`cypher-shell` rejects a
   BOM on line 1);
 - starts Docker, loads the schema, and refuses to report success unless a hard gate passes.
 
@@ -148,6 +157,12 @@ which:
    project `neo4j` server as connected — so this smoke-test call is the reliable check
    on both CLI and Desktop.
 
+For Codex, `.mcp.json` is not acceptance evidence. Open a new task at the same
+canonical trusted project root and require discovery of `nacl_neo4j` from
+`.codex/config.toml`, followed by the same handshake/read check. The generated
+launcher path may be absolute for this machine, but must contain no secret and
+must not point into a developer checkout or plugin cache.
+
 If setup fails it prints `NACL_GRAPH_RESULT: status=FAILED` with the failing check — it never
 reports a half-configured graph as ready. The graph step is idempotent, so re-run `/nacl-init`
 after addressing the cause.
@@ -159,8 +174,10 @@ after addressing the cause.
 After public release, install the official NaCl Skills-only card from
 **Plugins** once, grant only the displayed permissions, create a new project
 task, and run the `nacl-init` read-only preflight. After confirmed bootstrap
-writes project `.mcp.json`, create another new task for project MCP pickup. No
-PowerShell setup, repository path, public MCP, or Git reinstall is required.
+creates the no-secret launcher and merges project `.codex/config.toml`, create
+another new task at the same canonical trusted root for project MCP pickup.
+Project `.mcp.json` is Claude/compatibility-only. No PowerShell setup,
+repository path, public MCP, or Git reinstall is required.
 Until publication, use the separately documented immutable Git/full-plugin
 compatibility channel and its installation doctor.
 

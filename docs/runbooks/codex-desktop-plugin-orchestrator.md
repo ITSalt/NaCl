@@ -22,8 +22,9 @@ publication.
 > app-plus-skills/public-MCP plan in ADR-004 and in older Execution Ledger
 > entries. The public target is one Skills-only UI installation followed by
 > `nacl-init`; packaged scripts create the per-project Neo4j Community stack,
-> install the pinned project `neo4j-mcp`, and write project `.mcp.json`. The
-> user then opens a new task. There is no public NaCl MCP service and no
+> install the pinned project `neo4j-mcp`, generate a no-secret launcher, and
+> merge `[mcp_servers.nacl_neo4j]` into the trusted project's
+> `.codex/config.toml`. The user then opens a new task. There is no public NaCl MCP service and no
 > mandatory second GitHub installation. Historical ledger text is retained
 > unchanged as evidence of the superseded work.
 
@@ -280,6 +281,8 @@ before implementation begins. Use official sources only for technical facts:
 - Plugin building: <https://learn.chatgpt.com/docs/build-plugins>
 - Plugin submission: <https://learn.chatgpt.com/docs/submit-plugins>
 - MCP in Codex: <https://learn.chatgpt.com/docs/extend/mcp>
+- Codex configuration reference:
+  <https://learn.chatgpt.com/docs/config-file/config-reference#configtoml>
 - Codex skills: <https://learn.chatgpt.com/docs/build-skills>
 - Codex subagents: <https://learn.chatgpt.com/docs/agent-configuration/subagents>
 - Codex/Desktop changes: <https://learn.chatgpt.com/docs/whats-new>
@@ -313,7 +316,18 @@ Facts verified during the audit, but to be refreshed:
   reached through `../../resources`; the exact submitted tree must be tested;
 - public MCP URL, authentication, domain verification, CSP, and tool scanning
   are documented for submissions containing an app/MCP, not as requirements
-  of the documented Skills-only submission path.
+  of the documented Skills-only submission path;
+- Codex scopes MCP servers to a trusted project through
+  `<project>/.codex/config.toml` and `[mcp_servers.<server-name>]`; project
+  `.mcp.json` is not the Codex carrier.
+
+Runtime proof recorded on 2026-07-20 with `codex-cli 0.142.0`, isolated
+`CODEX_HOME`, and disposable trusted Git root
+`/private/tmp/nacl-codex-mcp-spike-20260720/project`: project
+`[mcp_servers.nacl_spike]` made `codex mcp list --json` return both
+`global_spike` and `nacl_spike`. Trusting the wrong noncanonical `/tmp/...`
+spelling returned only the global server. This proves project-config pickup and
+the canonical trust boundary, not Desktop UI publication.
 
 If current official documentation contradicts this runbook, stop Wave 1,
 record the exact source and impact, and amend the architecture decision before
@@ -330,9 +344,9 @@ Official Plugins Directory
          ├─ self-contained workflow/reference/script closure
          └─ nacl-init bootstrap
               ├─ exact plan + explicit confirmation
-              ├─ Project A -> Neo4j Community A + project .mcp.json
-              ├─ Project B -> Neo4j Community B + project .mcp.json
-              └─ Project C -> Neo4j Community C + project .mcp.json
+              ├─ Project A -> Neo4j A + trusted .codex/config.toml
+              ├─ Project B -> Neo4j B + trusted .codex/config.toml
+              └─ Project C -> Neo4j C + trusted .codex/config.toml
 
 new task in the selected project
     └─ project-local neo4j-mcp
@@ -345,7 +359,8 @@ new task in the selected project
 The Git marketplace/full local plugin remains a development, compatibility,
 source, and recovery channel. It is not a second step in the ordinary public
 installation flow. The production user installs the official card once, runs
-`nacl-init`, and opens a new task after project `.mcp.json` is written.
+`nacl-init`, trusts the canonical project root, and opens a new task after
+project `.codex/config.toml` is written.
 
 ### 6.1 Proposed repository layout
 
@@ -460,8 +475,9 @@ two-stage spike is:
 3. Inspect the read-only plan, deny it once and prove zero mutation, then run a
    fresh plan and explicitly confirm it.
 4. Prove the scripts create one project-local Community stack, install only the
-   pinned checksum-verified `neo4j-mcp`, merge project `.mcp.json`, and preserve
-   unrelated project configuration.
+   pinned checksum-verified `neo4j-mcp`, generate a no-secret machine-local
+   launcher, merge `[mcp_servers.nacl_neo4j]` into trusted-project
+   `.codex/config.toml`, and preserve unrelated project configuration.
 5. Prove the current task stops without claiming MCP discovery.
 6. Start a new task in the same project and prove MCP initialize/tools-list,
    graph/schema health, read canary, confirmed write canary, and separate
@@ -472,15 +488,18 @@ two-stage spike is:
    a clean second machine and rerun steps 2-7 without Git or terminal setup.
 
 OpenAI's public docs do not promise cross-skill `../../resources` resolution,
-executable-mode preservation, permission prompts, or hot reload. Until the
-exact portal-installed artifact proves them, use a self-contained per-skill
-closure, invoke scripts through a documented available interpreter, present
-permissions to the user, and require a new task. Do not compensate with a
+executable-mode preservation, permission prompts, or hot reload. Before
+submission, require the exact staged/upload tree to prove closure and script
+execution in a clean local home; official-card proof remains Wave 10. Use a
+self-contained per-skill closure, invoke scripts through a documented available
+interpreter, present permissions to the user, and require a new task. Do not compensate with a
 developer-authored/source-checkout absolute path, a stale installed-cache path,
 Git checkout, package `.mcp.json`, or public MCP service. A user-machine
-absolute path generated and read back by `nacl-init` for that machine's pinned
-project MCP binary is allowed when it contains no secret and is regenerated
-portably on another machine.
+absolute launcher/binary path generated and read back by `nacl-init` for that
+machine is allowed in project `.codex/config.toml` when it contains no secret,
+does not point into a developer checkout or plugin cache, and is regenerated
+portably on another machine. Project-root `.mcp.json` is Claude/compatibility
+output only and never satisfies Codex pickup.
 
 ---
 
@@ -1294,7 +1313,8 @@ channel rather than a mandatory second install.
 4. Document the first-project path: installed-skill discovery, `nacl-init`
    read-only prerequisite/closure check, explicit project resolution,
    confirmation tokens, optional Docker/Keychain graph bootstrap, project
-   `.mcp.json` creation, mandatory new-task pickup, MCP handshake, graph doctor,
+   trusted-project `.codex/config.toml` creation, canonical trust diagnostic,
+   mandatory new-task pickup, MCP handshake, graph doctor,
    first safe read/write/read-back, and optional create-only agent profiles.
    The package MCP installation doctor applies only to the Git/full-plugin
    compatibility channel and must not gate the official Skills-only journey.
@@ -1311,8 +1331,9 @@ channel rather than a mandatory second install.
 8. Prepare accurate public-facing descriptions, capability/permission and data
    flow explanations, starter prompts, limitations, support expectations, and
    screenshots without local usernames, temporary paths, secrets, or internal
-   test identifiers. Explain that scripts create a local project graph and
-   `.mcp.json`; GitHub is the source/support channel, not an installer step.
+   test identifiers. Explain that scripts create a local project graph,
+   no-secret launcher, and trusted-project `.codex/config.toml`; GitHub is the
+   source/support channel, not an installer step.
 9. Add automated Markdown link/anchor checks and Russian/English structure
    parity checks. Run spell/style checks where available and inspect rendered
    pages, not only source Markdown.
@@ -1354,8 +1375,9 @@ cleanup.
 
 **Purpose:** turn the released local plugin and existing graph bootstrap into
 one public Skills-only installation: UI Install, `nacl-init`, packaged scripts,
-per-project Neo4j Community plus project-local `neo4j-mcp`/`.mcp.json`, then a
-mandatory new task. No public NaCl MCP or second GitHub installation exists in
+per-project Neo4j Community plus project-local `neo4j-mcp`, no-secret launcher,
+and trusted-project `.codex/config.toml`, then a mandatory new task. No public
+NaCl MCP or second GitHub installation exists in
 this product path.
 
 **Primary worker:** Skills packaging and bootstrap engineer.
@@ -1380,7 +1402,7 @@ controlling decision and package-risk inventory.
    and independent durable volumes per project, locally or on a VPS.
 2. Local Neo4j binds only to loopback. The project receives a stable ID,
    explicit route, schema ledger, secret reference, backup/recovery contract,
-   and project `.mcp.json`.
+   and trusted project `.codex/config.toml`.
 3. For optional remote graphs, the server/VPS remains the authorization
    boundary. Access to server `S` permits its registered project graphs and
    never server `T`; `project_scope` is routing/provenance, not a grant.
@@ -1412,15 +1434,19 @@ controlling decision and package-risk inventory.
    new-task guidance until project MCP is verified.
 5. Adapt `nacl-init` to a bootstrap-first plan/apply/read-back contract. The
    read-only plan states the exact project root, files, Docker resources, ports,
-   downloads/checksums, secret references, `.mcp.json` merge, schema actions,
-   rollback points, and confirmation. Denial causes zero mutation.
+   downloads/checksums, secret references, canonical trust prerequisite,
+   no-secret launcher, `.codex/config.toml` merge, schema actions, rollback
+   points, and confirmation. Denial causes zero mutation.
 6. Reuse and harden the packaged POSIX and PowerShell graph setup: pinned
    checksum-verified `neo4j-mcp`, one project Community stack, loopback ports,
-   durable volumes, strict secret handling, non-clobbering `.mcp.json`, schema
-   migration, health/read canary, backup, and idempotent rerun. Do not add a
-   public endpoint or managed graph dependency.
-7. After writing `.mcp.json`, return a closed handoff status and stop. Require a
-   new task in the same project; only there verify MCP initialize/tools-list,
+   durable volumes, strict secret handling, a generated machine-local launcher,
+   non-clobbering trusted-project `.codex/config.toml`, schema migration,
+   health/read canary, backup, and idempotent rerun. A Claude `.mcp.json` may be
+   emitted only as explicit compatibility output. Do not add a public endpoint
+   or managed graph dependency.
+7. After writing `.codex/config.toml`, return a closed handoff status and stop.
+   Require the canonical project root to be trusted and a new task in that
+   project; only there verify MCP initialize/tools-list,
    graph/schema health, named read, confirmed write canary, and separate
    read-back before reporting initialization `VERIFIED`.
 8. Map post-init BA/SA/TL/goal/fix/verify/migrate/publish graph operations to the
@@ -1458,16 +1484,18 @@ controlling decision and package-risk inventory.
   post-publication Wave 10 gate; an undocumented draft preview remains
   `NOT_VERIFIED`, not a circular prerequisite.
 - All ten public skills are discoverable and their complete runtime closure is
-  inside the submitted tree; portal-installed file paths and script execution
-  are proven rather than inferred.
+  inside the exact staged/upload tree; with the source repository unavailable,
+  local clean-home discovery resolves every path and executes every required
+  script from that tree. Official-card proof belongs only to Wave 10.
 - `nacl-init` performs plan/confirmation/apply/read-back, creates the isolated
-  project graph and project `.mcp.json`, stops honestly, and the mandatory new
-  task proves MCP/schema/read/confirmed-write/read-back.
+  project graph, no-secret launcher, and project `.codex/config.toml`, stops
+  honestly, and the mandatory new task proves canonical trusted-project
+  MCP/schema/read/confirmed-write/read-back.
 - Denial, unsafe input, missing prerequisites, offline download, checksum
   mismatch, malformed config, collision, and partial failure cannot report
   success or leave an unreported mutation.
-- Update/uninstall preserves project graph data, `.mcp.json`, project config,
-  backups, profile files, and secret state.
+- Update/uninstall preserves project graph data, `.codex/config.toml`, Claude
+  compatibility config, backups, profile files, and secret state.
 - Local and optional remote Community topology, server authorization,
   concurrency, recovery, and Claude isolation gates remain verified.
 - All required Skills-only portal materials and exact 5 positive/3 negative
@@ -1571,7 +1599,8 @@ publish.
 - The Skills-only submission tree has its own deterministic file/digest
   manifest and every public skill's transitive closure is inside that tree.
 - Shared `../../resources` paths are not assumed portable until the exact
-  portal-installed tree proves them; unresolved or symlink-escaping paths fail.
+  staged/upload tree passes local clean-home closure and execution tests;
+  unresolved or symlink-escaping paths fail. Official-card proof is Wave 10.
 
 ### G3 — CLI parity
 
@@ -1589,8 +1618,9 @@ publish.
 - User approvals and write read-back work.
 - Restart does not lose data.
 - For the Skills-only product, installed `nacl-init` runs before a NaCl package
-  MCP exists, writes project `.mcp.json` only after confirmation, and a new
-  task discovers the project-local `neo4j-mcp`.
+  MCP exists, writes trusted-project `.codex/config.toml` only after
+  confirmation, and a new task at the canonical trusted root discovers the
+  project-local `neo4j-mcp`.
 
 ### G5 — Graph security
 
@@ -1738,7 +1768,7 @@ Record decisions as repository ADRs and summarize them in the ledger:
 | Lease/revision/ID model | Transactions, TTL, fencing, sequences, idempotency? | Wave 5 |
 | Agent-profile delivery | Explicit companion installation and overwrite policy? | Wave 6 |
 | Candidate/public versioning | Framework/plugin/schema compatibility mapping? | Wave 7 |
-| Skills-only submission/bootstrap | Exact skill closure, pre-MCP init path, project `.mcp.json` pickup, and single-install public journey? | Wave 9 |
+| Skills-only submission/bootstrap | Exact skill closure, pre-MCP init path, trusted project `.codex/config.toml` pickup, and single-install public journey? | Wave 9 |
 
 An ADR may not waive a non-negotiable invariant. Architecture-changing
 disagreement is escalated to the user with concrete options and evidence.
@@ -1752,8 +1782,10 @@ Do not:
 - modify Claude Code skills to make Codex packaging easier;
 - expose all 60 current skills without measuring discovery behavior;
 - treat a plugin cache as a symlink/live checkout;
-- embed an absolute developer path in manifest or MCP config;
-- embed secrets in `.mcp.json`, `.env.example`, marketplace, repo config, logs,
+- embed an absolute developer/cache path in manifest or MCP config; a
+  bootstrap-generated per-machine launcher path in project
+  `.codex/config.toml` is allowed when portable and secret-free;
+- embed secrets in `.codex/config.toml`, Claude `.mcp.json`, `.env.example`, marketplace, repo config, logs,
   or command arguments;
 - auto-start Docker from an untrusted session hook;
 - use one Community Neo4j database for unrelated projects;
@@ -1775,10 +1807,14 @@ Do not:
   project-local MCP;
 - assume the portal preserves `../../resources`, arbitrary plugin-root files,
   executable mode bits, or draft-preview install behavior without exact proof;
-- claim project `.mcp.json` hot reload in the current task instead of requiring
-  a new task;
-- reject a portable absolute path that `nacl-init` generated and read back for
-  the pinned binary on that user's machine; reject only developer-authored,
+- claim project `.codex/config.toml` hot reload in the current task instead of
+  requiring a new task;
+- treat project `.mcp.json` as Codex pickup evidence; it is Claude/full-plugin
+  compatibility only;
+- trust a noncanonical spelling alias or a different worktree path and assume
+  Codex will load the canonical project's config;
+- reject a portable absolute launcher/binary path that `nacl-init` generated
+  and read back for that user's machine; reject only developer-authored,
   checkout-bound, secret-bearing, or stale-cache absolute paths.
 
 ---
