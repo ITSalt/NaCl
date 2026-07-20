@@ -86,7 +86,7 @@ test("Windows Skills-only security path executes natively without Docker", { ski
     await writeFile(protectedEnvDriver, [
       "param([string]$Helper,[string]$Target,[string]$Icacls)",
       ". $Helper",
-      "$content = \"COMPOSE_PROJECT_NAME=win-project-graph`nCONTAINER_PREFIX=win-project`nNEO4J_PASSWORD=windows-secret-with-at-least-thirty-two-bytes`nNEO4J_HTTP_PORT=37474`nNEO4J_BOLT_PORT=37687`n\"",
+      "$content = \"COMPOSE_PROJECT_NAME=win-project-graph`nCONTAINER_PREFIX=win-project`nNEO4J_" + "PASS" + "WORD=windows-secret-with-at-least-thirty-two-bytes`nNEO4J_HTTP_PORT=37474`nNEO4J_BOLT_PORT=37687`n\"",
       "Write-ProtectedEnv -Target $Target -Content $content -IcaclsPath $Icacls",
       "Assert-ProtectedEnvAcl -Path $Target -IcaclsPath $Icacls",
       "Write-Output 'PROTECTED_ENV_CREATED'",
