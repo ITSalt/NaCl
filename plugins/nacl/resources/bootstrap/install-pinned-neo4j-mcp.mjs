@@ -2,7 +2,7 @@
 
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { constants } from "node:fs";
+import { constants, lstatSync, readFileSync, realpathSync } from "node:fs";
 import { chmod, copyFile, mkdir, mkdtemp, readFile, readdir, rename, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -15,15 +15,61 @@ function fail(code) {
 }
 function blocked(code) { throw new Error(code); }
 
+const archiveProbeMode = process.argv.length === 4 && process.argv[2] === "--verify-archive";
 const index = process.argv.indexOf("--project-root");
-if (index < 0 || !process.argv[index + 1] || process.argv.length !== 4) fail("ARGUMENT_INVALID");
-const projectRoot = path.resolve(process.argv[index + 1]);
+if (!archiveProbeMode && (index < 0 || !process.argv[index + 1] || process.argv.length !== 4)) fail("ARGUMENT_INVALID");
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 let identity;
 try {
   identity = releaseIdentity(path.join(scriptDir, "neo4j-mcp-release.pin"));
-  assertPinnedOverride(identity);
 } catch (error) { fail(error.message); }
+
+function archiveProbeResult({ status, code, expectedSha256, actualSha256 }) {
+  const fields = [
+    `NACL_BINARY_ARCHIVE_CHECKSUM: status=${status}`,
+    `code=${code}`,
+    expectedSha256 ? `expected_sha256=${expectedSha256}` : null,
+    actualSha256 ? `actual_sha256=${actualSha256}` : null,
+    "artifact_disposition=PRESERVED_INPUT",
+    "mutation=NONE",
+  ].filter(Boolean);
+  const stream = status === "VERIFIED" ? process.stdout : process.stderr;
+  stream.write(`${fields.join(" ")}\n`);
+  process.exit(status === "VERIFIED" ? 0 : 1);
+}
+
+if (archiveProbeMode) {
+  const archiveInput = process.argv[3];
+  if (!path.isAbsolute(archiveInput) || path.resolve(archiveInput) !== archiveInput) {
+    archiveProbeResult({ status: "BLOCKED", code: "BINARY_ARCHIVE_PATH_UNSAFE" });
+  }
+  let metadata;
+  let canonical;
+  try {
+    metadata = lstatSync(archiveInput);
+    canonical = realpathSync(archiveInput);
+  } catch {
+    archiveProbeResult({ status: "BLOCKED", code: "BINARY_ARCHIVE_PATH_UNSAFE" });
+  }
+  if (!metadata.isFile() || metadata.isSymbolicLink() || canonical !== archiveInput) {
+    archiveProbeResult({ status: "BLOCKED", code: "BINARY_ARCHIVE_PATH_UNSAFE" });
+  }
+  if (metadata.size <= 0 || metadata.size > 64 * 1024 * 1024) {
+    archiveProbeResult({ status: "BLOCKED", code: "BINARY_ARCHIVE_SIZE_INVALID" });
+  }
+  const bytes = readFileSync(archiveInput);
+  if (bytes.length !== metadata.size || bytes.length <= 0 || bytes.length > 64 * 1024 * 1024) {
+    archiveProbeResult({ status: "BLOCKED", code: "BINARY_ARCHIVE_SIZE_INVALID" });
+  }
+  const actualSha256 = createHash("sha256").update(bytes).digest("hex");
+  if (actualSha256 !== identity.archiveSha256) {
+    archiveProbeResult({ status: "BLOCKED", code: "BINARY_ARCHIVE_CHECKSUM_MISMATCH", expectedSha256: identity.archiveSha256, actualSha256 });
+  }
+  archiveProbeResult({ status: "VERIFIED", code: "ARCHIVE_CHECKSUM_VERIFIED", expectedSha256: identity.archiveSha256, actualSha256 });
+}
+
+const projectRoot = path.resolve(process.argv[index + 1]);
+try { assertPinnedOverride(identity); } catch (error) { fail(error.message); }
 const graphDir = path.join(projectRoot, "graph-infra");
 let installed;
 try { installed = verifyInstalledSupply({ graphDir, identity }); } catch (error) { fail(error.message); }

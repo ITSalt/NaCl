@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { chmod, copyFile, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { chmod, copyFile, mkdir, mkdtemp, readFile, realpath, rm, symlink, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
@@ -18,7 +18,7 @@ function run(command, args, options = {}) {
 }
 
 test("Windows Skills-only security path executes natively without Docker", { skip: !windows }, async () => {
-  const root = await mkdtemp(path.join(os.tmpdir(), "nacl-windows-security-"));
+  const root = await realpath(await mkdtemp(path.join(os.tmpdir(), "nacl-windows-security-")));
   try {
     const planProject = path.join(root, "plan-project");
     await mkdir(planProject);
@@ -30,6 +30,19 @@ test("Windows Skills-only security path executes natively without Docker", { ski
     assert.equal(plan.confirmation, `INIT_LOCAL_GRAPH:win-plan:${plan.planHash}`);
     const verifiedPlan = run(process.execPath, [planRunner, ...planSelection, "--verify-token", plan.confirmation]);
     assert.equal(verifiedPlan.status, 0, `${verifiedPlan.stdout}\n${verifiedPlan.stderr}`);
+    const aliasProject = path.join(root, "plan-project-alias");
+    await symlink(planProject, aliasProject, "junction");
+    const aliasSelection = ["--project-root", aliasProject, "--project-id", "win-plan", "--bolt-port", "38687", "--http-port", "38474", "--database", "neo4j"];
+    const aliasPlan = run(process.execPath, [planRunner, ...aliasSelection]);
+    assert.notEqual(aliasPlan.status, 0);
+    assert.equal(JSON.parse(aliasPlan.stderr).code, "PROJECT_ROOT_NOT_CANONICAL");
+    const aliasApply = run("powershell.exe", [
+      "-NoLogo", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File", path.join(packagedBootstrap, "setup-project-graph.ps1"),
+      "-ProjectRoot", aliasProject, "-ProjectId", "win-plan", "-BoltPort", "38687", "-HttpPort", "38474", "-Confirmation", plan.confirmation,
+    ]);
+    assert.notEqual(aliasApply.status, 0);
+    assert.match(aliasApply.stderr, /PROJECT_ROOT_NOT_CANONICAL/);
+    await assert.rejects(readFile(path.join(planProject, "graph-infra", ".env")), /ENOENT/);
     await writeFile(path.join(planProject, ".gitignore"), "changed\n");
     const stalePlan = run(process.execPath, [planRunner, ...planSelection, "--verify-token", plan.confirmation]);
     assert.notEqual(stalePlan.status, 0);

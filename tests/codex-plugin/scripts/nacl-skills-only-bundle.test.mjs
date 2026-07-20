@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { chmod, copyFile, mkdir, mkdtemp, readFile, readdir, realpath, rm, symlink, writeFile } from "node:fs/promises";
+import { chmod, copyFile, mkdir, mkdtemp, readFile, readdir, realpath, rm, symlink, truncate, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
@@ -16,6 +16,7 @@ const guard = path.join(bootstrap, "codex-config-guard.mjs");
 const launcherSource = path.join(bootstrap, "project-neo4j-launcher.mjs");
 const supplySource = path.join(bootstrap, "neo4j-mcp-supply.mjs");
 const planRunner = path.join(packagedBootstrap, "plan-project-graph.mjs");
+const binaryInstaller = path.join(packagedBootstrap, "install-pinned-neo4j-mcp.mjs");
 
 function run(command, args, options = {}) {
   return spawnSync(command, args, { encoding: "utf8", timeout: 30_000, ...options });
@@ -220,7 +221,7 @@ test("project launcher accepts only a protected project env and never prints its
 });
 
 test("POSIX bootstrap blocks a symlinked graph directory before writing outside the project", { skip: process.platform === "win32" }, async () => {
-  const root = await mkdtemp(path.join(os.tmpdir(), "nacl-bootstrap-symlink-"));
+  const root = await realpath(await mkdtemp(path.join(os.tmpdir(), "nacl-bootstrap-symlink-")));
   const project = path.join(root, "project");
   const outside = path.join(root, "outside");
   try {
@@ -273,8 +274,74 @@ test("OS bootstrap scripts are bundle-relative, confirmation-gated, pinned, and 
   assert.equal(syntax.status, 0, syntax.stderr);
 });
 
+test("local archive checksum probe is public, read-only, size-bounded, and preserves mismatched input", async () => {
+  const root = await realpath(await mkdtemp(path.join(os.tmpdir(), "nacl-archive-probe-")));
+  try {
+    const project = path.join(root, "project");
+    const artifact = path.join(root, "reviewer-artifact.bin");
+    const zero = path.join(root, "empty.bin");
+    const oversized = path.join(root, "oversized.bin");
+    const fakeBin = path.join(root, "fake-bin");
+    const marker = path.join(root, "external-command-called");
+    await mkdir(project);
+    await mkdir(fakeBin);
+    await writeFile(path.join(project, "sentinel"), "project-preserved\n");
+    await writeFile(artifact, "untrusted reviewer fixture");
+    await writeFile(zero, "");
+    await writeFile(oversized, "x");
+    await truncate(oversized, 64 * 1024 * 1024 + 1);
+    await writeFile(path.join(fakeBin, "tar"), `#!/bin/sh\nprintf called > "$MARKER"\nexit 99\n`);
+    await chmod(path.join(fakeBin, "tar"), 0o700);
+    const protectedFiles = [
+      path.join(bootstrap, "install-pinned-neo4j-mcp.mjs"),
+      binaryInstaller,
+      path.join(packagedBootstrap, "neo4j-mcp-release.pin"),
+    ];
+    const before = await Promise.all(protectedFiles.map((filename) => readFile(filename)));
+    const supply = await import(`${pathToFileURL(path.join(packagedBootstrap, "neo4j-mcp-supply.mjs")).href}?archive-probe=${Date.now()}`);
+    const identity = supply.releaseIdentity(path.join(packagedBootstrap, "neo4j-mcp-release.pin"));
+    const env = { ...process.env, PATH: `${fakeBin}:${process.env.PATH ?? ""}` };
+
+    const mismatch = run(process.execPath, [binaryInstaller, "--verify-archive", artifact], { env, cwd: project });
+    assert.notEqual(mismatch.status, 0);
+    assert.match(mismatch.stderr, /NACL_BINARY_ARCHIVE_CHECKSUM: status=BLOCKED code=BINARY_ARCHIVE_CHECKSUM_MISMATCH/);
+    assert.match(mismatch.stderr, new RegExp(`expected_sha256=${identity.archiveSha256}`));
+    assert.match(mismatch.stderr, /actual_sha256=d383404402e24a4bc4ca1ad169293a81e12d630b3bd8c4f8f5249f5b564447e6/);
+    assert.match(mismatch.stderr, /artifact_disposition=PRESERVED_INPUT mutation=NONE/);
+    assert.equal(await readFile(artifact, "utf8"), "untrusted reviewer fixture");
+    assert.equal(await readFile(path.join(project, "sentinel"), "utf8"), "project-preserved\n");
+    await assert.rejects(readFile(path.join(project, "graph-infra", "bin", "neo4j-mcp")), /ENOENT/);
+    await assert.rejects(readFile(marker), /ENOENT/);
+
+    const relative = run(process.execPath, [binaryInstaller, "--verify-archive", path.basename(artifact)], { cwd: root });
+    assert.notEqual(relative.status, 0);
+    assert.match(relative.stderr, /code=BINARY_ARCHIVE_PATH_UNSAFE/);
+    const directory = run(process.execPath, [binaryInstaller, "--verify-archive", project]);
+    assert.notEqual(directory.status, 0);
+    assert.match(directory.stderr, /code=BINARY_ARCHIVE_PATH_UNSAFE/);
+    const empty = run(process.execPath, [binaryInstaller, "--verify-archive", zero]);
+    assert.notEqual(empty.status, 0);
+    assert.match(empty.stderr, /code=BINARY_ARCHIVE_SIZE_INVALID/);
+    const tooLarge = run(process.execPath, [binaryInstaller, "--verify-archive", oversized]);
+    assert.notEqual(tooLarge.status, 0);
+    assert.match(tooLarge.stderr, /code=BINARY_ARCHIVE_SIZE_INVALID/);
+    if (process.platform !== "win32") {
+      const alias = path.join(root, "artifact-alias.bin");
+      await symlink(artifact, alias);
+      const linked = run(process.execPath, [binaryInstaller, "--verify-archive", alias]);
+      assert.notEqual(linked.status, 0);
+      assert.match(linked.stderr, /code=BINARY_ARCHIVE_PATH_UNSAFE/);
+    }
+    const after = await Promise.all(protectedFiles.map((filename) => readFile(filename)));
+    assert.deepEqual(after, before);
+    assert.deepEqual((await readdir(project)).sort(), ["sentinel"]);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
 test("content-addressed bootstrap plan is read-only and rejects stale root, ports, files, and legacy tokens", { skip: process.platform === "win32" }, async () => {
-  const root = await mkdtemp(path.join(os.tmpdir(), "nacl-bootstrap-plan-"));
+  const root = await realpath(await mkdtemp(path.join(os.tmpdir(), "nacl-bootstrap-plan-")));
   try {
     const project = path.join(root, "project");
     const otherProject = path.join(root, "other-project");
@@ -317,6 +384,25 @@ test("content-addressed bootstrap plan is read-only and rejects stale root, port
     assert.equal(verified.status, 0, `${verified.stdout}\n${verified.stderr}`);
     assert.equal(JSON.parse(verified.stdout).code, "PLAN_TOKEN_VERIFIED");
 
+    const alias = path.join(root, "project-alias");
+    await mkdir(path.join(project, ".codex"));
+    await writeFile(path.join(project, ".codex", "config.toml"), "model =");
+    await symlink(project, alias);
+    const aliasPlan = run(process.execPath, [planRunner, ...bootstrapSelection(alias, "demo-plan", 29687, 29474)], { env });
+    assert.notEqual(aliasPlan.status, 0);
+    assert.equal(JSON.parse(aliasPlan.stderr).code, "PROJECT_ROOT_NOT_CANONICAL");
+    const aliasApply = run("sh", [
+      path.join(packagedBootstrap, "setup-project-graph.sh"),
+      ...bootstrapSelection(alias, "demo-plan", 29687, 29474),
+      "--confirmation", planned.confirmation,
+    ], { env });
+    assert.notEqual(aliasApply.status, 0);
+    assert.match(aliasApply.stderr, /status=BLOCKED code=PROJECT_ROOT_NOT_CANONICAL/);
+    assert.equal(await readFile(path.join(project, ".gitignore"), "utf8"), "preserved\n");
+    assert.equal(await readFile(path.join(project, ".codex", "config.toml"), "utf8"), "model =");
+    await assert.rejects(readFile(marker), /ENOENT/);
+    await assert.rejects(readFile(path.join(project, "graph-infra", ".env")), /ENOENT/);
+
     await writeFile(path.join(project, ".gitignore"), "changed\n");
     for (const selection of [
       bootstrapSelection(project, "demo-plan", 29687, 29474),
@@ -348,7 +434,7 @@ test("content-addressed bootstrap plan is read-only and rejects stale root, port
 });
 
 test("file-only diagnosis distinguishes uninitialized and blocked partial bootstrap without Docker", async () => {
-  const root = await mkdtemp(path.join(os.tmpdir(), "nacl-bootstrap-diagnose-"));
+  const root = await realpath(await mkdtemp(path.join(os.tmpdir(), "nacl-bootstrap-diagnose-")));
   try {
     const project = path.join(root, "project");
     const fakeBin = path.join(root, "fake-bin");
@@ -382,7 +468,7 @@ test("file-only diagnosis distinguishes uninitialized and blocked partial bootst
 });
 
 test("bootstrap plan fails closed when mandatory schema, query, or migration inputs are missing or symlinked", { skip: process.platform === "win32" }, async () => {
-  const root = await mkdtemp(path.join(os.tmpdir(), "nacl-bootstrap-inputs-"));
+  const root = await realpath(await mkdtemp(path.join(os.tmpdir(), "nacl-bootstrap-inputs-")));
   try {
     const bundle = path.join(root, "bundle");
     const project = path.join(root, "project");
@@ -454,7 +540,7 @@ test("Skills-only query rewrite is isolated from canonical plugins and preserves
 });
 
 test("preflight rejects adversarial TOML before any project, Docker, or download mutation", { skip: process.platform === "win32" }, async () => {
-  const root = await mkdtemp(path.join(os.tmpdir(), "nacl-preflight-zero-mutation-"));
+  const root = await realpath(await mkdtemp(path.join(os.tmpdir(), "nacl-preflight-zero-mutation-")));
   try {
     const fakeBin = path.join(root, "fake-bin");
     await mkdir(fakeBin);
@@ -492,7 +578,7 @@ test("preflight rejects adversarial TOML before any project, Docker, or download
 });
 
 test("post-mutation failure rolls back a fresh project and reports an exact inventory", { skip: process.platform === "win32" }, async () => {
-  const root = await mkdtemp(path.join(os.tmpdir(), "nacl-bootstrap-rollback-"));
+  const root = await realpath(await mkdtemp(path.join(os.tmpdir(), "nacl-bootstrap-rollback-")));
   try {
     const project = path.join(root, "project");
     const fakeBin = path.join(root, "fake-bin");

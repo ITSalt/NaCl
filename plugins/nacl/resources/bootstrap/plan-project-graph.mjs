@@ -57,6 +57,7 @@ function canonicalRoot(value) {
   if (typeof value !== "string" || !path.isAbsolute(value)) stop("PROJECT_ROOT_NOT_ABSOLUTE");
   let root;
   try { root = realpathSync(value); } catch { stop("PROJECT_ROOT_UNAVAILABLE"); }
+  if (root !== path.resolve(value)) stop("PROJECT_ROOT_NOT_CANONICAL");
   const metadata = lstatSync(root);
   if (!metadata.isDirectory() || metadata.isSymbolicLink()) stop("PROJECT_ROOT_UNSAFE");
   return root;

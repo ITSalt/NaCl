@@ -50,7 +50,7 @@ async function query(port, password, statement, parameters = {}) {
 test("exact staged Skills-only tree bootstraps, requires restart, and verifies initialization through a new-process MCP", { skip: !enabled, timeout: 600_000 }, async () => {
   const docker = run("docker", ["info"]);
   if (docker.status !== 0) return test.skip("Docker daemon is unavailable");
-  const temporary = await mkdtemp(path.join(os.tmpdir(), "nacl-skills-bootstrap-e2e-"));
+  const temporary = await realpath(await mkdtemp(path.join(os.tmpdir(), "nacl-skills-bootstrap-e2e-")));
   const bundle = path.join(temporary, "bundle");
   const project = path.join(temporary, "project");
   const suffix = `${process.pid}${Date.now().toString().slice(-6)}`;

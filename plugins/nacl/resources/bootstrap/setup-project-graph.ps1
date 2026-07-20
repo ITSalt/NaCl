@@ -19,7 +19,16 @@ function Block([string]$Code) {
   exit 1
 }
 if (-not [System.IO.Path]::IsPathRooted($ProjectRoot) -or -not (Test-Path -LiteralPath $ProjectRoot -PathType Container)) { Block "PROJECT_ROOT_INVALID" }
-$ProjectRoot = (Resolve-Path -LiteralPath $ProjectRoot).Path
+$ProjectRootInput = $ProjectRoot
+$ProjectRootItem = Get-Item -LiteralPath $ProjectRootInput -Force
+$ProjectRootCursor = $ProjectRootItem
+while ($null -ne $ProjectRootCursor) {
+  if ($ProjectRootCursor.Attributes.HasFlag([System.IO.FileAttributes]::ReparsePoint)) { Block "PROJECT_ROOT_NOT_CANONICAL" }
+  $ProjectRootCursor = $ProjectRootCursor.Parent
+}
+$ProjectRootCanonical = (Resolve-Path -LiteralPath $ProjectRootInput).Path
+if (-not [string]::Equals($ProjectRootInput, $ProjectRootCanonical, [System.StringComparison]::OrdinalIgnoreCase)) { Block "PROJECT_ROOT_NOT_CANONICAL" }
+$ProjectRoot = $ProjectRootCanonical
 if ($ProjectId -notmatch '^[a-z0-9][a-z0-9_-]{2,63}$') { Block "PROJECT_ID_INVALID" }
 if ($BoltPort -lt 1024 -or $BoltPort -gt 65535 -or $HttpPort -lt 1024 -or $HttpPort -gt 65535 -or $BoltPort -eq $HttpPort) { Block "PORT_INVALID" }
 $ConfirmationPrefix = "INIT_LOCAL_GRAPH:${ProjectId}:"
