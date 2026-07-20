@@ -151,7 +151,6 @@ test("exact staged Skills-only tree bootstraps, requires restart, and verifies i
       { jsonrpc: "2.0", id: 5, method: "tools/call", params: { name: "read-cypher", arguments: { query: constraintsQuery, params: {} } } },
       { jsonrpc: "2.0", id: 6, method: "tools/call", params: { name: "read-cypher", arguments: { query: namedRead, params: {} } } },
       { jsonrpc: "2.0", id: 7, method: "tools/call", params: { name: "write-cypher", arguments: { query: verificationPlan.plan.writeStatement, params: verificationPlan.plan.parameters } } },
-      { jsonrpc: "2.0", id: 8, method: "tools/call", params: { name: "read-cypher", arguments: { query: verificationPlan.plan.readbackStatement, params: verificationPlan.plan.parameters } } },
     ];
     const mcp = run(process.execPath, [launcher, "--binary", binary], {
       cwd: project,
@@ -167,7 +166,7 @@ test("exact staged Skills-only tree bootstraps, requires restart, and verifies i
     const canary = responses.find((response) => response.id === 3);
     assert.ok(canary?.result && !canary.error, JSON.stringify(canary));
     assert.match(JSON.stringify(canary.result), /ok/);
-    for (const id of [4, 5, 6, 7, 8]) {
+    for (const id of [4, 5, 6, 7]) {
       const response = responses.find((candidate) => candidate.id === id);
       assert.ok(response?.result && !response.error, `MCP call ${id}: ${JSON.stringify(response)}\nSTDERR:\n${mcp.stderr}`);
     }
@@ -187,7 +186,21 @@ test("exact staged Skills-only tree bootstraps, requires restart, and verifies i
     const [namedReadback] = toolRows(responses.find((response) => response.id === 6));
     for (const field of ["decisions", "screens", "screen_states", "domain_errors", "cache_policies", "degradation_rules"]) assert.equal(typeof namedReadback[field], "number", field);
     const [writeReadback] = toolRows(responses.find((response) => response.id === 7));
-    const [separateReadback] = toolRows(responses.find((response) => response.id === 8));
+    const readbackRequests = [
+      { jsonrpc: "2.0", id: 9, method: "initialize", params: { protocolVersion: "2025-06-18" } },
+      { jsonrpc: "2.0", method: "notifications/initialized" },
+      { jsonrpc: "2.0", id: 10, method: "tools/call", params: { name: "read-cypher", arguments: { query: verificationPlan.plan.readbackStatement, params: verificationPlan.plan.parameters } } },
+    ];
+    const readbackMcp = run(process.execPath, [launcher, "--binary", binary], {
+      cwd: project,
+      env: { NEO4J_URI: `bolt://127.0.0.1:${boltPort}`, NEO4J_USERNAME: "neo4j", NEO4J_DATABASE: "neo4j", NEO4J_TELEMETRY: "false" },
+      input: `${readbackRequests.map((request) => JSON.stringify(request)).join("\n")}\n`,
+    });
+    assert.equal(readbackMcp.status, 0, `${readbackMcp.stdout}\n${readbackMcp.stderr}`);
+    const readbackResponses = readbackMcp.stdout.trim().split(/\r?\n/).filter(Boolean).map(JSON.parse);
+    const readbackResponse = readbackResponses.find((response) => response.id === 10);
+    assert.ok(readbackResponse?.result && !readbackResponse.error, `MCP readback: ${JSON.stringify(readbackResponse)}\nSTDERR:\n${readbackMcp.stderr}`);
+    const [separateReadback] = toolRows(readbackResponse);
     assert.deepEqual(separateReadback, writeReadback);
     assert.equal(writeReadback.projectId, projectId);
     assert.equal(writeReadback.idempotencyKey, verificationPlan.plan.parameters.idempotencyKey);
