@@ -58,10 +58,10 @@ same-task gates succeed through the actual project `nacl_neo4j` MCP:
    failure requires a new verification plan, new idempotency key, and fresh
    user confirmation.
 
-Return these exact result fields: `status`, `initializationState`,
+Return these exact result fields: `status`, `code`, `initializationState`,
 `mcpServerKey`, `mcpInitialize`, `mcpToolsList`, `readTool`, `writeTool`,
 `graphHealth`, `schemaVersion`, `schemaChecksum`, `namedRead`, `writeCanary`,
-and `writeReadback`. Set `status=VERIFIED` and
+and `writeReadback`. Set `status=VERIFIED`, `code=INITIALIZATION_VERIFIED`, and
 `initializationState=VERIFIED` only when every field is verified; otherwise
 preserve the closed failing status/code.
 

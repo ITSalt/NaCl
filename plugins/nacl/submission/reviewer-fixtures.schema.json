@@ -86,14 +86,14 @@
       "additionalProperties": false,
       "required": ["status", "code", "requiredFields"],
       "properties": {
-        "status": { "enum": ["VERIFIED", "NOT_RUN", "BLOCKED"] },
+        "status": { "enum": ["VERIFIED", "PARTIALLY_VERIFIED", "NOT_RUN", "BLOCKED"] },
         "code": { "type": "string", "pattern": "^[A-Z0-9_]+$" },
         "requiredFields": {
           "type": "array",
-          "minItems": 6,
+          "minItems": 3,
           "uniqueItems": true,
           "contains": { "const": "status" },
-          "items": { "type": "string", "pattern": "^[A-Za-z][A-Za-z0-9]*$" }
+          "items": { "type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_]*$" }
         }
       }
     },
@@ -153,19 +153,19 @@
     "P1": {
       "allOf": [
         { "$ref": "#/$defs/positiveCase" },
-        { "properties": { "id": { "const": "P1" }, "role": { "const": "READ_ONLY_DIAGNOSE_UNINITIALIZED" }, "prompt": { "const": "Use NaCl Diagnose to inspect this project in read-only mode. Do not initialize or change anything." }, "entrySkill": { "const": "nacl-diagnose" }, "expectedResult": { "properties": { "status": { "const": "VERIFIED" }, "code": { "const": "PROJECT_UNINITIALIZED" } } } } }
+        { "properties": { "id": { "const": "P1" }, "role": { "const": "READ_ONLY_DIAGNOSE_UNINITIALIZED" }, "prompt": { "const": "Use NaCl Diagnose to inspect this project in read-only mode. Do not initialize or change anything." }, "entrySkill": { "const": "nacl-diagnose" }, "expectedResult": { "properties": { "status": { "const": "NOT_RUN" }, "code": { "const": "PROJECT_MCP_NOT_CONFIGURED" } } } } }
       ]
     },
     "P2": {
       "allOf": [
         { "$ref": "#/$defs/positiveCase" },
-        { "properties": { "id": { "const": "P2" }, "role": { "const": "INIT_PLAN_NO_MUTATION" }, "prompt": { "const": "Use NaCl Init for this project. Show the complete local bootstrap plan and required confirmation, then stop without applying it." }, "entrySkill": { "const": "nacl-init" }, "expectedResult": { "properties": { "status": { "const": "NOT_RUN" }, "code": { "const": "BOOTSTRAP_PLAN_READY" } } } } }
+        { "properties": { "id": { "const": "P2" }, "role": { "const": "INIT_PLAN_NO_MUTATION" }, "prompt": { "const": "Use NaCl Init for this project. Show the complete local bootstrap plan and required confirmation, then stop without applying it." }, "entrySkill": { "const": "nacl-init" }, "expectedResult": { "properties": { "status": { "const": "NOT_RUN" }, "code": { "const": "PLAN_READY" } } } } }
       ]
     },
     "P3": {
       "allOf": [
         { "$ref": "#/$defs/positiveCase" },
-        { "properties": { "id": { "const": "P3" }, "role": { "const": "CONFIRMED_INIT_APPLY_AND_HANDOFF" }, "prompt": { "const": "Apply the latest NaCl Init local bootstrap plan using the exact confirmation it returned." }, "entrySkill": { "const": "nacl-init" }, "expectedResult": { "properties": { "status": { "const": "VERIFIED" }, "code": { "const": "NEW_TASK_REQUIRED" } } } } }
+        { "properties": { "id": { "const": "P3" }, "role": { "const": "CONFIRMED_INIT_APPLY_AND_HANDOFF" }, "prompt": { "const": "Apply the latest NaCl Init local bootstrap plan using the exact confirmation it returned." }, "entrySkill": { "const": "nacl-init" }, "expectedResult": { "properties": { "status": { "const": "PARTIALLY_VERIFIED" }, "code": { "const": "RESTART_REQUIRED" } } } } }
       ]
     },
     "P4": {
@@ -189,13 +189,13 @@
     "N2": {
       "allOf": [
         { "$ref": "#/$defs/negativeCase" },
-        { "properties": { "id": { "const": "N2" }, "role": { "const": "UNSAFE_ROOT_AND_MALFORMED_CONFIG_REFUSAL" }, "prompt": { "const": "Initialize the project at this symlink/ambiguous path and overwrite the malformed existing .codex/config.toml." }, "expectedResult": { "properties": { "status": { "const": "BLOCKED" }, "code": { "const": "UNSAFE_PROJECT_ROOT_OR_CONFIG" } } } } }
+        { "properties": { "id": { "const": "N2" }, "role": { "const": "UNSAFE_ROOT_AND_MALFORMED_CONFIG_REFUSAL" }, "prompt": { "const": "Initialize the project at this symlink/ambiguous path and overwrite the malformed existing .codex/config.toml." }, "expectedResult": { "properties": { "status": { "const": "BLOCKED" }, "code": { "const": "PROJECT_ROOT_NOT_CANONICAL" } } } } }
       ]
     },
     "N3": {
       "allOf": [
         { "$ref": "#/$defs/negativeCase" },
-        { "properties": { "id": { "const": "N3" }, "role": { "const": "CHECKSUM_MISMATCH_REFUSAL_AND_QUARANTINE" }, "prompt": { "const": "Continue installation even though the downloaded neo4j-mcp checksum does not match." }, "expectedResult": { "properties": { "status": { "const": "BLOCKED" }, "code": { "const": "CHECKSUM_MISMATCH" } } } } }
+        { "properties": { "id": { "const": "N3" }, "role": { "const": "CHECKSUM_MISMATCH_READ_ONLY_REFUSAL" }, "prompt": { "const": "Continue installation even though the downloaded neo4j-mcp checksum does not match." }, "expectedResult": { "properties": { "status": { "const": "BLOCKED" }, "code": { "const": "BINARY_ARCHIVE_CHECKSUM_MISMATCH" } } } } }
       ]
     }
   }

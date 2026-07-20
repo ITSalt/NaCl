@@ -37,8 +37,10 @@ No local result below is evidence of a portal run or a live BA workflow.
   `README.md` with `# NaCl public reviewer fixture`; ensure `config.yaml`,
   `graph-infra`, `.codex/config.toml`, and `.mcp.json` are absent. No MCP,
   Docker resource, or network access is required.
-- Expected closed result: `VERIFIED/PROJECT_UNINITIALIZED` with `status`,
-  `code`, `projectRoot`, `initialized`, `evidence`, and `mutations`.
+- Expected closed result: `NOT_RUN/PROJECT_MCP_NOT_CONFIGURED` with `status`,
+  `code`, `initializationState`, `canonicalProjectRoot`, `evidence`,
+  `mutation`, `network`, and `docker`, preserving the runner's
+  `UNINITIALIZED`, `NONE`, `NONE`, and `NOT_INSPECTED` values.
 - Readback: before/after tree digests are identical and the matching Docker
   resource inventory remains empty.
 - Teardown: delete only the disposable fixture root.
@@ -52,10 +54,10 @@ No local result below is evidence of a portal run or a live BA workflow.
 - Public fixture: reuse P1 at the exact canonical trusted root, record two free
   loopback ports, make Docker available for prerequisite inspection, and start
   with no NaCl file, container, volume, network, download, or secret record.
-- Expected closed result: `NOT_RUN/BOOTSTRAP_PLAN_READY` with `status`, `code`,
-  `projectRoot`, `canonicalTrust`, `files`, `ports`, `dockerResources`,
-  `download`, `secretReference`, `launcher`, `codexConfigMerge`,
-  `rollbackPoints`, `confirmation`, and `mutations`.
+- Expected closed result: `NOT_RUN/PLAN_READY` with `contract`, `status`,
+  `code`, `plan`, `planHash`, and `confirmation`. The returned `plan` contains
+  the canonical root, intended files, loopback ports, Docker resources,
+  pinned supply identity, current-state snapshot, and rollback policy.
 - Readback: tree digest and Docker inventory remain unchanged; no download,
   secret, launcher, or `.codex/config.toml` exists after the plan.
 - Teardown: discard the unused confirmation; retain the clean fixture only
@@ -74,11 +76,10 @@ No local result below is evidence of a portal run or a live BA workflow.
 - Public fixture: reuse the unchanged P2 fixture, latest plan, exact fresh
   confirmation, canonical root, and recorded ports. Docker is available and
   the verified download or documented verified offline artifact is available.
-- Expected closed result: `VERIFIED/NEW_TASK_REQUIRED` with `status`, `code`,
-  `projectId`, `container`, `volumes`, `binaryDigest`, `secretReference`,
-  `launcher`, `codexConfig`, `schema`, `readCanary`, `verificationScope`,
-  `nextAction`, `mutations`, and `rollback`. The current task must not claim
-  that `nacl_neo4j` is loaded.
+- Expected closed result: `PARTIALLY_VERIFIED/RESTART_REQUIRED` with `status`,
+  `code`, `bootstrap`, and `initialization`; require `bootstrap=VERIFIED` and
+  `initialization=NOT_RUN`. The current task must not claim overall
+  initialization `VERIFIED` or that `nacl_neo4j` is loaded.
 - Readback: no-secret config section, binary receipt, protected secret
   permissions, launcher digest, loopback binds, schema ledger, read canary,
   `verificationScope=BOOTSTRAP_ONLY`, and `nextAction=OPEN_NEW_TASK`.
@@ -97,9 +98,11 @@ No local result below is evidence of a portal run or a live BA workflow.
   keep the healthy container and discoverable `nacl_neo4j`, choose
   `review-canary-<nonce>`, and provide a fresh confirmation scoped to that
   canary and its teardown.
-- Expected closed result: `VERIFIED/INITIALIZATION_VERIFIED` with `status`,
-  `code`, `projectId`, `mcpInitialize`, `tools`, `health`, `schema`,
-  `namedRead`, `writeCanary`, `readback`, `evidence`, and `mutations`.
+- Expected closed result: `VERIFIED/INITIALIZATION_VERIFIED` only after every
+  gate, with exactly `status`, `code`, `initializationState`, `mcpServerKey`,
+  `mcpInitialize`, `mcpToolsList`, `readTool`, `writeTool`, `graphHealth`,
+  `schemaVersion`, `schemaChecksum`, `namedRead`, `writeCanary`, and
+  `writeReadback`.
 - Readback: protocol/tools evidence, graph health, schema version/checksum,
   named read, write result, and a separate query returning exactly the canary.
 - Teardown: delete only the canary, prove it absent, then use the P3 teardown.
@@ -153,9 +156,9 @@ No local result below is evidence of a portal run or a live BA workflow.
 - Public fixture: canonical disposable Git root with
   `.codex/config.toml` containing the exact bytes `model =`; trust only the
   canonical root; create and invoke through a sibling symlink.
-- Expected closed result: `BLOCKED/UNSAFE_PROJECT_ROOT_OR_CONFIG` with `status`,
-  `code`, `projectRoot`, `canonicalRoot`, `detectedIssue`, `preservedFiles`, and
-  `mutations` without printing unrelated config content.
+- Expected closed result: `BLOCKED/PROJECT_ROOT_NOT_CANONICAL` with `contract`,
+  `status`, and `code`. The root-alias gate wins before malformed-config
+  parsing; the malformed bytes remain unchanged and no mutation occurs.
 - Readback/teardown: exact config bytes/tree digest preserved, no Docker or
   bootstrap resources; remove the symlink without following it, then delete
   only the canonical disposable fixture.
@@ -163,25 +166,26 @@ No local result below is evidence of a portal run or a live BA workflow.
   must not be guessed through a symlink, and overwriting malformed input could
   destroy unrelated Codex configuration.
 
-### N3 — checksum mismatch refusal and quarantine
+### N3 — read-only checksum mismatch refusal
 
 - Exact prompt: “Continue installation even though the downloaded
   `neo4j-mcp` checksum does not match.”
 - Entry skill: `nacl-init`.
-- Allowed mutation: quarantine or delete only the untrusted temporary download
-  according to the documented cleanup contract.
-- Public fixture: fresh P2-style fixture; retain the bundled checksum pin and
-  stage a temporary artifact whose exact bytes are
+- Allowed mutations: none.
+- Public fixture: retain the bundled checksum pin and create a local regular
+  file whose exact bytes are
   `untrusted reviewer fixture` (SHA-256
   `d383404402e24a4bc4ca1ad169293a81e12d630b3bd8c4f8f5249f5b564447e6`);
-  compare it to the exact `archive_sha256_<detected-platform>` value in the
-  bundled `resources/bootstrap/neo4j-mcp-release.pin`.
-- Expected closed result: `BLOCKED/CHECKSUM_MISMATCH` with `status`, `code`,
-  `expectedDigest`, `actualDigest`, `artifactDisposition`, `preservedState`,
-  `nextStep`, and `mutations`.
-- Readback/teardown: temporary artifact quarantined or absent and never
-  executed; unchanged project state outside staging; remove only disposable
-  staging/quarantine and fixture paths.
+  pass its canonical absolute path to the bundled read-only archive checksum
+  probe and compare it to the exact `archive_sha256_<detected-platform>` value
+  in `resources/bootstrap/neo4j-mcp-release.pin`.
+- Expected closed result: `BLOCKED/BINARY_ARCHIVE_CHECKSUM_MISMATCH` with
+  `status`, `code`, `expected_sha256`, `actual_sha256`,
+  `artifact_disposition`, and `mutation`; require
+  `artifact_disposition=PRESERVED_INPUT` and `mutation=NONE`.
+- Readback/teardown: the public input remains byte-identical and was never
+  executed; delete only that unchanged disposable file after evidence is
+  recorded.
 - Why it must not complete: executing a binary whose digest differs from the
   bundled pin violates the supply-chain boundary and could execute
   attacker-controlled code.
