@@ -39,10 +39,8 @@ Users are responsible for:
 - complying with applicable law, organizational policy, third-party rights,
   and the terms of services they choose to use.
 
-NaCl must not be used to gain unauthorized access, interfere with systems or
-data, distribute malware, violate privacy or intellectual-property rights, or
-otherwise facilitate unlawful activity. This statement describes user
-responsibility and does not add restrictions to the rights granted by the MIT
+Operational and safety guidance accompanying NaCl is informational. It does
+not modify, condition, or add restrictions to the rights granted by the MIT
 License.
 
 ## Third-party products and services
