@@ -368,11 +368,17 @@ test("public nacl-init profile guidance remains create-only while the full local
 
 test("public nacl-init exposes only the confirmed local Skills-only bootstrap before project MCP discovery", async () => {
   const publicEntry = await readFile(path.join(pluginRoot, "skills", "nacl-init", "SKILL.md"), "utf8");
-  assert.match(publicEntry, /INIT_LOCAL_GRAPH:<project-id>/);
+  assert.match(publicEntry, /INIT_LOCAL_GRAPH:<project-id>:<sha256>/);
+  assert.match(publicEntry, /plan-project-graph\.mjs/);
   assert.match(publicEntry, /setup-project-graph\.sh/);
   assert.match(publicEntry, /setup-project-graph\.ps1/);
+  assert.match(publicEntry, /PARTIALLY_VERIFIED[\s\S]*RESTART_REQUIRED/);
+  assert.match(publicEntry, /VERIFY_NACL_INITIALIZATION/);
+  assert.match(publicEntry, /tools\/list/);
+  assert.match(publicEntry, /read-cypher[\s\S]*write-cypher/);
+  assert.match(publicEntry, /writeReadback/);
   assert.match(publicEntry, /new task/i);
-  assert.match(publicEntry, /project-local `nacl_neo4j` MCP/);
+  assert.match(publicEntry, /project `nacl_neo4j` MCP/);
   assert.doesNotMatch(publicEntry, /nacl_installation_doctor|nacl_legacy_symlinks_/);
   assert.doesNotMatch(publicEntry, /public MCP|OAuth/i);
 });

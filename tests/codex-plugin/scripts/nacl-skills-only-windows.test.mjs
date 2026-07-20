@@ -20,6 +20,21 @@ function run(command, args, options = {}) {
 test("Windows Skills-only security path executes natively without Docker", { skip: !windows }, async () => {
   const root = await mkdtemp(path.join(os.tmpdir(), "nacl-windows-security-"));
   try {
+    const planProject = path.join(root, "plan-project");
+    await mkdir(planProject);
+    const planRunner = path.join(packagedBootstrap, "plan-project-graph.mjs");
+    const planSelection = ["--project-root", planProject, "--project-id", "win-plan", "--bolt-port", "38687", "--http-port", "38474", "--database", "neo4j"];
+    const planned = run(process.execPath, [planRunner, ...planSelection]);
+    assert.equal(planned.status, 0, `${planned.stdout}\n${planned.stderr}`);
+    const plan = JSON.parse(planned.stdout);
+    assert.equal(plan.confirmation, `INIT_LOCAL_GRAPH:win-plan:${plan.planHash}`);
+    const verifiedPlan = run(process.execPath, [planRunner, ...planSelection, "--verify-token", plan.confirmation]);
+    assert.equal(verifiedPlan.status, 0, `${verifiedPlan.stdout}\n${verifiedPlan.stderr}`);
+    await writeFile(path.join(planProject, ".gitignore"), "changed\n");
+    const stalePlan = run(process.execPath, [planRunner, ...planSelection, "--verify-token", plan.confirmation]);
+    assert.notEqual(stalePlan.status, 0);
+    assert.equal(JSON.parse(stalePlan.stderr).code, "PLAN_TOKEN_STALE");
+
     const malformedProject = path.join(root, "malformed");
     await mkdir(path.join(malformedProject, ".codex"), { recursive: true });
     const malformed = "model=\"a\"\nmodel=\"b\"\n";
@@ -27,7 +42,7 @@ test("Windows Skills-only security path executes natively without Docker", { ski
     await writeFile(malformedConfig, malformed);
     const blocked = run("powershell.exe", [
       "-NoLogo", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File", path.join(packagedBootstrap, "setup-project-graph.ps1"),
-      "-ProjectRoot", malformedProject, "-ProjectId", "win-malformed", "-BoltPort", "37687", "-HttpPort", "37474", "-Confirmation", "INIT_LOCAL_GRAPH:win-malformed",
+      "-ProjectRoot", malformedProject, "-ProjectId", "win-malformed", "-BoltPort", "37687", "-HttpPort", "37474", "-Confirmation", `INIT_LOCAL_GRAPH:win-malformed:${"a".repeat(64)}`,
     ]);
     assert.notEqual(blocked.status, 0);
     assert.match(blocked.stderr, /CODEX_CONFIG_MALFORMED/);

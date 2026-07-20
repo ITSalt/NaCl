@@ -117,8 +117,22 @@ test("public discovery stays within the bounded ten-skill routing budget", async
     descriptionBytes += Buffer.byteLength(frontmatter.description);
     assert.doesNotMatch(content, /nacl_installation_doctor/);
     assert.match(content, /skills-only-runtime-contract\.md/);
-    if (directory === "nacl-init") assert.match(content, /setup-project-graph\.(?:sh|ps1)/);
-    else assert.match(content, /PROJECT_MCP_NOT_CONFIGURED/);
+    if (directory === "nacl-init") {
+      assert.match(content, /setup-project-graph\.(?:sh|ps1)/);
+      assert.match(content, /plan-project-graph\.mjs/);
+      assert.match(content, /INIT_LOCAL_GRAPH:<project-id>:<sha256>/);
+      assert.match(content, /PARTIALLY_VERIFIED[\s\S]*RESTART_REQUIRED/);
+      assert.match(content, /VERIFY_NACL_INITIALIZATION/);
+      assert.match(content, /tools\/list/);
+      assert.match(content, /sa_statistics_extensions/);
+      assert.match(content, /read-cypher[\s\S]*write-cypher/);
+      assert.match(content, /writeReadback/);
+    } else assert.match(content, /PROJECT_MCP_NOT_CONFIGURED/);
+    if (directory === "nacl-diagnose") {
+      assert.match(content, /--diagnose-only/);
+      assert.match(content, /UNINITIALIZED/);
+      assert.match(content, /INITIALIZED_LOCAL_FILES/);
+    }
     if (directory !== "nacl-init") assert.match(content, /resources\/workflows/);
     assert.doesNotMatch(content, /\bmodel\s*:/i);
   }

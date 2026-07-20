@@ -22,7 +22,10 @@ if (-not [System.IO.Path]::IsPathRooted($ProjectRoot) -or -not (Test-Path -Liter
 $ProjectRoot = (Resolve-Path -LiteralPath $ProjectRoot).Path
 if ($ProjectId -notmatch '^[a-z0-9][a-z0-9_-]{2,63}$') { Block "PROJECT_ID_INVALID" }
 if ($BoltPort -lt 1024 -or $BoltPort -gt 65535 -or $HttpPort -lt 1024 -or $HttpPort -gt 65535 -or $BoltPort -eq $HttpPort) { Block "PORT_INVALID" }
-if ($Confirmation -ne "INIT_LOCAL_GRAPH:$ProjectId") { Block "CONFIRMATION_REQUIRED" }
+$ConfirmationPrefix = "INIT_LOCAL_GRAPH:${ProjectId}:"
+if (-not $Confirmation.StartsWith($ConfirmationPrefix, [System.StringComparison]::Ordinal)) { Block "CONFIRMATION_REQUIRED" }
+$ConfirmationHash = $Confirmation.Substring($ConfirmationPrefix.Length)
+if ($ConfirmationHash -notmatch '^[0-9a-f]{64}$') { Block "CONFIRMATION_REQUIRED" }
 
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $ResourceRoot = (Resolve-Path (Join-Path $ScriptDir "..")).Path
@@ -35,11 +38,13 @@ $SchemaRunner = Join-Path $ScriptDir "apply-project-schema.mjs"
 $Preflight = Join-Path $ScriptDir "preflight-project-graph.mjs"
 $BinaryInstaller = Join-Path $ScriptDir "install-pinned-neo4j-mcp.mjs"
 $RollbackRunner = Join-Path $ScriptDir "rollback-project-bootstrap.mjs"
+$PlanRunner = Join-Path $ScriptDir "plan-project-graph.mjs"
 $ProtectedEnvHelper = Join-Path $ScriptDir "protected-env.ps1"
-foreach ($required in @($Guard,$Writer,$LauncherSource,$SupplySource,$PinSource,$SchemaRunner,$Preflight,$BinaryInstaller,$RollbackRunner,$ProtectedEnvHelper,(Join-Path $ScriptDir "graph-docker-compose.yml"))) { if (-not (Test-Path -LiteralPath $required -PathType Leaf)) { Block "BUNDLE_RESOURCE_MISSING" } }
+foreach ($required in @($Guard,$Writer,$LauncherSource,$SupplySource,$PinSource,$SchemaRunner,$Preflight,$BinaryInstaller,$RollbackRunner,$PlanRunner,$ProtectedEnvHelper,(Join-Path $ScriptDir "graph-docker-compose.yml"))) { if (-not (Test-Path -LiteralPath $required -PathType Leaf)) { Block "BUNDLE_RESOURCE_MISSING" } }
 $Node = Get-Command node -ErrorAction SilentlyContinue
 if (-not $Node) { Block "NODE_MISSING" }
-$NodePath = $Node.Source
+$NodePath = ((& $Node.Source -p "process.execPath") | Select-Object -First 1).Trim()
+if (-not [System.IO.Path]::IsPathRooted($NodePath) -or -not (Test-Path -LiteralPath $NodePath -PathType Leaf)) { Block "NODE_MISSING" }
 $Icacls = Get-Command icacls.exe -ErrorAction SilentlyContinue
 if (-not $Icacls) { Block "WINDOWS_ACL_TOOL_MISSING" }
 . $ProtectedEnvHelper
@@ -75,6 +80,9 @@ $LogState = if (Test-DockerResource @("volume","inspect",$LogVolume)) { "preexis
 $NetworkState = if (Test-DockerResource @("network","inspect",$Network)) { "preexisting" } else { "absent" }
 $GraphState = if (Test-Path -LiteralPath $GraphDir) { "preexisting" } else { "absent" }
 if ($GraphState -eq "absent" -and @($ContainerState,$DataState,$LogState,$NetworkState) -contains "preexisting") { Block "DOCKER_RESOURCE_CONFLICT" }
+
+& $NodePath $PlanRunner --project-root $ProjectRoot --project-id $ProjectId --bolt-port $BoltPort --http-port $HttpPort --database $Database --verify-token $Confirmation
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
 $TransactionDir = Join-Path ([System.IO.Path]::GetTempPath()) ("nacl-graph-transaction-" + [Guid]::NewGuid().ToString("N"))
 New-Item -ItemType Directory -Path $TransactionDir | Out-Null
@@ -191,7 +199,7 @@ try {
 & $NodePath $Guard --phase readback --project-root $ProjectRoot --node $NodePath --launcher $ProjectLauncher --binary $StableBin --uri $Uri --database $Database
 if ($LASTEXITCODE -ne 0) { Block "CONFIG_READBACK_FAILED" }
 $script:MutationStarted = $false
-Write-Output "NACL_SKILLS_ONLY_BOOTSTRAP: status=VERIFIED project_id=$ProjectId codex_config=.codex/config.toml mcp=nacl_neo4j next=new-task"
+Write-Output "NACL_SKILLS_ONLY_BOOTSTRAP: status=PARTIALLY_VERIFIED code=RESTART_REQUIRED bootstrap=VERIFIED initialization=NOT_RUN project_id=$ProjectId codex_config=.codex/config.toml mcp=nacl_neo4j next=new-task"
 } catch {
   $code = if ($_.Exception.Data["NaclCode"]) { [string]$_.Exception.Data["NaclCode"] } else { "UNEXPECTED_BOOTSTRAP_FAILURE" }
   $rollbackOk = $true

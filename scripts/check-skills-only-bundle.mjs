@@ -13,6 +13,7 @@ const runtimePluginAllowlist = new Set([
   path.join("resources", "bootstrap", "apply-project-schema.mjs"),
   path.join("resources", "bootstrap", "graph-docker-compose.yml"),
   path.join("resources", "bootstrap", "neo4j-image-PROVENANCE.md"),
+  path.join("resources", "bootstrap", "plan-project-graph.mjs"),
   path.join("resources", "bootstrap", "setup-project-graph.ps1"),
   path.join("resources", "bootstrap", "setup-project-graph.sh"),
 ]);

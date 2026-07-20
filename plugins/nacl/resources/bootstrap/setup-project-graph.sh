@@ -30,7 +30,10 @@ echo "$HTTP_PORT" | grep -Eq '^[0-9]+$' || fail HTTP_PORT_INVALID
 [ "$BOLT_PORT" -ge 1024 ] && [ "$BOLT_PORT" -le 65535 ] || fail BOLT_PORT_INVALID
 [ "$HTTP_PORT" -ge 1024 ] && [ "$HTTP_PORT" -le 65535 ] || fail HTTP_PORT_INVALID
 [ "$BOLT_PORT" != "$HTTP_PORT" ] || fail PORT_COLLISION
-[ "$CONFIRMATION" = "INIT_LOCAL_GRAPH:$PROJECT_ID" ] || fail CONFIRMATION_REQUIRED
+CONFIRMATION_PREFIX="INIT_LOCAL_GRAPH:$PROJECT_ID:"
+case "$CONFIRMATION" in "$CONFIRMATION_PREFIX"*) ;; *) fail CONFIRMATION_REQUIRED ;; esac
+CONFIRMATION_HASH=${CONFIRMATION#"$CONFIRMATION_PREFIX"}
+echo "$CONFIRMATION_HASH" | grep -Eq '^[0-9a-f]{64}$' || fail CONFIRMATION_REQUIRED
 
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd -P) || fail BUNDLE_PATH_UNAVAILABLE
 RESOURCE_ROOT=$(CDPATH= cd -- "$SCRIPT_DIR/.." && pwd -P) || fail BUNDLE_PATH_UNAVAILABLE
@@ -43,9 +46,11 @@ SCHEMA_RUNNER="$SCRIPT_DIR/apply-project-schema.mjs"
 PREFLIGHT="$SCRIPT_DIR/preflight-project-graph.mjs"
 BINARY_INSTALLER="$SCRIPT_DIR/install-pinned-neo4j-mcp.mjs"
 ROLLBACK_RUNNER="$SCRIPT_DIR/rollback-project-bootstrap.mjs"
-for required in "$GUARD" "$WRITER" "$LAUNCHER_SOURCE" "$SUPPLY_SOURCE" "$PIN_SOURCE" "$SCHEMA_RUNNER" "$PREFLIGHT" "$BINARY_INSTALLER" "$ROLLBACK_RUNNER" "$SCRIPT_DIR/graph-docker-compose.yml"; do [ -f "$required" ] || fail BUNDLE_RESOURCE_MISSING; done
+PLAN_RUNNER="$SCRIPT_DIR/plan-project-graph.mjs"
+for required in "$GUARD" "$WRITER" "$LAUNCHER_SOURCE" "$SUPPLY_SOURCE" "$PIN_SOURCE" "$SCHEMA_RUNNER" "$PREFLIGHT" "$BINARY_INSTALLER" "$ROLLBACK_RUNNER" "$PLAN_RUNNER" "$SCRIPT_DIR/graph-docker-compose.yml"; do [ -f "$required" ] || fail BUNDLE_RESOURCE_MISSING; done
 NODE=$(command -v node 2>/dev/null || command -v nodejs 2>/dev/null) || fail NODE_MISSING
-NODE=$(CDPATH= cd -- "$(dirname -- "$NODE")" && printf '%s/%s\n' "$PWD" "$(basename -- "$NODE")")
+NODE=$("$NODE" -p 'process.execPath') || fail NODE_MISSING
+case "$NODE" in /*) ;; *) fail NODE_MISSING ;; esac
 
 GRAPH_DIR="$PROJECT_ROOT/graph-infra"; SCHEMA_DIR="$GRAPH_DIR/schema"; QUERY_DIR="$GRAPH_DIR/queries"; RUNTIME_DIR="$GRAPH_DIR/scripts"
 PROJECT_LAUNCHER="$RUNTIME_DIR/nacl-neo4j-mcp-launcher.mjs"
@@ -75,6 +80,9 @@ else
   GRAPH_STATE=absent
   [ "$CONTAINER_STATE" = absent ] && [ "$DATA_STATE" = absent ] && [ "$LOG_STATE" = absent ] && [ "$NETWORK_STATE" = absent ] || fail DOCKER_RESOURCE_CONFLICT
 fi
+
+"$NODE" "$PLAN_RUNNER" --project-root "$PROJECT_ROOT" --project-id "$PROJECT_ID" --bolt-port "$BOLT_PORT" --http-port "$HTTP_PORT" \
+  --database "$DATABASE" --verify-token "$CONFIRMATION" || exit 1
 
 TRANSACTION_DIR=$(mktemp -d "${TMPDIR:-/tmp}/nacl-graph-transaction.XXXXXX") || fail TRANSACTION_SNAPSHOT_FAILED
 CONFIG_DIR_STATE=absent; CONFIG_STATE=absent; CONFIG_BACKUP="$TRANSACTION_DIR/config.toml"; GITIGNORE_STATE=absent; GITIGNORE_BACKUP="$TRANSACTION_DIR/gitignore"
@@ -225,4 +233,4 @@ MUTATION_STARTED=0
 trap - INT TERM HUP
 rm -f "$CONFIG_BACKUP" "$GITIGNORE_BACKUP" 2>/dev/null || true
 rmdir "$TRANSACTION_DIR" 2>/dev/null || true
-echo "NACL_SKILLS_ONLY_BOOTSTRAP: status=VERIFIED project_id=$PROJECT_ID codex_config=.codex/config.toml mcp=nacl_neo4j next=new-task"
+echo "NACL_SKILLS_ONLY_BOOTSTRAP: status=PARTIALLY_VERIFIED code=RESTART_REQUIRED bootstrap=VERIFIED initialization=NOT_RUN project_id=$PROJECT_ID codex_config=.codex/config.toml mcp=nacl_neo4j next=new-task"

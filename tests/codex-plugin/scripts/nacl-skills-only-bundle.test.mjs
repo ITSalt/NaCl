@@ -15,6 +15,7 @@ const writer = path.join(bootstrap, "write-codex-mcp-config.mjs");
 const guard = path.join(bootstrap, "codex-config-guard.mjs");
 const launcherSource = path.join(bootstrap, "project-neo4j-launcher.mjs");
 const supplySource = path.join(bootstrap, "neo4j-mcp-supply.mjs");
+const planRunner = path.join(packagedBootstrap, "plan-project-graph.mjs");
 
 function run(command, args, options = {}) {
   return spawnSync(command, args, { encoding: "utf8", timeout: 30_000, ...options });
@@ -29,6 +30,22 @@ function binding(root) {
     "--uri", "bolt://localhost:7687",
     "--database", "neo4j",
   ];
+}
+
+function bootstrapSelection(root, projectId, boltPort, httpPort) {
+  return [
+    "--project-root", root,
+    "--project-id", projectId,
+    "--bolt-port", String(boltPort),
+    "--http-port", String(httpPort),
+    "--database", "neo4j",
+  ];
+}
+
+function createBootstrapPlan(root, projectId, boltPort, httpPort, options = {}) {
+  const result = run(process.execPath, [planRunner, ...bootstrapSelection(root, projectId, boltPort, httpPort)], options);
+  assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
+  return JSON.parse(result.stdout);
 }
 
 test("secure Codex TOML writer appends one managed MCP section and preserves unrelated bytes", async () => {
@@ -217,7 +234,7 @@ test("POSIX bootstrap blocks a symlinked graph directory before writing outside 
       "--project-id", "demo-alpha",
       "--bolt-port", "17687",
       "--http-port", "17474",
-      "--confirmation", "INIT_LOCAL_GRAPH:demo-alpha",
+      "--confirmation", `INIT_LOCAL_GRAPH:demo-alpha:${"a".repeat(64)}`,
     ]);
     assert.notEqual(result.status, 0);
     assert.match(result.stderr, /code=DIRECTORY_UNSAFE/);
@@ -234,6 +251,10 @@ test("OS bootstrap scripts are bundle-relative, confirmation-gated, pinned, and 
   ]);
   for (const content of [posix, powershell]) {
     assert.match(content, /INIT_LOCAL_GRAPH:/);
+    assert.match(content, /plan-project-graph\.mjs/);
+    assert.match(content, /verify-token|VerifyToken/);
+    assert.match(content, /PARTIALLY_VERIFIED/);
+    assert.match(content, /RESTART_REQUIRED/);
     assert.match(content, /codex-config-guard\.mjs/);
     assert.match(content, /write-codex-mcp-config\.mjs/);
     assert.match(content, /project-neo4j-launcher\.mjs/);
@@ -250,6 +271,145 @@ test("OS bootstrap scripts are bundle-relative, confirmation-gated, pinned, and 
   }
   const syntax = run("sh", ["-n", path.join(bootstrap, "setup-project-graph.sh")]);
   assert.equal(syntax.status, 0, syntax.stderr);
+});
+
+test("content-addressed bootstrap plan is read-only and rejects stale root, ports, files, and legacy tokens", { skip: process.platform === "win32" }, async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), "nacl-bootstrap-plan-"));
+  try {
+    const project = path.join(root, "project");
+    const otherProject = path.join(root, "other-project");
+    const fakeBin = path.join(root, "fake-bin");
+    const marker = path.join(root, "docker-called");
+    await mkdir(project);
+    await mkdir(otherProject);
+    await mkdir(fakeBin);
+    await writeFile(path.join(project, ".gitignore"), "preserved\n");
+    await writeFile(path.join(fakeBin, "docker"), `#!/bin/sh\nprintf called > "$MARKER"\nexit 0\n`);
+    await chmod(path.join(fakeBin, "docker"), 0o700);
+    const env = { ...process.env, PATH: `${fakeBin}:${path.dirname(process.execPath)}:/usr/bin:/bin`, MARKER: marker };
+
+    const planned = createBootstrapPlan(project, "demo-plan", 29687, 29474, { env });
+    assert.equal(planned.contract, "nacl-skills-only-bootstrap-plan-v1");
+    assert.equal(planned.status, "NOT_RUN");
+    assert.equal(planned.code, "PLAN_READY");
+    assert.match(planned.planHash, /^[0-9a-f]{64}$/);
+    assert.equal(planned.confirmation, `INIT_LOCAL_GRAPH:demo-plan:${planned.planHash}`);
+    assert.equal(planned.plan.canonicalProjectRoot, await realpath(project));
+    assert.equal(planned.plan.projectId, "demo-plan");
+    assert.equal(planned.plan.database, "neo4j");
+    assert.deepEqual([planned.plan.ports.bolt.port, planned.plan.ports.http.port], [29687, 29474]);
+    assert.match(planned.plan.neo4j.image, /^neo4j:5\.24\.2-community@sha256:[0-9a-f]{64}$/);
+    assert.equal(planned.plan.neo4j.apoc.sha256, "39092c89df1cb80f4f3d8799821e74c7f1d10503f92625be32882b70b13002fa");
+    assert.equal(planned.plan.neo4jMcp.version, "v1.5.3");
+    assert.match(planned.plan.neo4jMcp.archiveSha256, /^[0-9a-f]{64}$/);
+    assert.match(planned.plan.neo4jMcp.binarySha256, /^[0-9a-f]{64}$/);
+    assert.equal(planned.plan.bootstrapPolicyVersion, "nacl-skills-only-bootstrap-policy-v2");
+    assert.ok(planned.plan.intendedFiles.some((entry) => entry.destination === "graph-infra/schema/sa-schema.cypher"));
+    assert.ok(planned.plan.intendedFiles.every((entry) => entry.destination !== "graph-infra/schema/seed-data.cypher"));
+    assert.deepEqual(planned.plan.intendedFileStates.map((entry) => entry.path), planned.plan.intendedFiles.map((entry) => entry.destination));
+    assert.ok(planned.plan.bundlePolicyAssets.some((entry) => entry.destination.endsWith("vendor/smol-toml-1.7.0.cjs")));
+    assert.equal(planned.plan.currentState.gitignore.state, "FILE");
+    assert.equal(planned.plan.rollbackPolicy.existingConfigAndGitignore, "RESTORE_EXACT_PRE_RUN_BYTES");
+    await assert.rejects(readFile(marker), /ENOENT/);
+    await assert.rejects(readFile(path.join(project, "graph-infra", ".env")), /ENOENT/);
+
+    const verified = run(process.execPath, [planRunner, ...bootstrapSelection(project, "demo-plan", 29687, 29474), "--verify-token", planned.confirmation], { env });
+    assert.equal(verified.status, 0, `${verified.stdout}\n${verified.stderr}`);
+    assert.equal(JSON.parse(verified.stdout).code, "PLAN_TOKEN_VERIFIED");
+
+    await writeFile(path.join(project, ".gitignore"), "changed\n");
+    for (const selection of [
+      bootstrapSelection(project, "demo-plan", 29687, 29474),
+      bootstrapSelection(project, "demo-plan", 29688, 29474),
+      bootstrapSelection(otherProject, "demo-plan", 29687, 29474),
+    ]) {
+      const stale = run(process.execPath, [planRunner, ...selection, "--verify-token", planned.confirmation], { env });
+      assert.notEqual(stale.status, 0);
+      assert.equal(JSON.parse(stale.stderr).code, "PLAN_TOKEN_STALE");
+    }
+    assert.equal(await readFile(path.join(project, ".gitignore"), "utf8"), "changed\n");
+    await assert.rejects(readFile(marker), /ENOENT/);
+
+    const legacy = run("sh", [
+      path.join(packagedBootstrap, "setup-project-graph.sh"),
+      "--project-root", project,
+      "--project-id", "demo-plan",
+      "--bolt-port", "29687",
+      "--http-port", "29474",
+      "--confirmation", "INIT_LOCAL_GRAPH:demo-plan",
+    ], { env });
+    assert.notEqual(legacy.status, 0);
+    assert.match(legacy.stderr, /code=CONFIRMATION_REQUIRED/);
+    await assert.rejects(readFile(marker), /ENOENT/);
+    await assert.rejects(readFile(path.join(project, "graph-infra", ".env")), /ENOENT/);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("file-only diagnosis distinguishes uninitialized and blocked partial bootstrap without Docker", async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), "nacl-bootstrap-diagnose-"));
+  try {
+    const project = path.join(root, "project");
+    const fakeBin = path.join(root, "fake-bin");
+    const marker = path.join(root, "docker-called");
+    await mkdir(project);
+    await mkdir(fakeBin);
+    await writeFile(path.join(fakeBin, "docker"), `#!/bin/sh\nprintf called > "$MARKER"\nexit 0\n`);
+    await chmod(path.join(fakeBin, "docker"), 0o700);
+    const env = { ...process.env, PATH: `${fakeBin}:${path.dirname(process.execPath)}:/usr/bin:/bin`, MARKER: marker };
+    const fresh = run(process.execPath, [planRunner, "--diagnose-only", "--project-root", project], { env });
+    assert.equal(fresh.status, 0, `${fresh.stdout}\n${fresh.stderr}`);
+    const freshResult = JSON.parse(fresh.stdout);
+    assert.deepEqual(
+      { status: freshResult.status, code: freshResult.code, initializationState: freshResult.initializationState },
+      { status: "NOT_RUN", code: "PROJECT_MCP_NOT_CONFIGURED", initializationState: "UNINITIALIZED" },
+    );
+    assert.equal(freshResult.docker, "NOT_INSPECTED");
+    await mkdir(path.join(project, "graph-infra"));
+    await writeFile(path.join(project, "graph-infra", "docker-compose.yml"), "partial\n");
+    const partial = run(process.execPath, [planRunner, "--diagnose-only", "--project-root", project], { env });
+    assert.notEqual(partial.status, 0);
+    const partialResult = JSON.parse(partial.stdout);
+    assert.deepEqual(
+      { status: partialResult.status, code: partialResult.code, initializationState: partialResult.initializationState },
+      { status: "BLOCKED", code: "PARTIAL_BOOTSTRAP_STATE", initializationState: "BLOCKED" },
+    );
+    await assert.rejects(readFile(marker), /ENOENT/);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("bootstrap plan fails closed when mandatory schema, query, or migration inputs are missing or symlinked", { skip: process.platform === "win32" }, async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), "nacl-bootstrap-inputs-"));
+  try {
+    const bundle = path.join(root, "bundle");
+    const project = path.join(root, "project");
+    await mkdir(project);
+    const built = run(process.execPath, [path.join(repoRoot, "scripts", "build-codex-skills-only.mjs"), "--output", bundle]);
+    assert.equal(built.status, 0, `${built.stdout}\n${built.stderr}`);
+    const initRoot = path.join(bundle, "skills", "nacl-init");
+    const isolatedPlan = path.join(initRoot, "resources", "bootstrap", "plan-project-graph.mjs");
+    const selection = ["--project-root", project, "--project-id", "input-check", "--bolt-port", "30687", "--http-port", "30474", "--database", "neo4j"];
+    const inputs = [
+      [path.join(initRoot, "resources", "graph-infra", "schema", "sa-schema.cypher"), "missing"],
+      [path.join(initRoot, "resources", "graph-infra", "queries", "sa-queries.cypher"), "symlink"],
+      [path.join(initRoot, "graph", "migrations", "003-schema-resource-identity.json"), "missing"],
+    ];
+    for (const [filename, mode] of inputs) {
+      const original = await readFile(filename);
+      await rm(filename);
+      if (mode === "symlink") await symlink("/dev/null", filename);
+      const blocked = run(process.execPath, [isolatedPlan, ...selection]);
+      assert.notEqual(blocked.status, 0, filename);
+      assert.match(blocked.stderr, /BUNDLE_RESOURCE_(?:MISSING|UNSAFE)/, filename);
+      await rm(filename, { force: true });
+      await writeFile(filename, original);
+    }
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
 });
 
 test("Skills-only Neo4j Compose is immutable and publishes only loopback ports", async () => {
@@ -318,7 +478,7 @@ test("preflight rejects adversarial TOML before any project, Docker, or download
         "--project-id", `demo-${name}`,
         "--bolt-port", "27687",
         "--http-port", "27474",
-        "--confirmation", `INIT_LOCAL_GRAPH:demo-${name}`,
+        "--confirmation", `INIT_LOCAL_GRAPH:demo-${name}:${"a".repeat(64)}`,
       ], { env: { ...process.env, PATH: `${fakeBin}:${path.dirname(process.execPath)}:/usr/bin:/bin`, MARKER: marker } });
       assert.notEqual(result.status, 0);
       assert.equal(await readFile(config, "utf8"), malformed);
@@ -342,13 +502,14 @@ test("post-mutation failure rolls back a fresh project and reports an exact inve
     const fakeDocker = path.join(fakeBin, "docker");
     await writeFile(fakeDocker, "#!/bin/sh\ncase \"$1\" in info) exit 0;; inspect|volume|network) exit 1;; *) exit 0;; esac\n");
     await chmod(fakeDocker, 0o700);
+    const planned = createBootstrapPlan(project, "demo-rollback", 28687, 28474);
     const result = run("sh", [
       path.join(packagedBootstrap, "setup-project-graph.sh"),
       "--project-root", project,
       "--project-id", "demo-rollback",
       "--bolt-port", "28687",
       "--http-port", "28474",
-      "--confirmation", "INIT_LOCAL_GRAPH:demo-rollback",
+      "--confirmation", planned.confirmation,
     ], { env: {
       ...process.env,
       PATH: `${fakeBin}:${path.dirname(process.execPath)}:/usr/bin:/bin`,
