@@ -1,3 +1,20 @@
+function Get-ProtectedEnvAcl {
+  param([Parameter(Mandatory=$true)][string]$Path)
+  try {
+    # A PowerShell 5.1 child can inherit PowerShell 7's PSModulePath. Import the
+    # in-box security module from this host's PSHOME so Get-Acl does not depend
+    # on that mutable parent environment.
+    $moduleManifest = Join-Path $PSHOME "Modules\Microsoft.PowerShell.Security\Microsoft.PowerShell.Security.psd1"
+    if (-not (Test-Path -LiteralPath $moduleManifest -PathType Leaf)) {
+      throw [System.Exception]::new("SECURITY_MODULE_MISSING")
+    }
+    Import-Module -Name $moduleManifest -ErrorAction Stop | Out-Null
+    return Microsoft.PowerShell.Security\Get-Acl -LiteralPath $Path -ErrorAction Stop
+  } catch {
+    throw [System.Exception]::new("GRAPH_ENV_PERMISSIONS_UNSAFE")
+  }
+}
+
 function Assert-ProtectedEnvAcl {
   param([Parameter(Mandatory=$true)][string]$Path,[Parameter(Mandatory=$true)][string]$IcaclsPath)
   $output = (& $IcaclsPath $Path 2>&1) -join "`n"
@@ -6,7 +23,7 @@ function Assert-ProtectedEnvAcl {
   }
   $identity = [System.Security.Principal.WindowsIdentity]::GetCurrent()
   $currentSid = $identity.User
-  $acl = Get-Acl -LiteralPath $Path
+  $acl = Get-ProtectedEnvAcl -Path $Path
   if (-not $acl.AreAccessRulesProtected -or $acl.GetOwner([System.Security.Principal.SecurityIdentifier]) -ne $currentSid) {
     throw [System.Exception]::new("GRAPH_ENV_PERMISSIONS_UNSAFE")
   }
