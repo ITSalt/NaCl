@@ -284,17 +284,33 @@ Analyze the feature against graph results and classify:
 
 #### Step 2.5: Determine UC allocation
 
-For new UCs, find the next available number in the target module:
+For new UCs, find the next available number for the target module:
 
 ```cypher
 // mcp__neo4j__read-cypher
 // Query: sa_next_uc_in_module
-MATCH (m:Module {id: $moduleId})-[:CONTAINS_UC]->(uc:UseCase)
-WITH max(toInteger(replace(uc.id, 'UC-', ''))) AS maxNum
-RETURN 'UC-' + apoc.text.lpad(toString(coalesce(maxNum, 0) + 1), 3, '0') AS nextUcId
+// Candidate = module-local max + 1 (empty module: m.uc_range_start).
+// MANDATORY collision check against ALL UseCase ids: range-partitioned
+// projects keep their module-local number (no collision -> candidate stands);
+// projects with global UC numbering fall back to global max + 1, which is
+// collision-free by construction. Never hand-compute UC ids.
+MATCH (m:Module {id: $moduleId})
+OPTIONAL MATCH (m)-[:CONTAINS_UC]->(muc:UseCase)
+WITH m, max(toInteger(replace(muc.id, 'UC-', ''))) AS localMax
+OPTIONAL MATCH (any:UseCase) WHERE any.id =~ 'UC-[0-9]+'
+WITH coalesce(localMax + 1, m.uc_range_start, 1) AS candidate,
+     collect(toInteger(replace(any.id, 'UC-', ''))) AS allNums
+WITH CASE WHEN candidate IN allNums
+     THEN reduce(mx = 0, n IN allNums | CASE WHEN n > mx THEN n ELSE mx END) + 1
+     ELSE candidate END AS nextNum
+RETURN 'UC-' + apoc.text.lpad(toString(nextNum), 3, '0') AS nextUcId
 ```
 
-If the module has no UCs yet, use `m.uc_range_start` as the first UC number.
+The query itself handles the empty module (`m.uc_range_start` fallback) and the
+collision check. On a project with global UC numbering (UC ids increase across
+modules while `uc_range_start` sits unused), the module-local candidate collides
+with a sibling module's UC and the query falls back to global max + 1; on a
+range-partitioned project the module-local number stands.
 
 #### Step 2.6: Present impact matrix
 
@@ -376,13 +392,22 @@ Invoke `/nacl-sa-roles` via Skill tool or manually:
 
 For each new UC:
 
-1. Get next UC number:
+1. Get next UC number — same collision-safe query as Step 2.5
+   (`sa_next_uc_in_module`); do NOT use a module-only max here:
 
 ```cypher
 // mcp__neo4j__read-cypher
-MATCH (m:Module {id: $moduleId})-[:CONTAINS_UC]->(uc:UseCase)
-WITH m, max(toInteger(replace(uc.id, 'UC-', ''))) AS maxNum
-RETURN 'UC-' + apoc.text.lpad(toString(coalesce(maxNum, m.uc_range_start - 1, 0) + 1), 3, '0') AS nextUcId
+// Query: sa_next_uc_in_module (see Step 2.5 for the collision rationale)
+MATCH (m:Module {id: $moduleId})
+OPTIONAL MATCH (m)-[:CONTAINS_UC]->(muc:UseCase)
+WITH m, max(toInteger(replace(muc.id, 'UC-', ''))) AS localMax
+OPTIONAL MATCH (any:UseCase) WHERE any.id =~ 'UC-[0-9]+'
+WITH coalesce(localMax + 1, m.uc_range_start, 1) AS candidate,
+     collect(toInteger(replace(any.id, 'UC-', ''))) AS allNums
+WITH CASE WHEN candidate IN allNums
+     THEN reduce(mx = 0, n IN allNums | CASE WHEN n > mx THEN n ELSE mx END) + 1
+     ELSE candidate END AS nextNum
+RETURN 'UC-' + apoc.text.lpad(toString(nextNum), 3, '0') AS nextUcId
 ```
 
 2. Invoke `/nacl-sa-uc [UC_number]` via Skill tool or create manually:
