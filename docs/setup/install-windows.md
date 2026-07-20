@@ -68,9 +68,10 @@ single command both installs and updates. Pass `-NoPull` to skip the git
 step. Falls back to directory junctions for skills if symlink creation is
 unavailable; agents require true symlinks.
 
-For Codex, the normal path is the full plugin in the **Plugins** UI. The
-following skills-only installer is retained for legacy compatibility and must
-not be combined with the full plugin:
+For Codex, the target normal path after public release is the official
+Skills-only plugin in the **Plugins** UI. The following symlink-only installer
+is retained for legacy compatibility and must not be confused with the
+official card or combined with the current full Git plugin:
 
 ```powershell
 & "$HOME\NaCl\skills-for-codex\scripts\install-user-symlinks.ps1"
@@ -155,20 +156,21 @@ after addressing the cause.
 
 ### UI installation
 
-Install the trusted full NaCl plugin from **Plugins**, grant only the displayed
-permissions, fully restart Codex, and create a new task. Call
-`nacl_installation_doctor` exactly once and continue only with
-`status=VERIFIED`, `mode=plugin-only`, and
-`executionLocation=installed-cache`. No PowerShell command or repository path
-is required for this normal installation.
+After public release, install the official NaCl Skills-only card from
+**Plugins** once, grant only the displayed permissions, create a new project
+task, and run the `nacl-init` read-only preflight. After confirmed bootstrap
+writes project `.mcp.json`, create another new task for project MCP pickup. No
+PowerShell setup, repository path, public MCP, or Git reinstall is required.
+Until publication, use the separately documented immutable Git/full-plugin
+compatibility channel and its installation doctor.
 
 ### Graph and authorization
 
 Local mode uses the per-project Neo4j 5 Community container through Docker
 Desktop's WSL2 backend. Remote mode connects to a separately operated VPS.
 Access to a server currently implies access to every project database hosted
-there; `project_scope` is routing and provenance, not authorization. Public
-HTTP/OAuth and release remain `NOT_RUN`.
+there; `project_scope` is routing and provenance, not authorization. The
+Skills-only path uses local/project MCP and does not add public HTTP/OAuth.
 
 ## Next Steps
 

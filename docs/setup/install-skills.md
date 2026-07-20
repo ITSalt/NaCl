@@ -158,30 +158,31 @@ Start Claude Code in a project and run:
 
 ## Codex
 
-Codex normally uses the full NaCl plugin. The plugin packages the application
-surface, ten public skills, sixty internal skills, and twenty-five bounded MCP
-tools together. Installation, update, disablement, and removal happen in the
-Codex **Plugins** UI; the ordinary user does not need a source checkout, a
-terminal, a local marketplace folder, or a machine-specific package path.
+The target normal Codex channel is one NaCl Skills-only card. It packages ten
+public skills and their complete script/reference/asset closure. Installation,
+update, disablement, and removal happen in the Codex **Plugins** UI; the
+ordinary user does not need a source checkout, terminal, local marketplace
+folder, public MCP service, or second Git installation.
 
-### Full Codex plugin (normal channel)
+### Official Codex Skills-only plugin (normal channel after publication)
 
 1. Open **Plugins** in Codex Desktop.
 2. Open the trusted NaCl card supplied for the intended workspace and choose
    **Install** or the **+** action.
 3. Grant only the permissions shown by Codex.
-4. Fully quit and reopen Codex, then create a new task.
+4. Open a new task in the project and run `nacl-init`.
 
-The local candidate has been verified from Codex's installed cache. A public
-card or install URL is not yet available: the public Streamable HTTP MCP
-endpoint, OAuth flow, release, and marketplace submission remain `NOT_RUN`.
-Do not reuse a saved package path from another computer. See the
-[Codex plugin installation guide](install-codex-plugin.md) for the current
-verified boundary.
+A public card or install URL is not yet available. After a confirmed init
+writes project `.mcp.json`, start another new task in the same project so Codex
+can load the project-local `neo4j-mcp`; this is not a second installation. Do
+not reuse a saved package path from another computer. The current immutable
+Git/full-plugin channel remains the verified development/compatibility path.
+See the [Codex plugin installation guide](install-codex-plugin.md) for both
+boundaries.
 
 ### Verify Codex
 
-In the new task, send:
+For the current Git/full-plugin compatibility channel, send in the new task:
 
 ```text
 Call nacl_installation_doctor exactly once with no arguments. Report status, mode, pluginVersion, and executionLocation. Continue only if status=VERIFIED and mode=plugin-only.
@@ -190,11 +191,17 @@ Call nacl_installation_doctor exactly once with no arguments. Report status, mod
 Confirm that the version matches the installed card and that
 `executionLocation=installed-cache`. Stop if any field differs.
 
+For the future official Skills-only card, verify installed `nacl-init` with its
+read-only preflight. After confirmed bootstrap, open the mandatory new task and
+require project MCP handshake, schema/read canary, confirmed write canary, and
+read-back. Do not call the package installation doctor in that public path.
+
 ### Legacy Codex skills (compatibility only)
 
-The former skills-only installation remains documented for existing machines
-and controlled migration, but it is not the normal Codex path. Do not combine
-it with the full plugin. If the doctor reports `mode=both`, stop and use the
+The former symlink-only skill installation remains documented for existing
+machines and controlled migration, but it is not the official Skills-only
+plugin. Do not combine it with the full Git plugin. If the doctor reports
+`mode=both`, stop and use the
 [legacy compatibility appendix](codex-legacy-compatibility.md) to plan an
 evidence-preserving migration.
 

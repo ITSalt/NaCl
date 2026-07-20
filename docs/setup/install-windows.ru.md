@@ -58,8 +58,10 @@ git clone https://github.com/ITSalt/NaCl.git $HOME\NaCl
 Скрипт связывает `nacl-*` с `%USERPROFILE%\.claude\skills`, а профили агентов — с
 `%USERPROFILE%\.claude\agents`. Для скиллов есть fallback на directory junction; агентам нужны symlink.
 
-Полный Codex-плагин устанавливается из **Plugins**. Skills-only PowerShell installer остаётся
-только legacy-каналом и не должен совмещаться с полным плагином. См.
+После публичного релиза целевой нормальный Codex-путь — официальная Skills-only
+карточка в **Plugins**. Приведённый PowerShell installer через symlink остаётся
+только legacy-каналом, не является официальной карточкой и не должен
+совмещаться с текущим полным Git-плагином. См.
 [Установку скиллов](install-skills.ru.md).
 
 ### После `git pull`
@@ -104,17 +106,20 @@ NaCl Analyst Tool, работающий вне Docker.
 
 ### Установка в UI
 
-Установите доверенный полный плагин NaCl из **Plugins**, выдайте только показанные права,
-перезапустите Codex и в новой задаче вызовите `nacl_installation_doctor` ровно один раз.
-Продолжайте только при `status=VERIFIED`, `mode=plugin-only` и `executionLocation=installed-cache`.
-Для этой нормальной установки PowerShell и путь к репозиторию не нужны.
+После публичного релиза один раз установите официальную Skills-only карточку
+NaCl из **Plugins**, выдайте только показанные права, откройте новую задачу
+проекта и запустите read-only preflight `nacl-init`. После подтверждённого
+bootstrap и записи проектного `.mcp.json` откройте ещё одну новую задачу для
+загрузки проектного MCP. PowerShell setup, путь к репозиторию, публичный MCP и
+повторная Git-установка не нужны. До публикации используйте отдельно описанный
+immutable Git/full-plugin канал совместимости и его installation doctor.
 
 ### Граф и авторизация
 
 Локальный режим использует контейнер Neo4j 5 Community проекта через WSL2 backend Docker Desktop;
 удалённый режим подключается к отдельно администрируемому VPS. Доступ к серверу означает доступ
-ко всем базам проектов на нём; `project_scope` — маршрутизация и provenance, а не авторизация. Публичный HTTP/OAuth
-и релиз остаются `NOT_RUN`.
+ко всем базам проектов на нём; `project_scope` — маршрутизация и provenance, а не авторизация.
+Skills-only путь использует локальный/проектный MCP и не добавляет публичный HTTP/OAuth.
 
 ## Дальше
 

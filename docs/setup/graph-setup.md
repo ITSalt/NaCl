@@ -217,8 +217,11 @@ notifies.
 
 The default Codex path uses one Neo4j 5 Community container and durable volumes
 per project. `nacl-init` plans and creates the stack, waits for health, loads the
-schema, and records the project route. The full Codex plugin uses its bounded
-gateway tools; the stdio example above remains the Claude/repository channel.
+schema, installs the pinned `neo4j-mcp`, writes project `.mcp.json`, and records
+the project route. The current Git/full-plugin compatibility channel can also
+use its bounded package gateway. The target official Skills-only channel uses
+the installed `nacl-init` scripts and then requires a new task to load the
+project-local MCP; it does not require a public NaCl MCP or a second Git install.
 
 ### VPS connection and authorization
 
@@ -227,10 +230,10 @@ NaCl does not provide a managed graph. The server is currently the authorization
 boundary: access to it implies access to all project databases hosted there.
 Each project has a separate Neo4j 5 Community container and independent durable
 volumes. `project_scope` selects its route and records provenance; it does not
-grant access or represent a shared-graph `(:Project)` authorization marker. A
-future public Streamable HTTP gateway must map OAuth principals
-to server grants and deny cross-server routing. That public deployment and its
-release remain `NOT_RUN`.
+grant access or represent a shared-graph `(:Project)` authorization marker. The
+optional remote create/connect scripts retain the existing mTLS server-access
+boundary and deny cross-server routing. The Skills-only public product does not
+add a hosted Streamable HTTP or OAuth gateway.
 
 ## Next Steps
 

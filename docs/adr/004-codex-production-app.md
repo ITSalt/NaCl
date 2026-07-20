@@ -1,6 +1,6 @@
 # ADR-004: Production app-plus-skills architecture for Codex and ChatGPT
 
-**Status:** Accepted for local implementation — external deployment not authorized and Wave 9 not verified
+**Status:** Superseded by [ADR-005](005-codex-skills-only-bootstrap.md) on 2026-07-20; retained as historical evidence
 **Date:** 2026-07-15
 **Decision owner:** NaCl maintainers
 **Reviewed baseline:** `main` / `origin/main` at `d828e54dc3329c5b2664df5e388badb83fc5d83e`

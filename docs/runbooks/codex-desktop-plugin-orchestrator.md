@@ -1,18 +1,31 @@
 # NaCl Codex Plugin — Clean-Context Implementation Orchestrator Runbook
 
-Last audited: 2026-07-15
+Last audited: 2026-07-20
 
 Repository: `https://github.com/ITSalt/NaCl`
 
 Audited local checkout: `$ORIGINAL_CHECKOUT`
 
-Audited commit: `d98f7399e7b9941341421321407ad27ee895d221` (`main`)
+Audited commit: `56cea47cdbcb97732dc7d239ddd107ef2ba8aae0`
+(Skills-only planning baseline; the historical Wave 0 base remains recorded in
+the Execution Ledger)
 
 Target outcome: an installable NaCl plugin that works in both Codex CLI and
 Codex in the ChatGPT desktop app, without changing the Claude Code
 distribution. Waves 0-7 produce and verify the non-public local candidate;
 Waves 8-9 prepare complete user documentation and the production
-app-plus-skills product; Wave 10 alone owns OpenAI submission and publication.
+bootstrap-first Skills-only product; Wave 10 alone owns OpenAI submission and
+publication.
+
+> **Controlling public-distribution decision (2026-07-20):**
+> [ADR-005](../adr/005-codex-skills-only-bootstrap.md) supersedes the historical
+> app-plus-skills/public-MCP plan in ADR-004 and in older Execution Ledger
+> entries. The public target is one Skills-only UI installation followed by
+> `nacl-init`; packaged scripts create the per-project Neo4j Community stack,
+> install the pinned project `neo4j-mcp`, and write project `.mcp.json`. The
+> user then opens a new task. There is no public NaCl MCP service and no
+> mandatory second GitHub installation. Historical ledger text is retained
+> unchanged as evidence of the superseded work.
 
 This is an executable handoff for an orchestrator starting with no prior
 conversation context. Treat it as the authoritative implementation plan and
@@ -34,10 +47,12 @@ When the user asks you to execute this runbook:
    claims: inspect files, commands, tests, diffs, and runtime evidence.
 6. Update only the **Execution Ledger** in this document after every accepted
    wave. Subagents must not edit the ledger.
-7. Stop after the last explicitly authorized wave. Waves 8 and 9 require new
-   authorization before work starts. Wave 10 submission and post-approval
-   publication are separate external mutations and each requires explicit user
-   confirmation. Never merge to `main`, publish a marketplace version, create
+7. Stop after the last explicitly authorized wave. Follow each wave's current
+   status declaration; the Skills-only Wave 9 implementation is authorized as
+   of 2026-07-20. In Wave 10, portal draft creation,
+   submission for review, and post-approval publication are separate external
+   mutations and each requires explicit user confirmation. Never merge to
+   `main`, publish a marketplace version, create
    a public tag/release, or mutate real remote infrastructure merely because
    this roadmap exists.
 
@@ -79,12 +94,13 @@ Build a versioned, self-contained repository plugin package for NaCl that:
 - remains backward-compatible with the existing v2.23.0 remote graph mode;
 - does not modify or behaviorally regress Claude Code skills, agents,
   workflows, or installation paths;
-- produces a local user-test bundle and exact install/reinstall instructions.
+- produces a local user-test bundle and exact install/reinstall instructions;
 - before public submission, provides complete plugin-first Russian and English
   onboarding that does not require Git or terminal use for the normal Desktop
   install path;
-- targets only a full production app-plus-skills submission, never a reduced
-  skills-only substitute.
+- publishes a complete bootstrap-first Skills-only bundle whose `nacl-init`
+  creates the project-local graph and MCP configuration without a public MCP
+  service or mandatory second GitHub installation.
 
 ### Definition of done for the user-test candidate
 
@@ -112,9 +128,10 @@ All conditions below must hold:
     limitations, and install commands are recorded in the Execution Ledger.
 
 The pilot must implement multi-user correctness primitives and a local
-two-principal/two-session E2E. Production documentation and remote transport
-are later gated work in Waves 8-9. OpenAI submission and publication are
-deliberately separate external actions in Wave 10.
+two-principal/two-session E2E. Production documentation and the Skills-only
+bootstrap/package projection are later gated work in Waves 8-9. OpenAI draft
+creation, submission, and publication are deliberately separate external
+actions in Wave 10.
 
 ---
 
@@ -261,6 +278,7 @@ primary OpenAI sources and record the retrieval date plus relevant differences
 before implementation begins. Use official sources only for technical facts:
 
 - Plugin building: <https://learn.chatgpt.com/docs/build-plugins>
+- Plugin submission: <https://learn.chatgpt.com/docs/submit-plugins>
 - MCP in Codex: <https://learn.chatgpt.com/docs/extend/mcp>
 - Codex skills: <https://learn.chatgpt.com/docs/build-skills>
 - Codex subagents: <https://learn.chatgpt.com/docs/agent-configuration/subagents>
@@ -287,7 +305,15 @@ Facts verified during the audit, but to be refreshed:
 - the current documentation does not guarantee that `${PLUGIN_ROOT}` expands
   in `.mcp.json`; this must be proven experimentally;
 - the initial skill list has a bounded description budget, so publishing all
-  60 current skills as independent entry points risks incomplete discovery.
+  60 current skills as independent entry points risks incomplete discovery;
+- a public plugin may be submitted as **Skills only** and the portal accepts a
+  final skill bundle with referenced scripts, templates, and assets;
+- the current documentation does not guarantee that a Skills-only upload
+  preserves a full plugin root, executable mode bits, or shared resources
+  reached through `../../resources`; the exact submitted tree must be tested;
+- public MCP URL, authentication, domain verification, CSP, and tool scanning
+  are documented for submissions containing an app/MCP, not as requirements
+  of the documented Skills-only submission path.
 
 If current official documentation contradicts this runbook, stop Wave 1,
 record the exact source and impact, and amend the architecture decision before
@@ -298,29 +324,28 @@ code implementation.
 ## 6. Target architecture
 
 ```text
-Codex CLI ───────────────┐
-                        │
-Codex Desktop ──────────┼─> cached NaCl plugin
-                        │      ├─ compact public entry skills
-                        │      ├─ internal NaCl workflow/reference bundle
-                        │      ├─ installation/doctor tools
-                        │      └─ NaCl Graph MCP Gateway
-                        │
-                        └─> project companion `.codex/agents` (optional install)
+Official Plugins Directory
+    └─ NaCl Skills-only bundle
+         ├─ compact public entry skills
+         ├─ self-contained workflow/reference/script closure
+         └─ nacl-init bootstrap
+              ├─ exact plan + explicit confirmation
+              ├─ Project A -> Neo4j Community A + project .mcp.json
+              ├─ Project B -> Neo4j Community B + project .mcp.json
+              └─ Project C -> Neo4j Community C + project .mcp.json
 
-NaCl Graph MCP Gateway
-    ├─ project registry and resolver
-    ├─ secret references
-    ├─ connection pool keyed by project_id
-    ├─ schema migrations
-    ├─ scoped read tools
-    ├─ policy-controlled write tools
-    ├─ ID allocator / revisions / leases
-    ├─ audit log
-    ├─ Project A -> Neo4j A
-    ├─ Project B -> Neo4j B
-    └─ Project C -> Neo4j C
+new task in the selected project
+    └─ project-local neo4j-mcp
+         ├─ schema and named graph operations
+         ├─ ID allocation / revisions / leases
+         ├─ audit and recovery
+         └─ optional confirmed `.codex/agents` bootstrap
 ```
+
+The Git marketplace/full local plugin remains a development, compatibility,
+source, and recovery channel. It is not a second step in the ordinary public
+installation flow. The production user installs the official card once, runs
+`nacl-init`, and opens a new task after project `.mcp.json` is written.
 
 ### 6.1 Proposed repository layout
 
@@ -355,6 +380,18 @@ plugins/nacl/
     compose/
   scripts/
   assets/
+dist/codex-skills-only/  # generated, submission-exact tree; never canonical
+  skills/
+    nacl-init/           # includes its complete bootstrap closure
+    nacl-ba/
+    nacl-sa/
+    nacl-tl/
+    nacl-fix/
+    nacl-verify/
+    nacl-migrate/
+    nacl-diagnose/
+    nacl-goal/
+    nacl-publish/
 tests/codex-plugin/
 scripts/check-claude-runtime-unchanged.sh
 scripts/check-plugin-closure.mjs
@@ -381,6 +418,14 @@ Every entry skill must:
 - work identically under CLI and Desktop;
 - never select or constrain the runtime model.
 
+For the Skills-only submission, every entry must also be usable before any
+package-level NaCl MCP exists. `nacl-init` uses packaged deterministic scripts
+to create the project-local MCP configuration. Other graph-backed entries stop
+with actionable `nacl-init` guidance until a new task discovers that project
+MCP. They must not route through hidden `nacl_graph_*`, `nacl_project_*`,
+installation-doctor, legacy-symlink, or profile tools supplied only by the full
+Git plugin.
+
 ### 6.3 Agent profiles
 
 Do not place `.codex/agents/*.toml` into the plugin and assume Codex will
@@ -397,22 +442,45 @@ It copies validated templates into `<project>/.codex/agents/` after showing the
 write plan and receiving confirmation. Existing files are never overwritten
 without confirmation. CLI/Desktop without profiles must still work.
 
-### 6.4 MCP launch-path decision
+### 6.4 Skills-only bootstrap and MCP pickup decision
 
-This is a blocking spike, not an assumption. Prove how a cached plugin launches
-its bundled STDIO MCP server on the target Mac:
+The local cached-plugin MCP spike is retained as compatibility evidence, but it
+is not the public launch contract. Before submission, prove the exact
+Skills-only tree through documented local/clean-home authoring or marketplace
+installation. After publication, Wave 10 repeats the same journey from the
+official card. Do not assume an undocumented draft-preview install. The full
+two-stage spike is:
 
-1. Install a minimal plugin from the repo marketplace.
-2. Confirm the actual cache path.
-3. Test relative command/argument behavior from `.mcp.json`.
-4. Test whether documented plugin-root variables expand there.
-5. Reinstall with a cachebuster and start a new task.
-6. Confirm CLI and Desktop both start the same binary/script.
+1. Install/discover the exact Skills-only tree in a clean local test home using
+   a documented authoring or marketplace path, without a source-checkout
+   dependency or a pre-existing NaCl MCP. Record any portal draft preview as
+   `NOT_VERIFIED` unless OpenAI documents and exposes it.
+2. Invoke installed `nacl-init` and prove that all referenced scripts/assets
+   resolve inside the submitted bundle.
+3. Inspect the read-only plan, deny it once and prove zero mutation, then run a
+   fresh plan and explicitly confirm it.
+4. Prove the scripts create one project-local Community stack, install only the
+   pinned checksum-verified `neo4j-mcp`, merge project `.mcp.json`, and preserve
+   unrelated project configuration.
+5. Prove the current task stops without claiming MCP discovery.
+6. Start a new task in the same project and prove MCP initialize/tools-list,
+   graph/schema health, read canary, confirmed write canary, and separate
+   read-back.
+7. Repeat on every supported OS/architecture and with the installed source
+   bundle unavailable except through the host-managed installation.
+8. After publication, install the approved artifact from the official card on
+   a clean second machine and rerun steps 2-7 without Git or terminal setup.
 
-If direct bundled launch is unsupported, choose one documented fallback and
-record it in an ADR, for example an explicit install shim under `~/.nacl/bin`
-created through a confirmed hook/installer. Do not depend on source checkout
-paths.
+OpenAI's public docs do not promise cross-skill `../../resources` resolution,
+executable-mode preservation, permission prompts, or hot reload. Until the
+exact portal-installed artifact proves them, use a self-contained per-skill
+closure, invoke scripts through a documented available interpreter, present
+permissions to the user, and require a new task. Do not compensate with a
+developer-authored/source-checkout absolute path, a stale installed-cache path,
+Git checkout, package `.mcp.json`, or public MCP service. A user-machine
+absolute path generated and read back by `nacl-init` for that machine's pinned
+project MCP binary is allowed when it contains no secret and is regenerated
+portably on another machine.
 
 ---
 
@@ -1199,7 +1267,9 @@ instruction.
 **Status in this runbook:** `NOT_RUN` until separately authorized after Wave 7.
 
 **Purpose:** replace the legacy Codex symlink-first documentation with a
-complete, ordinary-user plugin path before any production submission work.
+complete, ordinary-user Skills-only path before submission work, while keeping
+the released Git marketplace clearly labelled as a development/compatibility
+channel rather than a mandatory second install.
 
 **Primary worker:** product documentation engineer.
 
@@ -1210,18 +1280,24 @@ complete, ordinary-user plugin path before any production submission work.
 1. Audit `README*`, quick starts, setup guides, troubleshooting, skill catalog,
    graph setup, and every cross-link in Russian and English. Classify each page
    as plugin-first, Claude-specific, legacy Codex compatibility, or obsolete.
-2. Create `docs/setup/install-codex-plugin.ru.md` and
-   `docs/setup/install-codex-plugin.md`. The normal Desktop path must be UI-only:
-   open the marketplace/share link, choose **Install**, grant scoped
-   permissions, fully restart, open a new task, and run the installation check.
-   Git, shell, source checkout paths, and manual symlinks must not be required.
+2. Maintain `docs/setup/install-codex-plugin.ru.md` and
+   `docs/setup/install-codex-plugin.md`. Before publication they must label the
+   official-card journey as a target that is not yet available and keep the
+   immutable Git release as the verified test/compatibility channel. After
+   publication, the normal path is UI-only: find the official NaCl Skills-only
+   card, choose **Install**, grant scoped permissions, open a new task, and run
+   `nacl-init`. Git, shell, source checkout paths, manual symlinks, and a second
+   plugin installation must not be required.
 3. Document install, update, reinstall, disable, uninstall, rollback, exact
    version verification, cache behavior, and the promise that plugin removal
    does not delete project graph data, profiles, or Keychain state.
-4. Document the first-project path: installation doctor, explicit project
-   resolution, confirmation tokens, graph doctor, optional Docker/Keychain
-   graph bootstrap, first safe read/write/read-back, and optional create-only
-   agent profiles.
+4. Document the first-project path: installed-skill discovery, `nacl-init`
+   read-only prerequisite/closure check, explicit project resolution,
+   confirmation tokens, optional Docker/Keychain graph bootstrap, project
+   `.mcp.json` creation, mandatory new-task pickup, MCP handshake, graph doctor,
+   first safe read/write/read-back, and optional create-only agent profiles.
+   The package MCP installation doctor applies only to the Git/full-plugin
+   compatibility channel and must not gate the official Skills-only journey.
 5. Add a legacy migration appendix covering plugin-plus-symlink conflict,
    fail-closed plan, exact confirmation, apply/read-back, and rollback. Keep
    Claude Code installation separate and unchanged.
@@ -1235,7 +1311,8 @@ complete, ordinary-user plugin path before any production submission work.
 8. Prepare accurate public-facing descriptions, capability/permission and data
    flow explanations, starter prompts, limitations, support expectations, and
    screenshots without local usernames, temporary paths, secrets, or internal
-   test identifiers.
+   test identifiers. Explain that scripts create a local project graph and
+   `.mcp.json`; GitHub is the source/support channel, not an installer step.
 9. Add automated Markdown link/anchor checks and Russian/English structure
    parity checks. Run spell/style checks where available and inspect rendered
    pages, not only source Markdown.
@@ -1244,8 +1321,9 @@ complete, ordinary-user plugin path before any production submission work.
 
 **Acceptance gate:**
 
-- a reviewer with no repository knowledge can install, restart, verify, start
-  a first dry-run project, update, and uninstall through the documented UI path;
+- a reviewer with no repository knowledge can install once, run a no-mutation
+  init preflight, confirm bootstrap, open the mandatory new task, verify the
+  project MCP, update, and uninstall through the documented UI path;
 - normal installation contains no terminal, Git, developer worktree, or local
   absolute-path step;
 - Russian and English navigation and semantics agree;
@@ -1262,234 +1340,155 @@ portal draft, merge to `main`, push, tag, or publish.
 
 ---
 
-### Wave 9 — Full app-plus-skills production readiness
+### Wave 9 — Bootstrap-first Skills-only production readiness
 
-**Status in this runbook:** `IN_PROGRESS — LOCAL IMPLEMENTATION AUTHORIZED`
-as of 2026-07-15. Wave 8 remains `PARTIALLY_VERIFIED`, but its unavailable
-Personal workspace-share UI no longer blocks local Wave 9 implementation. The
-replacement portability gate is a clean second-machine installation through
-Git **after** separately authorized merge to `main` and release. That sequencing
-statement is not authorization to merge, push, tag, publish, or create a
-release.
+**Status in this runbook:** `AUTHORIZED — IMPLEMENTATION REQUIRED` as of
+2026-07-20. This status supersedes the historical app-plus-skills/public-MCP
+plan recorded in the Execution Ledger; it does not rewrite that ledger.
 
-The current authorization covers provider-neutral source, local disposable
-fixtures, tests, package generation, documentation, and review in isolated
-worktrees. It does not cover creating or mutating a real VPS, DNS/TLS, real
-project or user certificates, credentials, paid resources, deployment, OpenAI
-portal state, `main`, a remote branch, a tag, or a release. Each such external
-mutation requires a separate contemporaneous user confirmation.
+The current authorization covers source, generated Skills-only artifacts,
+local disposable fixtures, tests, documentation, and independent review in
+isolated worktrees. It does not authorize portal mutation, merge, push, tag,
+release, publication, real VPS/certificate/credential changes, or destructive
+cleanup.
 
-**Purpose:** turn the verified local plugin into the exact production
-app-plus-skills implementation that can later enter OpenAI review, while
-preserving the already implemented NaCl graph topology and access lifecycle. A
-skills-only downgrade is out of scope and must be rejected.
+**Purpose:** turn the released local plugin and existing graph bootstrap into
+one public Skills-only installation: UI Install, `nacl-init`, packaged scripts,
+per-project Neo4j Community plus project-local `neo4j-mcp`/`.mcp.json`, then a
+mandatory new task. No public NaCl MCP or second GitHub installation exists in
+this product path.
 
-**Primary worker:** production MCP/platform engineer.
+**Primary worker:** Skills packaging and bootstrap engineer.
 
-**Independent verifiers:** security/privacy reviewer and release QA operator.
+**Independent verifiers:** clean-machine novice operator and security/release
+reviewer.
 
-Before implementation, refresh the official OpenAI **Build plugins** and
-**Submit plugins** contracts and record the source URLs/date in Wave 9
-evidence. Portal fields and review policy are live external contracts; if they
-changed, update this plan and acceptance gate before building the submission
-artifact.
+Before implementation, refresh and record the official contract date:
 
-Current official entry points (revalidate when the wave starts):
-
-- `https://learn.chatgpt.com/docs/build-app`
+- `https://learn.chatgpt.com/docs/build-skills`
 - `https://learn.chatgpt.com/docs/build-plugins`
 - `https://learn.chatgpt.com/docs/submit-plugins`
-- `https://developers.openai.com/apps-sdk/build/auth`
 - `https://platform.openai.com/plugins`
 
-#### Accepted graph and authorization baseline
+Treat [ADR-005](../adr/005-codex-skills-only-bootstrap.md) and
+`docs/research/codex-skills-only-submission-contract-2026-07-20.md` as the
+controlling decision and package-risk inventory.
 
-Wave 9 must reuse, not replace, the current graph implementation documented in:
+#### Preserved graph and authorization baseline
 
-- `nacl-init/SKILL.md` Step 2c and `skills-for-codex/nacl-init/SKILL.md`;
-- `docs/configuration.md` (`graph.mode`, `graph.remote`, developer identity);
-- `docs/runbooks/provision-shared-graph-vps.md`;
-- `docs/runbooks/connect-to-existing-remote-project.md`;
-- `nacl-tl-core/templates/graph-docker-compose.vps.yml` and the existing
-  provision, client-certificate issue/revoke, sidecar, create, and connect
-  scripts.
-
-The controlling policy for this wave is:
-
-1. Neo4j remains **Community Edition**. Each project has its own Docker Compose
-   stack, Neo4j container, and named data/log volumes, whether the host is the
-   developer's local machine or a VPS. Projects do not share a Neo4j database
-   or volume.
-2. For remote graphs, the **VPS/server is the authorization boundary**. An
-   authenticated principal authorized for server `S` may use every project
-   graph installed on `S`. `project_scope` selects and identifies a project for
-   routing, audit, and provenance; it is not an authorization boundary and must
-   neither grant nor restrict access inside an already authorized server.
-3. Authorization for server `S` never grants access to server `T`. A requested
-   host, URI, server ID, or `project_scope` supplied by a tool caller is not
-   authorization evidence. Routing resolves only through a server-side
-   allowlisted server/project registry. Project membership is a derived view of
-   the authoritative server principal set, never an independently managed
-   authorization list.
-4. The existing personal mTLS client certificate and key remain the revocable
-   server-access credential (the current user-facing "API key"). The existing
-   private CA, ghostunnel, local sidecar, and issue/revoke lifecycle remain in
-   use. The server's trusted-principal registry is authoritative; every project
-   gateway allow-list is its derived projection. Wave 9 may add deterministic
-   server-level registry/fan-out around the existing scripts so an authorized
-   certificate CN is present at every project gateway on that server, newly
-   created project gateways inherit the server allow-list, and revocation
-   removes the CN from every gateway on that server.
-5. OAuth protects the public MCP surface and maps its verified subject to one
-   or more authorized server principals. OAuth tool scopes and confirmations
-   remain operation-level controls (`read`, `write`, schema, backup, restore,
-   administration); they do not create per-project membership on an authorized
-   server. Linking must prove/control the existing server principal without
-   shipping its private key in the plugin or accepting a raw client-supplied
-   graph endpoint.
-6. `NACL_DEVELOPER_ID`, `claimed_by`, `updated_by`, and `project_scope` remain
-   identity/provenance/concurrency fields, not authentication credentials.
-   Neo4j Community's internal `neo4j` account and project password remain
-   implementation secrets behind the gateway, not per-developer authorization.
-   An mTLS certificate is neither the Neo4j password nor an OAuth token; all
-   three layers retain distinct purposes and lifecycles.
+1. Neo4j remains Community Edition with one Docker Compose stack, container,
+   and independent durable volumes per project, locally or on a VPS.
+2. Local Neo4j binds only to loopback. The project receives a stable ID,
+   explicit route, schema ledger, secret reference, backup/recovery contract,
+   and project `.mcp.json`.
+3. For optional remote graphs, the server/VPS remains the authorization
+   boundary. Access to server `S` permits its registered project graphs and
+   never server `T`; `project_scope` is routing/provenance, not a grant.
+4. Existing mTLS/private-CA/ghostunnel issue and revoke remain the optional
+   server-access lifecycle. They are not uploaded to or replaced by a public
+   MCP/OAuth service.
+5. `NACL_DEVELOPER_ID`, claims, revisions, fences, and project scope remain
+   identity/provenance/concurrency fields, not credentials.
 
 **Tasks:**
 
-1. Reconcile ADR-004 and all Wave 9 design/evidence with the accepted graph and
-   authorization baseline above. Remove proposed managed/shared-database and
-   per-project membership assumptions that contradict the existing Community
-   topology or the server-level authorization decision.
-2. Execute the accepted main-reconciliation plan from a fresh, re-fetched
-   `origin/main`: use the old Codex integration only as an exact-SHA/path
-   allowlisted donor, rebuild Codex resources from current root sources, compose
-   the documented overlaps manually, and prove the current Claude Code
-   `plugin/**` artifact and CI semantics remain unchanged.
-3. Implement a provider-neutral, locally runnable Streamable HTTP MCP service
-   and full app-plus-skills binding. The production-shaped package must not
-   depend on local `stdio`, an absolute developer path, a source checkout, or a
-   user-managed Node process. Local development may use disposable containers
-   and fixtures; it must not mutate a real VPS or credential store.
-4. Reuse `nacl-init` `local | create | connect`, per-project Compose stacks,
-   Community containers/volumes, VPS provisioner, local mTLS sidecar, project
-   marker, graph migrations, lease/fencing/CAS, backup, and restore contracts.
-   Add adapters at their boundaries instead of introducing a second graph
-   lifecycle or a managed graph dependency. Preserve full remote-init endpoint
-   parity across root, Codex adapter, generated package, OS implementations, and
-   tests: mode, host, unique gateway port, local sidecar port/URI,
-   `project_scope`, certificate/key/CA references, database user/name, and
-   secret-source rules must round-trip without silent defaults or dropped
-   fields.
-5. Implement an opaque server registry and OAuth-subject-to-server-principal
-   binding. Resolve a project only as `(authorized_server_id, project_scope)`;
-   enumerate/routable projects from trusted server state; never accept an
-   arbitrary graph host, Bolt URI, filesystem root, database password, or
-   certificate path from an MCP tool input.
-6. Extend the existing mTLS issue/revoke lifecycle to the server authorization
-   boundary without replacing it: deterministic CN membership across every
-   project gateway on a server, inheritance by new project gateways, rotation,
-   full-server revocation, stale-session invalidation, redacted audit, rate
-   limits, and abuse boundaries. Migrate existing per-project allow-lists only
-   through an explicit, reviewed union into the authoritative server list, then
-   verify identical projections at every gateway. A partial revoke or projection
-   failure is fail-closed at the OAuth/public MCP boundary and cannot report
-   success until every gateway and stale session is reconciled. Allocate a
-   unique public gateway port per project stack on the same VPS and reject
-   collisions before Compose mutation. Private client keys must never be
-   uploaded to the plugin, returned by tools, committed, or logged.
-7. Review all tool names, descriptions, input/output schemas, minimized response
-   data, authentication challenges, and `readOnlyHint`, `openWorldHint`,
-   `destructiveHint`, and `idempotentHint` annotations against actual behavior.
-   Local-only lifecycle/symlink/profile tools must not silently become public
-   remote capabilities. Every dynamic Cypher value must be parameterized;
-   identifiers that cannot be parameterized must come from a closed catalog or
-   pass an exact allowlist/grammar validator before query construction.
-8. Add a mandatory authorization/topology matrix using disposable fixtures:
-   two project containers and volumes on server A, at least one project on
-   server B, two principals, grant/rotation/revoke, and stale sessions. Prove
-   that an authorized server-A principal can access both A projects, cannot
-   access server B, and cannot gain access by forging `project_scope`, server
-   ID, URI, host, subject, or provenance fields. Unknown/ambiguous projects,
-   revoked principals, cross-server routes, arbitrary Cypher/URLs/paths, and
-   direct Neo4j exposure must fail closed before a graph mutation. Include
-   explicit union-migration, new-project inheritance, duplicate gateway-port,
-   partial-revoke, remote-endpoint-field-loss, raw-Cypher-identifier, and
-   certificate-versus-OAuth/password-confusion cases.
-9. Complete stable publisher and package metadata, public website/support/
-   privacy/terms/license/repository placeholders, production visual assets,
-   category/capability copy, data-flow explanation, starter prompts, and exactly
-   five positive plus three negative reviewer cases. Placeholder URLs cannot be
-   presented as verified or submitted before their real external state exists.
-10. Run Node 20+ and current bundled Codex matrices, hosted CI where available,
-    dependency/SBOM/vulnerability and secret/privacy scans, manifest/skill
-    validators, exact archive reproducibility, clean install/cache/reinstall/
-    uninstall, server-boundary authorization, concurrency, backup/restore, and
-    Claude compatibility gates. Preserve all evidence by exact source SHA and
-    artifact digest.
-11. After separate authorization, deploy the already reviewed artifact to a
-    real public production Streamable HTTP endpoint, bind OAuth to the existing
-    server-principal lifecycle, configure hostname/TLS/domain verification/CSP,
-    and run real two-machine/two-user grant/rotation/revoke, stale-session,
-    backup, and external restore drills. Until then these live gates remain
-    `NOT_RUN`, never simulated as production verification.
-12. Create a release-candidate branch only after its prerequisite gates pass,
-    rebuild the exact submission artifact, and produce a signed checklist that
-    binds source SHA, plugin version, skills bundle, MCP deployment revision,
-    graph topology/policy version, fixtures, legal URLs, and evidence digests.
-    Branch creation, merge, push, tag, release, and publication follow their
-    own explicit authorization boundaries.
+1. Reconcile from current `main` without overwriting parallel Claude Code,
+   documentation, or framework changes. Preserve the immutable Git release as
+   historical evidence and rebuild generated Codex outputs from current
+   canonical inputs.
+2. Add a dedicated deterministic Skills-only builder. Its output is the exact
+   portal upload tree and has a complete file/digest manifest. Build twice and
+   require byte-for-byte tree/archive equality.
+3. Compute each public skill's transitive Markdown/script/template/asset
+   closure. Reject absolute paths, source-checkout dependencies, symlink
+   escapes, missing imports, unpinned downloads, and undeclared executables.
+   Until portal testing proves shared top-level resources supported, make each
+   public skill self-contained or duplicate common immutable resources with
+   digest equality checks.
+4. Remove the public skills' mandatory package MCP doctor and all bootstrap
+   dependencies on package-only `nacl_*` tools. `nacl-init` must run with only
+   the installed skill bundle plus declared system prerequisites. Other skills
+   may use file-only workflows; graph-backed paths stop with precise init or
+   new-task guidance until project MCP is verified.
+5. Adapt `nacl-init` to a bootstrap-first plan/apply/read-back contract. The
+   read-only plan states the exact project root, files, Docker resources, ports,
+   downloads/checksums, secret references, `.mcp.json` merge, schema actions,
+   rollback points, and confirmation. Denial causes zero mutation.
+6. Reuse and harden the packaged POSIX and PowerShell graph setup: pinned
+   checksum-verified `neo4j-mcp`, one project Community stack, loopback ports,
+   durable volumes, strict secret handling, non-clobbering `.mcp.json`, schema
+   migration, health/read canary, backup, and idempotent rerun. Do not add a
+   public endpoint or managed graph dependency.
+7. After writing `.mcp.json`, return a closed handoff status and stop. Require a
+   new task in the same project; only there verify MCP initialize/tools-list,
+   graph/schema health, named read, confirmed write canary, and separate
+   read-back before reporting initialization `VERIFIED`.
+8. Map post-init BA/SA/TL/goal/fix/verify/migrate/publish graph operations to the
+   project-local `neo4j-mcp` contract or bundled deterministic adapters.
+   Inventory and eliminate hidden calls to package-only project/graph/profile/
+   legacy tools. Preserve leases, fencing, revisions, atomic IDs,
+   idempotency, audit, backup, and restore semantics.
+9. Test the exact upload tree in a clean local test home with the repository
+   unavailable after staging: discovery, permission denial, local bootstrap,
+   new-task pickup, two projects, two sessions, restart, update, uninstall,
+   persistence, offline/manual download, checksum mismatch, malformed existing
+   config, port collision, partial apply, and every supported OS/architecture.
+   Do not make an undocumented portal-draft preview a Wave 9 prerequisite.
+10. Run official skill validation, closure/path/link checks, Node 20+ and
+    PowerShell where supported, Docker lifecycle/isolation/concurrency/recovery,
+    secret/privacy/license/dependency scans, Claude isolation, hosted CI, and
+    independent adversarial review. A missing platform runner is `NOT_RUN`, not
+    success.
+11. Complete the public listing, verified publisher prerequisites, public
+    website/support/privacy/terms URLs, approved assets, category/capability
+    and data-flow copy, starter prompts, availability, release notes, and
+    exactly five positive plus three negative reviewer cases. Test cases must
+    require no private repository knowledge or public MCP credentials.
+12. Freeze the exact submission artifact by source SHA, public skill
+    inventory, file manifest, archive digest, graph bootstrap policy version,
+    tests, legal URLs, and evidence digests. GitHub may publish matching source
+    and artifacts after separate authorization, but it is not a user install
+    prerequisite.
 
 **Acceptance gate:**
 
-- A local implementation checkpoint may be recorded as
-  `LOCAL_IMPLEMENTATION_VERIFIED` when the full provider-neutral source,
-  generated package, disposable topology/auth matrix, Node/Codex/Claude gates,
-  security/privacy scans, reproducibility, and independent code/security review
-  pass. This checkpoint is progress evidence, not aggregate Wave 9 acceptance.
-- The exact Community topology is preserved: one project equals one Neo4j
-  container plus its own volumes; no shared multi-project database or managed
-  graph is introduced.
-- The authorization matrix proves the intended positive boundary (all project
-  graphs on an authorized server) and the negative boundary (no graph on an
-  unauthorized server). `project_scope`, developer/provenance fields, and raw
-  routing inputs never grant access.
-- OAuth subjects, mTLS server principals, server registry, full-server
-  issue/rotation/revoke, stale-session handling, tool scopes, confirmations,
-  audit, and rate limits are mutually consistent and independently reviewed.
-  The server trusted-principal set is authoritative; union migration, gateway
-  projection/inheritance, unique ports, and partial-revoke fail-closed behavior
-  are verified, and project membership cannot drift independently.
-- Before aggregate `VERIFIED`, the deferred Wave 8 portability gate passes by
-  installing the released Git artifact on a clean second machine after an
-  explicitly authorized `main` merge and release. Failure returns to the
-  responsible implementation wave; it is not waived.
-- Before aggregate `VERIFIED`, the full app-plus-skills package works end to end
-  through the separately authorized real production MCP endpoint in both
-  ChatGPT/Codex review-shaped environments; real grant/revoke, stale session,
-  backup, and external restore drills pass.
-- Every OpenAI submission field and the exact five positive/three negative
-  reviewer fixtures are complete and reproducible; security, privacy, identity,
-  domain, legal, support, availability, hosted CI, Node 20+, SBOM, server
-  isolation/revoke, and restore gates are `VERIFIED`.
-- Independent security/privacy and release QA both return `ACCEPT`; the exact
-  submission bundle is frozen and no skills-only fallback exists.
+- The exact Skills-only artifact is reproducible and passes clean-home local
+  discovery/bootstrap tests with the source repository unavailable after
+  staging. Official-card one-click installation on a clean second machine is a
+  post-publication Wave 10 gate; an undocumented draft preview remains
+  `NOT_VERIFIED`, not a circular prerequisite.
+- All ten public skills are discoverable and their complete runtime closure is
+  inside the submitted tree; portal-installed file paths and script execution
+  are proven rather than inferred.
+- `nacl-init` performs plan/confirmation/apply/read-back, creates the isolated
+  project graph and project `.mcp.json`, stops honestly, and the mandatory new
+  task proves MCP/schema/read/confirmed-write/read-back.
+- Denial, unsafe input, missing prerequisites, offline download, checksum
+  mismatch, malformed config, collision, and partial failure cannot report
+  success or leave an unreported mutation.
+- Update/uninstall preserves project graph data, `.mcp.json`, project config,
+  backups, profile files, and secret state.
+- Local and optional remote Community topology, server authorization,
+  concurrency, recovery, and Claude isolation gates remain verified.
+- All required Skills-only portal materials and exact 5 positive/3 negative
+  tests are complete and independently reproducible.
+- Independent clean-machine and security/release reviews both return `ACCEPT`.
 
-Wave 9 may prepare a portal-ready package and local release candidate, but this
-authorization does not permit creation/submission of a portal draft, mutation
-of a real VPS/DNS/certificate/credential/deployment/paid resource, merge or
-push, tag, release, publication, or making the plugin public.
+Wave 9 may prepare and freeze a portal-ready artifact. It does not authorize a
+portal draft, submission, publication, Git mutation, release, real credential
+or VPS mutation, or making the plugin public.
 
 ---
 
-### Wave 10 — OpenAI review submission and controlled publication
+### Wave 10 — Skills-only OpenAI review and controlled publication
 
 **Status in this runbook:** `NOT_RUN` until Waves 8-9 are `VERIFIED`. Creating
 or submitting the draft and publishing after approval are separate external
 actions that each require explicit user confirmation.
 
-**Purpose:** submit only the frozen full app-plus-skills artifact to OpenAI,
-handle review without artifact drift, and publish only after approval and a
-second user decision.
+**Purpose:** submit only the frozen Skills-only artifact to OpenAI, handle
+review without artifact drift, and publish only after approval and a separate
+user decision.
 
 **Primary operator:** release manager with OpenAI Platform Apps Management
 write access.
@@ -1505,15 +1504,18 @@ runbook is `BLOCKED`, not permission to guess or omit a field.
 1. Verify the publishing organization, Apps Management write permission, and
    matching verified individual or business developer identity.
 2. After explicit user approval, open the OpenAI plugin submission portal,
-   choose **With MCP** for an app-plus-skills plugin, and create the draft. Do
-   not select **Skills only**.
-3. Enter the frozen production MCP URL and authentication, complete domain
-   verification, scan tools, upload the exact skills bundle, and fill listing,
-   prompts, five positive tests, three negative tests, regions, release notes,
-   and policy attestations from the Wave 9 package.
-4. Reconcile the portal's scanned tool inventory, annotations, domains, and
-   validation output against the frozen manifest. Any material change returns
-   to Wave 9 and creates a new artifact/version; never patch only the portal.
+   choose **Skills only**, and create the draft. If the live form unexpectedly
+   requires a production MCP URL, OAuth, domain verification, CSP, or tool
+   scan, stop and record the contract discrepancy; do not switch to **With MCP**
+   or invent a service.
+3. Upload the exact frozen skill bundle and fill listing, verified publisher,
+   website/support/privacy/terms, prompts, exactly five positive tests, exactly
+   three negative tests, regions, release notes, and policy attestations from
+   the Wave 9 package.
+4. Reconcile the portal's skill scan, file inventory when exposed, permissions,
+   validation output, and listing against the frozen manifest. Any material
+   change returns to Wave 9 and creates a new artifact/version; never patch only
+   the portal.
 5. Present the final draft summary and evidence digests to the user. Submit for
    review only after an explicit confirmation, then record the submission ID,
    timestamp, exact version, receipt, and review status in the ledger.
@@ -1522,10 +1524,11 @@ runbook is `BLOCKED`, not permission to guess or omit a field.
    artifact.
 7. After OpenAI approval, present the approved listing and exact artifact to the
    user. Publish only after a second explicit confirmation.
-8. Align the approved artifact with the authorized release branch/main merge,
-   tag, framework/plugin release, and repository push; each Git/public mutation
-   remains separately scoped. Run post-publication discovery, install, tool,
-   update, uninstall, and rollback smoke in both ChatGPT and Codex.
+8. Align the approved artifact with any separately authorized release
+   branch/main merge, tag, source release, and repository push. Run
+   post-publication discovery, one-click install, `nacl-init`, new-task project
+   MCP pickup, update, uninstall/persistence, and rollback smoke in ChatGPT and
+   Codex. The smoke must not use Git as a second installation step.
 
 **Acceptance gate:**
 
@@ -1533,8 +1536,9 @@ runbook is `BLOCKED`, not permission to guess or omit a field.
 - submission and publication confirmations are recorded separately;
 - the submitted, approved, published, tagged, and documented artifacts are
   byte-for-byte/version-identical or any difference is explicitly re-reviewed;
-- the public directory entry, fresh install, full app-plus-skills behavior,
-  update/uninstall, support links, and rollback smoke are `VERIFIED`;
+- the public directory entry, fresh single install, bootstrap-first behavior,
+  mandatory new-task project MCP pickup, update/uninstall persistence, support
+  links, and rollback smoke are `VERIFIED`;
 - ledger contains portal receipt/review evidence and exact public state.
 
 Do not treat successful Wave 7 local tests as production verification, Wave 9
@@ -1564,6 +1568,10 @@ publish.
 - Manifest paths exist and remain under plugin root.
 - No runtime import/link/path escapes plugin root.
 - Cached plugin works without checkout.
+- The Skills-only submission tree has its own deterministic file/digest
+  manifest and every public skill's transitive closure is inside that tree.
+- Shared `../../resources` paths are not assumed portable until the exact
+  portal-installed tree proves them; unresolved or symlink-escaping paths fail.
 
 ### G3 — CLI parity
 
@@ -1571,6 +1579,8 @@ publish.
 - Plugin install passes under CLI with no GUI.
 - Plugin and Desktop share content/version/tool schemas.
 - Double install is diagnosed.
+- The public Skills-only path does not require the full Git plugin, package MCP
+  doctor, or legacy symlink channel; those remain compatibility-only paths.
 
 ### G4 — Desktop runtime
 
@@ -1578,6 +1588,9 @@ publish.
 - MCP starts from cache.
 - User approvals and write read-back work.
 - Restart does not lose data.
+- For the Skills-only product, installed `nacl-init` runs before a NaCl package
+  MCP exists, writes project `.mcp.json` only after confirmation, and a new
+  task discovers the project-local `neo4j-mcp`.
 
 ### G5 — Graph security
 
@@ -1611,6 +1624,8 @@ publish.
 - Clean-home install from marketplace succeeds.
 - Reinstall/new-task behavior documented.
 - No public state mutation.
+- Exact Skills-only tree/archive digest, source SHA, skill inventory, bootstrap
+  policy version, and reviewer fixtures are bound together.
 
 ### G10 — User documentation and onboarding
 
@@ -1619,17 +1634,23 @@ publish.
 - Legacy Codex and Claude paths are clearly separated from the plugin path.
 - Permissions, confirmations, persistence, rollback, troubleshooting, support,
   and data handling are documented from verified behavior.
+- The normal public path is one official-card install followed by `nacl-init`
+  and a mandatory new task; Git is explicitly source/support/compatibility, not
+  a second installation requirement.
 
 ### G11 — Production submission and publication integrity
 
-- Only the full app-plus-skills product may advance; skills-only substitution is
-  a blocking scope change.
-- Production MCP, identity, auth, domain, legal, privacy, regions, reviewer
-  fixtures, and public support gates pass before portal submission.
+- Only the bootstrap-first Skills-only product defined by ADR-005 may advance;
+  adding a public MCP or mandatory Git installation is a blocking scope change.
+- Verified publisher, legal, privacy, regions, reviewer fixtures, public
+  support, exact bundle scan, and portal validation pass before submission.
+  Production MCP URL, OAuth, domain, CSP, and tool-scan gates do not apply
+  unless the live Skills-only form unexpectedly renders them; if it does, stop
+  and record the contract discrepancy.
 - Source, submitted, approved, published, tagged, and documented artifacts are
   cryptographically/version bound.
-- Portal submission and post-approval publication have separate recorded user
-  confirmations.
+- Portal draft creation, submission, and post-approval publication have
+  separate recorded user confirmations.
 
 No aggregate `VERIFIED` is allowed while any mandatory gate is missing or
 `PARTIALLY_VERIFIED`.
@@ -1717,6 +1738,7 @@ Record decisions as repository ADRs and summarize them in the ledger:
 | Lease/revision/ID model | Transactions, TTL, fencing, sequences, idempotency? | Wave 5 |
 | Agent-profile delivery | Explicit companion installation and overwrite policy? | Wave 6 |
 | Candidate/public versioning | Framework/plugin/schema compatibility mapping? | Wave 7 |
+| Skills-only submission/bootstrap | Exact skill closure, pre-MCP init path, project `.mcp.json` pickup, and single-install public journey? | Wave 9 |
 
 An ADR may not waive a non-negotiable invariant. Architecture-changing
 disagreement is escalated to the user with concrete options and evidence.
@@ -1744,7 +1766,20 @@ Do not:
 - destroy a target graph before a recoverable backup and validated replacement;
 - mark a wave accepted based only on the implementer's report;
 - publish an RC to a public marketplace as a substitute for local testing;
-- merge or tag while any mandatory gate lacks evidence.
+- merge or tag while any mandatory gate lacks evidence;
+- require a public NaCl MCP, OAuth, domain, CSP, or hosted service for the
+  Skills-only product unless a newly documented OpenAI contract forces a new
+  user decision;
+- require a GitHub/plugin reinstall after the official Skills-only Install;
+- make `nacl-init` depend on a package-level NaCl MCP before it creates the
+  project-local MCP;
+- assume the portal preserves `../../resources`, arbitrary plugin-root files,
+  executable mode bits, or draft-preview install behavior without exact proof;
+- claim project `.mcp.json` hot reload in the current task instead of requiring
+  a new task;
+- reject a portable absolute path that `nacl-init` generated and read back for
+  the pinned binary on that user's machine; reject only developer-authored,
+  checkout-bound, secret-bearing, or stale-cache absolute paths.
 
 ---
 
