@@ -35,6 +35,7 @@ case ${1:-} in
       tests/codex-plugin/scripts/nacl-reviewer-fixtures.test.mjs
       tests/codex-plugin/scripts/nacl-server-access-source.test.mjs
       tests/codex-plugin/scripts/nacl-server-operation-authorization-source.test.mjs
+      tests/codex-plugin/scripts/nacl-skills-only-bundle.test.mjs
       tests/codex-plugin/scripts/nacl-submission-readiness.test.mjs
       tests/codex-plugin/scripts/nacl-vps-provision-r2.test.mjs
       tests/codex-plugin/scripts/nacl-vps-server-access-source.test.mjs

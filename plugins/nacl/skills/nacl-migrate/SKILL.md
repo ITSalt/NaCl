@@ -5,21 +5,16 @@ description: Plan or execute confirmed NaCl methodology migrations for legacy, B
 
 # NaCl Migrate
 
-Call `nacl_installation_doctor` once and stop unless it returns
-`status=VERIFIED`.
+Read [the Skills-only runtime contract](../../resources/references/skills-only-runtime-contract.md),
+[the migration workflow](../../resources/workflows/nacl-migrate/SKILL.md), and
+[the migration rules](../../resources/workflows/references/migration-rules.md).
+Require a loaded project `nacl_neo4j` MCP and verified read canary for graph
+migration; otherwise return `BLOCKED/PROJECT_MCP_NOT_CONFIGURED` and route to
+`nacl-init`.
 
-Read
-[the migration workflow](../../resources/workflows/nacl-migrate/SKILL.md),
-[the migration rules](../../resources/workflows/references/migration-rules.md),
-and [the gateway binding](../../resources/references/workflow-gateway-contract.md).
-
-Choose `nacl-migrate`, `nacl-migrate-ba`, or `nacl-migrate-sa` under
-`../../resources/workflows/`. Present the before-state, write plan, backup,
-confirmation, and validation plan before mutation.
-
-Gateway schema recovery uses only the exact `SchemaMigration/MIG-GATEWAY`
-sequence: claim with `CONFIRM_SCHEMA_ADMIN`, retain/heartbeat its fence, call
-`nacl_graph_apply_migrations` with that fence plus `CONFIRM_SCHEMA_ADMIN` and
-`APPLY_MIGRATIONS`, release, then health/schema/read-back. File-only BA/SA
-conversion retains its own backup and confirmation. Domain graph migration not
-represented by the fixed catalog is `BLOCKED/DOMAIN_MIGRATION_RESOURCE_UNAVAILABLE`.
+Choose the exact migration leaf. Present before-state, backup, write plan,
+confirmation and validation before mutation. Use only project-local Neo4j MCP
+tools and packaged scripts. Preserve schema lease/fence, additive ordered
+migrations, checksum ledger and read-back. File-only conversion retains its
+own backup and confirmation. An unrepresented domain migration stays
+`BLOCKED`.

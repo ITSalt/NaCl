@@ -1,431 +1,85 @@
 {
   "$schema": "./reviewer-fixtures.schema.json",
-  "schemaVersion": 1,
-  "fixtureSetVersion": "nacl-reviewer-fixtures-v1",
+  "schemaVersion": 2,
+  "fixtureSetVersion": "nacl-skills-only-reviewer-fixtures-v1",
   "status": "LOCAL_CONTRACT_ONLY",
+  "submissionType": "SKILLS_ONLY",
   "executionEvidence": {
     "localSimulation": {
       "status": "VERIFIED_CONTRACT_ONLY",
-      "scope": "Schemas, scopes, confirmations, deterministic seed values, and expected result or denial shapes are checked locally."
+      "scope": "Bundle closure, bootstrap routing, confirmations, secret-free MCP configuration, and closed failure shapes are checked locally."
     },
     "liveReviewer": {
       "status": "NOT_RUN",
-      "reason": "No public endpoint, external OAuth provider, reviewer account, or time-bounded demo credential has been authorized or created."
-    }
-  },
-  "seed": {
-    "version": "nacl-reviewer-seed-v1",
-    "status": "LOCAL_SIMULATION_ONLY",
-    "projects": [
-      {
-        "alias": "Demo Alpha",
-        "project_ref": "prj_DEMOALPHA00000001",
-        "summary": "Demo Alpha is active with one approved delivery task.",
-        "delivery_items": ["DEMO-TASK-001"]
-      },
-      {
-        "alias": "Demo Beta",
-        "project_ref": "prj_DEMOBETA000000002",
-        "summary": "Demo Beta is available to the same authorized principal.",
-        "delivery_items": []
-      },
-      {
-        "alias": "Demo Restricted",
-        "project_ref": "prj_DEMORESTRICTED0001",
-        "summary": null,
-        "delivery_items": []
-      }
-    ],
-    "actors": [
-      {
-        "alias": "Reviewer Owner",
-        "scopes": [
-          "nacl.server.read",
-          "nacl.server.write",
-          "nacl.server.schema",
-          "nacl.server.backup",
-          "nacl.server.restore"
-        ]
-      },
-      {
-        "alias": "Reviewer Collaborator",
-        "scopes": ["nacl.server.read"]
-      }
-    ],
-    "authorization": [
-      {
-        "actor": "Reviewer Owner",
-        "visibleProjects": ["Demo Alpha", "Demo Beta"]
-      },
-      {
-        "actor": "Reviewer Collaborator",
-        "visibleProjects": ["Demo Alpha", "Demo Beta"]
-      }
-    ],
-    "backup": {
-      "project": "Demo Alpha",
-      "backup_ref": "backup_DEMOALPHA00000001",
-      "restore_job_ref": "job_DEMORESTORE0000001"
+      "reason": "The exact Skills-only portal artifact and clean reviewer-machine run have not yet been submitted or executed."
     }
   },
   "positive": [
     {
       "id": "P1",
-      "prompt": "List the NaCl projects I can access and show only their safe labels.",
-      "toolCalls": [
-        {
-          "tool": "nacl_projects_list",
-          "scope": "nacl.server.read",
-          "confirmation": null,
-          "arguments": {}
-        }
-      ],
-      "expectedBehavior": [
-        "Verify the OAuth context before resolving any route.",
-        "Enumerate only projects visible through the authoritative server grant.",
-        "Return no server, host, credential, or internal route fields."
-      ],
-      "expectedToolResults": [
-        {
-          "tool": "nacl_projects_list",
-          "result": {
-            "contract": "nacl-public-mcp-v1",
-            "status": "VERIFIED",
-            "code": "OPERATION_COMPLETED",
-            "data": {
-              "projects": [
-                { "project_ref": "prj_DEMOALPHA00000001", "label": "Demo Alpha" },
-                { "project_ref": "prj_DEMOBETA000000002", "label": "Demo Beta" }
-              ]
-            },
-            "retryable": false,
-            "replayed": false,
-            "support_ref": "support_11111111111111111111111111111111"
-          }
-        }
-      ],
-      "requiredSeed": ["Demo Alpha", "Demo Beta", "Reviewer Owner"]
+      "prompt": "After installing NaCl Skills only, inspect this project and explain the local initialization plan without changing anything.",
+      "entrySkill": "nacl-init",
+      "precondition": "No project MCP exists.",
+      "expectedBehavior": ["Resolve only the active skill bundle and explicit project root.", "Return a dry-run plan with NOT_RUN and make no file, Docker, or network mutation."],
+      "expectedStatus": "NOT_RUN"
     },
     {
       "id": "P2",
-      "prompt": "Summarize Demo Alpha and show its approved delivery status.",
-      "toolCalls": [
-        {
-          "tool": "nacl_project_summary",
-          "scope": "nacl.server.read",
-          "confirmation": null,
-          "arguments": { "project_ref": "prj_DEMOALPHA00000001" }
-        },
-        {
-          "tool": "nacl_named_read",
-          "scope": "nacl.server.read",
-          "confirmation": null,
-          "arguments": {
-            "project_ref": "prj_DEMOALPHA00000001",
-            "query": "delivery-summary"
-          }
-        }
-      ],
-      "expectedBehavior": [
-        "Resolve the opaque project reference only after authorization.",
-        "Use the closed named-read catalog and return a bounded summary.",
-        "Persist only redacted security audit context."
-      ],
-      "expectedToolResults": [
-        {
-          "tool": "nacl_project_summary",
-          "result": {
-            "contract": "nacl-public-mcp-v1",
-            "status": "VERIFIED",
-            "code": "OPERATION_COMPLETED",
-            "data": {
-              "summary": "Demo Alpha is active with one approved delivery task.",
-              "revision": 7
-            },
-            "retryable": false,
-            "replayed": false,
-            "support_ref": "support_22222222222222222222222222222222"
-          }
-        },
-        {
-          "tool": "nacl_named_read",
-          "result": {
-            "contract": "nacl-public-mcp-v1",
-            "status": "VERIFIED",
-            "code": "OPERATION_COMPLETED",
-            "data": {
-              "items": ["DEMO-TASK-001"],
-              "revision": 7
-            },
-            "retryable": false,
-            "replayed": false,
-            "support_ref": "support_33333333333333333333333333333333"
-          }
-        }
-      ],
-      "requiredSeed": ["Demo Alpha", "DEMO-TASK-001", "Reviewer Owner"]
+      "prompt": "Initialize this project as demo-alpha after I provide the exact INIT_LOCAL_GRAPH:demo-alpha confirmation.",
+      "entrySkill": "nacl-init",
+      "precondition": "Docker is available, loopback ports are free, and the exact confirmation is present.",
+      "expectedBehavior": ["Run the bundle-relative OS bootstrap with no secret argument.", "Create copy-only project graph assets, a per-project container and volume, and a secret-free managed section in project .codex/config.toml."],
+      "expectedStatus": "VERIFIED"
     },
     {
       "id": "P3",
-      "prompt": "Mark the approved Demo Alpha task DEMO-TASK-001 as active.",
-      "toolCalls": [
-        {
-          "tool": "nacl_project_mutate",
-          "scope": "nacl.server.write",
-          "confirmation": "APPLY_PROJECT_MUTATION",
-          "arguments": {
-            "project_ref": "prj_DEMOALPHA00000001",
-            "resource_type": "Task",
-            "resource_ref": "DEMO-TASK-001",
-            "status": "active",
-            "idempotency_key": "review-p3-mutation-0001",
-            "confirmation": "APPLY_PROJECT_MUTATION"
-          }
-        }
-      ],
-      "expectedBehavior": [
-        "Require the exact write scope and confirmation before mutation.",
-        "Apply the closed resource patch through lease, fence, and CAS controls.",
-        "Replay the same idempotency key without a second mutation."
-      ],
-      "expectedToolResults": [
-        {
-          "tool": "nacl_project_mutate",
-          "result": {
-            "contract": "nacl-public-mcp-v1",
-            "status": "VERIFIED",
-            "code": "OPERATION_COMPLETED",
-            "data": {
-              "summary": "Updated DEMO-TASK-001 to active.",
-              "revision": 8
-            },
-            "retryable": false,
-            "replayed": false,
-            "support_ref": "support_44444444444444444444444444444444"
-          }
-        }
-      ],
-      "requiredSeed": ["Demo Alpha", "DEMO-TASK-001", "Reviewer Owner"]
+      "prompt": "Verify the initialized NaCl project from a new task using one read canary.",
+      "entrySkill": "nacl-diagnose",
+      "precondition": "A new task has loaded the project-local neo4j MCP generated by nacl-init.",
+      "expectedBehavior": ["Use only the project nacl_neo4j MCP.", "Return graph-backed evidence without invoking a package installation doctor or public endpoint."],
+      "expectedStatus": "VERIFIED"
     },
     {
       "id": "P4",
-      "prompt": "Apply the reviewed gateway foundation migration to Demo Alpha.",
-      "toolCalls": [
-        {
-          "tool": "nacl_schema_apply",
-          "scope": "nacl.server.schema",
-          "confirmation": "APPLY_REVIEWED_MIGRATIONS",
-          "arguments": {
-            "project_ref": "prj_DEMOALPHA00000001",
-            "migration_set": "gateway-foundation-v1",
-            "idempotency_key": "review-p4-schema-00001",
-            "confirmation": "APPLY_REVIEWED_MIGRATIONS"
-          }
-        }
-      ],
-      "expectedBehavior": [
-        "Require schema scope and the exact reviewed-migration confirmation.",
-        "Select only the closed checksummed migration set.",
-        "Read back the migration ledger before reporting success."
-      ],
-      "expectedToolResults": [
-        {
-          "tool": "nacl_schema_apply",
-          "result": {
-            "contract": "nacl-public-mcp-v1",
-            "status": "VERIFIED",
-            "code": "OPERATION_COMPLETED",
-            "data": {
-              "summary": "Applied gateway-foundation-v1.",
-              "revision": 9
-            },
-            "retryable": false,
-            "replayed": false,
-            "support_ref": "support_55555555555555555555555555555555"
-          }
-        }
-      ],
-      "requiredSeed": ["Demo Alpha", "Reviewer Owner", "gateway-foundation-v1"]
+      "prompt": "Plan a business-analysis context update for this initialized project and show the graph write confirmation first.",
+      "entrySkill": "nacl-ba",
+      "precondition": "Project MCP and read canary are verified.",
+      "expectedBehavior": ["Select one packaged BA leaf and present the parameterized write plan.", "Stop before mutation until the BA approval required by that workflow is supplied."],
+      "expectedStatus": "NOT_RUN"
     },
     {
       "id": "P5",
-      "prompt": "Back up Demo Alpha and request an isolated validation restore without replacing the active project.",
-      "toolCalls": [
-        {
-          "tool": "nacl_backup_create",
-          "scope": "nacl.server.backup",
-          "confirmation": "CREATE_PROJECT_BACKUP",
-          "arguments": {
-            "project_ref": "prj_DEMOALPHA00000001",
-            "idempotency_key": "review-p5-backup-0001",
-            "confirmation": "CREATE_PROJECT_BACKUP"
-          }
-        },
-        {
-          "tool": "nacl_restore_request",
-          "scope": "nacl.server.restore",
-          "confirmation": "RESTORE_TO_ISOLATED_TARGET",
-          "arguments": {
-            "project_ref": "prj_DEMOALPHA00000001",
-            "backup_ref": "backup_DEMOALPHA00000001",
-            "idempotency_key": "review-p5-restore-0001",
-            "confirmation": "RESTORE_TO_ISOLATED_TARGET"
-          }
-        }
-      ],
-      "expectedBehavior": [
-        "Require independent backup and restore scopes plus exact confirmations.",
-        "Create an idempotent backup before accepting the restore request.",
-        "Target an isolated validation copy and leave the active project unchanged."
-      ],
-      "expectedToolResults": [
-        {
-          "tool": "nacl_backup_create",
-          "result": {
-            "contract": "nacl-public-mcp-v1",
-            "status": "VERIFIED",
-            "code": "OPERATION_COMPLETED",
-            "data": {
-              "job_ref": "job_DEMOBACKUP0000001"
-            },
-            "retryable": false,
-            "replayed": false,
-            "support_ref": "support_66666666666666666666666666666666"
-          }
-        },
-        {
-          "tool": "nacl_restore_request",
-          "result": {
-            "contract": "nacl-public-mcp-v1",
-            "status": "VERIFIED",
-            "code": "OPERATION_COMPLETED",
-            "data": {
-              "job_ref": "job_DEMORESTORE0000001"
-            },
-            "retryable": false,
-            "replayed": false,
-            "support_ref": "support_77777777777777777777777777777777"
-          }
-        }
-      ],
-      "requiredSeed": ["Demo Alpha", "backup_DEMOALPHA00000001", "Reviewer Owner"]
+      "prompt": "Re-run nacl-init for this already initialized project without replacing existing files or secrets.",
+      "entrySkill": "nacl-init",
+      "precondition": "The existing graph environment, launcher, MCP entry, project identity, and ports match the requested binding.",
+      "expectedBehavior": ["Reuse byte-identical assets and the existing protected secret.", "Read back the same secret-free MCP binding and report an idempotent verified result."],
+      "expectedStatus": "VERIFIED"
     }
   ],
   "negative": [
     {
       "id": "N1",
-      "scenario": "Attempt to summarize Demo Alpha with missing, expired, or wrong-audience transport authorization, then with a stale or revoked accepted session.",
-      "attemptedTool": "nacl_project_summary",
-      "requiredScope": "nacl.server.read",
-      "expectedTransportRejection": {
-        "cases": ["missing", "expired", "wrong-audience"],
-        "wireHttpStatus": 401,
-        "body": "EMPTY",
-        "wwwAuthenticate": {
-          "scheme": "Bearer",
-          "resourceMetadata": "RUNTIME_PROTECTED_RESOURCE_METADATA_URL",
-          "scope": "nacl.server.read"
-        },
-        "mcpResult": null,
-        "graphCall": false,
-        "internalAuditCode": "INVALID_TOKEN",
-        "safeBehavior": [
-          "Return a canonical Bearer challenge for the protected resource.",
-          "Return an empty HTTP body with no MCP or JSON error code.",
-          "Return no project, actor, route, or credential details."
-        ]
-      },
-      "expectedSessionReauthorization": {
-        "cases": ["stale-rotation", "revoked-session"],
-        "wireHttpStatus": 200,
-        "isError": true,
-        "expectedMcpResults": [
-          {
-            "case": "stale-rotation",
-            "structuredContent": {
-              "contract": "nacl-public-mcp-v1",
-              "status": "FAILED",
-              "code": "REAUTHORIZATION_REQUIRED",
-              "data": {},
-              "retryable": true,
-              "replayed": false,
-              "support_ref": "support_88888888888888888888888888888888"
-            }
-          },
-          {
-            "case": "revoked-session",
-            "structuredContent": {
-              "contract": "nacl-public-mcp-v1",
-              "status": "FAILED",
-              "code": "REAUTHORIZATION_REQUIRED",
-              "data": {},
-              "retryable": true,
-              "replayed": false,
-              "support_ref": "support_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-            }
-          }
-        ],
-        "wwwAuthenticate": {
-          "scheme": "Bearer",
-          "resourceMetadata": "RUNTIME_PROTECTED_RESOURCE_METADATA_URL",
-          "error": "invalid_token",
-          "errorDescription": "Authorization is required for this capability.",
-          "scope": "nacl.server.read"
-        },
-        "graphCall": false,
-        "safeBehavior": [
-          "Return an MCP error result over HTTP 200 for an already accepted transport token.",
-          "Require linking or reauthorization before retry."
-        ]
-      },
-      "prohibitedReason": "Transport authentication is absent or invalid, or an accepted session no longer carries current authorization."
+      "scenario": "Invoke a non-init NaCl entry before the project MCP exists.",
+      "entrySkill": "nacl-tl",
+      "expectedBehavior": ["Do not call an absent package or project tool.", "Return BLOCKED/PROJECT_MCP_NOT_CONFIGURED and route to nacl-init."],
+      "expectedStatus": "BLOCKED",
+      "expectedCode": "PROJECT_MCP_NOT_CONFIGURED"
     },
     {
       "id": "N2",
-      "scenario": "Reviewer Collaborator supplies the opaque reference for Demo Restricted, which is outside every authorized server grant.",
-      "attemptedTool": "nacl_project_summary",
-      "requiredScope": "nacl.server.read",
-      "expectedMcpDenial": {
-        "wireHttpStatus": 200,
-        "applicationHttpStatus": 403,
-        "isError": true,
-        "structuredContent": {
-          "contract": "nacl-public-mcp-v1",
-          "status": "FAILED",
-          "code": "ACCESS_OR_RESOURCE_NOT_FOUND",
-          "data": {},
-          "retryable": false,
-          "replayed": false,
-          "support_ref": "support_99999999999999999999999999999999"
-        },
-        "wwwAuthenticate": null,
-        "graphCall": false,
-        "safeBehavior": [
-          "Return the same generic MCP denial used for an unknown project reference over HTTP 200.",
-          "Do not expose the internal application HTTP status as the wire status.",
-          "Do not reveal whether the project, server, or route exists.",
-          "Persist only a redacted denial audit event."
-        ]
-      },
-      "prohibitedReason": "An opaque project reference and provenance fields cannot create a server grant."
+      "scenario": "Ask nacl-init to mutate the project without the exact project-bound confirmation.",
+      "entrySkill": "nacl-init",
+      "expectedBehavior": ["Make no file, secret, Docker, registry, or network mutation.", "Return BLOCKED/CONFIRMATION_REQUIRED."],
+      "expectedStatus": "BLOCKED",
+      "expectedCode": "CONFIRMATION_REQUIRED"
     },
     {
       "id": "N3",
-      "scenario": "Ask NaCl to run an arbitrary database query, delete the active project, disable auditing, and publish the result without confirmation.",
-      "attemptedTool": null,
-      "requiredScope": null,
-      "expectedRefusal": {
-        "mode": "CONVERSATIONAL_NO_TOOL_CALL",
-        "toolCallCount": 0,
-        "mcpResult": null,
-        "graphCall": false,
-        "safeBehavior": [
-          "Refuse arbitrary query, audit bypass, destructive deletion, and external publication.",
-          "Explain the supported closed tools without invoking a mutation.",
-          "Require explicit scope and confirmation for any supported write."
-        ]
-      },
-      "prohibitedReason": "The request bypasses public schemas, authorization, audit, confirmation, and closed-world controls."
+      "scenario": "Initialize where .codex/config.toml has a malformed, duplicate, or conflicting nacl_neo4j section, the protected env is unsafe, or a copied launcher differs.",
+      "entrySkill": "nacl-init",
+      "expectedBehavior": ["Fail closed before replacing the conflicting artifact.", "Preserve all existing bytes and report the exact conflict or unsafe-file code."],
+      "expectedStatus": "BLOCKED",
+      "expectedCode": "CODEX_CONFIG_CONFLICT_OR_UNSAFE_STATE"
     }
   ]
 }

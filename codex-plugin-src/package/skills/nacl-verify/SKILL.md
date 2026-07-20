@@ -5,21 +5,15 @@ description: Verify NaCl code, tests, QA, synchronization, review evidence, or s
 
 # NaCl Verify
 
-Call `nacl_installation_doctor` once and stop unless it returns
-`status=VERIFIED`.
-
-Read
+Read [the Skills-only runtime contract](../../resources/references/skills-only-runtime-contract.md),
 [the verification workflow](../../resources/workflows/nacl-tl-verify/SKILL.md),
-[the evidence taxonomy](../../resources/workflows/references/verification-evidence.md),
-and [the gateway binding](../../resources/references/workflow-gateway-contract.md).
+and [the evidence taxonomy](../../resources/workflows/references/verification-evidence.md).
+Require a loaded project `nacl_neo4j` MCP and verified read canary for graph-backed
+verification; otherwise return `BLOCKED/PROJECT_MCP_NOT_CONFIGURED` and route
+to `nacl-init`.
 
-Route to one packaged leaf: `nacl-tl-verify`, `nacl-tl-verify-code`,
-`nacl-tl-qa`, `nacl-tl-review`, `nacl-tl-sync`, or `nacl-tl-stubs`. Load only
-the selected leaf and report the exact commands and exit codes it requires.
-
-Start with the mapped read preflight. Verification is read-only except for
-explicitly requested evidence artifacts and a mapped Task evidence update. Any
-such update requires claim, current fence/revision, `APPROVE_TL_WRITE`,
-same-mutation evidence, read-back, and release. If the required Task/domain
-named read is unavailable, return its exact gap code with `BLOCKED`; never
-report a vacuous pass.
+Select one verification leaf and report its exact commands and exit codes. Use
+only project-local Neo4j MCP tools. Verification stays read-only except for an
+explicit evidence artifact or confirmed Task evidence update with claim,
+fence/revision, same-mutation evidence, read-back and release. Missing runtime
+or graph proof never becomes a vacuous pass.

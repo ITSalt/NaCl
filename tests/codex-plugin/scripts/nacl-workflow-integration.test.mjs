@@ -100,8 +100,10 @@ test("public description budget and conductor bindings retain every critical ent
     const summary = description(content);
     bytes += Buffer.byteLength(summary);
     assert.ok(summary.length >= 80, entry);
-    assert.match(content, /nacl_installation_doctor/, entry);
-    assert.match(content, /workflow-gateway-contract\.md/, entry);
+    assert.doesNotMatch(content, /nacl_installation_doctor/, entry);
+    assert.match(content, /skills-only-runtime-contract\.md/, entry);
+    if (entry === "nacl-init") assert.match(content, /setup-project-graph\.(?:sh|ps1)/, entry);
+    else assert.match(content, /PROJECT_MCP_NOT_CONFIGURED/, entry);
     assert.doesNotMatch(content, /\b(?:model|model_reasoning_effort)\s*:/i, entry);
     assert.doesNotMatch(content, /\/Users\//, entry);
   }
@@ -303,7 +305,7 @@ test("MCP lifecycle tools stop on confirmation before side effects", async () =>
   assert.deepEqual(calls.map(([name]) => name), ["init", "start", "doctor"]);
 });
 
-test("public nacl-init profile guidance matches create-only MCP schema and behavior", async () => {
+test("public nacl-init profile guidance remains create-only while the full local plugin keeps its schema", async () => {
   const publicEntry = await readFile(path.join(pluginRoot, "skills", "nacl-init", "SKILL.md"), "utf8");
   const plan = WORKFLOW_TOOL_DEFINITIONS.find((definition) => definition.name === "nacl_agent_profiles_plan");
   const apply = WORKFLOW_TOOL_DEFINITIONS.find((definition) => definition.name === "nacl_agent_profiles_apply");
@@ -315,7 +317,7 @@ test("public nacl-init profile guidance matches create-only MCP schema and behav
   assert.match(publicEntry, /`AGENT_PROFILE_CONFLICT`/);
   assert.match(publicEntry, /move or back up/);
   assert.match(publicEntry, /fresh plan/);
-  assert.match(publicEntry, /nacl_agent_profiles_apply/);
+  assert.doesNotMatch(publicEntry, /nacl_agent_profiles_(?:plan|apply)/);
   assert.doesNotMatch(publicEntry, /replacement confirmation|current hashes|paths\/actions\/hashes/i);
 
   const projectRoot = await mkdtemp(path.join(os.tmpdir(), "nacl-public-init-contract-"));
@@ -364,32 +366,15 @@ test("public nacl-init profile guidance matches create-only MCP schema and behav
   }
 });
 
-test("public nacl-init exposes only the bounded legacy-symlink migration corridor during mode=both", async () => {
+test("public nacl-init exposes only the confirmed local Skills-only bootstrap before project MCP discovery", async () => {
   const publicEntry = await readFile(path.join(pluginRoot, "skills", "nacl-init", "SKILL.md"), "utf8");
-  const plan = WORKFLOW_TOOL_DEFINITIONS.find((definition) => definition.name === "nacl_legacy_symlinks_plan");
-  const apply = WORKFLOW_TOOL_DEFINITIONS.find((definition) => definition.name === "nacl_legacy_symlinks_apply");
-
-  assert.ok(plan);
-  assert.ok(apply);
-  assert.equal(plan.annotations.readOnlyHint, true);
-  assert.equal(plan.annotations.destructiveHint, false);
-  assert.deepEqual(plan.inputSchema.required, []);
-  assert.equal(apply.annotations.readOnlyHint, false);
-  assert.equal(apply.annotations.destructiveHint, true);
-  assert.equal(apply.annotations.idempotentHint, true);
-  assert.deepEqual(apply.inputSchema.required, ["plan_token", "confirmation"]);
-  assert.equal(apply.inputSchema.properties.plan_token.pattern, "^[0-9a-f]{64}$");
-
-  assert.match(publicEntry, /status=FAILED.*mode=both/s);
-  assert.match(publicEntry, /nacl_legacy_symlinks_plan/);
-  assert.match(publicEntry, /nacl_legacy_symlinks_apply/);
-  assert.match(publicEntry, /fixed 60-name catalog/);
-  assert.match(publicEntry, /unknown `nacl-\*` artifacts, broken links, real files\/directories/);
-  assert.match(publicEntry, /REMOVE_LEGACY_NACL_SYMLINKS:<plan-token>/);
-  assert.match(publicEntry, /PARTIALLY_VERIFIED.*quarantine path/s);
-  assert.match(publicEntry, /nacl_installation_doctor.*status=VERIFIED.*mode=plugin-only/s);
-  assert.match(publicEntry, /No other project, graph, profile, or workflow tool is allowed.*mode=both/s);
-  assert.match(publicEntry, /never modifies their source targets, real files\/directories,\s*project graph data, or project agent profiles/s);
+  assert.match(publicEntry, /INIT_LOCAL_GRAPH:<project-id>/);
+  assert.match(publicEntry, /setup-project-graph\.sh/);
+  assert.match(publicEntry, /setup-project-graph\.ps1/);
+  assert.match(publicEntry, /new task/i);
+  assert.match(publicEntry, /project-local `nacl_neo4j` MCP/);
+  assert.doesNotMatch(publicEntry, /nacl_installation_doctor|nacl_legacy_symlinks_/);
+  assert.doesNotMatch(publicEntry, /public MCP|OAuth/i);
 });
 
 test("packaged workflow parity has 39 exact copies and 21 explicit hash-bound divergences", async () => {

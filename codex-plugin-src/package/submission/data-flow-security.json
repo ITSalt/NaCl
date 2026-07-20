@@ -1,129 +1,89 @@
 {
-  "schemaVersion": 1,
-  "artifact": "nacl-public-mcp-data-flow-security",
-  "contractVersion": "nacl-public-mcp-v1",
+  "schemaVersion": 2,
+  "artifact": "nacl-skills-only-data-flow-security",
   "status": "LOCAL_SOURCE_DISCLOSURE_ONLY",
-  "productionPolicyStatus": "NOT_VERIFIED",
-  "scope": {
-    "included": "The source implementation, intended production topology, data categories, controls, and unresolved production decisions for the NaCl public MCP service.",
-    "excluded": "This artifact is not a published privacy policy, terms of service, security certification, subprocessors list, or production deployment attestation."
-  },
+  "submissionType": "SKILLS_ONLY",
+  "productionPolicyStatus": "NOT_APPLICABLE_NO_HOSTED_SERVICE",
   "topology": {
-    "projectIsolation": "One Neo4j Community container with independent data, logs, and backup volumes per NaCl project.",
-    "authorizationBoundary": "A user who is authorized for a configured Neo4j server or VPS is treated as authorized for every NaCl project database configured on that server. The MCP control plane still resolves opaque project_ref values and rejects client-supplied graph URLs, paths, credentials, identities, and Cypher.",
-    "deploymentStatus": "NOT_VERIFIED"
+    "skills": "Installed and executed by the user's Codex host.",
+    "graph": "One loopback-only Neo4j Community container and persistent volume per initialized project.",
+    "mcp": "One project-local stdio neo4j-mcp process configured as nacl_neo4j in the project's .codex/config.toml.",
+    "publicEndpoint": null,
+    "oauth": null,
+    "authorHostedService": null
   },
   "dataCategories": [
     {
-      "id": "oauth-identity",
-      "data": ["OAuth subject and issuer", "token audience and scopes", "session identifier", "authorization revision"],
-      "purpose": "Authenticate the caller, enforce scopes and server-level access, and invalidate stale or revoked sessions."
+      "id": "project-files",
+      "location": "user-project",
+      "contents": "NaCl configuration, graph templates, methodology artifacts, and secret-free MCP configuration."
     },
     {
       "id": "project-graph",
-      "data": ["NaCl project requirements", "architecture and process records", "delivery plans and tasks", "verification evidence", "project metadata"],
-      "purpose": "Provide the bounded analysis, planning, delivery, and verification operations explicitly requested by the user."
+      "location": "user-controlled-docker-volume",
+      "contents": "Project requirements, analysis, architecture, delivery state, leases, revisions, migrations, and audit provenance."
     },
     {
-      "id": "mcp-request-result",
-      "data": ["allowlisted tool name", "validated tool arguments", "bounded structured result", "confirmation and idempotency fields for writes"],
-      "purpose": "Execute the selected public MCP operation and return its result to Codex."
+      "id": "local-graph-secret",
+      "location": "gitignored-mode-0600-project-file",
+      "contents": "One generated Neo4j password stored only in graph-infra/.env and read by the project-local launcher."
     },
     {
-      "id": "security-audit",
-      "data": ["authorization decision", "rate-limit and idempotency state", "redacted audit event", "opaque support reference"],
-      "purpose": "Prevent replay and abuse, investigate failures, and support security operations without exposing graph credentials."
-    },
-    {
-      "id": "backup-restore",
-      "data": ["project-scoped backup artifact", "restore request and approval state", "integrity metadata"],
-      "purpose": "Create project backups and perform isolated, confirmed restore workflows."
+      "id": "local-mcp-request-result",
+      "location": "local-stdio",
+      "contents": "Neo4j MCP requests and results exchanged between Codex and the local project process."
     }
   ],
   "flows": [
     {
-      "from": "OAuth provider",
-      "to": "NaCl MCP token verifier",
-      "dataCategory": "oauth-identity",
-      "purpose": "Validate issuer, audience, expiry, scopes, session, and authorization revision."
+      "id": "install-skills",
+      "from": "OpenAI plugin distribution",
+      "to": "user Codex host",
+      "data": ["skill instructions", "bundled scripts", "templates", "schemas", "queries"],
+      "externalToUserMachine": true
     },
     {
-      "from": "NaCl MCP token verifier",
-      "to": "NaCl server control plane",
-      "dataCategory": "oauth-identity",
-      "purpose": "Resolve the principal's server-level authorization and active session."
+      "id": "bootstrap-project",
+      "from": "nacl-init bundled runner",
+      "to": "user project and local Docker",
+      "data": ["project ID", "loopback ports", "generated local secret", "graph schema"],
+      "externalToUserMachine": false
     },
     {
-      "from": "NaCl MCP application",
-      "to": "project graph adapter",
-      "dataCategory": "mcp-request-result",
-      "purpose": "Route an allowlisted operation to the project selected by opaque project_ref."
-    },
-    {
-      "from": "project graph adapter",
-      "to": "project Neo4j container",
-      "dataCategory": "project-graph",
-      "purpose": "Read or mutate only the catalogued project graph operation."
-    },
-    {
-      "from": "NaCl MCP application",
-      "to": "audit, rate-limit, idempotency, and session stores",
-      "dataCategory": "security-audit",
-      "purpose": "Enforce operational controls and record redacted decisions."
-    },
-    {
-      "from": "project graph adapter",
-      "to": "Codex",
-      "dataCategory": "mcp-request-result",
-      "purpose": "Return a bounded result conforming to nacl-public-mcp-v1."
-    },
-    {
-      "from": "project Neo4j container",
-      "to": "project backup store or isolated restore target",
-      "dataCategory": "backup-restore",
-      "purpose": "Create or restore a project-scoped artifact after the required confirmation."
+      "id": "project-mcp",
+      "from": "Codex host",
+      "to": "project-local neo4j-mcp and loopback Neo4j",
+      "data": ["parameterized Cypher", "project graph results"],
+      "externalToUserMachine": false
     }
   ],
-  "implementedControls": [
-    "OAuth issuer, audience, expiry, scope, session, and authorization-revision verification",
-    "Closed public tool and named-query catalog",
-    "Opaque project_ref routing with no client-supplied graph URL, path, credential, identity, or Cypher",
-    "Server-level authorization applied before project routing",
-    "Exact confirmation and idempotency requirements for writes",
-    "Rate limiting, replay handling, and redacted audit events",
-    "Independent Neo4j data, log, and backup volumes per project"
+  "securityControls": [
+    "No public or hosted NaCl MCP service.",
+    "No OAuth, reviewer credential, author analytics, or author-controlled data transfer.",
+    "Exact confirmation before project mutation.",
+    "Per-project container, named volume, ports, secret, and MCP configuration.",
+    "Neo4j ports bind only to 127.0.0.1.",
+    "Pinned neo4j-mcp release-archive checksum, project-local binary storage, and binary-digest verification on every reuse.",
+    "No secret in .codex/config.toml, .env.example, logs, process arguments, bundle, or repository.",
+    "The managed Codex TOML section is append-only, atomic, idempotent, and fails closed on malformed, duplicate, ambiguous, or conflicting state while preserving unrelated bytes.",
+    "Project launcher validates secret file type, symlink state, permissions, keys, and value before spawning neo4j-mcp.",
+    "No-clobber conflicts fail closed and graph writes retain confirmation, parameterization, concurrency, and read-back gates."
   ],
-  "productionDecisions": {
-    "publisherIdentity": { "status": "NOT_VERIFIED", "value": null },
-    "oauthProvider": { "status": "NOT_SELECTED", "value": null },
-    "subprocessors": { "status": "NOT_SELECTED", "value": [] },
-    "hostingRegions": { "status": "NOT_VERIFIED", "value": [] },
-    "primaryDataRetention": { "status": "NOT_VERIFIED", "value": null },
-    "auditDataRetention": { "status": "NOT_VERIFIED", "value": null },
-    "backupRetention": { "status": "NOT_VERIFIED", "value": null },
-    "deletionProcess": { "status": "NOT_VERIFIED", "value": null },
-    "exportProcess": { "status": "NOT_VERIFIED", "value": null },
-    "supportOwner": { "status": "NOT_VERIFIED", "value": null },
-    "supportContact": { "status": "NOT_VERIFIED", "value": null },
-    "supportResponseCommitment": { "status": "NOT_VERIFIED", "value": null },
-    "securityOwner": { "status": "NOT_VERIFIED", "value": null },
-    "securityContact": { "status": "NOT_VERIFIED", "value": null },
-    "vulnerabilityReportingProcess": { "status": "NOT_VERIFIED", "value": null },
-    "securityIncidentProcess": { "status": "NOT_VERIFIED", "value": null },
-    "publicWebsite": { "status": "NOT_VERIFIED", "value": null },
-    "publicPrivacyPolicy": { "status": "NOT_VERIFIED", "value": null },
-    "publicTermsOfService": { "status": "NOT_VERIFIED", "value": null },
-    "modelTraining": {
-      "sourceImplementationStatus": "DOES_NOT_SEND_TO_AUTHOR_ANALYTICS",
-      "productionCommitmentStatus": "NOT_VERIFIED",
-      "productionCommitment": null
+  "externalNetwork": [
+    {
+      "destination": "github.com/neo4j/mcp releases",
+      "purpose": "Download the pinned official neo4j-mcp binary during first bootstrap only.",
+      "controls": "Exact release asset plus bundled SHA-256 verification; latest is not used by the Skills-only workflow."
+    },
+    {
+      "destination": "Docker image registry",
+      "purpose": "Pull the pinned Neo4j Community image when it is not already available locally.",
+      "controls": "Pinned image version and loopback-only runtime."
     }
-  },
-  "repositoryPrivacyNotice": {
-    "repositoryPath": "PRIVACY.md",
-    "pathBase": "repository-root",
-    "includedInPackage": false,
-    "status": "LOCAL_FRAMEWORK_NOTICE_ONLY",
-    "productionPublicPolicyStatus": "NOT_VERIFIED"
-  }
+  ],
+  "knownLimitations": [
+    "Docker, Node.js, and supported neo4j-mcp release assets are local prerequisites.",
+    "A new Codex task is required after nacl-init writes project .codex/config.toml; hot reload is not claimed.",
+    "The exact portal upload and clean reviewer-machine journey remain NOT_RUN until submission."
+  ]
 }

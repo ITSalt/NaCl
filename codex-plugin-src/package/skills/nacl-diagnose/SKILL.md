@@ -5,19 +5,13 @@ description: Diagnose NaCl project health, drift, status, reconciliation, or nex
 
 # NaCl Diagnose
 
-Call `nacl_installation_doctor` once and stop unless it returns
-`status=VERIFIED`.
-
-Read
+Read [the Skills-only runtime contract](../../resources/references/skills-only-runtime-contract.md),
 [the diagnostic workflow](../../resources/workflows/nacl-tl-diagnose/SKILL.md),
-[the evidence taxonomy](../../resources/workflows/references/verification-evidence.md),
-and [the gateway binding](../../resources/references/workflow-gateway-contract.md).
+and [the evidence taxonomy](../../resources/workflows/references/verification-evidence.md).
+Require a loaded project `nacl_neo4j` MCP and verified read canary; otherwise return
+`BLOCKED/PROJECT_MCP_NOT_CONFIGURED` and route to `nacl-init`.
 
-Route to one packaged leaf: `nacl-tl-diagnose`, `nacl-tl-next`,
-`nacl-tl-status`, `nacl-tl-reconcile`, or `nacl-postmortem`. Keep the run
-read-only unless the user separately asks for a resulting artifact.
-
-Run installation, explicit project resolution, trusted worker derivation,
-health, schema status, and the packaged summary read. When Task-level or domain
-diagnosis requires an unavailable named query, return the mapped exact gap code
-with `BLOCKED`. Never infer graph truth from a stale local status file.
+Route to one packaged diagnostic leaf. Keep the run read-only unless the user
+separately requests an artifact. Use only project-local Neo4j MCP reads and
+preserve exact graph status. Never infer graph truth from a stale local status
+file; missing named evidence is an honest closed non-success.

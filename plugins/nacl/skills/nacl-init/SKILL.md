@@ -1,49 +1,36 @@
 ---
 name: nacl-init
-description: Inspect or initialize a NaCl project with verified identity, local graph, schema, canary evidence, and optional agent profiles. Use for setup and bootstrap requests.
+description: Inspect or initialize a NaCl project with a per-project Neo4j Community graph and project-local MCP. Use for first setup, bootstrap, and repair planning.
 ---
 
 # NaCl Init
 
-Call `nacl_installation_doctor` once. Continue normally only when it returns
-`status=VERIFIED` and `mode=plugin-only`.
+Read [the Skills-only runtime contract](../../resources/references/skills-only-runtime-contract.md).
 
-If it returns `status=FAILED` and `mode=both`, the only allowed recovery is the
-bounded user-skill migration corridor. Call `nacl_legacy_symlinks_plan`, show
-every exact symlink path, target, parity class, blocker, and the total against
-the fixed 60-name catalog, then stop. Never call apply when the plan has a
-blocker: unknown `nacl-*` artifacts, broken links, real files/directories,
-unsafe skill roots, or target/hash drift require manual inspection and remain
-`BLOCKED`. For a ready plan, call `nacl_legacy_symlinks_apply` only after the
-user supplies its exact
-`REMOVE_LEGACY_NACL_SYMLINKS:<plan-token>` confirmation. Preserve any
-`PARTIALLY_VERIFIED` quarantine path for manual recovery; never delete or move
-it. After a verified apply, call `nacl_installation_doctor` again and continue
-only after a separate `status=VERIFIED`, `mode=plugin-only` read-back.
+This entry must work before any project MCP exists. Never call an installation
+doctor, a package gateway, or a checkout-relative/global skill path.
 
-No other project, graph, profile, or workflow tool is allowed while the doctor
-reports `mode=both`. The migration removes only validated user-level symlink
-entries; it never modifies their source targets, real files/directories,
-project graph data, or project agent profiles.
+Resolve one explicit absolute project root. Inspect `config.yaml`,
+`graph-infra/`, `.codex/config.toml`, `.gitignore`, Docker, and occupied ports. For a
+missing stable `project.id`, present the exact add-only config change and stop
+for confirmation before writing it; never derive identity during a read.
 
-Read [the packaged init workflow](../../resources/workflows/nacl-init/SKILL.md)
-and [the gateway binding](../../resources/references/workflow-gateway-contract.md).
-Use its `initialize` sequence exactly: installation doctor, explicit project
-resolution or confirmed identity migration/registration, confirmed local init
-and start, lifecycle doctor, trusted worker derivation, initial administrator
-bootstrap or existing membership, current schema, named read, confirmed write
-canary, and separate read-back.
+Present the deterministic graph bootstrap plan, including all files, the
+project-specific container/volume, loopback ports, checksum-pinned binary,
+secret handling, and no-clobber behavior. Stop for exact
+`INIT_LOCAL_GRAPH:<project-id>` confirmation. Then invoke the bundled POSIX or
+PowerShell runner, respectively the
+[POSIX runner](../../resources/bootstrap/setup-project-graph.sh) or
+[PowerShell runner](../../resources/bootstrap/setup-project-graph.ps1), with
+the same root, ID, ports, and confirmation. Never pass a password.
 
-Never infer a root or identity. Stop at every confirmation named by the
-contract. An existing stale schema uses only the fenced
-`SchemaMigration/MIG-GATEWAY` recovery sequence. Report `VERIFIED` only when
-the entire evidence chain is verified; preserve any exact gateway status/code.
+Preserve the runner's status/code. Report graph bootstrap `VERIFIED` only from
+its `NACL_SKILLS_ONLY_BOOTSTRAP: status=VERIFIED` read-back. Then stop and ask
+the user to open a new task in this project so Codex loads the newly created
+project `.codex/config.toml`. The current task must not claim the MCP is already loaded.
 
-For `nacl init --install-agent-profiles`, call
-`nacl_agent_profiles_plan`, show its destinations, actions, and required
-confirmation, then stop. Call `nacl_agent_profiles_apply` only with the fresh
-plan token and exact confirmation. This contract is create-only: if plan or
-apply returns `BLOCKED` / `AGENT_PROFILE_CONFLICT`, do not retry or overwrite.
-Ask the user to move or back up every conflicting file outside the plugin,
-then obtain a fresh plan and apply that new plan only after confirmation.
-Profiles are optional; their absence never blocks normal NaCl.
+In the new task, verify the project-local `nacl_neo4j` MCP with one read canary before
+continuing to ordinary NaCl work. Optional agent profiles remain create-only
+and require a separate path-by-path plan and confirmation. On
+`AGENT_PROFILE_CONFLICT`, never overwrite: ask the user to move or back up the
+conflicting file, then produce a fresh plan before any retry.

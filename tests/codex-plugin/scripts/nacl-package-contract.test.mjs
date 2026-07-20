@@ -113,8 +113,11 @@ test("public discovery stays within the bounded ten-skill routing budget", async
     assert.equal(descriptions.has(frontmatter.description), false);
     descriptions.add(frontmatter.description);
     descriptionBytes += Buffer.byteLength(frontmatter.description);
-    assert.match(content, /nacl_installation_doctor/);
-    assert.match(content, /resources\/workflows/);
+    assert.doesNotMatch(content, /nacl_installation_doctor/);
+    assert.match(content, /skills-only-runtime-contract\.md/);
+    if (directory === "nacl-init") assert.match(content, /setup-project-graph\.(?:sh|ps1)/);
+    else assert.match(content, /PROJECT_MCP_NOT_CONFIGURED/);
+    if (directory !== "nacl-init") assert.match(content, /resources\/workflows/);
     assert.doesNotMatch(content, /\bmodel\s*:/i);
   }
   assert.ok(descriptionBytes <= 2048, `description budget is ${descriptionBytes} bytes`);
