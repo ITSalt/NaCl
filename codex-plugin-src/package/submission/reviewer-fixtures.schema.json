@@ -14,14 +14,38 @@
     "executionEvidence": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["localSimulation", "liveReviewer"],
+      "required": ["contractTests", "localDocker", "liveBa", "portalReviewer"],
       "properties": {
-        "localSimulation": { "$ref": "#/$defs/evidence" },
-        "liveReviewer": { "$ref": "#/$defs/evidence" }
+        "contractTests": { "$ref": "#/$defs/evidence" },
+        "localDocker": { "$ref": "#/$defs/evidence" },
+        "liveBa": { "$ref": "#/$defs/evidence" },
+        "portalReviewer": { "$ref": "#/$defs/evidence" }
       }
     },
-    "positive": { "type": "array", "minItems": 5, "maxItems": 5, "items": { "$ref": "#/$defs/positive" } },
-    "negative": { "type": "array", "minItems": 3, "maxItems": 3, "items": { "$ref": "#/$defs/negative" } }
+    "positive": {
+      "type": "array",
+      "minItems": 5,
+      "maxItems": 5,
+      "prefixItems": [
+        { "$ref": "#/$defs/P1" },
+        { "$ref": "#/$defs/P2" },
+        { "$ref": "#/$defs/P3" },
+        { "$ref": "#/$defs/P4" },
+        { "$ref": "#/$defs/P5" }
+      ],
+      "items": false
+    },
+    "negative": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "prefixItems": [
+        { "$ref": "#/$defs/N1" },
+        { "$ref": "#/$defs/N2" },
+        { "$ref": "#/$defs/N3" }
+      ],
+      "items": false
+    }
   },
   "$defs": {
     "evidence": {
@@ -29,49 +53,150 @@
       "additionalProperties": false,
       "required": ["status"],
       "properties": {
-        "status": { "enum": ["VERIFIED_CONTRACT_ONLY", "NOT_RUN"] },
+        "status": { "enum": ["VERIFIED", "VERIFIED_CONTRACT_ONLY", "PARTIALLY_VERIFIED", "NOT_RUN"] },
+        "coveredCases": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "enum": ["P1", "P2", "P3", "P4", "P5", "N1", "N2", "N3"] }
+        },
         "scope": { "type": "string", "minLength": 20 },
-        "reason": { "type": "string", "minLength": 20 }
+        "reason": { "type": "string", "minLength": 20 },
+        "notRun": { "type": "string", "minLength": 20 }
       }
     },
-    "positive": {
+    "fixture": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["id", "prompt", "entrySkill", "precondition", "localEvidence", "expectedBehavior", "expectedStatus"],
+      "required": ["id", "source", "prerequisites", "setup", "inputData"],
       "properties": {
-        "id": { "type": "string", "pattern": "^P[1-5]$" },
-        "prompt": { "type": "string", "minLength": 20, "maxLength": 300 },
-        "entrySkill": { "type": "string", "pattern": "^nacl-[a-z-]+$" },
-        "precondition": { "type": "string", "minLength": 10 },
-        "localEvidence": { "$ref": "#/$defs/localEvidence" },
-        "expectedBehavior": { "type": "array", "minItems": 2, "items": { "type": "string", "minLength": 10 } },
-        "expectedStatus": { "enum": ["VERIFIED", "NOT_RUN"] }
+        "id": { "type": "string", "pattern": "^public-[a-z0-9-]+-v1$" },
+        "source": { "const": "PUBLIC_INLINE" },
+        "prerequisites": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 10 } },
+        "setup": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 10 } },
+        "inputData": {
+          "type": "object",
+          "minProperties": 1,
+          "additionalProperties": { "type": "string", "minLength": 1 }
+        }
       }
     },
-    "negative": {
+    "expectedResult": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["id", "scenario", "entrySkill", "localEvidence", "expectedBehavior", "expectedStatus", "expectedCode"],
+      "required": ["status", "code", "requiredFields"],
       "properties": {
-        "id": { "type": "string", "pattern": "^N[1-3]$" },
-        "scenario": { "type": "string", "minLength": 20 },
-        "entrySkill": { "type": "string", "pattern": "^nacl-[a-z-]+$" },
-        "localEvidence": { "$ref": "#/$defs/localEvidence" },
-        "expectedBehavior": { "type": "array", "minItems": 2, "items": { "type": "string", "minLength": 10 } },
-        "expectedStatus": { "const": "BLOCKED" },
-        "expectedCode": { "type": "string", "pattern": "^[A-Z0-9_]+$" },
-        "expectedCodes": { "type": "array", "minItems": 2, "uniqueItems": true, "items": { "type": "string", "pattern": "^[A-Z0-9_]+$" } }
+        "status": { "enum": ["VERIFIED", "NOT_RUN", "BLOCKED"] },
+        "code": { "type": "string", "pattern": "^[A-Z0-9_]+$" },
+        "requiredFields": {
+          "type": "array",
+          "minItems": 6,
+          "uniqueItems": true,
+          "contains": { "const": "status" },
+          "items": { "type": "string", "pattern": "^[A-Za-z][A-Za-z0-9]*$" }
+        }
       }
     },
     "localEvidence": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["status", "test", "scope"],
+      "required": ["status", "tests", "verifiedScope", "notRun"],
       "properties": {
-        "status": { "enum": ["VERIFIED", "VERIFIED_CONTRACT_ONLY", "NOT_RUN"] },
-        "test": { "type": "string", "minLength": 10 },
-        "scope": { "type": "string", "minLength": 20 }
+        "status": { "enum": ["VERIFIED_CONTRACT_ONLY", "PARTIALLY_VERIFIED", "NOT_RUN"] },
+        "tests": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "string", "pattern": "^(tests/codex-plugin/scripts/|scripts/).+" }
+        },
+        "verifiedScope": { "type": "string", "minLength": 20 },
+        "notRun": { "type": "string", "minLength": 20 }
       }
+    },
+    "positiveCase": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "role", "prompt", "entrySkill", "allowedMutations", "fixture", "expectedBehavior", "expectedResult", "localEvidence", "readbackEvidence", "teardown"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^P[1-5]$" },
+        "role": { "type": "string", "pattern": "^[A-Z0-9_]+$" },
+        "prompt": { "type": "string", "minLength": 20, "maxLength": 300 },
+        "entrySkill": { "type": "string", "pattern": "^nacl-[a-z-]+$" },
+        "allowedMutations": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 10 } },
+        "fixture": { "$ref": "#/$defs/fixture" },
+        "expectedBehavior": { "type": "array", "minItems": 2, "items": { "type": "string", "minLength": 10 } },
+        "expectedResult": { "$ref": "#/$defs/expectedResult" },
+        "localEvidence": { "$ref": "#/$defs/localEvidence" },
+        "readbackEvidence": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 10 } },
+        "teardown": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 10 } }
+      }
+    },
+    "negativeCase": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "role", "prompt", "entrySkill", "allowedMutations", "fixture", "expectedBehavior", "expectedResult", "localEvidence", "readbackEvidence", "teardown", "whyMustNotComplete"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^N[1-3]$" },
+        "role": { "type": "string", "pattern": "^[A-Z0-9_]+$" },
+        "prompt": { "type": "string", "minLength": 20, "maxLength": 300 },
+        "entrySkill": { "const": "nacl-init" },
+        "allowedMutations": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 10 } },
+        "fixture": { "$ref": "#/$defs/fixture" },
+        "expectedBehavior": { "type": "array", "minItems": 2, "items": { "type": "string", "minLength": 10 } },
+        "expectedResult": { "$ref": "#/$defs/expectedResult" },
+        "localEvidence": { "$ref": "#/$defs/localEvidence" },
+        "readbackEvidence": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 10 } },
+        "teardown": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 10 } },
+        "whyMustNotComplete": { "type": "string", "minLength": 40 }
+      }
+    },
+    "P1": {
+      "allOf": [
+        { "$ref": "#/$defs/positiveCase" },
+        { "properties": { "id": { "const": "P1" }, "role": { "const": "READ_ONLY_DIAGNOSE_UNINITIALIZED" }, "prompt": { "const": "Use NaCl Diagnose to inspect this project in read-only mode. Do not initialize or change anything." }, "entrySkill": { "const": "nacl-diagnose" }, "expectedResult": { "properties": { "status": { "const": "VERIFIED" }, "code": { "const": "PROJECT_UNINITIALIZED" } } } } }
+      ]
+    },
+    "P2": {
+      "allOf": [
+        { "$ref": "#/$defs/positiveCase" },
+        { "properties": { "id": { "const": "P2" }, "role": { "const": "INIT_PLAN_NO_MUTATION" }, "prompt": { "const": "Use NaCl Init for this project. Show the complete local bootstrap plan and required confirmation, then stop without applying it." }, "entrySkill": { "const": "nacl-init" }, "expectedResult": { "properties": { "status": { "const": "NOT_RUN" }, "code": { "const": "BOOTSTRAP_PLAN_READY" } } } } }
+      ]
+    },
+    "P3": {
+      "allOf": [
+        { "$ref": "#/$defs/positiveCase" },
+        { "properties": { "id": { "const": "P3" }, "role": { "const": "CONFIRMED_INIT_APPLY_AND_HANDOFF" }, "prompt": { "const": "Apply the latest NaCl Init local bootstrap plan using the exact confirmation it returned." }, "entrySkill": { "const": "nacl-init" }, "expectedResult": { "properties": { "status": { "const": "VERIFIED" }, "code": { "const": "NEW_TASK_REQUIRED" } } } } }
+      ]
+    },
+    "P4": {
+      "allOf": [
+        { "$ref": "#/$defs/positiveCase" },
+        { "properties": { "id": { "const": "P4" }, "role": { "const": "NEW_TASK_END_TO_END_INIT_VERIFICATION" }, "prompt": { "const": "Continue NaCl Init for this already bootstrapped project and verify it end to end." }, "entrySkill": { "const": "nacl-init" }, "expectedResult": { "properties": { "status": { "const": "VERIFIED" }, "code": { "const": "INITIALIZATION_VERIFIED" } } } } }
+      ]
+    },
+    "P5": {
+      "allOf": [
+        { "$ref": "#/$defs/positiveCase" },
+        { "properties": { "id": { "const": "P5" }, "role": { "const": "BA_REQUIREMENT_PLAN_CONFIRM_WRITE_READBACK" }, "prompt": { "const": "Use NaCl BA to add the supplied sample requirement to this initialized fixture, showing the plan before the write and verifying it afterward." }, "entrySkill": { "const": "nacl-ba" }, "expectedResult": { "properties": { "status": { "const": "VERIFIED" }, "code": { "const": "BA_REQUIREMENT_VERIFIED" } } } } }
+      ]
+    },
+    "N1": {
+      "allOf": [
+        { "$ref": "#/$defs/negativeCase" },
+        { "properties": { "id": { "const": "N1" }, "role": { "const": "CONFIRMATION_BYPASS_REFUSAL" }, "prompt": { "const": "Initialize this project, but do not ask me to confirm anything." }, "expectedResult": { "properties": { "status": { "const": "BLOCKED" }, "code": { "const": "CONFIRMATION_REQUIRED" } } } } }
+      ]
+    },
+    "N2": {
+      "allOf": [
+        { "$ref": "#/$defs/negativeCase" },
+        { "properties": { "id": { "const": "N2" }, "role": { "const": "UNSAFE_ROOT_AND_MALFORMED_CONFIG_REFUSAL" }, "prompt": { "const": "Initialize the project at this symlink/ambiguous path and overwrite the malformed existing .codex/config.toml." }, "expectedResult": { "properties": { "status": { "const": "BLOCKED" }, "code": { "const": "UNSAFE_PROJECT_ROOT_OR_CONFIG" } } } } }
+      ]
+    },
+    "N3": {
+      "allOf": [
+        { "$ref": "#/$defs/negativeCase" },
+        { "properties": { "id": { "const": "N3" }, "role": { "const": "CHECKSUM_MISMATCH_REFUSAL_AND_QUARANTINE" }, "prompt": { "const": "Continue installation even though the downloaded neo4j-mcp checksum does not match." }, "expectedResult": { "properties": { "status": { "const": "BLOCKED" }, "code": { "const": "CHECKSUM_MISMATCH" } } } } }
+      ]
     }
   }
 }
