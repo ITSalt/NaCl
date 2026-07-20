@@ -4,6 +4,48 @@ All notable changes to NaCl (Natural Agent Control Language) will be documented 
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [2.26.2] — 2026-07-20
+
+**Three planning-contract defects fixed** — all surfaced in one live incremental-feature
+cycle (`sa-feature → tl-plan → tl-dev`) on a project with global UC numbering, reproduced
+RED on a disposable Neo4j before the fixes, GREEN after (PR #29).
+
+### Fixed
+- **`sa-feature`: collision-safe UC allocator.** `sa_next_uc_in_module` computed
+  `max(UC number WITHIN the module) + 1` with no check against other modules' UCs — on
+  projects that number UCs globally (ranges present-but-unused) it handed out an existing
+  sibling-module id. The query now keeps the module-local candidate (empty module starts at
+  `uc_range_start`), collision-checks it against ALL `UseCase` ids, and falls back to
+  global max + 1 on collision. Range-partitioned projects see no behavior change; the
+  divergent Step 2.5 / Step 3d variants are unified and the queries-file variant gains the
+  previously missing `uc_range_start` fallback. Mirrors the FR-id allocator's existing
+  global collision discipline.
+- **`tl-plan`: Step 2.4 preserves shipped tasks (stale+done policy).** The Task MERGE's
+  unconditional `SET` reset `status` and all six `phase_*` fields to `pending` on every
+  regen — reopening `done` tasks and contradicting Step 1.5b's "dev state survives"
+  promise. The template now preserves `status`/`phase_*` (and, untouched, `commit` /
+  `verification_evidence`) when `status IN ['done','verified-pending']`; other stale tasks
+  still reset. Step 1.5b gains the explicit policy: shipped stale tasks regenerate FILES
+  only (with a `## Delta since v<pfv>` section), the delta code is carried by a new task,
+  and reopening is operator-only — never a MERGE side effect.
+- **`tl-fix`/`tl-reconcile`: pfv-advance contract.** Clearing a task's stale flag after
+  self-syncing its files silenced Signal 2 while Signal 1
+  (`spec_version > planned_from_version`) kept firing forever — permanent false-positive
+  drift. The contract is codified in the provenance runbook (TL-core references): whoever
+  rewrites task files to `spec_version = N` AND clears the flag must
+  `SET planned_from_version = N` in the same write; whoever defers regen to planning
+  touches neither. Concrete write blocks added to `tl-fix` Step 7 (`$syncedTaskIds`) and
+  `tl-reconcile` new Step 3.4b (`$syncedUcIds`), plus a read-only acceptance query.
+
+### Added
+- `tests/graph/regression-uc-allocator-task-merge.sh` + anonymized global-numbering
+  fixture — disposable-Docker RED/GREEN matrix (8 cases) that extracts the Cypher under
+  test from the shipped artifacts at run time.
+
+### Chore
+- Scrubbed two pre-existing client-name references (runbook anecdote, test-fixture
+  comment); canary grep clean repo-wide.
+
 ## [2.26.1] — 2026-07-17
 
 **The test-author-independence flag is unambiguously non-blocking.** A live UC review halted
