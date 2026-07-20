@@ -152,7 +152,7 @@
 
 ## Публичные Codex-скиллы (10)
 
-Полный Codex-плагин показывает ровно эти дирижёры:
+Официальный Codex Skills-only bundle показывает ровно эти дирижёры:
 
 ```text
 nacl-ba
@@ -167,12 +167,21 @@ nacl-tl
 nacl-verify
 ```
 
-Они маршрутизируют работу во внутренний каталог и сохраняют confirmation gates. Codex-схема
-только со скиллами — legacy-совместимость; обычный путь идёт через полный плагин в UI.
+Каждый публичный скилл содержит полное замыкание нужных ему
+workflow/references/scripts; до инициализации ни одному не требуется пакетный
+MCP Git/full-plugin. `nacl-init` — bootstrap entry: после точного плана и
+подтверждения он создаёт или подключает граф проекта и записывает безопасную
+проектную MCP-конфигурацию в `.codex/config.toml`. Текущая задача
+останавливается, а новая задача в том же проекте обязана проверить MCP до
+graph-backed дирижёров. GitHub не является второй установкой.
 
 ## Внутренний Codex-inventory (60)
 
-Этот сгенерированный inventory задан в `plugins/nacl/resources/package-index.json`:
+Этот сгенерированный inventory задан в
+`plugins/nacl/resources/package-index.json`. Он документирует методологию и
+Git/full-plugin пакет совместимости; публичный builder копирует необходимое
+транзитивное замыкание каждого дирижёра в его self-contained Skills-only
+upload-tree.
 
 ```text
 nacl-ba-analyze
@@ -237,8 +246,12 @@ nacl-tl-verify
 nacl-tl-verify-code
 ```
 
-Локальный Codex candidate проверен. Публичный Streamable HTTP/OAuth-сервис, релиз и публикация в
-marketplace остаются `NOT_RUN`.
+Официальная Skills-only карточка пока не опубликована. Публичная архитектура
+не требует hosted MCP или managed graph service: после одной установки
+карточки `nacl-init` создаёт проектный MCP, а новая задача подхватывает его из
+`.codex/config.toml`. Корневой `.mcp.json` и inventory пакетных MCP tools
+относятся только к Claude или явно документированным Git/full-plugin
+compatibility-сценариям.
 
 ## Что дальше
 

@@ -9,37 +9,64 @@ NaCl is a graph-first software-delivery framework for Claude Code and Codex. Bus
 
 | Runtime | Ordinary installation | Status |
 |---|---|---|
-| Codex Desktop | Full NaCl plugin from the **Plugins** UI | Local candidate verified; public HTTP/OAuth service, public listing, and release are `NOT_RUN` |
+| Codex Desktop | One official **NaCl Skills-only** card from **Plugins** | Bootstrap-first bundle is being prepared; the official listing is not published yet |
 | Claude Code Desktop | NaCl marketplace plugin | Supported by the current 2.24.0 package |
 | Claude Code CLI | Repository-backed Claude skills | Supported compatibility channel |
 
-For Codex, the full plugin is the normal path: one UI install supplies the application surface, ten public skills, sixty internal skills, and twenty-five bounded MCP tools. The old skills-only Codex layout is compatibility-only. See [Skill Installation](docs/setup/install-skills.md).
+After publication, the normal Codex path is one UI installation of the
+Skills-only card. Its ten public conductors include `nacl-init`; packaged
+scripts then create or connect the selected project's Neo4j Community stack
+and project-local MCP configuration. GitHub remains a source, release, audit,
+and support channel, not a mandatory second installation. The existing Git
+marketplace/full-plugin and symlink layouts remain development and
+compatibility channels. See [Codex installation](docs/setup/install-codex-plugin.md).
 
 <!-- doc-key: codex-installation -->
 ## Install in Codex Desktop
 
-Open **Plugins**, select the trusted NaCl card supplied for your workspace, install it, grant only the permissions shown by Codex, fully restart the app, and open a new task. Do not use a saved package path from another computer.
+When the official listing is published, open **Plugins**, select the verified
+**NaCl Skills-only** card, install it once, grant only the permissions shown by
+Codex, and open a new task in the project you want to initialize. Do not use a
+saved package path from another computer.
 
-The local candidate has been verified from Codex's installed cache. A portable public card or URL is not yet available: the public Streamable HTTP MCP endpoint, OAuth flow, release, and marketplace submission remain `NOT_RUN`. Follow [the Codex installation guide](docs/setup/install-codex-plugin.md) for the current verified boundary.
+The official card is not published yet. The immutable Git/full-plugin release
+remains the verified pre-publication compatibility channel. Follow [the Codex
+installation guide](docs/setup/install-codex-plugin.md) for the exact current
+availability and do not install a similarly named third-party card.
 
 <!-- doc-key: first-check -->
-## Verify before project work
+## Initialize the first Codex project
 
-In a new Codex task, ask NaCl to call `nacl_installation_doctor` exactly once. Continue only when it reports:
+In a new Codex task opened at the intended project root, invoke `nacl-init`.
+It first performs a read-only prerequisite check and presents the exact files,
+Docker resources, downloads, ports, secret references, and
+`.codex/config.toml` changes.
+Denial must leave the project unchanged.
 
-- `status=VERIFIED`;
-- `mode=plugin-only`;
-- the version shown by the installed card;
-- `executionLocation=installed-cache`.
+After explicit confirmation, the bundled scripts create or connect the
+per-project graph, install the pinned checksum-verified `neo4j-mcp`, and merge
+the project's `mcp_servers` entry in `.codex/config.toml` without overwriting
+unrelated servers. The current task then stops: open a **new task in the same
+project** so Codex can discover the newly created project MCP. Initialization
+is `VERIFIED` only after MCP
+handshake, graph/schema health, a named read, a separately confirmed write
+canary, and read-back succeed.
 
-Then use the [Quick Start](docs/quickstart.md) for the first dry run and project initialization.
+The package-level `nacl_installation_doctor` belongs only to the Git/full-plugin
+compatibility channel; it is not a prerequisite for the official Skills-only
+journey. See the [Quick Start](docs/quickstart.md).
 
 <!-- doc-key: graph-model -->
 ## Graph model
 
 Each project gets its own Neo4j 5 Community container and durable volumes. `/nacl-init` can create it locally, connect to a project container on a reachable VPS, or register an existing connection. Local Docker remains the default.
 
-The server is the current authorization boundary: a developer who has access to a Neo4j server is treated as able to access every project database hosted there. `project_scope` selects and records the logical project; it is routing and provenance, not an authorization control. A future public Codex service must authenticate the user with OAuth, map that principal to an allowed server, and reject cross-server routing. NaCl does not provide a managed graph service.
+The server is the current authorization boundary: a developer who has access
+to a Neo4j server is treated as able to access every project database hosted
+there. `project_scope` selects and records the logical project; it is routing
+and provenance, not an authorization control. Access to another server must be
+granted separately. NaCl does not provide a managed graph or public MCP
+service.
 
 <!-- doc-key: key-concepts -->
 ## Key concepts
@@ -105,8 +132,11 @@ Neither integration replaces the Neo4j graph as the analysis source of truth.
 NaCl keeps host-specific packaging separate from methodology:
 
 - root `nacl-*` sources and `plugin/` build the Claude package;
-- `plugins/nacl/` is the generated Codex bundle;
-- `plugins/nacl/resources/package-index.json` is the Codex inventory contract;
+- `plugins/nacl/` is the generated Git/full-plugin compatibility bundle;
+- the dedicated Skills-only builder produces the self-contained public upload
+  tree from Codex sources without a package-level MCP binding;
+- `plugins/nacl/resources/package-index.json` remains the full-plugin Codex
+  inventory contract;
 - `graph-infra/` is copied per project by initialization;
 - `docs/` contains the shared operational contract.
 
@@ -163,7 +193,7 @@ NaCl/
   graph-infra/          Neo4j template copied per project
   plugin/               generated Claude Desktop artifact
   .claude-plugin/       Claude marketplace manifest
-  plugins/nacl/         generated Codex plugin artifact
+  plugins/nacl/         generated Codex Git/full-plugin compatibility artifact
   analyst-tool/         local board and graph UI
   docs/                 shared documentation
 ```
@@ -171,7 +201,12 @@ NaCl/
 <!-- doc-key: inventory -->
 ## Inventory
 
-The repository contains 59 root NaCl skills. The Codex package exposes 10 public conductors, contains 60 internal skills including `nacl-tl-core`, and provides 25 bounded MCP tools. Generated inventories are validated against the package index; see [Skills Reference](docs/skills-reference.md).
+The repository contains 59 root NaCl skills. The public Skills-only bundle
+exposes 10 self-contained conductors and carries their required internal
+workflow closure. The Git/full-plugin compatibility package contains the
+generated 60-skill catalog and 25 package MCP tools; those package tools are
+not a prerequisite or advertised runtime surface of the official Skills-only
+journey. See [Skills Reference](docs/skills-reference.md).
 
 <!-- doc-key: requirements -->
 ## Requirements
@@ -179,6 +214,7 @@ The repository contains 59 root NaCl skills. The Codex package exposes 10 public
 - Codex Desktop or Claude Code;
 - Docker and Docker Compose for a local graph;
 - access to a separately operated VPS when using a remote graph;
+- Node.js 20+ for the Codex Skills-only project bootstrap;
 - Git 2.30+ and Node.js 18+ for repository-backed development and tooling.
 
 The ordinary Codex plugin install itself is a UI operation. A user should not need a source checkout, terminal command, local marketplace folder, or machine-specific path.

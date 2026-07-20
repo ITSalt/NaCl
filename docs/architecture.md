@@ -123,26 +123,34 @@ graph:                          # only if using graph skills
 
 Skills read `config.yaml` at runtime to adapt behavior to the project.
 
-## Codex Runtime and Service Boundary
+## Codex Skills-only Runtime and Project Boundary
 
-The generated Codex artifact under `plugins/nacl/` exposes ten public
-conductor skills, keeps sixty internal workflows, and starts a bounded Node.js
-MCP server with twenty-five tools. Its package index is the inventory contract;
-the root Claude sources remain the methodology source.
+The public Codex distribution is one Skills-only bundle with ten conductor
+skills. Each uploaded skill carries its complete referenced workflow, script,
+template, and asset closure; the public artifact has no plugin-level
+MCP binding, app binding, or hosted MCP dependency. The generated full plugin
+under `plugins/nacl/` remains the Git development and compatibility package;
+its sixty-workflow/25-tool inventory is not the public runtime contract.
 
-The verified local candidate runs from Codex's installed cache. The intended
-production transport is Streamable HTTP with OAuth, but the public endpoint,
-OAuth deployment, domain, release, and marketplace submission are `NOT_RUN`.
-Local stdio is a development and installed-candidate transport, not the public
-service architecture.
+`nacl-init` is the bootstrap boundary. It checks prerequisites, presents an
+exact no-mutation plan, and acts only after fresh confirmation. Its packaged
+scripts create or connect one Neo4j 5 Community stack per project, install the
+pinned checksum-verified `neo4j-mcp`, and merge a no-secret `mcp_servers`
+entry into the project-root `.codex/config.toml` without overwriting unrelated
+servers. The current task stops after writing that file; a new task in the
+same project is required
+to load the project MCP and verify handshake, schema, read, confirmed write,
+and read-back.
 
-Neo4j 5 Community remains separately operated per project, locally or on a
-reachable VPS. The server is the current authorization boundary: access to a
-server implies access to all project databases hosted there. `project_scope`
-provides routing and provenance, not authorization. A public gateway must map
-the authenticated OAuth principal to a server grant, allow same-server project
-selection, and reject cross-server routing. Credentials are resolved at
-runtime and are never embedded in the package or committed configuration.
+Neo4j remains separately operated per project, locally or on a reachable VPS.
+The server is the authorization boundary: access to one server implies access
+to all project databases hosted there, while another server requires its own
+grant. `project_scope` provides routing and provenance, not authorization.
+Credentials are resolved by the project-local runtime and are never embedded
+in the Skills-only bundle, committed configuration, logs, or process
+arguments. A root `.mcp.json` belongs only to Claude or explicitly documented
+full-plugin compatibility flows; it is not the Codex Skills-only pickup file.
+NaCl does not introduce a public or managed MCP service.
 
 ## Next Steps
 
