@@ -53,6 +53,10 @@ Read `../nacl-core/SKILL.md`, `../references/migration-rules.md`, and
 Feature request ids must avoid collisions across `.tl/feature-requests`,
 `:FeatureRequest` nodes, and legacy graph nodes whose `id` already matches an
 `FR-*` pattern. Reserved tombstone prefixes must not be allocated for new work.
+New `UC-*` ids follow the same discipline: allocate from the target module
+(module-local max + 1, empty module starts at `uc_range_start`), then
+collision-check the candidate against every existing `UseCase.id`; on collision
+(projects with global UC numbering) fall back to global max + 1.
 
 ## Phase Contract Details
 
@@ -96,7 +100,8 @@ and file writes, read the `FeatureRequest` subgraph back before reporting succes
 - Modify root-level `nacl-*` source folders.
 - Start implementation before SA graph changes are specified.
 - Write graph data or `.tl` handoff files without explicit confirmation.
-- Allocate `FR-*` ids by checking only one namespace.
+- Allocate `FR-*` ids by checking only one namespace, or `UC-*` ids by
+  checking only one module.
 - Select or constrain the runtime.
 
 ### Conditional Tools And Actions
@@ -126,7 +131,8 @@ and file writes, read the `FeatureRequest` subgraph back before reporting succes
 - Selective dependency order across SA architecture, domain, roles, use cases,
   UI, and validation.
 - FeatureRequest handoff for TL planning.
-- Collision-safe `FR-*` allocation across disk and graph.
+- Collision-safe `FR-*` allocation across disk and graph, and collision-safe
+  `UC-*` allocation across all modules.
 - Graph-native change provenance: `spec_version` bump, staleness stamping of
   dependents, and a `:Decision` node (`IMPLEMENTS`/`JUSTIFIES`/`SUPERSEDES`).
 

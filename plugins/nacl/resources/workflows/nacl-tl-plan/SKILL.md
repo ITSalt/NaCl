@@ -133,10 +133,16 @@ if violations:
   add an arm keyed only on `INCLUDES_UC {kind:'modified'}` + `status='spec-complete'`:
   `spec-complete` is sticky and would re-flag already-current UCs every run,
   resetting in-progress work. Regenerate only the changed set; `MERGE` Task nodes
-  by stable id (`UC###-BE/FE`) — no duplicates. On each regen set
+  by stable id (`UC###-BE/FE`) — no duplicates. Tasks whose status is
+  `done`/`verified-pending` keep status, phase progress, commit and verification
+  evidence on regen — only their files regenerate (with a delta section); the
+  delta code is carried by a new task of the feature, and reopening a shipped
+  task is an explicit operator decision, never a MERGE side effect. All other
+  stale tasks reset to `pending`. On each regen set
   `Task.planned_from_version = uc.spec_version` and clear `review_status`/`stale_*`
-  on BOTH the Task and its source UC (the only sanctioned way a node leaves `stale`;
-  forgetting the UC keeps L8 red). `INCLUDES_UC {kind}` is consumed for explicit
+  on BOTH the Task and its source UC (sanctioned clears — plan regen and the
+  narrow fix/reconcile self-sync — must advance `planned_from_version` in the
+  same write; forgetting the UC keeps L8 red). `INCLUDES_UC {kind}` is consumed for explicit
   `--feature FR-NNN` scoping only. On a project just upgraded to Фаза 0, baseline
   once (`SET t.planned_from_version = coalesce(uc.spec_version,0) WHERE t.planned_from_version IS NULL`)
   so the first run does not over-regenerate.

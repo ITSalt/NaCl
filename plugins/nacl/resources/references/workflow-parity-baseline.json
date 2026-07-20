@@ -78,8 +78,8 @@
     },
     {
       "workflow": "nacl-tl-fix",
-      "packagedSha256": "7bacbca6e67d2194ad5ae283b4157b34e7ecaecc1032c5d3f0725473b783ae74",
-      "codexRootSha256": "1e7746158415dfcc1fc139542b8fe6ef14e2a29c55fada6c686cfc5a0030ff61",
+      "packagedSha256": "47d59b6780f6db2e2b4119257eb3deaa7b31a3c586f0c4fd9802212aa632da0d",
+      "codexRootSha256": "a925f0b17dfaeacb4c592d8b55411f517f9c871b1024ac4eec0b812089fd4eaf",
       "reason": "Uses an internal goal reference and replaces inline graph triage with an explicit capability gap."
     },
     {
@@ -102,8 +102,8 @@
     },
     {
       "workflow": "nacl-tl-plan",
-      "packagedSha256": "9f49075186563dd92e67478923861b2e11469346d1daa3d50a7e19be8aff395a",
-      "codexRootSha256": "ee2cddc8a59e91247e97b136f85c83ef2a6aee4203d8e9d59f8468c449a7f0a9",
+      "packagedSha256": "bdb5a74d3cb91f41deb64f1255f6723c8b23250d9ae87ef94fbc360989e770ab",
+      "codexRootSha256": "ebf1def6678b100496f3d43712c534f88f360819ba4d11b3a25487ce3a9d1fcf",
       "reason": "Replaces inline relationship discovery with an honest named-query capability gap."
     },
     {

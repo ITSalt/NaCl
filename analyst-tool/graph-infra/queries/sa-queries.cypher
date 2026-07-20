@@ -149,11 +149,23 @@ LIMIT 20;
 // ---------------------------------------------------------------------------
 // Query: sa_next_uc_in_module
 // Params: $moduleId — Module.id
-// Description: Find next available UC number in a module's UC range.
+// Description: Find next available UC number for a module, with a MANDATORY
+//              collision check against ALL UseCase ids. Range-partitioned
+//              projects keep the module-local number (candidate = local max + 1,
+//              empty module starts at m.uc_range_start); projects with global
+//              UC numbering collide on the module-local candidate and fall
+//              back to global max + 1, which is collision-free by construction.
 // ---------------------------------------------------------------------------
-MATCH (m:Module {id: $moduleId})-[:CONTAINS_UC]->(uc:UseCase)
-WITH max(toInteger(replace(uc.id, 'UC-', ''))) AS maxNum
-RETURN 'UC-' + apoc.text.lpad(toString(coalesce(maxNum, 0) + 1), 3, '0') AS nextUcId;
+MATCH (m:Module {id: $moduleId})
+OPTIONAL MATCH (m)-[:CONTAINS_UC]->(muc:UseCase)
+WITH m, max(toInteger(replace(muc.id, 'UC-', ''))) AS localMax
+OPTIONAL MATCH (any:UseCase) WHERE any.id =~ 'UC-[0-9]+'
+WITH coalesce(localMax + 1, m.uc_range_start, 1) AS candidate,
+     collect(toInteger(replace(any.id, 'UC-', ''))) AS allNums
+WITH CASE WHEN candidate IN allNums
+     THEN reduce(mx = 0, n IN allNums | CASE WHEN n > mx THEN n ELSE mx END) + 1
+     ELSE candidate END AS nextNum
+RETURN 'UC-' + apoc.text.lpad(toString(nextNum), 3, '0') AS nextUcId;
 
 
 // ---------------------------------------------------------------------------

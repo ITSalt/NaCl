@@ -211,10 +211,48 @@ RETURN DISTINCT uc.id AS uc_id, uc.stale_origin AS origin
 **Incremental algorithm (default when tasks exist):**
 1. `stale_set` = UCs from Signal 1 ∪ Signal 2 (both drift-confirmed).
 2. `new_set` = UCs from `INCLUDES_UC {kind:'new'}` (or in-scope UCs) with **no** `GENERATES` edge yet.
-3. Regenerate task files **only** for `stale_set ∪ new_set`. UCs not in either set are left untouched — their tasks and dev state survive.
+3. Regenerate task files **only** for `stale_set ∪ new_set`. UCs not in either set are left untouched — their tasks and dev state survive. Within the stale set, tasks whose status is `done`/`verified-pending` keep their dev state too — only their files regenerate (see the **Stale+done policy** below).
 4. Use `MERGE (t:Task {id: $taskId})` (Step 2.4) so re-running is idempotent at the node level: the same `UC###-BE`/`UC###-FE` ids are updated in place, never duplicated.
 5. On each successful regeneration, stamp `planned_from_version` and **clear** the staleness flag (Step 2.4).
 6. If `stale_set ∪ new_set` is empty, report "plan is current — nothing to regenerate" and stop.
+
+**Stale+done policy (dev state survives re-planning).** Split the stale TASKS
+(per task, not per UC — one UC may have one preserved and one reset task) by
+current status before regenerating:
+
+- **Active stale tasks** (status is anything but `done`/`verified-pending`):
+  regenerate files AND reset dev state — Step 2.4 sets `status` and every
+  `phase_*` back to `'pending'` so the next dev run rebuilds from the fresh
+  snapshot. This includes `blocked`/`failed`/`regression`: the spec change is
+  usually what unblocks them, so they re-queue.
+- **Shipped stale tasks** (status `done` or `verified-pending`): the code
+  already shipped — re-planning must NOT reopen it. Regenerate the task files
+  from the current spec and prepend a delta section to `task-be.md`/`task-fe.md`:
+  `## Delta since v<planned_from_version>`, listing what changed between the
+  baked snapshot and the current spec. Step 2.4 PRESERVES `status`, every
+  `phase_*`, `commit`, and `verification_evidence`. The delta CODE is carried
+  by a NEW task of the feature — normally the FR's `kind:'new'` UC tasks,
+  whose `DEPENDS_ON` edges point at the shipped tasks; name the carrier task
+  next to each shipped stale task in the plan report ("Delta carried by: ...").
+  If no new task can carry the delta, HALT and ask the operator: either they
+  explicitly reopen the shipped task (the ONLY sanctioned reset — statement
+  below, run only on in-session operator confirmation), or the delta becomes a
+  follow-up feature. Reopening is never a MERGE side effect.
+- Do NOT hand shipped stale tasks to the deterministic wave planner — they are
+  no longer execution units. Read each one's existing `t.wave` in the same
+  query that reads its status and pass it as `$waveNumber` in Step 2.4, so the
+  `IN_WAVE` re-link is a no-op. When rewriting `.tl/status.json`, keep their
+  real status — do not list them as pending.
+
+```cypher
+// mcp__neo4j__write-cypher — operator-approved reopen ONLY (explicit
+// confirmation in-session; never automatic)
+MATCH (t:Task {id: $taskId})
+SET t.status = 'pending', t.updated = datetime(),
+    t.phase_be = 'pending', t.phase_fe = 'pending', t.phase_sync = 'pending',
+    t.phase_review_be = 'pending', t.phase_review_fe = 'pending',
+    t.phase_qa = 'pending'
+```
 
 **First Фаза-0 plan on an existing project — baseline, don't regenerate.** If Tasks
 exist but none has `planned_from_version` (project just upgraded), do NOT treat
@@ -477,23 +515,31 @@ SET w.number = $waveNumber,
 // MERGE by stable id ($taskId = "UC###-BE"/"UC###-FE") makes re-planning idempotent:
 // re-running updates the same node in place, never duplicates it.
 // $specVersion = the source UseCase.spec_version this task's files were generated from.
+// Preservation policy (stale+done, Step 1.5b): a task whose code already shipped
+// (status 'done' or 'verified-pending') keeps its status and phase_* progress —
+// and, untouched below hence preserved, its commit / verification_evidence.
+// Every other pre-existing task resets to 'pending' for re-development. On
+// CREATE t.status is null, so the create path gets 'pending' everywhere.
+// Reopening a shipped task is an explicit operator decision (Step 1.5b),
+// never a MERGE side effect.
 MERGE (t:Task {id: $taskId})
+WITH t, coalesce(t.status, '') IN ['done', 'verified-pending'] AS preserve
 SET t.title = $title,
     t.type = $type,
-    t.status = 'pending',
     t.wave = $waveNumber,
     t.agent = $agent,
-    t.phase_be = 'pending',
-    t.phase_fe = 'pending',
-    t.phase_sync = 'pending',
-    t.phase_review_be = 'pending',
-    t.phase_review_fe = 'pending',
-    t.phase_qa = 'pending',
     t.priority = coalesce($priority, 'medium'),
     t.planned_from_version = coalesce($specVersion, 0),
     t.created = coalesce(t.created, datetime()),
-    t.updated = datetime()
-// Clear any staleness flag: this task has just been re-synced from current spec.
+    t.updated = datetime(),
+    t.status          = CASE WHEN preserve THEN t.status                            ELSE 'pending' END,
+    t.phase_be        = CASE WHEN preserve THEN coalesce(t.phase_be, 'pending')        ELSE 'pending' END,
+    t.phase_fe        = CASE WHEN preserve THEN coalesce(t.phase_fe, 'pending')        ELSE 'pending' END,
+    t.phase_sync      = CASE WHEN preserve THEN coalesce(t.phase_sync, 'pending')      ELSE 'pending' END,
+    t.phase_review_be = CASE WHEN preserve THEN coalesce(t.phase_review_be, 'pending') ELSE 'pending' END,
+    t.phase_review_fe = CASE WHEN preserve THEN coalesce(t.phase_review_fe, 'pending') ELSE 'pending' END,
+    t.phase_qa        = CASE WHEN preserve THEN coalesce(t.phase_qa, 'pending')        ELSE 'pending' END
+// Clear any staleness flag: this task's FILES have just been re-synced from current spec.
 REMOVE t.review_status, t.stale_reason, t.stale_since, t.stale_origin
 WITH t
 MATCH (w:Wave {number: $waveNumber})
@@ -511,10 +557,14 @@ REMOVE uc.review_status, uc.stale_reason, uc.stale_since, uc.stale_origin
 > generation: `RETURN coalesce(uc.spec_version, 0) AS spec_version`. Stamping it
 > here is what lets a later `nacl-tl-plan` run detect (Step 1.5b) that the task's
 > baked snapshot has fallen behind the UC. Clearing the staleness flag here (on
-> BOTH the Task and its source UC, in the one statement above) is the **only**
-> sanctioned way a node leaves `stale` — it certifies regeneration from the current
-> graph, satisfying `nacl-sa-validate` L8. Leaving the source UC stamped while
-> clearing only its Tasks is the easy mistake that keeps L8 red — hence the combined clear.
+> BOTH the Task and its source UC, in the one statement above) is the **canonical**
+> way a node leaves `stale` — it certifies regeneration from the current graph,
+> satisfying `nacl-sa-validate` L8. The narrow `nacl-tl-fix` / `nacl-tl-reconcile`
+> self-sync paths are also sanctioned, and every sanctioned clear must advance
+> `planned_from_version` in the same write — see the pfv-advance contract in
+> `provenance-gap-closure.md` (TL-core references). Leaving the source UC stamped
+> while clearing only its Tasks is the easy mistake that keeps L8 red — hence the
+> combined clear.
 
 ```cypher
 // Create dependency edge between tasks
@@ -1253,7 +1303,11 @@ If Task/Wave nodes already exist, the **default is incremental** (Step 1.5b):
 regenerate only the UCs whose `spec_version > planned_from_version`, or that an
 FR marked `modified`, or that carry a `stale` flag — leaving every other UC's
 tasks and in-progress dev state untouched. `MERGE`-by-id makes this safe to
-re-run; no duplicate Task nodes.
+re-run; no duplicate Task nodes. Stale tasks whose status is
+`done`/`verified-pending` keep status, phases, commit and verification
+evidence — only their files regenerate (with a delta section); the delta code
+is carried by a new task, and reopening is operator-only (Step 1.5b
+Stale+done policy).
 
 Full overwrite is opt-in via `--overwrite` only (it destroys in-progress dev
 state and re-bakes every snapshot):
@@ -1308,6 +1362,8 @@ MATCH (n) WHERE n:Task OR n:Wave DETACH DELETE n
 # Change-tracking writes:
 - Task.planned_from_version := source UseCase.spec_version (on every regen)
 - REMOVE review_status/stale_* on regenerated Task and its source UseCase (clears L8 staleness)
+- Task.status / phase_* preserved when status IN {done, verified-pending} (Stale+done policy); reset to 'pending' otherwise
+- Task.commit / Task.verification_evidence: never written by this skill (survive every regen)
 
 # TL layer edges created:
 - (Task)-[:IN_WAVE]->(Wave)

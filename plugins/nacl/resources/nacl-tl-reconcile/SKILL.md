@@ -320,6 +320,35 @@ Update `.tl/tasks/*/api-contract.md` for each UC:
 1. Read backend routes — extract endpoints, schemas, responses
 2. Update api-contract.md
 
+#### Step 3.4b: Advance task provenance (graph, conditional)
+
+Reconcile just rewrote task files. If the project graph is reachable
+(`mcp__neo4j__write-cypher` available), close the provenance loop for every UC
+whose `.tl/tasks/<UC>/` files are now FULLY current with both code and spec —
+otherwise `nacl-tl-plan` Signal 1 (`spec_version > planned_from_version`) keeps
+flagging those tasks as drifted forever. See the pfv-advance contract in
+`provenance-gap-closure.md` (TL-core references).
+
+```cypher
+// mcp__neo4j__write-cypher
+// Params: $syncedUcIds — UCs whose task files reconcile brought fully current
+MATCH (uc:UseCase)-[:GENERATES]->(t:Task)
+WHERE uc.id IN $syncedUcIds
+SET t.planned_from_version = coalesce(uc.spec_version, 0)
+REMOVE t.review_status, t.stale_reason, t.stale_since, t.stale_origin
+WITH DISTINCT uc
+REMOVE uc.review_status, uc.stale_reason, uc.stale_since, uc.stale_origin
+```
+
+Include ONLY UCs where reconcile updated or verified ALL task files
+(api-contract.md AND the task/test/brief files) against current code. If only
+api-contract.md was touched and the other files still embed an older snapshot,
+leave the UC out — its regen belongs to `nacl-tl-plan`, and pfv must stay
+behind so Signal 1 keeps pointing at it.
+
+If the graph is unreachable, skip and record in the Phase 5 report:
+`pfv advancement deferred — graph unavailable; run nacl-tl-plan to close`.
+
 #### Step 3.5: Missing Docs (New)
 
 **UC index consistency check:** Before creating new UC files, read `docs/14-usecases/_uc-index.md` (or equivalent index). Verify:

@@ -64,7 +64,7 @@ Component         CMP-{Name}          (e.g., CMP-DataTable)
 ### Key properties by node type
 
 **Module** -- represents a Bounded Context in DDD terms.
-- `uc_range_start`, `uc_range_end`: the UC number allocation range for this module (e.g., 100-199 for mod-orders). Prevents ID collisions across modules.
+- `uc_range_start`, `uc_range_end`: the UC number allocation range for this module (e.g., 100-199 for mod-orders). Prevents ID collisions across modules. The allocator additionally collision-checks its candidate against all existing UC ids, so projects that number UCs globally (ignoring the ranges) are also safe — on collision it falls back to global max + 1.
 - `status`: draft, specified, or finalized.
 
 **UseCase** -- a single unit of automated behavior.

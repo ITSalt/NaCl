@@ -575,7 +575,7 @@ test('parsePortBindings: single container with both bolt and http bindings', () 
 test('parsePortBindings: multi-container output, one line per container', () => {
   // 3 containers: ev-dispatcher (bolt+http), a container with no published ports
   // (blank line — e.g. an unrelated service), and a stopped-but-still-bound container
-  // (kinga's collision from today) whose inspect line is identical in shape.
+  // (a stopped-container port collision observed on a dev machine) whose inspect line is identical in shape.
   const out = [
     '7687/tcp=3607 7474/tcp=3594 ',
     '',

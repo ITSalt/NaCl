@@ -164,7 +164,7 @@ configured — the same port the RUNNING `learn-neo4j` holds. `docker start
 ptd-back-neo4j` will fail until re-ported.
 
 **Task.** Nothing to code in this repo. Surface to the owner; if they want,
-re-port ptd-back the way kinga was re-ported (edit `graph-infra/.env`,
+re-port ptd-back the same way the earlier collision was resolved (edit `graph-infra/.env`,
 `config.yaml`, `.mcp.json` to the `NACL_GRAPH_PORTS_SUGGEST` rung, recreate
 container, new session). Also: `nacl-bench-neo4j` container is deletable per
 an old owner decision — confirm before removing anything (invariant: never
