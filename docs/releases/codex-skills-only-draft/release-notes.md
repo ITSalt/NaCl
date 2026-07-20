@@ -55,8 +55,7 @@ The candidate currently expects:
 - Node.js 20 or later;
 - Docker Engine or Docker Desktop with Docker Compose for a local graph; and
 - outbound HTTPS access to the bundled-version `neo4j-mcp` release on GitHub
-  and to the registry used by Docker for the Neo4j Community image, unless a
-  release-approved offline procedure is used.
+  and to the registry used by Docker for the Neo4j Community image.
 
 Supported operating systems and architectures will be stated only after the
 clean-machine matrix is complete. A remote Neo4j/VPS mode, if included in the
@@ -92,8 +91,8 @@ draft:
   new-task project-MCP tests on the supported macOS and Linux targets;
 - complete native Windows/PowerShell clean-machine verification or publish an
   explicit Windows limitation;
-- verify local port binding, image pinning, checksum failure, offline/manual
-  asset handling, malformed configuration, collision, partial-apply recovery,
+- verify local port binding, image pinning, checksum failure, local archive
+  preflight, malformed configuration, collision, partial-apply recovery,
   and idempotent rerun behavior;
 - reconcile the live OpenAI **Skills only** form, upload scan, listing, legal
   URLs, exactly five positive tests, and exactly three negative tests; and

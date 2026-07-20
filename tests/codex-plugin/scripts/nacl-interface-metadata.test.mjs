@@ -20,16 +20,21 @@ const expectedInterface = {
   displayName: "NaCl",
   shortDescription: "Analyze, plan, deliver, and verify software with NaCl.",
   longDescription: "Use bounded NaCl skills and project-scoped graph workflows to analyze requirements, design systems, plan delivery, implement changes, and verify evidence without exposing infrastructure credentials or arbitrary graph queries.",
-  developerName: "NaCl contributors",
+  developerName: "ITSalt",
   category: "Developer Tools",
   capabilities: ["Analysis", "Planning", "Delivery", "Verification", "Read", "Write"],
   defaultPrompt: expectedPrompts,
   brandColor: "#0F766E",
+  websiteURL: "https://github.com/ITSalt/NaCl",
+  privacyPolicyURL: "https://github.com/ITSalt/NaCl/blob/main/PRIVACY.md",
+  termsOfServiceURL: "https://github.com/ITSalt/NaCl/blob/main/TERMS.md",
   composerIcon: "./assets/composer-icon.png",
   logo: "./assets/logo.png",
   logoDark: "./assets/logo-dark.png",
 };
 const expectedPackageMetadata = {
+  author: { name: "ITSalt", url: "https://github.com/ITSalt" },
+  homepage: "https://github.com/ITSalt/NaCl",
   repository: "https://github.com/ITSalt/NaCl",
   license: "MIT",
   keywords: ["developer-tools", "software-delivery", "systems-analysis", "verification"],
@@ -77,10 +82,7 @@ test("plugin interface metadata is stable, honest, and backed by deterministic P
   for (const prompt of expectedPrompts) assert.ok(prompt.length > 20 && prompt.length <= 128);
   assert.equal(Object.hasOwn(packaged.interface, "screenshots"), false);
   for (const field of ["websiteURL", "privacyPolicyURL", "termsOfServiceURL"]) {
-    assert.equal(Object.hasOwn(packaged.interface, field), false);
-  }
-  for (const field of ["homepage", "website", "privacyPolicy", "termsOfService"]) {
-    assert.equal(Object.hasOwn(packaged, field), false);
+    assert.match(packaged.interface[field], /^https:\/\//);
   }
   assert.equal(Object.hasOwn(packaged, "apps"), false);
   assert.equal(marketplace.plugins[0].category, "Developer Tools");

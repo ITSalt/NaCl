@@ -79,8 +79,10 @@ downloads after the user reviews and confirms the plan:
 These providers receive ordinary network request information, such as the
 requesting IP address and user agent, under their own privacy policies. NaCl
 does not attach project specifications or graph contents to these downloads.
-An administrator may use previously downloaded, independently verified assets
-instead, subject to the release's documented offline-install checks.
+The bundle can verify a local archive against its pinned checksum without
+network access or changing the project, but the standard bootstrap still
+downloads the pinned archive itself. This release does not claim a separate
+offline installation path.
 
 The project-local `neo4j-mcp` is launched with its telemetry setting disabled.
 This does not control telemetry or logs produced by the AI host, Docker engine,
