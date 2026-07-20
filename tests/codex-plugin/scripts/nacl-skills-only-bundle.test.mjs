@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { chmod, copyFile, mkdir, mkdtemp, readFile, realpath, rm, symlink, writeFile } from "node:fs/promises";
+import { chmod, copyFile, mkdir, mkdtemp, readFile, readdir, realpath, rm, symlink, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
@@ -266,15 +266,31 @@ test("Skills-only Neo4j Compose is immutable and publishes only loopback ports",
   assert.match(provenance, /apoc-5\.24\.2-core\.jar[\s\S]*39092c89df1cb80f4f3d8799821e74c7f1d10503f92625be32882b70b13002fa/);
 });
 
-test("Skills-only named queries require no runtime plugin and preserve wide UC identifiers", async () => {
-  const queries = await readFile(path.join(repoRoot, "graph-infra", "queries", "sa-queries.cypher"), "utf8");
-  const start = queries.indexOf("// Query: sa_next_uc_in_module");
-  const end = queries.indexOf("// Query:", start + 10);
-  const allocator = queries.slice(start, end < 0 ? undefined : end);
-  assert.ok(start >= 0);
-  assert.doesNotMatch(allocator, /apoc|CALL\s+dbms\.procedures/i);
-  assert.match(allocator, /CASE WHEN size\(digits\) < 3/);
-  assert.match(allocator, /ELSE digits END AS nextUcId/);
+test("Skills-only query rewrite is isolated from canonical plugins and preserves wide UC identifiers", async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), "nacl-skills-query-rewrite-"));
+  try {
+    const bundle = path.join(root, "bundle");
+    const built = run(process.execPath, [path.join(repoRoot, "scripts", "build-codex-skills-only.mjs"), "--output", bundle]);
+    assert.equal(built.status, 0, `${built.stdout}\n${built.stderr}`);
+    const queryRoot = path.join(bundle, "skills", "nacl-init", "resources", "graph-infra", "queries");
+    const queryFiles = (await readdir(queryRoot)).filter((entry) => entry.endsWith(".cypher"));
+    const shippedQueries = (await Promise.all(queryFiles.map((entry) => readFile(path.join(queryRoot, entry), "utf8")))).join("\n");
+    assert.doesNotMatch(shippedQueries, /apoc\.text\.lpad/i);
+    const queries = await readFile(path.join(queryRoot, "sa-queries.cypher"), "utf8");
+    const start = queries.indexOf("// Query: sa_next_uc_in_module");
+    const end = queries.indexOf("// Query:", start + 10);
+    const allocator = queries.slice(start, end < 0 ? undefined : end);
+    assert.ok(start >= 0);
+    assert.doesNotMatch(allocator, /apoc|CALL\s+dbms\.procedures/i);
+    assert.match(allocator, /CASE WHEN size\(digits\) < 3/);
+    assert.match(allocator, /ELSE digits END AS nextUcId/);
+    const canonical = await readFile(path.join(repoRoot, "graph-infra", "queries", "sa-queries.cypher"), "utf8");
+    const generated = await readFile(path.join(repoRoot, "plugins", "nacl", "resources", "graph-infra", "queries", "sa-queries.cypher"), "utf8");
+    assert.match(canonical, /apoc\.text\.lpad\(toString\(nextNum\), 3, '0'\)/);
+    assert.equal(generated, canonical);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
 });
 
 test("preflight rejects adversarial TOML before any project, Docker, or download mutation", { skip: process.platform === "win32" }, async () => {

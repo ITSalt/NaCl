@@ -157,7 +157,7 @@ async function copyTree(source, destination) {
   await cp(source, destination, { recursive: true, preserveTimestamps: false });
 }
 
-const textExtensions = new Set([".md", ".mjs", ".js", ".cjs", ".sh", ".ps1", ".json", ".yml", ".yaml", ".toml", ".txt", ".pin"]);
+const textExtensions = new Set([".md", ".mjs", ".js", ".cjs", ".sh", ".ps1", ".json", ".yml", ".yaml", ".toml", ".txt", ".pin", ".cypher"]);
 const groupSeeds = Object.freeze({
   "nacl-ba": [/^nacl-ba-/],
   "nacl-sa": [/^nacl-sa-/],
@@ -169,6 +169,12 @@ const groupSeeds = Object.freeze({
   "nacl-diagnose": [/^nacl-tl-diagnose$/],
   "nacl-verify": [/^nacl-tl-verify(?:-|$)/],
 });
+
+function replaceExactlyOnce(source, before, after, label) {
+  const first = source.indexOf(before);
+  if (first < 0 || source.indexOf(before, first + before.length) >= 0) throw new Error(`Skills-only rewrite expected exactly one ${label}`);
+  return `${source.slice(0, first)}${after}${source.slice(first + before.length)}`;
+}
 
 function rewriteSkillsOnlyText(source, relative = "") {
   let rewritten = source
@@ -188,6 +194,22 @@ function rewriteSkillsOnlyText(source, relative = "") {
       });
     }
     rewritten = `${JSON.stringify(document, null, 2)}\n`;
+  }
+  if (relative === path.join("resources", "graph-infra", "queries", "sa-queries.cypher")) {
+    rewritten = replaceExactlyOnce(
+      rewritten,
+      "RETURN 'UC-' + apoc.text.lpad(toString(nextNum), 3, '0') AS nextUcId;",
+      "WITH toString(nextNum) AS digits\nRETURN 'UC-' + CASE WHEN size(digits) < 3\n       THEN substring('000', 0, 3 - size(digits)) + digits\n       ELSE digits END AS nextUcId;",
+      "SA UC allocator",
+    );
+  }
+  if (relative === path.join("resources", "graph-infra", "queries", "ba-queries.cypher")) {
+    rewritten = replaceExactlyOnce(
+      rewritten,
+      "// RETURN $prefix + apoc.text.lpad(toString(nextNum), $padLen, '0') AS nextId",
+      "// WITH $prefix AS prefix, $padLen AS padLen, toString(nextNum) AS digits\n// RETURN prefix + CASE WHEN size(digits) < padLen\n//        THEN substring('0000000000000000', 0, padLen - size(digits)) + digits\n//        ELSE digits END AS nextId",
+      "BA allocator example",
+    );
   }
   return rewritten;
 }

@@ -214,10 +214,7 @@ WITH coalesce(localMax + 1, m.uc_range_start, 1) AS candidate,
 WITH CASE WHEN candidate IN allNums
      THEN reduce(mx = 0, n IN allNums | CASE WHEN n > mx THEN n ELSE mx END) + 1
      ELSE candidate END AS nextNum
-WITH toString(nextNum) AS digits
-RETURN 'UC-' + CASE WHEN size(digits) < 3
-       THEN substring('000', 0, 3 - size(digits)) + digits
-       ELSE digits END AS nextUcId;
+RETURN 'UC-' + apoc.text.lpad(toString(nextNum), 3, '0') AS nextUcId;
 
 
 // ---------------------------------------------------------------------------

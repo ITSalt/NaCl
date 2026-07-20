@@ -203,10 +203,7 @@ ORDER BY brq.id;
 // Usage: CALL { MATCH (n) WHERE $label IN labels(n)
 //   WITH max(toInteger(replace(n.id, $prefix, ''))) AS maxNum
 //   RETURN coalesce(maxNum, 0) + 1 AS nextNum }
-// WITH $prefix AS prefix, $padLen AS padLen, toString(nextNum) AS digits
-// RETURN prefix + CASE WHEN size(digits) < padLen
-//        THEN substring('0000000000000000', 0, padLen - size(digits)) + digits
-//        ELSE digits END AS nextId
+// RETURN $prefix + apoc.text.lpad(toString(nextNum), $padLen, '0') AS nextId
 
 
 // ---------------------------------------------------------------------------

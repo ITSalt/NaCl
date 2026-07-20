@@ -16,7 +16,7 @@ const runtimePluginAllowlist = new Set([
   path.join("resources", "bootstrap", "setup-project-graph.ps1"),
   path.join("resources", "bootstrap", "setup-project-graph.sh"),
 ]);
-const textExtensions = /\.(?:md|mjs|js|cjs|sh|ps1|json|ya?ml|toml|txt|pin)$/i;
+const textExtensions = /\.(?:md|mjs|js|cjs|sh|ps1|json|ya?ml|toml|txt|pin|cypher)$/i;
 const markdownLink = /!?\[[^\]]*\]\(([^)\s]+)(?:\s+["'][^)]*)?\)/g;
 
 function inside(root, filename) {
