@@ -34,17 +34,90 @@ echo "$HTTP_PORT" | grep -Eq '^[0-9]+$' || fail HTTP_PORT_INVALID
 
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd -P) || fail BUNDLE_PATH_UNAVAILABLE
 RESOURCE_ROOT=$(CDPATH= cd -- "$SCRIPT_DIR/.." && pwd -P) || fail BUNDLE_PATH_UNAVAILABLE
-SKILL_ROOT=$(CDPATH= cd -- "$RESOURCE_ROOT/.." && pwd -P) || fail BUNDLE_PATH_UNAVAILABLE
-LIB="$RESOURCE_ROOT/nacl-tl-core/scripts/lib-neo4j-mcp.sh"
 GUARD="$SCRIPT_DIR/codex-config-guard.mjs"
 WRITER="$SCRIPT_DIR/write-codex-mcp-config.mjs"
 LAUNCHER_SOURCE="$SCRIPT_DIR/project-neo4j-launcher.mjs"
+SUPPLY_SOURCE="$SCRIPT_DIR/neo4j-mcp-supply.mjs"
+PIN_SOURCE="$SCRIPT_DIR/neo4j-mcp-release.pin"
 SCHEMA_RUNNER="$SCRIPT_DIR/apply-project-schema.mjs"
-for required in "$LIB" "$GUARD" "$WRITER" "$LAUNCHER_SOURCE" "$SCHEMA_RUNNER"; do [ -f "$required" ] || fail BUNDLE_RESOURCE_MISSING; done
+PREFLIGHT="$SCRIPT_DIR/preflight-project-graph.mjs"
+BINARY_INSTALLER="$SCRIPT_DIR/install-pinned-neo4j-mcp.mjs"
+ROLLBACK_RUNNER="$SCRIPT_DIR/rollback-project-bootstrap.mjs"
+for required in "$GUARD" "$WRITER" "$LAUNCHER_SOURCE" "$SUPPLY_SOURCE" "$PIN_SOURCE" "$SCHEMA_RUNNER" "$PREFLIGHT" "$BINARY_INSTALLER" "$ROLLBACK_RUNNER" "$SCRIPT_DIR/graph-docker-compose.yml"; do [ -f "$required" ] || fail BUNDLE_RESOURCE_MISSING; done
 NODE=$(command -v node 2>/dev/null || command -v nodejs 2>/dev/null) || fail NODE_MISSING
 NODE=$(CDPATH= cd -- "$(dirname -- "$NODE")" && printf '%s/%s\n' "$PWD" "$(basename -- "$NODE")")
 
 GRAPH_DIR="$PROJECT_ROOT/graph-infra"; SCHEMA_DIR="$GRAPH_DIR/schema"; QUERY_DIR="$GRAPH_DIR/queries"; RUNTIME_DIR="$GRAPH_DIR/scripts"
+PROJECT_LAUNCHER="$RUNTIME_DIR/nacl-neo4j-mcp-launcher.mjs"
+PROJECT_SUPPLY="$RUNTIME_DIR/neo4j-mcp-supply.mjs"
+PROJECT_PIN="$RUNTIME_DIR/neo4j-mcp-release.pin"
+STABLE_BIN="$GRAPH_DIR/bin/neo4j-mcp"
+URI="bolt://localhost:$BOLT_PORT"
+"$NODE" "$PREFLIGHT" --project-root "$PROJECT_ROOT" --project-id "$PROJECT_ID" --bolt-port "$BOLT_PORT" --http-port "$HTTP_PORT" \
+  --node "$NODE" --launcher "$PROJECT_LAUNCHER" --binary "$STABLE_BIN" --uri "$URI" --database "$DATABASE" || exit 1
+
+DOCKER=$(command -v docker 2>/dev/null || true)
+if [ -z "$DOCKER" ]; then
+  for candidate in /usr/local/bin/docker /opt/homebrew/bin/docker "$HOME/.docker/bin/docker" /Applications/Docker.app/Contents/Resources/bin/docker; do
+    [ -x "$candidate" ] && DOCKER="$candidate" && break
+  done
+fi
+[ -n "$DOCKER" ] || fail DOCKER_CLI_MISSING
+"$DOCKER" info >/dev/null 2>&1 || fail DOCKER_DAEMON_DOWN
+
+CONTAINER="$PROJECT_ID-neo4j"; DATA_VOLUME="$PROJECT_ID-neo4j-data"; LOG_VOLUME="$PROJECT_ID-neo4j-logs"; NETWORK="$PROJECT_ID-net"
+if "$DOCKER" inspect "$CONTAINER" >/dev/null 2>&1; then CONTAINER_STATE=preexisting; else CONTAINER_STATE=absent; fi
+if "$DOCKER" volume inspect "$DATA_VOLUME" >/dev/null 2>&1; then DATA_STATE=preexisting; else DATA_STATE=absent; fi
+if "$DOCKER" volume inspect "$LOG_VOLUME" >/dev/null 2>&1; then LOG_STATE=preexisting; else LOG_STATE=absent; fi
+if "$DOCKER" network inspect "$NETWORK" >/dev/null 2>&1; then NETWORK_STATE=preexisting; else NETWORK_STATE=absent; fi
+if [ -e "$GRAPH_DIR" ]; then GRAPH_STATE=preexisting
+else
+  GRAPH_STATE=absent
+  [ "$CONTAINER_STATE" = absent ] && [ "$DATA_STATE" = absent ] && [ "$LOG_STATE" = absent ] && [ "$NETWORK_STATE" = absent ] || fail DOCKER_RESOURCE_CONFLICT
+fi
+
+TRANSACTION_DIR=$(mktemp -d "${TMPDIR:-/tmp}/nacl-graph-transaction.XXXXXX") || fail TRANSACTION_SNAPSHOT_FAILED
+CONFIG_DIR_STATE=absent; CONFIG_STATE=absent; CONFIG_BACKUP="$TRANSACTION_DIR/config.toml"; GITIGNORE_STATE=absent; GITIGNORE_BACKUP="$TRANSACTION_DIR/gitignore"
+[ -d "$PROJECT_ROOT/.codex" ] && CONFIG_DIR_STATE=preexisting
+if [ -f "$PROJECT_ROOT/.codex/config.toml" ]; then CONFIG_STATE=preexisting; cp "$PROJECT_ROOT/.codex/config.toml" "$CONFIG_BACKUP" || fail TRANSACTION_SNAPSHOT_FAILED; fi
+if [ -f "$PROJECT_ROOT/.gitignore" ]; then GITIGNORE_STATE=preexisting; cp "$PROJECT_ROOT/.gitignore" "$GITIGNORE_BACKUP" || fail TRANSACTION_SNAPSHOT_FAILED; fi
+MUTATION_STARTED=1
+
+rollback_transaction() {
+  rollback_ok=1
+  if [ "$CONTAINER_STATE" = absent ] && "$DOCKER" inspect "$CONTAINER" >/dev/null 2>&1; then "$DOCKER" rm -f "$CONTAINER" >/dev/null 2>&1 || rollback_ok=0; fi
+  if [ "$NETWORK_STATE" = absent ] && "$DOCKER" network inspect "$NETWORK" >/dev/null 2>&1; then "$DOCKER" network rm "$NETWORK" >/dev/null 2>&1 || rollback_ok=0; fi
+  if [ "$DATA_STATE" = absent ] && "$DOCKER" volume inspect "$DATA_VOLUME" >/dev/null 2>&1; then "$DOCKER" volume rm "$DATA_VOLUME" >/dev/null 2>&1 || rollback_ok=0; fi
+  if [ "$LOG_STATE" = absent ] && "$DOCKER" volume inspect "$LOG_VOLUME" >/dev/null 2>&1; then "$DOCKER" volume rm "$LOG_VOLUME" >/dev/null 2>&1 || rollback_ok=0; fi
+  "$NODE" "$ROLLBACK_RUNNER" --project-root "$PROJECT_ROOT" --graph-state "$GRAPH_STATE" \
+    --config-state "$CONFIG_STATE" --config-dir-state "$CONFIG_DIR_STATE" --config-backup "$CONFIG_BACKUP" \
+    --gitignore-state "$GITIGNORE_STATE" --gitignore-backup "$GITIGNORE_BACKUP" || rollback_ok=0
+  rm -f "$CONFIG_BACKUP" "$GITIGNORE_BACKUP" 2>/dev/null || true
+  rmdir "$TRANSACTION_DIR" 2>/dev/null || true
+  [ "$rollback_ok" -eq 1 ]
+}
+fail() {
+  code="$1"
+  trap - INT TERM HUP
+  if rollback_transaction; then
+    if { [ "$DATA_STATE" = preexisting ] || [ "$LOG_STATE" = preexisting ]; } && { [ "$code" = SCHEMA_GATE_FAILED ] || [ "$code" = CONFIG_READBACK_FAILED ]; }; then
+      echo "NACL_GRAPH_RESULT: status=PARTIALLY_VERIFIED code=$code rollback=BEST_EFFORT removed=new-resources preserved=preexisting-volumes,image-cache" >&2
+    else
+      echo "NACL_GRAPH_RESULT: status=FAILED code=$code rollback=VERIFIED removed=new-resources preserved=preexisting-resources,image-cache" >&2
+    fi
+  else
+    echo "NACL_GRAPH_RESULT: status=PARTIALLY_VERIFIED code=$code rollback=INCOMPLETE inventory=manual-review-required" >&2
+  fi
+  exit 1
+}
+trap 'fail INTERRUPTED' INT TERM HUP
+
+IGNORE="$PROJECT_ROOT/.gitignore"
+if [ -L "$IGNORE" ]; then fail GITIGNORE_UNSAFE
+elif [ -e "$IGNORE" ]; then [ -f "$IGNORE" ] || fail GITIGNORE_UNSAFE
+else touch "$IGNORE" || fail GITIGNORE_WRITE_FAILED; fi
+for entry in '.codex/config.toml' 'graph-infra/.env' 'graph-infra/bin/'; do grep -Fxq "$entry" "$IGNORE" 2>/dev/null || printf '%s\n' "$entry" >> "$IGNORE" || fail GITIGNORE_WRITE_FAILED; done
+
 safe_directory() {
   if [ -L "$1" ]; then fail DIRECTORY_UNSAFE
   elif [ -e "$1" ]; then [ -d "$1" ] || fail DIRECTORY_UNSAFE
@@ -62,7 +135,7 @@ safe_directory "$SCHEMA_DIR"
 safe_directory "$QUERY_DIR"
 safe_directory "$GRAPH_DIR/boards"
 safe_directory "$RUNTIME_DIR"
-copy_exact_or_create "$RESOURCE_ROOT/nacl-tl-core/templates/graph-docker-compose.yml" "$GRAPH_DIR/docker-compose.yml" COMPOSE_CONFLICT
+copy_exact_or_create "$SCRIPT_DIR/graph-docker-compose.yml" "$GRAPH_DIR/docker-compose.yml" COMPOSE_CONFLICT
 for schema in ba-schema sa-schema tl-schema; do
   copy_exact_or_create "$RESOURCE_ROOT/graph-infra/schema/$schema.cypher" "$SCHEMA_DIR/$schema.cypher" SCHEMA_CONFLICT
 done
@@ -72,7 +145,6 @@ for query in "$RESOURCE_ROOT"/graph-infra/queries/*.cypher; do
   copy_exact_or_create "$query" "$target" QUERY_CONFLICT
 done
 
-PROJECT_LAUNCHER="$RUNTIME_DIR/nacl-neo4j-mcp-launcher.mjs"
 if [ -L "$PROJECT_LAUNCHER" ]; then fail PROJECT_LAUNCHER_CONFLICT
 elif [ -e "$PROJECT_LAUNCHER" ]; then
   [ -f "$PROJECT_LAUNCHER" ] || fail PROJECT_LAUNCHER_CONFLICT
@@ -81,6 +153,9 @@ else
   cp "$LAUNCHER_SOURCE" "$PROJECT_LAUNCHER" || fail PROJECT_LAUNCHER_COPY_FAILED
 fi
 chmod 600 "$PROJECT_LAUNCHER" 2>/dev/null || fail PROJECT_LAUNCHER_PERMISSIONS_FAILED
+copy_exact_or_create "$SUPPLY_SOURCE" "$PROJECT_SUPPLY" PROJECT_SUPPLY_VERIFIER_CONFLICT
+copy_exact_or_create "$PIN_SOURCE" "$PROJECT_PIN" PROJECT_RELEASE_PIN_CONFLICT
+chmod 600 "$PROJECT_SUPPLY" "$PROJECT_PIN" 2>/dev/null || fail PROJECT_SUPPLY_PERMISSIONS_FAILED
 
 ENV_FILE="$GRAPH_DIR/.env"
 if [ -L "$ENV_FILE" ]; then fail GRAPH_ENV_UNSAFE
@@ -111,77 +186,43 @@ if [ -e "$EXAMPLE" ]; then
 else
   printf '%s\n' "$EXPECTED_EXAMPLE" > "$EXAMPLE" || fail EXAMPLE_WRITE_FAILED
 fi
-node "$PROJECT_LAUNCHER" --check-only || fail GRAPH_ENV_VALIDATION_FAILED
+"$NODE" "$PROJECT_LAUNCHER" --check-only || fail GRAPH_ENV_VALIDATION_FAILED
+[ "${CODEX_BUILDER_TEST_MODE:-0}" != 1 ] || [ "${NACL_SKILLS_ONLY_FAILURE_INJECTION:-}" != after-files ] || fail INJECTED_AFTER_FILES
 
-SKILLS_DIR="$RESOURCE_ROOT"; export SKILLS_DIR
-[ "${NEO4J_MCP_VERSION:-}" != latest ] || fail UNPINNED_BINARY_VERSION_FORBIDDEN
-BIN_DIR="$GRAPH_DIR/bin"; STABLE_BIN="$BIN_DIR/neo4j-mcp"; CACHE_DIR="$GRAPH_DIR/cache/neo4j-mcp"
-export BIN_DIR STABLE_BIN CACHE_DIR
-safe_directory "$BIN_DIR"
-safe_directory "$GRAPH_DIR/cache"
-safe_directory "$CACHE_DIR"
-. "$LIB" || fail BINARY_RESOLVER_LOAD_FAILED
-BINARY_RECEIPT="$BIN_DIR/neo4j-mcp.sha256"
-binary_sha256() {
-  if command -v shasum >/dev/null 2>&1; then shasum -a 256 "$1" | awk '{print $1}'
-  elif command -v sha256sum >/dev/null 2>&1; then sha256sum "$1" | awk '{print $1}'
-  else return 1; fi
-}
-if [ -L "$STABLE_BIN" ] || [ -L "$BINARY_RECEIPT" ]; then fail BINARY_RECEIPT_MISMATCH; fi
-if [ -e "$STABLE_BIN" ] || [ -e "$BINARY_RECEIPT" ]; then
-  [ -f "$STABLE_BIN" ] && [ ! -L "$STABLE_BIN" ] && [ -x "$STABLE_BIN" ] || fail BINARY_RECEIPT_MISMATCH
-  [ -f "$BINARY_RECEIPT" ] && [ ! -L "$BINARY_RECEIPT" ] || fail BINARY_RECEIPT_MISMATCH
-  EXPECTED_BINARY_SHA=$(cat "$BINARY_RECEIPT")
-  echo "$EXPECTED_BINARY_SHA" | grep -Eq '^[0-9a-f]{64}$' || fail BINARY_RECEIPT_MISMATCH
-  ACTUAL_BINARY_SHA=$(binary_sha256 "$STABLE_BIN") || fail CHECKSUM_TOOL_MISSING
-  [ "$ACTUAL_BINARY_SHA" = "$EXPECTED_BINARY_SHA" ] || fail BINARY_RECEIPT_MISMATCH
-else
-  resolve_neo4j_mcp_bin || fail RESOLVE_BINARY_FAILED
-  [ -x "$STABLE_BIN" ] || fail RESOLVE_BINARY_FAILED
-  ACTUAL_BINARY_SHA=$(binary_sha256 "$STABLE_BIN") || fail CHECKSUM_TOOL_MISSING
-  umask 077
-  printf '%s\n' "$ACTUAL_BINARY_SHA" > "$BINARY_RECEIPT" || fail BINARY_RECEIPT_WRITE_FAILED
-fi
+"$NODE" "$BINARY_INSTALLER" --project-root "$PROJECT_ROOT" || fail BINARY_INSTALL_FAILED
+[ -x "$STABLE_BIN" ] || fail BINARY_READBACK_FAILED
 
-URI="bolt://localhost:$BOLT_PORT"
-GUARD_RESULT=$(node "$GUARD" --phase preflight --project-root "$PROJECT_ROOT" --node "$NODE" --launcher "$PROJECT_LAUNCHER" \
-  --binary "$STABLE_BIN" --uri "$URI" --database "$DATABASE") || exit 1
+GUARD_RESULT=$("$NODE" "$GUARD" --phase preflight --project-root "$PROJECT_ROOT" --node "$NODE" --launcher "$PROJECT_LAUNCHER" \
+  --binary "$STABLE_BIN" --uri "$URI" --database "$DATABASE") || fail CODEX_CONFIG_PREFLIGHT_FAILED
 printf '%s\n' "$GUARD_RESULT"
 case "$GUARD_RESULT" in
   *state=reusable*) ;;
   *)
-  node "$WRITER" --project-root "$PROJECT_ROOT" --node "$NODE" --launcher "$PROJECT_LAUNCHER" \
-    --binary "$STABLE_BIN" --uri "$URI" --database "$DATABASE" || exit 1
+  "$NODE" "$WRITER" --project-root "$PROJECT_ROOT" --node "$NODE" --launcher "$PROJECT_LAUNCHER" \
+    --binary "$STABLE_BIN" --uri "$URI" --database "$DATABASE" || fail CODEX_CONFIG_WRITE_FAILED
   ;;
 esac
 
-IGNORE="$PROJECT_ROOT/.gitignore"
-if [ -L "$IGNORE" ]; then fail GITIGNORE_UNSAFE
-elif [ -e "$IGNORE" ]; then [ -f "$IGNORE" ] || fail GITIGNORE_UNSAFE
-else touch "$IGNORE" || fail GITIGNORE_WRITE_FAILED; fi
-for entry in '.codex/config.toml' 'graph-infra/.env' 'graph-infra/bin/' 'graph-infra/cache/'; do grep -Fxq "$entry" "$IGNORE" 2>/dev/null || printf '%s\n' "$entry" >> "$IGNORE" || fail GITIGNORE_WRITE_FAILED; done
-
-DOCKER=$(command -v docker 2>/dev/null || true)
-if [ -z "$DOCKER" ]; then
-  for candidate in /usr/local/bin/docker /opt/homebrew/bin/docker "$HOME/.docker/bin/docker" /Applications/Docker.app/Contents/Resources/bin/docker; do
-    [ -x "$candidate" ] && DOCKER="$candidate" && break
-  done
-fi
-[ -n "$DOCKER" ] || fail DOCKER_CLI_MISSING
-"$DOCKER" info >/dev/null 2>&1 || fail DOCKER_DAEMON_DOWN
 (cd "$PROJECT_ROOT" && "$DOCKER" compose -f graph-infra/docker-compose.yml up -d) || fail DOCKER_UP_FAILED
-CONTAINER="$PROJECT_ID-neo4j"; HEALTH="unknown"; attempts=0
+HEALTH="unknown"; attempts=0
 while [ "$attempts" -lt 40 ]; do
   HEALTH=$("$DOCKER" inspect -f '{{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}' "$CONTAINER" 2>/dev/null || echo absent)
   [ "$HEALTH" = healthy ] && break
   attempts=$((attempts + 1)); sleep 3
 done
 [ "$HEALTH" = healthy ] || fail CONTAINER_HEALTH_FAILED
+APOC_DIGEST=$($DOCKER exec "$CONTAINER" sha256sum /var/lib/neo4j/plugins/apoc.jar 2>/dev/null | awk '{print $1}') || fail APOC_SUPPLY_VERIFICATION_FAILED
+[ "$APOC_DIGEST" = "39092c89df1cb80f4f3d8799821e74c7f1d10503f92625be32882b70b13002fa" ] || fail APOC_SUPPLY_VERIFICATION_FAILED
+echo "NACL_APOC_SUPPLY: status=VERIFIED version=5.24.2 digest=$APOC_DIGEST source=pinned-image"
 
 export NEO4J_PASSWORD
-node "$SCHEMA_RUNNER" --endpoint "http://127.0.0.1:$HTTP_PORT" --database "$DATABASE" || fail SCHEMA_GATE_FAILED
+"$NODE" "$SCHEMA_RUNNER" --endpoint "http://127.0.0.1:$HTTP_PORT" --database "$DATABASE" || fail SCHEMA_GATE_FAILED
 unset NEO4J_PASSWORD
 
-node "$GUARD" --phase readback --project-root "$PROJECT_ROOT" --node "$NODE" --launcher "$PROJECT_LAUNCHER" \
-  --binary "$STABLE_BIN" --uri "$URI" --database "$DATABASE" || exit 1
+"$NODE" "$GUARD" --phase readback --project-root "$PROJECT_ROOT" --node "$NODE" --launcher "$PROJECT_LAUNCHER" \
+  --binary "$STABLE_BIN" --uri "$URI" --database "$DATABASE" || fail CONFIG_READBACK_FAILED
+MUTATION_STARTED=0
+trap - INT TERM HUP
+rm -f "$CONFIG_BACKUP" "$GITIGNORE_BACKUP" 2>/dev/null || true
+rmdir "$TRANSACTION_DIR" 2>/dev/null || true
 echo "NACL_SKILLS_ONLY_BOOTSTRAP: status=VERIFIED project_id=$PROJECT_ID codex_config=.codex/config.toml mcp=nacl_neo4j next=new-task"

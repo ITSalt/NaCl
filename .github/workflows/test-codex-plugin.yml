@@ -75,3 +75,23 @@ jobs:
 
       - name: Verify the legacy installer in an isolated home
         run: bash scripts/codex-plugin-ci.sh test:cli-legacy
+
+  skills-only-bootstrap-e2e:
+    name: Exact Skills-only Docker bootstrap and MCP handshake
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20.19.4'
+
+      - name: Verify generated package parity
+        run: node scripts/build-codex-plugin.mjs --check
+
+      - name: Run exact staged-tree bootstrap twice and new-process MCP read
+        env:
+          NACL_RUN_SKILLS_ONLY_BOOTSTRAP: '1'
+        run: node --test tests/codex-plugin/scripts/nacl-skills-only-bootstrap-docker-e2e.test.mjs

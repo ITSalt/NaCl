@@ -63,11 +63,15 @@
     "Exact confirmation before project mutation.",
     "Per-project container, named volume, ports, secret, and MCP configuration.",
     "Neo4j ports bind only to 127.0.0.1.",
-    "Pinned neo4j-mcp release-archive checksum, project-local binary storage, and binary-digest verification on every reuse.",
+    "Pinned neo4j-mcp release archive and binary checksums, strict immutable receipt, no project cache trust, and binary-digest verification before every spawn.",
     "No secret in .codex/config.toml, .env.example, logs, process arguments, bundle, or repository.",
     "The managed Codex TOML section is append-only, atomic, idempotent, and fails closed on malformed, duplicate, ambiguous, or conflicting state while preserving unrelated bytes.",
-    "Project launcher validates secret file type, symlink state, permissions, keys, and value before spawning neo4j-mcp.",
-    "No-clobber conflicts fail closed and graph writes retain confirmation, parameterization, concurrency, and read-back gates."
+    "Project launcher validates secret file type, symlink state, POSIX mode or Windows ACL, keys, value, canonical binary path, receipt, and binary digest before spawning neo4j-mcp with only five allowlisted environment keys.",
+    "Neo4j Community is pinned to exact tag 5.24.2-community and immutable OCI index digest sha256:2e7e4eea5bc1eec581a3097c018dfeb3747f3638e67a963c10554825c31c1425.",
+    "The pinned Neo4j image embeds APOC Core 5.24.2; startup copies that image-bound JAR locally, bootstrap verifies its SHA-256 and runtime version/meta capability, and no separate plugin download occurs.",
+    "Bundled NaCl named queries use core Cypher only; APOC is present solely because the pinned neo4j-mcp runtime requires its meta component.",
+    "No-clobber conflicts fail closed and graph writes retain confirmation, parameterization, checksum-ledgered migrations, concurrency, and read-back gates.",
+    "A failed fresh bootstrap removes only resources created by that run and restores prior config/gitignore bytes; pre-existing volumes are preserved and reported as partial-state inventory when rollback cannot undo graph writes."
   ],
   "externalNetwork": [
     {
@@ -78,7 +82,7 @@
     {
       "destination": "Docker image registry",
       "purpose": "Pull the pinned Neo4j Community image when it is not already available locally.",
-      "controls": "Pinned image version and loopback-only runtime."
+      "controls": "Exact 5.24.2-community tag plus immutable OCI index digest and loopback-only runtime."
     }
   ],
   "knownLimitations": [

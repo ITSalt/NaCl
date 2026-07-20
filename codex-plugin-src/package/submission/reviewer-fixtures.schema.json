@@ -37,12 +37,13 @@
     "positive": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["id", "prompt", "entrySkill", "precondition", "expectedBehavior", "expectedStatus"],
+      "required": ["id", "prompt", "entrySkill", "precondition", "localEvidence", "expectedBehavior", "expectedStatus"],
       "properties": {
         "id": { "type": "string", "pattern": "^P[1-5]$" },
         "prompt": { "type": "string", "minLength": 20, "maxLength": 300 },
         "entrySkill": { "type": "string", "pattern": "^nacl-[a-z-]+$" },
         "precondition": { "type": "string", "minLength": 10 },
+        "localEvidence": { "$ref": "#/$defs/localEvidence" },
         "expectedBehavior": { "type": "array", "minItems": 2, "items": { "type": "string", "minLength": 10 } },
         "expectedStatus": { "enum": ["VERIFIED", "NOT_RUN"] }
       }
@@ -50,14 +51,26 @@
     "negative": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["id", "scenario", "entrySkill", "expectedBehavior", "expectedStatus", "expectedCode"],
+      "required": ["id", "scenario", "entrySkill", "localEvidence", "expectedBehavior", "expectedStatus", "expectedCode"],
       "properties": {
         "id": { "type": "string", "pattern": "^N[1-3]$" },
         "scenario": { "type": "string", "minLength": 20 },
         "entrySkill": { "type": "string", "pattern": "^nacl-[a-z-]+$" },
+        "localEvidence": { "$ref": "#/$defs/localEvidence" },
         "expectedBehavior": { "type": "array", "minItems": 2, "items": { "type": "string", "minLength": 10 } },
         "expectedStatus": { "const": "BLOCKED" },
-        "expectedCode": { "type": "string", "pattern": "^[A-Z0-9_]+$" }
+        "expectedCode": { "type": "string", "pattern": "^[A-Z0-9_]+$" },
+        "expectedCodes": { "type": "array", "minItems": 2, "uniqueItems": true, "items": { "type": "string", "pattern": "^[A-Z0-9_]+$" } }
+      }
+    },
+    "localEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "test", "scope"],
+      "properties": {
+        "status": { "enum": ["VERIFIED", "VERIFIED_CONTRACT_ONLY", "NOT_RUN"] },
+        "test": { "type": "string", "minLength": 10 },
+        "scope": { "type": "string", "minLength": 20 }
       }
     }
   }

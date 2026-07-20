@@ -1,3 +1,8 @@
+import { createRequire } from "node:module";
+
+const require = createRequire(import.meta.url);
+const { parse: parseToml } = require("./vendor/smol-toml-1.7.0.cjs");
+
 export const SERVER_ID = "nacl_neo4j";
 export const START_MARKER = `# >>> NaCl managed MCP: ${SERVER_ID}`;
 export const END_MARKER = `# <<< NaCl managed MCP: ${SERVER_ID}`;
@@ -18,62 +23,12 @@ export function renderManagedBlock(options) {
   ].join("\n");
 }
 
-function topLevelEquals(line) {
-  let quote = null;
-  let escaped = false;
-  for (let index = 0; index < line.length; index += 1) {
-    const char = line[index];
-    if (escaped) { escaped = false; continue; }
-    if (quote === '"' && char === "\\") { escaped = true; continue; }
-    if (quote) { if (char === quote) quote = null; continue; }
-    if (char === '"' || char === "'") { quote = char; continue; }
-    if (char === "#") return -1;
-    if (char === "=") return index;
-  }
-  return -1;
-}
-
-function validateEnvelope(source) {
-  if (source.includes("\0")) return false;
-  let square = 0;
-  let curly = 0;
-  let quote = null;
-  let escaped = false;
-  for (let raw of source.split(/\r?\n/)) {
-    const trimmed = raw.trim();
-    if (!quote && square === 0 && curly === 0) {
-      if (!trimmed || trimmed.startsWith("#")) continue;
-      if (trimmed.startsWith("[")) {
-        if (!/^\s*\[\[?[^\]\r\n]+\]\]?\s*(?:#.*)?$/.test(raw)) return false;
-        continue;
-      }
-      const equals = topLevelEquals(raw);
-      if (equals < 1) return false;
-      raw = raw.slice(equals + 1);
-    }
-    for (let index = 0; index < raw.length; index += 1) {
-      const char = raw[index];
-      if (escaped) { escaped = false; continue; }
-      if (quote === '"' && char === "\\") { escaped = true; continue; }
-      if (quote) { if (char === quote) quote = null; continue; }
-      if (char === '"' || char === "'") { quote = char; continue; }
-      if (char === "#") break;
-      if (char === "[") square += 1;
-      else if (char === "]") square -= 1;
-      else if (char === "{") curly += 1;
-      else if (char === "}") curly -= 1;
-      if (square < 0 || curly < 0) return false;
-    }
-  }
-  return square === 0 && curly === 0 && quote === null && !escaped;
-}
-
 function countLines(source, predicate) {
   return source.split(/\r?\n/).filter((line) => predicate(line.trim())).length;
 }
 
 export function inspectCodexConfig(source, expectedBlock) {
-  if (!validateEnvelope(source)) return { state: "blocked", code: "CODEX_CONFIG_MALFORMED" };
+  try { parseToml(source); } catch { return { state: "blocked", code: "CODEX_CONFIG_MALFORMED" }; }
   const startCount = countLines(source, (line) => line === START_MARKER);
   const endCount = countLines(source, (line) => line === END_MARKER);
   const tablePattern = /^\[\s*mcp_servers\s*\.\s*(?:nacl_neo4j|"nacl_neo4j"|'nacl_neo4j')\s*\](?:\s*#.*)?$/;

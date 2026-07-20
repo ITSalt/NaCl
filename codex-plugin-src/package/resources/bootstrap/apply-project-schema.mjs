@@ -4,6 +4,7 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { Neo4jHttpTransport } from "../../runtime/graph-gateway/neo4j-http.mjs";
+import { loadMigrationCatalog } from "../../runtime/graph-gateway/catalog.mjs";
 import { applyMigrations } from "../../runtime/graph-gateway/migrations.mjs";
 
 function fail(code) {
@@ -40,13 +41,16 @@ try {
   const schemaStatements = [];
   for (const filename of schemaFiles) schemaStatements.push(...statements(await readFile(path.join(schemaRoot, filename), "utf8")));
   for (const statement of schemaStatements) await transport.execute([statement]);
-  const migrationFiles = ["001-gateway-foundation.json", "002-concurrency-foundation.json", "003-schema-resource-identity.json"];
-  const migrations = [];
-  for (const filename of migrationFiles) migrations.push(JSON.parse(await readFile(path.join(migrationRoot, filename), "utf8")));
+  const migrations = await loadMigrationCatalog(migrationRoot);
   const migration = await applyMigrations(transport, migrations);
-  const [canary] = await transport.execute([{ statement: "RETURN 1 AS ok", parameters: {} }]);
+  const [apocVersion, apocMeta, canary] = await transport.execute([
+    { statement: "RETURN apoc.version() AS version", parameters: {} },
+    { statement: "CALL apoc.meta.schema() YIELD value RETURN value", parameters: {} },
+    { statement: "RETURN 1 AS ok", parameters: {} },
+  ]);
+  if (apocVersion[0]?.version !== "5.24.2" || !Array.isArray(apocMeta)) fail("APOC_RUNTIME_CANARY_FAILED");
   if (canary[0]?.ok !== 1) fail("READ_CANARY_FAILED");
-  process.stdout.write(`NACL_SCHEMA_RESULT: status=VERIFIED statements=${schemaStatements.length} migration_version=${migration.currentVersion} read_canary=ok\n`);
+  process.stdout.write(`NACL_SCHEMA_RESULT: status=VERIFIED statements=${schemaStatements.length} migration_version=${migration.currentVersion} apoc_version=5.24.2 meta_canary=ok read_canary=ok\n`);
 } catch {
   fail("SCHEMA_APPLY_OR_READBACK_FAILED");
 }

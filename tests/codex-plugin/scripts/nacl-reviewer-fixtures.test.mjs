@@ -46,8 +46,18 @@ test("every fixture routes to a shipped public skill and preserves closed status
   assert.deepEqual(fixture.negative.map(({ expectedCode }) => expectedCode), [
     "PROJECT_MCP_NOT_CONFIGURED",
     "CONFIRMATION_REQUIRED",
-    "CODEX_CONFIG_CONFLICT_OR_UNSAFE_STATE",
+    "TAMPER_OR_UNSAFE_STATE",
   ]);
+  assert.deepEqual(fixture.negative[2].expectedCodes, [
+    "CODEX_CONFIG_MALFORMED",
+    "CODEX_MCP_CONFIG_CONFLICT",
+    "BINARY_DIGEST_MISMATCH",
+    "BINARY_RECEIPT_MISMATCH",
+    "UNTRUSTED_BINARY_CACHE_PRESENT",
+    "BINARY_RECEIPT_UNSAFE",
+  ]);
+  assert.deepEqual(fixture.positive.map(({ localEvidence }) => localEvidence.status), ["VERIFIED_CONTRACT_ONLY", "VERIFIED", "VERIFIED", "VERIFIED_CONTRACT_ONLY", "VERIFIED"]);
+  assert.deepEqual(fixture.negative.map(({ localEvidence }) => localEvidence.status), ["VERIFIED_CONTRACT_ONLY", "VERIFIED", "VERIFIED"]);
   assert.match(fixture.positive[1].expectedBehavior.join(" "), /secret-free managed section in project \.codex\/config\.toml/);
   assert.match(fixture.positive[2].expectedBehavior.join(" "), /project nacl_neo4j MCP/);
 });
@@ -63,6 +73,7 @@ test("fixture schema binds the Skills-only shape and exact case counts", async (
     [5, 5, 3, 3],
   );
   assert.equal(schema.$defs.negative.properties.expectedStatus.const, "BLOCKED");
+  assert.equal(schema.$defs.localEvidence.additionalProperties, false);
 });
 
 test("reviewer artifacts contain no public endpoint, OAuth contract, credentials, secret value, or personal path", async () => {
