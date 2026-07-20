@@ -42,12 +42,12 @@
     "mcpRevision": { "status": "NOT_APPLICABLE", "value": null }
   },
   "publicMetadata": {
-    "publisherIdentity": { "status": "NOT_VERIFIED", "value": null },
-    "website": { "status": "NOT_VERIFIED", "value": null },
-    "support": { "status": "NOT_VERIFIED", "value": null },
-    "securityContact": { "status": "NOT_VERIFIED", "value": null },
-    "privacyPolicy": { "status": "NOT_VERIFIED", "value": null },
-    "termsOfService": { "status": "NOT_VERIFIED", "value": null },
+    "publisherIdentity": { "status": "VERIFIED_REPOSITORY", "value": "ITSalt" },
+    "website": { "status": "VERIFIED_REPOSITORY", "value": "https://github.com/ITSalt/NaCl" },
+    "support": { "status": "VERIFIED_REPOSITORY", "value": "https://github.com/ITSalt/NaCl/issues" },
+    "securityContact": { "status": "VERIFIED_REPOSITORY", "value": "https://github.com/ITSalt/NaCl/security/advisories/new" },
+    "privacyPolicy": { "status": "VERIFIED_REPOSITORY", "value": "https://github.com/ITSalt/NaCl/blob/main/PRIVACY.md" },
+    "termsOfService": { "status": "VERIFIED_REPOSITORY", "value": "https://github.com/ITSalt/NaCl/blob/main/TERMS.md" },
     "repository": { "status": "VERIFIED_REPOSITORY", "value": "https://github.com/ITSalt/NaCl" },
     "license": { "status": "VERIFIED_REPOSITORY", "spdx": "MIT", "path": "./LICENSE" },
     "modelTraining": { "status": "DOES_NOT_SEND_TO_AUTHOR_ANALYTICS" }
