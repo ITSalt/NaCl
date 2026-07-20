@@ -36,9 +36,8 @@ MCP process through its environment.
 The generated project `.codex/config.toml` contains the machine-local launcher
 and binary paths plus non-secret connection parameters. It does **not** contain
 the Neo4j password. The empty `graph-infra/.env.example` contains no usable
-password. The bootstrap also adds `.codex/config.toml`, `graph-infra/.env`, the
-download cache, and the downloaded MCP binary directory to the initialized
-project's `.gitignore`.
+password. The bootstrap also adds `.codex/config.toml`, `graph-infra/.env`, and
+the downloaded MCP binary directory to the initialized project's `.gitignore`.
 
 Users remain responsible for the security, access controls, backups, logs, and
 retention of their local machine, Docker installation, VPS, Neo4j server, and
