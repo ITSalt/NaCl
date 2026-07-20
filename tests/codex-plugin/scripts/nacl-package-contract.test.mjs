@@ -10,6 +10,7 @@ import { fileURLToPath } from "node:url";
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
 const pluginRoot = path.join(repoRoot, "plugins", "nacl");
 const manifestPath = path.join(pluginRoot, ".codex-plugin", "plugin.json");
+const sourceManifestPath = path.join(repoRoot, "codex-plugin-src", "package", ".codex-plugin", "plugin.json");
 const marketplacePath = path.join(repoRoot, ".agents", "plugins", "marketplace.json");
 const indexPath = path.join(pluginRoot, "resources", "package-index.json");
 const validatorVendorRoot = path.join(
@@ -55,13 +56,14 @@ async function skillHashes(root) {
 }
 
 test("manifest, marketplace, and MCP companion describe the real nacl package", async () => {
-  const [manifest, marketplace, mcp] = await Promise.all([
+  const [manifest, sourceManifest, marketplace, mcp] = await Promise.all([
     readJson(manifestPath),
+    readJson(sourceManifestPath),
     readJson(marketplacePath),
     readJson(path.join(pluginRoot, ".mcp.json")),
   ]);
   assert.equal(manifest.name, "nacl");
-  assert.match(manifest.version, /^0\.1\.0\+codex\.[0-9A-Za-z.-]+$/);
+  assert.equal(manifest.version, sourceManifest.version);
   assert.equal(manifest.description.includes("compatibility spike"), false);
   assert.equal(manifest.skills, "./skills/");
   assert.equal(manifest.mcpServers, "./.mcp.json");
