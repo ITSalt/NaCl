@@ -10,9 +10,27 @@ Read [the Skills-only runtime contract](../../resources/references/skills-only-r
 This entry must work before any project MCP exists. Never call an installation
 doctor, a package gateway, or a checkout-relative/global skill path.
 
-Resolve one explicit absolute project root. For a missing stable `project.id`,
-present the exact add-only config change and stop for confirmation before
-writing it; never derive identity during a read.
+Resolve one explicit absolute project root. For an empty new project without
+`config.yaml`, invoke the bundle-relative
+[project-creation planner](../../resources/bootstrap/plan-project-creation.mjs)
+with the root, project name, optional one-line description, and optional stack.
+It performs no writes. Present its exact `config.yaml`, `AGENTS.md`, Git action,
+`planHash`, and `CREATE_NACL_PROJECT:<sha256>` confirmation, then stop.
+
+After the user repeats that exact confirmation, invoke the bundle-relative
+[project-creation applier](../../resources/bootstrap/apply-project-creation.mjs)
+with the same inputs, `plan-hash`, and confirmation. It recomputes the plan
+under a create lock before writing. For a genuinely empty non-Git directory it
+creates `config.yaml` and concise repository-specific `AGENTS.md`, initializes
+Git and commits only those initial artifacts. It preserves an existing
+`AGENTS.md` and never auto-adopts a non-Git directory containing files or a
+linked worktree. Stop on any non-success result.
+
+`AGENTS.md` records durable project context, constraints, and verified commands;
+keep it concise and use a closer nested `AGENTS.md` for directory-specific
+rules. Never put credentials in it. For an existing `config.yaml` without a
+stable `project.id`, present the exact add-only config change and stop for
+confirmation before writing it; never derive identity during a read.
 
 Before bootstrap, invoke the bundle-relative
 [plan runner](../../resources/bootstrap/plan-project-graph.mjs) with the
