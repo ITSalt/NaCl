@@ -83,6 +83,25 @@ test("secure Codex TOML writer appends one managed MCP section and preserves unr
   }
 });
 
+test("nacl-init makes the post-confirmation runner receipt authoritative", async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), "nacl-init-instructions-"));
+  try {
+    const bundle = path.join(root, "bundle");
+    const built = run(process.execPath, [path.join(repoRoot, "scripts", "build-codex-skills-only.mjs"), "--output", bundle]);
+    assert.equal(built.status, 0, `${built.stdout}\n${built.stderr}`);
+    const instructions = await readFile(path.join(bundle, "skills", "nacl-init", "SKILL.md"), "utf8");
+    assert.match(instructions, /Treat the exact token as an execution request/);
+    assert.match(instructions, /Run the selected runner exactly\s+once/);
+    assert.match(instructions, /NACL_SKILLS_ONLY_BOOTSTRAP: status=\.\.\. code=\.\.\./);
+    assert.match(instructions, /NACL_GRAPH_RESULT: status=\.\.\. code=\.\.\./);
+    assert.match(instructions, /Never claim `PARTIAL_BOOTSTRAP_STATE`/);
+    assert.match(instructions, /`FAILED` with `rollback=VERIFIED`[\s\S]*not partial/);
+    assert.match(instructions, /`PARTIALLY_VERIFIED` with[\s\S]*`rollback=INCOMPLETE`[\s\S]*--diagnose-only/);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
 test("vendored TOML parser is pinned with exact BSD provenance", async () => {
   const vendor = path.join(bootstrap, "vendor");
   assert.equal(createHash("sha256").update(await readFile(path.join(vendor, "smol-toml-1.7.0.cjs"))).digest("hex"), "173006d8b690034d636c1af4dc6836db8dc6a708bcd4fea90c8d04ea250afa7d");

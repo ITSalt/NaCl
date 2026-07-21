@@ -48,6 +48,28 @@ the same root, ID, database, ports, and token. Never pass a password. The
 runner recomputes the plan immediately before its first mutation; stale or
 mismatched state is `BLOCKED/PLAN_TOKEN_STALE` with zero mutation.
 
+Treat the exact token as an execution request, not as a reason to re-plan,
+diagnose, or ask for another confirmation. Run the selected runner exactly
+once, capture its complete stdout and stderr, and do not infer project state
+while it is running. The runner's terminal machine-readable line is the sole
+authority for the outcome:
+
+- `NACL_SKILLS_ONLY_BOOTSTRAP: status=... code=...` is the successful
+  bootstrap receipt.
+- `NACL_GRAPH_RESULT: status=... code=...` is a blocked, failed, or
+  partially verified bootstrap receipt.
+
+Report those fields verbatim. Never claim `PARTIAL_BOOTSTRAP_STATE`, missing
+files, or an incomplete bootstrap from an LLM inference, a directory name, or
+a prior message. If the runner reports `FAILED` with `rollback=VERIFIED`,
+report that failure and rollback; the graph bootstrap is not partial and no
+recovery plan is needed. A retry requires a newly generated plan and fresh
+user confirmation. Only if the runner reports `PARTIALLY_VERIFIED` with
+`rollback=INCOMPLETE`, invoke `plan-project-graph.mjs --diagnose-only` once,
+then report the returned JSON evidence without embellishment. If no terminal
+receipt is produced, report `RUNNER_RECEIPT_MISSING` and run that same
+read-only diagnosis; do not assert a state before its result.
+
 Preserve the runner's status/code. A successful runner returns
 `PARTIALLY_VERIFIED/RESTART_REQUIRED` with `bootstrap=VERIFIED` and
 `initialization=NOT_RUN`. Then stop and ask the user to open a new task in this
