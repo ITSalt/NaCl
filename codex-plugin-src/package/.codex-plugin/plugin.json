@@ -1,6 +1,6 @@
 {
   "name": "nacl",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Self-contained NaCl workflows, optional project agents, and fenced multi-user graph gateway for Codex CLI and Desktop",
   "author": {
     "name": "ITSalt",

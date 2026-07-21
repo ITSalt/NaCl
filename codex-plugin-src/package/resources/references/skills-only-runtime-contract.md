@@ -38,7 +38,19 @@ directory and copies the complete runtime closure inside the same skill.
 
 ## Bootstrap contract
 
-Before mutation, use only `resources/bootstrap/plan-project-graph.mjs`. It
+For an empty project root without `config.yaml`, first use
+`resources/bootstrap/plan-project-creation.mjs`. It returns the exact new
+`config.yaml`, create-or-preserve `AGENTS.md` action, Git action, content-bound
+`planHash`, and `CREATE_NACL_PROJECT:<sha256>` confirmation with zero writes.
+After that exact confirmation, use only
+`resources/bootstrap/apply-project-creation.mjs` with the same inputs and
+current `planHash`. It recomputes the plan while holding a create lock, refuses
+non-Git directories that already contain files and linked worktrees, creates
+only missing config/guidance, and initializes/commits Git only when the root
+has no history. Existing guidance and history are preserved. Any changed file
+state returns a closed non-success; never recreate a confirmation manually.
+
+Before graph mutation, use only `resources/bootstrap/plan-project-graph.mjs`. It
 canonicalizes the explicit project root and emits the project ID, database,
 selected loopback ports and their apply-preflight policy, immutable Neo4j image
 and bundled plugin digest, exact
@@ -55,8 +67,8 @@ INIT_LOCAL_GRAPH:<project-id>:<sha256>
 ```
 
 The token is a content-addressed snapshot, not a reusable static approval.
-Creating or migrating a missing `project.id` remains a separate presented file
-change and confirmation, followed by a new graph plan.
+Migrating a missing `project.id` in an existing `config.yaml` remains a
+separate presented file change and confirmation, followed by a new graph plan.
 
 After that exact confirmation, run only one bundle-relative command:
 

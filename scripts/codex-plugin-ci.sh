@@ -30,6 +30,7 @@ case ${1:-} in
       tests/codex-plugin/scripts/nacl-package-contract.test.mjs
       tests/codex-plugin/scripts/nacl-package-server.test.mjs
       tests/codex-plugin/scripts/nacl-project-routing.test.mjs
+      tests/codex-plugin/scripts/nacl-project-bootstrap.test.mjs
       tests/codex-plugin/scripts/nacl-production-binding.test.mjs
       tests/codex-plugin/scripts/nacl-public-mcp-bundle.test.mjs
       tests/codex-plugin/scripts/nacl-reviewer-fixtures.test.mjs
