@@ -290,12 +290,7 @@ function skillsOnlyManifest(source) {
   const manifest = structuredClone(source);
   delete manifest.mcpServers;
   delete manifest.apps;
-  manifest.description = "Self-contained NaCl skills with confirmed local per-project Neo4j and project MCP bootstrap";
   manifest.skills = "./skills/";
-  manifest.interface = {
-    ...manifest.interface,
-    longDescription: "Install NaCl skills, then run nacl-init to create a loopback-only per-project Neo4j Community stack and secret-safe project-local neo4j MCP without a public MCP service or second plugin install.",
-  };
   return manifest;
 }
 
