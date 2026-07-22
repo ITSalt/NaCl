@@ -18,8 +18,8 @@ const expectedPrompts = [
 ];
 const expectedInterface = {
   displayName: "NaCl",
-  shortDescription: "Analyze, plan, deliver, and verify software with NaCl.",
-  longDescription: "Use bounded NaCl skills and project-scoped graph workflows to analyze requirements, design systems, plan delivery, implement changes, and verify evidence without exposing infrastructure credentials or arbitrary graph queries.",
+  shortDescription: "Develop without IT-specialists",
+  longDescription: "NaCl (reading as Natrium Chloride) is an open-source full-SDLC framework, and its core innovation is how it solves the hardest problem in agentic development: storing and retrieving project knowledge. Instead of markdown specs that agents must re-read every session, all project knowledge — requirements, architecture decisions, entities, rules, and their relationships — lives in a Neo4j knowledge graph as first-class queryable objects. The measured effect: planning a single use case takes ~550 tokens (one targeted Cypher query) instead of ~150,000 tokens (reading a ~70-file markdown spec, because the agent doesn't know in advance where the relevant facts live) — a 99.6% reduction in context per use case, repeated in every planning session.\n\nAround the graph we've built the full tooling for agentic development and testing: 57 skills covering BA → SA → TDD development → review → QA → release, quality gates before production, and an autonomous goal orchestrator (/nacl-goal). The framework answers \"how is this built and why\" for any part of the system, regardless of project scale or iteration count. Benchmarked on a real production project (EV charging station management): a classical team was estimated at 5,831 person-hours; running fully on NaCl the same scope takes 1,480 person-hours — 4x fewer person-hours and 60% lower cost.",
   developerName: "ITSalt",
   category: "Developer Tools",
   capabilities: ["Analysis", "Planning", "Delivery", "Verification", "Read", "Write"],
@@ -115,6 +115,23 @@ test("two clean builds are byte-identical and pass the pinned OpenAI plugin vali
     const manifest = await readFile(path.join(first, manifestPath), "utf8");
     assert.doesNotMatch(manifest, /plugin_asdk_app_|example\.com|screenshots/);
     await assert.rejects(readFile(path.join(first, ".app.json")), /ENOENT/);
+  } finally {
+    await rm(temporary, { recursive: true, force: true });
+  }
+});
+
+test("Skills-only bundle retains the public listing metadata", async () => {
+  const temporary = await mkdtemp(path.join(os.tmpdir(), "nacl-skills-only-listing-"));
+  try {
+    const output = path.join(temporary, "bundle");
+    run(process.execPath, ["scripts/build-codex-skills-only.mjs", "--output", output]);
+    const [source, bundled] = await Promise.all([
+      readJson(path.join(sourceRoot, manifestPath)),
+      readJson(path.join(output, manifestPath)),
+    ]);
+    assert.equal(bundled.description, source.description);
+    assert.equal(bundled.interface.shortDescription, expectedInterface.shortDescription);
+    assert.equal(bundled.interface.longDescription, expectedInterface.longDescription);
   } finally {
     await rm(temporary, { recursive: true, force: true });
   }

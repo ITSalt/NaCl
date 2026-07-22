@@ -36,7 +36,7 @@
   },
   "releaseBindings": {
     "sourceSha": { "status": "NOT_BOUND", "value": null },
-    "pluginVersion": { "status": "PREFREEZE_ONLY", "value": "0.2.1" },
+    "pluginVersion": { "status": "PREFREEZE_ONLY", "value": "0.2.2" },
     "skillsOnlyBundle": { "status": "NOT_BOUND", "treeSha256": null, "fileCount": null },
     "publicEndpoint": { "status": "NOT_APPLICABLE", "value": null },
     "mcpRevision": { "status": "NOT_APPLICABLE", "value": null }
