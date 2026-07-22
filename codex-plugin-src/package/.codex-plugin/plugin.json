@@ -1,6 +1,6 @@
 {
   "name": "nacl",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Open-source full-SDLC framework with graph-native project knowledge for agentic development.",
   "author": {
     "name": "ITSalt",
