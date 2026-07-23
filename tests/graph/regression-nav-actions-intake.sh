@@ -11,6 +11,12 @@
 #      optional $intakeId param, so the conductor Phase-4/4.5 gates that filter
 #      `WHERE t.intake_id = $intakeId` see every task the plan created. A null
 #      $intakeId (standalone /nacl:tl-plan) must NOT clobber a prior value.
+#   C. The SAME Step 2.4 statement must also stamp UseCase.intake_id on the
+#      SOURCE UC (via the one shared $intakeId binding), so the conductor's
+#      Phase-4.5 P-S6 staleness gate — which anchors on
+#      `(:UseCase {intake_id:$intake})` to bound this batch's UC closure — is
+#      non-vacuous instead of matching zero UCs and passing trivially. A null
+#      $intakeId must likewise NOT clobber a UC's prior value.
 #
 # MANUAL / stage-3 verification only. Drives a real disposable Neo4j in
 # Docker; intentionally NOT wired into CI (CI has no docker daemon). Run by
@@ -35,7 +41,7 @@
 #
 # Case order (fixed; each case re-seeds, so each is self-contained):
 #   nav-formless -> nav-form-no-inbound -> nav-form-with-inbound ->
-#   intake-stamp -> intake-preserve
+#   intake-stamp -> intake-preserve -> uc-intake-stamp -> uc-intake-preserve
 #
 # `set -e` deliberately NOT used: probes that legitimately return non-zero
 # must not abort the harness.
@@ -63,7 +69,7 @@ while [ $# -gt 0 ]; do
   esac
 done
 
-KNOWN_CASES="nav-formless nav-form-no-inbound nav-form-with-inbound intake-stamp intake-preserve"
+KNOWN_CASES="nav-formless nav-form-no-inbound nav-form-with-inbound intake-stamp intake-preserve uc-intake-stamp uc-intake-preserve"
 if [ -n "$CASE_FILTER" ]; then
   case " $KNOWN_CASES " in
     *" $CASE_FILTER "*) : ;;
@@ -381,6 +387,58 @@ EOF
 }
 
 # ---------------------------------------------------------------------------
+# Case: uc-intake-stamp — Step 2.4 with $intakeId set stamps UseCase.intake_id
+# on the SOURCE UC (same statement, same binding as the Task stamp), so the
+# conductor Phase-4.5 P-S6 gate `MATCH (uc:UseCase {intake_id:$intake})…` sees
+# this batch's UC closure. RED (pre-fix): the template never writes
+# uc.intake_id, so it stays null and P-S6 matches nothing (vacuous pass).
+# ---------------------------------------------------------------------------
+run_uc_intake_stamp() {
+  wipe_graph
+  cy >/dev/null <<'EOF'
+CREATE (uc:UseCase {id: 'UC-101', name: 'Case 101', spec_version: 1})
+CREATE (:Wave {id: 'W1', number: 1});
+EOF
+  run_step24_intake "UC101-BE" "UC-101" 1 1 '"intake-example"' >/dev/null
+  result=$(probe <<'EOF'
+MATCH (uc:UseCase {id: 'UC-101'})
+RETURN uc.intake_id = 'intake-example' AS ok;
+EOF
+)
+  if [ "$result" = "true" ]; then
+    CASE_STATUS=PASS; CASE_REASON="ok uc.intake_id stamped"
+  else
+    got=$(printf 'MATCH (uc:UseCase {id: "UC-101"}) RETURN coalesce(uc.intake_id, "<null>") AS s;\n' | cy | tail -1)
+    CASE_STATUS=FAIL; CASE_REASON="uc-intake_id-not-stamped:got=${got}"
+  fi
+}
+
+# ---------------------------------------------------------------------------
+# Case: uc-intake-preserve — a null $intakeId (standalone plan) must NOT clobber
+# a UC's prior intake_id. GREEN-only guard on the coalesce semantics (mirrors
+# intake-preserve for the UC side).
+# ---------------------------------------------------------------------------
+run_uc_intake_preserve() {
+  wipe_graph
+  cy >/dev/null <<'EOF'
+CREATE (uc:UseCase {id: 'UC-102', name: 'Case 102', spec_version: 1, intake_id: 'intake-earlier'})
+CREATE (:Wave {id: 'W1', number: 1});
+EOF
+  run_step24_intake "UC102-BE" "UC-102" 1 1 'null' >/dev/null
+  result=$(probe <<'EOF'
+MATCH (uc:UseCase {id: 'UC-102'})
+RETURN uc.intake_id = 'intake-earlier' AS ok;
+EOF
+)
+  if [ "$result" = "true" ]; then
+    CASE_STATUS=PASS; CASE_REASON="ok prior uc.intake_id preserved"
+  else
+    got=$(printf 'MATCH (uc:UseCase {id: "UC-102"}) RETURN coalesce(uc.intake_id, "<null>") AS s;\n' | cy | tail -1)
+    CASE_STATUS=FAIL; CASE_REASON="uc-intake_id-clobbered:got=${got}"
+  fi
+}
+
+# ---------------------------------------------------------------------------
 # Main loop
 # ---------------------------------------------------------------------------
 for name in $KNOWN_CASES; do
@@ -393,6 +451,8 @@ for name in $KNOWN_CASES; do
       nav-form-with-inbound) run_nav_form_with_inbound ;;
       intake-stamp) run_intake_stamp ;;
       intake-preserve) run_intake_preserve ;;
+      uc-intake-stamp) run_uc_intake_stamp ;;
+      uc-intake-preserve) run_uc_intake_preserve ;;
     esac
     status="$CASE_STATUS"; reason="$CASE_REASON"
   fi

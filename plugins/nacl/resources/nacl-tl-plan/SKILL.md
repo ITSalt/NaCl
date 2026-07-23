@@ -58,7 +58,7 @@ self-sufficient task files for dev agents (`nacl-tl-dev-be`, `nacl-tl-dev-fe`).
 | `--feature` | `FR-NNN` | Plan only UCs from a feature request. Resolves the UC list and `new`/`modified` split from the **graph** (`(:FeatureRequest)-[:INCLUDES_UC]->`), falling back to `.tl/feature-requests/FR-NNN.md` only if the node is absent (Step 1.5b). |
 | `wave-start` | `0` (default) | Starting wave number (for incremental planning) |
 | `--overwrite` | (flag) | Destroy ALL existing Task/Wave nodes and re-plan from scratch. Default is incremental (Step 1.5b); use this only for an intentional clean rebuild. |
-| `--intake` | `<intake-id>` | Batch provenance. Stamps `Task.intake_id` on every task this run creates/reopens so the conductor's Phase-4/4.5 gates (which filter `WHERE t.intake_id = $intakeId`) see the whole plan. Optional; omit for a standalone plan. |
+| `--intake` | `<intake-id>` | Batch provenance. Stamps `Task.intake_id` on every task this run creates/reopens **and `UseCase.intake_id` on every UC it plans**, so both the conductor's Phase-4/4.5 task gates (`WHERE t.intake_id = $intakeId`) and its Phase-4.5 P-S6 UC-closure staleness gate (`(:UseCase {intake_id:$intake})`) see the whole batch. Optional; omit for a standalone plan. |
 
 ### Configuration Resolution — `$intakeId`
 
@@ -72,10 +72,12 @@ start of the run, in this order:
 3. Otherwise `null`.
 
 Bind the resolved value as the `$intakeId` parameter on **every** Step 2.4
-write (the template references it, so it must always be bound — pass literal
-`null` when absent; `coalesce($intakeId, t.intake_id)` then leaves any prior
-value untouched). Do NOT infer the id from the branch name or the prompt text
-— resolve it deterministically from the two sources above only.
+write (the template references it twice in one statement — the `Task` stamp and
+the source-`UseCase` stamp — so it must always be bound: pass literal `null`
+when absent; `coalesce($intakeId, t.intake_id)` / `coalesce($intakeId,
+uc.intake_id)` then leave any prior value untouched). Do NOT infer the id from
+the branch name or the prompt text — resolve it deterministically from the two
+sources above only.
 
 ---
 
@@ -570,6 +572,15 @@ MERGE (t)-[:IN_WAVE]->(w)
 WITH t
 MATCH (uc:UseCase {id: $ucId})
 MERGE (uc)-[:GENERATES]->(t)
+// Batch provenance (UC side): stamp the intake onto the SOURCE UC so the
+// conductor's Phase-4.5 reconciliation gate P-S6 — which anchors on
+// (:UseCase {intake_id:$intake}) to bound this batch's UC closure — is
+// non-vacuous instead of matching zero UCs and passing trivially. Sibling of
+// the Task.intake_id stamp above: $intakeId is referenced by both the Task and
+// this UC write in the ONE statement, bound once, so a green Step 2.4b Task
+// check transitively proves this UC stamp landed too. $intakeId is OPTIONAL — a
+// standalone plan passes null and coalesce keeps any prior value untouched.
+SET uc.intake_id = coalesce($intakeId, uc.intake_id)
 // Clear the SOURCE UC's staleness in the same statement — the UC node is itself a
 // stamp target (sa-feature step 3g), and a lingering UC flag keeps L8 red even after
 // its tasks are cleared. Idempotent if the UC has multiple tasks.
@@ -617,6 +628,14 @@ If `unstamped_count > 0`, **HALT** — do NOT report the plan as complete. The
 write did not take on `unstamped_ids`; re-run the Step 2.4 write for those
 tasks with `$intakeId` bound, then re-check. This gate is skipped entirely
 when `$intakeId` resolved to `null` (standalone plan — nothing to stamp).
+
+> **UC stamp coverage.** The same Step 2.4 statement also stamps
+> `UseCase.intake_id` on each source UC from the *same* `$intakeId` binding.
+> Because both writes share one parameter in one statement, a green Task check
+> above transitively proves the UC stamp landed — no separate UC re-read is
+> needed. This is what makes the conductor's Phase-4.5 P-S6 gate
+> (`MATCH (uc:UseCase {intake_id:$intake})…`) non-vacuous: without the stamp it
+> matches zero UCs and passes trivially, never catching a stale downstream node.
 
 ### Step 2.5: Re-link behavior slices (VERIFIED_BY)
 
