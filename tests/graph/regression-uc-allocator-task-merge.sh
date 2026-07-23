@@ -192,6 +192,10 @@ allocate_for() { # $1=moduleId
 }
 
 # Run the Step 2.4 task re-MERGE template with standard regen params.
+# intakeId is bound to null: these cases exercise the standalone-plan path
+# (no batch), where the template's coalesce($intakeId, t.intake_id) must not
+# clobber any prior value. Every param the template references MUST be bound
+# or cypher-shell errors — that now includes $intakeId.
 run_step24() { # $1=taskId $2=ucId $3=specVersion $4=waveNumber
   terminate "$STEP24_CYPHER" | cy \
     --param "taskId => \"$1\"" \
@@ -201,6 +205,7 @@ run_step24() { # $1=taskId $2=ucId $3=specVersion $4=waveNumber
     --param "agent => \"developer\"" \
     --param "priority => null" \
     --param "specVersion => $3" \
+    --param "intakeId => null" \
     --param "ucId => \"$2\""
 }
 

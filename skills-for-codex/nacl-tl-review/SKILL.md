@@ -102,6 +102,11 @@ exception under the W4 schema):
 - `UseCase.has_ui = false` — no Form attached.
 - `UseCase.entrypoint_type IN ['deep-link-only', 'embed-only']` —
   invitation links, embed-only access.
+- A `HAS_SCREEN` screen with `formless = true` — renders no Form by
+  spec (splash / 404 / landing); self-justifying (no signed exception),
+  the `nav_actions_consumer_check` query excludes it. Condition 2 still
+  applies against the screen route (`route='/'` → direct entry counts).
+  Record `nav-actions-EXEMPT:<uc-id>:formless`.
 
 Run the consumer query scoped to the affected UCs:
 

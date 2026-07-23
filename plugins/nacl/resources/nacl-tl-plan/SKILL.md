@@ -58,6 +58,24 @@ self-sufficient task files for dev agents (`nacl-tl-dev-be`, `nacl-tl-dev-fe`).
 | `--feature` | `FR-NNN` | Plan only UCs from a feature request. Resolves the UC list and `new`/`modified` split from the **graph** (`(:FeatureRequest)-[:INCLUDES_UC]->`), falling back to `.tl/feature-requests/FR-NNN.md` only if the node is absent (Step 1.5b). |
 | `wave-start` | `0` (default) | Starting wave number (for incremental planning) |
 | `--overwrite` | (flag) | Destroy ALL existing Task/Wave nodes and re-plan from scratch. Default is incremental (Step 1.5b); use this only for an intentional clean rebuild. |
+| `--intake` | `<intake-id>` | Batch provenance. Stamps `Task.intake_id` on every task this run creates/reopens so the conductor's Phase-4/4.5 gates (which filter `WHERE t.intake_id = $intakeId`) see the whole plan. Optional; omit for a standalone plan. |
+
+### Configuration Resolution — `$intakeId`
+
+Resolve the `$intakeId` parameter for the Step 2.4 Task MERGE once, at the
+start of the run, in this order:
+
+1. The `--intake <id>` argument, if given.
+2. Otherwise, the `intake_id` field of `.tl/conductor-state.json`, if that
+   file exists (the conductor writes it there — this is how a conductor-driven
+   plan inherits the batch id without the operator retyping it).
+3. Otherwise `null`.
+
+Bind the resolved value as the `$intakeId` parameter on **every** Step 2.4
+write (the template references it, so it must always be bound — pass literal
+`null` when absent; `coalesce($intakeId, t.intake_id)` then leaves any prior
+value untouched). Do NOT infer the id from the branch name or the prompt text
+— resolve it deterministically from the two sources above only.
 
 ---
 
@@ -530,6 +548,11 @@ SET t.title = $title,
     t.agent = $agent,
     t.priority = coalesce($priority, 'medium'),
     t.planned_from_version = coalesce($specVersion, 0),
+    // Batch provenance: stamp the intake this plan run belongs to so the
+    // conductor's Phase-4/4.5 gates (WHERE t.intake_id = $intakeId) see every
+    // task this run created/reopened. $intakeId is OPTIONAL — a standalone
+    // /nacl:tl-plan passes null and coalesce keeps any prior value untouched.
+    t.intake_id = coalesce($intakeId, t.intake_id),
     t.created = coalesce(t.created, datetime()),
     t.updated = datetime(),
     t.status          = CASE WHEN preserve THEN t.status                            ELSE 'pending' END,
@@ -571,6 +594,29 @@ REMOVE uc.review_status, uc.stale_reason, uc.stale_since, uc.stale_origin
 MATCH (t1:Task {id: $taskId}), (t2:Task {id: $dependsOnId})
 MERGE (t1)-[:DEPENDS_ON]->(t2)
 ```
+
+#### Step 2.4b: Post-write intake-stamp check (only when `$intakeId` is not null)
+
+The MERGE above can silently no-op a property write if the parameter is
+omitted from the write call (the historical failure mode: the run *reports*
+it stamped `intake_id`, but the graph keeps `null`, so the conductor's
+Phase-4 gates count fewer tasks than were planned). After creating every task,
+re-read the graph and assert the stamp actually landed. `$plannedTaskIds` is
+the list of every task id this run created or reopened.
+
+```cypher
+// intake_stamp_verification — run ONLY when $intakeId is not null.
+MATCH (t:Task) WHERE t.id IN $plannedTaskIds
+WITH collect(t) AS ts
+WITH ts, [t IN ts WHERE coalesce(t.intake_id, '') <> $intakeId] AS unstamped
+RETURN size(unstamped) AS unstamped_count,
+       [t IN unstamped | t.id] AS unstamped_ids
+```
+
+If `unstamped_count > 0`, **HALT** — do NOT report the plan as complete. The
+write did not take on `unstamped_ids`; re-run the Step 2.4 write for those
+tasks with `$intakeId` bound, then re-check. This gate is skipped entirely
+when `$intakeId` resolved to `null` (standalone plan — nothing to stamp).
 
 ### Step 2.5: Re-link behavior slices (VERIFIED_BY)
 

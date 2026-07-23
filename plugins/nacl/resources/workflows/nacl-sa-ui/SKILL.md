@@ -200,6 +200,10 @@ implemented here):
 - `UseCase.entrypoint_type IN ['deep-link-only', 'embed-only']` —
   intentional URL-only access (invitation links, third-party iframes);
   each requires a signed exception.
+- a `HAS_SCREEN` screen with `formless = true` — renders no Form by spec
+  (splash / 404 / landing); excluded by the query as a structural,
+  self-justifying exemption (mirrors sa-validate L10.2). A real Form that
+  merely lacks an inbound action still blocks.
 
 ## Graph Contract
 

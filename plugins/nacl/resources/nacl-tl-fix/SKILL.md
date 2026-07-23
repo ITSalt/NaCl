@@ -875,28 +875,16 @@ UNWIND ucs AS uc
 > If this fix reverses an earlier decision, also write `(:Decision)-[:SUPERSEDES]->(:Decision)`
 > and set the old one's `status='superseded'` (see `nacl-sa-feature` step 6.2ter).
 
-If the fix's own code + file changes in Step 6 fully re-sync a task to the
-current spec (rare — usually planning does), clear that task's flag at Step 7
-**and advance its provenance in the same write**. Clearing the flag alone
-silences Signal 2 while Signal 1 (`spec_version > planned_from_version`) keeps
-firing forever — see the pfv-advance contract in `provenance-gap-closure.md`
-(TL-core references):
-
-```cypher
-// mcp__neo4j__write-cypher — ONLY for tasks whose files this fix made current
-// Params: $syncedTaskIds — Task ids fully re-synced by this fix's own change
-MATCH (uc:UseCase)-[:GENERATES]->(t:Task)
-WHERE t.id IN $syncedTaskIds
-SET t.planned_from_version = coalesce(uc.spec_version, 0)
-REMOVE t.review_status, t.stale_reason, t.stale_since, t.stale_origin
-WITH DISTINCT uc
-WHERE NOT EXISTS { (uc)-[:GENERATES]->(x:Task) WHERE coalesce(x.review_status, 'current') = 'stale' }
-REMOVE uc.review_status, uc.stale_reason, uc.stale_since, uc.stale_origin
-```
-
-Otherwise leave the flag for `nacl-tl-plan` and do NOT touch
-`planned_from_version` — the un-advanced pfv is exactly what keeps Signal 1
-pointing at the task until planning regenerates it.
+These stamps are CLEARED later, in Phase B — **Step 7.5b** — and only once
+this fix's own code has been applied AND the status is GREEN, confirming the
+task's files now match the new `spec_version`. Do NOT clear them here in
+Phase A and do NOT touch `planned_from_version` here: at this point no code has
+been written yet, so the stamp is exactly what makes `nacl-tl-plan` (or the
+Step 7.5b self-sync path) re-plan the task, and what keeps the closure gate
+blocking until it does. Deferring the clear to Phase B is what closes the
+dangling-stale gap — a completed L2 fix must not exit with its own stamp still
+hanging (see the pfv-advance contract in `provenance-gap-closure.md`, TL-core
+references).
 
 **If the root cause is a missing or wrong domain-error branch** (the
 Project-Alpha class: restart returned 200 instead of `409 TASK_NOT_RESTARTABLE`
@@ -1262,6 +1250,58 @@ Answer **every** item below explicitly in the Step 8 report. "Not applicable" is
 
 If any item in 1–4 cannot be answered with a concrete file path and a stated verification, the fix status downgrades to `UNVERIFIED` for the Step 8 report (the agent does not silently call PASS while neighbours are unexamined).
 
+#### 7.5b Clear staleness & advance provenance (conditional — L2/L3 self-sync)
+
+Runs only when Step 5 (Phase A) stamped dependent Tasks `stale` — i.e. an
+L2/L3 fix that bumped a UC `spec_version`. This is the step that closes the
+dangling-stale gap: a completed fix must not exit leaving its own stamp
+hanging for another session's Phase-4.5 `P-S6` / release-condition-#7 gate to
+trip over.
+
+**Gate on status first.** Only proceed when the Step 7.3 status is `PASS`
+(rule 0 or rule 5) — the fix's own code + file changes were applied and
+verification is green, so the affected tasks' files now match the new
+`spec_version`. For any non-green status (`BLOCKED` / `UNVERIFIED` /
+`NO_INFRA` / `RUNNER_BROKEN` / `REGRESSION`) do NOT clear any stamp — the code
+is not confirmed to match the spec; leave everything for `nacl-tl-plan`.
+
+**Determine `$syncedTaskIds`** = the tasks this fix stamped `stale` in Step 5
+whose files THIS fix's own change (Step 6) brought fully current with the new
+`spec_version`. For a typical L2 fix that edits the affected UC's BE and/or FE
+code, that is the stamped task(s) for the layer(s) this fix actually touched.
+
+For those tasks, advance provenance and clear the flags in **one** write — the
+exact mirror of the `nacl-tl-plan` Step 2.4 MERGE (advance
+`planned_from_version` to the source UC's `spec_version`, REMOVE the stale
+flags on the Task, and on the source UC once no stale task remains). Clearing
+the flag WITHOUT advancing `planned_from_version` silences Signal 2 while
+Signal 1 (`spec_version > planned_from_version`) keeps firing forever — see
+the pfv-advance contract in `provenance-gap-closure.md` (TL-core references):
+
+```cypher
+// mcp__neo4j__write-cypher — ONLY for tasks whose files this fix made current
+// Params: $syncedTaskIds — Task ids fully re-synced by this fix's own change
+MATCH (uc:UseCase)-[:GENERATES]->(t:Task)
+WHERE t.id IN $syncedTaskIds
+SET t.planned_from_version = coalesce(uc.spec_version, 0)
+REMOVE t.review_status, t.stale_reason, t.stale_since, t.stale_origin
+WITH DISTINCT uc
+WHERE NOT EXISTS { (uc)-[:GENERATES]->(x:Task) WHERE coalesce(x.review_status, 'current') = 'stale' }
+REMOVE uc.review_status, uc.stale_reason, uc.stale_since, uc.stale_origin
+```
+
+**Partial fix.** For any task stamped `stale` in Step 5 that this fix did NOT
+fully re-sync (the fix touched only one layer, or deliberately deferred
+regeneration), leave its `review_status` and `planned_from_version` untouched
+and record it in the Step 8 report as `requires /nacl:tl-plan --feature <FR>`.
+The un-advanced pfv is exactly what keeps Signal 1 pointing at the task until
+planning regenerates it.
+
+**Graph unreachable.** If Neo4j is not reachable here, do not fail the fix:
+print `pfv advancement deferred — graph unavailable; run nacl-tl-plan to
+close` and leave the stamps for `nacl-tl-plan` (mirror of `nacl-tl-reconcile`
+Step 3.4b).
+
 #### 7.6 Update `.tl/changelog`
 
 ```markdown
@@ -1273,7 +1313,7 @@ If any item in 1–4 cannot be answered with a concrete file path and a stated v
 - **Root cause:** [what was wrong]
 - **Affected UC:** UC-### (or "infrastructure")
 - **Decision:** DEC-NNN — [title] (L2/L3 only; the graph-native "why" — `(:Decision)-[:JUSTIFIES]->(:UseCase)`); "none (L0/L1)" otherwise
-- **Stale (to re-plan):** [N tasks stamped review_status='stale' → `/nacl-tl-plan` clears] or "none"
+- **Stale:** [self-synced by this fix, cleared at Step 7.5b (pfv advanced): <task-ids>] and/or [deferred → `/nacl-tl-plan --feature <FR>` clears: <task-ids>]; or "none"
 - **Docs updated:** [list] or "none (L0/L1)"
 - **Code changed:** [file list]
 - **Tests:** [new test path if Path A] or "existing test transitioned: [path]" or "verification record updated: [path] (Path C)" or "none (status BLOCKED/UNVERIFIED/NO_INFRA)"

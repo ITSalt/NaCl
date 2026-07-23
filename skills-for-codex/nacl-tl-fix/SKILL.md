@@ -95,11 +95,14 @@ must record *why*, graph-natively, as part of the spec-update commit: write a
 `:Decision` (`DEC-NNN`, `created_by:'nacl-tl-fix'`, non-empty `rationale` from the
 root cause + corrected behavior) linked to the affected UCs via `JUSTIFIES`; bump
 `spec_version` on those UCs and stamp `review_status='stale'` on their `GENERATES`
-Tasks so `nacl-tl-plan` re-plans them. A fix that itself re-syncs a task's files
-to the current spec must, when clearing that task's stale flag, also set
+Tasks so `nacl-tl-plan` re-plans them. The clear happens later, in Phase B
+(Step 7), and only after verification is GREEN: a fix that itself re-synced a
+task's files to the current spec clears that task's stale flag AND sets
 `planned_from_version = spec_version` in the same write (pfv-advance contract);
 a fix that defers regen to planning leaves both alone — clearing the flag
-without advancing pfv leaves a permanent false-positive version drift.
+without advancing pfv leaves a permanent false-positive version drift, and
+NOT clearing a self-synced task leaves a dangling stale stamp that trips a
+later Phase-4.5 gate.
 `Decision` is in the spec-update label
 list, so this satisfies the spec-first gate; `nacl-sa-validate` L9 enforces it.
 L0/L1 fixes record no Decision (no new "why").
@@ -487,6 +490,14 @@ Validation must also include:
 - L2/L3 mini SA validation: docs now describe implemented behavior.
 - Impact check: adjacent UCs, shared endpoints, shared types, shared state,
   shared components, and consumers.
+- Clear staleness & advance provenance (L2/L3 self-sync, ONLY when the fix
+  outcome is `PASS`): for each task this fix stamped `stale` whose files this
+  fix's own change brought current, `SET t.planned_from_version =
+  coalesce(uc.spec_version, 0)` and REMOVE the stale flags (on the Task, and on
+  the source UC once no stale task remains) in one write — the mirror of the
+  `nacl-tl-plan` Step 2.4 clear. This closes the dangling-stale gap. Tasks the
+  fix did not fully re-sync stay `stale` for `/nacl-tl-plan --feature <FR>`; if
+  the graph is unreachable, defer with a printed note.
 - Changelog update in `.tl/changelog.md` when editing is available:
 
   ```markdown

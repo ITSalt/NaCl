@@ -215,6 +215,15 @@ is set on the UseCase node in the graph:
   intentional URL-only or embed-only UC; each such exemption
   requires a signed exception under the W4 schema referencing the
   operational context (invitation link, partner iframe, etc.).
+- A `Screen` reached from the UC via `HAS_SCREEN` has `formless = true`
+  — the screen renders no Form **by specification** (splash / 404 /
+  landing; a stub Form is forbidden by the no-stubs-in-docs rule), so
+  Condition 1 (an unreachable *Form*) is inapplicable — there is no
+  Form to reach. This is self-justifying: the `formless=true` flag is
+  the spec record, so no signed W4 exception is required (sa-validate
+  L10.2 already exempts formless screens from the `RENDERS -> Form`
+  requirement). Condition 2 STILL applies, read against the screen
+  route (see below).
 
 An affected UC that is NOT exempt and that fails either of the two
 conditions above triggers refusal.
@@ -234,6 +243,10 @@ MATCH (uc)-[:ACTOR]->(role:SystemRole)
 WHERE coalesce(role.name, '') <> 'SYSTEM'
   AND coalesce(uc.has_ui, true) = true
   AND NOT coalesce(uc.entrypoint_type, '') IN ['deep-link-only', 'embed-only']
+  AND NOT EXISTS {
+    MATCH (uc)-[:HAS_SCREEN]->(scr:Screen)
+    WHERE coalesce(scr.formless, false) = true
+  }
 OPTIONAL MATCH (uc)-[:USES_FORM]->(f:Form)
 OPTIONAL MATCH (c:Component)-[:HAS_INBOUND_ACTION]->(f)
 WITH uc, f, collect(DISTINCT c) AS inbound_components
@@ -250,6 +263,15 @@ Any row in the result set is a blocker. The check fails.
 The check is satisfied when at least one QA evidence artifact for the
 UC explicitly records a navigation step from a parent screen to the
 UC's Form via a captured `HAS_INBOUND_ACTION` affordance.
+
+**Formless screens.** When the UC's screen is `formless = true` there
+is no Form to navigate *to*; the natural entrypoint is entry onto the
+**screen route** itself. Acceptable evidence is a QA artifact that
+reaches the screen's canonical route through the app — a nav item, a
+link, or, for a **root entrypoint** (`route = '/'`), direct navigation
+to the root, which IS the natural entry (nothing sits above the root to
+click through from). A non-root formless screen with no in-app path to
+its route still fails Condition 2.
 
 The reviewer reads the QA artifacts (`.tl/tasks/UC###/qa-*.md` and
 linked screenshots / Playwright traces). Acceptable evidence shapes:
@@ -275,6 +297,7 @@ If no such evidence is found, the check fails for the UC.
 | Condition 1 fails for any non-exempt affected UC | **REFUSE** VERIFIED — emit `REVIEW APPLIED — BLOCKED (nav-actions-missing)`; the `Code judgment` line is `CHANGES REQUESTED` |
 | Condition 1 holds but Condition 2 fails for any non-exempt affected UC | **REFUSE** VERIFIED — emit `REVIEW APPLIED — BLOCKED (nav-actions-no-natural-entrypoint-evidence)`; verdict is `CHANGES REQUESTED` |
 | UC is exempt under `actor=SYSTEM` / `has_ui=false` / `entrypoint_type ∈ {deep-link-only, embed-only}` AND the exemption is recorded on the UseCase node OR carried by a signed exception (W4) | **EXEMPT**; record `nav-actions-EXEMPT:<uc_id>:<reason>` and proceed |
+| UC's `HAS_SCREEN` screen has `formless=true` (self-justifying; no signed exception) AND Condition 2 holds against the screen route | **EXEMPT** for Condition 1; record `nav-actions-EXEMPT:<uc_id>:formless` and proceed. If Condition 2 fails, refuse as usual (`nav-actions-no-natural-entrypoint-evidence`) |
 
 **VERIFIED refused if nav-actions are missing or the QA evidence does
 not reference a natural entrypoint — override requires signed
@@ -1156,7 +1179,7 @@ Before deep review, verify these first:
 
 ### Nav-actions Consumer Check (W7)
 - [ ] Affected UC ids identified for the current review
-- [ ] Exemption flags read from graph (`actor`, `has_ui`, `entrypoint_type`)
+- [ ] Exemption flags read from graph (`actor`, `has_ui`, `entrypoint_type`, `Screen.formless`)
 - [ ] `nav_actions_consumer_check` Cypher run; empty result OR every blocker covered by exemption / signed exception
 - [ ] QA evidence inspected for at least one natural-entrypoint path per non-exempt affected UC
 - [ ] `nav-actions-GREEN:<uc-ids>` recorded OR `nav-actions-EXEMPT:<uc-id>:<reason>` per exempt UC OR `REVIEW APPLIED — BLOCKED (nav-actions-*)` emitted
