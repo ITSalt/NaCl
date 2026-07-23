@@ -1,7 +1,7 @@
 {
   "name": "nacl",
   "description": "NaCl framework: BA/SA/TL spec-graph methodology skills, backed by a Neo4j project graph.",
-  "version": "2.26.3",
+  "version": "2.26.4",
   "author": {
     "name": "ITSalt"
   },

@@ -4,6 +4,46 @@ All notable changes to NaCl (Natural Agent Control Language) will be documented 
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [2.26.4] — 2026-07-23
+
+**Conductor P-S6 reconciliation gate made non-vacuous** — `tl-plan` now stamps
+`UseCase.intake_id`, the UseCase-side sibling of 2.26.3's `Task.intake_id` fix (DEF-B),
+reproduced RED on a disposable Neo4j before the fix and closed GREEN after (PR #34).
+
+### Fixed
+- **`tl-plan`: Step 2.4 now stamps `UseCase.intake_id` — the conductor's Phase-4.5 P-S6
+  staleness gate can actually fire.** P-S6 asserts "no node in this intake's UC closure
+  carries `review_status='stale'`" by anchoring on
+  `MATCH (uc:UseCase {intake_id:$intake})` — but no skill ever wrote `intake_id` to a
+  UseCase, so the anchor set was always empty, `count(n)=0` was vacuously true, and the
+  gate could never catch a stale downstream node (a dead gate). The stamp lands in the
+  SAME Step 2.4 statement that stamps `Task.intake_id`:
+  `SET uc.intake_id = coalesce($intakeId, uc.intake_id)` — optional and null-safe (a
+  standalone plan passes null and keeps any prior value). Because both writes share the
+  one `$intakeId` binding in one statement, the existing Step 2.4b post-write Task check
+  transitively proves the UC stamp landed — no separate UC re-read is needed. The site
+  was chosen over `sa-feature` deliberately: `sa-feature` runs BEFORE the conductor mints
+  the intake id (`tl-intake` → `sa-feature` creates FR+UCs → conductor Phase 0), so it
+  cannot resolve one; `tl-plan` runs under the conductor with `--intake` and touches
+  exactly the batch's UC closure. P-S6 and `nacl-tl-conductor` are unchanged — the gate
+  was written correctly; it lacked only the stamp it consumes. Scope matches DEF-B: the
+  feature/`tl-plan` path (bug-fix tasks from `tl-fix` still carry no `intake_id` — a
+  tracked separate follow-up).
+
+### Added
+- `tests/graph/regression-nav-actions-intake.sh` gains two cases: `uc-intake-stamp`
+  (RED pre-fix — `uc.intake_id` stays null after the Step 2.4 run) and
+  `uc-intake-preserve` (a null `$intakeId` must not clobber a prior UC value), still
+  extracting the Cypher under test from the shipped Step 2.4 fence at run time.
+  End-to-end, the verbatim P-S6 assertion returns FALSE (fires) for a stamped UC with a
+  stale downstream, TRUE (vacuous) when unstamped, and TRUE for a clean batch.
+
+### Chore
+- `plugin/` and `plugins/nacl/` regenerated. Codex `tl-plan` variant covered by the
+  existing `skills-for-codex/sync-exemptions/nacl-tl-plan.md` (principle-level
+  divergence — no Step 2.4 procedural detail). The `plugin-manifest` R10 slash-invocation
+  pin is kept frozen (net-new references use the no-slash skill-name form).
+
 ## [2.26.3] — 2026-07-23
 
 **Three planning-contract defects fixed** — surfaced by a live conductor intake batch,
