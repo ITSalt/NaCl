@@ -589,6 +589,12 @@ they consume):
   intentional URL-only or embed-only UCs (invitation links, e-mail
   CTAs, third-party iframes). Each requires a signed exception that
   names the operational context.
+- A `HAS_SCREEN` screen with `formless = true` — the screen renders no
+  Form **by specification** (splash / 404 / landing), so the rule's
+  `no-form` blocker is inapplicable: there is no Form to reach. This is
+  self-justifying (sa-validate L10.2 already exempts formless screens
+  from `RENDERS -> Form`); no signed exception is required. A real Form
+  that merely lacks an inbound action is NOT exempt and still blocks.
 
 ---
 

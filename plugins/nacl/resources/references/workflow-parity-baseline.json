@@ -78,8 +78,8 @@
     },
     {
       "workflow": "nacl-tl-fix",
-      "packagedSha256": "47d59b6780f6db2e2b4119257eb3deaa7b31a3c586f0c4fd9802212aa632da0d",
-      "codexRootSha256": "a925f0b17dfaeacb4c592d8b55411f517f9c871b1024ac4eec0b812089fd4eaf",
+      "packagedSha256": "c66075b27f2151a362714e421245e48fcdb62ec269a3e7482948bbe560a4d255",
+      "codexRootSha256": "2c4b6071ba87a43019b53088b25e8148d686730f7eeb3f298d00b7e8a59237ea",
       "reason": "Uses an internal goal reference and replaces inline graph triage with an explicit capability gap."
     },
     {
@@ -120,8 +120,8 @@
     },
     {
       "workflow": "nacl-tl-review",
-      "packagedSha256": "c3bafec1c2c94902c981c140fb1ed825e7460cca90ae7ed18bac1a029a432f38",
-      "codexRootSha256": "bb6ff6e30db1ec287a7f12a5ee8d1ef019fdd6de00d0c7eaa0dfe592484ba037",
+      "packagedSha256": "57aed632a82a616be67b070d98b20b57352475993b3f9991c475c22e423c28f4",
+      "codexRootSha256": "4c331aeefd2eb085b943a3019e1aae84fcc4d1aa7d7e9bb3ae0f3b3ebd99145a",
       "reason": "Uses package-local deterministic review commands and evidence classification."
     },
     {

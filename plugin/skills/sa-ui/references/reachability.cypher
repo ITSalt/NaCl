@@ -161,6 +161,16 @@ CALL {
 // Step 2: enumerate all actor-triggered UseCases.
 MATCH (uc:UseCase)-[:ACTOR]->(role:SystemRole)
 WHERE coalesce(role.name, '') <> 'SYSTEM'
+  // Formless screens (splash / 404 / landing) render no Form BY
+  // specification, so the 'no-form' blocker below is inapplicable —
+  // there is no Form to reach. Excluded here as a structural, self-
+  // justifying exemption (like actor=SYSTEM), mirroring sa-validate
+  // L10.2's exemption of formless screens from the RENDERS -> Form rule.
+  // A real Form that merely lacks an inbound action still blocks.
+  AND NOT EXISTS {
+    MATCH (uc)-[:HAS_SCREEN]->(scr:Screen)
+    WHERE coalesce(scr.formless, false) = true
+  }
 
 // Step 3: pull the UC's Forms (may be zero).
 OPTIONAL MATCH (uc)-[:USES_FORM]->(f:Form)
@@ -263,11 +273,14 @@ ORDER BY depth, menu_order, component_id;
 //   - UC.has_ui = false                         (machine-only UC; no Form)
 //   - UC.entrypoint_type IN ['deep-link-only',  (intentional URL-only access,
 //                            'embed-only']       e.g. invitation links)
+//   - a HAS_SCREEN screen with formless=true    (splash / 404 / landing;
+//                                                renders no Form by spec —
+//                                                already excluded above)
 //
-// Query 1 above implements only the actor-SYSTEM exclusion. The remaining
-// exemption flags (has_ui, entrypoint_type) are consumed by sa-validate
-// when wrapping this query — see nacl-sa-validate (consumer-side, owner of
-// the full validator).
+// Query 1 above implements the actor-SYSTEM AND formless-screen exclusions
+// (both structural and self-justifying). The remaining exemption flags
+// (has_ui, entrypoint_type) are consumed by sa-validate when wrapping this
+// query — see nacl-sa-validate (consumer-side, owner of the full validator).
 
 
 // ---------------------------------------------------------------------------

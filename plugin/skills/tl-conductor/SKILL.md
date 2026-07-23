@@ -128,6 +128,7 @@ Conductor persists its state for resumption:
 {
   "branch": "feature/FR-001-generation-controls",
   "baseBranch": "main",
+  "intake_id": "intake-2026-04-04",
   "items": [
     { "id": "FR-001", "type": "feature", "ucs": ["UC028", "UC029"] },
     { "id": "BUG-003", "type": "bug", "description": "Share button on mobile" }
@@ -247,12 +248,23 @@ RETURN fr.id AS feature_id, fr.title AS feature_title,
 **Critical difference from nacl-tl-conductor:** Delegates to `nacl-tl-plan` instead of `nacl-tl-plan`.
 
 For each FR item that needs planning:
-1. Launch sub-agent (Task tool): `/nacl:tl-plan --feature FR-NNN`
+1. Launch sub-agent (Task tool): `/nacl:tl-plan --feature FR-NNN --intake <intake_id>`
+   — pass the batch `intake_id` (from `conductor-state.json`) so tl-plan stamps
+   `Task.intake_id` on every task it creates. Without it, the Phase-4/4.5 gates
+   below (which filter `WHERE t.intake_id = $intakeId`) under-count the plan.
 2. Wait for completion
 3. Verify: `.tl/master-plan.md` updated, task files created in `.tl/tasks/`
 4. Parse execution waves from master-plan.md
 
 Update `conductor-state.json` with wave assignments.
+
+> **Intake-stamping invariant.** Every `Task` node in the batch — UC tasks and
+> TECH tasks alike, including any unplanned TECH task discovered mid-batch —
+> must carry `intake_id`. The conductor never MERGEs `Task` nodes itself; task
+> creation always goes through `nacl-tl-plan` (Step 2.4 stamps `intake_id`
+> from `--intake`). If a task must be added outside a planned wave, re-run
+> `nacl-tl-plan --intake <intake_id>` scoped to it rather than writing the
+> node by hand, so the Phase-4/4.5 gates keep counting the whole batch.
 
 ---
 
@@ -576,7 +588,9 @@ After all development items have been processed:
    RETURN t.id AS taskId, t.status AS currentStatus
    ```
 
-   - Bind `$intakeId` to the current intake (from conductor-state.json header).
+   - Bind `$intakeId` to the current intake — the `intake_id` field of
+     `.tl/conductor-state.json`. This is the same id the conductor passed to
+     `nacl-tl-plan --intake` in Phase 2, so every planned task carries it.
    - If the query returns **any rows**: HALT immediately.
      Post this advisory and do NOT advance to Phase 5:
 
@@ -614,7 +628,9 @@ After all development items have been processed:
    RETURN t.id AS taskId, t.status AS currentStatus
    ```
 
-   - Bind `$intakeId` to the current intake (from conductor-state.json header).
+   - Bind `$intakeId` to the current intake — the `intake_id` field of
+     `.tl/conductor-state.json`. This is the same id the conductor passed to
+     `nacl-tl-plan --intake` in Phase 2, so every planned task carries it.
    - If the query returns **any rows**: HALT immediately.
      Post this advisory and do NOT advance to Phase 5:
 
