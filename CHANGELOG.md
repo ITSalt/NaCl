@@ -4,6 +4,51 @@ All notable changes to NaCl (Natural Agent Control Language) will be documented 
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [2.26.3] — 2026-07-23
+
+**Three planning-contract defects fixed** — surfaced by a live conductor intake batch,
+each reproduced RED before the fix (on a disposable Neo4j, or as a structural guard) and
+GREEN after (PR #33).
+
+### Fixed
+- **`tl-review` / `sa-ui`: formless screens no longer false-BLOCK the nav-actions gate.**
+  The `nav_actions_consumer_check` gate — and its rule owner, `sa-ui` W7 and
+  `reachability.cypher` — treated a UC with no `USES_FORM` as a `no-form` blocker. A
+  formless screen (`has_ui=true`, `Screen.formless=true`) renders no Form BY SPECIFICATION,
+  so any formless-root UC (e.g. a landing page at `/`) drew a false
+  `BLOCKED (nav-actions-missing)`. A fourth, structural, self-justifying exemption — a
+  `HAS_SCREEN` screen with `formless=true` — is added as a `NOT EXISTS` carve-out in the
+  Cypher (mirroring `sa-validate` L10.2) and to every exemption list; Condition 2 (natural
+  entrypoint) is reformulated to read against the screen route (root `/` = direct entry).
+  A real Form that merely lacks an inbound action still blocks (`no-inbound-action`).
+- **`tl-plan`: Step 2.4 now stamps `Task.intake_id` deterministically.** The conductor's
+  Phase-4/4.5 gates filter `WHERE t.intake_id = $intakeId`, but the Task MERGE never wrote
+  the property — so a batch under-counted its own tasks (prompt-only instruction was
+  non-deterministic; measured 2-of-4 silent misses). The template gains
+  `t.intake_id = coalesce($intakeId, t.intake_id)` (optional, null-safe), a `--intake`
+  param with deterministic Configuration Resolution (arg → `.tl/conductor-state.json` →
+  null), and a post-write verification gate that HALTs on any unstamped planned task.
+  `intake_id` is added to the conductor-state schema and passed through by the conductor.
+- **`tl-fix` (L2): no more dangling stale stamp.** An L2 fix stamped a dependent task
+  `stale` + bumped `spec_version`, brought code to spec, then exited without clearing —
+  because the clear/advance write lived orphaned in Phase A/Step 5 while its prose said
+  "clear at Step 7", and Step 7 never ran it; the stamp later failed another session's
+  Phase-4.5 `P-S6`. The write moves into a new **Step 7.5b** that runs after GREEN
+  verification, gated on status, with partial-fix and graph-unreachable fallbacks (mirrors
+  `tl-reconcile` Step 3.4b). The Step 8 report reflects self-sync clearing.
+
+### Added
+- `tests/graph/regression-nav-actions-intake.sh` — disposable-Docker RED/GREEN matrix
+  (5 cases) for the formless exemption and `intake_id` stamping, extracting the Cypher
+  under test from the shipped skill artifacts at run time.
+- `scripts/tl-fix-phaseb-stale-clear.test.mjs` — CI structural guard (node `--test`) that
+  the clear/advance write is wired into Phase B / Step 7, not left orphaned in Phase A.
+
+### Chore
+- Codex mirrors (`skills-for-codex` + workflow overlays) applied per the sync topology;
+  `plugin/` and `plugins/nacl/` regenerated. The `plugin-manifest` R10 slash-invocation
+  pin is kept frozen (net-new `tl-plan` references use the no-slash skill-name form).
+
 ## [2.26.2] — 2026-07-20
 
 **Three planning-contract defects fixed** — all surfaced in one live incremental-feature
