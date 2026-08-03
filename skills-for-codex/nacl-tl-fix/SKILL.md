@@ -94,10 +94,15 @@ verification outcome `Fix outcome: NO_INFRA`.
 must record *why*, graph-natively, as part of the spec-update commit: write a
 `:Decision` (`DEC-NNN`, `created_by:'nacl-tl-fix'`, non-empty `rationale` from the
 root cause + corrected behavior) linked to the affected UCs via `JUSTIFIES`; bump
-`spec_version` on those UCs and stamp `review_status='stale'` on their `GENERATES`
-Tasks so `nacl-tl-plan` re-plans them. The clear happens later, in Phase B
-(Step 7), and only after verification is GREEN: a fix that itself re-synced a
-task's files to the current spec clears that task's stale flag AND sets
+`spec_version` on those UCs and stamp their `GENERATES` Tasks **by status**:
+active tasks get `review_status='stale'` so `nacl-tl-plan` re-plans them;
+already-shipped tasks (`done` / `verified-pending`) get `review_status='spec_drift'`
+instead. A fix changes spec AND code together and proves it GREEN, so its shipped
+tasks are not re-planning units — and re-planning cannot close them anyway, which
+is how a one-file fix ends up flagging a dozen done tasks that then accrue until
+the closure gate is skipped. The clear happens later, in Phase B (Step 7), and
+only after verification is GREEN: a fix that itself re-synced a task's files to
+the current spec clears that task's stale flag AND sets
 `planned_from_version = spec_version` in the same write (pfv-advance contract);
 a fix that defers regen to planning leaves both alone — clearing the flag
 without advancing pfv leaves a permanent false-positive version drift, and
@@ -494,10 +499,21 @@ Validation must also include:
   outcome is `PASS`): for each task this fix stamped `stale` whose files this
   fix's own change brought current, `SET t.planned_from_version =
   coalesce(uc.spec_version, 0)` and REMOVE the stale flags (on the Task, and on
-  the source UC once no stale task remains) in one write — the mirror of the
-  `nacl-tl-plan` Step 2.4 clear. This closes the dangling-stale gap. Tasks the
-  fix did not fully re-sync stay `stale` for `/nacl-tl-plan --feature <FR>`; if
-  the graph is unreachable, defer with a printed note.
+  the source UC once no `stale` or `spec_drift` task remains) in one write — the
+  mirror of the `nacl-tl-plan` Step 2.4 clear. This closes the dangling-stale
+  gap. Tasks the fix did not fully re-sync stay `stale` for
+  `/nacl-tl-plan --feature <FR>`; if the graph is unreachable, defer with a
+  printed note.
+- Review verdict for every task stamped `spec_drift` (shipped code whose spec
+  moved under it). Re-planning cannot close these, so state one verdict each:
+  `resynced` (this fix made it current) → treat as self-sync above;
+  `still-correct` (shipped code already satisfies the new spec) → advance
+  `planned_from_version` and REMOVE the flags in one write, additionally setting
+  `reviewed_by = <DEC-NNN>` and `reviewed_at = datetime()` so the close is
+  auditable; `needs-rework` → re-stamp `stale` as a genuine planning unit. Never
+  touch `status`, `commit`, or `verification_evidence` — a verdict is not a
+  re-opening. A `spec_drift` task left without a verdict is a fix-plan gap:
+  report it, do not let it accrue silently.
 - Changelog update in `.tl/changelog.md` when editing is available:
 
   ```markdown

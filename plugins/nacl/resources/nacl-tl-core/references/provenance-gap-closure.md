@@ -63,18 +63,29 @@ Sanctioned clear paths (all bound by the invariant):
 | Path | Skill | When |
 |---|---|---|
 | Plan regen (canonical) | `nacl-tl-plan` Step 2.4 | Every regeneration |
-| Fix self-sync (rare) | `nacl-tl-fix` Step 7 | The fix's own change fully re-synced the task's files |
+| Fix self-sync (rare) | `nacl-tl-fix` Step 7.5b Arm A | The fix's own change fully re-synced the task's files |
+| Review verdict | `nacl-tl-fix` Step 7.5b Arm B | A **shipped** task flagged `spec_drift` was reviewed as `still-correct` against the new spec |
 | Emergency reconcile | `nacl-tl-reconcile` Step 3.4b | Reconcile brought the task's files fully current |
 
-Acceptance check (read-only; run after any reconcile or fix self-sync — expect
-zero rows):
+The review-verdict path is the one exception to "files were rewritten": nothing
+is regenerated, because the shipped code was judged already to satisfy the new
+spec. It is bound by the invariant all the same — pfv advances in the same write
+— and carries `reviewed_by` / `reviewed_at` so the close is auditable against
+its `:Decision` instead of being an untraceable flag removal. Without it,
+shipped tasks have no reachable exit at all: re-planning cannot close code that
+has already shipped, so the flag accrues until the gate is skipped.
+
+Acceptance check (read-only; run after any reconcile, fix self-sync, or review
+verdict — expect zero rows):
 
 ```cypher
-// Tasks whose files claim currency (not stale) but whose provenance lags the spec.
+// Tasks whose files claim currency (no open review flag) but whose provenance
+// lags the spec. Both flags are open states: 'stale' awaits re-planning,
+// 'spec_drift' awaits a verdict — neither claims currency.
 MATCH (uc:UseCase)-[:GENERATES]->(t:Task)
 WHERE t.planned_from_version IS NOT NULL
   AND coalesce(uc.spec_version, 0) > t.planned_from_version
-  AND coalesce(t.review_status, 'current') <> 'stale'
+  AND NOT coalesce(t.review_status, 'current') IN ['stale', 'spec_drift']
 RETURN uc.id AS uc_id, uc.spec_version AS spec_version,
        t.id AS task_id, t.planned_from_version AS pfv
 ```

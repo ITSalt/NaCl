@@ -292,6 +292,48 @@ exists, so user-tuned values are never overwritten (same rule as Step 2b
 
 Record: `intake scoring defaults added to config.yaml`.
 
+#### Migration check H — missing `validation:` budget block in `config.yaml`
+
+```bash
+# Does config.yaml exist and lack the validation: section?
+[ -f config.yaml ] && ! grep -q '^validation:' config.yaml 2>/dev/null
+```
+
+If true, append the spec-drift budget with the built-in defaults (read by
+`nacl-sa-validate` L8.1b and release condition #7b). Append at the end of the
+file, preserving all existing content and comments:
+
+```bash
+python3 - config.yaml <<'EOF'
+import sys
+path = sys.argv[1]
+text = open(path).read()
+block = """
+# Validation budgets
+# spec_drift_budget bounds the backlog of SHIPPED tasks whose spec moved under
+# them (review_status='spec_drift'). Each needs a review verdict, not a re-plan
+# — nacl-tl-fix Step 7.5b Arm B. Within budget the L8.1b finding is a WARNING
+# and a release may proceed; past EITHER bound it becomes CRITICAL and blocks
+# with `spec-drift-backlog`. The point is that the backlog drains or escalates:
+# an unbounded one goes permanently red and gets skipped, which is the failure
+# this budget exists to prevent.
+validation:
+  spec_drift_budget:
+    max_count: 25             # total spec_drift nodes tolerated before CRITICAL
+    max_age_days: 14          # any single item older than this -> CRITICAL
+"""
+if not text.endswith("\n"):
+    text += "\n"
+open(path, 'w').write(text + block)
+EOF
+```
+
+Add-only, same rule as check G: an existing `validation:` section is never
+overwritten. Skills fall back to these same defaults when the key is absent —
+a missing budget is never read as "unlimited".
+
+Record: `spec-drift budget defaults added to config.yaml`.
+
 ---
 
 #### Migration summary output

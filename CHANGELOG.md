@@ -4,6 +4,95 @@ All notable changes to NaCl (Natural Agent Control Language) will be documented 
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [2.27.0] — 2026-08-03
+
+**Staleness is stamped by task status, and shipped drift finally has an exit** —
+`tl-fix` no longer tells already-shipped tasks to re-plan, `L8` grades the two
+kinds of drift separately, and the release gate's `graph.status` becomes a closed
+vocabulary. Reproduced RED on a disposable Neo4j before the fix and closed GREEN
+after.
+
+### Fixed
+- **`tl-fix`: Step 5 stamps by task status — a one-file fix no longer flags a dozen
+  shipped tasks for re-planning.** `nacl-tl-fix` inherited `nacl-sa-feature`'s stamp
+  semantics, but the two have opposite code-state invariants: `sa-feature` changes spec
+  while the code does not yet exist, so every dependent task is a re-planning unit;
+  `tl-fix` changes spec AND code together and proves it GREEN before returning, so the
+  affected UC's shipped tasks are already current. Because the stamp matched
+  `(uc)-[:GENERATES]->(t:Task)` with no status filter, every task of the UC was marked
+  `'stale'` — including tasks shipped weeks earlier. But `'stale'` means "`tl-plan` must
+  regenerate this", and re-planning is not applicable to shipped code: `tl-plan`'s
+  shipped-stale path HALTs asking for a delta carrier that fix-origin staleness never
+  has, because the fix WAS the delta and it already shipped. The flags therefore had no
+  reachable exit and accrued. Measured on a live project: 87 flagged tasks, 67 of them
+  `status=done` (77%), six origins over eleven days, with release condition #7 red the
+  entire time — so every release in that window shipped past it, one recording
+  `graph.status="skipped"` with no exception and no baseline. A gate that blocks
+  everything blocks nothing. Step 5 now writes
+  `t.review_status = CASE WHEN shipped THEN 'spec_drift' ELSE 'stale' END`, where
+  `shipped` is `coalesce(t.status,'') IN ['done','verified-pending']`. Active-task
+  semantics are unchanged.
+- **`tl-fix`: Step 7.5b gains Arm B — the review verdict release condition #7 always
+  promised but no skill could perform.** #7's remedy text has always offered "or
+  re-reviewing the flagged nodes", yet nothing in the framework could record that a node
+  was reviewed and found correct, so regeneration was the only exit even when the right
+  answer was "nothing to do". Phase A already traverses the UC's impact; it now carries
+  one verdict per shipped task — `resynced` (folds into Arm A), `still-correct`, or
+  `needs-rework` (re-stamped `'stale'` as a genuine planning unit). A `still-correct`
+  verdict advances `planned_from_version` in the same write (pfv-advance contract) and
+  stamps `reviewed_by` / `reviewed_at`, so the close is auditable against its `:Decision`
+  instead of being an untraceable flag removal. The write is guarded on `spec_drift` and
+  never touches `status`, `commit`, or `verification_evidence` — a verdict is not a
+  re-opening. Both clear arms now hold the UC flag until **both** `'stale'` and
+  `'spec_drift'` have drained.
+- **`tl-release`: `graph.status` is a closed vocabulary.** The strict-only rule (no
+  `--skip-*` flag, no inline override) was worth nothing while an unrecognised status
+  value walked straight through: a shipped release was observed carrying
+  `"graph": {"status": "skipped", "note": "graph stamping not run in this operator
+  pass"}` with `exceptions: []` and no baseline. Only `pending` | `done` | `blocked` are
+  now readable or writable; anything else refuses with `graph-status-invalid`, `blocked`
+  without a signed exception covering `graph-stale`/`stale-downstream` refuses with
+  `graph-skipped-without-exception`, and `done` without a `baseline` block remains
+  `graph-baseline-missing`. A free-text operator note is not an exception.
+
+### Changed
+- **`sa-validate` L8 is split and proportional.** `L8.1` keeps CRITICAL but is scoped to
+  `'stale'` only. New **`L8.1b`** grades the `'spec_drift'` backlog against `config.yaml`
+  `validation.spec_drift_budget` (`max_count`, `max_age_days`): WARNING within budget,
+  CRITICAL past either bound, so the backlog drains or escalates and can never sit
+  permanently red-and-ignored. Treating shipped drift as CRITICAL made the gate red with
+  no reachable green, which is precisely what trains operators to skip it.
+- **Release condition #7 has two arms and a second token.** 7a (`stale-downstream`, remedy
+  `tl-plan`) and 7b (`spec-drift-backlog`, remedy the review verdict, which `tl-plan`
+  cannot supply). `spec-drift-backlog` is registered in the recognised `affected_gates`
+  set, so it can be covered by a signed exception like every other gate. Naming the wrong
+  arm sends the operator to a skill that cannot close the finding.
+- **`tl-conductor` P-S6** is documented as deliberately keyed on `'stale'` only — shipped
+  drift is graded by budget at release time rather than blocking every intake.
+- **Graph schema** documents `review_status: 'current' | 'stale' | 'spec_drift'` plus the
+  `reviewed_by` / `reviewed_at` verdict properties, on both the SA and TL side.
+- **pfv-advance contract** gains the review-verdict row: the one sanctioned clear where
+  no files were rewritten, bound by the same invariant. Its acceptance query now treats
+  both flags as open states.
+
+### Added
+- `nacl-init` migration check H seeds `validation.spec_drift_budget` (25 / 14 days),
+  add-only like check G. Skills fall back to the same defaults when the key is absent —
+  a missing budget is never read as "unlimited".
+- `tests/graph/regression-staleness-stamp-polarity.sh` — 7 cases against a real Neo4j,
+  extracting the Cypher under test from the shipped skill text at run time so the matrix
+  cannot drift from it. Pre-fix RED is specific: `done=stale`, `verified-pending=stale`,
+  `L8.1` lists shipped drift, verdict and `L8.1b` fences absent.
+- `scripts/tl-fix-stamp-polarity.test.mjs` — the CI-runnable structural half, guarding
+  the wiring and prose flow a Cypher harness cannot see (verdict fence lives in Phase B,
+  is guarded on `spec_drift`, and never mutates shipped state).
+
+### Known follow-up
+- `tl-fix` still lacks the `DEPENDS_ON*1..5` arm that `sa-feature` has, so tasks of
+  dependent UCs are not stamped when a fix moves their upstream spec — the false-negative
+  half of the same polarity defect. Deliberately sequenced after this release: it *raises*
+  stale counts and is only safe once shipped tasks stop generating noise.
+
 ## [2.26.4] — 2026-07-23
 
 **Conductor P-S6 reconciliation gate made non-vacuous** — `tl-plan` now stamps

@@ -169,9 +169,9 @@ are the canonical episodes these gates exist to prevent.
 | 4 | `/nacl:sa-validate full` reports `Status: FAIL` with at least one finding at `severity: CRITICAL` | `RELEASE HALTED — UNVERIFIED (sa-validate-critical)` | `sa-validate-critical` |
 | 5 | **Missing PROD_GOLDEN_PATH evidence.** A bare HTTP 200 from `/health` is `HEALTH_ONLY` evidence and is **never product-readiness evidence**. The release requires a `PROD_GOLDEN_PATH` evidence string in the QA aggregate (per W3 six-stage decomposition) for every UC where the matrix marks `PROD_GOLDEN_PATH` mandatory. | `RELEASE HALTED — UNVERIFIED (missing-prod-golden-path)` | `missing-prod-golden-path` |
 | 6 | **PR / CI skipped without `project_kind: prototype` AND a signed exception.** Direct-strategy releases (no PR, no CI) are permitted only when `config.yaml` declares `project_kind: prototype` AND `.tl/exceptions/` contains a valid (unexpired, well-formed) exception with `affected_gates` including the literal `skipped-pr` and / or `skipped-ci` matching what is actually skipped. | `RELEASE HALTED — UNVERIFIED (skipped-pr-without-prototype-exception)` or `(skipped-ci-without-prototype-exception)` | `skipped-pr-without-prototype-exception` or `skipped-ci-without-prototype-exception` |
-| 7 | **Stale downstream of an unreviewed change.** `/nacl:sa-validate full` reports an `L8` finding — at least one node carries `review_status='stale'` (a UC/entity/endpoint changed upstream and its dependents were never re-synced; typically Tasks whose source UC moved but were never re-planned). This is distinct from #4 (any CRITICAL) and #3 (snapshot vs live count): #7 is specifically "a recorded change has un-propagated dependents." Clear by running `/nacl:tl-plan` (regenerates stale tasks) or re-reviewing the flagged nodes. | `RELEASE HALTED — UNVERIFIED (stale-downstream)` | `stale-downstream` |
+| 7 | **Stale downstream of an unreviewed change.** `/nacl:sa-validate full` reports a blocking `L8` finding. Two distinct arms: **(7a)** `L8.1` — a node carries `review_status='stale'`, i.e. un-built work whose source spec moved and which was never re-planned. Clear by running `/nacl:tl-plan`. **(7b)** `L8.1b` returned `CRITICAL` — the `spec_drift` backlog (shipped code whose spec moved under it) has outgrown `validation.spec_drift_budget` on count or age. Re-planning cannot clear these; clear them by recording a review verdict per `nacl-tl-fix` Step 7.5b. An `L8.1b` `WARNING` does **not** block. This is distinct from #4 (any CRITICAL) and #3 (snapshot vs live count): #7 is specifically "a recorded change has un-propagated dependents." | `RELEASE HALTED — UNVERIFIED (stale-downstream)` or `(spec-drift-backlog)` | `stale-downstream` or `spec-drift-backlog` |
 
-> Conditions #4 and #7 both surface through `/nacl:sa-validate full`: #4 is the generic "any CRITICAL" gate, #7 names the staleness CRITICAL (L8) specifically so the refusal headline tells the operator *what* to do (run `tl-plan`) rather than just "validation failed." If L8 fires, prefer the `stale-downstream` headline.
+> Conditions #4 and #7 both surface through `/nacl:sa-validate full`: #4 is the generic "any CRITICAL" gate, #7 names the staleness CRITICAL (L8) specifically so the refusal headline tells the operator *what* to do rather than just "validation failed." If L8 fires, prefer the L8 headline — `stale-downstream` for 7a (the remedy is `tl-plan`), `spec-drift-backlog` for 7b (the remedy is a review verdict, which `tl-plan` cannot supply). Naming the wrong one sends the operator to a skill that cannot close the finding.
 
 ### HEALTH_ONLY vs PROD_GOLDEN_PATH
 
@@ -234,7 +234,7 @@ required fields are:
 Recognised gate names for `affected_gates` (W4 release-skill set):
 `skipped-pr`, `skipped-ci`, `upstream-sync-unverified`,
 `upstream-qa-unverified`, `graph-stale`, `sa-validate-critical`,
-`missing-prod-golden-path`, `stale-downstream`. (The cross-skill set — `repo-checks-RED`,
+`missing-prod-golden-path`, `stale-downstream`, `spec-drift-backlog`. (The cross-skill set — `repo-checks-RED`,
 `wire-evidence-missing`, `LIVE_PROVIDER_SMOKE`, etc. — is documented
 in `.tl/exceptions/_template.yaml` header.)
 
@@ -798,6 +798,30 @@ The `baseline` block is REQUIRED — it is the live capture that the
 NEXT release will diff against. A release that fails to write
 `graph.baseline` is in a corrupt state and the next release will
 refuse with `Status: BLOCKED (graph-baseline-missing)`.
+
+**`graph.status` is a closed vocabulary.** The only values this skill
+may read or write are `pending`, `done`, and `blocked`. Before
+trusting a resumed `release-status.json`, validate the field:
+
+- a value outside that set — `skipped`, `warn`, `deferred`, anything
+  invented by an operator pass — is **not** a completed gate. Refuse
+  with `Status: BLOCKED (graph-status-invalid)` and state the value
+  found.
+- `blocked` is only sanctioned when `.tl/exceptions/` holds a valid,
+  unexpired exception whose `affected_gates` includes `graph-stale`
+  and/or `stale-downstream`, matching what is actually being bypassed.
+  Without it, refuse with
+  `Status: BLOCKED (graph-skipped-without-exception)`.
+- `done` without a `baseline` block is the corrupt state above.
+
+This is a real bypass, not a hypothetical: a shipped release was
+observed carrying
+`"graph": {"status": "skipped", "note": "graph stamping not run in
+this operator pass — orchestrator to follow up"}` with `exceptions: []`
+and no baseline. A free-text note in a state file is not an exception,
+and the strict-only rule above (no `--skip-*` flag, no inline override)
+is worth nothing if an unrecognised status value walks straight
+through. Validate the enum, or the gate is advisory.
 
 → **Output:** count of IntakeItem nodes stamped with the release version
 

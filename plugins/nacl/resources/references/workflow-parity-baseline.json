@@ -61,7 +61,7 @@
     {
       "workflow": "nacl-sa-validate",
       "packagedSha256": "00da4073a99157f16fb69d8a0e8c4f719aa01fab858275878008d679dba27417",
-      "codexRootSha256": "1026ea749c584207d13b515994e07fc3ac4476219542f29306df85d21cde2a21",
+      "codexRootSha256": "2599c640300437531638183869b6d72440a5b4a8f94123a7c4f86fb859c8f2b6",
       "reason": "Loads goal proof as an internal reference instead of an active package-relative command."
     },
     {
@@ -79,7 +79,7 @@
     {
       "workflow": "nacl-tl-fix",
       "packagedSha256": "c66075b27f2151a362714e421245e48fcdb62ec269a3e7482948bbe560a4d255",
-      "codexRootSha256": "2c4b6071ba87a43019b53088b25e8148d686730f7eeb3f298d00b7e8a59237ea",
+      "codexRootSha256": "c0339a8ebb033042ecb354e3373d2dbfe641080382b9e7d185d31792d218fe8f",
       "reason": "Uses an internal goal reference and replaces inline graph triage with an explicit capability gap."
     },
     {
@@ -109,7 +109,7 @@
     {
       "workflow": "nacl-tl-release",
       "packagedSha256": "4de77f54a3b288576c75940d534469d0185e6645252a4b380ee7e9287906fca6",
-      "codexRootSha256": "0312b7118a474f4570c6fd45566eebd9fdf0dd529a64178fabfadea4d4ec829e",
+      "codexRootSha256": "fbe4c01c1db30262c8d0334589ea0c5601162ec186436dde59a77b39b5d89841",
       "reason": "Normalizes SA validation failure handling to the exact closed FAILED status."
     },
     {
