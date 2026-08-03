@@ -74,14 +74,21 @@ CREATE INDEX index_apiendpoint_path IF NOT EXISTS  FOR (n:APIEndpoint) ON (n.pat
 //                                  // generated from. nacl-tl-plan compares
 //                                  // coalesce(uc.spec_version,0) > coalesce(t.planned_from_version,-1)
 //                                  // to detect tasks whose baked-in snapshot is stale.
-//   review_status: String,        // 'current' | 'stale' (default 'current'); see
-//                                  // sa-schema.cypher § Staleness properties. A Task is
-//                                  // stamped 'stale' when its source UC changed, and
-//                                  // cleared on successful re-plan. Read with
+//   review_status: String,        // 'current' | 'stale' | 'spec_drift' (default
+//                                  // 'current'); see sa-schema.cypher § Staleness
+//                                  // properties. When its source UC changes, a Task is
+//                                  // stamped BY STATUS: an active task gets 'stale'
+//                                  // (exit: re-plan), a shipped task — status 'done' or
+//                                  // 'verified-pending' — gets 'spec_drift' (exit: a
+//                                  // review verdict; re-planning cannot close code that
+//                                  // already shipped). Read with
 //                                  // coalesce(t.review_status,'current').
 //   stale_reason: String,         // human-readable cause
 //   stale_since: DateTime,        // when stamped
-//   stale_origin: String          // id of the node whose change caused it (UC/FR)
+//   stale_origin: String,         // id of the node whose change caused it (UC/FR)
+//   reviewed_by: String,          // DEC-NNN whose 'still-correct' verdict closed a
+//                                  // spec_drift (nacl-tl-fix Step 7.5b Arm B)
+//   reviewed_at: DateTime         // when that verdict was recorded
 // }
 //
 

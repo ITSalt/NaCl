@@ -842,9 +842,16 @@ UNWIND $affectedUcIds AS x
 RETURN d.id;
 ```
 
-Then bump `spec_version` on the changed UCs and stamp staleness on their
-dependent Tasks (so `nacl-tl-plan` re-plans them and the closure gate blocks until
-it does — identical mechanism to `nacl-sa-feature` step 3g):
+Then bump `spec_version` on the changed UCs and stamp their dependent Tasks —
+**by status**, because a fix and a feature do not leave the code in the same
+state. `nacl-sa-feature` changes spec while the code does not yet exist, so every
+one of its tasks is a re-planning unit. A fix changes spec AND code together and
+proves it GREEN before it returns, so the UC's already-shipped tasks are not
+re-planning units at all. Stamping them `stale` asks `nacl-tl-plan` for something
+it cannot do — re-planning is not applicable to shipped code, and its
+shipped-stale path HALTs asking for a delta carrier that a fix never has (the fix
+*was* the delta, and it already shipped). That is how a one-file fix comes to
+stamp a dozen done tasks, and how the closure gate ends up permanently red:
 
 ```cypher
 // mcp__neo4j__write-cypher
@@ -854,9 +861,20 @@ SET uc.spec_version = coalesce(uc.spec_version, 0) + 1, uc.updated_at = datetime
 WITH collect(uc) AS ucs
 UNWIND ucs AS uc
   OPTIONAL MATCH (uc)-[:GENERATES]->(t:Task)
-  SET t.review_status = 'stale', t.stale_reason = $reason,
+  // Shipped code and un-built code ask different questions of the same change.
+  WITH uc, t, coalesce(t.status, '') IN ['done', 'verified-pending'] AS shipped
+  SET t.review_status = CASE WHEN shipped THEN 'spec_drift' ELSE 'stale' END,
+      t.stale_reason = $reason,
       t.stale_since = datetime(), t.stale_origin = $origin
 ```
+
+| stamp | means | who closes it |
+|---|---|---|
+| `stale` (active tasks) | *this task must be regenerated from the new spec* | `nacl-tl-plan` — unchanged |
+| `spec_drift` (shipped tasks) | *shipped code, spec moved under it — does the code still satisfy it?* | a review verdict (Step 7.5b) |
+
+`spec_drift` is a question about code that already exists, so its answer is a
+judgement, not a regeneration. Step 7.5b records that judgement.
 
 > If this fix reverses an earlier decision, also write `(:Decision)-[:SUPERSEDES]->(:Decision)`
 > and set the old one's `status='superseded'` (see `nacl-sa-feature` step 6.2ter).
@@ -1251,15 +1269,18 @@ verification is green, so the affected tasks' files now match the new
 `NO_INFRA` / `RUNNER_BROKEN` / `REGRESSION`) do NOT clear any stamp — the code
 is not confirmed to match the spec; leave everything for `nacl-tl-plan`.
 
-**Determine `$syncedTaskIds`** = the tasks this fix stamped `stale` in Step 5
-whose files THIS fix's own change (Step 6) brought fully current with the new
-`spec_version`. For a typical L2 fix that edits the affected UC's BE and/or FE
-code, that is the stamped task(s) for the layer(s) this fix actually touched.
+Step 5 leaves two classes of flag behind, and they close differently.
+
+**Arm A — `stale` (active tasks): `$syncedTaskIds`** = the tasks this fix
+stamped `stale` in Step 5 whose files THIS fix's own change (Step 6) brought
+fully current with the new `spec_version`. For a typical L2 fix that edits the
+affected UC's BE and/or FE code, that is the stamped task(s) for the layer(s)
+this fix actually touched.
 
 For those tasks, advance provenance and clear the flags in **one** write — the
 exact mirror of the `nacl-tl-plan` Step 2.4 MERGE (advance
 `planned_from_version` to the source UC's `spec_version`, REMOVE the stale
-flags on the Task, and on the source UC once no stale task remains). Clearing
+flags on the Task, and on the source UC once no flagged task remains). Clearing
 the flag WITHOUT advancing `planned_from_version` silences Signal 2 while
 Signal 1 (`spec_version > planned_from_version`) keeps firing forever — see
 the pfv-advance contract in `provenance-gap-closure.md` (TL-core references):
@@ -1272,8 +1293,60 @@ WHERE t.id IN $syncedTaskIds
 SET t.planned_from_version = coalesce(uc.spec_version, 0)
 REMOVE t.review_status, t.stale_reason, t.stale_since, t.stale_origin
 WITH DISTINCT uc
-WHERE NOT EXISTS { (uc)-[:GENERATES]->(x:Task) WHERE coalesce(x.review_status, 'current') = 'stale' }
+WHERE NOT EXISTS { (uc)-[:GENERATES]->(x:Task) WHERE coalesce(x.review_status, 'current') IN ['stale', 'spec_drift'] }
 REMOVE uc.review_status, uc.stale_reason, uc.stale_since, uc.stale_origin
+```
+
+**Arm B — `spec_drift` (shipped tasks): the review verdict.** Release condition
+#7 has always offered "or re-reviewing the flagged nodes" as a way out, but no
+skill could ever record that a node was reviewed and found correct — so the only
+exit was regeneration, even when the right answer was "nothing to do", and the
+flags accumulated forever.
+
+Phase A already traversed this UC's impact. Carry that work forward: for **every
+shipped task** the Step 5 stamp marked `spec_drift`, the diagnostician's fix-plan
+states one verdict. The list is bounded (a UC's shipped tasks, typically 6–12),
+and the judgement is exactly the one the gate is asking for:
+
+| verdict | meaning | action |
+|---|---|---|
+| `resynced` | this fix's own code brought it current | include in `$syncedTaskIds` (Arm A) |
+| `still-correct` | the spec moved, but the shipped code already satisfies it | Arm B write below |
+| `needs-rework` | the shipped code no longer satisfies the new spec | re-stamp `stale`; it is a genuine planning unit |
+
+`still-correct` closes the drift with the same provenance discipline as every
+other sanctioned clear — pfv advances in the same write — and additionally
+records *who* closed it, so the close is auditable against its `:Decision`
+rather than being an untraceable flag removal:
+
+```cypher
+// mcp__neo4j__write-cypher — ONLY for shipped tasks reviewed as still-correct
+// Params: $reviewedTaskIds — Task ids judged 'still-correct' against the new spec
+//         $decisionId      — the DEC-NNN this fix recorded in Step 5
+MATCH (uc:UseCase)-[:GENERATES]->(t:Task)
+WHERE t.id IN $reviewedTaskIds
+  AND coalesce(t.review_status, 'current') = 'spec_drift'
+SET t.planned_from_version = coalesce(uc.spec_version, 0),
+    t.reviewed_by = $decisionId,
+    t.reviewed_at = datetime()
+REMOVE t.review_status, t.stale_reason, t.stale_since, t.stale_origin
+WITH DISTINCT uc
+WHERE NOT EXISTS { (uc)-[:GENERATES]->(x:Task) WHERE coalesce(x.review_status, 'current') IN ['stale', 'spec_drift'] }
+REMOVE uc.review_status, uc.stale_reason, uc.stale_since, uc.stale_origin
+```
+
+This write never touches `status`, `commit`, or `verification_evidence` — a
+review verdict is not a re-opening, and shipped state stays shipped.
+
+For `needs-rework`, re-stamp the task so it becomes a real planning unit that
+`nacl-tl-plan` can carry, and name it in the Step 8 report:
+
+```cypher
+// mcp__neo4j__write-cypher — shipped code that the new spec invalidates
+// Params: $reworkTaskIds, $reason, $origin (same values Step 5 used)
+MATCH (t:Task) WHERE t.id IN $reworkTaskIds
+SET t.review_status = 'stale', t.stale_reason = $reason,
+    t.stale_since = datetime(), t.stale_origin = $origin
 ```
 
 **Partial fix.** For any task stamped `stale` in Step 5 that this fix did NOT
@@ -1282,6 +1355,12 @@ regeneration), leave its `review_status` and `planned_from_version` untouched
 and record it in the Step 8 report as `requires /nacl:tl-plan --feature <FR>`.
 The un-advanced pfv is exactly what keeps Signal 1 pointing at the task until
 planning regenerates it.
+
+**No silent third path.** Every task Step 5 stamped must leave this step in
+exactly one of the states above — cleared (Arm A / Arm B), re-stamped
+`needs-rework`, or explicitly deferred. A `spec_drift` task that receives no
+verdict is a defect in the fix-plan, not a default: report it as
+`spec_drift unreviewed` so it is visible rather than silently accruing.
 
 **Graph unreachable.** If Neo4j is not reachable here, do not fail the fix:
 print `pfv advancement deferred — graph unavailable; run nacl-tl-plan to
@@ -1300,6 +1379,7 @@ Step 3.4b).
 - **Affected UC:** UC-### (or "infrastructure")
 - **Decision:** DEC-NNN — [title] (L2/L3 only; the graph-native "why" — `(:Decision)-[:JUSTIFIES]->(:UseCase)`); "none (L0/L1)" otherwise
 - **Stale:** [self-synced by this fix, cleared at Step 7.5b (pfv advanced): <task-ids>] and/or [deferred → `/nacl:tl-plan --feature <FR>` clears: <task-ids>]; or "none"
+- **Spec-drift verdicts:** [still-correct, closed with pfv advanced: <task-ids>] and/or [needs-rework, re-stamped stale: <task-ids>] and/or [unreviewed — fix-plan gap: <task-ids>]; or "none (no shipped tasks on the affected UCs)"
 - **Docs updated:** [list] or "none (L0/L1)"
 - **Code changed:** [file list]
 - **Tests:** [new test path if Path A] or "existing test transitioned: [path]" or "verification record updated: [path] (Path C)" or "none (status BLOCKED/UNVERIFIED/NO_INFRA)"

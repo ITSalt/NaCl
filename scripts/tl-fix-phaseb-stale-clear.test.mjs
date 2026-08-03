@@ -38,12 +38,15 @@ test('tl-fix section skeleton is intact', () => {
   assert.ok(idxStep8 > idxStep7, 'Step 8 header present after Step 7');
 });
 
-test('Phase A still stamps dependent tasks stale (unchanged)', () => {
-  const stampIdx = body.indexOf("t.review_status = 'stale'");
-  assert.ok(stampIdx > 0, 'stale stamp write present');
+test('Phase A still stamps dependent tasks (now status-aware)', () => {
+  // The stamp is authored in Phase A as before; since the stamp-polarity fix it
+  // discriminates by task status rather than writing a bare 'stale' to every
+  // task of the UC. Polarity itself is asserted in tl-fix-stamp-polarity.test.mjs.
+  const stampIdx = body.indexOf("t.review_status = CASE WHEN shipped");
+  assert.ok(stampIdx > 0, 'status-aware stamp write present');
   assert.ok(
     stampIdx > idxPhaseA && stampIdx < idxPhaseB,
-    'stale stamp is authored in Phase A',
+    'stamp is authored in Phase A',
   );
 });
 

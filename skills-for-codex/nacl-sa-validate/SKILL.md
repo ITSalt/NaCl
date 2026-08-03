@@ -80,10 +80,19 @@ Internal checks:
   recorded.
 - L7 feature request consistency: `FeatureRequest` ids are collision-free,
   linked UCs exist, and requested new or modified scope is traceable.
-- L8 staleness closure: no node carries `review_status='stale'` (read with
-  `coalesce(n.review_status,'current')`). A stale node is a downstream of an
-  upstream change that was never re-synced; `stale_origin`/`stale_since` give the
-  lineage. CRITICAL. In scoped runs, restrict to the changed node's dependents.
+- L8 staleness closure, graded in two arms (both read with
+  `coalesce(n.review_status,'current')`; `stale_origin`/`stale_since` give the
+  lineage). **L8.1:** no node carries `review_status='stale'` — un-built work
+  whose spec moved and which was never re-planned. CRITICAL. **L8.1b:** nodes
+  carrying `review_status='spec_drift'` — SHIPPED work whose spec moved under it,
+  awaiting a review verdict (`nacl-tl-fix` Step 7.5b), since re-planning cannot
+  close code that already shipped. Graded against `config.yaml`
+  `validation.spec_drift_budget` (`max_count`, `max_age_days`; defaults 25 / 14
+  when absent — never read a missing budget as unlimited): WARNING within budget,
+  CRITICAL past either bound. Keeping shipped drift out of the CRITICAL arm is
+  what stops this gate from going permanently red with no reachable green, which
+  is what trains operators to skip it. In scoped runs, restrict to the changed
+  node's dependents.
 - L9 decision provenance: every active `FeatureRequest` has
   `IMPLEMENTS -> :Decision`; every non-superseded `:Decision` has a `JUSTIFIES`
   edge and a non-empty `rationale`; superseded decisions carry

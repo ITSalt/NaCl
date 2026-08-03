@@ -277,17 +277,39 @@ CREATE INDEX index_degradationrule_trigger IF NOT EXISTS  FOR (n:DegradationRule
 // }
 //
 // --- Staleness / review-status properties (documented) ---
-// These four properties may appear on any SA/TL node that carries an embedded
+// These properties may appear on any SA/TL node that carries an embedded
 // snapshot of upstream state (primarily Task, but also UseCase, Form,
 // Requirement). They are set by write-skills (nacl-sa-feature, nacl-tl-fix
-// L2/L3) after running the sa_impact_closure traversal, and cleared on
-// successful re-sync (nacl-tl-plan regen, nacl-tl-fix verify). All are read
-// with coalesce(n.review_status,'current') — no migration/backfill needed; an
+// L2/L3), and cleared on successful re-sync (nacl-tl-plan Step 2.4 regen,
+// nacl-tl-fix Step 7.5b, nacl-tl-reconcile Step 3.4b). All are read with
+// coalesce(n.review_status,'current') — no migration/backfill needed; an
 // absent property means 'current'.
-//   review_status : String     // 'current' | 'stale'   (default 'current')
+//
+// Two open states, because un-built and shipped work are not downstream of a
+// change in the same way. Un-built work is regenerated; shipped work is
+// judged. Conflating them makes the L8 gate permanently red with no reachable
+// green (observed: 77% of one project's stale backlog was status=done, which
+// re-planning cannot close), so nacl-tl-fix stamps by task status.
+//   review_status : String     // 'current' | 'stale' | 'spec_drift'  (default 'current')
+//                              //   'stale'      — un-built work whose spec moved;
+//                              //                  exit is regeneration (nacl-tl-plan).
+//                              //                  L8.1, CRITICAL.
+//                              //   'spec_drift' — SHIPPED work whose spec moved under
+//                              //                  it; exit is a review verdict, never a
+//                              //                  re-plan. L8.1b, WARNING within
+//                              //                  config validation.spec_drift_budget
+//                              //                  and CRITICAL past it.
 //   stale_reason  : String      // human-readable cause, e.g. "upstream UC-014 modified"
 //   stale_since   : DateTime     // when it was stamped
 //   stale_origin  : String       // id of the node whose change caused it (UC/FR) — lineage answer
+//
+// --- Review-verdict properties (documented) ---
+// Written only by the nacl-tl-fix Step 7.5b Arm B verdict, when a shipped task
+// flagged 'spec_drift' is judged 'still-correct' against the new spec. They make
+// the close auditable — a cleared flag with no reviewed_by is indistinguishable
+// from a flag that was never set.
+//   reviewed_by   : String       // the DEC-NNN whose review closed the drift
+//   reviewed_at   : DateTime      // when the verdict was recorded
 
 
 // ---------------------------------------------------------------------------

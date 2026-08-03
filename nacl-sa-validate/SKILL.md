@@ -1075,24 +1075,67 @@ Resolution: rename the non-`:FeatureRequest` node into a tombstone namespace (e.
 
 ### Level 8: Staleness Closure
 
-**Goal:** When an upstream node changes, write-skills run `sa_impact_closure` and stamp the snapshot-bearing dependents (`Task`, `UseCase`, `Form`, `Requirement`) with `review_status='stale'`. A node left `stale` is an un-reviewed downstream of a change. This level is the read-only gate that surfaces them; closure skills (`nacl-tl-release`, `nacl-tl-conductor`, `nacl-tl-deliver`) refuse while any remain. The flag is read with `coalesce(n.review_status,'current')`, so a graph that has never been stamped passes cleanly (every node is implicitly `current`).
+**Goal:** When an upstream node changes, write-skills stamp the snapshot-bearing dependents (`Task`, `UseCase`, `Form`, `Requirement`) with a review flag. This level is the read-only gate that surfaces them; closure skills (`nacl-tl-release`, `nacl-tl-conductor`) refuse while blocking ones remain. Every flag is read with `coalesce(n.review_status,'current')`, so a graph that has never been stamped passes cleanly (every node is implicitly `current`).
 
-This level writes nothing — it reads the flag that the producers set.
+**Two flags, because a change asks two different questions.** Un-built code and shipped code are not downstream of a change in the same way, and conflating them is what makes this gate unusable:
 
-#### Check 8.1: Stale nodes not yet reviewed (project-wide)
+| flag | question | severity | exit |
+|---|---|---|---|
+| `stale` | *this task must be regenerated from the new spec* | CRITICAL (8.1) | `nacl-tl-plan` regenerates it |
+| `spec_drift` | *shipped code, spec moved under it — does the code still satisfy it?* | budgeted (8.1b) | a review verdict (`nacl-tl-fix` Step 7.5b) |
+
+Re-planning is not applicable to shipped code, so a `spec_drift` node has no `tl-plan` exit — treating it as CRITICAL makes the gate permanently red with no reachable green, which trains operators to skip it. The observed failure mode: 87 flagged tasks, 67 of them `done`, six origins, eleven days, every release in that window shipping past the gate. A gate that blocks everything blocks nothing. 8.1b keeps `spec_drift` visible and bounded instead: WARNING while the backlog is small and fresh, CRITICAL the moment it outgrows its budget — so it drains or it escalates, but never silently accrues.
+
+This level writes nothing — it reads the flags that the producers set.
+
+#### Check 8.1: Stale nodes not yet re-planned (project-wide)
 
 ```cypher
 // L8.1 -- Severity: CRITICAL
-// Any node still marked stale is a downstream of an upstream change that has not
-// been re-synced. stale_origin/stale_since are the lineage answer ("why / since when").
+// A node marked 'stale' is un-built work whose spec moved: it must be regenerated
+// before it is developed. stale_origin/stale_since are the lineage answer
+// ("why / since when"). Shipped nodes carry 'spec_drift' instead and are graded
+// by 8.1b — re-planning cannot close them, so they must not block here.
 MATCH (n)
 WHERE coalesce(n.review_status, 'current') = 'stale'
 RETURN labels(n)[0] AS node_type, n.id AS id,
        coalesce(n.name, n.title, n.description) AS display,
        n.stale_origin AS caused_by, n.stale_reason AS reason, n.stale_since AS since,
-       'Node is stale (downstream of an upstream change) and not yet reviewed' AS problem
+       'Node is stale (spec moved before the work was built) and not yet re-planned' AS problem
 ORDER BY n.stale_since
 ```
+
+#### Check 8.1b: Spec-drift backlog on shipped work (project-wide, budgeted)
+
+Resolve the budget from `config.yaml` `validation.spec_drift_budget`
+(`max_count`, `max_age_days`; seeded by `nacl-init`, defaults 25 / 14). A project
+that has not declared one uses those defaults — never treat an absent budget as
+"unlimited".
+
+```cypher
+// L8.1b -- Severity: WARNING within budget, CRITICAL when exceeded
+// Params: $driftMaxCount, $driftMaxAgeDays (config validation.spec_drift_budget)
+// Shipped code whose spec moved under it. Each needs a review verdict, not a
+// re-plan. Bounded on BOTH axes: a backlog that grows past max_count, or any
+// single item older than max_age_days, escalates to CRITICAL — that is what
+// stops this from becoming a permanently-red gate everyone learns to skip.
+MATCH (n)
+WHERE coalesce(n.review_status, 'current') = 'spec_drift'
+WITH collect(n) AS drifted
+WITH drifted, size(drifted) AS total,
+     [x IN drifted WHERE x.stale_since < datetime() - duration({days: $driftMaxAgeDays})] AS overdue
+RETURN total AS drift_count,
+       size(overdue) AS overdue_count,
+       [x IN overdue | x.id] AS overdue_ids,
+       [x IN drifted | x.stale_origin] AS origins,
+       CASE WHEN total > $driftMaxCount OR size(overdue) > 0
+            THEN 'CRITICAL' ELSE 'WARNING' END AS severity,
+       CASE WHEN total > $driftMaxCount OR size(overdue) > 0
+            THEN 'Spec-drift backlog past budget — review the flagged shipped tasks (nacl-tl-fix Step 7.5b verdict) or record why they stand'
+            ELSE 'Spec-drift backlog within budget — shipped tasks awaiting a review verdict' END AS problem
+```
+
+> Report 8.1b at the severity the query returns. When it returns `CRITICAL` the overall status is `FAIL` exactly as any other CRITICAL, and the release refusal detail is `spec-drift-backlog` (condition #7). When it returns `WARNING` the release may proceed — the backlog is recorded, not hidden.
 
 #### Check 8.2: Stale closure of a single change (scoped, `--scope=intra-uc`)
 
