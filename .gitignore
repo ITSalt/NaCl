@@ -66,3 +66,9 @@ docs/article-plan.md
 # analyst-tool: keep operational handoff notes and local benchmark scripts private
 analyst-tool/HANDOFF-*.md
 analyst-tool/bench/
+
+# Methodology and metagraph — separate PRIVATE repo ITSalt/NaCl-meta, cloned here
+# as `meta/`. It may name real client projects and containers, which this public
+# repo must never carry; git and GitHub grant access per repository, not per path.
+# Not a submodule on purpose: no .gitmodules, no gitlink, no private URL leaks here.
+meta/
