@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 
 import { createHash } from "node:crypto";
-import { cp, lstat, mkdir, mkdtemp, readFile, readdir, realpath, rm, writeFile } from "node:fs/promises";
+import { copyFreshTree } from "./copy-fresh-tree.mjs";
+import { lstat, mkdir, mkdtemp, readFile, readdir, realpath, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -154,7 +155,7 @@ async function copyTree(source, destination) {
     }
   }
   await inspect(source);
-  await cp(source, destination, { recursive: true, preserveTimestamps: false });
+  await copyFreshTree(source, destination, { recursive: true, preserveTimestamps: false });
 }
 
 const textExtensions = new Set([".md", ".mjs", ".js", ".cjs", ".sh", ".ps1", ".json", ".yml", ".yaml", ".toml", ".txt", ".pin", ".cypher"]);
@@ -269,6 +270,12 @@ async function buildSkillClosure(skillName, skillRoot, sourceEntry) {
     if (copied.has(filename)) continue;
     copied.add(filename);
     const relative = path.relative(packageRoot, filename);
+    if (relative === path.join("resources", "bootstrap", "codex-config-contract.mjs")) {
+      // createRequire dependencies and their notices are not ESM import edges.
+      for (const name of ["smol-toml-1.7.0.cjs", "smol-toml-LICENSE.txt", "PROVENANCE.md"]) {
+        await add(path.join(path.dirname(filename), "vendor", name), "Codex TOML parser closure");
+      }
+    }
     const target = path.join(skillRoot, relative);
     await mkdir(path.dirname(target), { recursive: true });
     if (textExtensions.has(path.extname(filename).toLowerCase())) {
@@ -281,7 +288,7 @@ async function buildSkillClosure(skillName, skillRoot, sourceEntry) {
           await add(path.resolve(path.dirname(filename), match[1]), `module import from ${relative}`);
         }
       }
-    } else await cp(filename, target, { preserveTimestamps: false });
+    } else await copyFreshTree(filename, target, { preserveTimestamps: false });
   }
   return copied.size;
 }
@@ -304,7 +311,7 @@ async function build(destination) {
     { encoding: "utf8", mode: 0o644 },
   );
   await copyTree(path.join(packageRoot, "assets"), path.join(destination, "assets"));
-  await cp(path.join(packageRoot, "LICENSE"), path.join(destination, "LICENSE"), { preserveTimestamps: false });
+  await copyFreshTree(path.join(packageRoot, "LICENSE"), path.join(destination, "LICENSE"), { preserveTimestamps: false });
 
   const skillNames = (await readdir(path.join(packageRoot, "skills"), { withFileTypes: true }))
     .filter((entry) => entry.isDirectory())
@@ -357,7 +364,7 @@ async function main() {
       await writeFile(path.join(staging, "release-manifest.json"), `${JSON.stringify(releaseManifest, null, 2)}\n`, { mode: 0o644 });
     }
     await rm(options.output, { recursive: true, force: true });
-    await cp(staging, options.output, { recursive: true, preserveTimestamps: false });
+    await copyFreshTree(staging, options.output, { recursive: true, preserveTimestamps: false });
     process.stdout.write(`Built Skills-only bundle at ${options.output} (${skills.length} self-contained skills).\n`);
     if (options.archiveOutput) {
       const archive = await writeDeterministicZip(staging, options.archiveOutput);
