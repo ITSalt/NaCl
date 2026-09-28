@@ -175,6 +175,16 @@ CREATE INDEX index_degradationrule_trigger IF NOT EXISTS  FOR (n:DegradationRule
 //     carries Requirement.anchor_exempt = true (a durable per-node flag, set by skill,
 //     read with coalesce(rq.anchor_exempt,false)) so the L3.7 CRITICAL gate stays
 //     clearable without disabling it. Validator L3.7 enforces all of the above.
+//   REVERSE COVERAGE (L3.8, WARNING, opt-in once any REALIZED_BY->ActivityStep
+//     exists): every actor='System' ActivityStep should be realized by >=1
+//     requirement. A System step that realizes no rule (pure render /
+//     navigation / client plumbing: render the list, redirect, clear
+//     sessionStorage) carries the durable per-node escape valve
+//       ActivityStep.coverage_exempt: Boolean          // read coalesce(s.coverage_exempt,false)
+//       ActivityStep.coverage_exempt_reason: String    // REQUIRED non-blank when the flag is true (L3.9)
+//     Set by nacl-sa-uc (authoring) or by hand after review; never for a step
+//     carrying a business rule, validation, persistence, an external call,
+//     security or money. Exempted-step count is reported in validator Step 0d.
 //
 // (:UseCase)-[:DEPENDS_ON]->(:UseCase)
 //   Use case depends on another use case.
@@ -674,6 +684,16 @@ CREATE INDEX index_degradationrule_trigger IF NOT EXISTS  FOR (n:DegradationRule
 //                               // invalidates ("promo redeemed -> invalidateQuotaCache")
 //   serves_stale: Boolean,  // optional: stale data may be shown while
 //                           // revalidating (stale-while-revalidate)
+//   overlap_accepted: Boolean, // optional L13.9 escape valve (the ONLY L13
+//                              // exemption; L13.0-L13.8 have none by design):
+//                              // this policy intentionally shares an endpoint
+//                              // with another policy of the same storage_kind
+//                              // (e.g. in-app Cache API layer + Service Worker
+//                              // runtime cache, distinct cache names, versioned
+//                              // immutable URLs). L13.9 is silenced only when
+//                              // BOTH policies of the pair carry true.
+//   overlap_accepted_reason: String, // REQUIRED non-blank when overlap_accepted
+//                                    // is true (L13.10); cite the Decision id
 //   created_by: String,     // "nacl-sa-uc" | "nacl-tl-fix"
 //   created_at: DateTime
 // }

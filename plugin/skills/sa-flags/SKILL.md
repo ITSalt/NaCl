@@ -43,6 +43,7 @@ This skill writes **only** validator-relevant metadata. It does not create new n
 | `shared` | `:DomainEntity` | boolean | L6.1 (skip intentionally cross-module entities) |
 | `internal` | `:DomainAttribute` | boolean | L4.2 (skip system attributes from FormField mapping requirement) |
 | `field_category` | `:FormField` | enum: `input`/`display`/`action` | L4.1 (only `input` requires MAPS_TO), L5.4 (only `input` counts toward UC-form coverage) |
+| `coverage_exempt` + `coverage_exempt_reason` | `:ActivityStep` | boolean + string (reason REQUIRED) | L3.8 (skip System steps that realize no rule from reverse coverage); L3.9 flags a missing reason. **Opt-in valve — never backfilled**: absent = not exempt, which is correct. Set only per node, with a reason, after review (`suggest-coverage-exempt` proposes candidates) |
 
 ---
 
@@ -64,6 +65,8 @@ This skill writes **only** validator-relevant metadata. It does not create new n
 | `set-shared --entity <ent-id> <true|false>` | Set on a single DomainEntity. |
 | `set-internal --attr <attr-id> <true|false>` | Set on a single DomainAttribute. |
 | `set-field-category --field <field-id> <input|display|action>` | Set on a single FormField. |
+| `suggest-coverage-exempt [--uc <UC-NNN>]` | **Read-only, report-only.** Lists System ActivitySteps that L3.8 reports and whose description looks like pure render / navigation / client plumbing, as *candidates* for `coverage_exempt`. Never writes. |
+| `set-coverage-exempt --step <step-id> --reason "<why>" [true|false]` | Set on a single ActivityStep. `--reason` is mandatory for `true` (refuse without it); `false` removes the flag and the reason. |
 | `set-batch <yaml-or-json-file>` | Apply a hand-curated batch of overrides (see schema below). |
 
 ---
@@ -95,6 +98,52 @@ Without `--detect-internal`, all NULL `internal` properties are set to `false` (
 - Otherwise → `input` (default; surfaces in L4.1 for user review).
 
 The skill does **not** auto-detect `display` or `action` from name patterns — too project-specific. The user runs `set-field-category` on the small subset that need overrides.
+
+### `:ActivityStep.coverage_exempt` — not part of `backfill-all`
+
+`backfill-all` never touches this valve: an absent flag means "not exempt", which is the
+correct default, and exempting a step is a per-node judgment that needs a written reason.
+The opt-in heuristic lives in the separate report-only command below.
+
+---
+
+## `suggest-coverage-exempt` — opt-in heuristic, report-only
+
+Validator L3.8 reports every `System` step no requirement realizes. On a freshly anchored
+graph a large share of those are pure UI/plumbing steps (render the list, redirect, clear
+`sessionStorage`) that legitimately merit no requirement. This command narrows the list to
+**candidates** by description pattern — and only proposes. It **never writes**; the user
+reviews the table and applies accepted rows with `set-coverage-exempt` or `set-batch`, each
+with its own reason.
+
+Signals (case-insensitive, on `s.description`):
+- **plumbing verbs** (candidate): отображ/показ/рендер/перенаправ/переход/открыва/закрыва/очища/скролл/фокус, render/display/show/redirect/navigate/open/close/clear/scroll/focus
+- **rule markers** (disqualify — these steps must get a requirement): провер/валид/сохран/запис/созда/удал/обнов/списыв/оплат/плат/вызыв/отправ/прав/доступ/авториз/токен/расч/вычисл/начисл/резерв/блокир, validat/check/verify/save/persist/create/delete/update/charge/pay/call/send/permission/auth/token/calculat/reserve/lock
+
+```cypher
+// mcp__neo4j__read-cypher — suggest-coverage-exempt (READ-ONLY)
+// Candidates = exactly the steps L3.8 would report, filtered to plumbing wording.
+MATCH (uc:UseCase)-[:HAS_STEP]->(s:ActivityStep)
+WHERE s.actor = 'System'
+  AND ($ucId IS NULL OR uc.id = $ucId)
+  AND coalesce(s.coverage_exempt, false) = false
+  AND NOT (:Requirement)-[:REALIZED_BY]->(s)
+WITH uc, s, toLower(coalesce(s.description, '')) AS d
+WITH uc, s, d,
+     d =~ '.*(отображ|показ|рендер|перенаправ|переход|открыва|закрыва|очища|скролл|фокус|render|display|show|redirect|navigat|open|close|clear|scroll|focus).*' AS plumbing,
+     d =~ '.*(провер|валид|сохран|запис|созда|удал|обнов|списыв|оплат|плат|вызыв|отправ|прав|доступ|авториз|токен|расч|вычисл|начисл|резерв|блокир|validat|check|verify|save|persist|create|delete|update|charge|pay|call|send|permission|auth|token|calculat|reserve|lock).*' AS rule_marker
+WHERE plumbing
+RETURN uc.id AS uc_id, s.id AS step_id, s.description AS step,
+       CASE WHEN rule_marker THEN 'review (rule marker present — likely needs a requirement)'
+            ELSE 'candidate' END AS suggestion
+ORDER BY suggestion, uc_id, step_id
+```
+
+Present the result as a table (`uc_id | step_id | step | suggestion`) with the count of L3.8
+steps inspected vs candidates found. Rows marked `review` are shown so the user sees them,
+not so they get flagged — a rule marker means the step most likely realizes a requirement.
+Output ends with: "Nothing was written. Apply accepted rows with set-coverage-exempt or
+set-batch (a reason per step is required)."
 
 ---
 
@@ -221,6 +270,19 @@ RETURN uc.id, uc.has_ui;
 
 (analogous shapes for `set-system-only`, `set-shared`, `set-internal`, `set-field-category`)
 
+```cypher
+// mcp__neo4j__write-cypher
+// set-coverage-exempt --step UC-101-A04 --reason "..." true   ($reason REQUIRED non-blank for true)
+MATCH (s:ActivityStep {id: $stepId})
+WHERE $value = false OR trim(coalesce($reason, '')) <> ''
+SET s.coverage_exempt = CASE WHEN $value THEN true ELSE null END,
+    s.coverage_exempt_reason = CASE WHEN $value THEN $reason ELSE null END
+RETURN s.id, s.coverage_exempt, s.coverage_exempt_reason;
+```
+
+Zero rows returned for a `true` call means the reason was blank (or the step id is wrong) —
+report it; never retry without a reason.
+
 ---
 
 ## `set-batch` — hand-curated overrides
@@ -243,9 +305,14 @@ internal:
 field_category:
   field-712: display  # attachment chip preview
   field-099: action   # submit button
+coverage_exempt:      # value = the REQUIRED reason (non-blank); sets coverage_exempt=true
+  UC-101-A04: "renders the list already loaded in A03; no rule"
+  UC-101-A07: "redirect to the result page after A06 persisted the order"
 ```
 
 Cypher executor: `UNWIND $overrides AS o MATCH (n {id: o.id}) SET n[o.property] = o.value`.
+`coverage_exempt` entries expand to two overrides per step (`coverage_exempt=true`,
+`coverage_exempt_reason=<value>`); refuse the whole batch if any reason is blank.
 
 ---
 
@@ -271,6 +338,10 @@ After `backfill-all`, the next `nacl-sa-validate full` will surface real finding
 /nacl:sa-flags set-batch overrides.yaml
 ```
 
+Once L3.8 (reverse coverage) is in play — i.e. after requirements were anchored with
+`REALIZED_BY` — review its System-step list with `suggest-coverage-exempt`, then flag only
+the accepted pure-plumbing steps (each with a reason).
+
 ---
 
 ## Boundaries (what this skill does NOT do)
@@ -279,6 +350,7 @@ After `backfill-all`, the next `nacl-sa-validate full` will surface real finding
 - **Does not touch business properties** (`name`, `description`, `data_type`, `priority`, etc.). Use `nacl-sa-uc`, `nacl-sa-domain`, `nacl-sa-roles`, `nacl-sa-ui` for those.
 - **Does not run validators.** It only sets flags. Run `nacl-sa-validate` separately to see results.
 - **Does not infer domain semantics.** All heuristics are conservative defaults; the user's manual override is always authoritative.
+- **Never auto-writes `coverage_exempt`.** `suggest-coverage-exempt` is report-only; the flag is written only by an explicit `set-coverage-exempt` / `set-batch` call carrying a reason.
 
 ---
 

@@ -653,5 +653,106 @@ class ActivityStepActorTests(unittest.TestCase):
                 )
 
 
+class LegacyTwoColumnMainFlowTests(unittest.TestCase):
+    """Legacy Main Flow tables that split one step across a user-action
+    column and a system-reaction column.
+
+    Format A ``| Шаг | Актор | Система | Данные |``: the Шаг NUMBER column used
+    to be taken as the description ("1", "2", "7a"), the Актор column (which
+    holds the user ACTION TEXT, not a role) canonicalized to 'User' on every
+    row, and the Система column was dropped.
+
+    Format B ``| # | Актор | Действие | Система | ... |``: Актор is a role tag
+    only; a row whose Действие is a placeholder ('--') produced description
+    '--' while the real content sat in Система.
+
+    Per-row rule: user cell empty → System/system cell; system cell empty →
+    User/user cell; both → User/'<user> → <system>'. A role tag in Актор that
+    canonicalizes to System keeps actor='System' when only the action cell is
+    filled (format B row 5).
+    """
+
+    _FIXTURES = Path(__file__).parent / "fixtures" / "inline-table" / "usecases-2col"
+
+    def _parse_fixture(self, filename: str):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = Path(tmp) / "fix"
+            uc_dir = project / "docs" / "14-usecases"
+            uc_dir.mkdir(parents=True)
+            shutil.copy(self._FIXTURES / filename, uc_dir / filename)
+            ir, _ = InlineTableV1SaAdapter().parse(project)
+        self.assertEqual(len(ir.use_cases), 1, "fixture must produce exactly 1 UC")
+        return ir.use_cases[0]
+
+    def _assert_steps(self, uc, expected):
+        steps = uc.activity_steps
+        self.assertEqual(len(steps), len(expected))
+        for i, (step, (exp_actor, exp_desc)) in enumerate(zip(steps, expected), start=1):
+            with self.subTest(step_number=i):
+                self.assertEqual(step.actor, exp_actor)
+                self.assertEqual(step.description, exp_desc)
+
+    def test_format_a_shag_aktor_sistema(self):
+        uc = self._parse_fixture("UC-701-shag-aktor-sistema.md")
+        self._assert_steps(uc, [
+            ("User", "Пользователь открывает афишу → Показывает список сеансов"),
+            ("User", "Выбирает сеанс"),
+            ("System", "Проверяет доступность мест"),         # empty actor cell
+            ("System", "Резервирует места на 10 минут"),      # '—' actor cell
+            ("User", "Нажимает «Оплатить» → Перенаправляет на платёжную форму"),
+        ])
+
+    def test_format_b_hash_aktor_deistvie_sistema(self):
+        uc = self._parse_fixture("UC-702-hash-aktor-deistvie-sistema.md")
+        self._assert_steps(uc, [
+            ("User", "Открывает список броней"),
+            ("User", "Нажимает «Отменить» → Показывает диалог подтверждения"),
+            ("System", "Снимает резерв мест"),                # '--' action cell
+            ("System", "Отправляет уведомление об отмене"),   # empty role tag
+            ("System", "Пересчитывает остаток мест"),         # role tag wins
+        ])
+
+    def test_no_step_description_is_a_number_or_placeholder(self):
+        for fixture in ("UC-701-shag-aktor-sistema.md",
+                        "UC-702-hash-aktor-deistvie-sistema.md"):
+            uc = self._parse_fixture(fixture)
+            for step in uc.activity_steps:
+                with self.subTest(fixture=fixture, step=step.id):
+                    self.assertNotRegex(step.description, r"^\s*\d+[a-zа-я]?\s*$")
+                    self.assertNotIn(step.description.strip(), {"", "-", "--", "—"})
+
+    def test_numbered_shag_column_never_becomes_description(self):
+        """No reaction column: `| Шаг | Описание |` — the numeric Шаг column
+        must not be picked as the description just because its header
+        contains 'шаг'."""
+        content = (
+            "# UC-703: Numbered shag column\n"
+            "\n"
+            "## 1. Метаданные\n"
+            "\n"
+            "| Поле | Значение |\n"
+            "|------|----------|\n"
+            "| ID | UC-703 |\n"
+            "| Название | Numbered shag column |\n"
+            "| Актор | Пользователь |\n"
+            "| Модуль | core |\n"
+            "\n"
+            "## 3. Основной сценарий\n"
+            "\n"
+            "| Шаг | Описание |\n"
+            "|-----|----------|\n"
+            "| 1 | Открыть афишу |\n"
+            "| 2 | Выбрать фильм |\n"
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            project = Path(tmp) / "fix"
+            uc_dir = project / "docs" / "14-usecases"
+            uc_dir.mkdir(parents=True)
+            (uc_dir / "UC-703-numbered.md").write_text(content, encoding="utf-8")
+            ir, _ = InlineTableV1SaAdapter().parse(project)
+        steps = ir.use_cases[0].activity_steps
+        self.assertEqual([s.description for s in steps], ["Открыть афишу", "Выбрать фильм"])
+
+
 if __name__ == "__main__":
     unittest.main()

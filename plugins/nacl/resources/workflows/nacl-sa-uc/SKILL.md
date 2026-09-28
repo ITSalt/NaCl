@@ -217,7 +217,12 @@ Commands:
    session's work overwrites it; `manual` = explicit purges only),
    `serves_stale` true only where stale display is acceptable per the
    requirement — false where a stale read causes a wrong decision (quotas,
-   limits). DegradationRule: `DEG-{NNN}-{PascalName}`
+   limits). Two same-`storage_kind` policies on one endpoint are a
+   contradiction (L13.9) unless the layering is deliberate and recorded in a
+   Decision (e.g. in-app Cache API layer + Service Worker runtime cache,
+   distinct cache names, versioned immutable URLs): then set
+   `overlap_accepted=true` + non-blank `overlap_accepted_reason` citing the
+   Decision on BOTH policies (blank reason = L13.10). DegradationRule: `DEG-{NNN}-{PascalName}`
    (UC-number infix), `trigger_kind` ∈ error|offline|capability, REQUIRED
    `behavior` (the observable degraded behavior, mirror of `slice.then`),
    `fallback_kind` ∈ cached_data|static_content|alternate_provider|
@@ -275,6 +280,11 @@ and `UseCase -[:HAS_REQUIREMENT]-> Requirement`. Every functional/validation/
 behavioral/interface requirement must also be anchored to its implementer via
 `Requirement -[:REALIZED_BY {provenance, anchor_kind}]-> (ActivityStep|FormField|Form|Screen)`
 (validator L3.7, CRITICAL); only NFR/reserved classes and `anchor_exempt=true` nodes are exempt.
+A System step that realizes no rule (pure render, navigation, client plumbing — e.g.
+"render the list", "redirect to the result page", "clear sessionStorage") must not get an
+invented requirement to satisfy L3.8: after confirmation set `coverage_exempt=true` with a
+non-blank `coverage_exempt_reason` (a blank reason is L3.9). Any step carrying a business
+rule, validation, persistence, an external call, security, or money gets a requirement.
 
 Canonical writes are `UseCase`, `ActivityStep`, `Form`, `FormField`,
 `Requirement`, `RuntimeContract`, `RuntimeState`, `RuntimeTransition`,

@@ -29,6 +29,12 @@ Commands:
   `set-field-category`: set one property on one node after confirmation.
 - `set-batch`: apply user-curated overrides from a YAML or JSON file after
   reading and summarizing the planned changes.
+- `suggest-coverage-exempt [--uc UC-NNN]`: read-only, report-only. Lists the
+  System steps L3.8 reports whose description reads as pure render /
+  navigation / client plumbing, marking those that also contain rule markers
+  (validate, save, pay, call, permission, reserve, ...) as `review`. Never writes.
+- `set-coverage-exempt --step <id> --reason "<why>" [true|false]`: set the
+  L3.8 valve on one step; refuse `true` without a non-blank reason.
 
 Managed properties:
 
@@ -39,16 +45,19 @@ Managed properties:
 | `shared` | `DomainEntity` | Whether cross-module use is intentional. |
 | `internal` | `DomainAttribute` | Whether a field can be omitted from UI mapping checks. |
 | `field_category` | `FormField` | `input`, `display`, or `action`; only `input` must map to a domain attribute. |
+| `coverage_exempt` + `coverage_exempt_reason` | `ActivityStep` | System step realizes no rule (L3.8 valve); reason REQUIRED (L3.9). Opt-in, never backfilled. |
 
 Default backfill is conservative: missing `has_ui` is derived from `USES_FORM`;
 missing `system_only`, `shared`, and `internal` default to `false`; missing
-`field_category` defaults to `input`. Manual overrides are authoritative.
+`field_category` defaults to `input`. `coverage_exempt` is never backfilled
+(absent = not exempt). Manual overrides are authoritative.
 
 ## Graph Contract
 
 This skill writes only metadata properties on existing nodes:
 `UseCase.has_ui`, `SystemRole.system_only`, `DomainEntity.shared`,
-`DomainAttribute.internal`, and `FormField.field_category`. It must not create
+`DomainAttribute.internal`, `FormField.field_category`, and
+`ActivityStep.coverage_exempt` + `coverage_exempt_reason`. It must not create
 or delete nodes, relationships, permissions, requirements, forms, fields, or
 domain semantics.
 

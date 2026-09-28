@@ -61,7 +61,7 @@
     {
       "workflow": "nacl-sa-validate",
       "packagedSha256": "00da4073a99157f16fb69d8a0e8c4f719aa01fab858275878008d679dba27417",
-      "codexRootSha256": "2599c640300437531638183869b6d72440a5b4a8f94123a7c4f86fb859c8f2b6",
+      "codexRootSha256": "8e7a2c4f692fbb508053282884f41cc24f198c6de2019d5a620c479bfbc038f5",
       "reason": "Loads goal proof as an internal reference instead of an active package-relative command."
     },
     {

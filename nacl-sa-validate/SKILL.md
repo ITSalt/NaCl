@@ -396,6 +396,32 @@ If `missing` is high for any property, the exemption filters in L4-L6/XL8 will t
 as non-exempt (defaulting to the strict check). This is correct behavior -- it means the SA skills
 haven't classified those nodes yet.
 
+**Escape-valve debt (INFO).** The opt-in valves (`anchor_exempt` for L3.7, `coverage_exempt` for
+L3.8, `overlap_accepted` for L13.9) default to absent, so the table above cannot show them. Report
+how many nodes have pulled each valve and how many did so without the required reason, so the
+debt stays visible even when the gate is green:
+
+```cypher
+// Pre-flight: escape-valve debt (INFO)
+// Aggregate WITHOUT a grouping key so a valve with zero uses still returns its 0 row.
+OPTIONAL MATCH (rq:Requirement) WHERE coalesce(rq.anchor_exempt, false) = true
+WITH count(rq) AS exempted,
+     sum(CASE WHEN rq IS NOT NULL AND trim(coalesce(toString(rq.anchor_exempt_reason), '')) = '' THEN 1 ELSE 0 END) AS without_reason
+RETURN 'Requirement.anchor_exempt' AS valve, exempted, without_reason
+UNION ALL
+OPTIONAL MATCH (s:ActivityStep) WHERE coalesce(s.coverage_exempt, false) = true
+WITH count(s) AS exempted,
+     sum(CASE WHEN s IS NOT NULL AND trim(coalesce(toString(s.coverage_exempt_reason), '')) = '' THEN 1 ELSE 0 END) AS without_reason
+RETURN 'ActivityStep.coverage_exempt' AS valve, exempted, without_reason
+UNION ALL
+OPTIONAL MATCH (cp:CachePolicy) WHERE coalesce(cp.overlap_accepted, false) = true
+WITH count(cp) AS exempted,
+     sum(CASE WHEN cp IS NOT NULL AND trim(coalesce(toString(cp.overlap_accepted_reason), '')) = '' THEN 1 ELSE 0 END) AS without_reason
+RETURN 'CachePolicy.overlap_accepted' AS valve, exempted, without_reason
+```
+
+`without_reason > 0` for `coverage_exempt` / `overlap_accepted` is also reported by L3.9 / L13.10.
+
 **To backfill missing exemption properties**, use `/nacl-sa-flags`:
 
 ```
@@ -422,9 +448,12 @@ Every detected problem is assigned a severity:
 hand (miscounting "5+ WARNING" or missing one CRITICAL silently changes the gate
 verdict). Collect every finding as `{check, severity, flags?}` and pass them to the
 single-authority classifier; emit its `overall` token verbatim. It also re-applies the
-property-based exemption filters (L3.7/L4.1/L5.1/L6.1/L9.1/L10.2/L10.6/XL8.2) as a
-defense-in-depth net, so a finding whose Cypher omitted its `coalesce(...)` filter is
-still dropped before it can flip the gate. Equivalence pinned by .
+property-based exemption filters (L3.7/L3.8/L4.1/L5.1/L6.1/L9.1/L10.2/L10.6/L13.9/XL8.2)
+as a defense-in-depth net, so a finding whose Cypher omitted its `coalesce(...)` filter is
+still dropped before it can flip the gate. Pass the exemption properties the query returns as
+`flags` (L3.8: `coverage_exempt`; L13.9: `overlap_accepted_1` and `overlap_accepted_2` — the
+pair is exempt only when both are true). Equivalence pinned by
+`classify-findings.test.mjs`, next to the classifier script.
 
 ```bash
 node nacl-core/scripts/classify-findings.mjs '{"findings":[{"check":"L1.1","severity":"CRITICAL"},{"check":"L4.1","severity":"CRITICAL","flags":{"field_category":"display"}}]}'
@@ -679,6 +708,29 @@ RETURN uc.id AS uc_id, s.id AS step_id, s.actor AS actor_value,
        'Non-canonical actor value (renderer expects User|System exactly)' AS problem
 ```
 
+#### Check 3.6b: ActivityStep description is a bare number or a placeholder (data quality)
+
+A step whose `description` is only a step number (`1`, `7a`, `2.1`) or a placeholder
+(`--`, `-`, `—`, empty) carries no behavior: the activity diagram shows a numbered box,
+and L3.7/L3.8 anchoring has nothing to anchor to. This is the signature of a migration that
+read the wrong table column (e.g. the `Шаг` number column of a legacy
+`| Шаг | Актор | Система | Данные |` Main Flow table) — cheap to detect after any
+`nacl-migrate-sa` run or manual import. INFO — a count to act on (re-run the migration
+with a fixed adapter, or rewrite the steps via `nacl-sa-uc`), never a gate.
+
+```cypher
+// L3.6b -- Severity: INFO
+// ActivitySteps whose description is numeric-only or a placeholder, per UC
+MATCH (uc:UseCase)-[:HAS_STEP]->(s:ActivityStep)
+WITH uc, s, trim(coalesce(toString(s.description), '')) AS d
+WHERE d IN ['', '-', '--', '---', '—', '–']
+   OR d =~ '[0-9]+[A-Za-zА-Яа-я]?(\\.[0-9]+)*\\.?'
+RETURN uc.id AS uc_id, count(s) AS bad_descriptions,
+       collect(s.id)[..5] AS sample_step_ids,
+       'ActivityStep description is a bare step number or a placeholder (migration column defect?)' AS observation
+ORDER BY bad_descriptions DESC
+```
+
 #### Check 3.7: Requirement not anchored to its implementer (REALIZED_BY)
 
 The **outgoing-anchor invariant** for requirements. A requirement reachable only from
@@ -737,28 +789,56 @@ REALIZED_BY at all** (the `EXISTS {...}` arm), so un-anchored graphs pass vacuou
 the same opt-in shape as the cache-layer arm in L13. Closing it requires authoring, so
 it never escalates to CRITICAL.
 
+Not every System step realizes a rule: pure render / navigation / client plumbing
+(render the list, redirect to the result page, clear `sessionStorage`) legitimately merits
+no requirement, and inventing one per step to reach PASS is junk authoring. Such a step
+carries `coverage_exempt=true` **plus a non-blank `coverage_exempt_reason`** — the durable
+escape valve, mirroring `anchor_exempt` for L3.7. The reason is part of the contract
+(L3.9 flags a blank one) and the exempted count is reported in Step 0d, so the valve can
+never be pulled silently. Anything carrying a business rule, validation, persistence, an
+external call, security, or money is **not** exemptible — author the requirement.
+
 ```cypher
 // L3.8 -- Severity: WARNING
 MATCH (uc:UseCase)-[:HAS_STEP]->(s:ActivityStep)
 WHERE s.actor = 'System'
-  AND EXISTS { (:Requirement)-[:REALIZED_BY]->(:ActivityStep) }  -- opt-in: only after anchoring started
+  AND EXISTS { (:Requirement)-[:REALIZED_BY]->(:ActivityStep) }  // opt-in: only after anchoring started
+  AND coalesce(s.coverage_exempt, false) = false  // REQUIRED FILTER: durable escape valve
   AND NOT (:Requirement)-[:REALIZED_BY]->(s)
 RETURN uc.id AS uc_id, s.id AS step_id,
        coalesce(s.description, '') AS step,
        'System ActivityStep has no realizing requirement (reverse-coverage gap)' AS problem
 ```
 
+#### Check 3.9: coverage_exempt without a reason
+
+The L3.8 valve is only legitimate when it says why. A step flagged `coverage_exempt=true`
+with a missing/blank `coverage_exempt_reason` is an unexplained hole in reverse coverage.
+Not opt-in-gated: a flag without a reason is wrong whether or not anchoring has started.
+
+```cypher
+// L3.9 -- Severity: WARNING
+MATCH (s:ActivityStep)
+WHERE coalesce(s.coverage_exempt, false) = true
+  AND trim(coalesce(toString(s.coverage_exempt_reason), '')) = ''
+OPTIONAL MATCH (uc:UseCase)-[:HAS_STEP]->(s)
+RETURN uc.id AS uc_id, s.id AS step_id,
+       coalesce(s.description, '') AS step,
+       'coverage_exempt=true without coverage_exempt_reason (the L3.8 valve must be justified)' AS problem
+```
+
 ---
 
 ### CRITICAL: Mandatory Exemption Filters
 
-Checks L3.7, L4–L6, L9, L10 and XL8 contain WHERE filters that exempt nodes with specific
+Checks L3.7, L3.8, L4–L6, L9, L10, L13.9 and XL8 contain WHERE filters that exempt nodes with specific
 properties. These filters MUST be included verbatim in every query — omitting them causes
 false positives that cannot be fixed by any SA skill (the data is correct, the query is wrong).
 
 | Check | Mandatory filter | Purpose |
 |-------|-----------------|---------|
 | L3.7 | `AND NOT coalesce(rq.type,'') IN ['nfr','adr','question','assumption'] AND coalesce(rq.anchor_exempt,false) = false` | Exempt NFR/reserved `type` values and durably-flagged unanchorable requirements from the REALIZED_BY anchor gate (class read as `coalesce(rq.rq_type, rq.req_type, rq.type, 'unknown')`) |
+| L3.8 | `AND coalesce(s.coverage_exempt, false) = false` | Exempt System steps that realize no rule (pure render / navigation / client plumbing) from the reverse-coverage check; the flag REQUIRES a non-blank `coverage_exempt_reason` (L3.9) |
 | L4.1 | `AND coalesce(ff.field_category, 'input') = 'input'` | Exempt display/action fields from MAPS_TO requirement |
 | L5.1 | `AND coalesce(uc.has_ui, true) = true` | Exempt backend-only UCs from form requirement |
 | L5.4 | `WHERE mapped_fields = 0 AND input_fields > 0` | Exempt forms with only display/action fields |
@@ -769,6 +849,7 @@ false positives that cannot be fixed by any SA skill (the data is correct, the q
 | L9.1 | `AND coalesce(fr.decision_exempt, false) = false` | Exempt grandfathered pre-provenance FRs (rationale unrecoverable at gap-closure; see provenance-gap-closure runbook) |
 | L10.2 | `AND coalesce(scr.formless, false) = false` | Exempt screens that render no Form (splash, 404) from the RENDERS requirement |
 | L10.6 | `AND coalesce(st.terminal, false) = false` | Exempt intentionally terminal error states from the escape-transition requirement |
+| L13.9 | `AND NOT (coalesce(cp1.overlap_accepted, false) = true AND coalesce(cp2.overlap_accepted, false) = true)` | Exempt an intentional same-storage layering of two policies on one endpoint — only when BOTH policies of the pair accept the overlap; the flag REQUIRES a non-blank `overlap_accepted_reason` (L13.10) |
 | XL8.2 | `AND coalesce(sr.system_only, false) = false` | Exempt infrastructure-only roles |
 
 L11 has **no exemption properties by design**: an anchorless Slice (L11.2) is not an exemptible
@@ -779,10 +860,16 @@ an exemptible state — a failure mode observable at no API surface is an implem
 belongs in Requirements / RuntimeContract notes, not in a node; an unshown ErrorPresentation is
 dead text. Deliberate UI silence is modeled as a `silent`-kind presentation, not as an exemption.
 
-L13 likewise has **no exemption properties by design**: a CachePolicy that caches no surface
-(L13.2) is dead vocabulary — a caching intention with no data surface belongs in Requirements,
-not in a node; a DegradationRule with neither an ON_ERROR failure mode nor a DEGRADES_TO state
-is prose change propagation can never reach (the L11.2 argument verbatim).
+L13's **structural checks (L13.0–L13.8) have no exemption properties by design**: a CachePolicy
+that caches no surface (L13.2) is dead vocabulary — a caching intention with no data surface
+belongs in Requirements, not in a node; a DegradationRule with neither an ON_ERROR failure mode
+nor a DEGRADES_TO state is prose change propagation can never reach (the L11.2 argument
+verbatim). **L13.9 has exactly one exemption** — `CachePolicy.overlap_accepted` — because it is
+a heuristic overlap check, not a structural invariant: two same-storage policies on one endpoint
+are usually contradictory, but an intentional layering (e.g. an in-app Cache API layer plus a
+Service Worker runtime cache with distinct cache names over versioned immutable URLs, recorded
+in a Decision) is not. The pair is exempt only when both policies carry `overlap_accepted=true`,
+and each flag REQUIRES a non-blank `overlap_accepted_reason` (L13.10 flags a blank one).
 
 If executing via HTTP API (curl) instead of MCP tools, copy queries CHARACTER-FOR-CHARACTER
 from the code blocks below. Do NOT simplify, rephrase, or omit WHERE clauses.
@@ -2107,15 +2194,34 @@ RETURN dr.id AS rule,
 
 Two policies caching the same endpoint with the same storage are two contradictory invalidation contracts for one surface. Different storages on one endpoint are normal layering (memory over indexed_db) — only same-storage pairs fire.
 
+This is the one L13 check with an exemption (see Mandatory Exemption Filters): an intentional same-storage layering — e.g. an in-app Cache API layer plus a Service Worker runtime cache, with distinct cache names and versioned immutable URLs, recorded in a Decision — is accepted when **both** policies of the pair carry `overlap_accepted=true` with a non-blank `overlap_accepted_reason`. One side accepting is not enough: the owner of the other policy has not agreed to share the surface.
+
 ```cypher
 // L13.9 -- Severity: WARNING
-// Same endpoint, same storage, two policies
+// Same endpoint, same storage, two policies (unless both accept the overlap)
 MATCH (cp1:CachePolicy)-[:CACHES]->(api:APIEndpoint)<-[:CACHES]-(cp2:CachePolicy)
 WHERE cp1.id < cp2.id
   AND coalesce(cp1.storage_kind, '') = coalesce(cp2.storage_kind, '')
+  AND NOT (coalesce(cp1.overlap_accepted, false) = true
+           AND coalesce(cp2.overlap_accepted, false) = true)  // REQUIRED FILTER: accepted layering
 RETURN api.id AS endpoint, cp1.id AS policy_1, cp2.id AS policy_2,
        coalesce(cp1.storage_kind, '') AS storage_kind,
+       coalesce(cp1.overlap_accepted, false) AS overlap_accepted_1,
+       coalesce(cp2.overlap_accepted, false) AS overlap_accepted_2,
        'Two cache policies with the same storage cache the same endpoint — contradictory invalidation contracts' AS observation
+```
+
+#### Check 13.10: overlap_accepted without a reason
+
+The L13.9 valve is only legitimate when it says why (normally a Decision id and the mechanism that keeps the layers apart). A policy flagged `overlap_accepted=true` with a missing/blank `overlap_accepted_reason` is an unexplained acceptance.
+
+```cypher
+// L13.10 -- Severity: WARNING
+MATCH (cp:CachePolicy)
+WHERE coalesce(cp.overlap_accepted, false) = true
+  AND trim(coalesce(toString(cp.overlap_accepted_reason), '')) = ''
+RETURN cp.id AS policy, coalesce(cp.storage_kind, '') AS storage_kind,
+       'overlap_accepted=true without overlap_accepted_reason (the L13.9 valve must be justified)' AS problem
 ```
 
 ---
@@ -2383,7 +2489,7 @@ For each enabled level (L1 through L13, XL6 through XL9):
 6. **L10 scope:** in `--scope=intra-uc UC-NNN` runs, restrict L10 to the screens of the scoped UCs by prepending `MATCH (uc:UseCase)-[:HAS_SCREEN]->(scr:Screen) WHERE uc.id IN $ucIds` to each screen-anchored query. Run L10.3 before L10.5b (reachability assumes same-screen wiring, which 10.3 guarantees).
 7. **L11 scope:** in `--scope=intra-uc UC-NNN` runs, restrict L11 to the slices of the scoped UCs by anchoring on `MATCH (uc:UseCase)-[:HAS_SLICE]->(sl:Slice) WHERE uc.id IN $ucIds`; for the non-anchored checks L11.0/L11.1, filter by the id family instead: `WHERE sl.id STARTS WITH 'SLC-' + <NNN> + '-'` (the UC-number infix makes every slice id of one UC match).
 8. **L12 scope:** domain errors are NOT UC-scoped (shared vocabulary, Module parent) — the slice id-infix recipe does not apply. In `--scope=intra-uc UC-NNN` runs, restrict L12 to the errors raisable from the scoped UCs' endpoints: `MATCH (uc:UseCase)-[:EXPOSES]->(:APIEndpoint)-[:MAY_RAISE]->(err:DomainError) WHERE uc.id IN $ucIds` (and their presentations via `PRESENTED_AS`); when invoked from a producer run, prefer the explicit id list the run collected: `WHERE err.id IN $errIds`. The screen-keyed L12.7 and UC-keyed L12.9 carry no `err.id` — scope them by the UCs instead (L12.7 prefiltered to the scoped UCs' screens via `HAS_SCREEN`, L12.9 anchored on the scoped UCs).
-9. **L13 scope (mixed recipe):** cache policies are NOT UC-scoped (shared vocabulary, Module parent) — in `--scope=intra-uc UC-NNN` runs restrict them to the policies caching the scoped UCs' surfaces: `MATCH (uc:UseCase)-[:EXPOSES]->(:APIEndpoint)<-[:CACHES]-(cp:CachePolicy) WHERE uc.id IN $ucIds`; when invoked from a producer run, prefer the explicit id list the run collected: `WHERE cp.id IN $cacheIds`. Degradation rules ARE UC-scoped — filter by the id family: `WHERE dr.id STARTS WITH 'DEG-' + <NNN> + '-'` (the UC-number infix, same recipe as SLC). The surface-keyed L13.7 carries no `cp.id` per row — prefilter it to the scoped UCs' endpoints via `EXPOSES`. L13.6–13.9 are WARNING/INFO — report, never block.
+9. **L13 scope (mixed recipe):** cache policies are NOT UC-scoped (shared vocabulary, Module parent) — in `--scope=intra-uc UC-NNN` runs restrict them to the policies caching the scoped UCs' surfaces: `MATCH (uc:UseCase)-[:EXPOSES]->(:APIEndpoint)<-[:CACHES]-(cp:CachePolicy) WHERE uc.id IN $ucIds`; when invoked from a producer run, prefer the explicit id list the run collected: `WHERE cp.id IN $cacheIds`. Degradation rules ARE UC-scoped — filter by the id family: `WHERE dr.id STARTS WITH 'DEG-' + <NNN> + '-'` (the UC-number infix, same recipe as SLC). The surface-keyed L13.7 carries no `cp.id` per row — prefilter it to the scoped UCs' endpoints via `EXPOSES`. L13.6–13.10 are WARNING/INFO — report, never block.
 
 ### Step 3: Aggregate results
 
@@ -2515,6 +2621,8 @@ If pre-flight returns zero nodes:
 ```yaml
 # SA layer nodes:
 - Module, UseCase, ActivityStep, DomainEntity, DomainAttribute
+  (L3 exemption properties: Requirement.anchor_exempt, ActivityStep.coverage_exempt
+   + coverage_exempt_reason)
 - Enumeration, EnumValue, Form, FormField
 - Requirement, SystemRole, Component
 
@@ -2552,7 +2660,8 @@ If pre-flight returns zero nodes:
 - edges: HAS_CACHE, CACHES, HAS_DEGRADATION, ON_ERROR, DEGRADES_TO (all unshared names)
 - node properties: storage_kind, invalidation_kind, ttl_seconds, serves_stale,
   trigger_kind, behavior, fallback_kind (+ DomainError.retryable for L13.6/13.7)
-- no exemption properties (by design)
+- no exemption properties on the structural checks L13.0–L13.8 (by design);
+  L13.9 exemption: CachePolicy.overlap_accepted (+ overlap_accepted_reason, L13.10)
 ```
 
 ### Writes
@@ -2590,6 +2699,9 @@ Before completing, verify:
 - [ ] No orphaned Requirements
 - [ ] Every UseCase has ActivitySteps
 - [ ] Every UseCase has an actor (SystemRole)
+- [ ] Numeric-only / placeholder step descriptions counted (INFO, L3.6b)
+- [ ] Must-anchor requirements anchored via REALIZED_BY or `anchor_exempt` (L3.7)
+- [ ] System steps realized by a requirement or `coverage_exempt` with a reason (L3.8, L3.9); exempted-step count reported in Step 0d
 
 ### L4: Form-Domain Traceability
 - [ ] All FormFields have MAPS_TO -> DomainAttribute
@@ -2660,7 +2772,7 @@ Before completing, verify:
 - [ ] DEGRADES_TO targets belong to the rule's own UC; error-triggered rules satisfy the channel rule (the degraded screen actually calls a raising endpoint)
 - [ ] HAS_CACHE / CACHES / HAS_DEGRADATION / ON_ERROR / DEGRADES_TO edges target correct labels
 - [ ] No blank invalidation_kind or behavior; ttl policies carry ttl_seconds; kind vocabularies canonical
-- [ ] Retryable consistency reviewed (WARNING); cached-surface degradation gaps reviewed (WARNING); unjoined cached_data rules reviewed (INFO); overlapping policies reviewed (WARNING)
+- [ ] Retryable consistency reviewed (WARNING); cached-surface degradation gaps reviewed (WARNING); unjoined cached_data rules reviewed (INFO); overlapping policies reviewed (WARNING) unless both accept the overlap (`overlap_accepted`); every `overlap_accepted` carries a reason (L13.10)
 
 ### XL6: UC Coverage (ba-cross / full only)
 - [ ] All automated WorkflowSteps have AUTOMATES_AS -> UseCase

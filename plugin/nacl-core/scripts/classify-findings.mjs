@@ -23,18 +23,22 @@ const coalesce = (v, d) => (v === undefined || v === null ? d : v);
 
 // Property-based exemption predicates, keyed by LAYER then check id. A finding is exempt
 // when its node's flags satisfy the predicate — mirrors the verbatim `coalesce(...)` WHERE
-// filter. LAYER matters: nacl-ba-validate reuses check ids L4.1/L5.1/L6.1 for entirely
+// filter (L13.9 is a pair finding: flags carry overlap_accepted_1/_2). LAYER matters: nacl-ba-validate reuses check ids L4.1/L5.1/L6.1 for entirely
 // different (BA-layer) checks that have NO exemptions — so the SA rules must NOT apply to
 // them. Default layer is 'sa' (back-compat). 'ba' has no exemption rules.
 const EXEMPTION_RULES = {
   sa: {
     'L3.7':  { reason: 'requirement legitimately unanchorable (anchor_exempt = true)', test: (f) => coalesce(f.anchor_exempt, false) === true },
+    'L3.8':  { reason: 'System step realizes no rule (coverage_exempt = true)', test: (f) => coalesce(f.coverage_exempt, false) === true },
     'L4.1':  { reason: 'display/action field (field_category != input)', test: (f) => coalesce(f.field_category, 'input') !== 'input' },
     'L5.1':  { reason: 'backend-only UC (has_ui = false)',               test: (f) => coalesce(f.has_ui, true) === false },
     'L6.1':  { reason: 'intentionally shared entity (shared = true)',    test: (f) => coalesce(f.shared, false) === true },
     'L9.1':  { reason: 'grandfathered FR (decision_exempt = true)',      test: (f) => coalesce(f.decision_exempt, false) === true },
     'L10.2': { reason: 'formless screen (formless = true)',              test: (f) => coalesce(f.formless, false) === true },
     'L10.6': { reason: 'terminal state (terminal = true)',               test: (f) => coalesce(f.terminal, false) === true },
+    // Pair finding: exempt only when BOTH policies accept the overlap (one side is not consent).
+    'L13.9': { reason: 'accepted same-storage layering (overlap_accepted = true on both policies)',
+               test: (f) => coalesce(f.overlap_accepted_1, false) === true && coalesce(f.overlap_accepted_2, false) === true },
     'XL8.2': { reason: 'infrastructure-only role (system_only = true)',  test: (f) => coalesce(f.system_only, false) === true },
   },
   ba: {}, // BA-layer L1-L8 / XL1-XL5 have no property exemptions

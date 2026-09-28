@@ -743,6 +743,33 @@ Parameters per requirement (anchor target chosen by class):
 
 A requirement realized by multiple steps gets one `REALIZED_BY` edge per step.
 
+**System steps that realize no rule (`coverage_exempt`).** The reverse direction — validator
+**L3.8 (WARNING)** — expects every `System`-actor step to be realized by ≥1 requirement.
+Some System steps legitimately realize none: they are pure render, navigation or client
+plumbing. For those, **do not invent a requirement** to satisfy the check; flag the step
+instead, with a reason (a flag without a reason is itself a finding, L3.9):
+
+```cypher
+MATCH (s:ActivityStep {id: $stepId})
+WHERE s.actor = 'System'
+SET s.coverage_exempt = true,
+    s.coverage_exempt_reason = $reason      // REQUIRED, non-blank: why no rule lives here
+RETURN s.id AS step_id, s.coverage_exempt_reason AS reason
+```
+
+| Qualifies (flag it) | Does NOT qualify (author a requirement) |
+|---|---|
+| «Система отображает список сеансов» — renders data already fetched and validated elsewhere | «Система проверяет, что места ещё свободны» — a business rule |
+| «Система перенаправляет на страницу результата» — navigation after a completed step | «Система сохраняет бронь» — persistence |
+| «Система очищает `sessionStorage` черновика» — client plumbing | «Система списывает оплату / вызывает платёжный шлюз» — money + external call |
+| | «Система проверяет права доступа к брони» — security; «Система валидирует промокод» — validation |
+
+Rule of thumb: if the step's behavior could be **wrong** in a way a user, a business owner
+or an auditor would care about — a business rule, validation, persistence, an external call,
+security, money — it realizes a requirement. Present every proposed `coverage_exempt` step to
+the user with its reason, as a short table right after the 4.1 requirements table (step id,
+description, reason), and write the flag only after confirmation — never silently. The exempted count stays visible in the validator's Step 0d report.
+
 Anchor-candidate lookups (run before 4.1 to prefill the Anchor column):
 
 ```cypher
@@ -1685,6 +1712,8 @@ Also read:
 
 **CachePolicy contract:** `storage_kind ∈ {memory, local_storage, indexed_db, cache_api, http, server, cdn}` — mapping notes: `server` covers server-side key-value/cache stores (Redis, memcached); `memory` is process-local in-memory (a module-level JS cache, an in-process LRU); **`invalidation_kind ∈ {ttl, event, manual, session, never}` — REQUIRED**, this is when the cache stops lying: `ttl` requires `ttl_seconds`, `event` should name the `invalidation_event` ("promo redeemed → invalidateQuotaCache"); `serves_stale` (Boolean) — whether stale data may be shown while revalidating. **Kind selection for boundary-style invalidation:** a named recurring boundary ("daily reset at 00:00 UTC") is an `event` whose name goes into `invalidation_event` — never convert a boundary into `ttl_seconds` the requirement does not state; `session` is for data scoped to one user session/installation that lives until overwritten by the next session's work (offline restore caches); `manual` is for explicit operator/user-initiated purges only. Real graphs are mostly event/manual-invalidated client caches — never invent a TTL a requirement does not name. **serves_stale principle:** set `true` only where showing stale data is acceptable per the requirement (offline viewing of generated content); set `false` where a stale read causes a wrong decision (quotas, rate limits, permissions).
 
+**Intentional same-storage overlap (`overlap_accepted`).** Two policies with the same `storage_kind` on one endpoint normally mean two contradictory invalidation contracts (validator L13.9, WARNING) — prefer one policy. When the layering is deliberate and recorded in a Decision (e.g. an in-app Cache API layer plus a Service Worker runtime cache, kept apart by distinct cache names and versioned immutable URLs), set `overlap_accepted = true` with a non-blank `overlap_accepted_reason` that cites the Decision id and the separating mechanism on **both** policies of the pair (one side accepting does not silence L13.9; a flag without a reason is L13.10). Also add `(:Decision)-[:JUSTIFIES]->(:CachePolicy)` for both. Never set it to quiet a genuine contradiction.
+
 **DegradationRule contract:** `trigger_kind ∈ {error, offline, capability}` (error — a catalogued domain failure; offline — no network; capability — the browser/platform cannot do it); **`behavior` — REQUIRED**, the observable degraded behavior in plain language («показывается универсальный fallback-контент; пользователь не видит сырую ошибку» — mirrors `slice.then`); `fallback_kind ∈ {cached_data, static_content, alternate_provider, alternate_ui, skip_unit, backoff}`.
 
 **Anchor proposal:** error-triggered rules → `ON_ERROR` to the catalogued errors that fire them (1..n; one fallback rule may fire on several failure modes) + `DEGRADES_TO` where a UI half exists; offline/capability rules → `DEGRADES_TO` to the state representing the degraded experience. The degraded state may be ANY state_kind — degrading INTO a `content` state showing stale cached data is normal (offline restore). **Target selection:** anchor to the state the user LIVES IN during the degraded experience (for substituted fallback content that is the `content` state), not necessarily the state that HANDLES the error — handling and degraded residence may differ. Only propose `DEGRADES_TO` for states of THIS UC's screens (same-UC rule, L13.3), and for error-triggered rules only where the **channel rule** holds — the rule is SCREEN-scoped, exactly as L12.3: any of the target state's screen's effects, on any of its transitions, CALLS an endpoint that raises one of the rule's errors (the calling effect does not have to lead into the target state) — L13.3 enforces exactly this.
@@ -1710,6 +1739,8 @@ SET cp.name = $name,
     cp.ttl_seconds = $ttlSeconds,            // REQUIRED iff invalidation_kind='ttl'
     cp.invalidation_event = $invalidationEvent, // recommended for kind='event'
     cp.serves_stale = $servesStale,          // optional Boolean
+    cp.overlap_accepted = $overlapAccepted,  // optional Boolean: intentional same-storage layering (L13.9)
+    cp.overlap_accepted_reason = $overlapAcceptedReason, // REQUIRED non-blank iff overlap_accepted (L13.10)
     cp.created_by = 'nacl-sa-uc',
     cp.created_at = coalesce(cp.created_at, datetime()),
     cp.updated = datetime()
