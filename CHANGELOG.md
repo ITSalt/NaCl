@@ -4,6 +4,83 @@ All notable changes to NaCl (Natural Agent Control Language) will be documented 
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [2.28.0] — 2026-09-28
+
+**Two validator warnings get an audited escape valve, and a migration defect that
+blanked step descriptions is fixed and made visible.** `L3.8` (System step with no
+realizing requirement) gains `ActivityStep.coverage_exempt`, and `L13.9` (two same-storage
+cache policies on one endpoint) gains `CachePolicy.overlap_accepted`. Both valves require a
+written reason, which the validator checks, and both show up as debt in pre-flight.
+`nacl-migrate-sa` stops reading the step-number column of legacy two-column Main Flow
+tables as the step description. Found while validating family-cinema; reproduced RED on a
+disposable Neo4j and closed GREEN.
+
+### Added
+- **`L3.8` escape valve `coverage_exempt`** (mirrors `anchor_exempt` for `L3.7`). Once a
+  project anchors its requirements, `L3.8` lists every System step no requirement realizes.
+  On family-cinema that was 202 steps after 383 requirements were anchored; by the
+  owner's estimate about 60 of them are pure render / navigation / client plumbing
+  (render the list, redirect, clear `sessionStorage`) that legitimately merits no
+  requirement. Without a valve the gate could never drop below the 5-WARNING threshold
+  unless someone authored junk requirements. A step now carries `coverage_exempt=true`
+  plus a non-blank `coverage_exempt_reason`, and `L3.8` skips it
+  (`AND coalesce(s.coverage_exempt, false) = false`, listed in the Mandatory Exemption
+  Filters table).
+- **`L3.9` (WARNING)** — `coverage_exempt=true` with a missing/blank reason. The valve
+  cannot be pulled silently.
+- **`L13.10` (WARNING)** — `overlap_accepted=true` with a missing/blank reason.
+- **`L3.6b` (INFO)** — per-UC count of ActivityStep descriptions that are a bare step
+  number (`1`, `7a`, `2.1`) or a placeholder (`--`, `-`, `—`, empty): the signature of a
+  migration that read the wrong table column, visible after any migration.
+- **Step 0d escape-valve debt (INFO)** — exempted and reasonless counts for
+  `anchor_exempt`, `coverage_exempt` and `overlap_accepted`, so debt stays visible when
+  the gate is green.
+- **`nacl-sa-flags suggest-coverage-exempt`** — opt-in, report-only heuristic. It narrows
+  the `L3.8` list to candidates whose description reads as plumbing and marks steps that
+  also carry rule markers (validate, save, pay, call, permission, reserve…) as `review`.
+  It never writes. The new `set-coverage-exempt` setter and `set-batch` both refuse a
+  blank reason. `backfill-all` never touches the valve, because an absent flag correctly
+  means "not exempt".
+- `tests/graph/regression-validator-escape-valves.sh` — 8 cases on a disposable Neo4j.
+  The Cypher under test is extracted from the shipped `SKILL.md` at run time.
+
+### Changed
+- **`L13.9` accepts intentional layering.** An in-app Cache API layer plus a Service
+  Worker runtime cache with distinct cache names and versioned immutable URLs
+  (family-cinema DEC-042) is not a contradiction. The pair is silenced only when **both**
+  policies carry `overlap_accepted=true`; one side accepting is not consent. The
+  structural checks `L13.0–L13.8` keep "no exemption properties by design", and the
+  paragraph now says precisely that `L13.9` has exactly this one exemption.
+- **`classify-findings.mjs`** gains the `L3.8` (`coverage_exempt`) and `L13.9`
+  (`overlap_accepted_1 && overlap_accepted_2`, a pair finding) rules plus tests. The
+  SKILL.md equivalence note, which had been reduced to "pinned by .", names the test file
+  again.
+- **`nacl-sa-uc`** authoring. Phase 4 says when a System step gets `coverage_exempt`
+  instead of an invented requirement, with qualifying and non-qualifying examples: any
+  business rule, validation, persistence, external call, security or money needs a
+  requirement. Resilience Phase 2 says when to set `overlap_accepted` (both policies,
+  reason citing the Decision).
+- Schema (`sa-schema.cypher`, `docs/graph-schema.md`) and `docs/methodology/validation`
+  (EN + RU) document all four properties.
+
+### Fixed
+- **`L3.8` did not execute as written.** Its opt-in line carried a `-- opt-in: …`
+  annotation, but `--` is not a Cypher comment, so on Neo4j 5 the query copied
+  character-for-character is a syntax error. `L3.8` and `L13.9` now use `//`. The same
+  `-- REQUIRED FILTER` annotation still exists in other checks (L3.7, L4–L7, L9) and is
+  tracked as a follow-up.
+- **`nacl-migrate-sa`: 2-column Main Flow tables.** In `| Шаг | Актор | Система | Данные |`
+  tables, the inline-table adapter's `_parse_scenario_table` picked the numeric `Шаг` column
+  as the description (the graph got `1`, `2`, `7a`). It also set every row to `actor=User`
+  from an `Актор` column that holds the user's *action text*, and dropped the `Система`
+  column. In `| # | Актор | Действие | Система |` rows with an empty action, the
+  description came out as `--`. Now a numbered column (`Шаг`/`#`/`Step`/`№` holding a step
+  number) is never the description, a system-reaction column is detected, and each row
+  resolves as: user cell empty → `System` / system text; system cell empty → `User` / user
+  text; both → `User` / `<user> → <system>`. A `System` role tag on an action-only row
+  stays `System`. Fail-loudly semantics are unchanged. Fixtures for both formats are
+  under `nacl-migrate-core/tests/fixtures/inline-table/usecases-2col/`.
+
 ## [2.27.0] — 2026-08-03
 
 **Staleness is stamped by task status, and shipped drift finally has an exit** —
