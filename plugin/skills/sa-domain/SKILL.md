@@ -835,7 +835,7 @@ adds the anchor when it creates the steps and fields. NFRs (`rq_type` not set or
 // anchor_requirement (when the implementing field/form already exists)
 MATCH (rq:Requirement {id: $reqId})
 MATCH (anchor {id: $anchorId})
-WHERE $anchorLabel IN labels(anchor)        -- FormField | Form | ActivityStep | Screen
+WHERE $anchorLabel IN labels(anchor)        // FormField | Form | ActivityStep | Screen
 MERGE (rq)-[rel:REALIZED_BY]->(anchor)
 SET   rel.provenance = 'authored', rel.anchor_kind = $reqType
 ```

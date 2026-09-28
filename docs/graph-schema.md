@@ -86,7 +86,7 @@ System Analysis nodes capture the "how the system is built" level — modules, u
 |---|---|---|
 | `Module` | A functional module of the system | `id`, `name` |
 | `UseCase` | A system use case with user story and acceptance criteria | `id`, `name`, `user_story`, `acceptance_criteria`, `priority` |
-| `ActivityStep` | An ordered step inside a use case | `id`, `description` |
+| `ActivityStep` | An ordered step inside a use case | `id`, `description`, `actor`, `coverage_exempt`, `coverage_exempt_reason` (L3.8 escape valve for System steps that realize no rule; the reason is required — L3.9) |
 | `DomainEntity` | A domain model entity with typed attributes | `id`, `name`, `module` |
 | `DomainAttribute` | A typed attribute of a `DomainEntity` | `id`, `name` |
 | `Enumeration` | An enumeration type | `id`, `name` |
@@ -107,7 +107,7 @@ System Analysis nodes capture the "how the system is built" level — modules, u
 | `Slice` | A behavior slice — graph-native acceptance scenario (Given/When/Then), below the UC, above the Task (owned by `nacl-sa-uc slices`) | `id`, `name`, `slice_kind`, `given`, `when`, `then`, `criterion_index` |
 | `DomainError` | A transport-independent domain error — named, catalogued failure mode observable at an API surface; module-scoped shared vocabulary (owned by `nacl-sa-uc errors`) | `id`, `code`, `name`, `error_kind`, `http_status`, `retryable` |
 | `ErrorPresentation` | One user-facing presentation of a `DomainError` (user-language message + kind) | `id`, `message`, `presentation_kind`, `recovery_action` |
-| `CachePolicy` | A caching policy for one server data surface — storage, invalidation contract, staleness tolerance; module-scoped shared vocabulary (owned by `nacl-sa-uc resilience`) | `id`, `name`, `storage_kind`, `invalidation_kind`, `ttl_seconds`, `invalidation_event`, `serves_stale` |
+| `CachePolicy` | A caching policy for one server data surface — storage, invalidation contract, staleness tolerance; module-scoped shared vocabulary (owned by `nacl-sa-uc resilience`) | `id`, `name`, `storage_kind`, `invalidation_kind`, `ttl_seconds`, `invalidation_event`, `serves_stale`, `overlap_accepted`, `overlap_accepted_reason` (L13.9 escape valve for an intentional same-storage layering; silences L13.9 only when both policies of the pair accept; the reason is required — L13.10) |
 | `DegradationRule` | How one UC's experience degrades on failure / offline / missing capability — trigger, observable degraded behavior, fallback (owned by `nacl-sa-uc resilience`) | `id`, `name`, `trigger_kind`, `behavior`, `fallback_kind` |
 
 `priority` values: `MVP`, `Post-MVP`, `Nice-to-have`

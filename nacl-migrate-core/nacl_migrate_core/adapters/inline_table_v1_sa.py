@@ -69,6 +69,43 @@ def _canonicalize_actor(text: Optional[str]) -> Optional[str]:
     return None
 
 
+# Placeholder cells that mean "nothing in this column for this row".
+_EMPTY_CELLS = frozenset({"", "-", "--", "---", "—", "–"})
+# Headers of a step-NUMBER column ("Шаг", "#", "Step", "№").
+_NUMBER_HEADERS = frozenset({"шаг", "#", "step", "№", "no", "n"})
+# Step numbers as written in legacy tables: "1", "7a", "2.1", "3.".
+_STEP_NUMBER_RE = re.compile(r"\d+[a-zа-я]?(?:\.\d+)*\.?", re.IGNORECASE)
+# Words that only name a role; used to tell a role tag ("Пользователь",
+# "ACT-01 Пользователь (Посетитель)", "Сервер (Fastify)") from action text
+# ("Пользователь выбирает фильм").
+_ROLE_WORDS_RE = re.compile(
+    r"\b(?:пользовател\w*|клиент\w*|users?|clients?|систем\w*|сервер\w*"
+    r"|system|server|backend|frontend|бэкенд\w*|фронтенд\w*)\b",
+    re.IGNORECASE,
+)
+
+
+def _is_empty_cell(cell: Optional[str]) -> bool:
+    return (cell or "").strip() in _EMPTY_CELLS
+
+
+def _is_step_number(cell: Optional[str]) -> bool:
+    return bool(_STEP_NUMBER_RE.fullmatch((cell or "").strip()))
+
+
+def _is_role_tag(cell: Optional[str]) -> bool:
+    """True when *cell* canonicalizes to a role and carries nothing else
+    (role words, ``ACT-NN`` ids, parenthetical qualifiers). A cell that
+    canonicalizes to a role but also holds action text is NOT a role tag.
+    """
+    if _canonicalize_actor(cell) is None:
+        return False
+    residual = re.sub(r"\([^)]*\)", " ", cell or "")
+    residual = re.sub(r"\b[A-ZА-Я]{2,}-\d+\b", " ", residual)
+    residual = _ROLE_WORDS_RE.sub(" ", residual)
+    return re.sub(r"[\W_]+", "", residual) == ""
+
+
 # ---------------------------------------------------------------------------
 
 class InlineTableV1SaAdapter:
@@ -833,8 +870,20 @@ class InlineTableV1SaAdapter:
         canonicalized value ('User' / 'System' / None) derived from an
         optional 'Компонент' / 'Исполнитель' / 'Actor' / 'Актор' column, and
         *description* is the step text from the 'Действие' / 'Action' column.
+
+        A step-NUMBER column ('Шаг' / '#' / 'Step' / '№' whose cell is "1",
+        "7a", ...) is never the description. When the table also has a
+        system-reaction column ('Система' / 'System' / 'Ответ системы'), each
+        row is resolved from its user-action cell (Действие, else an Актор
+        cell holding action text rather than a role tag) and its system cell:
+        user empty → ('System', system); system empty → ('User', user);
+        both → ('User', 'user → system').
         """
         _ACTOR_HEADER_TOKENS = ("компонент", "исполнитель", "actor", "актор")
+        # System-reaction column of the legacy two-column Main Flow dialects
+        # (``| Шаг | Актор | Система | Данные |``,
+        # ``| # | Актор | Действие | Система | ... |``).
+        _SYSTEM_HEADER_TOKENS = ("систем", "system", "ответ системы", "реакция")
 
         if not body:
             return []
@@ -853,32 +902,90 @@ class InlineTableV1SaAdapter:
                         actor_col = k
                         break
 
-                # Detect step-description column.
-                step_col = None
+                def _norm(k: str) -> str:
+                    return re.sub(r"\*\*", "", k).strip().lower()
+
+                def _cell(k: Optional[str]) -> str:
+                    return re.sub(r"\*\*", "", row.get(k, "")).strip() if k else ""
+
+                # A step-NUMBER column ("Шаг"/"#"/"Step"/"№" holding "1", "7a")
+                # is never a description column.
+                number_cols = {
+                    k for k in keys
+                    if _norm(k) in _NUMBER_HEADERS and _is_step_number(_cell(k))
+                }
+
+                # Detect optional system-reaction column (Система / System /
+                # Ответ системы).
+                system_col = None
                 for k in keys:
-                    kl = k.lower()
-                    if any(t in kl for t in ("действие", "action", "шаг", "step")):
-                        step_col = k
+                    if k != actor_col and any(t in _norm(k) for t in _SYSTEM_HEADER_TOKENS):
+                        system_col = k
+                        break
+
+                # Detect step-description column: an action column wins over a
+                # textual Шаг/Step column; a numeric Шаг/Step column is skipped.
+                step_col = None
+                for tokens in (("действие", "action"), ("шаг", "step")):
+                    for k in keys:
+                        if k in number_cols or k == system_col:
+                            continue
+                        if any(t in k.lower() for t in tokens):
+                            step_col = k
+                            break
+                    if step_col:
                         break
 
                 # Canonicalize per-step actor from the actor column cell.
                 col_actor: Optional[str] = None
                 if actor_col:
-                    raw_cell = re.sub(r"\*\*", "", row.get(actor_col, "")).strip()
-                    if raw_cell and raw_cell != "--":
+                    raw_cell = _cell(actor_col)
+                    if not _is_empty_cell(raw_cell):
                         col_actor = _canonicalize_actor(raw_cell)
 
-                if step_col and row[step_col].strip():
+                if system_col:
+                    # Legacy two-column dialect: one step = user action and/or
+                    # system reaction. The user-action cell is the Действие
+                    # column when present, else the Актор column when it holds
+                    # action text rather than a role tag.
+                    system_cell = _cell(system_col)
+                    role_tag: Optional[str] = None
+                    if step_col:
+                        user_cell = _cell(step_col)
+                        if actor_col and _is_role_tag(_cell(actor_col)):
+                            role_tag = col_actor
+                    elif actor_col and not _is_role_tag(_cell(actor_col)):
+                        user_cell = _cell(actor_col)
+                    else:
+                        user_cell = ""
+                        role_tag = col_actor
+                    user_empty = _is_empty_cell(user_cell)
+                    system_empty = _is_empty_cell(system_cell)
+                    if user_empty and not system_empty:
+                        out.append(("System", md.strip_markdown_inline(system_cell)))
+                        continue
+                    if not user_empty and system_empty:
+                        # A System role tag on an action-only row (e.g.
+                        # "| 5 | Система | Пересчитывает | — |") stays System.
+                        out.append((role_tag or "User", md.strip_markdown_inline(user_cell)))
+                        continue
+                    if not user_empty and not system_empty:
+                        out.append(("User", md.strip_markdown_inline(
+                            f"{user_cell} → {system_cell}")))
+                        continue
+                    # Both empty: fall through to the generic fallback below.
+
+                if step_col and not system_col and row[step_col].strip():
                     desc = md.strip_markdown_inline(row[step_col].strip())
                     out.append((col_actor, desc))
                 else:
                     # Fallback: concatenate all non-numeric, non-actor columns
-                    skip = {keys[0]}
+                    skip = {keys[0]} | number_cols
                     if actor_col:
                         skip.add(actor_col)
                     pieces = [
                         v.strip() for k, v in row.items()
-                        if v.strip() and k not in skip
+                        if not _is_empty_cell(v) and k not in skip
                     ]
                     if pieces:
                         out.append((col_actor, md.strip_markdown_inline(" — ".join(pieces))))

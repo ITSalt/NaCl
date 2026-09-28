@@ -59,10 +59,56 @@ test('L3.7 unanchored requirement: anchor_exempt clears it, default counts as FA
   assert.equal(exempted.overall, 'PASS');
 });
 
+test('L3.8 reverse-coverage gap: coverage_exempt clears it, default still counts', () => {
+  // WARNING by default (System step with no realizing requirement).
+  const gap = classifyFindings({ findings: [{ check: 'L3.8', severity: 'WARNING', flags: {} }] });
+  assert.equal(gap.findings[0].exempt, false);
+  assert.equal(gap.counts.warning, 1);
+  // Five pure-plumbing steps flagged coverage_exempt must not push the gate to WARN.
+  const plumbing = classifyFindings({ findings: Array.from({ length: 5 }, () => (
+    { check: 'L3.8', severity: 'WARNING', flags: { coverage_exempt: true } })) });
+  assert.equal(plumbing.counts.warning, 0);
+  assert.equal(plumbing.counts.exempt, 5);
+  assert.equal(plumbing.overall, 'PASS');
+  // The same five without the flag do.
+  const unflagged = classifyFindings({ findings: Array.from({ length: 5 }, () => (
+    { check: 'L3.8', severity: 'WARNING', flags: { coverage_exempt: false } })) });
+  assert.equal(unflagged.overall, 'WARN');
+});
+
+test('L3.9 (coverage_exempt without reason) has no exemption of its own', () => {
+  const r = classifyFindings({ findings: [{ check: 'L3.9', severity: 'WARNING', flags: { coverage_exempt: true } }] });
+  assert.equal(r.findings[0].exempt, false);
+  assert.equal(r.counts.warning, 1);
+});
+
+test('L13.9 overlapping policies: exempt only when BOTH policies accept the overlap', () => {
+  const ex = (flags) => classifyFindings({ findings: [{ check: 'L13.9', severity: 'WARNING', flags }] }).findings[0].exempt;
+  assert.equal(ex({ overlap_accepted_1: true, overlap_accepted_2: true }), true);
+  assert.equal(ex({ overlap_accepted_1: true, overlap_accepted_2: false }), false); // one side is not consent
+  assert.equal(ex({ overlap_accepted_1: true }), false);
+  assert.equal(ex({ overlap_accepted: true }), false);                               // unpaired flag name never exempts
+  assert.equal(ex({}), false);                                                        // default: fires
+  const accepted = classifyFindings({ findings: [
+    { check: 'L13.9', severity: 'WARNING', flags: { overlap_accepted_1: true, overlap_accepted_2: true } },
+  ] });
+  assert.equal(accepted.counts.warning, 0);
+  assert.equal(accepted.counts.exempt, 1);
+});
+
+test('L13.10 (overlap_accepted without reason) has no exemption of its own', () => {
+  const r = classifyFindings({ findings: [{ check: 'L13.10', severity: 'WARNING', flags: { overlap_accepted: true } }] });
+  assert.equal(r.findings[0].exempt, false);
+});
+
 test('exemption predicates per check', () => {
   const ex = (check, flags) => classifyFindings({ findings: [{ check, severity: 'CRITICAL', flags }] }).findings[0].exempt;
   assert.equal(ex('L3.7', { anchor_exempt: true }), true);
   assert.equal(ex('L3.7', {}), false);                 // default anchor_exempt=false → not exempt
+  assert.equal(ex('L3.8', { coverage_exempt: true }), true);
+  assert.equal(ex('L3.8', {}), false);                 // default coverage_exempt=false → not exempt
+  assert.equal(ex('L13.9', { overlap_accepted_1: true, overlap_accepted_2: true }), true);
+  assert.equal(ex('L13.9', {}), false);
   assert.equal(ex('L5.1', { has_ui: false }), true);
   assert.equal(ex('L5.1', { has_ui: true }), false);
   assert.equal(ex('L5.1', {}), false);                 // default has_ui=true → not exempt

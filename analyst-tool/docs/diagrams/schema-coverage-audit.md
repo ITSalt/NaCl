@@ -207,17 +207,17 @@ Confirmed: `Requirement` is drawn in markdown reports only (nacl-sa-* skills out
 ## Appendix — Raw Probe Commands
 
 ```cypher
--- Node label counts (both graphs)
+// Node label counts (both graphs)
 MATCH (n) RETURN labels(n)[0] AS label, count(*) AS n ORDER BY n DESC
 
--- Relationship type counts (both graphs)
+// Relationship type counts (both graphs)
 MATCH ()-[r]->() RETURN type(r) AS rel, count(*) AS n ORDER BY n DESC
 
--- Screen family edges (fc-neo4j)
+// Screen family edges (fc-neo4j)
 MATCH (s:Screen)-[r]->(t) RETURN type(r), labels(t)[0], count(*) ORDER BY count(*) DESC
 MATCH (t:Transition)-[r]->(n) RETURN type(r), labels(n)[0], count(*) ORDER BY count(*) DESC
 
--- RuntimeContract family (a Runtime*-family sample graph)
+// RuntimeContract family (a Runtime*-family sample graph)
 MATCH (rc:RuntimeContract)-[r]->(t) RETURN type(r), labels(t)[0], count(*) ORDER BY count(*) DESC
 MATCH (rt:RuntimeTransition)-[r]->(t) RETURN type(r), labels(t)[0], count(*) ORDER BY count(*) DESC
 ```

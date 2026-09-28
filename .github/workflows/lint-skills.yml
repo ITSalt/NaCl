@@ -93,6 +93,13 @@ jobs:
           # `# version-pin-ok` comment.
           sh scripts/check-version-pins.sh
 
+      - name: Check Cypher fences for SQL-style comments
+        run: |
+          # `--` is not a Cypher comment: a fence annotated `... -- REQUIRED
+          # FILTER` is a syntax error on Neo4j 5, and skills tell agents to copy
+          # queries character-for-character. Cypher line comments are `//`.
+          node scripts/check-cypher-comments.mjs
+
       - name: Check graph-down HALT snippet sync
         run: |
           # The "Neo4j is not reachable" HALT message is duplicated across

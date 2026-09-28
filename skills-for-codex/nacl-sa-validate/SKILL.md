@@ -54,7 +54,10 @@ Pre-flight:
    requested but the BA layer is empty, run the complete internal set
    (L1-L13) and skip the BA-to-SA cross-checks with a warning in the report.
 5. Audit exemption properties used by deeper checks: `has_ui`, `system_only`,
-   `shared`, `internal`, `field_category`, and `anchor_exempt` (L3.7).
+   `shared`, `internal`, `field_category`, and `anchor_exempt` (L3.7). Also
+   report escape-valve debt (INFO): how many `Requirement.anchor_exempt`,
+   `ActivityStep.coverage_exempt` and `CachePolicy.overlap_accepted` flags are
+   set, and how many lack their `*_reason`.
 
 Internal checks:
 
@@ -70,7 +73,12 @@ Internal checks:
   implements it — `functional`/`behavioral` -> `ActivityStep`, `validation` ->
   `FormField`, `interface` -> `Form`|`Screen`; the overloaded reserved `type` values
   (nfr|adr|question|assumption) and nodes flagged `anchor_exempt=true` are exempt. L3.7b (WARNING) cross-checks the target label against the class; L3.8
-  (WARNING, opt-in once any REALIZED_BY exists) flags System steps no requirement realizes.
+  (WARNING, opt-in once any REALIZED_BY exists) flags System steps no requirement realizes,
+  except steps flagged `coverage_exempt=true` (REQUIRED filter
+  `coalesce(s.coverage_exempt,false)=false`; pure render/navigation/client plumbing only).
+  L3.9 (WARNING) flags `coverage_exempt=true` with a blank `coverage_exempt_reason`.
+  L3.6b (INFO) counts per UC the step descriptions that are a bare step number or a
+  placeholder (`--`, `-`, `—`, empty) — a migration column defect signature.
 - L4 form-domain traceability: input fields have `MAPS_TO`, attributes used by
   forms exist, and internal attributes are exempt only when flagged.
 - L5 UC-form validation: UI use cases have forms, user steps reference forms
@@ -190,7 +198,10 @@ Internal checks:
   WARNING (anchored on CACHES, so error-only graphs stay silent);
   `cached_data` rules that meet no CachePolicy through their errors' raisers
   or their screen's calls are INFO; two same-storage policies on one
-  endpoint are WARNING. A graph with zero CachePolicy/DegradationRule nodes
+  endpoint are WARNING (L13.9) unless BOTH carry `overlap_accepted=true` —
+  the only L13 exemption (the structural L13.0-L13.8 have none by design),
+  for intentional layering recorded in a Decision; L13.10 (WARNING) flags
+  `overlap_accepted=true` with a blank `overlap_accepted_reason`. A graph with zero CachePolicy/DegradationRule nodes
   passes L13 cleanly. All five edge names are unshared (second phase in a
   row).
 
