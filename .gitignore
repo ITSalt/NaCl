@@ -72,6 +72,3 @@ analyst-tool/bench/
 # repo must never carry; git and GitHub grant access per repository, not per path.
 # Not a submodule on purpose: no .gitmodules, no gitlink, no private URL leaks here.
 meta/
-
-# Claude Code runtime lock (per-session, never commit)
-.claude/scheduled_tasks.lock
