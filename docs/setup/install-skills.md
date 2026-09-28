@@ -156,6 +156,36 @@ Start Claude Code in a project and run:
 /nacl-init --dry-run
 ```
 
+### Switch channels
+
+If both channels are installed (the plugin's SessionStart hook warns about a
+symlinked `~/.claude/skills/nacl-init`), keep one and remove the other.
+
+**Keep the plugin — remove the symlink install.** The uninstaller deletes only
+symlinks under `~/.claude/skills/nacl-*` and `~/.claude/agents/*.md` that point
+into your NaCl checkout; your own skills and agents are left untouched. Preview
+first, then run it:
+
+```sh
+sh "$HOME/NaCl/scripts/uninstall-claude-code-skills.sh" --dry-run
+```
+
+```sh
+sh "$HOME/NaCl/scripts/uninstall-claude-code-skills.sh"
+```
+
+On Windows, use `scripts\uninstall-claude-code-skills.ps1` (`-DryRun` to
+preview). Note that `nacl-goal`, `nacl-postmortem`, and the `nacl-migrate*`
+skills exist only in the symlink channel.
+
+**Keep the symlinks — remove the plugin.** Disable or uninstall `nacl@nacl`
+(`/plugin` panel, or `"nacl@nacl": false` under `enabledPlugins` in
+`~/.claude/settings.json`), then re-run the installer above to refresh the links.
+
+Start a new session afterwards: skills are loaded at session start. The
+`NACL_ALLOW_DUAL=1` opt-out silences the warning but still loads every skill and
+agent twice; use it only if you deliberately run both channels.
+
 ## Codex
 
 The target normal Codex channel is one NaCl Skills-only card. It packages ten
