@@ -64,8 +64,8 @@ WHERE rq.rq_type IS NULL
 SET rq.rq_type = CASE
       WHEN rq.req_type IN ['functional','validation','behavioral','interface'] THEN rq.req_type
       WHEN rq.type    IN ['functional','validation','behavioral','interface'] THEN rq.type
-      ELSE 'functional'   -- legacy business/security/integrity → must-anchor functional
-    END                    --   (намеренно: всплывёт в L3.7, аналитик переклассифицирует валидационные)
+      ELSE 'functional'   // legacy business/security/integrity → must-anchor functional
+    END                    //   (намеренно: всплывёт в L3.7, аналитик переклассифицирует валидационные)
 RETURN coalesce(rq.req_type, rq.type) AS legacy, rq.rq_type AS canonical, count(*) AS n ORDER BY canonical;
 ```
 
@@ -145,7 +145,7 @@ RETURN rq.id AS rq, uc.id AS uc, [x IN steps | x.id] AS candidate_steps, size(st
 // mcp__neo4j__write-cypher
 MATCH (rq:Requirement {id: $rqId})
 MATCH (anchor {id: $anchorId})
-WHERE $anchorLabel IN labels(anchor)        -- ActivityStep | FormField | Form | Screen
+WHERE $anchorLabel IN labels(anchor)        // ActivityStep | FormField | Form | Screen
 MERGE (rq)-[rel:REALIZED_BY]->(anchor)
 ON CREATE SET rel.provenance = 'backfill', rel.confidence = 'high', rel.anchor_kind = $cls
 RETURN rq.id AS rq, anchor.id AS anchor, $anchorLabel AS label;

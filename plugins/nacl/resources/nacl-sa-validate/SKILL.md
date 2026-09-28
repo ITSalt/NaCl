@@ -755,8 +755,8 @@ reserved values it also carries — `nfr`, `adr`/`question` (read by `nacl-sa-fi
 MATCH (rq:Requirement)
 WITH rq, coalesce(rq.rq_type, rq.req_type, rq.type, 'unknown') AS cls
 WHERE cls IN ['functional','validation','behavioral','interface']
-  AND NOT coalesce(rq.type, '') IN ['nfr','adr','question','assumption']  -- REQUIRED FILTER: reserved type values
-  AND coalesce(rq.anchor_exempt, false) = false                          -- REQUIRED FILTER: durable escape valve
+  AND NOT coalesce(rq.type, '') IN ['nfr','adr','question','assumption']  // REQUIRED FILTER: reserved type values
+  AND coalesce(rq.anchor_exempt, false) = false                          // REQUIRED FILTER: durable escape valve
   AND NOT (rq)-[:REALIZED_BY]->()
 RETURN rq.id AS req_id, cls AS req_class,
        coalesce(rq.description, rq.name, '') AS description,
@@ -888,7 +888,7 @@ from the code blocks below. Do NOT simplify, rephrase, or omit WHERE clauses.
 // Only input fields require MAPS_TO; display and action fields are exempt
 MATCH (f:Form)-[:HAS_FIELD]->(ff:FormField)
 WHERE NOT (ff)-[:MAPS_TO]->(:DomainAttribute)
-  AND coalesce(ff.field_category, 'input') = 'input'  -- REQUIRED FILTER: exempt display/action
+  AND coalesce(ff.field_category, 'input') = 'input'  // REQUIRED FILTER: exempt display/action
 RETURN f.name AS form_name, f.id AS form_id,
        ff.name AS field_name, ff.id AS field_id,
        ff.field_type AS field_type, ff.field_category AS field_category,
@@ -950,7 +950,7 @@ RETURN ff.id AS field_id, ff.name AS field_name, ff.field_type AS field_type,
 // Backend-only UCs (has_ui=false) are exempt
 MATCH (uc:UseCase)-[:HAS_STEP]->(:ActivityStep)
 WHERE NOT (uc)-[:USES_FORM]->(:Form)
-  AND coalesce(uc.has_ui, true) = true  -- REQUIRED FILTER: exempt backend-only UCs
+  AND coalesce(uc.has_ui, true) = true  // REQUIRED FILTER: exempt backend-only UCs
 WITH DISTINCT uc
 RETURN uc.id AS uc_id, uc.name AS uc_name,
        'UseCase has steps but no linked Forms (USES_FORM)' AS problem
@@ -990,7 +990,7 @@ MATCH (uc:UseCase)-[:USES_FORM]->(f:Form)-[:HAS_FIELD]->(ff:FormField)
 WITH uc, f, count(ff) AS total_fields,
      sum(CASE WHEN coalesce(ff.field_category, 'input') = 'input' THEN 1 ELSE 0 END) AS input_fields,
      sum(CASE WHEN (ff)-[:MAPS_TO]->(:DomainAttribute) THEN 1 ELSE 0 END) AS mapped_fields
-WHERE mapped_fields = 0 AND input_fields > 0  -- REQUIRED FILTER: exempt display-only forms
+WHERE mapped_fields = 0 AND input_fields > 0  // REQUIRED FILTER: exempt display-only forms
 RETURN uc.id AS uc_id, uc.name AS uc_name,
        f.id AS form_id, f.name AS form_name,
        total_fields, input_fields,
@@ -1011,7 +1011,7 @@ RETURN uc.id AS uc_id, uc.name AS uc_name,
 // Entities marked shared=true are intentionally shared and exempt
 MATCH (m:Module)-[:CONTAINS_ENTITY]->(de:DomainEntity)
 WITH de, collect(m.name) AS modules, count(m) AS module_count
-WHERE module_count > 1 AND coalesce(de.shared, false) = false  -- REQUIRED FILTER: exempt shared entities
+WHERE module_count > 1 AND coalesce(de.shared, false) = false  // REQUIRED FILTER: exempt shared entities
 RETURN de.id AS entity_id, de.name AS entity_name, modules,
        'DomainEntity belongs to multiple modules -- verify attribute consistency' AS problem
 ```
@@ -1092,7 +1092,7 @@ Active FeatureRequest nodes must scope at least one UseCase via INCLUDES_UC, oth
 // Tombstones (legacy_origin IS NOT NULL) are exempt — they use legacy edges, not INCLUDES_UC.
 MATCH (fr:FeatureRequest)
 WHERE NOT (fr)-[:INCLUDES_UC]->(:UseCase)
-  AND fr.legacy_origin IS NULL  -- REQUIRED FILTER: exempt tombstones
+  AND fr.legacy_origin IS NULL  // REQUIRED FILTER: exempt tombstones
 RETURN fr.id AS fr_id, fr.status AS status,
        'FeatureRequest has no INCLUDES_UC -> UseCase' AS problem
 ```
@@ -1116,7 +1116,7 @@ RETURN fr.id AS fr_id, uc.id AS uc_id, r.kind AS kind,
 // (Neo4j MERGE on missing UC silently no-ops, so an FR can end up with zero UCs.)
 // Tombstones (legacy_origin IS NOT NULL) are exempt -- they use legacy edges.
 MATCH (fr:FeatureRequest)
-WHERE fr.legacy_origin IS NULL  -- REQUIRED FILTER: exempt tombstones
+WHERE fr.legacy_origin IS NULL  // REQUIRED FILTER: exempt tombstones
 OPTIONAL MATCH (fr)-[:INCLUDES_UC]->(uc:UseCase)
 WITH fr, count(uc) AS uc_count
 WHERE uc_count = 0
@@ -1265,7 +1265,7 @@ This level writes nothing.
 MATCH (fr:FeatureRequest)
 WHERE fr.legacy_origin IS NULL
   AND coalesce(fr.status, '') <> 'tombstone'
-  AND coalesce(fr.decision_exempt, false) = false  -- REQUIRED FILTER: exempt grandfathered FRs
+  AND coalesce(fr.decision_exempt, false) = false  // REQUIRED FILTER: exempt grandfathered FRs
   AND NOT (fr)-[:IMPLEMENTS]->(:Decision)
 RETURN fr.id AS fr_id, fr.status AS status,
        'FeatureRequest has no IMPLEMENTS -> Decision (structural change with no recorded rationale)' AS problem
@@ -1391,7 +1391,7 @@ RETURN 'AnalyticsEvent' AS node_type, ae.id AS id,
 // Screens marked formless=true (splash, 404) are exempt from RENDERS.
 MATCH (scr:Screen)
 WHERE NOT (scr)-[:RENDERS]->(:Form)
-  AND coalesce(scr.formless, false) = false  -- REQUIRED FILTER: exempt formless screens
+  AND coalesce(scr.formless, false) = false  // REQUIRED FILTER: exempt formless screens
 RETURN 'Screen' AS node_type, scr.id AS id,
        'Screen has no RENDERS -> Form (domain changes cannot reach it)' AS problem
 UNION ALL
@@ -1500,7 +1500,7 @@ RETURN scr.id AS screen, st.id AS state_id, st.name AS state,
 // error-kind states with NO outgoing transition at all
 MATCH (scr:Screen)-[:HAS_STATE]->(st:ScreenState)
 WHERE st.state_kind = 'error'
-  AND coalesce(st.terminal, false) = false  -- REQUIRED FILTER: exempt terminal states
+  AND coalesce(st.terminal, false) = false  // REQUIRED FILTER: exempt terminal states
   AND NOT (st)<-[:FROM_STATE]-(:Transition)
 RETURN scr.id AS screen, st.id AS state_id, st.name AS state,
        'error state has no outgoing transition (user is trapped)' AS problem
@@ -1513,7 +1513,7 @@ RETURN scr.id AS screen, st.id AS state_id, st.name AS state,
 // error states whose every escape is system/lifecycle-triggered
 MATCH (scr:Screen)-[:HAS_STATE]->(st:ScreenState)
 WHERE st.state_kind = 'error'
-  AND coalesce(st.terminal, false) = false  -- REQUIRED FILTER: exempt terminal states
+  AND coalesce(st.terminal, false) = false  // REQUIRED FILTER: exempt terminal states
   AND (st)<-[:FROM_STATE]-(:Transition)
   AND NOT EXISTS {
         MATCH (st)<-[:FROM_STATE]-(tr2:Transition)-[:ON_EVENT]->(ev:ScreenEvent)
@@ -2376,7 +2376,7 @@ RETURN br.id AS br_id, coalesce(br.full_name, br.name) AS br_name,
 // Roles marked system_only=true are infrastructure roles with no BA counterpart -- exempt
 MATCH (sr:SystemRole)
 WHERE NOT (:BusinessRole)-[:MAPPED_TO]->(sr)
-  AND coalesce(sr.system_only, false) = false  -- REQUIRED FILTER: exempt infrastructure roles
+  AND coalesce(sr.system_only, false) = false  // REQUIRED FILTER: exempt infrastructure roles
 RETURN sr.id AS sr_id, sr.name AS sr_name,
        'SystemRole not mapped from any BA BusinessRole (may be system-only role)' AS problem
 ```

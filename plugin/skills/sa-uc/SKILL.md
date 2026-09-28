@@ -728,10 +728,10 @@ anchor) using the confirmed Anchor column from 4.1:
 ```cypher
 MATCH (rq:Requirement {id: $rqId})
 MATCH (anchor {id: $anchorId})
-WHERE $anchorLabel IN labels(anchor)        -- guard: ActivityStep | FormField | Form | Screen
+WHERE $anchorLabel IN labels(anchor)        // guard: ActivityStep | FormField | Form | Screen
 MERGE (rq)-[rel:REALIZED_BY]->(anchor)
 SET   rel.provenance  = 'authored',
-      rel.anchor_kind = $rqType             -- equals the requirement class
+      rel.anchor_kind = $rqType             // equals the requirement class
 RETURN rq.id AS rq_id, anchor.id AS anchor_id, $anchorLabel AS anchor_label
 ```
 
@@ -773,14 +773,14 @@ description, reason), and write the flag only after confirmation — never silen
 Anchor-candidate lookups (run before 4.1 to prefill the Anchor column):
 
 ```cypher
--- validation / interface candidates: this UC's forms and their fields
+// validation / interface candidates: this UC's forms and their fields
 MATCH (uc:UseCase {id: $ucId})-[:USES_FORM]->(f:Form)
 OPTIONAL MATCH (f)-[:HAS_FIELD]->(ff:FormField)
 RETURN f.id AS form_id, f.name AS form_name, ff.id AS field_id, ff.name AS field_name
 ```
 
 ```cypher
--- behavioral / functional candidates: this UC's System-actor steps (where rules are enforced)
+// behavioral / functional candidates: this UC's System-actor steps (where rules are enforced)
 MATCH (uc:UseCase {id: $ucId})-[:HAS_STEP]->(s:ActivityStep)
 WHERE s.actor = 'System'
 RETURN s.id AS step_id, s.order AS step_order, s.description AS step

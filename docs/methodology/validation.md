@@ -78,7 +78,7 @@ extension layers introduced in 2.15.
 // L4.1 -- Severity: CRITICAL
 MATCH (f:Form)-[:HAS_FIELD]->(ff:FormField)
 WHERE NOT (ff)-[:MAPS_TO]->(:DomainAttribute)
-  AND coalesce(ff.field_category, 'input') = 'input'  -- REQUIRED FILTER: exempt display/action
+  AND coalesce(ff.field_category, 'input') = 'input'  // REQUIRED FILTER: exempt display/action
 RETURN ff.id, ff.name, ff.field_type
 ```
 
