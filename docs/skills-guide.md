@@ -149,6 +149,15 @@ skill names are reference material, not the normal Codex UI.
 The full plugin is the ordinary Codex channel. Its local candidate is verified;
 public HTTP/OAuth and release are `NOT_RUN`.
 
+## Duplicate skills (`nacl-*` and `/nacl:*`)
+
+If every skill appears twice, the plugin and the symlink install are both
+active on this machine. Keep one channel: see
+[Switch channels](setup/install-skills.md#switch-channels). To remove the
+symlink install, preview with
+`sh scripts/uninstall-claude-code-skills.sh --dry-run`, then run it without
+`--dry-run`.
+
 ## Next Steps
 
 - [Skills Reference](skills-reference.md) — complete catalog with descriptions
