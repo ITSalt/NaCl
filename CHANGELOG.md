@@ -43,6 +43,9 @@ disposable Neo4j and closed GREEN.
   means "not exempt".
 - `tests/graph/regression-validator-escape-valves.sh` — 8 cases on a disposable Neo4j.
   The Cypher under test is extracted from the shipped `SKILL.md` at run time.
+- `tests/graph/regression-cypher-fence-parse.sh` — `EXPLAIN`s each of the 21 formerly
+  `--`-annotated fences on a disposable Neo4j, sent over HTTP as a single string the way
+  the MCP driver sends it. All 21 fail before this release and parse after it.
 
 ### Changed
 - **`L13.9` accepts intentional layering.** An in-app Cache API layer plus a Service
@@ -64,11 +67,20 @@ disposable Neo4j and closed GREEN.
   (EN + RU) document all four properties.
 
 ### Fixed
-- **`L3.8` did not execute as written.** Its opt-in line carried a `-- opt-in: …`
-  annotation, but `--` is not a Cypher comment, so on Neo4j 5 the query copied
-  character-for-character is a syntax error. `L3.8` and `L13.9` now use `//`. The same
-  `-- REQUIRED FILTER` annotation still exists in other checks (L3.7, L4–L7, L9) and is
-  tracked as a follow-up.
+- **27 Cypher fences did not execute as written.** Validator and authoring queries were
+  annotated SQL-style (`AND …  -- REQUIRED FILTER: …`), but `--` is not a Cypher comment.
+  Neo4j 5 rejects each such query (`Invalid input 'FILTER'`), and `nacl-sa-validate` tells
+  agents to copy queries character-for-character. The affected lines were exactly the
+  REQUIRED exemption filters, the ones an agent is least allowed to drop. Affected:
+  `nacl-sa-validate` L3.7, L3.8, L4.1, L5.1, L5.4, L6.1, L7.2, L7.4, L9.1, L10.2, L10.6a,
+  L10.6b and XL8.2; the `nacl-sa-uc` REALIZED_BY write and anchor-candidate lookups; the
+  `nacl-sa-domain` anchor write; the L4.1 example in `docs/methodology/validation`
+  (EN + RU); the `rq_type` normalization and anchor write in the requirement-anchoring
+  upgrade runbook; and the analyst-tool schema-audit probe appendix. All now use `//`,
+  the Cypher line comment. New CI gate `scripts/check-cypher-comments.mjs` (in
+  `lint-skills.yml`) flags comment-shaped `--` in any `cypher` fence. It skips
+  relationship patterns such as `(a)--(b)`, `'--'` string literals, and `--` already
+  inside a `//` comment.
 - **`nacl-migrate-sa`: 2-column Main Flow tables.** In `| Шаг | Актор | Система | Данные |`
   tables, the inline-table adapter's `_parse_scenario_table` picked the numeric `Шаг` column
   as the description (the graph got `1`, `2`, `7a`). It also set every row to `actor=User`

@@ -108,14 +108,29 @@ RETURN api.id AS endpoint, cp1.id AS policy_1, cp2.id AS policy_2,
 per UC, step descriptions matching `''`/`-`/`--`/`---`/`—`/`–` or the step-number
 pattern `[0-9]+[A-Za-zА-Яа-я]?(\.[0-9]+)*\.?`.
 
-### `L3.8` did not run as written
+### 27 Cypher fences did not run as written
 
-The shipped `L3.8` fence carried `-- opt-in: only after anchoring started`. `--` is not a
-Cypher comment. Neo4j 5.26 rejects the query with `Invalid input …`. An agent following
-the skill's own "copy character-for-character" instruction therefore got a syntax error,
-not a result. `L3.8` and `L13.9` now use `//`. The same `-- REQUIRED FILTER` annotation is
-still present on other checks (L3.7, L4.1, L5.1, L5.4, L6.1, L7.2, L7.4, L9.1) and is
-tracked as a separate follow-up, not changed here.
+The shipped `L3.8` fence carried `-- opt-in: only after anchoring started`, and 26 more
+lines across 8 files were annotated the same SQL way, mostly `-- REQUIRED FILTER: …`.
+`--` is not a Cypher comment. Neo4j 5.26 rejects every such query
+(`Invalid input 'FILTER'`). An agent following the skill's own "copy
+character-for-character" instruction therefore got a syntax error, not a result. The
+annotated lines were exactly the REQUIRED exemption filters, the ones an agent is least
+allowed to drop.
+
+Affected fences, all now using `//`:
+- `nacl-sa-validate`: L3.7, L3.8, L4.1, L5.1, L5.4, L6.1, L7.2, L7.4, L9.1, L10.2,
+  L10.6a, L10.6b, XL8.2 and L13.9.
+- `nacl-sa-uc`: the REALIZED_BY write and both anchor-candidate lookups.
+- `nacl-sa-domain`: the anchor write.
+- `docs/methodology/validation` (EN + RU): the L4.1 example.
+- The requirement-anchoring upgrade runbook: the `rq_type` normalization and the anchor
+  write. **Both are write queries projects were told to run during the 2.21.0 upgrade.**
+- The analyst-tool schema-audit probe appendix.
+
+`scripts/check-cypher-comments.mjs` now runs in `lint-skills.yml`. It flags comment-shaped
+`--` in any `cypher` fence, and skips relationship patterns like `(a)--(b)`, `'--'` string
+literals, and `--` already inside a `//` comment.
 
 ### The migrator fix
 
@@ -185,6 +200,8 @@ through `nacl-sa-uc`.
 
 | What | Command | Result |
 |---|---|---|
+| Every formerly `--`-annotated fence parses (`EXPLAIN` over HTTP, disposable Neo4j 5.26) | `tests/graph/regression-cypher-fence-parse.sh` | 21/21 PASS; `NACL_FENCE_REF=<pre-change ref>` gives 21/21 FAIL with `Invalid input …` |
+| No SQL-style comment left in any `cypher` fence | `node scripts/check-cypher-comments.mjs` | 0 findings; 27 on the pre-change tree |
 | Validator Cypher on a disposable Neo4j 5.26 (fences extracted from the shipped SKILL.md) | `tests/graph/regression-validator-escape-valves.sh` | 8/8 PASS; against the pre-change `nacl-sa-validate/SKILL.md` the first 6 FAIL (L3.8 syntax error, L3.9/L3.6b/L13.10/Step 0d fences absent, L13.9 fires on the accepted pair) |
 | Classifier | `node --test nacl-core/scripts/classify-findings.test.mjs` | 17/17; 3 fail against the pre-change classifier |
 | Migrator | `cd nacl-migrate-core && python3 -m unittest discover -s tests` | 126/126 (122 existing + 4 new); the new tests fail on the old adapter with `'1' != …`, `'7a' != …`, `'--' != …` |

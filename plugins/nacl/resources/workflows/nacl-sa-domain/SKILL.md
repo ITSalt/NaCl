@@ -71,8 +71,8 @@ data is unavailable for `IMPORT_BA` or `FULL`, report `BLOCKED`.
 When a business rule becomes a `Requirement`, write the class to the canonical
 `rq_type` property (not the legacy `req_type`) and, if the constrained `FormField`
 or governing `Form` already exists, anchor the requirement with
-`Requirement -[:REALIZED_BY {provenance:'authored', anchor_kind}]-> (FormField|Form|ActivityStep)`
-(validator L3.7). If the UC has not been detailed yet, leave the anchor for
+`Requirement -[:REALIZED_BY {provenance:'authored', anchor_kind}]-> (FormField|Form|ActivityStep|Screen)`
+(`Screen` for an interface requirement on a formless screen; validator L3.7). If the UC has not been detailed yet, leave the anchor for
 `nacl-sa-uc detail` to add when it creates the steps and fields. NFRs are exempt.
 
 Before writes, present the module owner, entity ids, attribute ids and data

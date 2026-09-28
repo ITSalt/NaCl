@@ -78,7 +78,7 @@ BA-проверки. L1-L7 покрывают ядро спецификации;
 // L4.1 -- Severity: CRITICAL
 MATCH (f:Form)-[:HAS_FIELD]->(ff:FormField)
 WHERE NOT (ff)-[:MAPS_TO]->(:DomainAttribute)
-  AND coalesce(ff.field_category, 'input') = 'input'  -- ОБЯЗАТЕЛЬНЫЙ ФИЛЬТР: исключает display/action
+  AND coalesce(ff.field_category, 'input') = 'input'  // ОБЯЗАТЕЛЬНЫЙ ФИЛЬТР: исключает display/action
 RETURN ff.id, ff.name, ff.field_type
 ```
 
