@@ -68,4 +68,3 @@ Graph/schema/validators/queries, Markdown/JSON/task files, транзакцио�
 ## Пересдачи
 
 Пока не было: пакет подготовлен, исследование не запускалось.
-

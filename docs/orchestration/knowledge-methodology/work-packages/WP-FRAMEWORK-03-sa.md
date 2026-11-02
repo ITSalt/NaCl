@@ -68,4 +68,3 @@ Domain/roles/architecture; feature/UC/UI; flags/validate/finalize/full. Повт
 ## Пересдачи
 
 Пока не было: пакет подготовлен, исследование не запускалось.
-

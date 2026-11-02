@@ -68,4 +68,3 @@ Canonical/overlay/generated; routers vs workflows; hooks/agents/MCP/CLI; permiss
 ## Пересдачи
 
 Пока не было: пакет подготовлен, исследование не запускалось.
-

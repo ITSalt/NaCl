@@ -68,4 +68,3 @@ Goal → BA/SA/TL; migrate → spec → verify; graph ↔ JSON ↔ Git/CI ↔ ho
 ## Пересдачи
 
 Пока не было: пакет подготовлен, исследование не запускалось.
-

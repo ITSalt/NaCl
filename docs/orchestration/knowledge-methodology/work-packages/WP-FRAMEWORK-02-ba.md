@@ -68,4 +68,3 @@ Context/import/from-board; glossary/entities/roles/rules/process/workflow; analy
 ## Пересдачи
 
 Пока не было: пакет подготовлен, исследование не запускалось.
-

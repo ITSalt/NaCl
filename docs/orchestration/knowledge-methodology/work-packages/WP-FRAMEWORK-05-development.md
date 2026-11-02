@@ -68,4 +68,3 @@ BE/FE split, contracts/stubs, spec-first, fix/hotfix/reopen. Малый фикс
 ## Пересдачи
 
 Пока не было: пакет подготовлен, исследование не запускалось.
-

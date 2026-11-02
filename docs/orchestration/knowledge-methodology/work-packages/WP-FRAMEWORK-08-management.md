@@ -7,7 +7,7 @@
 | Снимок | `20fe4c6a56482e85d3ea9a9ebaadb37206047e41` |
 | Режим | read-only pepper_scout; выполнение исследования после plan |
 | Модель / усилие | наследовать пользовательские настройки; не переопределять |
-| Разрешённые пути чтения | nacl-goal/; nacl-migrate*/; nacl-tl-diagnose/; nacl-tl-status/; nacl-tl-reconcile/; nacl-tl-sync/; nacl-postmortem/; nacl-init/ |
+| Разрешённые пути чтения | nacl-goal/; nacl-migrate*/; nacl-tl-diagnose/; nacl-tl-status/; nacl-tl-reconcile/; nacl-tl-sync/; nacl-tl-verify-code/; nacl-postmortem/; nacl-init/ |
 | Разрешённые изменения исходников | нет |
 | Артефакт координатора | `reports/WP-FRAMEWORK-08.md` |
 | Общие пути / замки / миграции / БД / порты | нет; в program workspace пишет только координатор |
@@ -26,11 +26,11 @@
 
 ## 1. Факты
 
-Основание: `reports/planning-evidence.md`. Это предварительная разведка. Конкретные утверждения подтвердить по исходникам с SHA и file:line; готового вывода об избыточности нет. Область: nacl-goal/; nacl-migrate*/; nacl-tl-diagnose/; nacl-tl-status/; nacl-tl-reconcile/; nacl-tl-sync/; nacl-postmortem/; nacl-init/.
+Основание: `reports/planning-evidence.md`. Это предварительная разведка. Конкретные утверждения подтвердить по исходникам с SHA и file:line; готового вывода об избыточности нет. Область: nacl-goal/; nacl-migrate*/; nacl-tl-diagnose/; nacl-tl-status/; nacl-tl-reconcile/; nacl-tl-sync/; nacl-tl-verify-code/; nacl-postmortem/; nacl-init/.
 
 ## 2. Объём
 
-Отдельно: goal intake/conduct; восстановление по коду (migrate); diagnose/status/reconcile/verify-code; postmortem/init. Как они отвечают на «что происходит», различают факт и намерение, не создают второй план и цикл самоподдержки?
+Отдельно: goal intake/conduct; восстановление картины по коду и фактам через diagnose/reconcile/verify-code; отдельно migrate и status; postmortem/init. Как они отвечают на «что происходит», различают факт и намерение, не создают второй план и цикл самоподдержки?
 
 ### Не входит
 
@@ -68,4 +68,3 @@
 ## Пересдачи
 
 Пока не было: пакет подготовлен, исследование не запускалось.
-
