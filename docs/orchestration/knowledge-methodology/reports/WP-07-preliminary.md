@@ -1,5 +1,7 @@
 # WP-07: предварительное исследование поставки и публикации
 
+[Deploy trigger и monitoring](WP-07-deploy-monitor-trace.md) — source-level границы SHA и health.
+
 [CI run и revision](WP-07-ci-selection-trace.md) — source-level трасса; runtime UNKNOWN.
 
 Предисследование до приёмки WP-01. NaCl SHA `20fe4c6a56482e85d3ea9a9ebaadb37206047e41`; фактические release/CI/deploy/Docmost не запускались. Цена и частота неизвестны, категории DEFER. D-2 исключает поставку NaCl в рамках этой программы.

@@ -1,5 +1,7 @@
 # WP-11: предварительное исследование стыка BA → SA
 
+[WorkflowStep → UseCase](WP-11-step-uc-propagation.md) — различие selector и семантическая свежесть edge.
+
 [Передача BA attributes в SA](WP-11-attribute-propagation-trace.md) показывает различие полей в конкретных source paths; runtime UNKNOWN.
 
 [Контур BusinessRule → Requirement](WP-11-rule-requirement-trace.md) уточняет условия root BA и SA validators; runtime UNKNOWN.
