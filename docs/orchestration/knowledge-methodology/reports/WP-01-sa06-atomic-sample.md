@@ -1,0 +1,16 @@
+# WP-01: SA-06, выборка атомарных обязанностей
+
+SA-06 в реестре объединяет L1–L13 и XL; ниже выборка, не полная инвентаризация. Источник — `codex-plugin-src/workflow-overlays/nacl-sa-validate/SKILL.md`, NaCl 20fe4c6, если не оговорено иное. Consumers заявлены источником, runtime неизвестен. Все тесты предлагаются, не запускались; частота и стоимость UNKNOWN, категория DEFER.
+
+| Атом | Контракт / потребитель | Proposed negative и positive |
+|---|---|---|
+| Availability/scope | :34–56,201–207,223–231: full internal + BA cross; пустой BA даёт internal, cross skipped и PARTIALLY_VERIFIED при доступных tooling/schema/scope и отсутствии CRITICAL; потребитель SA full `nacl-sa-full/SKILL.md:466–500` | Пустой BA при зелёном internal не выдавать за VERIFIED full; с заполненным BA проверить cross |
+| Requirement anchor | :66–74: must-anchor через REALIZED_BY к допустимому типу, перечисленные исключения; неправильный label L3.7b WARNING | Функциональное требование без anchor → CRITICAL L3.7; correct anchor; отдельно обоснованное exemption |
+| UI binding | :75–78: input→MAPS_TO, UI UC→формы/ссылки шагов | Поле без MAPS_TO или UI UC без формы; root L5.1 `nacl-sa-validate/SKILL.md:945–956` исключает has_ui=false, но не просто SYSTEM; исключения navigation не переносить на binding. Severity fixture требует сверки query |
+| Stale/replan | :84–87: stale CRITICAL; legacy Codex `skills-for-codex/nacl-sa-validate/SKILL.md:91–103` отдельно описывает spec_drift count/age; root release :169–174 различает remediation | Stale active task; отдельно shipped spec_drift выше и ниже бюджета; клиенты не смешивать |
+| Screen state | :98–115: initial, reachability, уникальность from/event кроме guard, effect targets; отсутствие Screen даёт vacuous pass L10 | Два unguarded перехода или unreachable state; положительный контроль с guard у каждого дублирующего перехода и достижимостью |
+| Behavior/closure | :116–129: Slice parent, observable then, COVERS/CALLS, для planned UC VERIFIED_BY→Task той же UC; потребитель TL plan по :121–123 | Пустой then или чужая Task; корректная связь отдельно; ребро не доказывает исполненный тест |
+| Errors/cache | :131–153,155–185: ownership, raisability, presentation; endpoint, TTL и degradation; отсутствие объектов даёт vacuous pass | Blank error.code или TTL без ttl_seconds → CRITICAL по :143–147,171–175; полный объект как положительный контроль |
+| Reporting | :199–231: findings/status и repair отдельным подтверждённым workflow; root full :493–500 ожидает graph ValidationReport | Denied read → BLOCKED; partial cross без CRITICAL и при доступности tooling/schema/scope → PARTIALLY_VERIFIED; unresolved CRITICAL → FAILED. Сопоставить writer graph node, который пока не установлен |
+
+L1/L2/L6/L7/L9/XL и многие подпроверки L10–13 остаются не разложены. Отсутствие ветки в overlay SKILL не доказывает её отсутствие в query resources. Предыдущее исследование graph report: [WP-01-sa-validation-report-trace.md](WP-01-sa-validation-report-trace.md).

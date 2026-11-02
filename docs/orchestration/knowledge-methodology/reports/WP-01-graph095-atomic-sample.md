@@ -1,0 +1,16 @@
+# WP-01: группа 09.5, атомарная выборка backup/restore
+
+Pinned NaCl 20fe4c6. Legacy handover и package graph-cli — разные контуры. Статическое чтение, без операций с графом и тестов. Контрпримеры предлагаются, категория DEFER; полнота/частота/цена UNKNOWN.
+
+| Обязанность | Source и потребитель | Proposed falsifier / граница |
+|---|---|---|
+| Legacy export | `graph-infra/scripts/handover-export.sh:49–60`: APOC Cypher→файл, проверка ненулевых строк; consumer — replay | Усечённый непустой файл; consistent snapshot и согласование writers не доказаны |
+| Legacy manifest и упаковка | export :62–97: timestamp/SHA/versions/counts/histograms, gzip→age и удаление plaintext intermediates | Manifest другого состояния с теми же totals; семантическая и криптографическая связь с графом не доказана |
+| Legacy import | `graph-infra/scripts/handover-import.sh:55–61,70–101`: предупреждение о version mismatch, decrypt, удаление всех nodes, сброс constraints/indexes и попытка удаления оставшихся non-LOOKUP indexes, replay; отдельные ошибки DROP подавляются | Общий graph с чужими данными; scoped reset отсутствует в указанных строках, ошибка после wipe может оставить неполное состояние |
+| Legacy acceptance | import :106–145: сравнивает totals; label diff печатается, FAIL зависит от totals | Равные totals и иные labels/properties/edges; это не доказательство семантического восстановления |
+| Package snapshot | `codex-plugin-src/package/runtime/graph-cli/backup-contract.mjs:28–60,71–74`, `lifecycle.mjs:820–830`: проверка формы переданного snapshot | Корректный по форме устаревший snapshot; источник, свежесть и связь со снимком dump этими строками не доказаны |
+| Package offline dump | `lifecycle.mjs:831–925`: остановленный clean container/volume, offline dump, SHA-256 и manifest | Running/unclean/missing volume, изменённые bytes; BACKUP_VERIFIED сам по себе не подтверждает выполненный restore |
+| Package restore verify | `lifecycle.mjs:941–994,1122–1169`; `verification-snapshot.mjs:63–75,82–106,108–144,163–171`: проверка projectId, пути и checksum dump, отдельный candidate, snapshot compare/cleanup; встроенный probe содержит один gateway-canary и smoke | Иная предметная семантика при совпадающих counts/schema/canary; полное semantic recovery не доказано |
+| Migration gate | `codex-plugin-src/package/runtime/graph-gateway/migrations.mjs:181–185`: миграция с backupRequired, не прошедшая ветвь already-applied, требует `options.backupVerified === true` | true от другого project/backup; указанная проверка сама не связывает конкретный manifest, путь передачи и enforcement требуют дальнейшей трассы |
+
+Остаток: обеспечить consistent capture и границу writers, связать snapshot/dump/project/time, проверить семантический fingerprint и cleanup при отказе процесса. Предложения не являются действующими gates или результатом пробы.
