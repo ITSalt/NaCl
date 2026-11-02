@@ -79,6 +79,7 @@ R-n — действие: точная команда одной строкой 
 <!-- orch:journal -->
 | Дата | WP | Событие | Подтверждение |
 |------|----|---------|---------------|
+| 2026-11-02 15:28Z | WP-FRAMEWORK-01 | Уточнены Git modes package и состав изменений installed plugin.json; runtime причины не установлены | reports/WP-10-installed-integrity-trace.md |
 | 2026-11-02 15:26Z | WP-FRAMEWORK-01 | Проверены 415 путей full package, 16 transformations и два generated index по pinned Git tree | reports/WP-01-full-package-provenance.md |
 | 2026-11-02 15:23Z | WP-FRAMEWORK-01 | Проверены installed Skills-only manifest, 154 transformed файла и in-memory модели closure; plugin.json отличается от manifest | reports/WP-10-installed-integrity-trace.md |
 | 2026-11-02 15:21Z | WP-FRAMEWORK-01 | Сверены 196 root resources и 34 shared files, включая 14 transformations в памяти | reports/WP-01-root-shared-resource-map.md |
