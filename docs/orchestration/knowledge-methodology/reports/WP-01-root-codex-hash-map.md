@@ -44,4 +44,4 @@ NaCl SHA 20fe4c6a56482e85d3ea9a9ebaadb37206047e41. Read-only сравнение 
 | nacl-tl-verify | 309fbf09f68be8aff3f41676143d0e48678e6924be057d104dd7bebdf8d93db6 | 1bcda8cb4da8dd60d8f061d3eb082fab3acc1059e659abb4b63b865eb174c253 |
 | nacl-tl-verify-code | d8941033ec133d90f9678cddd09d1bcb6b971d8905b1b0ea8f000e23d5a04040 | ec5b4835c244869af6ec9f875bdcd29e57207e25d5a816c7cc3285ea8177a47e |
 
-Итого 39 workflows без overlay, разные bytes root/Codex: 39; разница hash не определяет смысл изменений. При отсутствии полного сравнения capability и installed/runtime остаются UNKNOWN.
+Итого 39 workflows без overlay, разные bytes root/Codex: 39; независимый reviewer сверил 39 строк и все 78 hashes по Git objects без ошибок; разница hash не определяет смысл изменений. При отсутствии полного сравнения capability и installed/runtime остаются UNKNOWN.
