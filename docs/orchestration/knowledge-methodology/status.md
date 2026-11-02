@@ -78,6 +78,7 @@ R-n — действие: точная команда одной строкой 
 <!-- orch:journal -->
 | Дата | WP | Событие | Подтверждение |
 |------|----|---------|---------------|
+| 2026-11-02 14:48Z | WP-FRAMEWORK-01 | Согласованы source-level границы подобластей и сопоставлены новые находки с критериями механизмов | reports/WP-01-subarea-scope-decisions.md |
 | 2026-11-02 14:46Z | WP-FRAMEWORK-01 | Добавлены и независимо сверены отдельные условия workflow, ship и release для gap crosswalk | reports/WP-01-gap-controls.md |
 | 2026-11-02 14:44Z | WP-FRAMEWORK-01 | Сопоставлены дополнительные кандидаты с DEFER и независимо проверены контуры Docmost sync | reports/WP-01-docmost-sync-trace.md |
 | 2026-11-02 14:41Z | WP-FRAMEWORK-01 | Уточнены потребители reopened/deploy/postmortem и состав tests/bench; correction reopened source outcome | reports/WP-01-consumer-gaps-trace.md |
