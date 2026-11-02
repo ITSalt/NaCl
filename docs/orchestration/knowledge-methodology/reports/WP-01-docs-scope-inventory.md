@@ -7,7 +7,7 @@
 | docs/adr | 5 | WP-01; proposed WP-10 для исторических решений упаковки, напр. 005-codex-skills-only-bootstrap.md |
 | docs/guides | 4 | WP-01; proposed WP-15 для goal proof и permissions, guide не доказывает CLI поведение |
 | docs/methodology | 14 | WP-01; proposed cross-links BA/SA и WP-11; не подменять исходники и execution |
-| docs/presentations | 69 | WP-01; слайды/PDF/сборки — предложенные кандидаты исключения как производные материалы, demo script может содержать указатели на уникальные claims, исключение ещё не принято |
+| docs/presentations | 69 | WP-01; слайды/PDF/сборки не исключены целиком; подтверждённые производные материалы дедуплицируются только в подсчёте механизмов по [решению](WP-01-subarea-scope-decisions.md); demo script может содержать уникальные claims |
 | docs/releases | 128 | WP-01; proposed WP-07/10 для истории поставки и packaging; notes/drafts не доказывают deployment |
 | docs/research | 50 | WP-01; proposed WP-16/17 и стыки WP-09/10; каждую дату, источник и claim проверять отдельно |
 | docs/retrospectives | 9 | Прямой read scope WP-16/17; историческая причинность требует primary traces |

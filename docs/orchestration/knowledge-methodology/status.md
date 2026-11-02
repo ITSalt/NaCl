@@ -79,6 +79,7 @@ R-n — действие: точная команда одной строкой 
 <!-- orch:journal -->
 | Дата | WP | Событие | Подтверждение |
 |------|----|---------|---------------|
+| 2026-11-02 16:50Z | WP-FRAMEWORK-01 | Уточнены статусы индексов и добавлен независимо подтверждённый source-only атом BA rules в предварительный WP-02; зависимость WP-01 остаётся открытой. | reports/WP-02-preliminary.md; reports/WP-01-docs-scope-inventory.md; reports/WP-01-subarea-scope-decisions.md |
 | 2026-11-02 16:49Z | WP-FRAMEWORK-01 | Уточнены условия docs resume и stub shape review, согласованы актуальные решения по областям исследования. | reports/WP-01-tl-gap-cards.md; reports/WP-01-subarea-coverage-matrix.md; reports/WP-01-subarea-scope-decisions.md |
 | 2026-11-02 16:48Z | WP-FRAMEWORK-01 | Независимо проверены BA atomic card и docs/resume контракт; исправлен диапазон источника BA-цепочки. | reports/WP-01-glossary-sa-trace.md; reports/WP-01-tl-gap-cards.md; reports/WP-FRAMEWORK-01.md |
 | 2026-11-02 16:46Z | WP-FRAMEWORK-01 | Скорректированы границы BA glossary и независимо проверены все 229 локальных inline targets в 163 отчётах WP. | reports/WP-01-glossary-sa-trace.md; reports/WP-01-acceptance-matrix.md |
