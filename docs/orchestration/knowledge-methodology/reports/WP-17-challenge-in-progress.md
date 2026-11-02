@@ -2,6 +2,8 @@
 
 [Symlink preservation и lock challenge](WP-17-symlink-challenge-trace.md) исследован по источникам без запуска.
 
+[Локальные references](WP-10-literal-references-checker.md) и [installed integrity](WP-10-installed-integrity-trace.md) показывают, что совпадение closure и hashes присутствующих файлов не доказывает полноту backtick-зависимостей; installed 0.2.2 относится к c291, pinned исследование к 20fe. [Navigation queries](WP-10-cypher-reference-semantics.md) различают root TL inline affected-UC query и SA reachable-component template. В 20fe mixed UC с formless Screen и Form аналитически исключается до проверки Form; допустимость модели и общий verdict UNKNOWN. Proposed controls: missing bundle reference, inbound от недостижимого Component, mixed UC и отдельные expected contracts для c291/20fe с учётом QA Condition 2. Ни один не выполнен.
+
 Зависимости и WP-01 не завершены; итоговое независимое оспаривание ещё не выполнено. Здесь peer-review предварительных отчётов и самокритика. Один исследователь участвовал в частях WP-01/06/10/14, другой — WP-03/05/07/09/13/15; их проверка собственных результатов не независима. Полный независимый reviewer нужен после завершения зависимостей.
 
 Исправлены: неверная ссылка клиента на QA prerequisite в WP-06, пропущенное условие HAS_STEP в аналитическом replay WP-03, некорректная формулировка про файловые записи BA analyze, неуниверсальный порядок dev/review/QA в WP-13, граница локального runtime probe в WP-10. WP-16: oracle wave-plan не проверяет UC005-BE и лишние задачи; независимый пересчёт 45 сохранённых true результатов обнаружил у всех точное ожидаемое множество задач, поэтому нельзя заявлять фактическую ошибку сохранённых процентов по этому признаку. При этом разный вход OLD/NEW подтверждён исходником.
