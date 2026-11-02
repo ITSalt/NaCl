@@ -38,10 +38,10 @@
 | [WP-FRAMEWORK-10](work-packages/WP-FRAMEWORK-10-platform.md) | Адаптеры, runtime и каналы поставки | WP-FRAMEWORK-01 |
 | [WP-FRAMEWORK-11](work-packages/WP-FRAMEWORK-11-interface-ba-sa.md) | Стык BA → SA | WP-FRAMEWORK-02, WP-FRAMEWORK-03 |
 | [WP-FRAMEWORK-12](work-packages/WP-FRAMEWORK-12-interface-sa-dev.md) | Стык SA → TL → разработка | WP-FRAMEWORK-03, WP-FRAMEWORK-04, WP-FRAMEWORK-05 |
-| [WP-FRAMEWORK-13](work-packages/WP-FRAMEWORK-13-interface-dev-qa.md) | Стык разработка → review/QA → release | WP-FRAMEWORK-05, WP-FRAMEWORK-06, WP-FRAMEWORK-07 |
+| [WP-FRAMEWORK-13](work-packages/WP-FRAMEWORK-13-interface-dev-qa.md) | Стык разработка → review/QA → release | WP-FRAMEWORK-05, WP-FRAMEWORK-06, WP-FRAMEWORK-07, WP-FRAMEWORK-12 |
 | [WP-FRAMEWORK-14](work-packages/WP-FRAMEWORK-14-interface-control.md) | Стык управления, восстановления и состояния | WP-FRAMEWORK-04, WP-FRAMEWORK-08, WP-FRAMEWORK-09, WP-FRAMEWORK-10 |
 | [WP-FRAMEWORK-15](work-packages/WP-FRAMEWORK-15-harness.md) | Что можно передать Harness | WP-FRAMEWORK-01 |
-| [WP-FRAMEWORK-16](work-packages/WP-FRAMEWORK-16-measurement.md) | Цена методологии и сравнение с Markdown | WP-FRAMEWORK-02, WP-FRAMEWORK-03, WP-FRAMEWORK-04, WP-FRAMEWORK-05, WP-FRAMEWORK-06, WP-FRAMEWORK-07, WP-FRAMEWORK-08, WP-FRAMEWORK-09, WP-FRAMEWORK-10, WP-FRAMEWORK-15 |
+| [WP-FRAMEWORK-16](work-packages/WP-FRAMEWORK-16-measurement.md) | Цена методологии и сравнение с Markdown | WP-FRAMEWORK-02, WP-FRAMEWORK-03, WP-FRAMEWORK-04, WP-FRAMEWORK-05, WP-FRAMEWORK-06, WP-FRAMEWORK-07, WP-FRAMEWORK-08, WP-FRAMEWORK-09, WP-FRAMEWORK-10, WP-FRAMEWORK-11, WP-FRAMEWORK-12, WP-FRAMEWORK-13, WP-FRAMEWORK-14, WP-FRAMEWORK-15 |
 | [WP-FRAMEWORK-17](work-packages/WP-FRAMEWORK-17-challenge.md) | Независимая проверка рекомендаций | WP-FRAMEWORK-11, WP-FRAMEWORK-12, WP-FRAMEWORK-13, WP-FRAMEWORK-14, WP-FRAMEWORK-16 |
 | [WP-FRAMEWORK-18](work-packages/WP-FRAMEWORK-18-recommendations.md) | Методические рекомендации и передача следующей программе | WP-FRAMEWORK-17 |
 

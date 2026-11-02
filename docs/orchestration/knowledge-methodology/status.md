@@ -78,6 +78,7 @@ R-n — действие: точная команда одной строкой 
 <!-- orch:journal -->
 | Дата | WP | Событие | Подтверждение |
 |------|----|---------|---------------|
+| 2026-11-02 11:39Z | — | План прошёл независимый review; уточнены BE/FE, recovery, зависимости и изоляция экспериментов. | reports/plan-review.md |
 | 2026-11-02 11:37Z | — | Plan: подготовлены 18 DRAFT исследовательских пакетов, протокол, карта волн и критерии; исходники NaCl не изменены; dispatch не выполнялся. | PLAN.md; spec/research-protocol.md; reports/planning-evidence.md; work-packages/ |
 | 2026-11-02 11:37Z | WP-FRAMEWORK-18 | WP-FRAMEWORK-18 created (DRAFT) | work-packages/WP-FRAMEWORK-18-recommendations.md |
 | 2026-11-02 11:37Z | WP-FRAMEWORK-17 | WP-FRAMEWORK-17 created (DRAFT) | work-packages/WP-FRAMEWORK-17-challenge.md |

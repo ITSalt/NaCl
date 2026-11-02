@@ -7,11 +7,11 @@
 | Снимок | `20fe4c6a56482e85d3ea9a9ebaadb37206047e41` |
 | Режим | read-only pepper_scout; выполнение исследования после plan |
 | Модель / усилие | наследовать пользовательские настройки; не переопределять |
-| Разрешённые пути чтения | nacl-tl-dev*/; nacl-tl-review/; nacl-tl-qa/; nacl-tl-verify*/; nacl-tl-deliver/; nacl-tl-release/ |
+| Разрешённые пути чтения | nacl-tl-dev*/; nacl-tl-sync/; nacl-tl-review/; nacl-tl-qa/; nacl-tl-verify*/; nacl-tl-deliver/; nacl-tl-release/ |
 | Разрешённые изменения исходников | нет |
 | Артефакт координатора | `reports/WP-FRAMEWORK-13.md` |
 | Общие пути / замки / миграции / БД / порты | нет; в program workspace пишет только координатор |
-| Зависит от | WP-FRAMEWORK-05, WP-FRAMEWORK-06, WP-FRAMEWORK-07 |
+| Зависит от | WP-FRAMEWORK-05, WP-FRAMEWORK-06, WP-FRAMEWORK-07, WP-FRAMEWORK-12 |
 | Решения | D-2 |
 | Размер | M — относительная трудоёмкость, не оценка календаря |
 | PR / merge / deploy | не применяются к исследовательскому пакету |
@@ -26,11 +26,11 @@
 
 ## 1. Факты
 
-Основание: `reports/planning-evidence.md`. Это предварительная разведка. Конкретные утверждения подтвердить по исходникам с SHA и file:line; готового вывода об избыточности нет. Область: nacl-tl-dev*/; nacl-tl-review/; nacl-tl-qa/; nacl-tl-verify*/; nacl-tl-deliver/; nacl-tl-release/.
+Основание: `reports/planning-evidence.md`. Это предварительная разведка. Конкретные утверждения подтвердить по исходникам с SHA и file:line; готового вывода об избыточности нет. Область: nacl-tl-dev*/; nacl-tl-sync/; nacl-tl-review/; nacl-tl-qa/; nacl-tl-verify*/; nacl-tl-deliver/; nacl-tl-release/.
 
 ## 2. Объём
 
-Связать head SHA, результаты тестов, окружение, evidence и повторные проверки. Исследовать обратные петли REVISE/fix/reopen; какие результаты можно переиспользовать и когда они протухают?
+Связать head SHA, результаты тестов, окружение, evidence и повторные проверки. Использовать BE↔FE трассу из WP-12: wire/API contracts и sync evidence должны доходить до QA без потери смысла. Исследовать обратные петли REVISE/fix/reopen; какие результаты можно переиспользовать и когда они протухают?
 
 ### Не входит
 
