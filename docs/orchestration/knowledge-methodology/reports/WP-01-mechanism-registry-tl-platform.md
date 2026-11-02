@@ -1,0 +1,45 @@
+# WP-01: реестр групп TL и platform
+
+Pinned SHA `20fe4c6a56482e85d3ea9a9ebaadb37206047e41`. Группы основаны на WP-04…10-preliminary, не являются исчерпывающим построчным анализом. Для всех: выбранный режим определяет применимость; фактические количество вызовов, частота, время и цена unknown; категория DEFER, пока не проверены потребители и историческая причинность. Источник — заявленный контракт, если отдельно не указана модельная проба.
+
+| ID / источник | Цель; вход → выход → consumer | Возможная альтернатива / риск; negative case |
+|---|---|---|
+| 04.1 `codex-plugin-src/workflow-overlays/nacl-tl-intake/SKILL.md:14–50` | Запрос → классификация/scope → SA/TL/fix/dev; подтверждение области | Typed intake; проверить неоднозначный баг и stale graph. |
+| 04.2 `.../nacl-tl-plan/SKILL.md:19–33,121–148` | SA/dependencies → waves/task/API/read-back → исполнители/status | Versioned snapshot; проверить drift, re-plan и одновременную запись. |
+| 04.3 `.../nacl-tl-next/SKILL.md:15–50` | Graph Task/Wave → выбор/remote claim → исполнитель | Упростить выбор, сохранив fence; два worker и expiry. |
+| 04.4 `.../nacl-tl-full/SKILL.md:73–83,134–209` | Scope/evidence → UC стадии и статусы → conductor | Объединить уровни; риск утраты независимости и recovery. Проверить interruption и неподтверждённый результат. |
+| 04.5 `.../nacl-tl-conductor/SKILL.md:79–165` | Несколько источников → reconciliation → владелец/release | Typed event log; проверить согласованные статусы при красном CI. |
+| 04.6 `skills-for-codex/nacl-tl-core/references/tl-codex-contract.md:7–28,30–81` | Mutation/evidence → closed status/read-back → TL workflows | Единый adapter; проверить stale graph и частичную запись. |
+| 05.1 `skills-for-codex/nacl-tl-dev/SKILL.md:20–28,59–101` | TECH task → результат и до/после → review | CI attestation; проверить отсутствующий baseline. |
+| 05.2 `skills-for-codex/nacl-tl-dev-be/SKILL.md:19–39,48–92`, FE :19–35,43–73 | Contract → BE/FE код и tests → review/sync | Один исполнитель и независимый contract test; проверить mismatch routes. |
+| 05.3 `codex-plugin-src/workflow-overlays/nacl-tl-fix/SKILL.md:41–59,78–108` | Defect → L0–L3/spec-first/fix → review | Typed fix contract; проверить L1 с корректной spec и L2 с drift. |
+| 05.4 `nacl-tl-stubs/SKILL.md:13–28,86–105` | Registry/scan → unresolved или подтверждённая форма → release | Contract tests; проверить fake IDs и непокрытый путь. |
+| 05.5 `nacl-tl-reopened/SKILL.md:13–38` | Reopened item → fix/review/report → tracker | Typed result; проверить partial и повтор. |
+| 05.6 `skills-for-codex/nacl-tl-hotfix/SKILL.md:20–31,66–105` | Срочный дефект → контролируемый fix/evidence | Risk-based incident workflow; проверить dirty tree и authority; D-2 исключает поставку. |
+| 06.1 `nacl-tl-regression-test/SKILL.md:21–46,89–112` | Expected behavior → RED evidence → dev/review | Independent test; проверить неверную причину RED. |
+| 06.2 `codex-plugin-src/workflow-overlays/nacl-tl-review/SKILL.md:14–46,146–179` | Diff/criteria/checks → verdict → ship | CI exact SHA; проверить npm и skipped path-filter. |
+| 06.3 `skills-for-codex/nacl-tl-verify-code/SKILL.md:43–59,112–137` | Scope/AC → trace/coverage → verify | Shared CI evidence; проверить реализованный AC без теста. |
+| 06.4 `skills-for-codex/nacl-tl-qa/SKILL.md:17–61`, `nacl-tl-verify/SKILL.md:54–65,128–155` | Change → fixture/runtime/wire/live evidence → release | Evidence ledger; проверить FAILED+NOT_RUN и environment mismatch. |
+| 06.5 `WP-06-sanitize-probe.md`, `WP-06-engine-mock-probe.md` | Task evidence → локальная функция/mock engine; downstream отдельный | Typed policy gate; локально QA FAILED/BLOCKED/NOT_RUN принимаются синтаксически, live graph/release не проверены. Первые пробы вне disposable среды зафиксированы как нарушение, повторены на временном archive без OS network isolation. |
+| 07.1 `nacl-tl-ship/SKILL.md:51–73`, `nacl-tl-deliver/SKILL.md:87–102` | Изменение → branch/PR/CI → deploy | Exact-SHA attestation; проверить смену head и skipped checks. |
+| 07.2 `skills-for-codex/nacl-tl-deploy/SKILL.md:26–76` | SHA/env → clean-checkout, CI/deploy/health evidence | Reuse check; проверить иной SHA/asset и environment. |
+| 07.3 `nacl-tl-release/SKILL.md:143–174` | Graph/QA/prod evidence → release decision | Semantic fingerprint; проверить те же counts и изменённые связи, health без user flow. |
+| 07.4 `nacl-tl-docs/SKILL.md:188–208,241–289,315–325` | Change → docs/checks → commit | Точечный diff; проверить staged/unstaged/untracked. |
+| 07.5 `nacl-publish/SKILL.md:14–26`, `docmost-sync/src/index.ts:41–72,105–147` | Graph → render → подтверждённая external publication | Remote read-back; проверить partial publish, render не означает success. |
+| 08.1 `skills-for-codex/nacl-goal/SKILL.md:48–66,159–181` | Goal → proof/refusal/preview → owner/lifecycle | Shared route registry; проверить отсутствие нужного runtime. |
+| 08.2 `codex-plugin-src/package/skills/nacl-diagnose/SKILL.md:8–36`, `skills-for-codex/nacl-tl-status/SKILL.md:13–40` | Local/graph facts → diagnose/status | Versioned view с freshness; local cache не доказывает graph truth. |
+| 08.3 `skills-for-codex/nacl-tl-reconcile/SKILL.md:14–44` | Diagnose/code → подтверждённый docs delta/read-back | Semantic diff; проверить противоречие кода и утверждённой spec. |
+| 08.4 `skills-for-codex/nacl-tl-sync/SKILL.md:19–36,40–80` | FE/BE → type/wire evidence → review/release | CI attestation с SHA/env; пропуск non-SYSTEM = UNVERIFIED. |
+| 08.5 `skills-for-codex/nacl-migrate/SKILL.md:29–42`, `codex-plugin-src/package/skills/nacl-init/SKILL.md:13–27,35–49`, `skills-for-codex/nacl-postmortem/SKILL.md:15–42` | Legacy→graph, bootstrap→receipt/read-back, fix history→анализ | Shared evidence registry; проверить отсутствие связи, частичный импорт и неверную причинность. |
+| 09.1 `nacl-tl-core/references/remote-mode-coordination.md:3–19,50–61` | Graph authoritative; локальный status — cache → status/resume | Versioned file view; проверить graph timeout. |
+| 09.2 `nacl-ba-sync/SKILL.md:11–17,56–60,89–128` | Board/IDs → graph/read-back → markers | Snapshot+delta; проверить crash между хранилищами. |
+| 09.3 `nacl-core/scripts/resolve-developer-id.mjs:4–16,60–65`, `claim-task.mjs:24–42` | Legacy ID/Task → TTL claim → worker | Fenced identity; два процесса с одним default ID. Task claim не project mutex. |
+| 09.4 `codex-plugin-src/package/runtime/graph-gateway/concurrency-cypher.mjs:136–165,279–295` | Principal/lease → scoped CAS/fence/idempotent mutation | Общий transport лишь после отдельных proofs. Локальная модель 16/16 не Neo4j/Skills-only; см. WP-09-concurrency-model-test. |
+| 09.5 `graph-infra/scripts/handover-import.sh:80–101,106–145`, `codex-plugin-src/package/runtime/graph-cli/backup-contract.mjs:28–52,63–74` | Graph → export/restore and counts/digests | Semantic scoped fingerprint; full import опасен для общего графа и не проверялся. |
+| 09.6 `analyst-tool/server/src/routes/skills.ts:44–49,110–143`, `services/skill-runner.ts:428–441`, `run-queue.ts:102–110` | Board/graph request → runId/event/terminal state → UI | Typed terminal status; проверить различие failure event и completed phase. |
+| 10.1 `codex-plugin-src/README.md:3–16`, `scripts/build-codex-plugin.mjs:332–369` | Source/overlay → generated plugin → client | Shared closure; проверить portable boundary и hashes, storage bytes не токены. |
+| 10.2 `scripts/build-codex-skills-only.mjs:179–186,245–278` | Builder → Skills-only closure → project MCP | Typed transformation; проверить допустимый read canary и запрет doctor. Текстовое противоречие подтверждено, live refusal нет. |
+| 10.3 `services/nacl-mcp/README.md:3–16,27–45`, `skills-only-runtime-contract.md:106–132` | Public HTTP/full local/project MCP — разные identity/scope модели | Общий adapter лишь после проверок wrong audience/fence/idempotency/read-back. |
+| 10.4 `.github/workflows/test-codex-plugin.yml:38–56,70–97`, `codex-plugin-src/package/.codex-plugin/plugin.json:22` | CI definitions и metadata → потребители релиза/каталога | Exact-head evidence и source measurements. Metadata string test не доказывает цифры. |
+
+За пределами перечисленных групп остаются детальные пути, отдельные исключения и исторические причинно-следственные связи. См. WP-01-package-index и предварительные WP-04…10. Сводный WP-01 не следует принимать, пока графовый baseline/corpus и предусмотренные критерии не готовы.

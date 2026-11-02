@@ -10,7 +10,7 @@
 
 ## Механизмы и отрицательные случаи
 
-[Первые карточки](WP-01-mechanism-samples.md) и [дополнительные механизмы](WP-01-additional-mechanisms.md) охватывают BA write/read-back, evidence, bootstrap, diagnose, publication, lease, validation, handoff, board sync и render. Предварительная категория DEFER: реальная частота и цена unknown, а альтернативы и потери гарантий должны проверяться на отрицательных случаях. Полный реестр каждой обязанности и поля consumer, историческое основание, confidence/опровержение ещё не собраны: это открытый критерий, а не доказанное покрытие.
+[Первые карточки](WP-01-mechanism-samples.md) и [дополнительные механизмы](WP-01-additional-mechanisms.md) охватывают BA write/read-back, evidence, bootstrap, diagnose, publication, lease, validation, handoff, board sync и render. Предварительная категория DEFER: реальная частота и цена unknown, а альтернативы и потери гарантий должны проверяться на отрицательных случаях. Подготовлены групповые реестры [BA/SA](WP-01-mechanism-registry-ba-sa.md) и [TL/platform](WP-01-mechanism-registry-tl-platform.md) с consumer, риском и контрпроверкой. Полная инвентаризация каждой обязанности, подтверждение исторической причинности, фактической частоты и confidence по эффекту ещё не завершены: это открытый критерий, а не доказанное полное покрытие.
 
 Проверенное текстовое противоречие установленного Skills-only read canary описано [здесь](WP-01-skills-only-canary.md); runtime-поведение не проверено. Кандидат расхождения QA FAILED + обязательный NOT_RUN может терять градацию отказа, оставаясь non-success; нужен отдельный negative test. Analyst Tool имеет статически различные статусы события и очереди при nonzero; UI outcome не проверен. Ничего из этого не является измеренным false PASS.
 
