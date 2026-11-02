@@ -79,6 +79,7 @@ R-n — действие: точная команда одной строкой 
 <!-- orch:journal -->
 | Дата | WP | Событие | Подтверждение |
 |------|----|---------|---------------|
+| 2026-11-02 17:33Z | WP-FRAMEWORK-01 | Добавлен независимый XL1.1 guard к coverage counterexample и уточнён BA interaction → SA permission candidate reader. | reports/WP-01-handoff-coverage-trace.md; reports/WP-01-ba-consumer-trace.md |
 | 2026-11-02 17:32Z | WP-FRAMEWORK-01 | Уточнены stub-shape release reference и ограничение per-board confirmation при отсутствующем baseline hash. | reports/WP-01-tl-gap-cards.md; reports/WP-01-board-direction-trace.md |
 | 2026-11-02 17:30Z | WP-FRAMEWORK-01 | Ограниченный challenge BA resume подтвердил source predicates; отдельно уточнён условный межконтрактный footer evidence. | reports/WP-01-ba-resume-detection.md; reports/WP-01-tl-gap-cards.md |
 | 2026-11-02 17:29Z | WP-FRAMEWORK-01 | Уточнены безопасный отказ legacy claim без идентичности держателя и source-only граница исторического non-reuse BA IDs. | reports/WP-01-platform-consumer-trace.md; reports/WP-01-ba-consumer-trace.md; reports/WP-01-docmost-sync-trace.md |
