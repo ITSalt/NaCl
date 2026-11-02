@@ -7,7 +7,7 @@
 | Снимок | `20fe4c6a56482e85d3ea9a9ebaadb37206047e41` |
 | Режим | read-only pepper_scout; выполнение исследования после plan |
 | Модель / усилие | наследовать пользовательские настройки; не переопределять |
-| Разрешённые пути чтения | codex-plugin-src/; skills-for-codex/; services/nacl-mcp/; scripts/; plugin/; plugins/nacl/; .claude/; .agents/; meta/ |
+| Разрешённые пути чтения | codex-plugin-src/; skills-for-codex/; services/nacl-mcp/; scripts/; plugin/; plugins/nacl/; .claude/; .agents/; .github/workflows/; yougile-setup/ |
 | Разрешённые изменения исходников | нет |
 | Артефакт координатора | `reports/WP-FRAMEWORK-10.md` |
 | Общие пути / замки / миграции / БД / порты | нет; в program workspace пишет только координатор |
@@ -26,7 +26,7 @@
 
 ## 1. Факты
 
-Основание: `reports/planning-evidence.md`. Это предварительная разведка. Конкретные утверждения подтвердить по исходникам с SHA и file:line; готового вывода об избыточности нет. Область: codex-plugin-src/; skills-for-codex/; services/nacl-mcp/; scripts/; plugin/; plugins/nacl/; .claude/; .agents/; meta/.
+Основание: `reports/planning-evidence.md`. Это предварительная разведка. Конкретные утверждения подтвердить по исходникам с SHA и file:line; готового вывода об избыточности нет. Область: codex-plugin-src/; skills-for-codex/; services/nacl-mcp/; scripts/; plugin/; plugins/nacl/; .claude/; .agents/; .github/workflows/; yougile-setup/.
 
 ## 2. Объём
 
@@ -34,7 +34,7 @@ Canonical/overlay/generated; routers vs workflows; hooks/agents/MCP/CLI; permiss
 
 ### Не входит
 
-Изменение NaCl, реализации рекомендаций, live-инфраструктура, внешняя публикация и полномасштабные запуски без ресурсного плана. Результат — исследование, а не diff скиллов.
+Вложенный приватный `meta/` исключён: это отдельный репозиторий, не входящий в зафиксированный SHA NaCl. Изменение NaCl, реализации рекомендаций, live-инфраструктура, внешняя публикация и полномасштабные запуски без ресурсного плана. Результат — исследование, а не diff скиллов.
 
 ## 3. Критерии приёмки
 

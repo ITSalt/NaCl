@@ -78,6 +78,8 @@ R-n — действие: точная команда одной строкой 
 <!-- orch:journal -->
 | Дата | WP | Событие | Подтверждение |
 |------|----|---------|---------------|
+| 2026-11-02 12:12Z | WP-FRAMEWORK-01 | WP-01: уточнён scope WP-10: CI и tracker CLI включены; вложенный приватный meta исключён из SHA NaCl | WP-10; git ls-files meta; reports/WP-01-coverage-check.md |
+| 2026-11-02 12:12Z | WP-FRAMEWORK-01 | WP-01: описаны нейтральные варианты сравнения при расхождении OTP и тарифов | reports/WP-01-corpus-conflicts.md |
 | 2026-11-02 12:12Z | WP-FRAMEWORK-01 | WP-01: уточнены пути runtime для WP-14 и ответственность за sync evidence в WP-08 | reports/WP-01-coverage-check.md; WP-08 и WP-14 |
 | 2026-11-02 12:12Z | WP-FRAMEWORK-01 | WP-01: проверено назначение 61 package и выделен вопрос владельца sync evidence внутри плана | reports/WP-01-coverage-check.md |
 | 2026-11-02 12:11Z | WP-FRAMEWORK-01 | WP-01: проверено происхождение требований FR-030/041 и recovery fixture | reports/WP-01-briefs-draft.md; historical git snapshots |
