@@ -19,6 +19,7 @@ CANCELLED (причина).
 |----|--------|----------|--------|--------|----|-----------|
 | [WP-FRAMEWORK-01](work-packages/WP-FRAMEWORK-01-inventory.md) | framework | Карта фреймворка и протокол измерений | DRAFT | knowledge-methodology-framework | — | 2026-11-02 |
 | [WP-FRAMEWORK-02](work-packages/WP-FRAMEWORK-02-ba.md) | framework | Бизнес-анализ | DRAFT | knowledge-methodology-framework | — | 2026-11-02 |
+| [WP-FRAMEWORK-03](work-packages/WP-FRAMEWORK-03-sa.md) | framework | Системный анализ | DRAFT | knowledge-methodology-framework | — | 2026-11-02 |
 
 ## Ждёт владельца
 
@@ -57,6 +58,7 @@ R-n — действие: точная команда одной строкой 
 <!-- orch:journal -->
 | Дата | WP | Событие | Подтверждение |
 |------|----|---------|---------------|
+| 2026-11-02 11:36Z | WP-FRAMEWORK-03 | WP-FRAMEWORK-03 created (DRAFT) | work-packages/WP-FRAMEWORK-03-sa.md |
 | 2026-11-02 11:36Z | WP-FRAMEWORK-02 | WP-FRAMEWORK-02 created (DRAFT) | work-packages/WP-FRAMEWORK-02-ba.md |
 | 2026-11-02 11:31Z | WP-FRAMEWORK-01 | WP-FRAMEWORK-01 created (DRAFT) | work-packages/WP-FRAMEWORK-01-inventory.md |
 | 2026-11-02 11:31Z | — | delivery on hold: D-2: исследовательская программа, поставка и выпуск изменений NaCl вне объёма | orch.py hold |
