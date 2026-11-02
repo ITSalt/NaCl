@@ -18,10 +18,10 @@ NaCl SHA 20fe4c6a56482e85d3ea9a9ebaadb37206047e41. Точечная сверка
 
 | Package | Общий контракт | Выборочное различие |
 |---|---|---|
-| tl-deliver | Root :12–27,339–353; Codex :14–40: ship/verify/deploy с evidence | Root :345–349 требует verify через Task agent, Codex :150–154 не требует именно такой механизм |
-| tl-deploy | Root :12–28,122–140; Codex :16–59: CI/health и SHA | Root :161–167 описывает legacy non-PASS override; Codex :65–76,104–110 использует closed vocabulary, полный mapping не доказан |
-| tl-dev | Root :24–37,150–156; Codex :20–42: TECH TDD | Root требует отдельного автора RED; Codex :190–203 допускает прямое выполнение, влияние на качество не измерено |
-| tl-dev-be | Root :54–79,171–176; Codex :19–39,58–67: baseline и RED-first | Root запрещает dev самому писать RED tests; Codex :140–150 не требует внешнего автора |
+| tl-deliver | Root :12–27,339–353; Codex :14–40: ship/verify/deploy с evidence | Root :345–349 после pre-verify gate требует verify через Task agent, Codex :150–154 не требует именно такой механизм |
+| tl-deploy | Root :12–28,122–140; Codex :16–59: CI/health и SHA | Root :161–167 ограниченно описывает override verified-pending/blocked без продвижения Task; Codex :65–76,104–110 использует closed vocabulary, полный mapping не доказан |
+| tl-dev | Root :24–37,150–156; Codex :20–42: TECH TDD | Root требует отдельного автора RED в Workflow A для testable code; Codex :190–203 допускает прямое выполнение, влияние на качество не измерено |
+| tl-dev-be | Root :54–79,171–176; Codex :19–39,58–67: baseline и RED-first | Root запрещает implementation agent писать test files на делегированном RED шаге; Codex :140–150 не требует внешнего автора |
 | tl-dev-fe | Root :39–64,198–211; Codex :19–41,57–73: FE TDD | Root делегирует tests/MSW, Codex :166–178 допускает прямое TDD |
 | tl-diagnose | Root :14–18,42–48; Codex :14–38: diagnosis без исправления | Root требует трёх Task agents, Codex допускает прямой сбор при недоступности subagents |
 | tl-docs | Root :11–21,188–197; Codex :16–38: documentation после review | Codex описывает классы проверок и non-success, идентичное правило скриптов/исключений в указанном срезе не установлено |
