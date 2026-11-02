@@ -30,6 +30,7 @@ CANCELLED (причина).
 | [WP-FRAMEWORK-11](work-packages/WP-FRAMEWORK-11-interface-ba-sa.md) | framework | Стык BA → SA | DRAFT | knowledge-methodology-framework | — | 2026-11-02 |
 | [WP-FRAMEWORK-12](work-packages/WP-FRAMEWORK-12-interface-sa-dev.md) | framework | Стык SA → TL → разработка | DRAFT | knowledge-methodology-framework | — | 2026-11-02 |
 | [WP-FRAMEWORK-13](work-packages/WP-FRAMEWORK-13-interface-dev-qa.md) | framework | Стык разработка → review/QA → release | DRAFT | knowledge-methodology-framework | — | 2026-11-02 |
+| [WP-FRAMEWORK-14](work-packages/WP-FRAMEWORK-14-interface-control.md) | framework | Стык управления, восстановления и состояния | DRAFT | knowledge-methodology-framework | — | 2026-11-02 |
 
 ## Ждёт владельца
 
@@ -68,6 +69,7 @@ R-n — действие: точная команда одной строкой 
 <!-- orch:journal -->
 | Дата | WP | Событие | Подтверждение |
 |------|----|---------|---------------|
+| 2026-11-02 11:37Z | WP-FRAMEWORK-14 | WP-FRAMEWORK-14 created (DRAFT) | work-packages/WP-FRAMEWORK-14-interface-control.md |
 | 2026-11-02 11:37Z | WP-FRAMEWORK-13 | WP-FRAMEWORK-13 created (DRAFT) | work-packages/WP-FRAMEWORK-13-interface-dev-qa.md |
 | 2026-11-02 11:37Z | WP-FRAMEWORK-12 | WP-FRAMEWORK-12 created (DRAFT) | work-packages/WP-FRAMEWORK-12-interface-sa-dev.md |
 | 2026-11-02 11:37Z | WP-FRAMEWORK-11 | WP-FRAMEWORK-11 created (DRAFT) | work-packages/WP-FRAMEWORK-11-interface-ba-sa.md |
