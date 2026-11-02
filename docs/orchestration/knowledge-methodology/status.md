@@ -79,6 +79,7 @@ R-n — действие: точная команда одной строкой 
 <!-- orch:journal -->
 | Дата | WP | Событие | Подтверждение |
 |------|----|---------|---------------|
+| 2026-11-02 16:41Z | WP-FRAMEWORK-01 | Свежий full-package --check pinned 20fe прошёл в disposable sandbox после write и loopback canaries; runtime не подтверждён. | reports/WP-01-acceptance-matrix.md |
 | 2026-11-02 16:40Z | WP-FRAMEWORK-01 | Независимо сверены другие пути Analyst Tool и существование Markdown-целей двух ключевых отчётов; критерий приёмки остаётся открытым. | reports/WP-01-analyst-render-path-boundary.md; reports/WP-01-acceptance-matrix.md |
 | 2026-11-02 16:38Z | WP-FRAMEWORK-01 | SA adapter symlink probe остановлен до запуска: строгий read-allowlist sandbox canary завершился -6; ограничения не ослаблялись | reports/WP-01-analyst-render-path-boundary.md |
 | 2026-11-02 16:36Z | WP-FRAMEWORK-01 | Уточнено происхождение SA source_file и повторно сверен Analyst sandbox evidence с источниками | reports/WP-01-analyst-render-path-boundary.md |
