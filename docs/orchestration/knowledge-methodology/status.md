@@ -79,6 +79,7 @@ R-n — действие: точная команда одной строкой 
 <!-- orch:journal -->
 | Дата | WP | Событие | Подтверждение |
 |------|----|---------|---------------|
+| 2026-11-02 17:08Z | WP-FRAMEWORK-01 | Сверены формы BA migration flow и context reader, а также applicability provider fixture и статус evidence в предварительном WP-13. | reports/WP-01-core-migration-cards.md; reports/WP-13-preliminary.md |
 | 2026-11-02 17:06Z | WP-FRAMEWORK-01 | Сверены условный Slice→Task fallback и источник BA rules в SA resilience; graph и workflow не исполнялись. | reports/WP-12-preliminary.md; reports/WP-01-ba-consumer-trace.md |
 | 2026-11-02 17:04Z | WP-FRAMEWORK-01 | Уточнены условные цепи role remap → actor и Docmost manifest → SKIP/update; runtime и API не запускались. | reports/WP-11-preliminary.md; reports/WP-01-docmost-sync-trace.md |
 | 2026-11-02 17:03Z | WP-FRAMEWORK-01 | Уточнены границы durable marker в public MCP fixture и exact-SHA consumer clean-checkout evidence. | reports/WP-10-preliminary.md; reports/WP-01-tl-consumer-trace-part2.md |

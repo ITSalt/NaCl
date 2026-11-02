@@ -2,6 +2,10 @@
 
 Снимок NaCl 20fe4c6a56482e85d3ea9a9ebaadb37206047e41. Все категории DEFER; частота, число вызовов/чтений/записей/подтверждений, время, цена и реальные эффекты UNKNOWN. Это статическое описание контрактов; предложенные проверки не запускались, installed/runtime не доказаны.
 
+## BA migration → context flow
+
+`nacl-migrate-ba/scripts/generate_ba_cypher.py:141–156,330–339` генерирует `SystemContext-[:HAS_FLOW]->DataFlow`, где direction/description — свойства node. Root context reader `nacl-ba-context/SKILL.md:304–320` и `graph-infra/queries/ba-queries.cypher:83–95` ищут `ExternalEntity-[:HAS_FLOW]->SystemContext` и свойства edge; интерактивный context writer также создаёт этот второй вид связи. На fixture только с migration edges указанный reader не получит из DataFlow эти поля; OPTIONAL MATCH может вернуть null-поля, не обязательно пустой список. Другие writers могут добавить искомый edge. Global count по типу HAS_FLOW и audit IR counts не различают endpoints/properties, если остальные counts совпадают. Source-only, graph, diagram и audit не запускались. Proposed controls: один system/external/flow в IR, сравнить оба patterns и reader, отдельно interactive edge; DEFER.
+
 ## BA migration audit: IR и исходные документы
 
 Root `nacl-migrate-ba/scripts/audit_ba.py:35–58,95–145` сравнивает supplied graph counts с ожидаемыми counts из уже сформированного BA IR; исходные Markdown он не перечитывает. Поэтому одинаковый пропуск source-элемента в IR и graph не обнаруживается этой проверкой, равно как counts сами не доказывают совпадение IDs, свойств и topology. Root workflow `nacl-migrate-ba/SKILL.md:211–252` ориентируется на process exit и при mismatch требует расследование.
