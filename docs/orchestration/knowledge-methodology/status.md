@@ -79,6 +79,7 @@ R-n — действие: точная команда одной строкой 
 <!-- orch:journal -->
 | Дата | WP | Событие | Подтверждение |
 |------|----|---------|---------------|
+| 2026-11-02 17:03Z | WP-FRAMEWORK-01 | Уточнены границы durable marker в public MCP fixture и exact-SHA consumer clean-checkout evidence. | reports/WP-10-preliminary.md; reports/WP-01-tl-consumer-trace-part2.md |
 | 2026-11-02 17:01Z | WP-FRAMEWORK-01 | Уточнены root permissions reader и условная неполнота Analyst batch discovery; обе трассы source-only. | reports/WP-01-sa-consumer-trace.md; reports/WP-09-preliminary.md |
 | 2026-11-02 17:00Z | WP-FRAMEWORK-01 | Уточнены deferred stub goal, границы source-sha и условия timestamp/fallback incremental publish без runtime проверки. | reports/WP-08-preliminary.md; reports/WP-07-preliminary.md; reports/WP-01-publish-render-trace.md |
 | 2026-11-02 16:58Z | WP-FRAMEWORK-01 | Уточнены два условных YouGile пути и source-only граница source-sha Skills-only архива для предварительного WP-07. | reports/WP-01-analyst-tracker-cards.md; reports/WP-07-preliminary.md |

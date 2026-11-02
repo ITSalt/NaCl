@@ -4,7 +4,13 @@
 
 [Skills-only resource closure](WP-10-skill-closure-trace.md) — анализ исходников и установленного дерева; свежая сборка и probes описаны отдельно.
 
-Предисследование до принятия WP-01, NaCl SHA `20fe4c6a56482e85d3ea9a9ebaadb37206047e41`. Full-package сборка, gateway server/MCP, live runtime, CI и release не запускались; отдельная свежая Skills-only сборка и checker выполнены в disposable sandbox, отдельная локальная функция runtime проверена в WP-06-sanitize-probe, а [Node probes](WP-10-js-dependency-trace.md) выполнены в disposable-копиях, включая sandboxed запуск копии diagnose runner; установленный skill не запускался.  цена/частота unknown; выводы DEFER.
+Предисследование до принятия WP-01, NaCl SHA `20fe4c6a56482e85d3ea9a9ebaadb37206047e41`. Full-package --check позднее прошёл в disposable sandbox ([матрица](WP-01-acceptance-matrix.md)); gateway server/MCP, live runtime, CI и release не запускались; отдельная свежая Skills-only сборка и checker выполнены в disposable sandbox, отдельная локальная функция runtime проверена в WP-06-sanitize-probe, а [Node probes](WP-10-js-dependency-trace.md) выполнены в disposable-копиях, включая sandboxed запуск копии diagnose runner; установленный skill не запускался.  цена/частота unknown; выводы DEFER.
+
+## Public HTTP MCP и durability adapters
+
+`services/nacl-mcp/src/service.mjs:62–76` требует capability-функции и строковые markers durable/shared у внедрённых adapters; один marker не доказывает сохранение после restart или межпроцессную атомарность. `src/idempotency.mjs:12–46` использует process-local Map и прямо маркируется как такой. В opt-in Docker topology fixture `test/topology-docker-e2e.test.mjs:32–34,178–179,205–222` маркеры in-memory adapters заменяются на durable/shared, а graph mutate/schema/backup/restore заглушены; реальные disposable Neo4j containers там предусмотрены для других проверок. Такой тест не доказывает durable ledger, restart/multi-instance recovery или production deployment. README :32–45 требует deployment-owned adapters; фактический adapter UNKNOWN.
+
+Предлагаемые controls: два instance с одним idempotency key, restart и прерывание после side effect до сохранения результата; positive — проверенный durable adapter и явный recovery contract. Возможны другие безопасные реализации и reconciliation, повтор side effect в реальной системе не установлен. Это public HTTP service, не local package gateway; тесты здесь не запускались, DEFER.
 
 ## Упаковка и фактическая установленная версия
 
