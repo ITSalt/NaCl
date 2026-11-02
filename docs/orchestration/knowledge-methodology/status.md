@@ -79,6 +79,7 @@ R-n — действие: точная команда одной строкой 
 <!-- orch:journal -->
 | Дата | WP | Событие | Подтверждение |
 |------|----|---------|---------------|
+| 2026-11-02 15:26Z | WP-FRAMEWORK-01 | Проверены 415 путей full package, 16 transformations и два generated index по pinned Git tree | reports/WP-01-full-package-provenance.md |
 | 2026-11-02 15:23Z | WP-FRAMEWORK-01 | Проверены installed Skills-only manifest, 154 transformed файла и in-memory модели closure; plugin.json отличается от manifest | reports/WP-10-installed-integrity-trace.md |
 | 2026-11-02 15:21Z | WP-FRAMEWORK-01 | Сверены 196 root resources и 34 shared files, включая 14 transformations в памяти | reports/WP-01-root-shared-resource-map.md |
 | 2026-11-02 15:19Z | WP-FRAMEWORK-01 | Независимо сверены legacy workflow non-SKILL resources и manifest transform на закреплённом снимке | reports/WP-01-legacy-resource-map.md |
