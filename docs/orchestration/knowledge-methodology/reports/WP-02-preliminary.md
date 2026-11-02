@@ -2,7 +2,7 @@
 
 Статус: предисследование; зависимость WP-01 не закрыта, приёмка WP-02 не проводилась. NaCl SHA `20fe4c6a56482e85d3ea9a9ebaadb37206047e41`. Тексты ниже — контракты, не доказательство live-исполнения. Цена, фактические counts и частота неизвестны; категории предварительно DEFER.
 
-Codex BA router `codex-plugin-src/package/skills/nacl-ba/SKILL.md:8–25` перечисляет 14 leaf и требует project MCP/read canary. Общий BA writer контракт `codex-plugin-src/package/resources/workflows/references/ba-codex-contract.md:58–84` задаёт чтение → candidate → подтверждение → write → read-back; анализ/валидация read-only.
+Codex BA router `codex-plugin-src/package/skills/nacl-ba/SKILL.md:8–25` перечисляет 14 leaf и требует project MCP/read canary. Общий BA writer контракт `codex-plugin-src/package/resources/workflows/references/ba-codex-contract.md:58–84` задаёт чтение → candidate → подтверждение → write → read-back; анализ/валидация не пишут graph. Analyze может сохранять board snapshot и по запросу report; validator запрещает и graph-, и filesystem-записи (`skills-for-codex/nacl-ba-analyze/SKILL.md:21–27,41–47,71–73`, `nacl-ba-validate/SKILL.md:65–68`).
 
 | Механизм | Источник | Вход → выход; исследовательская альтернатива и риск |
 |---|---|---|

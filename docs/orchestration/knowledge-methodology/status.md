@@ -78,6 +78,15 @@ R-n — действие: точная команда одной строкой 
 <!-- orch:journal -->
 | Дата | WP | Событие | Подтверждение |
 |------|----|---------|---------------|
+| 2026-11-02 12:27Z | — | Challenge BA→SA: добавлен negative case дублированных edges и пустых категорий | reports/WP-11-preliminary.md; graph-infra/queries/handoff-queries.cypher:55–79 |
+| 2026-11-02 12:27Z | — | Предварительный peer challenge зафиксирован; независимая приёмка WP-17 не выполнена | reports/WP-17-challenge-in-progress.md |
+| 2026-11-02 12:27Z | — | Challenge Harness: роль сабагента не доказывает отдельную sandbox границу | reports/WP-15-preliminary.md; официальная документация Codex subagents |
+| 2026-11-02 12:27Z | — | WP-16: подготовлен конкретный план одного парного пилота, лимит владельца запрошен | reports/WP-16-pilot-plan-draft.md |
+| 2026-11-02 12:26Z | — | Challenge: уточнены порядок Codex lifecycle и границы выполненного runtime probe | reports/WP-10-preliminary.md; reports/WP-13-preliminary.md |
+| 2026-11-02 12:26Z | — | Challenge BA: уточнено различие отсутствия graph writes и допуска записи snapshot/report | reports/WP-02-preliminary.md; ba-codex-contract и analyze SKILL |
+| 2026-11-02 12:26Z | — | Challenge oracle: пересчитаны 45 принятых wave-plan, нарушений набора задач в сохранённых строках нет | reports/WP-16-preliminary.md; tierA-n20.json read-only recount |
+| 2026-11-02 12:26Z | — | Challenge WP-16: проверены неполные инварианты oracle wave-plan; сохранённые результаты не пересчитывались | reports/WP-16-preliminary.md; ab.mjs:73–82,113 |
+| 2026-11-02 12:25Z | — | Предварительное challenge: исправлены ссылка Codex review и условие HAS_STEP в SA replay | reports/WP-06-preliminary.md; reports/WP-03-preliminary.md |
 | 2026-11-02 12:25Z | — | Подготовлена матрица официальных возможностей Harness с границами гарантий | reports/WP-15-preliminary.md; официальная документация Codex и Claude Code, 2026-11-02 |
 | 2026-11-02 12:24Z | — | WP-16: исследовано происхождение оценок и обнаружена несопоставимость входов wave-plan A/B | reports/WP-16-preliminary.md; bench/skill-tools/ab/ab.mjs:32–40,58–63,101–106 |
 | 2026-11-02 12:24Z | — | Два probe повторены на отдельном временном Git archive: 16/16 model tests и тот же sanitizer result; отдельного network sandbox не было | reports/WP-06-sanitize-probe.md; reports/WP-09-concurrency-model-test.md |

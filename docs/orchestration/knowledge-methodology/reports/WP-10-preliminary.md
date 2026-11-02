@@ -1,6 +1,6 @@
 # WP-10: предварительное исследование упаковки, клиентов и runtime
 
-Предисследование до принятия WP-01, NaCl SHA `20fe4c6a56482e85d3ea9a9ebaadb37206047e41`. Сборка, runtime, CI и release не запускались; цена/частота unknown; выводы DEFER.
+Предисследование до принятия WP-01, NaCl SHA `20fe4c6a56482e85d3ea9a9ebaadb37206047e41`. Сборка, gateway server/MCP, live runtime, CI и release не запускались; отдельная локальная функция runtime проверена в WP-06-sanitize-probe.  цена/частота unknown; выводы DEFER.
 
 ## Упаковка и фактическая установленная версия
 

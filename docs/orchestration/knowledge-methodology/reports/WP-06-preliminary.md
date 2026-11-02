@@ -11,7 +11,7 @@
 
 Отрицательные сценарии для последующей проверки:
 
-1. `codex-plugin-src/workflow-overlays/nacl-tl-full/SKILL.md:174–182` ставит review до QA, а root `nacl-tl-review/SKILL.md:89–96,118–127` требует QA evidence для не-exempt UC. Возможен цикл при новом UI без evidence; проверить активный packaged путь и возможные исключения, не заявлять live deadlock.
+1. `codex-plugin-src/workflow-overlays/nacl-tl-full/SKILL.md:174–182` ставит review до QA, а Codex `codex-plugin-src/workflow-overlays/nacl-tl-review/SKILL.md:89–96,118–127` требует QA evidence для не-exempt UC. Возможен цикл при новом UI без evidence; проверить активный packaged путь и возможные исключения, не заявлять live deadlock.
 2. Root review `nacl-tl-review/SKILL.md:103–127` выбирает package manager/config; Codex overlay `:146–179` жёстко описывает pnpm workspace. Проверить npm baseline с валидными repo_checks и одинаковыми требованиями; не выдавать статическую формулировку за наблюдённый отказ.
 3. Root `nacl-tl-verify-code/SKILL.md:347–353,413–424` имеет общую инструкцию UNVERIFIED без baseline, но отдельная таблица явно рассматривает no-baseline при наличии postfix failures. Проверить no-baseline + zero failures; это неоднозначность, не доказанный ложный PASS.
 4. FAILED + обязательный NOT_RUN: проверить приоритет aggregation по `codex-plugin-src/package/resources/workflows/references/verification-evidence.md:41–49`; потенциальная потеря градации FAILED остаётся non-success.
