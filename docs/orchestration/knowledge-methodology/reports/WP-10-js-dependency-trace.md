@@ -36,4 +36,6 @@ Builder завершился exit 0 с сообщением о 10 skills; `check
 
 В отдельном повторном temp build добавлена SHA-сверенная копия vendor из его nacl-init **только во временный diagnose bundle**. Под тем же sandbox с повторно пройденными canary runner завершился exit 0 и JSON `NOT_RUN / PROJECT_MCP_NOT_CONFIGURED`, `mutation: NONE`, `network: NONE` для пустого project. Это сильный контроль причины раннего loader failure в данной fixture/Node, не рекомендация брать ресурсы из другого установленного skill и не проверка TOML parsing, графа или реального проекта. Временные каталоги удалены.
 
+Независимый исследователь повторил fresh build и оба контроля в собственных disposable-каталогах: canary снова дали WRITE_DENIED/NETWORK_DENIED, builder и checker — exit 0/VERIFIED, fresh diagnose без vendor — exit 1/MODULE_NOT_FOUND, модифицированный temp bundle со сверенным vendor — exit 0/NOT_RUN/PROJECT_MCP_NOT_CONFIGURED с `mutation:NONE`, `network:NONE`, `docker:NOT_INSPECTED`. Временные каталоги удалены; независимое повторение не проверяло MCP, TOML parsing или реальный проект.
+
 Proposed будущие controls: explicit dependency manifest/recursive CommonJS dependency closure, missing vendor и package-local resolution до выполнения runner, положительный контроль без cross-skill доступа. Риски: динамические requires и неверные интерпретаторы; цена/runtime UNKNOWN, DEFER.
