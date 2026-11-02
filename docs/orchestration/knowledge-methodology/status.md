@@ -22,7 +22,7 @@ CANCELLED (причина).
 <!-- orch:wp -->
 | WP | Модуль | Название | Статус | Сессия | PR | Обновлено |
 |----|--------|----------|--------|--------|----|-----------|
-| [WP-FRAMEWORK-01](work-packages/WP-FRAMEWORK-01-inventory.md) | framework | Карта фреймворка и протокол измерений | DRAFT | knowledge-methodology-framework | — | 2026-11-02 |
+| [WP-FRAMEWORK-01](work-packages/WP-FRAMEWORK-01-inventory.md) | framework | Карта фреймворка и протокол измерений | IN_PROGRESS | knowledge-methodology-framework | — | 2026-11-02 |
 | [WP-FRAMEWORK-02](work-packages/WP-FRAMEWORK-02-ba.md) | framework | Бизнес-анализ | DRAFT | knowledge-methodology-framework | — | 2026-11-02 |
 | [WP-FRAMEWORK-03](work-packages/WP-FRAMEWORK-03-sa.md) | framework | Системный анализ | DRAFT | knowledge-methodology-framework | — | 2026-11-02 |
 | [WP-FRAMEWORK-04](work-packages/WP-FRAMEWORK-04-tl.md) | framework | Планирование и управление разработкой | DRAFT | knowledge-methodology-framework | — | 2026-11-02 |
@@ -78,6 +78,7 @@ R-n — действие: точная команда одной строкой 
 <!-- orch:journal -->
 | Дата | WP | Событие | Подтверждение |
 |------|----|---------|---------------|
+| 2026-11-02 11:48Z | WP-FRAMEWORK-01 | WP-FRAMEWORK-01: DRAFT -> IN_PROGRESS | Владелец поручил начать исследование; запущен read-only исследователь inventory. |
 | 2026-11-02 11:45Z | — | D-3: family-cinema выбран тестовым полигоном; разрешены необходимые операции с его графом. Обновлены PLAN, WP-01/16 и протокол baseline/reset. Проверены локальные инструкции/config; runtime-доступ и эксперименты не запускались. | decisions.md; spec/family-cinema-testbed.md |
 | 2026-11-02 11:43Z | — | D-3 recorded | Прямое указание владельца: использовать family-cinema и выполнять необходимые операции с его графом, 2026-11-02 |
 | 2026-11-02 11:39Z | — | План прошёл независимый review; уточнены BE/FE, recovery, зависимости и изоляция экспериментов. | reports/plan-review.md |
