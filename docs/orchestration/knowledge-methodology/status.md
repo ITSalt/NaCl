@@ -79,6 +79,7 @@ R-n — действие: точная команда одной строкой 
 <!-- orch:journal -->
 | Дата | WP | Событие | Подтверждение |
 |------|----|---------|---------------|
+| 2026-11-02 16:23Z | WP-FRAMEWORK-01 | Связаны glossary source findings с предварительными BA, BA-SA и кандидатами synthesis | reports/WP-01-glossary-sa-trace.md |
 | 2026-11-02 16:23Z | WP-FRAMEWORK-01 | Независимо исследован root BA glossary full/incremental и SA finalize mapping | reports/WP-01-glossary-sa-trace.md |
 | 2026-11-02 16:21Z | WP-FRAMEWORK-01 | Обновлён предварительный synthesis по фактическому fresh bundle scan при checker VERIFIED | reports/WP-18-preliminary-candidates.md |
 | 2026-11-02 16:20Z | WP-FRAMEWORK-01 | Независимый fresh sandboxed build 20fe подтвердил 22 missing literal targets при checker VERIFIED | reports/WP-10-literal-references-checker.md |
