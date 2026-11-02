@@ -1,6 +1,6 @@
 # WP-01: package-level сверка TL
 
-NaCl SHA 20fe4c6a56482e85d3ea9a9ebaadb37206047e41. Исследователи сопоставили 26 root TL packages с WP-01-mechanism-registry-tl-platform.md и gap cards. Основные обязанности 25 отражены хотя бы группой, nacl-tl-diagnose явно не назван в реестре. Это не полное покрытие behaviors, consumers или runtime. Ссылки в таблице — nacl-tl-<имя>/SKILL.md, если не указан другой путь.
+NaCl SHA 20fe4c6a56482e85d3ea9a9ebaadb37206047e41. Исследователи сопоставили 26 TL workflow packages с root SKILL с WP-01-mechanism-registry-tl-platform.md и gap cards; 27-й nacl-tl-core — ресурсный пакет без root SKILL. 25 workflows прямо названы хотя бы в групповой строке, nacl-tl-diagnose прямо не назван, но косвенно связан через указанный в реестре диагностический router. Это критерий прямого упоминания, а не вывод о полном отсутствии или полноте механизмов. Это не полное покрытие behaviors, consumers или runtime. Ссылки в таблице — nacl-tl-<имя>/SKILL.md, если не указан другой путь.
 
 | Пакет | Источник и назначенная группа | Остаток |
 |---|---|---|
