@@ -78,6 +78,7 @@ R-n — действие: точная команда одной строкой 
 <!-- orch:journal -->
 | Дата | WP | Событие | Подтверждение |
 |------|----|---------|---------------|
+| 2026-11-02 13:48Z | WP-FRAMEWORK-01 | WP-01: после независимой проверки уточнены BA контракты и добавлена выборка 7 SA и 8 TL root/Codex workflow | reports/WP-01-ba-root-codex-samples.md; reports/WP-01-sa-tl-root-codex-samples.md |
 | 2026-11-02 13:47Z | WP-FRAMEWORK-01 | WP-01: 39 root/Codex hash пар независимо проверены; начата выборочная смысловая сверка 13 BA workflows | reports/WP-01-root-codex-hash-map.md; reports/WP-01-ba-root-codex-samples.md |
 | 2026-11-02 13:46Z | WP-FRAMEWORK-01 | WP-01: исправлена интерпретация partial discovery после независимого review; дополнена карта 39 root/Codex hash | reports/WP-01-publish-render-trace.md; reports/WP-01-root-codex-hash-map.md; reports/WP-01-overlay-reasons.md |
 | 2026-11-02 13:45Z | WP-FRAMEWORK-01 | WP-01: независимая проверка подтвердила 60/60 workflow SHA и 21 overlay; прослежен source-level маршрут publish/render | reports/WP-01-workflow-source-map.md; reports/WP-01-overlay-reasons.md; reports/WP-01-publish-render-trace.md |
