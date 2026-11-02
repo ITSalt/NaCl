@@ -78,6 +78,7 @@ R-n — действие: точная команда одной строкой 
 <!-- orch:journal -->
 | Дата | WP | Событие | Подтверждение |
 |------|----|---------|---------------|
+| 2026-11-02 14:35Z | WP-FRAMEWORK-01 | Исследован путь подтверждения backup для migration и дополнительные атомы SA validation; независимая source-сверка выполнена | reports/WP-01-migration-backup-contract.md |
 | 2026-11-02 14:33Z | WP-FRAMEWORK-01 | Разложены выборочные обязанности SA validation и graph backup/restore; независимые замечания учтены | reports/WP-01-graph095-atomic-sample.md |
 | 2026-11-02 14:31Z | WP-FRAMEWORK-01 | Уточнены source-level recovery lock и QA-to-release evidence с независимой проверкой | reports/WP-01-qa-release-contract-trace.md |
 | 2026-11-02 14:29Z | WP-FRAMEWORK-01 | Уточнены falsifier-матрицы и исследованы корневые документы, последовательность GOAL proof и recovery legacy migration | reports/WP-01-guides-setup-trace.md |
