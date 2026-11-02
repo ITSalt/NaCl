@@ -79,6 +79,7 @@ R-n — действие: точная команда одной строкой 
 <!-- orch:journal -->
 | Дата | WP | Событие | Подтверждение |
 |------|----|---------|---------------|
+| 2026-11-02 16:46Z | WP-FRAMEWORK-01 | Скорректированы границы BA glossary и независимо проверены все 229 локальных inline targets в 163 отчётах WP. | reports/WP-01-glossary-sa-trace.md; reports/WP-01-acceptance-matrix.md |
 | 2026-11-02 16:45Z | WP-FRAMEWORK-01 | Оформлены и проверяются атомарные карточки механизмов closure и graph→render с явными UNKNOWN и способами опровержения. | reports/WP-10-js-dependency-trace.md; reports/WP-01-analyst-render-path-boundary.md |
 | 2026-11-02 16:44Z | WP-FRAMEWORK-01 | Уточнены временные границы старых отчётов, заполнена атомарная карточка JS closure и проверено совместное версионирование трёх пар snapshot/manifest. | reports/WP-10-js-dependency-trace.md; reports/WP-01-local-graph-snapshots.md; reports/WP-18-preliminary-candidates.md |
 | 2026-11-02 16:43Z | WP-FRAMEWORK-01 | Уточнена source-only цепочка QA отчёт → graph evidence → release; автоматическая передача в изученном workflow не подтверждена. | reports/WP-01-qa-release-contract-trace.md |
