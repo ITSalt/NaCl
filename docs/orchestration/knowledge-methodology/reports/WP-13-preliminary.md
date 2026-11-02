@@ -1,5 +1,7 @@
 # WP-13: предварительное исследование dev → QA → release
 
+[Dev acceptance → QA evidence](WP-13-dev-qa-evidence-trace.md) показывает source-level mapping и условия остановки; runtime UNKNOWN.
+
 Предисследование до приёмки WP-05/06/07/12. NaCl SHA `20fe4c6a56482e85d3ea9a9ebaadb37206047e41`; live QA, граф и поставка не запускались; стоимость и частота unknown.
 
 Заявленные каналы evidence, а не универсальный порядок: dev baseline/RED/GREEN + regression path (`skills-for-codex/nacl-tl-dev-fe/SKILL.md:57–73,96–110`) → Task+evidence в одной graph операции (`codex-plugin-src/package/resources/workflows/references/verification-evidence.md:101–116`) → FE↔BE sync (`skills-for-codex/nacl-tl-sync/SKILL.md:19–36,40–80`) → review/QA (`codex-plugin-src/workflow-overlays/nacl-tl-review/SKILL.md:19–58,89–96,146–169`, `skills-for-codex/nacl-tl-qa/SKILL.md:17–31,132–140`) → clean checkout/deploy SHA/health (`skills-for-codex/nacl-tl-deploy/SKILL.md:26–48,65–72`) → release gates. Codex full отдельно описывает BE dev → BE review → FE dev → FE review → sync → stubs → QA → docs (`codex-plugin-src/workflow-overlays/nacl-tl-full/SKILL.md:174–182`); после исправления возможны повторные review/sync/QA. Эти стадии отвечают на разные вопросы; их повторяемость и цена не измерены.

@@ -1,5 +1,7 @@
 # WP-14: предварительное исследование состояния и восстановления
 
+[Review evidence и revision](WP-14-review-revision-trace.md) показывает source-level SHA gate и неустановленную повторную сверку после нового push.
+
 Предисследование до принятия WP-04/08/09/10. NaCl SHA `20fe4c6a56482e85d3ea9a9ebaadb37206047e41`. Ни crash/recovery, ни граф, ни внешний side effect не запускались. Источники — тексты/код, цена unknown, категория DEFER.
 
 `codex-plugin-src/workflow-overlays/nacl-tl-full/SKILL.md:211–220` задаёт remote graph как истину и `.tl/status.json` как best-effort per-clone cache; claim/fence/revision обязательны. В то же время conductor overlay :128–165 требует совпадения totals/status JSON с graph, без явного remote carve-out в этих строках. Устаревший cache клона A после работы B потенциально может блокировать актуальное graph state; это статическая гипотеза, не live-ошибка. Тем же путём conductor ранее может быть заблокирован отсутствием named read :119–125. Нужен fixture со stale cache, актуальным graph и подтверждённой query capability.
