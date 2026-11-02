@@ -78,6 +78,9 @@ R-n — действие: точная команда одной строкой 
 <!-- orch:journal -->
 | Дата | WP | Событие | Подтверждение |
 |------|----|---------|---------------|
+| 2026-11-02 12:43Z | — | Challenge пилота: добавлены контроль порядка и caches; один pair не оценивает эффект порядка | reports/WP-16-pilot-plan-draft.md |
+| 2026-11-02 12:43Z | — | Browser preflight: исправлен origin routing, блокированы service workers, проверены пять отрицательных URL; окно и server egress ограничены | reports/WP-16-fr014-browser-preflight.md |
+| 2026-11-02 12:42Z | — | Обновлена хронология blind design после появления предварительных fixtures и узких тестов | reports/WP-16-fr014-blind-design.md |
 | 2026-11-02 12:41Z | — | FR-014: browser preflight повторён из захэшированного временного runner; сервер остановлен | reports/WP-16-fr014-browser-preflight.md |
 | 2026-11-02 12:40Z | — | FR-014: v2 draft oracle отклоняет пустой dialog и проходит на stub с изображением; полный harness не готов | reports/WP-16-fr014-draft-test-check.md |
 | 2026-11-02 12:40Z | — | Challenge пилота: уточнена классификация при недоказанной blind isolation | reports/WP-16-pilot-plan-draft.md |
