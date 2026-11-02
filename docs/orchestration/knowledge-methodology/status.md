@@ -78,6 +78,7 @@ R-n — действие: точная команда одной строкой 
 <!-- orch:journal -->
 | Дата | WP | Событие | Подтверждение |
 |------|----|---------|---------------|
+| 2026-11-02 15:16Z | WP-FRAMEWORK-01 | Проверены ограничения предварительных рекомендаций и уточнены обязательные installed resources; граница бюджета D-4 остаётся неустановленной | reports/WP-16-budget-observation.md |
 | 2026-11-02 15:15Z | WP-FRAMEWORK-01 | Сведены установленная resource closure и независимая проверка ограничений итоговых source claims | reports/WP-10-installed-resource-matrix.md |
 | 2026-11-02 15:13Z | WP-FRAMEWORK-01 | Дополнен предварительный список кандидатов и проверены installed TL/goal resources | reports/WP-18-preliminary-candidates.md |
 | 2026-11-02 15:11Z | WP-FRAMEWORK-01 | Проверены installed TL resource paths и source-level deploy monitoring/WorkflowStep handoff | reports/WP-07-deploy-monitor-trace.md |
