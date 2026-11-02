@@ -2,6 +2,12 @@
 
 Снимок NaCl 20fe4c6a56482e85d3ea9a9ebaadb37206047e41. Все категории DEFER; частота, число вызовов/чтений/записей/подтверждений, время, цена и реальные эффекты UNKNOWN. Это статическое описание контрактов; предложенные проверки не запускались, installed/runtime не доказаны.
 
+## BA migration audit: IR и исходные документы
+
+Root `nacl-migrate-ba/scripts/audit_ba.py:35–58,95–145` сравнивает supplied graph counts с ожидаемыми counts из уже сформированного BA IR; исходные Markdown он не перечитывает. Поэтому одинаковый пропуск source-элемента в IR и graph не обнаруживается этой проверкой, равно как counts сами не доказывают совпадение IDs, свойств и topology. Root workflow `nacl-migrate-ba/SKILL.md:211–252` ориентируется на process exit и при mismatch требует расследование.
+
+При валидных входах audit JSON может содержать `status:ok` вместе с ненулевым blockers и exit 1 (`audit_ba.py:60–78,88–92`); это не false PASS штатного workflow, который проверяет exit. Другой consumer, игнорирующий exit/blockers, не установлен. Missing input даёт отдельный error/exit 3. Proposed controls: under-extracted IR при совпадающих counts, различающиеся IDs при равных counts, mismatch JSON/exit; независимая сверка source inventory как positive. Global counts иные project scope не исключают; root only, script/graph не запускались, частота UNKNOWN, DEFER.
+
 ## CORE-SHARED-01
 
 nacl-core/SKILL.md:3–21,29–55,62–81 задаёт общую project config, schema, ID, MCP и различение main checkout/worktree. Project config — источник контекста, конкретный текстовый consumer nacl-publish/SKILL.md:29–34; фактический вызов и MCP неизвестны. Риск — неверный проект, root или ID, ложный успех при недоступном graph. Альтернатива: typed project-context adapter с проверкой identity/capabilities; нельзя терять общий schema и честный graph-down status. Negative: linked worktree и две конфигурации, недоступный MCP с валидным cache, ID collision; positive: согласованное разрешение root и подтверждённое чтение. Repo Codex skills-for-codex/nacl-core/SKILL.md:13–27, overlay codex-plugin-src/workflow-overlays/nacl-core/SKILL.md:13–23 и skills-only contract codex-plugin-src/package/resources/references/skills-only-runtime-contract.md:20–30 задают разные fallback/doctor контуры; их гарантии не переносить друг на друга. Для замены нужны независимые проверки identity в каждом клиенте.
