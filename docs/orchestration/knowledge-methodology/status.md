@@ -78,6 +78,10 @@ R-n — действие: точная команда одной строкой 
 <!-- orch:journal -->
 | Дата | WP | Событие | Подтверждение |
 |------|----|---------|---------------|
+| 2026-11-02 12:19Z | WP-FRAMEWORK-01 | Исправлен путь backup-contract в оценке graph baseline | reports/WP-01-graph-baseline-risks.md |
+| 2026-11-02 12:19Z | — | Подготовлено read-only исследование управления и восстановления | reports/WP-08-preliminary.md |
+| 2026-11-02 12:19Z | — | Подготовлено read-only исследование delivery и publication; WP-01 открыт | reports/WP-07-preliminary.md |
+| 2026-11-02 12:18Z | — | Предварительный WP-06: повторён in-memory probe sanitizeChanges; full gateway/release не проверялся | reports/WP-06-sanitize-probe.md |
 | 2026-11-02 12:18Z | — | Подготовлено read-only исследование TL planning и управления; WP-01 открыт | reports/WP-04-preliminary.md |
 | 2026-11-02 12:18Z | — | Подготовлено read-only исследование review и QA; WP-01 не закрыт | reports/WP-06-preliminary.md |
 | 2026-11-02 12:17Z | — | Подготовлено read-only исследование разработки и фиксов; dependency WP-01 открыта | reports/WP-05-preliminary.md |
