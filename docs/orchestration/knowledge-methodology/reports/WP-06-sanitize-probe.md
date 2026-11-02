@@ -1,6 +1,6 @@
 # WP-06: локальный отрицательный probe sanitizeChanges
 
-Снимок NaCl `20fe4c6a56482e85d3ea9a9ebaadb37206047e41`; выполнено 2026-11-02 локально в памяти через Node import `codex-plugin-src/package/runtime/graph-gateway/concurrency.mjs`, без файловых записей, графа или gateway-сервера. Координатор повторил probe исследователя.
+Снимок NaCl `20fe4c6a56482e85d3ea9a9ebaadb37206047e41`; выполнено 2026-11-02 локально в памяти через Node import `codex-plugin-src/package/runtime/graph-gateway/concurrency.mjs`, без файловых записей, графа или gateway-сервера. Координатор повторил probe исследователя. Нарушение протокола WP-01: import выполнен из основного checkout, а не в disposable sandbox. Функция выполнялась в памяти, записи/graph не использовались, checkout после этого чист. Повтор на отдельном временном Git archive закреплённого commit вновь принял все три stage как done; копия удалена. Отдельного ограничения сети на уровне ОС не применялось; этот probe не делает network calls.
 
 Для `sanitizeChanges('Task', {status:'done', verification_evidence:'test-GREEN:tests/task.test.mjs qa-stage:component:<stage>'})`:
 

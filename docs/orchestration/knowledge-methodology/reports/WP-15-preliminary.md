@@ -1,0 +1,15 @@
+# WP-15: предварительное сравнение с возможностями Harness
+
+Предисследование до приёмки WP-01; документация просмотрена 2026-11-02. Локально `codex-cli 0.166.0`, `Claude Code 2.1.316`; help/version показывают поверхность CLI, не доказывают поведение в конкретном permission profile. Встроенные capabilities не признаны автоматически эквивалентными гарантиям NaCl. Поведенческие native probes и платные вызовы не выполнялись.
+
+| Область | Что документировано | Что остаётся подтвердить/обеспечить |
+|---|---|---|
+| Делегирование | [Codex subagents](https://learn.chatgpt.com/docs/agent-configuration/subagents), [Claude agent teams](https://code.claude.com/docs/en/agent-teams): раздельные контексты, задачи и сбор результатов | Scope, независимая приёмка и durable graph claim не следуют из делегирования. Claude teams описывают ограничения восстановления in-process teammates и устаревшие task statuses. |
+| Worktree | [Codex worktrees](https://learn.chatgpt.com/docs/environments/git-worktrees): изоляция checkout, общий Git metadata | Graph/service/port locks, shared paths и интеграция не выводятся из worktree. Условия desktop не автоматически равны другим клиентам. |
+| Resume/compaction | [Codex app-server](https://learn.chatgpt.com/docs/app-server): thread history/read/resume, события compaction; [Claude checkpointing](https://code.claude.com/docs/en/checkpointing) | ACK не доказывает завершение compaction; остаётся сверка внешних side effects и состояния Git/DB. Checkpoint не полная резервная копия Bash и других agents. |
+| Permissions | [Codex approvals/security](https://learn.chatgpt.com/docs/agent-approvals-security), [Claude MCP](https://code.claude.com/docs/en/mcp) | Sandbox, approval и scoped authorization — разные уровни; CLI help не доказывает доступность сервера и fail-closed в конкретном профиле. |
+| Hooks/CI | [Codex hooks](https://learn.chatgpt.com/docs/hooks), [Claude hooks](https://code.claude.com/docs/en/hooks), [Codex GitHub Action](https://learn.chatgpt.com/docs/github-action), [Claude GitHub Actions](https://code.claude.com/docs/en/github-actions) | Не все async hooks блокируют действия/продолжают ход. CI integration сама по себе не подтверждает required checks, точный SHA, deploy или semantic acceptance. |
+
+Предварительно native инструменты могут уменьшить ручную координацию, но остаются источник требований, scoped owner decisions, проверка фактических результатов, graph schema/link traversals/stale, identity, lease/fence/CAS, durable idempotency и recovery. Не доказано, что они требуют именно нынешней реализации NaCl для малого проекта. `nacl-goal/SKILL.md:73–106` указывает soft budgets; stop/goal не следует считать hard billing cap.
+
+До переноса обязанностей предложены изолированные negative probes: два исполнителя и конфликт путей; concurrent claim/expiry и stale fence; stop/resume/compaction с наблюдением завершения; отказ MCP/permissions без false PASS; независимый review намеренно сломанного теста и отсутствующего provider; проверка exact SHA и evidence после перезапуска. Никакие проценты экономии и результаты этих проверок пока не измерены. WP-15 не принят.

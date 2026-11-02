@@ -78,6 +78,12 @@ R-n — действие: точная команда одной строкой 
 <!-- orch:journal -->
 | Дата | WP | Событие | Подтверждение |
 |------|----|---------|---------------|
+| 2026-11-02 12:25Z | — | Подготовлена матрица официальных возможностей Harness с границами гарантий | reports/WP-15-preliminary.md; официальная документация Codex и Claude Code, 2026-11-02 |
+| 2026-11-02 12:24Z | — | WP-16: исследовано происхождение оценок и обнаружена несопоставимость входов wave-plan A/B | reports/WP-16-preliminary.md; bench/skill-tools/ab/ab.mjs:32–40,58–63,101–106 |
+| 2026-11-02 12:24Z | — | Два probe повторены на отдельном временном Git archive: 16/16 model tests и тот же sanitizer result; отдельного network sandbox не было | reports/WP-06-sanitize-probe.md; reports/WP-09-concurrency-model-test.md |
+| 2026-11-02 12:23Z | — | Зафиксировано нарушение исследовательского протокола: два локальных probe выполнены из основного checkout, требуется повтор в disposable sandbox | reports/WP-06-sanitize-probe.md; reports/WP-09-concurrency-model-test.md |
+| 2026-11-02 12:23Z | — | WP-09: 16/16 локальных model tests конкурентности; live graph не проверялся | reports/WP-09-concurrency-model-test.md; node --test tests/codex-plugin/scripts/nacl-concurrency-model.test.mjs |
+| 2026-11-02 12:23Z | — | Подготовлено исследование стыка состояния и восстановления | reports/WP-14-preliminary.md |
 | 2026-11-02 12:22Z | — | Подготовлено исследование стыка SA→TL→dev; зависимости открыты | reports/WP-12-preliminary.md |
 | 2026-11-02 12:22Z | — | WP-10: проверены дополнительные файлы в installed cache; происхождение неизвестно | reports/WP-10-preliminary.md; read-only inventory |
 | 2026-11-02 12:22Z | — | Подготовлены сквозные исследования BA→SA и dev→QA→release; зависимости открыты | reports/WP-11-preliminary.md; reports/WP-13-preliminary.md |
