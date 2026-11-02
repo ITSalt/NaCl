@@ -8,6 +8,12 @@ Pinned NaCl 20fe4c6; две независимые проверки исходн
 
 `analyst-tool/server/src/render/markdown/markdown.test.ts:334–336,514–516,657–659` проверяет обычные resolve cases; проверка traversal board name в `analyst-tool/server/src/services/skill-runner.test.ts:143–147` относится к другой ветви и не доказывает защиту graph source_file. Наличие этих tests не означает их выполнение здесь; иные guards вне исследованной цепочки не исключены.
 
+## Другие пути Analyst Tool
+
+Ограниченный поиск server source выявил три явных graph `source_file` consumers — entity, UC, Form: они возвращают path/content, а не читают существующий target; записывают route и внутренняя ветка `render-md` skill-runner. Публичная доступность второй ветки не установлена. Domain-model/UC-index/traceability используют собственные фиксированные подкаталоги, а не graph source_file; это не доказывает полную symlink confinement.
+
+Board GET/PUT отдельно проверяют `name` и лексическую принадлежность boardsDir (`routes/boards.ts:8–11,41–47,78–85`, `services/boards.ts:42–50`), причём boardsDir настраивается отдельно от project root. `readBoard` :169–175 использует readFile/stat без показанной проверки realpath, а `writeBoard` :230–247 пишет tmp и делает rename; эти пути и их условия отличаются от `render` writeFile и не проверялись в описанном опыте. Другие guards и runtime не исключены.
+
 ## Происхождение source_file
 
 Две source-only проверки `nacl-migrate-sa/scripts/{parse_sa.py,generate_sa_cypher.py,validate_sa_ir.py}` и adapters показывают: обычные adapters формируют source_file из пути прочитанного документа; при невозможности `resolved_path.relative_to(project)` они возвращают исходный путь, а не отказывают (`inline_table_v1_sa.py:140–142,199–211`, `frontmatter_v1_sa.py:134–135,225–237`). Чтение документа происходит до такого преобразования, поэтому symlink наружу — условный исследовательский сценарий, не обнаруженный факт в данных пользователя.
