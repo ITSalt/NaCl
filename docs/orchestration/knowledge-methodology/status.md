@@ -78,6 +78,7 @@ R-n — действие: точная команда одной строкой 
 <!-- orch:journal -->
 | Дата | WP | Событие | Подтверждение |
 |------|----|---------|---------------|
+| 2026-11-02 13:55Z | WP-FRAMEWORK-01 | WP-01: уточнены заявленные callers, источники и consumers SA-01–09; BA trace скорректирован по независимому review | reports/WP-01-sa-consumer-trace.md; reports/WP-01-ba-consumer-trace.md |
 | 2026-11-02 13:53Z | WP-FRAMEWORK-01 | WP-01: независимо проверены 55 групп и заполнены source-level caller/authority/consumer для BA-01–09 | reports/WP-01-group-card-audit.md; reports/WP-01-ba-consumer-trace.md |
 | 2026-11-02 13:52Z | WP-FRAMEWORK-01 | WP-01: составлен семантический аудит 55 групп по обязательным полям; сохранены общие inherited DEFER и UNKNOWN | reports/WP-01-group-card-audit.md; spec/research-protocol.md |
 | 2026-11-02 13:51Z | WP-FRAMEWORK-01 | WP-01: проверены границы четырёх стыковых цепочек и уточнён same-mutation evidence после независимого review | reports/WP-01-interface-chain-audit.md; reports/WP-01-risky-overlay-trace.md |
