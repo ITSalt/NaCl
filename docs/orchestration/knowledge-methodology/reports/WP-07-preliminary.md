@@ -1,5 +1,7 @@
 # WP-07: предварительное исследование поставки и публикации
 
+[CI run и revision](WP-07-ci-selection-trace.md) — source-level трасса; runtime UNKNOWN.
+
 Предисследование до приёмки WP-01. NaCl SHA `20fe4c6a56482e85d3ea9a9ebaadb37206047e41`; фактические release/CI/deploy/Docmost не запускались. Цена и частота неизвестны, категории DEFER. D-2 исключает поставку NaCl в рамках этой программы.
 
 Три различные цепочки: пользовательский проект `nacl-tl-ship/SKILL.md:51–73` → `nacl-tl-deliver/SKILL.md:87–102` → `nacl-tl-deploy/SKILL.md:12–29,45–76` → `nacl-tl-release/SKILL.md:143–174`; выпуск самого NaCl — `docs/runbooks/framework-release.md:8–21,87–111,117–125,165–182`; граф → render/preview/внешняя публикация — `nacl-publish/SKILL.md:14–26`, `codex-plugin-src/workflow-overlays/nacl-publish/SKILL.md:12–18,24–53`. Успешный render не является фактом внешней публикации.

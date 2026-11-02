@@ -1,5 +1,7 @@
 # WP-09: предварительное исследование графа и синхронизации
 
+[Legacy node и project lease](WP-09-null-project-lease-trace.md) — source-level трасса; runtime UNKNOWN.
+
 Предисследование до принятия WP-01, SHA NaCl `20fe4c6a56482e85d3ea9a9ebaadb37206047e41`. Ни graph/network write, ни восстановление, ни конкурентные пробы не выполнены. Цена и частота unknown; категории DEFER.
 
 1. **Источники истины.** `nacl-tl-core/references/remote-mode-coordination.md:3–19,50–61` определяет graph как источник remote Task/Wave, `.tl/status.json` как cache. `nacl-ba-sync/SKILL.md:11–17,56–60,89–128` различает визуальную board и структурный graph. Успешная graph запись до падения board сохранения — отдельный crash/replay case; нельзя считать cross-store транзакцию доказанной. `nacl-tl-full/SKILL.md:912–951` описывает graph→JSON и recovery, но сам текст не реализует совместную транзакцию двух хранилищ; forensic запись не равна продвижению фазы.
