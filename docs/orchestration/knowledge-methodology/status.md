@@ -78,6 +78,7 @@ R-n — действие: точная команда одной строкой 
 <!-- orch:journal -->
 | Дата | WP | Событие | Подтверждение |
 |------|----|---------|---------------|
+| 2026-11-02 14:07Z | WP-FRAMEWORK-01 | WP-01: для групп TL 04.1–07.2 зафиксированы proposed falsifiers и границы source outcome; review продолжается | reports/WP-01-tl-falsifier-matrix-part1.md |
 | 2026-11-02 14:05Z | WP-FRAMEWORK-01 | WP-01: уточнены scope falsifiers и независимая проверка non-package index; статус дерева и hashes сверены | reports/WP-01-falsifier-links.md; reports/WP-01-nonpackage-scope-index.md; reports/WP-01-baseline-candidates.md |
 | 2026-11-02 14:05Z | WP-FRAMEWORK-01 | WP-01: индексированы области вне manifest, семь falsifiers связаны с evidence; проверены hashes draft и чистота Git-деревьев | reports/WP-01-nonpackage-scope-index.md; reports/WP-01-falsifier-links.md; reports/WP-01-baseline-candidates.md |
 | 2026-11-02 14:03Z | WP-FRAMEWORK-01 | WP-01: independently checked 122 explicit source paths/ranges; уточнены XL и aliases, полная семантическая сверка не заявлена | reports/WP-01-mechanism-registry-ba-sa.md; reports/WP-01-platform-consumer-trace.md |

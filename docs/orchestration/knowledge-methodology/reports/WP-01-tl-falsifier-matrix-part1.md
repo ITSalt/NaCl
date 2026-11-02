@@ -1,0 +1,27 @@
+# WP-01: TL 04.1–07.2 — alternatives и falsifiers
+
+NaCl SHA 20fe4c6a56482e85d3ea9a9ebaadb37206047e41. Ни один negative/positive здесь не выполнен. Source outcome — текст контракта, proposed — независимое ожидаемое поведение, не доказанный enforcement. Все альтернативы DEFER; частота, цена, историческая причинность и runtime UNKNOWN. Сокращённые overlay пути — codex-plugin-src/workflow-overlays/nacl-tl-<имя>/SKILL.md, Codex — skills-for-codex/nacl-tl-<имя>/SKILL.md, root — nacl-tl-<имя>/SKILL.md.
+
+| ID | Negative input и заявленный или предлагаемый исход | Риск замены / условие пересмотра DEFER |
+|---|---|---|
+| 04.1 | Graph unavailable + неоднозначный запрос; overlay intake :30–42,95–108 маркирует fallback low-confidence и требует применимого confirmation | Typed route не должен делать certainty/автовызов без подтверждения; проверить классификацию и downstream каждого клиента |
+| 04.2 | Missing/stub external contract без exception либо named read unavailable; overlay plan :52–86 задаёт BLOCKED или TL_NAMED_QUERY_UNAVAILABLE, file-only не graph-complete | Snapshot/registry может потерять owner/freshness/scope; сравнить per-pair exception и positive/negative |
+| 04.3 | Remote graph down при local cache либо чужой lease; overlay next :27–51 запрещает stale fallback, LEASE_HELD пропускается | Ranking может потерять authority/identity/fence; проверить TTL, conflict и recovery, не выводить authentication из двух workers |
+| 04.4 | UNVERIFIED result или done без parseable evidence; overlay full :12–19,73–99 требует инспекции и evidence в той же mutation | Слияние orchestration может потерять phase/evidence/recovery; проверить interruption, partial и named read |
+| 04.5 | Changelog FR отсутствует в graph либо named read отсутствует; overlay conductor :119–124,145–175 задаёт BLOCKED при доказанном drift/query gap | Typed log может потерять live reconciliation/exception scope; red CI из группового примера этими строками не доказан |
+| 04.6 | Graph down или write без read-back; Codex tl-core/references/tl-codex-contract.md:19–28,60–81 маркирует fallback и non-success | Общий adapter может потерять status/confirmation/authority; проверить partial write и каждый transport |
+| 05.1 | Testable TECH без baseline runner или infra без проверки; Codex dev :59–101 требует BLOCKED/UNVERIFIED по условиям | Post-change CI attestation может потерять baseline/TDD и durable verification; сравнить пути и consumers |
+| 05.2 | Baseline test уже green/падает из-за import, FE URL не совпадает с BE; Codex dev-be :48–77, dev-fe :57–73 и sync :19–30 | Один автор+contract test может потерять отдельного RED-author и result/evidence consumers; проверить правильную причину и route mismatch |
+| 05.3 | L1 с актуальной spec без spec-update либо L2 с неверной spec; overlay fix :83–88 и :142–149 содержат текстовую коллизию | Typed fix не должен фальсифицировать docs или пропустить drift; разрешить контракт и проверить обе ветви |
+| 05.4 | Нет test files, закрываемый stub без shape evidence, fake ID в user flow; root stubs :19–32 | Contract tests могут потерять scan coverage/registry/shape; точный статус fake ID отдельно проверить |
+| 05.5 | Reopened с зелёным headline, но нет Status или regression seam; root reopened :15–18,27–38 | Typed result должен сохранить неполный статус и не auto-ship; проверить parser, downstream и безопасный retry |
+| 05.6 | Невозможно безопасно защитить dirty tree либо autonomous goal просит production hotfix; Codex hotfix :20–31,66–82,114–126 | Incident workflow может потерять branch isolation/owner authority/restore; симулировать только в disposable repo |
+| 06.1 | RED из-за broken import/runner вместо требуемого поведения; root regression-test :89–111 формально принимает FAIL, причина требует отдельного контроля | Independent test может не доказать правильную причину RED/связь с AC; проверить runner и controls |
+| 06.2 | Repo-wide lint/typecheck/test failed или не выполнен без допустимого exception; overlay review :146–179 задаёт соответствующий BLOCKED | Exact-SHA CI может потерять обязательный command/exception; проверить head, команды и consumer |
+| 06.3 | Реализованный AC не покрыт собранным тестом; Codex verify-code :127–137 различает PARTIALLY_VERIFIED/UNVERIFIED | Shared CI может потерять per-AC trace; проверить AC→code→test→consumer и baseline |
+| 06.4 | FAILED stage и другой mandatory NOT_RUN; Codex qa :39–48 буквально перезаписывает aggregate на UNVERIFIED | Stage ledger должен сохранить отдельные statuses, applicability и exceptions; проверить release consumer, не заявлять runtime false PASS |
+| 06.5 | Done с mandatory QA FAILED; локальные WP-06 probes принимают token syntactically, mock result подставлен | Proposed downstream gate не должен считать это success; проверить actual scoped graph/release и same-mutation evidence |
+| 07.1 | Upstream UNVERIFIED при зелёных локальных тестах; root ship :142–149 допускает explicit override только как SHIP APPLIED — UNVERIFIED, не auto-deploy | SHA attestation может потерять upstream/branch/claim semantics; проверить per-UC, head, skips и route |
+| 07.2 | Clean-checkout PASS artifact от другого SHA; Codex deploy :43–59 задаёт BLOCKED/commit-mismatch или missing, исключения отдельно | Reuse может потерять SHA/env/CI/health distinction; проверить точный environment и consumer |
+
+Существующие групповые и trace-артефакты описывают producer/consumer. Эти строки добавляют условия проверки, но не устанавливают, что действующий runtime обеспечивает заявленную гарантию.
