@@ -79,6 +79,7 @@ R-n — действие: точная команда одной строкой 
 <!-- orch:journal -->
 | Дата | WP | Событие | Подтверждение |
 |------|----|---------|---------------|
+| 2026-11-02 15:44Z | WP-FRAMEWORK-01 | Уточнены условия 101 literal-reference occurrences: предварительное чтение, Goal Boundary и контекстные операции | reports/WP-10-literal-references-checker.md |
 | 2026-11-02 15:40Z | WP-FRAMEWORK-01 | Две модели проверили literal references ожидаемой Skills-only closure pinned 20fe: тот же набор, что installed c291 | reports/WP-10-literal-references-checker.md |
 | 2026-11-02 15:39Z | WP-FRAMEWORK-01 | Проверены literal backtick references installed bundle и source boundaries Skills-only checker | reports/WP-10-literal-references-checker.md |
 | 2026-11-02 15:36Z | WP-FRAMEWORK-01 | Независимо сверены смысловые различия восьми изменённых Skills-only source files между snapshots | reports/WP-10-skills-only-snapshot-delta.md |

@@ -6,6 +6,18 @@ Read-only проверка installed NaCl 0.2.2; выполнение workflow, 
 
 Две независимые in-memory модели применили ту же ограниченную проверку к ожидаемой closure Git-снимка `20fe4c6` и source `c291c798`: результаты идентичны установленному подсчёту — 129 вхождений, 26 targets, 22 отсутствуют в рассчитанной closure; наборы совпадают при игнорировании номеров строк. Для `20fe` это предсказание по моделям, а не проверка новой сборки; краевые отличия Python-модели от JS и динамическое разрешение не исключены.
 
+Разбивка 101 отсутствующего вхождения (проверена независимо):
+
+| Имя | Вхождения | Уникальные leaf→target | Bundle-local targets |
+|---|---:|---:|---:|
+| verification-vocabulary.md | 41 | 41 | 7 |
+| migration-rules.md | 27 | 27 | 4 |
+| verification-evidence.md | 15 | 12 | 3 |
+| goal-codex-contract.md | 11 | 11 | 5 |
+| orchestration-model.md | 7 | 4 | 3 |
+
+По воспроизводимой классификации текста 71 вхождение находится в явно предписанном предварительном или условно предварительном чтении, 11 — в Goal Compatibility/Boundary, 19 — в других контекстах. Это классификация **вхождений**, не безусловных запусков: например goal preview и применение TL core имеют собственные условия, а «другой контекст» может быть обязательным при terminal Task write или завершении batch. Фактический route и failure не проверены.
+
 Например BA full `skills/nacl-ba/resources/workflows/nacl-ba-full/SKILL.md:24–27` предписывает прочитать orchestration-model, migration-rules и verification-vocabulary; три нормализованных BA target отсутствуют, тогда как BA contract в списке присутствует. TL conductor :28–32 требует четыре файла references, и все четыре нормализованных TL target отсутствуют. Ссылки Goal Compatibility имеют отдельные условия и не должны автоматически считаться preflight каждого запуска. Наличие текста и отсутствие файлов не доказывают фактический отказ агента.
 
 Pinned checker `scripts/check-skills-only-bundle.mjs:20–21,76–90` проверяет inline Markdown links в `.md`, границу active skill и существование target; backticks, reference-style links, HTML и JS imports не входят в этот scan. Рекурсивный walk :28–37,61–64 запрещает symlinks внутри обнаруженных skill roots, но не доказывает отсутствие symlinks по всему bundle. :43–45 подавляет любые исключения optional проверки `.mcp.json`/`.app.json`; отдельные реальные read/readdir/parse failures могут завершить процесс исключением без гарантированного структурированного `Status: FAILED`. Это следствие source, не воспроизведённая ошибка.
