@@ -79,6 +79,7 @@ R-n — действие: точная команда одной строкой 
 <!-- orch:journal -->
 | Дата | WP | Событие | Подтверждение |
 |------|----|---------|---------------|
+| 2026-11-02 16:18Z | WP-FRAMEWORK-01 | Уточнены literal detail_status readers и BA HandoffPackage writer boundary | reports/WP-01-sa-resume-detection.md |
 | 2026-11-02 16:17Z | WP-FRAMEWORK-01 | Независимо сопоставлены phase detection root BA/SA и writer detail_status; graph не запрашивался | reports/WP-01-sa-resume-detection.md |
 | 2026-11-02 16:14Z | WP-FRAMEWORK-01 | Исправлены временные оговорки поздних build probes; независимо сверены root BA partial resume и ValidationReport | reports/WP-01-ba-resume-detection.md |
 | 2026-11-02 16:12Z | WP-FRAMEWORK-01 | Независимая проверка diagnose закреплена в предварительном challenge и synthesis | reports/WP-17-challenge-in-progress.md |
