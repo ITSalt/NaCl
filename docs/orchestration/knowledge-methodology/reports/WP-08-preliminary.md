@@ -1,5 +1,7 @@
 # WP-08: предварительное исследование целей и восстановления
 
+[Goal fingerprint и resume](WP-08-goal-resume-trace.md) — source-level границы checkpoint и recovery.
+
 [Свежесть diagnose → reconcile](WP-08-reconcile-freshness-trace.md) — source-level трасса; runtime UNKNOWN.
 
 Предисследование до приёмки WP-01; NaCl SHA `20fe4c6a56482e85d3ea9a9ebaadb37206047e41`. Live graph, тесты и workflow не запускались; цена и частота неизвестны, классификация DEFER.

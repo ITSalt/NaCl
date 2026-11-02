@@ -10,6 +10,8 @@
 
 `docs/guides/goal-permissions.md:18–21,95–99` описывает ограничения hooks/lock и detector; `nacl-goal/SKILL.md:71–79` оговаривает неактивность detector/lock в 2.10.0. Это граница версий и деклараций, а не доказательство обхода. Отдельная последовательность proof: [WP-01-goal-proof-sequence.md](WP-01-goal-proof-sequence.md).
 
+[Независимый challenge существующих symlink tests](WP-17-symlink-challenge-trace.md) различает подмену объекта и проверку lock ownership.
+
 ## Возможная гонка lock при legacy apply
 
 `legacy-symlinks.mjs:514–570,631–655`: после проверки token и первоначального плана второй apply присваивает `lockPath` до `open(..., wx)`. Если чужой файл lock существует, open возвращает EEXIST и вызывается BUSY, но `finally` вызывает `rm(lockPath)` без проверки владения. Lock относится к legacy apply одной canonical home (`.nacl/codex/legacy-migration/.apply.lock`), а не к graph mutex. При разрешённом удалении это может убрать lock первого процесса и открыть окно для третьего с тем же актуальным token; первый процесс затем также может удалить lock третьего в своём finally. Повторная проверка плана и другие условия могут остановить третью операцию; если plan уже изменился или есть receipt, второй вызов может вообще не достичь lock. Отказ удаления также возможен и подавляется. Это независимо проверенный вывод по коду и условному interleaving, а не наблюдавшаяся гонка, параллельная миграция или потеря данных.

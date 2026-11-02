@@ -1,5 +1,7 @@
 # WP-05: предварительное исследование разработки и исправлений
 
+[BE baseline и классификация](WP-05-be-baseline-trace.md) — отдельная source-level таблица, без runtime результатов.
+
 [FE baseline и RED handoff](WP-05-fe-red-handoff.md) — отдельная source-level трасса, без runtime вывода.
 
 Предисследование до приёмки WP-01. Снимок NaCl `20fe4c6a56482e85d3ea9a9ebaadb37206047e41`; источники описывают правила, а не зафиксированный runtime. Фактические частота, counts, время и стоимость unknown; кандидаты предварительно DEFER.

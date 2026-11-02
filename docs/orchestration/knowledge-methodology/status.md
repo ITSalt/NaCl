@@ -78,6 +78,7 @@ R-n — действие: точная команда одной строкой 
 <!-- orch:journal -->
 | Дата | WP | Событие | Подтверждение |
 |------|----|---------|---------------|
+| 2026-11-02 15:03Z | WP-FRAMEWORK-01 | Дополнены source-level goal resume, BE baseline и независимый challenge symlink tests | reports/WP-17-symlink-challenge-trace.md |
 | 2026-11-02 15:00Z | WP-FRAMEWORK-01 | Сверены authorization границы transports и поля BA→SA attribute mapping | reports/WP-11-attribute-propagation-trace.md |
 | 2026-11-02 14:59Z | WP-FRAMEWORK-01 | Исследованы Skills-only resource closure и отличие отдельного автора теста от независимого oracle | reports/WP-10-skill-closure-trace.md |
 | 2026-11-02 14:57Z | WP-FRAMEWORK-01 | Уточнены source-level выбор CI run, freshness reconcile и project-scoped lease legacy node | reports/WP-09-null-project-lease-trace.md |
