@@ -78,6 +78,8 @@ R-n — действие: точная команда одной строкой 
 <!-- orch:journal -->
 | Дата | WP | Событие | Подтверждение |
 |------|----|---------|---------------|
+| 2026-11-02 12:29Z | — | WP-06: engine mock path повторён на временной копии; первая попытка исследователя вне disposable отмечена | reports/WP-06-engine-mock-probe.md |
+| 2026-11-02 12:29Z | WP-FRAMEWORK-01 | Проверена среда: текущий Docker socket отсутствует; graph TCP 22/443 timeout, причины неизвестны | reports/WP-01-test-environment.md; docker version; TCP connect |
 | 2026-11-02 12:27Z | — | Challenge BA→SA: добавлен negative case дублированных edges и пустых категорий | reports/WP-11-preliminary.md; graph-infra/queries/handoff-queries.cypher:55–79 |
 | 2026-11-02 12:27Z | — | Предварительный peer challenge зафиксирован; независимая приёмка WP-17 не выполнена | reports/WP-17-challenge-in-progress.md |
 | 2026-11-02 12:27Z | — | Challenge Harness: роль сабагента не доказывает отдельную sandbox границу | reports/WP-15-preliminary.md; официальная документация Codex subagents |
