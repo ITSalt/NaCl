@@ -15,4 +15,4 @@
 
 Источники: [BA/SA registry](WP-01-mechanism-registry-ba-sa.md), [TL/platform registry](WP-01-mechanism-registry-tl-platform.md), [BA falsifiers](WP-01-ba-falsifier-matrix.md), [SA falsifiers](WP-01-sa-falsifier-matrix.md), [TL 1](WP-01-tl-falsifier-matrix-part1.md), [TL 2](WP-01-tl-falsifier-matrix-part2.md). Разложены выборочные группы [BA-03](WP-01-ba03-atomic-sample.md), [SA-06](WP-01-sa06-atomic-sample.md), [TL 04.2](WP-01-tl042-atomic-sample.md), [09.5](WP-01-graph095-atomic-sample.md).
 
-Criterion 3 остаётся частичным на уровне механизмов: наличие именованной ячейки не устанавливает конкретный consumer, назначение или заменяемость. Criterion 5 предварительно покрыт категорией DEFER и условиями на уровне выявленных групп, но составной список candidates и конкретные условия требуют заключительной сверки.
+Criterion 3 покрыт на source-level для выявленных групп с явно отмеченными UNKNOWN: наличие ячейки не доказывает фактический consumer или заменяемость. Criterion 5 покрыт категорией DEFER и условиями для 55 выявленных групп и 14 тематических gaps; это не доказывает отсутствие иных будущих кандидатов или выполненных проверок.

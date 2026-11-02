@@ -1,5 +1,7 @@
 # WP-13: предварительное исследование dev → QA → release
 
+[Актуальность QA scenario](WP-13-qa-scenario-freshness.md) — source-level граница reuse и mapping, без наблюдавшегося false PASS.
+
 [Dev acceptance → QA evidence](WP-13-dev-qa-evidence-trace.md) показывает source-level mapping и условия остановки; runtime UNKNOWN.
 
 Предисследование до приёмки WP-05/06/07/12. NaCl SHA `20fe4c6a56482e85d3ea9a9ebaadb37206047e41`; live QA, граф и поставка не запускались; стоимость и частота unknown.
