@@ -5,13 +5,13 @@ Pinned SHA `20fe4c6a56482e85d3ea9a9ebaadb37206047e41`. Группы основа
 | ID / источник | Цель; вход → выход → consumer | Возможная альтернатива / риск; negative case |
 |---|---|---|
 | 04.1 `codex-plugin-src/workflow-overlays/nacl-tl-intake/SKILL.md:14–50` | Запрос → классификация/scope → SA/TL/fix/dev; подтверждение области | Typed intake; проверить неоднозначный баг и stale graph. |
-| 04.2 `.../nacl-tl-plan/SKILL.md:19–33,121–148` | SA/dependencies → waves/task/API/read-back → исполнители/status | Versioned snapshot; проверить drift, re-plan и одновременную запись. |
-| 04.3 `.../nacl-tl-next/SKILL.md:15–50` | Graph Task/Wave → выбор/remote claim → исполнитель | Упростить выбор, сохранив fence; два worker и expiry. |
-| 04.4 `.../nacl-tl-full/SKILL.md:73–83,134–209` | Scope/evidence → UC стадии и статусы → conductor | Объединить уровни; риск утраты независимости и recovery. Проверить interruption и неподтверждённый результат. |
-| 04.5 `.../nacl-tl-conductor/SKILL.md:79–165` | Несколько источников → reconciliation → владелец/release | Typed event log; проверить согласованные статусы при красном CI. |
+| 04.2 `codex-plugin-src/workflow-overlays/nacl-tl-plan/SKILL.md:19–33,52–59,121–148` | SA/dependencies → waves/task/API/read-back → исполнители/status | Versioned snapshot; проверить drift, re-plan и одновременную запись. |
+| 04.3 `codex-plugin-src/workflow-overlays/nacl-tl-next/SKILL.md:15–50` | Graph Task/Wave → выбор/remote claim → исполнитель | Упростить выбор, сохранив fence; два worker и expiry. |
+| 04.4 `codex-plugin-src/workflow-overlays/nacl-tl-full/SKILL.md:12–19,73–83,134–209` | Scope/evidence → UC стадии и статусы → conductor | Объединить уровни; риск утраты независимости и recovery. Проверить interruption и неподтверждённый результат. |
+| 04.5 `codex-plugin-src/workflow-overlays/nacl-tl-conductor/SKILL.md:79–165` | Несколько источников → reconciliation → владелец/release | Typed event log; проверить согласованные статусы при красном CI. |
 | 04.6 `skills-for-codex/nacl-tl-core/references/tl-codex-contract.md:7–28,30–81` | Mutation/evidence → closed status/read-back → TL workflows | Единый adapter; проверить stale graph и частичную запись. |
 | 05.1 `skills-for-codex/nacl-tl-dev/SKILL.md:20–28,59–101` | TECH task → результат и до/после → review | CI attestation; проверить отсутствующий baseline. |
-| 05.2 `skills-for-codex/nacl-tl-dev-be/SKILL.md:19–39,48–92`, FE :19–35,43–73 | Contract → BE/FE код и tests → review/sync | Один исполнитель и независимый contract test; проверить mismatch routes. |
+| 05.2 `skills-for-codex/nacl-tl-dev-be/SKILL.md:19–39,48–92`, `skills-for-codex/nacl-tl-dev-fe/SKILL.md:19–35,43–73` | Contract → BE/FE код и tests → review/sync | Один исполнитель и независимый contract test; проверить mismatch routes. |
 | 05.3 `codex-plugin-src/workflow-overlays/nacl-tl-fix/SKILL.md:41–59,78–108` | Defect → L0–L3/spec-first/fix → review | Typed fix contract; проверить L1 с корректной spec и L2 с drift. |
 | 05.4 `nacl-tl-stubs/SKILL.md:13–28,86–105` | Registry/scan → unresolved или подтверждённая форма → release | Contract tests; проверить fake IDs и непокрытый путь. |
 | 05.5 `nacl-tl-reopened/SKILL.md:13–38` | Reopened item → fix/review/report → tracker | Typed result; проверить partial и повтор. |
@@ -20,7 +20,7 @@ Pinned SHA `20fe4c6a56482e85d3ea9a9ebaadb37206047e41`. Группы основа
 | 06.2 `codex-plugin-src/workflow-overlays/nacl-tl-review/SKILL.md:14–46,146–179` | Diff/criteria/checks → verdict → ship | CI exact SHA; проверить npm и skipped path-filter. |
 | 06.3 `skills-for-codex/nacl-tl-verify-code/SKILL.md:43–59,112–137` | Scope/AC → trace/coverage → verify | Shared CI evidence; проверить реализованный AC без теста. |
 | 06.4 `skills-for-codex/nacl-tl-qa/SKILL.md:17–61`, `nacl-tl-verify/SKILL.md:54–65,128–155` | Change → fixture/runtime/wire/live evidence → release | Evidence ledger; проверить FAILED+NOT_RUN и environment mismatch. |
-| 06.5 `WP-06-sanitize-probe.md`, `WP-06-engine-mock-probe.md` | Task evidence → локальная функция/mock engine; downstream отдельный | Typed policy gate; локально QA FAILED/BLOCKED/NOT_RUN принимаются синтаксически, live graph/release не проверены. Первые пробы вне disposable среды зафиксированы как нарушение, повторены на временном archive без OS network isolation. |
+| 06.5 [WP-06-sanitize-probe.md](WP-06-sanitize-probe.md), [WP-06-engine-mock-probe.md](WP-06-engine-mock-probe.md) | Task evidence → локальная функция/mock engine; downstream отдельный | Typed policy gate; локально QA FAILED/BLOCKED/NOT_RUN принимаются синтаксически, live graph/release не проверены. Первые пробы вне disposable среды зафиксированы как нарушение, повторены на временном archive без OS network isolation. |
 | 07.1 `nacl-tl-ship/SKILL.md:51–73`, `nacl-tl-deliver/SKILL.md:87–102` | Изменение → branch/PR/CI → deploy | Exact-SHA attestation; проверить смену head и skipped checks. |
 | 07.2 `skills-for-codex/nacl-tl-deploy/SKILL.md:26–76` | SHA/env → clean-checkout, CI/deploy/health evidence | Reuse check; проверить иной SHA/asset и environment. |
 | 07.3 `nacl-tl-release/SKILL.md:143–174` | Graph/QA/prod evidence → release decision | Semantic fingerprint; проверить те же counts и изменённые связи, health без user flow. |

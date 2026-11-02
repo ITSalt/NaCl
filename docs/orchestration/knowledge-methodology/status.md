@@ -78,6 +78,7 @@ R-n — действие: точная команда одной строкой 
 <!-- orch:journal -->
 | Дата | WP | Событие | Подтверждение |
 |------|----|---------|---------------|
+| 2026-11-02 14:00Z | WP-FRAMEWORK-01 | WP-01: подтверждена index-сверка 55 ID, уточнена трасса SA ValidationReport и исправлены неоднозначные source paths в реестрах | reports/WP-01-acceptance-matrix.md; reports/WP-01-sa-validation-report-trace.md; reports/WP-01-mechanism-registry-ba-sa.md; reports/WP-01-mechanism-registry-tl-platform.md |
 | 2026-11-02 13:58Z | WP-FRAMEWORK-01 | WP-01: трассировка caller/authority/consumer дополнена группами 08.4–10.4; quality/delivery уточнены по независимой проверке | reports/WP-01-tl-consumer-trace-part2.md; reports/WP-01-platform-consumer-trace.md |
 | 2026-11-02 13:57Z | WP-FRAMEWORK-01 | WP-01: продолжена трассировка TL 06.3–08.3; часть 04–06 уточнена по независимому challenge | reports/WP-01-tl-consumer-trace-part1.md; reports/WP-01-tl-consumer-trace-part2.md |
 | 2026-11-02 13:56Z | WP-FRAMEWORK-01 | WP-01: уточнены source-level маршруты TL 04.1–06.2, SA trace дополнен расхождением ValidationReport | reports/WP-01-tl-consumer-trace-part1.md; reports/WP-01-sa-consumer-trace.md |
