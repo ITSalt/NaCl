@@ -78,6 +78,7 @@ R-n — действие: точная команда одной строкой 
 <!-- orch:journal -->
 | Дата | WP | Событие | Подтверждение |
 |------|----|---------|---------------|
+| 2026-11-02 15:10Z | WP-FRAMEWORK-01 | Сверены installed BA resources и QA screenshot evidence, без запуска workflows | reports/WP-13-qa-screenshot-evidence.md |
 | 2026-11-02 15:09Z | WP-FRAMEWORK-01 | Уточнена локальная телеметрия D-4: условный parent output выше лимита при полной атрибуции, реальная атрибуция UNKNOWN | reports/WP-16-budget-observation.md |
 | 2026-11-02 15:07Z | WP-FRAMEWORK-01 | Подтверждена структура установленных SA/TL ресурсов и уточнена трасса Requirement anchors в TL | reports/WP-12-requirement-anchor-trace.md |
 | 2026-11-02 15:05Z | WP-FRAMEWORK-01 | Уточнён installed SA resource, критерии source-level инвентаризации и актуальность QA scenario | reports/WP-10-skill-closure-trace.md |

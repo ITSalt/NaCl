@@ -1,5 +1,7 @@
 # WP-13: предварительное исследование dev → QA → release
 
+[QA screenshots и evidence](WP-13-qa-screenshot-evidence.md) — границы путей и retention по исходникам.
+
 [Актуальность QA scenario](WP-13-qa-scenario-freshness.md) — source-level граница reuse и mapping, без наблюдавшегося false PASS.
 
 [Dev acceptance → QA evidence](WP-13-dev-qa-evidence-trace.md) показывает source-level mapping и условия остановки; runtime UNKNOWN.
