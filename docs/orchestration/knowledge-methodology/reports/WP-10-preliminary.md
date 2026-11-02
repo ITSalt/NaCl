@@ -4,7 +4,7 @@
 
 [Skills-only resource closure](WP-10-skill-closure-trace.md) — source-level исследование, не выполненный эксперимент.
 
-Предисследование до принятия WP-01, NaCl SHA `20fe4c6a56482e85d3ea9a9ebaadb37206047e41`. Сборка, gateway server/MCP, live runtime, CI и release не запускались; отдельная локальная функция runtime проверена в WP-06-sanitize-probe, а [Node path-resolution probe](WP-10-js-dependency-trace.md) выполнена в disposable-копиях без запуска diagnose runner.  цена/частота unknown; выводы DEFER.
+Предисследование до принятия WP-01, NaCl SHA `20fe4c6a56482e85d3ea9a9ebaadb37206047e41`. Сборка, gateway server/MCP, live runtime, CI и release не запускались; отдельная локальная функция runtime проверена в WP-06-sanitize-probe, а [Node probes](WP-10-js-dependency-trace.md) выполнены в disposable-копиях, включая sandboxed запуск копии diagnose runner; установленный skill не запускался.  цена/частота unknown; выводы DEFER.
 
 ## Упаковка и фактическая установленная версия
 
