@@ -79,6 +79,7 @@ R-n — действие: точная команда одной строкой 
 <!-- orch:journal -->
 | Дата | WP | Событие | Подтверждение |
 |------|----|---------|---------------|
+| 2026-11-02 17:23Z | WP-FRAMEWORK-01 | Проверено различие malformed и missing atom в synthetic conduct; уточнены docs changelog consumers. | reports/WP-14-preliminary.md; reports/WP-01-tl-gap-cards.md |
 | 2026-11-02 17:22Z | WP-FRAMEWORK-01 | Повторно сверены coverage, Skills-only checker, Analyst sandbox и QA reference; уточнены границы synthetic и непроверенного runtime. | reports/WP-FRAMEWORK-01.md |
 | 2026-11-02 17:21Z | WP-FRAMEWORK-01 | Прослежены BA lifecycle → SA import/enum и отдельный FULL consumer переходов; graph execution не проверялся. | reports/WP-01-ba-consumer-trace.md |
 | 2026-11-02 17:20Z | WP-FRAMEWORK-01 | Независимый challenge ограничил synthetic conduct штатными guards; отдельно прослежен has_ui backfill → state-machine consumer. | reports/WP-14-preliminary.md; reports/WP-01-sa-consumer-trace.md |

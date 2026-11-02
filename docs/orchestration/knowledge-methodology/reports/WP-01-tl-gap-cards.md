@@ -16,6 +16,12 @@ Root `nacl-tl-stubs/SKILL.md:412–426,452–459` при исчезновени�
 
 Proposed negative: связанный unresolved WARNING с shape-unvalidated без других блокеров, проследить итог и evidence; positive: проверенная форма и resolvedAt при соблюдении прочих gates. Частота, цена, runtime и фактический consumer UNKNOWN; DEFER, пробы не выполнялись.
 
+## TL-DOCS-CHANGELOG — producer и consumers
+
+Root `nacl-tl-docs/SKILL.md:174–197,307–325` до Step 9 пишет в changelog `Complete (verification pending Step 9)` и прямо обусловливает DONE проверками и commit. При отсутствии сообщения пользователя root ship `nacl-tl-ship/SKILL.md:236–247` может использовать entries после последнего commit для формирования сообщения; после docs commit запись уже может не входить в этот диапазон. Root conductor `nacl-tl-conductor/SKILL.md:799–808` проверяет FR-ID последнего раздела против graph с учётом exceptions, не трактует строку Complete как gate. Это заявленные consumers, не доказанное их исполнение или дословное копирование строки.
+
+Proposed negative: запись есть, Step 9 остановился; consumer не должен считать её окончательным verified evidence. Отдельно проверить явное сообщение пользователя и уже committed запись. Graph/ship/docs не запускались, DEFER.
+
 ## TL-BASELINE-REVIEW — источник baseline
 
 Root `nacl-tl-dev-be/SKILL.md:162–169,221–231,256–260` и FE :187–194,274–282 сохраняют pre-test baseline в /tmp и описывают diff в result. Root review `nacl-tl-review/SKILL.md:558–577` приоритизирует --base, затем `.tl/tasks/UC###/baseline-failures-{be,fe}.json`, затем merge-base и описывает worktree по baseline_ref. Показанные dev steps не задают writer этого JSON; review не описывает извлечение Git ref из JSON или использование набора failures напрямую. Иные producers, explicit --base и merge-base возможны; последний не обязательно равен исходному рабочему состоянию. Runtime отказ не установлен.
