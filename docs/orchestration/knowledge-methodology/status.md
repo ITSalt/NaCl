@@ -78,6 +78,7 @@ R-n — действие: точная команда одной строкой 
 <!-- orch:journal -->
 | Дата | WP | Событие | Подтверждение |
 |------|----|---------|---------------|
+| 2026-11-02 14:14Z | WP-FRAMEWORK-01 | WP-01: независимый challenge сохранил статус PARTIAL; добавлен scope inventory docs и ссылка на 6-критериальную матрицу | reports/WP-FRAMEWORK-01.md; reports/WP-01-docs-scope-inventory.md; reports/WP-01-acceptance-matrix.md |
 | 2026-11-02 14:13Z | WP-FRAMEWORK-01 | WP-01: обновлена сводка и исправлены source vs proposed outcomes в стыках и falsifiers; graph baseline отнесён к экспериментальным гейтам | reports/WP-FRAMEWORK-01.md; reports/WP-01-interface-chain-audit.md; reports/WP-01-acceptance-matrix.md |
 | 2026-11-02 14:11Z | WP-FRAMEWORK-01 | WP-01: 57 falsifier строк нормализуются к 55/55 group IDs; источник/предложение и неисполненные проверки сохранены отдельно | reports/WP-01-acceptance-matrix.md; reports/WP-01-ba-falsifier-matrix.md; reports/WP-01-sa-falsifier-matrix.md; reports/WP-01-tl-falsifier-matrix-part1.md; reports/WP-01-tl-falsifier-matrix-part2.md |
 | 2026-11-02 14:10Z | WP-FRAMEWORK-01 | WP-01: предложены falsifiers и условия DEFER для SA-02–09; BA матрица исправлена по независимому review | reports/WP-01-sa-falsifier-matrix.md; reports/WP-01-ba-falsifier-matrix.md |
