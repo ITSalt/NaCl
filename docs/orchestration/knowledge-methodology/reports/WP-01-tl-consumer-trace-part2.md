@@ -1,0 +1,19 @@
+# WP-01: TL 06.3–08.3 — заявленные callers, authority и consumers
+
+NaCl SHA 20fe4c6a56482e85d3ea9a9ebaadb37206047e41. Source-level связи, не actual invocation/read-back; installed routing, частота, цена и runtime UNKNOWN. Все группы наследуют DEFER. Root пути — nacl-tl-<workflow>/SKILL.md, Codex — skills-for-codex/nacl-tl-<workflow>/SKILL.md.
+
+| ID | Заявленный caller/trigger | Authority и текстовый consumer |
+|---|---|---|
+| 06.3 verify-code | Root verify :130 или user, scope task/AC | Task spec, diff, API/tests/runner; Codex verify-code :19–39,43–59,112–129. Consumers verification orchestrator и заявленные delivery/ship/reopened; выполненные тесты неизвестны |
+| 06.4 QA/verify | Root verify :130,154–155, deliver :352–353 условно; UC actor/provider matrix | Stage evidence, qa-report и tracking; Codex qa :17–31,51–66,132–151 и verify :19–36. Точное чтение stage fields release не доказано; коллизия aggregate описана отдельно |
+| 06.5 sanitize probe | Локальный исследовательский mock, не штатная QA функция | Gateway gateway.mjs:258–260,304–311 → concurrency.mjs:173–190,235–252; authority результатов — локальные WP-06 probe logs. Реальный downstream/release не проверен |
+| 07.1 ship/deliver | User или delivery context; утверждённое изменение | Git branch/SHA, предыдущая проверка и config; root ship :13–33,60–73. Root deliver :888–896 описывает прямые git/health вместо вызова ship/deploy при вводном описании chaining; runtime route не доказан |
+| 07.2 deploy | User или delivery context; confirmed SHA/env | Codex deploy :16–24,26–59,65–74 задаёт clean-checkout evidence, CI и health; root deliver :888–896 описывает собственный health. Actual deployment и downstream field consumer неизвестны |
+| 07.3 release | User, root conductor :1101 или next action deliver :764 | Graph/task, PR/CI, deployed SHA и live QA/sync; root release :12–27,143–174. Consumers GitHub release/deploy и owner — заявленные; D-2 исключает их выполнение в данной программе |
+| 07.4 docs | User или root full :589 после approved review | Task/AC/API и review для нормативного scope, implementation evidence для фактического поведения; Codex docs :16–38. Output docs/changelog/tracking; не приравнивать любой код к утверждённой spec |
+| 07.5 publish | User либо optional SA/BA full | Reconciled live graph и changelog/release; Codex publish :12–44, package overlay :12–19. Docmost и board manifest — отдельные targets; автоматическая CLI/endpoint связка не доказана |
+| 08.1 goal | User alias/preview, совместимый runtime | Версионированные references и фактическое proof/runtime evidence; Codex goal :48–79,159–182 описывает preview/NOT_RUN и unavailable/BLOCKED. Название goal не доказывает evaluator |
+| 08.2 diagnose/status | User или public router | Local config inspection отдельно от graph truth; package nacl-diagnose :8–36 и Codex tl-status :13–40. В remote при недоступном graph local cache не shared truth; tl-diagnose отдельно производит report |
+| 08.3 reconcile | User или diagnostic recommendation, исключительный docs catch-up | Fresh report, current code как факт и согласованная spec для конфликта; root reconcile :13–20,45–58 и Codex :19–44. Consumers owner/docs; non-PASS и freshness ограничения описаны в WP-01-tl-diagnose-card.md |
+
+Заявленная цепочка не доказывает live semantics, цену, безопасное повторение или фактическую передачу поля. Альтернативы и negative cases остаются предложениями.

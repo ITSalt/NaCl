@@ -78,6 +78,7 @@ R-n — действие: точная команда одной строкой 
 <!-- orch:journal -->
 | Дата | WP | Событие | Подтверждение |
 |------|----|---------|---------------|
+| 2026-11-02 13:57Z | WP-FRAMEWORK-01 | WP-01: продолжена трассировка TL 06.3–08.3; часть 04–06 уточнена по независимому challenge | reports/WP-01-tl-consumer-trace-part1.md; reports/WP-01-tl-consumer-trace-part2.md |
 | 2026-11-02 13:56Z | WP-FRAMEWORK-01 | WP-01: уточнены source-level маршруты TL 04.1–06.2, SA trace дополнен расхождением ValidationReport | reports/WP-01-tl-consumer-trace-part1.md; reports/WP-01-sa-consumer-trace.md |
 | 2026-11-02 13:55Z | WP-FRAMEWORK-01 | WP-01: уточнены заявленные callers, источники и consumers SA-01–09; BA trace скорректирован по независимому review | reports/WP-01-sa-consumer-trace.md; reports/WP-01-ba-consumer-trace.md |
 | 2026-11-02 13:53Z | WP-FRAMEWORK-01 | WP-01: независимо проверены 55 групп и заполнены source-level caller/authority/consumer для BA-01–09 | reports/WP-01-group-card-audit.md; reports/WP-01-ba-consumer-trace.md |
