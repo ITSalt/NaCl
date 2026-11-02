@@ -1,0 +1,22 @@
+# WP-01: TL 04.1–06.2 — заявленные callers, authority и consumers
+
+NaCl SHA 20fe4c6a56482e85d3ea9a9ebaadb37206047e41. Источники текстовые, caller/consumer означают объявленный маршрут; actual invocation, read-back, installed routing, частота и цена UNKNOWN. Все группы наследуют DEFER. Сокращённые overlay пути — codex-plugin-src/workflow-overlays/nacl-tl-<workflow>/SKILL.md; Codex — skills-for-codex/nacl-tl-<workflow>/SKILL.md; root — nacl-tl-<workflow>/SKILL.md.
+
+| ID | Заявленный caller/trigger | Authority и текстовый consumer |
+|---|---|---|
+| 04.1 intake | User/tracker request, overlay intake :17–27 | User request + graph evidence; keyword/file fallback low-confidence. Overlay :36–39 предлагает SA feature/fix/dev; invocation неизвестен |
+| 04.2 plan | Root full :199–217 или user; scope SA context | SA graph и подтверждённые external-contract files; overlay plan :14–39,52–59. Named read может быть BLOCKED, file-only не graph-complete. Root plan :16–20 выдаёт tasks для dev |
+| 04.3 next | User, root next :5–17 | Remote graph Task/Wave, local fallback отдельно; overlay next :17–51 запрещает stale fallback в remote. Worker — предложенный consumer, не доказанный auto-call |
+| 04.4 full | Root conductor :5–7 или user full :159–163 | Graph Task/Wave и task files; remote graph authority, local status cache. Overlay full :12–19,105–109 задаёт lease/fence/evidence; downstream conductor заявлен, atomicity неизвестна |
+| 04.5 conductor | User batch request, root conductor :5–7 | Graph и сверяемые .tl/release/exceptions root :700–723; overlay требует named reads и fenced Task write. Owner report, release evidence — заявленные consumers |
+| 04.6 TL core | Использующие Codex TL workflows, не самостоятельный user workflow | Codex tl-core/references/tl-codex-contract.md:1–5,7–28,30–34,60–81: graph authority при доступности, status и read-back; orchestrator parser не наблюдался |
+| 05.1 TECH dev | User, root full :367–368 или intake route | Task file/configured runner для scope; graph Task — отдельная authority состояния в remote. Codex dev :20–42,48–66 выдаёт result/review/conductor/ship |
+| 05.2 BE/FE dev | User или root full :482,502,520,539, UC task | task-be/fe и API contract, baseline test evidence; Codex dev-be/fe :21–41 указывают review/sync/conductor/ship. Автор RED отличается по клиентам |
+| 05.3 fix | User, reopened или hotfix по контрактам root fix :5–10,27–33 и reopened :15–20 | Принятая spec и факты дефекта; overlay fix :85–88,144–146 различает L1 code и L2/L3 spec drift. Consumers reopened/hotfix и review/verification по маршруту |
+| 05.4 stubs | User scan или root full :423 после TECH | Scoped production/test files, registry и shape evidence; root stubs :13–32 указывает review/release. Zero test files и непроверенный shape не clean |
+| 05.5 reopened | Tracker/manual feedback; root reopened :5–10, Codex :33–40,55–60 | Tracker/manual report, authoritative Status fix, review/stubs/test evidence. Root :40–42 описывает human tester без automated downstream отчёта; Codex :42–53 описывает дальнейшие workflows, фактическое чтение неизвестно |
+| 05.6 hotfix | User при срочном дефекте, не goal-autonomy | Git state/config и fix/test evidence, Codex hotfix :20–48; root :12–26 указывает PR/deploy pipeline как downstream. Текущая программа не разрешает такой delivery |
+| 06.1 regression | Root regression-test :5–16,21–28: fix/dev/user | Согласованное expected behavior и реальный baseline runner; Codex regression-test :17–47 описывает Regression test evidence для caller/full/conductor. RED сам по себе не доказывает правильную причину |
+| 06.2 review | User или root full после dev :502,539 | Task/AC/API, diff, реальные проверки, stubs и authorship; root review :12–30 указывает reopened/ship. Реальное enforcement и точность author data неизвестны |
+
+Файл закрывает обозначенные поля только на source-level и не доказывает semantic completeness механизма, live execution или заменяемость. Альтернативы и falsifiers в групповых реестрах и gap cards остаются предложениями.
