@@ -78,6 +78,7 @@ R-n — действие: точная команда одной строкой 
 <!-- orch:journal -->
 | Дата | WP | Событие | Подтверждение |
 |------|----|---------|---------------|
+| 2026-11-02 13:43Z | WP-FRAMEWORK-01 | WP-01: rubric уточнена после challenge без изменения D-4; подготовлен незамороженный oracle FR-014 | reports/WP-01-measurement-rubric-draft.md; reports/WP-01-fr014-oracle-design.md; reports/WP-01-baseline-candidates.md |
 | 2026-11-02 13:41Z | WP-FRAMEWORK-01 | WP-01: уточнены draft criteria и rubric после challenge; единая пара D-4 не приравнивается к повторной серии, hashes обновлены | reports/WP-01-measurement-rubric-draft.md; reports/WP-01-briefs-draft.md; reports/WP-01-baseline-candidates.md |
 | 2026-11-02 13:40Z | WP-FRAMEWORK-01 | WP-01: подготовлены матрицы всех шести кейсов; исправлен исторический hash recovery, уточнены границы 5xx и mock API | reports/WP-01-other-case-matrices.md; reports/WP-01-fr041-recovery-matrices.md; reports/WP-01-corpus-candidates.md |
 | 2026-11-02 13:39Z | WP-FRAMEWORK-01 | WP-01: в общий draft FR-014 добавлен исторический AC-11, уточнены FR-029/BUG-1/FR-030; новый hash briefs зафиксирован | reports/WP-01-fr014-acceptance-matrix.md; reports/WP-01-other-case-matrices.md; reports/WP-01-baseline-candidates.md |
