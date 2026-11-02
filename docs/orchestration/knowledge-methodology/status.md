@@ -51,6 +51,7 @@ R-n — действие: точная команда одной строкой 
 | ID | Что (команда ; ожидание) | Где описано | Открыто | Закрыто |
 |----|--------------------------|-------------|---------|---------|
 | ~~P-1~~ | ~~Repository nacl: add `.worktreeinclude` in its root (a change of the project, made by a package there) so that every new worktree gets the gitignored files it needs: .env, .env.local (gitignore syntax, one pattern per line; directories as dir/**). Recommend (a) yes: sessions then never copy secrets or settings themselves~~ | orch.py init | 2026-11-02 | 2026-11-02 dropped: Автопредложение .worktreeinclude относится к Claude Code. Программа использует Codex; необходимость gitignored-файлов не установлена. Вернуться к этому только в пакете, которому действительно нужны такие файлы. |
+| P-2 | Уточнить границу D-4: какие выполненные агентские работы относить к подготовке одной A/B-пары, чтобы оценить расход и сохранить лимит; текущие session totals и отсутствие подтверждённого общего hard cap описаны в evidence. | reports/WP-16-budget-observation.md | 2026-11-02 |  |
 
 ## Замки
 
@@ -78,6 +79,8 @@ R-n — действие: точная команда одной строкой 
 <!-- orch:journal -->
 | Дата | WP | Событие | Подтверждение |
 |------|----|---------|---------------|
+| 2026-11-02 15:16Z | WP-FRAMEWORK-01 | Зафиксирован вопрос об атрибуции D-4; пилот не запущен, общее исследование продолжалось | reports/WP-16-budget-observation.md |
+| 2026-11-02 15:16Z | — | P-2 opened for owner | reports/WP-16-budget-observation.md |
 | 2026-11-02 15:16Z | WP-FRAMEWORK-01 | Проверены ограничения предварительных рекомендаций и уточнены обязательные installed resources; граница бюджета D-4 остаётся неустановленной | reports/WP-16-budget-observation.md |
 | 2026-11-02 15:15Z | WP-FRAMEWORK-01 | Сведены установленная resource closure и независимая проверка ограничений итоговых source claims | reports/WP-10-installed-resource-matrix.md |
 | 2026-11-02 15:13Z | WP-FRAMEWORK-01 | Дополнен предварительный список кандидатов и проверены installed TL/goal resources | reports/WP-18-preliminary-candidates.md |
