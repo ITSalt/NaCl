@@ -2,7 +2,7 @@
 
 Статический поиск в `codex-plugin-src services scripts tests` на pinned NaCl 20fe4c6; migrations и graph не запускались. Динамические или внешние callers вне этого scope не исключены.
 
-`codex-plugin-src/package/runtime/graph-gateway/migrations.mjs:145–157,181–186` для ещё не применённой migration с `backupRequired` требует `options.backupVerified === true`, иначе BACKUP_REQUIRED/BLOCKED. Already-applied с совпадающим checksum проходит ранее; несовпадение checksum — отдельный исход. Сам guard не связывает boolean с manifest, project, digest или restore.
+`codex-plugin-src/package/runtime/graph-gateway/migrations.mjs:145–157,181–186` для ещё не применённой migration с `backupRequired` требует `options.backupVerified === true`, иначе BACKUP_REQUIRED/BLOCKED. Already-applied с совпадающим checksum обрабатывается ранее guard; для additive при этом повторно исполняются DDL statements, поэтому эта ветвь не обязательно read-only и после частичного исполнения может дать MIGRATION_PARTIALLY_APPLIED. Несовпадение checksum — отдельный исход. Сам guard не связывает boolean с manifest, project, digest или restore.
 
 В найденных package calls `graph-gateway/gateway.mjs:273–283,388–401` и `resources/bootstrap/apply-project-schema.mjs:38–45` `backupVerified` не передаётся. Следовательно в этих указанных путях будущее достижение guard для неприменённой backup-required migration с отсутствующей опцией даст BLOCKED, если ранее не возникнет иной исход. Это не доказывает отсутствие внешних callers. `graph-gateway/tool-schemas.mjs:144–160` не описывает backup ID/manifest/boolean; `validation.mjs:22–27` отклоняет неизвестные аргументы.
 
