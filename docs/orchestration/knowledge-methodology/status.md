@@ -79,6 +79,7 @@ R-n — действие: точная команда одной строкой 
 <!-- orch:journal -->
 | Дата | WP | Событие | Подтверждение |
 |------|----|---------|---------------|
+| 2026-11-02 16:00Z | WP-FRAMEWORK-01 | Прослежен путь full references в Skills-only closure и ограничение соответствующего source test | reports/WP-10-closure-mechanism-trace.md |
 | 2026-11-02 15:58Z | WP-FRAMEWORK-01 | Перенесены новые границы Skills-only и navigation в предварительные challenge и список кандидатов | reports/WP-17-challenge-in-progress.md |
 | 2026-11-02 15:56Z | WP-FRAMEWORK-01 | Найден root inline nav consumer и уточнена разница его проверки с SA reachable-component template | reports/WP-10-cypher-reference-semantics.md |
 | 2026-11-02 15:53Z | WP-FRAMEWORK-01 | Проверены source-семантика недостающих Cypher references и условный mixed formless/Form query | reports/WP-10-cypher-reference-semantics.md |
