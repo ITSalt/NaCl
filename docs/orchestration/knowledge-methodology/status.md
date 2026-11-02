@@ -78,6 +78,8 @@ R-n — действие: точная команда одной строкой 
 <!-- orch:journal -->
 | Дата | WP | Событие | Подтверждение |
 |------|----|---------|---------------|
+| 2026-11-02 13:20Z | WP-FRAMEWORK-01 | WP-01: read-only сверка выявила дополнительные обязанности BA/SA и TL; часть источников проверена координатором | reports/WP-01-registry-gap-review.md |
+| 2026-11-02 13:19Z | — | Независимый review уточнил ограничения synthetic pinch и риска ложных FAIL | reports/WP-16-fr014-browser-draft-check.md |
 | 2026-11-02 13:18Z | — | Browser draft: повторный pinch различил синтетические control с ошибкой и без; физическое устройство и blind isolation не проверены | reports/WP-16-fr014-browser-draft-check.md |
 | 2026-11-02 13:14Z | — | Browser draft: синтетический CDP pinch различил control без touch и control с touch; физическое устройство и full pinch не проверены | reports/WP-16-fr014-browser-draft-check.md |
 | 2026-11-02 13:12Z | WP-FRAMEWORK-01 | WP-01: сводка обновлена фактическими локальными проверками и бюджетом D-4, без заявлений об A/B | reports/WP-FRAMEWORK-01.md; WP-16 и WP-09 evidence |
