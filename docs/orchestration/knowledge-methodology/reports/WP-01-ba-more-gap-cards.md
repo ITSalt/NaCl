@@ -1,0 +1,19 @@
+# WP-01: дополнительные карточки BA и SA
+
+NaCl SHA 20fe4c6a56482e85d3ea9a9ebaadb37206047e41. Все DEFER: частота, количества чтений/записей/передач/подтверждений, время, цена и реальный эффект UNKNOWN; уверенность относится к исходному тексту. Installed/runtime, историческая причинность и предлагаемые negative/positive случаи не проверены.
+
+## Decision provenance
+
+Producer nacl-sa-feature/SKILL.md:807–830: структурный FR, scope и impact → graph Decision, rationale и связи. Consumer L9 в nacl-sa-validate/SKILL.md:1247–1295; применимость и исключения legacy/tombstone/exempt сохраняются. Repo Codex skills-for-codex/nacl-sa-feature/SKILL.md:80–85 и nacl-sa-validate/SKILL.md:104–112; installed неизвестен. Риск — потеря rationale и impact. Альтернатива: версионированный decision record с машинными ссылками и read-back; потеря graph-native authority/exceptions без отдельной проверки. Negative: активный non-exempt FR без решения, пустой rationale, orphan Decision; positive: связанное решение и корректное grandfather исключение. Основание для изменения DEFER: независимо подтвердить эквивалентность provenance, exceptions и consumer closure.
+
+## Board diff и sync
+
+Вход — board и предыдущий snapshot; nacl-ba-analyze/SKILL.md:230–250,283–318 сравнивает ID, добавления, удаления, текст и смещение >10px; без снимка создаёт baseline. Sync nacl-ba-sync/SKILL.md:820–860 использует MERGE, nodeId и failure sidecar; Codex references skills-for-codex/nacl-ba-sync/SKILL.md:42–55 и nacl-ba-analyze/SKILL.md:26–40,51–63. Board — источник входа, graph — объект синхронизации; удаление из board само по себе не доказывает удаление из graph. Риск — дубли, потеря изменений, ложный sync после crash. Альтернатива: typed delta, CAS и идемпотентный receipt; проверить сохранность marker/read-back/failure semantics. Negative: повтор, crash между graph write и marker, изменение текста, удалённая фигура; positive: корректный read-back и повтор без дублей. Сравнить recovery и полноту дельт до изменения категории.
+
+## Lifecycle, CRUD и handoff
+
+Вход подтверждённые entities и workflow usage; producer nacl-ba-entities/SKILL.md:442–474,527–539, handoff update nacl-ba-handoff/SKILL.md:497–517 сохраняет подтверждённые SA связи. Repo Codex skills-for-codex/nacl-ba-entities/SKILL.md:24–31,54–69 и nacl-ba-handoff/SKILL.md:43–54,90–93. Конкретный end-to-end consumer каждой CRUD строки не доказан. Риск: выдуманные переходы и потеря связей. Альтернатива: типизированная lifecycle/usage table и versioned mappings; риск потери SA edge или смыслового drift. Negative: изменить смысл при прежнем ID, пропустить transition, повторить update, удалить BA элемент; positive: подтверждённый lifecycle и сохранение корректных связей. Не считать сохранение edge доказательством актуальности SA-семантики.
+
+## Workflow decomposition
+
+Вход — пользовательские факты о шагах, исполнителях и документах; выход — authoritative graph и иллюстративный Mermaid. Root nacl-ba-workflow/SKILL.md:501–555 задаёт пределы 12 шагов и 3 ветвей, одного исполнителя, READS/PRODUCES и подтверждение предложений. Repo Codex skills-for-codex/nacl-ba-workflow/SKILL.md:29,54–75,83–91 отражает часть; точный предел ветвей для Codex не подтверждён. Риск — потеря ответственного, документа, связности или выдуманный процесс. Альтернатива: typed workflow с проверкой связности, ответственности и субпроцессов; риск потери формальных ограничений и сопоставимости. Negative: 13 шагов, 4 ветви, 2 исполнителя, dangling edge и неподтверждённое предложение; positive: связный подтверждённый процесс и эквивалентное разбиение длинного. До замены сравнить семантику и потребителей в обоих клиентах; пороги не являются измеренным оптимумом.

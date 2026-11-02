@@ -78,6 +78,7 @@ R-n — действие: точная команда одной строкой 
 <!-- orch:journal -->
 | Дата | WP | Событие | Подтверждение |
 |------|----|---------|---------------|
+| 2026-11-02 13:25Z | WP-FRAMEWORK-01 | WP-01: подготовлены и частично перекрёстно проверены новые карточки, исследованы локальные кандидаты graph snapshot; ни pilot, ни restore не выполнялись | reports/WP-01-sa-gap-cards.md; reports/WP-01-tl-gap-cards.md; reports/WP-01-ba-more-gap-cards.md; reports/WP-01-local-graph-snapshots.md |
 | 2026-11-02 13:23Z | WP-FRAMEWORK-01 | Переход на исправленный skill d778e85: явный research metadata для 18 WP; выбран auto, текущий coordinator привязан, watcher запущен и next вернул WP-01 | session discover; autonomy claim/enable/status; next --json; lint |
 | 2026-11-02 13:22Z | — | continuation: auto | Владелец явно поручил автономное продолжение программы и подтвердил его в текущем чате |
 | 2026-11-02 13:21Z | WP-FRAMEWORK-01 | WP-01: сверены root/Codex тексты QA aggregate и runtime contract; найдены текстовые расхождения без вывода о runtime | reports/WP-01-registry-gap-review.md |
