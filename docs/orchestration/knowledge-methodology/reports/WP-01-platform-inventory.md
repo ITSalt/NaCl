@@ -1,0 +1,11 @@
+# WP-01: дополнительные источники платформы
+
+Статическое исследование NaCl SHA `20fe4c6a56482e85d3ea9a9ebaadb37206047e41`. Факт наличия кода/CI definition не является результатом запуска.
+
+- `.github/workflows/test-codex-plugin.yml:3–10,38–56,70–77,91–97`: проверки контракта и graph unit, отдельный bootstrap Docker job. `build-plugin.yml:8–19,39–46` — Claude build parity/tests; `build-cli.yml:4–8,16,43–95` — CLI и analyst-tool build/E2E; `lint-skills.yml:15–16,35–36,96–112` — структура, ссылки, Cypher и sync. WP-07/10 проверяют конкретные trigger, filters и runs; definition не равна успешно выполненной CI или live acceptance.
+- `yougile-setup/src/index.ts:73–95,103–148,153–175,204–221,240–245,293–310`: обязательный project ID, внешние настройки, запись config/IDs, отдельные частичные ошибки. Статически шаблон около :175 подставляет пустую строку в обеих ветвях для `yougile.project_id`; проверить потребителей и реальные условия, не заявляя live-отказ. WP-10 изучает только чтением, без внешних вызовов.
+- `graph-infra/schema/` и `queries/`: схемы и шаблоны BA/SA/TL; export/import и опасность полного reset отдельно описаны в `WP-01-graph-baseline-risks.md`. WP-09 проверяет версии схем, семантическое восстановление и различия сред.
+- `analyst-tool/README.md:3–9,95–97`; `server/src/routes/skills.ts:31–49,110–143`, `routes/render.ts:41–65`, `services/project-registry.ts:68–71,149–162`: редактор, очередь и runId, graph/file fallback, рендер и project registry. Старт с runId не доказывает завершение синхронизации.
+- `analyst-tool/server/src/services/skill-runner.ts:428–441` при ошибке сообщает `run.failed`, но возвращает resolved failedSummary; `run-queue.ts:102–110` выставляет resolved summary как `phase: completed`, сохраняя exitCode. Это статический кандидат расхождения событий и состояния; WP-09 должен проследить UI consumer и проверить отрицательный случай. Не утверждать live-дефект без исполнения. `services/pinch.ts:87–103` содержит конфигурацию headless bypassPermissions; фактические права среды не измерены.
+
+Вложенный `meta/` — отдельный приватный репозиторий, не входящий в зафиксированный SHA NaCl; исключён из этого снимка. Прочие generated copies не считаются независимыми обязанностями без отличий поведения.

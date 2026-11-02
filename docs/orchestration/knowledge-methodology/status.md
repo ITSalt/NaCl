@@ -78,6 +78,9 @@ R-n — действие: точная команда одной строкой 
 <!-- orch:journal -->
 | Дата | WP | Событие | Подтверждение |
 |------|----|---------|---------------|
+| 2026-11-02 12:14Z | WP-FRAMEWORK-01 | WP-01: инвентаризированы CI, graph-infra, analyst-tool и tracker CLI; отмечены кандидаты negative cases | reports/WP-01-platform-inventory.md |
+| 2026-11-02 12:13Z | WP-FRAMEWORK-01 | WP-01: подготовлен проект семантического graph fingerprint и определены его ограничения | reports/WP-01-graph-baseline-risks.md |
+| 2026-11-02 12:13Z | WP-FRAMEWORK-01 | WP-01: выявлены ограничения полного graph import, согласованности snapshot и области task lock | reports/WP-01-graph-baseline-risks.md |
 | 2026-11-02 12:12Z | WP-FRAMEWORK-01 | WP-01: уточнён scope WP-10: CI и tracker CLI включены; вложенный приватный meta исключён из SHA NaCl | WP-10; git ls-files meta; reports/WP-01-coverage-check.md |
 | 2026-11-02 12:12Z | WP-FRAMEWORK-01 | WP-01: описаны нейтральные варианты сравнения при расхождении OTP и тарифов | reports/WP-01-corpus-conflicts.md |
 | 2026-11-02 12:12Z | WP-FRAMEWORK-01 | WP-01: уточнены пути runtime для WP-14 и ответственность за sync evidence в WP-08 | reports/WP-01-coverage-check.md; WP-08 и WP-14 |
