@@ -78,6 +78,7 @@ R-n — действие: точная команда одной строкой 
 <!-- orch:journal -->
 | Дата | WP | Событие | Подтверждение |
 |------|----|---------|---------------|
+| 2026-11-02 14:25Z | WP-FRAMEWORK-01 | WP-01: подготовлены source-level примеры всех четырёх стыков с явными разрывами и неподтверждённым recovery | reports/WP-01-ba-sa-static-chain.md; reports/WP-01-sa-tl-static-chain.md; reports/WP-01-quality-recovery-static-chains.md |
 | 2026-11-02 14:24Z | WP-FRAMEWORK-01 | WP-01: завершена выборочная парная сверка 21 overlay, добавлены условные BA→SA и SA→TL сквозные трассы | reports/WP-01-ba-sa-overlay-capabilities.md; reports/WP-01-ba-sa-static-chain.md; reports/WP-01-sa-tl-static-chain.md |
 | 2026-11-02 14:20Z | WP-FRAMEWORK-01 | WP-01: выборочно сопоставлены девять TL overlay с root/Codex, client runtime и costs не установлены | reports/WP-01-tl-overlay-client-samples.md |
 | 2026-11-02 14:19Z | WP-FRAMEWORK-01 | WP-01: уточнены 95% source consumers и BA/SA/core overlay границы; статические claims не приравнены к runtime | reports/WP-01-handoff-coverage-trace.md; reports/WP-01-ba-sa-overlay-capabilities.md; reports/WP-01-core-client-contracts.md |
