@@ -1,0 +1,11 @@
+# WP-01: SA full resume и detail_status
+
+Pinned NaCl 20fe4c6; source-only, независимо сверено. Graph/Cypher/workflows не запускались, runtime и стоимость UNKNOWN, DEFER.
+
+Root `nacl-sa-uc/SKILL.md:963–969,2046` описывает завершение detail с `SET uc.detail_status='detailed'`. Root `nacl-sa-full/SKILL.md:158–161,220–229,343–349` считает phase 5 по наличию любого UC с `detail_status='complete'` и выбирает MVP с NULL или иным статусом. Условный MVP UC с `detailed` без другого writer снова попадёт в discovery; если complete UC нет, phase5=false. Для реального resume ещё необходимы предыдущие фазы, выбор и confirmation (:192–207); автоматический цикл, duplicate или actual graph не установлены.
+
+`graph-infra/queries/sa-queries.cypher:163–180`, `nacl-sa-finalize/SKILL.md:129–135,501–509` и `nacl-tl-status/SKILL.md:430–444` также считают подробными только complete; root TL intake :409,598 распознаёт `detailed|approved` в своём evidence. Другие writers и версии вне ограниченного поиска возможны. Codex UC/full описывают detail/confirmation без показанного root Cypher; нельзя приписывать этот outcome установленному клиенту.
+
+SA full :137–184 определяет многие фазы по существованию хотя бы одного узла, а optional phase 6b — по наличию любого из нескольких типов extension. Это не проверка полноты всех UC/layers; применимость и другие gates остаются отдельными вопросами. :174–182 фильтрует ValidationReport/FinalizationReport по SA layer, но не по статусу, времени или проекту. Validator read-only, finalize выдаёт текстовый report; конкретный writer обоих report nodes в ограниченном поиске не установлен, внешние/dynamic writers возможны. Наличие старого или failed node может удовлетворить Boolean query при остальных условиях, но bypass не доказан.
+
+Proposed controls: один MVP UC только со статусом detailed; подтверждённый complete и новый UC; отдельно stale/failed SA report и absent node; положительный контроль — подтверждённые phase evidence нужного scope и корректное продолжение без повторной записи. Не выполнялись.
