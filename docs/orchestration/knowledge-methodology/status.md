@@ -34,6 +34,7 @@ CANCELLED (причина).
 | [WP-FRAMEWORK-15](work-packages/WP-FRAMEWORK-15-harness.md) | framework | Что можно передать Harness | DRAFT | knowledge-methodology-framework | — | 2026-11-02 |
 | [WP-FRAMEWORK-16](work-packages/WP-FRAMEWORK-16-measurement.md) | framework | Цена методологии и сравнение с Markdown | DRAFT | knowledge-methodology-framework | — | 2026-11-02 |
 | [WP-FRAMEWORK-17](work-packages/WP-FRAMEWORK-17-challenge.md) | framework | Независимая проверка рекомендаций | DRAFT | knowledge-methodology-framework | — | 2026-11-02 |
+| [WP-FRAMEWORK-18](work-packages/WP-FRAMEWORK-18-recommendations.md) | framework | Методические рекомендации и передача следующей программе | DRAFT | knowledge-methodology-framework | — | 2026-11-02 |
 
 ## Ждёт владельца
 
@@ -72,6 +73,7 @@ R-n — действие: точная команда одной строкой 
 <!-- orch:journal -->
 | Дата | WP | Событие | Подтверждение |
 |------|----|---------|---------------|
+| 2026-11-02 11:37Z | WP-FRAMEWORK-18 | WP-FRAMEWORK-18 created (DRAFT) | work-packages/WP-FRAMEWORK-18-recommendations.md |
 | 2026-11-02 11:37Z | WP-FRAMEWORK-17 | WP-FRAMEWORK-17 created (DRAFT) | work-packages/WP-FRAMEWORK-17-challenge.md |
 | 2026-11-02 11:37Z | WP-FRAMEWORK-16 | WP-FRAMEWORK-16 created (DRAFT) | work-packages/WP-FRAMEWORK-16-measurement.md |
 | 2026-11-02 11:37Z | WP-FRAMEWORK-15 | WP-FRAMEWORK-15 created (DRAFT) | work-packages/WP-FRAMEWORK-15-harness.md |
