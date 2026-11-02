@@ -1,0 +1,10 @@
+# WP-01: core/goal/init/migrate-sa — выборочные client contracts
+
+NaCl SHA 20fe4c6a56482e85d3ea9a9ebaadb37206047e41. Выборочная статическая сверка root и repo Codex; package overlay и Skills-only contract указаны отдельно. Наличие tools, фактические вызовы и enforcement UNKNOWN; не полный semantic diff.
+
+- **core:** root nacl-core/SKILL.md:13–21,57–59 называет Neo4j MCP; Codex skills-for-codex/nacl-core/SKILL.md:19–27,55–57,128–139 допускает verified legacy-only fallback и требует BLOCKED при недоступности graph tools. Package overlay codex-plugin-src/workflow-overlays/nacl-core/SKILL.md:13–23 и Skills-only contract codex-plugin-src/package/resources/references/skills-only-runtime-contract.md:20–30 имеют иные doctor/project MCP boundaries.
+- **goal:** root nacl-goal/SKILL.md:50–57,71–79,272–277 описывает /goal start и autonomous intake при собственных ограничениях; Codex skills-for-codex/nacl-goal/SKILL.md:48–60,96–104,122–124 описывает preview и BLOCKED без доказанного runtime. Нельзя приравнивать выданную команду к выполненному proof.
+- **init:** root nacl-init/SKILL.md:16–23,92–96 описывает CLAUDE.md и auto-migrate; Codex skills-for-codex/nacl-init/SKILL.md:16–24,34–50 требует plan/approval и для dry-run не запускать runner. Оба текста описывают connect без graph writes (root :555–561, Codex :88–94); исполнение не проверено. Root dry-run/auto-migrate ambiguity — WP-01-core-migration-cards.md.
+- **migrate-sa:** root nacl-migrate-sa/SKILL.md:168–191 и Codex skills-for-codex/nacl-migrate-sa/SKILL.md:28–40 описывают deterministic parser и dry-run без graph writes; Codex :35–40,52–65 явно останавливается для confirmation перед writes. Это сопоставление конкретных фаз, не доказательство отсутствия root approval на других уровнях.
+
+Все costs и реальная частота UNKNOWN; proposed negative/positive и условия DEFER приведены в WP-01-core-migration-cards.md и falsifier matrices.

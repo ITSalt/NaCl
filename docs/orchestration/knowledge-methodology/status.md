@@ -78,6 +78,7 @@ R-n — действие: точная команда одной строкой 
 <!-- orch:journal -->
 | Дата | WP | Событие | Подтверждение |
 |------|----|---------|---------------|
+| 2026-11-02 14:19Z | WP-FRAMEWORK-01 | WP-01: уточнены 95% source consumers и BA/SA/core overlay границы; статические claims не приравнены к runtime | reports/WP-01-handoff-coverage-trace.md; reports/WP-01-ba-sa-overlay-capabilities.md; reports/WP-01-core-client-contracts.md |
 | 2026-11-02 14:18Z | WP-FRAMEWORK-01 | WP-01: coverage arithmetic и board direction уточнены по независимому review, сводка ссылается на ограничения | reports/WP-01-handoff-coverage-trace.md; reports/WP-01-board-direction-trace.md; reports/WP-FRAMEWORK-01.md |
 | 2026-11-02 14:17Z | WP-FRAMEWORK-01 | WP-01: прослежены graph↔board маршруты и BA→SA coverage формулы; математические случаи статические, graph не исполнялся | reports/WP-01-board-direction-trace.md; reports/WP-01-handoff-coverage-trace.md |
 | 2026-11-02 14:15Z | WP-FRAMEWORK-01 | WP-01: проиндексированы ADR и methodology; отмечены исторические claims и source-level расхождения без runtime выводов | reports/WP-01-adr-methodology-inventory.md; reports/WP-01-docs-scope-inventory.md |
