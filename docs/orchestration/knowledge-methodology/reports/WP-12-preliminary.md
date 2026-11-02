@@ -1,5 +1,7 @@
 # WP-12: предварительное исследование SA → TL → разработка
 
+[Контур BA states → enum → TL artifacts](WP-12-enum-interface-trace.md) описывает неоднозначности и границы query без утверждения runtime-дефекта.
+
 Предисследование до приёмки WP-03/04/05. NaCl SHA `20fe4c6a56482e85d3ea9a9ebaadb37206047e41`; workflow, граф и тесты не запускались. Цена и частота unknown, категория DEFER.
 
 Заявленная цепочка: SA graph UC/Requirement/slices → readiness (`skills-for-codex/nacl-sa-finalize/SKILL.md:23–36,42–59`) → TL planner, Task/Wave и `UseCase-[:GENERATES]->Task`, self-contained task-be/task-fe/acceptance/api-contract/test-spec (`nacl-tl-plan/SKILL.md:905–982,1028–1042`) → BE/FE dev → sync и wire evidence (`skills-for-codex/nacl-tl-sync/SKILL.md:19–80`). Slice→Task `VERIFIED_BY` — traceability, не доказательство выполнения теста. Graph write требует подтверждения и read-back.

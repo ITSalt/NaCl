@@ -78,6 +78,7 @@ R-n — действие: точная команда одной строкой 
 <!-- orch:journal -->
 | Дата | WP | Событие | Подтверждение |
 |------|----|---------|---------------|
+| 2026-11-02 14:51Z | WP-FRAMEWORK-01 | Уточнены стыки BusinessRule→Requirement и BA states→SA enum→TL без вызова графа | reports/WP-11-rule-requirement-trace.md |
 | 2026-11-02 14:49Z | WP-FRAMEWORK-01 | Продолжены предварительные BA и SA исследования без закрытия зависимости WP-01 | reports/WP-03-permission-planning-trace.md |
 | 2026-11-02 14:48Z | WP-FRAMEWORK-01 | Согласованы source-level границы подобластей и сопоставлены новые находки с критериями механизмов | reports/WP-01-subarea-scope-decisions.md |
 | 2026-11-02 14:46Z | WP-FRAMEWORK-01 | Добавлены и независимо сверены отдельные условия workflow, ship и release для gap crosswalk | reports/WP-01-gap-controls.md |

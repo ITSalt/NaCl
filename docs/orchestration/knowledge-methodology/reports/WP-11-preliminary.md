@@ -1,5 +1,7 @@
 # WP-11: предварительное исследование стыка BA → SA
 
+[Контур BusinessRule → Requirement](WP-11-rule-requirement-trace.md) уточняет условия root BA и SA validators; runtime UNKNOWN.
+
 Предисследование: WP-01/02/03 не приняты. Снимок NaCl `20fe4c6a56482e85d3ea9a9ebaadb37206047e41`; граф/валидаторы не запускались. Цена и фактические вызовы unknown, категория DEFER.
 
 Сквозной заявленный путь: BA/board → graph read-back → handoff → SA stories/detail/domain/roles → XL6–9 → изменение BA и handoff update → SA impact/stale и проверка → TL replan. `nacl-ba-handoff/SKILL.md:37–46` описывает четыре связи: WorkflowStep→UseCase, BusinessEntity→DomainEntity, BusinessRole→SystemRole и BusinessRule→Requirement. `skills-for-codex/nacl-sa-uc/SKILL.md:23–82,268–282` использует unmapped automated steps, получает подтверждение и read-back, detail добавляет связи и anchors. `nacl-sa-validate/SKILL.md:2231–2250,2297–2311,2356–2368,2413–2449` описывает XL6–9, в том числе orphan Requirement.
