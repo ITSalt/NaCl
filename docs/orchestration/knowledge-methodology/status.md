@@ -79,6 +79,7 @@ R-n — действие: точная команда одной строкой 
 <!-- orch:journal -->
 | Дата | WP | Событие | Подтверждение |
 |------|----|---------|---------------|
+| 2026-11-02 16:03Z | WP-FRAMEWORK-01 | В disposable copies воспроизведён MODULE_NOT_FOUND на require.resolve diagnose; init positive control resolved, workflow не запускался | reports/WP-10-js-dependency-trace.md |
 | 2026-11-02 16:01Z | WP-FRAMEWORK-01 | Обнаружена отсутствующая локальная CommonJS vendor dependency установленного diagnose; Markdown targets отдельно сверены | reports/WP-10-js-dependency-trace.md |
 | 2026-11-02 16:00Z | WP-FRAMEWORK-01 | Прослежен путь full references в Skills-only closure и ограничение соответствующего source test | reports/WP-10-closure-mechanism-trace.md |
 | 2026-11-02 15:58Z | WP-FRAMEWORK-01 | Перенесены новые границы Skills-only и navigation в предварительные challenge и список кандидатов | reports/WP-17-challenge-in-progress.md |
