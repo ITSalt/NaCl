@@ -16,6 +16,12 @@ Proposed negative: disconnect во время terminal event, reconnect и ср�
 
 yougile-setup/src/index.ts:240–245,293–297 принимает project id для board, но :153–175,204–221 формирует yougile.project_id из одинаковых пустых ветвей. Непосредственный consumer этого поля пока не найден; влияние на live success не доказано. Риск потери выбранного scope в config. Альтернатива typed serializer/schema и roundtrip точных IDs. Negative: заданный project id после генерации, существующий config и сложный YAML; positive: корректный roundtrip ID и сохранение остальных значений.
 
+## TRACK-REOPENED: частичное создание колонки
+
+При успешном создании board и отказе создания Reopened `yougile-setup/src/index.ts:284–311,403–421` сохраняет error, продолжает остальные колонки и при успешном config update может записать пустой reopened ID (:167–185,204–221); итог `success:false`, exit 1, не тихий успех. Если частичная конфигурация затем сохранена и интеграция считается настроенной, root QA `nacl-tl-qa/SKILL.md:533–556` передаёт поле в create_task, reopened `nacl-tl-reopened/SKILL.md:100–114,122–143` использует его в get_tasks; в показанных ветвях отдельная проверка непустоты не найдена. При не настроенной интеграции предусмотрены skip/manual; поведение API при пустом ID и реальная потеря задач UNKNOWN.
+
+Proposed negative: fake API с отказом только Reopened, проверить exit/error, config и downstream handling без записи в произвольный scope; positive: созданный ID и точный roundtrip. Source-only, внешние API не запускались; DEFER.
+
 ## TRACK-02: частичный результат sticker states
 
 yougile-setup/src/index.ts:317–325 после failed GET продолжает создание; :333–363 ошибку создания state при повторном использовании существующего sticker логирует и возвращает частичные stateIds; при создании нового sticker исключение попадает во внешний catch и result.errors, а :405–421 success зависит от result.errors. Это статический путь к неполному config при success, если state POST ошибётся, не воспроизведённый live дефект. Column errors обрабатываются отдельно. Альтернатива per-operation typed outcomes и обязательный read-back states. Negative: failed GET, ошибка одного POST, отсутствующий обязательный ID и частичная board creation; positive: все states подтверждены. Возможные дубли проверять только fake API.
