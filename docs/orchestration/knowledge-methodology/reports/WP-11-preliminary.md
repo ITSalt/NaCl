@@ -2,6 +2,8 @@
 
 [WorkflowStep → UseCase](WP-11-step-uc-propagation.md) — различие selector и семантическая свежесть edge.
 
+[Глубина SA → TL staleness](WP-01-sa-stale-depth.md) фиксирует ограничение показанного directed query пятью рёбрами; реальный graph outcome UNKNOWN.
+
 [Glossary → SA](WP-01-glossary-sa-trace.md) исследован как source-only стык с условиями full rebuild и различием edges.
 
 [Передача BA attributes в SA](WP-11-attribute-propagation-trace.md) показывает различие полей в конкретных source paths; runtime UNKNOWN.

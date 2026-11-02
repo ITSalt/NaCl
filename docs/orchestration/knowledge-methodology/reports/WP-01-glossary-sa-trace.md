@@ -2,7 +2,7 @@
 
 Pinned NaCl 20fe4c6; независимо сверены root sources. Graph/Cypher, workflows и A/B не запускались; фактическая потеря, runtime, частота и цена UNKNOWN, DEFER.
 
-Root `nacl-ba-glossary/SKILL.md:25–27,33–39,72–80,297–304,318–326` при full предупреждает и требует confirmation, затем удаляет все `GlossaryTerm` через DETACH DELETE без project filter и создаёт узлы с `id,term,definition,source_id`. Если существовали SA-owned `sa_term` или дополнительные incident edges, они удаляются; показанный recreate не описывает их восстановление. Incremental :393–395,453–460,470–478 сохраняет существующие узлы и SA-поля. Это условный риск при подтверждённом full, не наблюдавшаяся потеря; внешние writers/backup возможны.
+Root `nacl-ba-glossary/SKILL.md:25–27,33–39,72–80,297–304,318–326` при наличии GlossaryTerm предупреждает и требует confirmation перед full, затем удаляет все `GlossaryTerm` через DETACH DELETE без project filter и создаёт узлы с `id,term,definition,source_id`. Если существовали SA-owned `sa_term` или дополнительные incident edges, они удаляются; показанный recreate не описывает их восстановление. Incremental :393–395,453–460,470–478 сохраняет существующие узлы и SA-поля. Это условный риск при подтверждённом full, не наблюдавшаяся потеря; внешние writers/backup возможны.
 
 Root :339–359 создаёт term из WorkflowStep/BusinessRule без DEFINES; :385–389 требует у каждого term DEFINES или исходящий ALIAS_OF. Уникальный подтверждённый canonical term только из такого источника и без дополнительной связи не удовлетворяет этому пункту проверки; при слиянии с другим источником или внешнем edge условия иные. Статус при данном несоответствии в показанном фрагменте не установлен.
 
