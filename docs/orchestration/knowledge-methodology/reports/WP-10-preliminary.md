@@ -2,9 +2,9 @@
 
 [Authorization границы transports](WP-10-auth-transport-trace.md) разделяют package gateway и project MCP без предположений о текущей конфигурации.
 
-[Skills-only resource closure](WP-10-skill-closure-trace.md) — source-level исследование, не выполненный эксперимент.
+[Skills-only resource closure](WP-10-skill-closure-trace.md) — анализ исходников и установленного дерева; свежая сборка и probes описаны отдельно.
 
-Предисследование до принятия WP-01, NaCl SHA `20fe4c6a56482e85d3ea9a9ebaadb37206047e41`. Сборка, gateway server/MCP, live runtime, CI и release не запускались; отдельная локальная функция runtime проверена в WP-06-sanitize-probe, а [Node probes](WP-10-js-dependency-trace.md) выполнены в disposable-копиях, включая sandboxed запуск копии diagnose runner; установленный skill не запускался.  цена/частота unknown; выводы DEFER.
+Предисследование до принятия WP-01, NaCl SHA `20fe4c6a56482e85d3ea9a9ebaadb37206047e41`. Full-package сборка, gateway server/MCP, live runtime, CI и release не запускались; отдельная свежая Skills-only сборка и checker выполнены в disposable sandbox, отдельная локальная функция runtime проверена в WP-06-sanitize-probe, а [Node probes](WP-10-js-dependency-trace.md) выполнены в disposable-копиях, включая sandboxed запуск копии diagnose runner; установленный skill не запускался.  цена/частота unknown; выводы DEFER.
 
 ## Упаковка и фактическая установленная версия
 
