@@ -78,6 +78,7 @@ R-n — действие: точная команда одной строкой 
 <!-- orch:journal -->
 | Дата | WP | Событие | Подтверждение |
 |------|----|---------|---------------|
+| 2026-11-02 12:11Z | WP-FRAMEWORK-01 | WP-01: подтверждено текстовое противоречие read canary в установленном Skills-only; live поведение не проверено | reports/WP-01-skills-only-canary.md |
 | 2026-11-02 12:10Z | WP-FRAMEWORK-01 | Уточнено наблюдение обычной автономии: websocket доступен; cwd текущего потока не соответствует координатору; claim не выполнялся | reports/autonomy-observation-2026-11-02.md |
 | 2026-11-02 12:10Z | WP-FRAMEWORK-01 | WP-01: черновые одинаковые brief и acceptance для шести кейсов; уточнено преобразование Skills-only | reports/WP-01-briefs-draft.md; scripts/build-codex-skills-only.mjs:179–186 |
 | 2026-11-02 12:09Z | WP-FRAMEWORK-01 | WP-01: дополнены механизмы графовой координации и проверяемая гипотеза по Skills-only | reports/WP-01-additional-mechanisms.md |
