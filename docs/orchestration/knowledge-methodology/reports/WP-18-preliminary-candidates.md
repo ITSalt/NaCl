@@ -14,6 +14,8 @@
 
 Отдельный candidate для дальнейшего challenge: [BA glossary → SA](WP-01-glossary-sa-trace.md) описывает подтверждаемый full rebuild, который удаляет все GlossaryTerm и не показывает восстановление SA-owned полей/внешних связей. Любая альтернатива должна сохранить разрешённый owner scope, различение омонимов и SA mapping; фактическая потеря не наблюдалась, категория DEFER.
 
+Дополнительный source-only candidate: [Analyst graph → Markdown path](WP-01-analyst-render-path-boundary.md) показывает условную возможность разрешить graph source_file вне project root при доступе к endpoint и правах процесса. Альтернатива с path/symlink boundary должна учитывать допустимые внешние файлы и TOCTOU; реальные graph/API/запись не проверены, DEFER.
+
 Дополнительные вопросы к closure и navigation: installed c291 и pinned 20fe дают одинаковые paths, но 9 output files отличаются; checker не сканирует backticks. В installed closure и независимо собранном disposable bundle 20fe из 26 bundle-local targets ограниченной выборки отсутствуют 22, хотя checker свежей сборки вернул VERIFIED; условия ссылок различны, это не счёт runtime failures. Для navigation необходимо отдельно сохранить per-Form reachability, affected scope, QA Condition 2 и подтверждённые exemptions; mixed formless+Form и disconnected inbound остаются proposed controls. Источники: [snapshot delta](WP-10-skills-only-snapshot-delta.md), [references](WP-10-literal-references-checker.md), [Cypher semantics](WP-10-cypher-reference-semantics.md).
 
 Окончательные предложения минимальной/standard/regulated методики, оценка выгоды и порядок внедрения требуют принятия зависимостей и независимого challenge. Изменение NaCl, A/B и release не выполнялись.

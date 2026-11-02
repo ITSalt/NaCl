@@ -1,0 +1,11 @@
+# WP-01: Analyst Tool graph → Markdown и граница пути
+
+Pinned NaCl 20fe4c6; две независимые проверки исходников. Сервер, graph, tests и A/B не запускались; фактическая запись, состояние graph, доступность API и права процесса UNKNOWN. Категория DEFER.
+
+В `analyst-tool/server/src/render/markdown/{entity,uc,form}.ts` свойство `source_file` читается из соответствующего Neo4j node (entity :46–57, UC :64, Form :56). После проверки на отсутствие (entity :284–291, UC :400–407, Form :246–253) renderer вычисляет `path.resolve(projectRoot, source_file)`. Dispatcher `render/markdown/index.ts:41–75` передаёт результат, а зарегистрированный `/api/v1/render/markdown` (`server/src/index.ts:123–136`, `routes/render.ts:41–61`) выполняет mkdir и writeFile; в показанной цепочке проверки, что путь остался внутри projectRoot, нет.
+
+Условный graph node с `../outside.md` или absolute source_file может разрешиться вне root, а существующий symlink внутри root — указать наружу; при достаточных правах процесса запись может создать или перезаписать файл. POST выбирает subtype/relatedId, а не задаёт source_file напрямую: влияние зависит от фактических graph properties, доступа к API и прав процесса. Config `server/src/config.ts:59–90` выбирает repoRoot из настроек/окружения/cwd и по умолчанию использует localhost; реальная конфигурация/exposure не проверялась. Ветка `services/skill-runner.ts:207–240` тоже пишет результат, но её доступность через HTTP в проверенном scope не установлена.
+
+`tests/markdown.test.ts:334–336,514–516,657–659` проверяет обычные resolve cases; проверка traversal board name в `skill-runner.test.ts:143–147` относится к другой ветви и не доказывает защиту graph source_file. Наличие этих tests не означает их выполнение здесь; иные guards вне исследованной цепочки не исключены.
+
+Альтернатива для будущего исследования — scope-aware разрешение путей с проверкой symlinks/realpath, preview/подтверждённым overwrite и read-back. Риски альтернативы: запрет легитимных внешних файлов, TOCTOU при одном prefix-check и изменение существующих контрактов. Proposed controls: traversal, absolute path, symlink наружу, существующий изменённый target и разрешённый относительный путь; ничего не выполнялось.
