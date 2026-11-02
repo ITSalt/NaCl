@@ -171,3 +171,4 @@ delivery:
   stand: orchestrator
   enabled_by: D-1
   prod: orchestrator
+  hold: "D-2: исследовательская программа, поставка и выпуск изменений NaCl вне объёма"

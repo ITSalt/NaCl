@@ -55,6 +55,8 @@ R-n — действие: точная команда одной строкой 
 <!-- orch:journal -->
 | Дата | WP | Событие | Подтверждение |
 |------|----|---------|---------------|
+| 2026-11-02 11:31Z | — | delivery on hold: D-2: исследовательская программа, поставка и выпуск изменений NaCl вне объёма | orch.py hold |
+| 2026-11-02 11:31Z | — | D-2 recorded | Прямое указание владельца в запросе plan от 2026-11-02 |
 | 2026-11-02 11:16Z | — | Инициализация завершена: русский язык, локальный Codex, один модуль framework; полномочия поставки D-1. Команды приёмки и выпуска уточняются на этапе plan. Локальные launch descriptors исключены из Git; замечания к шаблонам сохранены локально. | orch.yaml; decisions.md; PLAN.md; bugs/PLUGIN-BUG-1.md |
 | 2026-11-02 11:16Z | — | plugin defect PLUGIN-BUG-1 recorded (anonymized): Codex init: bootstrap protocol path and generated owner guidance need adjustment | bugs/PLUGIN-BUG-1.md |
 | 2026-11-02 11:16Z | — | A-1 recorded | Техническая конфигурация init; проверить при plan |
