@@ -79,6 +79,7 @@ R-n — действие: точная команда одной строкой 
 <!-- orch:journal -->
 | Дата | WP | Событие | Подтверждение |
 |------|----|---------|---------------|
+| 2026-11-02 17:01Z | WP-FRAMEWORK-01 | Уточнены root permissions reader и условная неполнота Analyst batch discovery; обе трассы source-only. | reports/WP-01-sa-consumer-trace.md; reports/WP-09-preliminary.md |
 | 2026-11-02 17:00Z | WP-FRAMEWORK-01 | Уточнены deferred stub goal, границы source-sha и условия timestamp/fallback incremental publish без runtime проверки. | reports/WP-08-preliminary.md; reports/WP-07-preliminary.md; reports/WP-01-publish-render-trace.md |
 | 2026-11-02 16:58Z | WP-FRAMEWORK-01 | Уточнены два условных YouGile пути и source-only граница source-sha Skills-only архива для предварительного WP-07. | reports/WP-01-analyst-tracker-cards.md; reports/WP-07-preliminary.md |
 | 2026-11-02 16:57Z | WP-FRAMEWORK-01 | Уточнены частичный YouGile setup и source-only цепь test-author → review в предварительном WP-06. | reports/WP-01-analyst-tracker-cards.md; reports/WP-06-preliminary.md |
