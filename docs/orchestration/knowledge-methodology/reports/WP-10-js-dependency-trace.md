@@ -10,6 +10,12 @@ Pinned `scripts/build-codex-skills-only.mjs:240–257,260–264,267–282` от�
 
 Отдельный независимый scan тех же installed skill trees обнаружил 56 локальных inline Markdown ссылок на 105 Markdown файлов: targets всех 56 существуют внутри соответствующего skill, missing/outside/symlink 0. Это не запуск checker и не доказательство semantics, anchors, backtick paths или JS dependencies.
 
+## Граница существующих тестов
+
+Два независимых source-only обзора установили: `tests/codex-plugin/scripts/nacl-skills-only-bundle.test.mjs:11–19,105–112,455–483` проверяет диагностический сценарий и vendor hash, но берёт runner из общего `plugins/nacl/resources/bootstrap`, а vendor — из исходного package, не из `skills/nacl-diagnose`. В том же test file :489–513 и Docker E2E используют свежий `skills/nacl-init` runner. `nacl-reviewer-fixtures.test.mjs:9–27,147–168` также ссылается на общий bootstrap; `nacl-package-contract.test.mjs:110–136` проверяет текст публичного diagnose. `nacl-submission-readiness.test.mjs:68–115` проверяет build и checker, но в показанном сценарии не вызывает diagnose runner.
+
+Ограниченный поиск по scripts/tests на `plan-project-graph`, `nacl-diagnose`, `diagnose-only` не нашёл вызова freshly built `skills/nacl-diagnose/.../plan-project-graph.mjs`. Иные динамические тесты вне области поиска возможны; эти source-ссылки не утверждают, что существующие тесты фактически прошли. Свежая изолированная проверка ниже проверяет именно этот bundle.
+
 ## Узкая проверка разрешения пути
 
 В одноразовую временную директорию отдельно скопированы installed diagnose и init bootstrap trees. Перед каждой пробой сверено относительное множество **файлов** и SHA-256 каждого файла, а также отсутствие symlinks в источнике. При Node `v24.13.1`, с удалёнными `NODE_OPTIONS`/`NODE_PATH`, diagnostic harness вызвал только `createRequire(<copied codex-config-contract.mjs>).resolve('./vendor/smol-toml-1.7.0.cjs')`, не исполняя скопированный модуль или vendor. Diagnose mirror вернул `MODULE_NOT_FOUND` (exit harness 2); независимая init mirror — `RESOLVED_EXPECTED` (exit 0). Временные директории удалены.
