@@ -79,6 +79,7 @@ R-n — действие: точная команда одной строкой 
 <!-- orch:journal -->
 | Дата | WP | Событие | Подтверждение |
 |------|----|---------|---------------|
+| 2026-11-02 17:21Z | WP-FRAMEWORK-01 | Прослежены BA lifecycle → SA import/enum и отдельный FULL consumer переходов; graph execution не проверялся. | reports/WP-01-ba-consumer-trace.md |
 | 2026-11-02 17:20Z | WP-FRAMEWORK-01 | Независимый challenge ограничил synthetic conduct штатными guards; отдельно прослежен has_ui backfill → state-machine consumer. | reports/WP-14-preliminary.md; reports/WP-01-sa-consumer-trace.md |
 | 2026-11-02 17:19Z | WP-FRAMEWORK-01 | Координатор независимо повторил synthetic fixture с чужим atom: GOAL_OK 2/2, полный и пустой controls совпали. | reports/WP-14-preliminary.md |
 | 2026-11-02 17:18Z | WP-FRAMEWORK-01 | Дополнительная synthetic fixture conduct: чужой verified atom при пропущенном запланированном дал GOAL_OK 2/2; реальный state не проверялся. | reports/WP-14-preliminary.md |
