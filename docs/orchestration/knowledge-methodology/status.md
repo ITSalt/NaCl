@@ -78,6 +78,9 @@ R-n — действие: точная команда одной строкой 
 <!-- orch:journal -->
 | Дата | WP | Событие | Подтверждение |
 |------|----|---------|---------------|
+| 2026-11-02 12:02Z | WP-FRAMEWORK-01 | WP-01: зафиксированы первые карточки механизмов и различие продуктовых контуров | reports/WP-01-mechanism-samples.md |
+| 2026-11-02 12:01Z | WP-FRAMEWORK-01 | WP-01: определены кандидаты pre-change и post-change тестов; корпус не заморожен | reports/WP-01-corpus-candidates.md; read-only git history |
+| 2026-11-02 12:01Z | WP-FRAMEWORK-01 | Коррекция: прежний вывод о недоступности обычной автономии не был подтверждён. session discover: App Server timeout: initialize; capabilities сообщает наличие queue и app_server. Проверка подключения остаётся открытой. | orch.py session discover; orch.py session capabilities |
 | 2026-11-02 11:50Z | WP-FRAMEWORK-01 | WP-01: промежуточная карта и кандидаты корпуса; автономия недоступна в текущем runtime | reports/WP-FRAMEWORK-01-progress.md; autonomy status; private-owner.md |
 | 2026-11-02 11:48Z | WP-FRAMEWORK-01 | WP-FRAMEWORK-01: DRAFT -> IN_PROGRESS | Владелец поручил начать исследование; запущен read-only исследователь inventory. |
 | 2026-11-02 11:45Z | — | D-3: family-cinema выбран тестовым полигоном; разрешены необходимые операции с его графом. Обновлены PLAN, WP-01/16 и протокол baseline/reset. Проверены локальные инструкции/config; runtime-доступ и эксперименты не запускались. | decisions.md; spec/family-cinema-testbed.md |
