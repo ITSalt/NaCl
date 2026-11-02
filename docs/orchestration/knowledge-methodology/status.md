@@ -78,6 +78,8 @@ R-n — действие: точная команда одной строкой 
 <!-- orch:journal -->
 | Дата | WP | Событие | Подтверждение |
 |------|----|---------|---------------|
+| 2026-11-02 13:30Z | WP-FRAMEWORK-01 | WP-01: независимая сверка подтвердила 59 описаний index, выполнена package-level карта BA/SA/TL, выявлен отдельный пробел TL diagnose | reports/WP-01-package-index.md; reports/WP-01-ba-sa-package-coverage.md; reports/WP-01-tl-package-coverage.md |
+| 2026-11-02 13:29Z | WP-FRAMEWORK-01 | WP-01: исправлены 59 отсутствовавших описаний package index; составлена package-level сверка BA/SA и сохранены ограничения покрытия | reports/WP-01-package-index.md; reports/WP-01-ba-sa-package-coverage.md; reports/WP-01-sa-projection-provenance.md |
 | 2026-11-02 13:27Z | WP-FRAMEWORK-01 | WP-01: независимый review уточнил branch/exception условия и подготовлена матрица приёмки и provenance трёх SA файлов | reports/WP-01-acceptance-matrix.md; reports/WP-01-sa-projection-provenance.md; reports/WP-01-tl-platform-more-cards.md |
 | 2026-11-02 13:25Z | WP-FRAMEWORK-01 | WP-01: подготовлены и частично перекрёстно проверены новые карточки, исследованы локальные кандидаты graph snapshot; ни pilot, ни restore не выполнялись | reports/WP-01-sa-gap-cards.md; reports/WP-01-tl-gap-cards.md; reports/WP-01-ba-more-gap-cards.md; reports/WP-01-local-graph-snapshots.md |
 | 2026-11-02 13:23Z | WP-FRAMEWORK-01 | Переход на исправленный skill d778e85: явный research metadata для 18 WP; выбран auto, текущий coordinator привязан, watcher запущен и next вернул WP-01 | session discover; autonomy claim/enable/status; next --json; lint |

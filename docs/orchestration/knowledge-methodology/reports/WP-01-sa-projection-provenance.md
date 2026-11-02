@@ -10,4 +10,6 @@ codex-plugin-src/README.md:3–16 описывает root, skills-for-codex и o
 | sa-ui | 76efc1c376c025f6061e522ab4345fd1deda6b62 | совпадает с skills-for-codex в c291c7, отличается от HEAD c214f21535bf89146517ba0784fcca82c08c0074 |
 | sa-validate | 34791a9a2151f63ea6a6283ce9257957b2bb2dbc | совпадает с выбранным overlay в c291c7 и HEAD; HEAD skills-for-codex имеет другой blob 82993dcbd35dbc01e9dd32d0e4a668603b2ccc3c |
 
+Независимый reviewer повторил git hash-object для installed файлов и сверку Git blobs. Важно учитывать второй этап упаковки: scripts/build-codex-skills-only.mjs:160–164,217–257,267–278,309–320 выбирает workflows и выполняет текстовое преобразование. Равенство установлено непосредственным hash, а не выведено только по первому builder; builder не запускался. Manifest commit — утверждение metadata, не доказанное происхождение всего пакета.
+
 Это Git blob SHA-1, не SHA-256 payload и не commit ID. Для validate прямое сравнение installed с HEAD skills-for-codex не является проверкой builder parity: manifest выбирает overlay. В installed validate строки 184–185 кратко описывают warning same-storage без найденных в root/skills-for-codex оговорок L13.9/L13.10. Это различие текстов, не доказательство runtime. Равенство трёх файлов не проверяет остальные payload/resources, активный routing или исполнение.
