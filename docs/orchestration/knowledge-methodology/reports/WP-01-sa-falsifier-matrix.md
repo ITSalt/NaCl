@@ -1,0 +1,16 @@
+# WP-01: SA-02–09 — alternatives и falsifiers
+
+NaCl SHA 20fe4c6a56482e85d3ea9a9ebaadb37206047e41. Cases и альтернативы предложены, не исполнены; runtime, частота, цена и исторический эффект UNKNOWN. Каждая группа DEFER. Root — nacl-sa-<имя>/SKILL.md, Codex — skills-for-codex/nacl-sa-<имя>/SKILL.md, overlay — codex-plugin-src/workflow-overlays/nacl-sa-<имя>/SKILL.md.
+
+| ID | Negative input / заявленный или предложенный исход | Риск и условие пересмотра DEFER |
+|---|---|---|
+| SA-02 | Одна BA роль соответствует двум SystemRole, плюс system-only роль; root roles :31–43 и domain :31–39 описывают N:M IMPORT_BA/CREATE | Единый каталог может потерять N:M, permissions/provenance; проверить confirmed mappings и semantic change обеих проекций |
+| SA-03 | UI UC без navigation entry или field без MAPS_TO; root ui :90–96,575–597. Допустимые SYSTEM/backend-only/deep-link/formless исключения учитывать | Typed scenarios могут потерять affordance/role scope; проверить достижимость при отсутствии valid exception и согласованный deep-link positive |
+| SA-04 | Изменён UC с shared actor и dependent task, повторный replan; Codex feature :29–42 и tl-plan :137–153 описывают directed stale и regeneration | Semantic diff может пропустить dependent или задеть unrelated, потерять evidence; проверить concurrency/interruption и consumer |
+| SA-05 | Intended UI без USES_FORM, backend-only и UI с form; root validate :945–956 L5.1 выдаёт warning для применимого случая | Design intent должен сохранять исключения и не маскировать требования; проверить user intent, metadata и связанные checks |
+| SA-06 | BA пуст при full или Requirement без REALIZED_BY; overlay validate :34–56,67–74 описывает internal/cross warning и critical при применимости | Incremental checker может потерять cross-module/orphan coverage; проверить full vs incremental, исключения и ValidationReport writer |
+| SA-07 | Graph изменился после snapshot либо Module отсутствует; root finalize :12–17,23–28,33–53,76–87 описывает graph summary и stop без Module | Materialized view рискует stale и смешать read/write modes; проверить freshness, version и consumers |
+| SA-08 | Specialist BLOCKED/partial либо нет approval; root full :62–117,466–518 и overlay :27–39 задают phase gates | Единый orchestrator может обойти human gate или потерять phase provenance; проверить partial/recovery и handoff |
+| SA-09 | Project MCP отсутствует/неподтверждён canary либо relation нельзя безопасно записать; package skills/nacl-sa/SKILL.md:8–22 описывает BLOCKED | Capability gate должен сохранить project identity и доказанную запись; проверить active installed route, canary и отсутствие ложного persisted result |
+
+Положительные controls: confirmed sources/edges и корректные read-backs в пределах выбранного клиента и scope; для SA-08 optional publish/TL отдельно; для SA-09 ровно один релевантный leaf при доступном project MCP. Матрица не разрешает graph writes или A/B; соответствующая авторизация и безопасный baseline рассматриваются отдельно.
