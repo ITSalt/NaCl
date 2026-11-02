@@ -79,6 +79,7 @@ R-n — действие: точная команда одной строкой 
 <!-- orch:journal -->
 | Дата | WP | Событие | Подтверждение |
 |------|----|---------|---------------|
+| 2026-11-02 15:53Z | WP-FRAMEWORK-01 | Проверены source-семантика недостающих Cypher references и условный mixed formless/Form query | reports/WP-10-cypher-reference-semantics.md |
 | 2026-11-02 15:48Z | WP-FRAMEWORK-01 | Сверены source-level обязанности отсутствующих references и различия gateway / Skills-only transport | reports/WP-10-missing-reference-semantics.md |
 | 2026-11-02 15:44Z | WP-FRAMEWORK-01 | Уточнены условия 101 literal-reference occurrences: предварительное чтение, Goal Boundary и контекстные операции | reports/WP-10-literal-references-checker.md |
 | 2026-11-02 15:40Z | WP-FRAMEWORK-01 | Две модели проверили literal references ожидаемой Skills-only closure pinned 20fe: тот же набор, что installed c291 | reports/WP-10-literal-references-checker.md |
