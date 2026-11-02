@@ -1,0 +1,3 @@
+.orch-backup/
+orchestration/settings/*.local.json
+orchestration/settings/*.codex.json

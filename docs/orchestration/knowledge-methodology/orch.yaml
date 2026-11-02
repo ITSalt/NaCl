@@ -1,0 +1,173 @@
+client: codex
+codex:
+  approval_policy: on-request
+  sandbox_mode: workspace-write
+# Program configuration for the pepper-orchestrator workspace.
+# Read by orch.py (YAML subset: block maps and lists, flow [..] and {..}, scalars).
+
+# Prefix of session names and messages.
+program: knowledge-methodology
+# active | closed: `close --apply` closes the program (one program, one goal), `reopen` reopens it.
+state: active
+# Session kind of module sessions, the owner's explicit choice at init: local (recommended) | cloud.
+# Repositories and modules inherit it; a module may set its own `sessions` after an owner decision.
+sessions: local
+# Shell of the start commands printed by init and dispatch: bash (default) | powershell (asked on
+# Windows: `cd "<dir>"; claude ...`). Written as `shell: powershell` only when chosen.
+# Permission mode of the program's sessions, the owner's explicit choice at init: auto (recommended) |
+# acceptEdits | default | dontAsk | bypassPermissions. dispatch passes it with --permission-mode.
+# Owner checkpoints: actions that always ask the owner in the session window (permissions.ask),
+# even in auto mode: push (every git push asks) | pr (gh pr create) | deploy_test (the
+# module's deploy_test command; pushes too where every push deploys the stand).
+checkpoints: []
+title: "Актуализация знаний и упрощение методологии"
+# [KNOWLEDGE] in messages and PR titles.
+tag: KNOWLEDGE
+# Language of owner-facing documents: en | ru.
+owner_language: ru
+coordinator_session: knowledge-methodology-coord
+# true: orch.py commit also pushes (the owner reads from another device).
+push_after_milestone: true
+# Where the workspace lives: separate (its own home repository) | in-repo (branch orch/<program>
+# of a module repository, in a directory every push workflow ignores; init --in-repo sets
+# workspace_branch and workspace_dir). State commits go only to workspace_branch.
+# deploy_check_override: D-n is written only when the owner accepted an unverifiable deploy check.
+workspace_mode: in-repo
+workspace_branch: orch/knowledge-methodology
+workspace_dir: docs/orchestration/knowledge-methodology
+
+# Implementer models (recommendation per package; the owner may change it before starting):
+# aliases sonnet | opus | fable | haiku | opusplan or a full claude-... id; effort low | medium |
+# high | xhigh | max. Without `models`, start commands carry no model flags (the owner's default).
+# models:
+#   implement: sonnet
+#   escalate: opus
+#   escalate_effort: high
+
+# Repositories shared by several modules (streams). One writing session per worktree and branch.
+repos:
+  - id: nacl
+    path: ~/projects/NaCl
+    base: main
+    branch_prefix: codex/
+    worktree_root: .codex/worktrees
+    worktree_setup: []
+    merge_policy: sequential
+    shared_paths: []
+    resources: []
+    checks: []
+    base_deploys: none
+    # Временный режим: до поставки этап plan должен определить команды проверки и выпуска пакета.
+    deploy_test_mode: owner
+# Example repository:
+#  - id: mono
+#    path: ~/projects/example-monorepo
+#    base: main
+#    branch_prefix: feature/          # the repository's own convention
+#    worktree_root: .claude/worktrees # where `claude -w` puts worktrees
+#    worktree_setup: ["pnpm install --frozen-lockfile"]   # installs and generation only; secrets: .worktreeinclude
+#    merge_policy: sequential         # sequential | free
+#    shared_paths: [pnpm-lock.yaml, "**/package.json", "backend/migrations/**"]
+#    resources: [staging, migrations, {name: ci-gate, mode: on-demand}]   # on-demand: LOCK/UNLOCK messages
+#    checks: ["./scripts/check-migration-order.sh"]   # read-only commands; see below
+#    review_setup: ["cp \"$ORCH_MAIN_CHECKOUT/.env\" .env", "pnpm install --frozen-lockfile"]  # review clones
+#    deploy_workflows: [deploy.yml]   # or {test: [...], prod: [...]}: resume (who holds the stand) and verify (run for the SHA)
+#    integration_branch: main         # branch the stand deploys from (verify --env test; default: base)
+#    prod_branch: main                # branch production deploys from (verify --env prod; default: base)
+#    merge_method: merge              # merge | squash | rebase: the repository's own method (deliver; never --admin)
+#    delete_branch: true              # deliver deletes the merged PR branch
+#    deploy_test_mode: command           # command | workflow | automatic | owner; inferred only when unambiguous
+#    deploy_test: ./scripts/deploy.sh --target test   # non-interactive; only when a merge does not deploy the stand
+#    rollback_test: "./scripts/deploy.sh --target test --ref {previous_sha}"   # optional; run on a stand failure
+#    run_timeout: 1800                # seconds to wait for a deploy run or promote checks (deliver, release)
+#    promote: pr                      # pr | ff: a PR integration -> prod merged with --merge, or a fast-forward push
+#    release_clone: ~/projects/example-monorepo-release   # a clean clone of origin; required for promote: ff
+#    backup_prod: ./scripts/backup.sh --target prod      # run by release before prod migrations; output in the ledger
+#    rollback_prod: ""                # e.g. "./scripts/deploy.sh --target prod --ref {previous_sha}"; empty = the owner
+#    verify_test: ["curl -fsS https://test.example.com/health"]   # read-only; env ORCH_ENV, ORCH_SHA, ORCH_WP, ORCH_BASE_URL
+#    verify_prod: ["curl -fsS https://example.com/health"]        # secrets only as $VARIABLE references
+#    version_url: "{base_url}/version.json"   # served version ({base_url} from web_urls, {env}); or {test: ..., prod: ...}
+#    version_pattern: '"sha": "([0-9a-f]+)"'  # one group, compared with the SHA (7+ characters) or --expect-version
+#    base_deploys: prod               # prod | staging | none: what a merge into base deploys
+#    sessions: cloud                  # local | cloud: module sessions are cloud sessions (own clones)
+#    cloud_environment: Project env   # name of the owner's cloud environment (never variable values)
+#    push_deploys: true               # a push of any branch deploys the stand: sessions push only with the stand slot
+#
+# Paths are globs: `*` (one directory), `**` (any depth), `?` (one character), `{a,b}`
+# (alternatives); `[` and `]` are literal.
+# worktree_setup: commands a session runs in its new worktree - dependency installs and code generation
+# only. Never copy .env files, secret/key/cert directories or .claude/ there: list the gitignored files
+# in `.worktreeinclude` in the repository root (Claude Code copies them into every new worktree), and
+# on macOS and Linux `.claude/settings.local.json` is read from the main checkout by every worktree
+# (not on Windows: the session rules always come from the generated --settings file).
+# resources: a name is held by a package from dispatch until merge or verification (mode package);
+# {name: <n>, mode: on-demand} is taken only when the session sends LOCK <n> (orch.py lock acquire)
+# and given back on UNLOCK or READY.
+# checks: run by `orch.py overlap` and `orch.py review-start` through the shell in the repository's main checkout, env
+# ORCH_BASE_REF (base ref) and ORCH_BRANCHES (active package branches, space separated), timeout
+# 300 s; a non-zero exit is a finding. Checks must only read.
+
+# Modules: a whole repository (kind: repo, `repo: <path>`) or an area/domain of a repos entry.
+modules:
+  - id: framework
+    kind: area
+    repo: nacl
+    paths: ["**"]
+    session: knowledge-methodology-framework
+# Example module that is a whole repository:
+#  - id: db
+#    repo: ~/projects/example-database
+#    base: main
+#    session: knowledge-methodology-db
+#    tests: ["./scripts/test.sh"]
+#    deploy_test: owner-confirmed in module window
+#    deploy_prod: ./scripts/deploy.sh --target prod   # the owner's; denied to every session, release never runs it
+#    release_clone: ~/projects/example-database-release
+#    web_urls: {test: https://test.example.com, prod: https://example.com}
+# Example module that is an area of a shared repository:
+#  - id: admin
+#    kind: area                       # area | domain | repo
+#    repo: mono
+#    paths: ["apps/admin/**"]
+#    session: knowledge-methodology-admin
+#    test_db: example_test_admin
+#    ports: {app: 3120}
+#    tests: {scoped: ["pnpm --filter admin test"], full: ["pnpm -r test"]}
+#    methodology: {name: nacl, allowed: [nacl-tl-fix, nacl-tl-ship], forbidden: [nacl-tl-release, nacl-tl-deploy]}
+#    model: opus                      # overrides models.implement for this module
+#    effort: high
+
+# verify_timeout: 300              # seconds per verify command (orch.py verify)
+# Trusted delivery (orch.py deliver): by default the owner merges and deploys. Each level is handed to
+# the orchestrator only by an owner decision: orch.py delivery set <level> orchestrator --decision D-n.
+# delivery:
+#   merge: owner                    # owner | orchestrator: merging accepted PRs into the integration branch
+#   stand: owner                    # owner | orchestrator: stand deploy (run or deploy_test) and verification
+#   prod: owner                     # owner | orchestrator: production by a release sheet (orch.py release)
+#   prod_migrations: owner          # owner | orchestrator: database migrations on prod (needs prod: orchestrator)
+#   release_policy: batch           # batch | per_package: one sheet per batch, or one per package after VERIFIED_TEST
+#   release_window: "Mon-Fri 10:00-18:00 Europe/Berlin"   # days, hours, zone (IANA, UTC or +03:00); empty = none
+#   max_prod_releases_per_day: 2
+#   enabled_by: D-n                 # written by delivery set; lint refuses orchestrator without it
+#   hold: "<reason>"                # orch.py hold / unhold: stops every delivery
+environments: {}
+guards: {}
+# Optional source of facts: none | nacl. Tasks and statuses always stay in files.
+spec_graph: none
+# Live checks: playwright | none.
+e2e: none
+
+# Optional CI exception (strict all-checks policy otherwise):
+# nonblocking_checks belongs on a repo/module, with exact name and provider:
+#   nonblocking_checks: [{name: Preview, source: "app:preview-provider", decision: D-7}]
+# Required checks cannot be excluded; unknown required/source facts remain blocking.
+
+numbering:
+  scope: program-b60acde3-825b-481b-9a1b-c1ea0b2f04eb
+  version: 1
+
+delivery:
+  merge: orchestrator
+  stand: orchestrator
+  enabled_by: D-1
+  prod: orchestrator
