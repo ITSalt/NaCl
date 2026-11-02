@@ -78,6 +78,8 @@ R-n — действие: точная команда одной строкой 
 <!-- orch:journal -->
 | Дата | WP | Событие | Подтверждение |
 |------|----|---------|---------------|
+| 2026-11-02 11:45Z | — | D-3: family-cinema выбран тестовым полигоном; разрешены необходимые операции с его графом. Обновлены PLAN, WP-01/16 и протокол baseline/reset. Проверены локальные инструкции/config; runtime-доступ и эксперименты не запускались. | decisions.md; spec/family-cinema-testbed.md |
+| 2026-11-02 11:43Z | — | D-3 recorded | Прямое указание владельца: использовать family-cinema и выполнять необходимые операции с его графом, 2026-11-02 |
 | 2026-11-02 11:39Z | — | План прошёл независимый review; уточнены BE/FE, recovery, зависимости и изоляция экспериментов. | reports/plan-review.md |
 | 2026-11-02 11:37Z | — | Plan: подготовлены 18 DRAFT исследовательских пакетов, протокол, карта волн и критерии; исходники NaCl не изменены; dispatch не выполнялся. | PLAN.md; spec/research-protocol.md; reports/planning-evidence.md; work-packages/ |
 | 2026-11-02 11:37Z | WP-FRAMEWORK-18 | WP-FRAMEWORK-18 created (DRAFT) | work-packages/WP-FRAMEWORK-18-recommendations.md |
