@@ -78,6 +78,8 @@ R-n — действие: точная команда одной строкой 
 <!-- orch:journal -->
 | Дата | WP | Событие | Подтверждение |
 |------|----|---------|---------------|
+| 2026-11-02 13:52Z | WP-FRAMEWORK-01 | WP-01: составлен семантический аудит 55 групп по обязательным полям; сохранены общие inherited DEFER и UNKNOWN | reports/WP-01-group-card-audit.md; spec/research-protocol.md |
+| 2026-11-02 13:51Z | WP-FRAMEWORK-01 | WP-01: проверены границы четырёх стыковых цепочек и уточнён same-mutation evidence после независимого review | reports/WP-01-interface-chain-audit.md; reports/WP-01-risky-overlay-trace.md |
 | 2026-11-02 13:50Z | WP-FRAMEWORK-01 | WP-01: завершена и частично перепроверена выборка 39 workflow; добавлен анализ трёх рискованных overlay | reports/WP-01-tl-other-root-codex-samples.md; reports/WP-01-risky-overlay-trace.md |
 | 2026-11-02 13:49Z | WP-FRAMEWORK-01 | WP-01: завершена первая точечная source-level сверка всех 39 non-overlay workflows; полная semantic closure не заявлена | reports/WP-01-ba-root-codex-samples.md; reports/WP-01-sa-tl-root-codex-samples.md; reports/WP-01-tl-other-root-codex-samples.md |
 | 2026-11-02 13:48Z | WP-FRAMEWORK-01 | WP-01: после независимой проверки уточнены BA контракты и добавлена выборка 7 SA и 8 TL root/Codex workflow | reports/WP-01-ba-root-codex-samples.md; reports/WP-01-sa-tl-root-codex-samples.md |
