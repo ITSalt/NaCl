@@ -78,6 +78,8 @@ R-n — действие: точная команда одной строкой 
 <!-- orch:journal -->
 | Дата | WP | Событие | Подтверждение |
 |------|----|---------|---------------|
+| 2026-11-02 13:12Z | — | WP-16: отмечена наблюдаемая модель и условный расчёт Standard credits по официальной таблице; billing route неизвестен | reports/WP-16-budget-observation.md; thread/read; OpenAI Docs |
+| 2026-11-02 13:11Z | — | Browser draft: synthetic визуальный negative control непрозрачного overlay получил UNRESOLVED; покрытие ограничено fixture | reports/WP-16-fr014-browser-draft-check.md |
 | 2026-11-02 13:10Z | — | Волна 0 отражает начатый WP-01; гейт остаётся открытым | status.md: WP-FRAMEWORK-01 IN_PROGRESS |
 | 2026-11-02 13:10Z | — | Browser draft: 8/8 на synthetic control v8 при сетевом sandbox frontend и Chromium; A/B не запущен | reports/WP-16-fr014-browser-draft-check.md; control-browser-network-sandbox.log |
 | 2026-11-02 13:09Z | — | FR-014: историческая frontend suite 16 файлов/109 тестов прошла в изолированной копии с запрещённой исходящей сетью | reports/WP-16-fr014-env-check.md; sandboxed Vitest run |
