@@ -78,6 +78,9 @@ R-n — действие: точная команда одной строкой 
 <!-- orch:journal -->
 | Дата | WP | Событие | Подтверждение |
 |------|----|---------|---------------|
+| 2026-11-02 12:32Z | — | D-4 recorded | Прямое подтверждение владельца в чате 2026-11-02 |
+| 2026-11-02 12:31Z | — | Подготовлен независимый blind design критериев FR-014, без исполнения и без доступа автора к истории | reports/WP-16-fr014-blind-design.md; brief-only subagent |
+| 2026-11-02 12:30Z | WP-FRAMEWORK-01 | WP-01: подготовлен реестр групп механизмов BA и SA с отрицательными случаями | reports/WP-01-mechanism-registry-ba-sa.md |
 | 2026-11-02 12:29Z | — | WP-06: engine mock path повторён на временной копии; первая попытка исследователя вне disposable отмечена | reports/WP-06-engine-mock-probe.md |
 | 2026-11-02 12:29Z | WP-FRAMEWORK-01 | Проверена среда: текущий Docker socket отсутствует; graph TCP 22/443 timeout, причины неизвестны | reports/WP-01-test-environment.md; docker version; TCP connect |
 | 2026-11-02 12:27Z | — | Challenge BA→SA: добавлен negative case дублированных edges и пустых категорий | reports/WP-11-preliminary.md; graph-infra/queries/handoff-queries.cypher:55–79 |
