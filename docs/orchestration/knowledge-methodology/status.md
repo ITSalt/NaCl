@@ -79,6 +79,7 @@ R-n — действие: точная команда одной строкой 
 <!-- orch:journal -->
 | Дата | WP | Событие | Подтверждение |
 |------|----|---------|---------------|
+| 2026-11-02 16:14Z | WP-FRAMEWORK-01 | Исправлены временные оговорки поздних build probes; независимо сверены root BA partial resume и ValidationReport | reports/WP-01-ba-resume-detection.md |
 | 2026-11-02 16:12Z | WP-FRAMEWORK-01 | Независимая проверка diagnose закреплена в предварительном challenge и synthesis | reports/WP-17-challenge-in-progress.md |
 | 2026-11-02 16:11Z | WP-FRAMEWORK-01 | Независимо повторены fresh isolated build, checker и negative/positive diagnose controls с sandbox canaries | reports/WP-10-js-dependency-trace.md |
 | 2026-11-02 16:10Z | WP-FRAMEWORK-01 | Сверены отчёты после свежей sandboxed Skills-only сборки, checker и diagnose positive/negative controls | reports/WP-10-js-dependency-trace.md |

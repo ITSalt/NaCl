@@ -1,6 +1,6 @@
 # WP-10: Skills-only closure — сравнение двух Git-снимков
 
-Сравнены installed manifest source `c291c798fcfda697dd8d93f23ffc6d7e68528a5a` и pinned NaCl `20fe4c6`. Две независимые read-only модели воспроизвели в памяти правила Markdown-link/allowlist/recursive JS-import/init seeds из `scripts/build-codex-skills-only.mjs:217–284`; builder/main, tests, graph и A/B не запускались.
+Сравнены installed manifest source `c291c798fcfda697dd8d93f23ffc6d7e68528a5a` и pinned NaCl `20fe4c6`. Две независимые read-only модели воспроизвели в памяти правила Markdown-link/allowlist/recursive JS-import/init seeds из `scripts/build-codex-skills-only.mjs:217–284`; в этой source-сверке builder/main, tests, graph и A/B не запускались; позднейший [disposable build и probe](WP-10-js-dependency-trace.md) описаны отдельно.
 
 Оба снимка дали одинаковые множества: 10 public SKILL и 144 resource paths, 0 added/removed и 0 unresolved по моделям. Это **равенство путей**, не semantic completeness: ссылки в backticks алгоритм не отслеживает, поэтому ранее [найденные отсутствующие ресурсы](WP-10-installed-resource-matrix.md) этим не опровергаются.
 
@@ -13,4 +13,4 @@
 - TL review :105–109 добавляет formless screen exemption и token `nav-actions-EXEMPT`, сохраняя проверку screen route. TL fix :96–105,469–477 для самостоятельно синхронизированных L2/L3 задач после PASS описывает одну graph write для снятия stale и продвижения planned_from_version; остальные случаи сохраняют stale/deferral.
 - Изменения `resources/graph-infra/schema/{sa-schema,tl-schema}.cypher` в этом diff — только комментарии; изменённых DDL-строк не найдено. Комментарии не доказывают применение schema или enforcement.
 
-Указанные строки относятся к `plugins/nacl/resources/workflows/` snapshot 20fe. Эти различия — source-level, не проверка поведения установленного агента или completeness других ресурсов. Граница: модели могут отличаться от JS builder на краевых URI и regex; fresh build, фактические modes, symlinks/untracked и активный runtime не проверены. Никаких изменений исходных файлов не выполнялось.
+Указанные строки относятся к `plugins/nacl/resources/workflows/` snapshot 20fe. Эти различия — source-level, не проверка поведения установленного агента или completeness других ресурсов. Граница: модели могут отличаться от JS builder на краевых URI и regex; эта модель сама не проверяла fresh build, фактические modes, symlinks/untracked и активный runtime; позднейший отдельный build не подтверждает все эти свойства. Никаких изменений исходных файлов не выполнялось.

@@ -1,6 +1,6 @@
 # WP-10: буквальные ссылки installed bundle и границы checker
 
-Read-only проверка installed NaCl 0.2.2; выполнение workflow, builder, checker и MCP не проводилось. Active route и runtime outcome UNKNOWN.
+Read-only проверка installed NaCl 0.2.2; при этом read-only подсчёте workflow, builder, checker и MCP не запускались; последующая [disposable build/probe](WP-10-js-dependency-trace.md) описана отдельно. Active route и runtime outcome UNKNOWN.
 
 Два независимых подсчёта по `skills/*/resources/workflows/*/SKILL.md` и буквальному backtick pattern `../references/<имя>.md`: **129 вхождений в 44 leaf**, 122 уникальные пары leaf→нормализованный target, 26 bundle-local targets, из них 22 отсутствуют и 4 существуют. На отсутствующие targets указывают 101 вхождение и 95 пар. Это не 22 различных имени и не 101 сбой: часть ссылок условная. Скан не охватывает другие формы путей, Markdown anchors, динамическое разрешение или эквивалентные инструменты. Symlinks внутри installed skills не найдены.
 

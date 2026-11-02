@@ -1,0 +1,9 @@
+# WP-01: BA full partial resume и определение ValidationReport
+
+Pinned NaCl 20fe4c6, source-only; независимо сверено двумя исследователями. Graph/Cypher и workflow не запускались; runtime/стоимость/частота UNKNOWN, DEFER.
+
+Root `nacl-ba-full/SKILL.md:185–194` в специальном partial-resume случае выбирает BusinessProcess с `has_decomposition=true` и без исходящей `HAS_WORKFLOW_STEP`. Root `nacl-ba-workflow/SKILL.md:375–389` создаёт шаги через `HAS_STEP`, то же имя используют `graph-infra/schema/ba-schema.cypher:129–131` и `nacl-ba-validate/SKILL.md:210–223`. Следовательно, при корректных HAS_STEP и отсутствии любого HAS_WORKFLOW_STEP конкретный query выберет такой процесс как требующий workflow. Общий выбор первой незавершённой фазы и подтверждение пользователя описаны в full :168–183; автоматический повтор или duplicate не наблюдались.
+
+Root BA full :155–158 считает фазу валидации по любому `ValidationReport`, без фильтра layer/status/project/time, и :368–369 декларирует создание graph node. BA validator `nacl-ba-validate/SKILL.md:20–35,673–677` при этом описан строго read-only и выдаёт отчёт в чат. Root SA full `nacl-sa-full/SKILL.md:174–177` отдельно ищет `ValidationReport {layer:'SA'}`: при наличии такого node в общем графе он логически удовлетворяет неотфильтрованному BA count. Для влияния на выбор фазы нужны также phase 1–7 и соответствующий confirmed resume; конкретный writer, graph и bypass не установлены.
+
+Legacy Codex `skills-for-codex/nacl-ba-full/SKILL.md:77–90` и package overlay :86–99 описывают обнаружение и подтверждение, но показанный root Cypher там не приведён; переносить outcome на активный Codex runtime нельзя. Proposed controls: BP с HAS_STEP и без HAS_WORKFLOW_STEP; отдельно SA-only report при выполненных предшествующих фазах; положительный контроль — подтверждённый BA report соответствующего scope и новая проверка без необоснованного повтора. Все controls не выполнялись.

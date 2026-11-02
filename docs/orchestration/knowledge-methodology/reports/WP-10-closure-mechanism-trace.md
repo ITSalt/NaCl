@@ -1,6 +1,6 @@
 # WP-10: full package → Skills-only dependency closure
 
-Источник pinned NaCl 20fe4c6, статическое чтение. Builder, checker, tests, graph, workflows и A/B не запускались.
+Источник pinned NaCl 20fe4c6, статическое чтение. В этой source-сверке builder, checker, tests, graph, workflows и A/B не запускались; последующая [disposable build/probe](WP-10-js-dependency-trace.md) описана отдельно.
 
 Full builder `scripts/build-codex-plugin.mjs:345–369` копирует workflow leaf и затем всё codexSource дерево, включая `resources/workflows/references/*.md`; соответствующие файлы есть в pinned Git. Skills-only builder `scripts/build-codex-skills-only.mjs:240–257,267–282` начинает с Markdown links public entry и выбранных leaf SKILL, затем рекурсивно добавляет Markdown inline links и статические относительные JS imports. Путь в backticks сам по себе не является dependency edge; файл может попасть через другой seed/link, поэтому отсутствие одного ребра само по себе не доказывает отсутствие файла.
 
