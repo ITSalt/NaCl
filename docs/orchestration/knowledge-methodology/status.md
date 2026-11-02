@@ -78,6 +78,7 @@ R-n — действие: точная команда одной строкой 
 <!-- orch:journal -->
 | Дата | WP | Событие | Подтверждение |
 |------|----|---------|---------------|
+| 2026-11-02 14:55Z | WP-FRAMEWORK-01 | Предварительно исследованы intake decisions, FE RED handoff и per-AC review; результаты независимо сверены | reports/WP-05-fe-red-handoff.md |
 | 2026-11-02 14:53Z | WP-FRAMEWORK-01 | Уточнены source-level передача acceptance в QA и контроль review evidence по ревизии | reports/WP-14-review-revision-trace.md |
 | 2026-11-02 14:51Z | WP-FRAMEWORK-01 | Уточнены стыки BusinessRule→Requirement и BA states→SA enum→TL без вызова графа | reports/WP-11-rule-requirement-trace.md |
 | 2026-11-02 14:49Z | WP-FRAMEWORK-01 | Продолжены предварительные BA и SA исследования без закрытия зависимости WP-01 | reports/WP-03-permission-planning-trace.md |
