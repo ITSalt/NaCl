@@ -1,0 +1,11 @@
+# WP-10 предварительно: Skills-only closure и SA resource
+
+NaCl 20fe4c6; source-only, dependency WP-01 открыта. Build и runtime не запускались, стоимость/frequency UNKNOWN, DEFER.
+
+`scripts/codex-plugin-manifest.json:89–96`, `scripts/build-codex-plugin.mjs:332–363,456–473` описывают копирование ресурсов и выбор overlay/legacy SKILL, staging check не проверяет installed route. Предыдущая source map сопоставляет SKILL bytes, не полную resource closure.
+
+Router `codex-plugin-src/package/skills/nacl-sa/SKILL.md:8–22` выбирает SA leaf; `plugins/nacl/resources/workflows/nacl-sa-uc/SKILL.md:74–77` требует `nacl-sa-uc/references/runtime-contract.cypher`. Root resource существует как `plugins/nacl/resources/nacl-sa-uc/references/runtime-contract.cypher`.
+
+`scripts/build-codex-skills-only.mjs:160–164,217–249,254–257,267–281` описывает seeding и поиск Markdown links/JS relative imports; указанная ссылка в SA UC дана backtick text. Ограниченный поиск не выявил Markdown link на ресурс. Это риск недостающей transitive closure, не доказательство отсутствия: возможен иной reachable seed/directory/reference; итоговый build и установленный пакет не проверены. Init allowlist нельзя автоматически переносить на SA.
+
+Независимая read-only проверка установленной `nacl/0.2.2/skills/nacl-sa` обнаружила workflow SKILL, но не обнаружила `runtime-contract.cypher` в двух проверенных путях `resources/nacl-sa-uc/references/` и `resources/workflows/nacl-sa-uc/references/`; поиск файлов в этой closure также не нашёл его по имени. Это наблюдение конкретной установленной выборки, чей source SHA отличается от pinned checkout, а не доказательство результата новой сборки или отказа MCP. Full package содержит resource в `plugins/nacl/resources/nacl-sa-uc/references/`, но не в одноимённом workflow references. Builder :179–186,297–320 также описывает rewrites и per-skill closures; одинаковый main SKILL hash не доказывает наличие ресурсов или активный transport. Альтернатива — явный dependency manifest и closure/provenance check; риски: пропуск динамического resource, лишние private paths и подмена semantic validation хешем. Proposed controls: backtick-only ссылка, missing resource и полностью закрытый dependency set. Не выполнялись.
