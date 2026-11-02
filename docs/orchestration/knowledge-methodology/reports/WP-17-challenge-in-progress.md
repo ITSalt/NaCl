@@ -1,5 +1,7 @@
 # WP-17: предварительный challenge, не приёмка
 
+**Challenge enum → TL.** Root `nacl-tl-plan/SKILL.md:719–728` ищет enum через путь USES_FORM→field→attribute→entity; если у UC нет USES_FORM, именно этот OPTIONAL path их не возвращает. Но другие запросы и контекст могут содержать enum, поэтому полная потеря в API contract не доказана. Query возвращает отдельные collections Enumeration и EnumValue без явно возвращённых пар; node IDs могут позволять частичную реконструкцию, а `nacl-sa-domain/SKILL.md:297–333` хранит entity→enum→value edges. Для двух enum одной entity предложенная таблица должна подтверждать соответствия отдельным источником, не приписывать все values каждому полю. Graph, runtime и test не запускались; DEFER.
+
 [Symlink preservation и lock challenge](WP-17-symlink-challenge-trace.md) исследован по источникам без запуска.
 
 [Свежий Skills-only build и независимый challenge diagnose](WP-10-js-dependency-trace.md): checker выдал VERIFIED, но runner в двух disposable-средах завершился MODULE_NOT_FOUND; отдельные модифицированные positive controls с vendor дошли до NOT_RUN пустого проекта. Это подтверждённый дефект проверенной сборки и Node-окружения, а не факт запуска установленного skill или MCP.
