@@ -13,6 +13,6 @@
 | docs/retrospectives | 9 | Прямой read scope WP-16/17; историческая причинность требует primary traces |
 | docs/runbooks | 10 | Прямой read scope WP-07; proposed WP-09/10 по конкретным graph/Codex контурным источникам |
 | docs/setup | 16 | WP-01; proposed WP-09/10 для graph setup и portability; не разрешение менять установку |
-| docs/* root files | отдельно | WP-01; proposed WP-09 для graph schema, WP-07/09 handover, WP-10/15 Codex и adapters; возможные производные копии исключать лишь после смысловой сверки |
+| docs/* root files | 29 | WP-01; proposed WP-09 для graph schema, WP-07/09 handover, WP-10/15 Codex и adapters; возможные производные копии исключать лишь после смысловой сверки |
 
-Counts — inventory Git tree, не число прочитанных или проанализированных документов. WP-01-nonpackage-scope-index.md фиксирует другие области, private meta остаётся вне pinned tree и не изучался.
+Независимая сверка Git tree подтвердила 334 файла: 305 в девяти подкаталогах и 29 в корне. Counts — inventory, не число прочитанных или проанализированных документов. Предложенные связи не расширяют разрешённые scopes других WP. WP-01-nonpackage-scope-index.md фиксирует другие области, private meta остаётся вне pinned tree и не изучался.
