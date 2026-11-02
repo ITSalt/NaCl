@@ -8,6 +8,14 @@ Pinned NaCl 20fe4c6; две независимые проверки исходн
 
 `analyst-tool/server/src/render/markdown/markdown.test.ts:334–336,514–516,657–659` проверяет обычные resolve cases; проверка traversal board name в `analyst-tool/server/src/services/skill-runner.test.ts:143–147` относится к другой ветви и не доказывает защиту graph source_file. Наличие этих tests не означает их выполнение здесь; иные guards вне исследованной цепочки не исключены.
 
+## Атомарная карточка 07.5-AT-ENTITY-PATH
+
+Область graph → локальная Markdown-проекция, отдельный Analyst Tool route, не Docmost: pinned NaCl 20fe4c6, `analyst-tool/server/src/render/markdown/entity.ts:46–57,270–291`, `render/markdown/index.ts:41–55`, `routes/render.ts:26–33,41–74`. Вход — entity subtype/id и graph record; выход — файл и HTTP response. Путь берётся из source_file, project root — из конфигурации; конкретный пользователь route и deployment config UNKNOWN. Потребитель — локальный файл и HTTP client; graph record — источник данных рассматриваемой проекции.
+
+При вызове entity-render путь source_file обязателен для показанной ветви: его отсутствие отклоняется 409, предотвращая запись без указанного назначения, но не проверяя его границу. На успешной ветви показаны один recursive mkdir, один writeFile и ответ; entity renderer параллельно вызывает fetchEntityData и fetchEnums (`entity.ts:270–273`), что не устанавливает число сетевых операций. Число graph reads в других ветвях, реальная частота, подтверждения вне route, цена, latency и историческое основание UNKNOWN. Находка не устанавливает возможность атакующего задать graph property или вызвать endpoint. Два disposable synthetic runs и их ограничения описаны ниже; они показали записи synthetic sentinel вне test project, но внутри temp sandbox, без реального graph/API/deployment.
+
+Предлагаемый для исследования путь — ограничение destination project root с контролем symlink, overwrite и read-back; он может запретить намеренные внешние пути и изменить семантику overwrite, а одна предварительная realpath проверка не исключает TOCTOU. DEFER; высокая уверенность только для описанного synthetic fixture. Повторение тех же условий с отказом traversal/absolute/symlink и неизменённым sentinel поставило бы под сомнение воспроизводимость соответствующей находки. Проверка альтернативы должна отдельно включать допустимый внутренний путь, заранее существующий файл и подмену symlink во время операции; альтернатива и гонка не проверены.
+
 ## Другие пути Analyst Tool
 
 Ограниченный поиск server source выявил три явных graph `source_file` consumers — entity, UC, Form: они возвращают path/content, а не читают существующий target; записывают route и внутренняя ветка `render-md` skill-runner. Публичная доступность второй ветки не установлена. Domain-model/UC-index/traceability используют собственные фиксированные подкаталоги, а не graph source_file; это не доказывает полную symlink confinement.
