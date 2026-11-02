@@ -79,6 +79,7 @@ R-n — действие: точная команда одной строкой 
 <!-- orch:journal -->
 | Дата | WP | Событие | Подтверждение |
 |------|----|---------|---------------|
+| 2026-11-02 17:19Z | WP-FRAMEWORK-01 | Координатор независимо повторил synthetic fixture с чужим atom: GOAL_OK 2/2, полный и пустой controls совпали. | reports/WP-14-preliminary.md |
 | 2026-11-02 17:18Z | WP-FRAMEWORK-01 | Дополнительная synthetic fixture conduct: чужой verified atom при пропущенном запланированном дал GOAL_OK 2/2; реальный state не проверялся. | reports/WP-14-preliminary.md |
 | 2026-11-02 17:17Z | WP-FRAMEWORK-01 | Выполнена ограниченная итоговая сверка WP01: 55 ID, 14 исходных gaps, ссылки и выборочные источники; graph TCP preflight снова timeout, P-2 и baseline остаются открыты. | reports/WP-01-acceptance-matrix.md; reports/WP-FRAMEWORK-01.md |
 | 2026-11-02 17:15Z | WP-FRAMEWORK-01 | Дополнен предварительный synthesis WP-18, уточнены bootstrap rollback и передача TDD baseline в review. | reports/WP-18-preliminary-candidates.md; reports/WP-01-platform-consumer-trace.md; reports/WP-01-tl-gap-cards.md |
