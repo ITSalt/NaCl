@@ -1,0 +1,19 @@
+# WP-01: analyst-tool и tracker дополнительные механизмы
+
+NaCl SHA 20fe4c6a56482e85d3ea9a9ebaadb37206047e41. Категория DEFER; цена, частота и runtime UNKNOWN. Источники проанализированы статически; negative/positive предложены, а не выполнены. Не обращаться к реальному tracker/graph для этих проб.
+
+## AT-01: состояние очереди и события
+
+analyst-tool/server/src/routes/skills.ts:31–49 возвращает runId, затем services/skill-runner.ts:417–441 при ненулевом exit публикует run.failed и возвращает resolved failedSummary; services/run-queue.ts:102–115 любую resolved summary отражает в ring как completed с exitCode. UI App.tsx:189–213 обрабатывает run.failed, RunPanel.tsx:63–67 показывает nonzero exit, а успешные side effects требуют completed и exitCode 0 (web/src/state/store.ts:420–439). Это статическое различие terminal state, не доказанный false PASS UI; hydration/reconnect и порядок событий требуют трассировки. Альтернатива единый typed phase+exitCode и reconciliation replay; риск consumer без exitCode считает completed успешным. Negative: nonzero resolved, reject, пропавший/поздний WS, reload и обратный порядок final events; positive: zero exit и read-back.
+
+## TRACK-01: project_id в конфигурации
+
+yougile-setup/src/index.ts:240–245,293–297 принимает project id для board, но :153–175,204–221 формирует yougile.project_id из одинаковых пустых ветвей. Непосредственный consumer этого поля пока не найден; влияние на live success не доказано. Риск потери выбранного scope в config. Альтернатива typed serializer/schema и roundtrip точных IDs. Negative: заданный project id после генерации, существующий config и сложный YAML; positive: корректный roundtrip ID и сохранение остальных значений.
+
+## TRACK-02: частичный результат sticker states
+
+yougile-setup/src/index.ts:317–325 после failed GET продолжает создание; :333–363 ошибку создания state логирует и возвращает частичные stateIds, а :405–421 success зависит от result.errors. Это статический путь к неполному config при success, если state POST ошибётся, не воспроизведённый live дефект. Column errors обрабатываются отдельно. Альтернатива per-operation typed outcomes и обязательный read-back states. Negative: failed GET, ошибка одного POST, отсутствующий обязательный ID и частичная board creation; positive: все states подтверждены. Возможные дубли проверять только fake API.
+
+## AT-02: файловая запись render endpoint
+
+analyst-tool/server/src/routes/render.ts:41–66 выполняет mkdir и writeFile и возвращает path/bytes; чтение graph при render не означает filesystem read-only. Конкретный UI consumer и защита outPath/confirmation ещё не проверены. Риск перезаписи или неверного project scope является гипотезой. Альтернатива preview, scoped overwrite и atomic read-back. Negative: dirty существующий файл, смена проекта, failure во время записи; positive: согласованный output с проверенным содержимым. Endpoint не запускался.
