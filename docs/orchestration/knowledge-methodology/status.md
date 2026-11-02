@@ -79,6 +79,7 @@ R-n — действие: точная команда одной строкой 
 <!-- orch:journal -->
 | Дата | WP | Событие | Подтверждение |
 |------|----|---------|---------------|
+| 2026-11-02 16:55Z | WP-FRAMEWORK-01 | Сверены root Path C → reopened/hotfix и условный reader RuntimeContract через slices; WP-05 остаётся предварительным. | reports/WP-05-preliminary.md; reports/WP-01-sa-gap-cards.md |
 | 2026-11-02 16:53Z | WP-FRAMEWORK-01 | Уточнены условная семантика null зависимости в предварительном WP-04 и граница BA migration audit; выводы source-only. | reports/WP-04-preliminary.md; reports/WP-01-core-migration-cards.md |
 | 2026-11-02 16:52Z | WP-FRAMEWORK-01 | Независимо сверены root NFR validation для предварительного WP-03 и Analyst reconnect recovery; graph и runtime не запускались. | reports/WP-03-preliminary.md; reports/WP-01-analyst-tracker-cards.md; reports/WP-01-acceptance-matrix.md |
 | 2026-11-02 16:50Z | WP-FRAMEWORK-01 | Уточнены статусы индексов и добавлен независимо подтверждённый source-only атом BA rules в предварительный WP-02; зависимость WP-01 остаётся открытой. | reports/WP-02-preliminary.md; reports/WP-01-docs-scope-inventory.md; reports/WP-01-subarea-scope-decisions.md |
