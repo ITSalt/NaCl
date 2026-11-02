@@ -79,6 +79,7 @@ R-n — действие: точная команда одной строкой 
 <!-- orch:journal -->
 | Дата | WP | Событие | Подтверждение |
 |------|----|---------|---------------|
+| 2026-11-02 16:07Z | WP-FRAMEWORK-01 | Независимо сверены ограничения diagnose probe и source-модель closure для c291 и 20fe | reports/WP-10-js-dependency-trace.md |
 | 2026-11-02 16:06Z | WP-FRAMEWORK-01 | В sandboxed модифицированной disposable копии добавление vendor устранило loader failure; runner вернул NOT_RUN для пустого проекта | reports/WP-10-js-dependency-trace.md |
 | 2026-11-02 16:05Z | WP-FRAMEWORK-01 | В sandboxed disposable копии diagnose runner --diagnose-only завершился MODULE_NOT_FOUND до structured status; installed workflow не запускался | reports/WP-10-js-dependency-trace.md |
 | 2026-11-02 16:03Z | WP-FRAMEWORK-01 | В предварительный synthesis добавлена граница проверенной path-resolution probe | reports/WP-18-preliminary-candidates.md |
