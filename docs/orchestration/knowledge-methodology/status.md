@@ -78,6 +78,12 @@ R-n — действие: точная команда одной строкой 
 <!-- orch:journal -->
 | Дата | WP | Событие | Подтверждение |
 |------|----|---------|---------------|
+| 2026-11-02 12:22Z | — | Подготовлено исследование стыка SA→TL→dev; зависимости открыты | reports/WP-12-preliminary.md |
+| 2026-11-02 12:22Z | — | WP-10: проверены дополнительные файлы в installed cache; происхождение неизвестно | reports/WP-10-preliminary.md; read-only inventory |
+| 2026-11-02 12:22Z | — | Подготовлены сквозные исследования BA→SA и dev→QA→release; зависимости открыты | reports/WP-11-preliminary.md; reports/WP-13-preliminary.md |
+| 2026-11-02 12:21Z | — | Подготовлено исследование упаковки, provenance и границ transport; зафиксировано расхождение 1 payload файла | reports/WP-10-preliminary.md; installed release-manifest и SHA-256 |
+| 2026-11-02 12:20Z | — | Уточнён source commit установленного Skills-only и совпадение relevant builder/contract blobs | reports/WP-01-skills-only-canary.md; installed release-manifest; git ancestry |
+| 2026-11-02 12:20Z | — | Подготовлено read-only исследование graph identity, dual-write и backup | reports/WP-09-preliminary.md |
 | 2026-11-02 12:19Z | WP-FRAMEWORK-01 | Исправлен путь backup-contract в оценке graph baseline | reports/WP-01-graph-baseline-risks.md |
 | 2026-11-02 12:19Z | — | Подготовлено read-only исследование управления и восстановления | reports/WP-08-preliminary.md |
 | 2026-11-02 12:19Z | — | Подготовлено read-only исследование delivery и publication; WP-01 открыт | reports/WP-07-preliminary.md |
