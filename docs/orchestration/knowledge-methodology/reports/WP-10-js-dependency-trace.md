@@ -22,4 +22,10 @@ Pinned `scripts/build-codex-skills-only.mjs:240–257,260–264,267–282` от�
 
 Результат запущенной **копии runner**: exit 1, stdout пуст, stderr содержит `MODULE_NOT_FOUND` и имя `smol-toml-1.7.0.cjs`, структурированного JSON status нет; отказа запуска sandbox-exec не зафиксировано. Исходник описывает загрузку зависимости до обработки `--diagnose-only`. Это воспроизведение отказа копии в указанной среде, не запуск установленного skill, не проверка его активного route или MCP и не доказательство поведения другой версии Node. Код пробы не содержал преднамеренных сетевых вызовов; временная копия удалена.
 
+## Положительный контроль загрузки
+
+В отдельной disposable-копии исходный diagnose bootstrap сначала проверен по относительным файлам/директориям и SHA-256; затем **только в этой копии** добавлен vendor directory из установленного nacl-init, с проверкой SHA-256 копии vendor. Это намеренно изменённая фикстура, не разрешённый способ разрешения зависимости в реальном Skills-only bundle и не изменение установленного пакета.
+
+При тех же Node v24.13.1 и sandbox-exec profile (сеть запрещена, запись только во временный каталог), пустых temp HOME/project/TMPDIR и очищенном Node environment копия `--diagnose-only --project-root <temp>` завершилась exit 0 и выдала JSON `status: NOT_RUN`, `code: PROJECT_MCP_NOT_CONFIGURED`, `mutation: NONE`, `network: NONE`, `docker: NOT_INSPECTED`; `MODULE_NOT_FOUND` не было. Это подтверждает, что в данной контрольной среде добавление vendor устранило наблюдённый ранний loader failure и позволило дойти до ветки диагностики пустого проекта. Это не проверка parsing TOML, фактического проекта/графа/MCP или установленного skill; принудительное срабатывание sandbox network deny отдельно не тестировалось. Временный каталог удалён.
+
 Proposed будущие controls: explicit dependency manifest/recursive CommonJS dependency closure, missing vendor и package-local resolution до выполнения runner, положительный контроль без cross-skill доступа. Риски: динамические requires и неверные интерпретаторы; цена/runtime UNKNOWN, DEFER.
