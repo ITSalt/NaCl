@@ -78,6 +78,7 @@ R-n — действие: точная команда одной строкой 
 <!-- orch:journal -->
 | Дата | WP | Событие | Подтверждение |
 |------|----|---------|---------------|
+| 2026-11-02 14:10Z | WP-FRAMEWORK-01 | WP-01: уточнены по review 07–10 и добавлены BA-01–09/SA-01 falsifiers; никакие negative cases не запускались | reports/WP-01-tl-falsifier-matrix-part2.md; reports/WP-01-ba-falsifier-matrix.md |
 | 2026-11-02 14:08Z | WP-FRAMEWORK-01 | WP-01: добавлены falsifiers 07.3–10.4, включая отдельные migration/init/postmortem; ранее найдены source outcome уточнения | reports/WP-01-tl-falsifier-matrix-part1.md; reports/WP-01-tl-falsifier-matrix-part2.md |
 | 2026-11-02 14:07Z | WP-FRAMEWORK-01 | WP-01: для групп TL 04.1–07.2 зафиксированы proposed falsifiers и границы source outcome; review продолжается | reports/WP-01-tl-falsifier-matrix-part1.md |
 | 2026-11-02 14:05Z | WP-FRAMEWORK-01 | WP-01: уточнены scope falsifiers и независимая проверка non-package index; статус дерева и hashes сверены | reports/WP-01-falsifier-links.md; reports/WP-01-nonpackage-scope-index.md; reports/WP-01-baseline-candidates.md |
