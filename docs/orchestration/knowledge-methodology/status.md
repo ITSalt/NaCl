@@ -78,6 +78,16 @@ R-n — действие: точная команда одной строкой 
 <!-- orch:journal -->
 | Дата | WP | Событие | Подтверждение |
 |------|----|---------|---------------|
+| 2026-11-02 12:41Z | — | FR-014: browser preflight повторён из захэшированного временного runner; сервер остановлен | reports/WP-16-fr014-browser-preflight.md |
+| 2026-11-02 12:40Z | — | FR-014: v2 draft oracle отклоняет пустой dialog и проходит на stub с изображением; полный harness не готов | reports/WP-16-fr014-draft-test-check.md |
+| 2026-11-02 12:40Z | — | Challenge пилота: уточнена классификация при недоказанной blind isolation | reports/WP-16-pilot-plan-draft.md |
+| 2026-11-02 12:39Z | — | Challenge бюджета D-4: исходное распределение не оставляло резерва, требуется учёт подготовки и подтверждённый остаток | reports/WP-16-pilot-plan-draft.md |
+| 2026-11-02 12:39Z | — | Challenge пилота: нынешний graph не принят как исторический baseline без доказанной реконструкции | reports/WP-16-pilot-plan-draft.md; baseline CLAUDE.md; historical Git |
+| 2026-11-02 12:39Z | — | Исправлены две правки challenge после первой попытки safe_edit: уточнены smoke и пустой dialog как контрпример | reports/WP-16-pilot-plan-draft.md; reports/WP-16-fr014-draft-test-check.md |
+| 2026-11-02 12:39Z | — | Challenge пилота: уточнена проверенная часть окружения; пустой dialog доказал неполноту чернового oracle | reports/WP-16-pilot-plan-draft.md; reports/WP-16-fr014-draft-test-check.md |
+| 2026-11-02 12:38Z | — | FR-014: browser preflight upload route с синтетическими API прошёл; A/B и user acceptance не выполнялись | reports/WP-16-fr014-browser-preflight.md |
+| 2026-11-02 12:37Z | — | FR-014: временный Next server и headless Chromium открыли стартовую страницу; сервер остановлен | reports/WP-16-fr014-env-check.md; loopback HTTP 200 |
+| 2026-11-02 12:36Z | — | FR-014: черновой jsdom тест дал baseline RED и прошёл на минимальном контрольном stub; полный harness и A/B не выполнены | reports/WP-16-fr014-draft-test-check.md |
 | 2026-11-02 12:35Z | — | FR-014: установлены зависимости в отдельной временной frontend копии, smoke unit test 6/6; A/B не запускался | reports/WP-16-fr014-env-check.md; npm ci --ignore-scripts; npm test -- src/test/tokens.test.ts |
 | 2026-11-02 12:33Z | — | Уточнена точка входа FR-014 и необходимость browser harness; RED/GREEN не выполнялись | reports/WP-16-fr014-blind-design.md; ограниченное чтение baseline |
 | 2026-11-02 12:33Z | WP-FRAMEWORK-01 | WP-01: реестры групп механизмов включены в сводный отчёт; полнота не заявлена | reports/WP-FRAMEWORK-01.md; mechanism registries |
