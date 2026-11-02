@@ -78,6 +78,7 @@ R-n — действие: точная команда одной строкой 
 <!-- orch:journal -->
 | Дата | WP | Событие | Подтверждение |
 |------|----|---------|---------------|
+| 2026-11-02 14:05Z | WP-FRAMEWORK-01 | WP-01: индексированы области вне manifest, семь falsifiers связаны с evidence; проверены hashes draft и чистота Git-деревьев | reports/WP-01-nonpackage-scope-index.md; reports/WP-01-falsifier-links.md; reports/WP-01-baseline-candidates.md |
 | 2026-11-02 14:03Z | WP-FRAMEWORK-01 | WP-01: independently checked 122 explicit source paths/ranges; уточнены XL и aliases, полная семантическая сверка не заявлена | reports/WP-01-mechanism-registry-ba-sa.md; reports/WP-01-platform-consumer-trace.md |
 | 2026-11-02 14:02Z | WP-FRAMEWORK-01 | WP-01: развёрнуты пути root/Codex/package, исправлены scope QA и sidecar после проверки источников | reports/WP-01-mechanism-registry-ba-sa.md; reports/WP-01-mechanism-registry-tl-platform.md; reports/WP-01-platform-consumer-trace.md |
 | 2026-11-02 14:00Z | WP-FRAMEWORK-01 | WP-01: подтверждена index-сверка 55 ID, уточнена трасса SA ValidationReport и исправлены неоднозначные source paths в реестрах | reports/WP-01-acceptance-matrix.md; reports/WP-01-sa-validation-report-trace.md; reports/WP-01-mechanism-registry-ba-sa.md; reports/WP-01-mechanism-registry-tl-platform.md |
