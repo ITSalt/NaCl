@@ -78,6 +78,7 @@ R-n — действие: точная команда одной строкой 
 <!-- orch:journal -->
 | Дата | WP | Событие | Подтверждение |
 |------|----|---------|---------------|
+| 2026-11-02 13:35Z | WP-FRAMEWORK-01 | WP-01: уточнены graph backup/status и tracker по независимому review; добавлена карта CI и сборки | reports/WP-01-graph-extra-cards.md; reports/WP-01-analyst-tracker-cards.md; reports/WP-01-ci-package-cards.md |
 | 2026-11-02 13:33Z | WP-FRAMEWORK-01 | WP-01: расширены graph-infra и analyst-tool/tracker карточки; уточнены migration контракты после независимой проверки | reports/WP-01-graph-extra-cards.md; reports/WP-01-analyst-tracker-cards.md; reports/WP-01-core-migration-cards.md |
 | 2026-11-02 13:32Z | WP-FRAMEWORK-01 | WP-01: подготовлены карточки core/init/migration/publish и уточнён reconcile после challenge; graph 22/443 повторно timeout | reports/WP-01-core-migration-cards.md; reports/WP-01-tl-diagnose-card.md; TCP connect 4s |
 | 2026-11-02 13:31Z | WP-FRAMEWORK-01 | WP-01: исследован TL diagnose/reconcile и остальные root/resource packages; оценка TL coverage исправлена после независимого review | reports/WP-01-tl-diagnose-card.md; reports/WP-01-tl-package-coverage.md; reports/WP-01-other-package-coverage.md |
