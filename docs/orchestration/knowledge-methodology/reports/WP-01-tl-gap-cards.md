@@ -16,6 +16,10 @@ Root `nacl-tl-stubs/SKILL.md:412–426,452–459` при исчезновени�
 
 Proposed negative: связанный unresolved WARNING с shape-unvalidated без других блокеров, проследить итог и evidence; positive: проверенная форма и resolvedAt при соблюдении прочих gates. Частота, цена, runtime и фактический consumer UNKNOWN; DEFER, пробы не выполнялись.
 
+## TL-EVIDENCE-FOOTER — точное значение и токены
+
+Root `nacl-tl-conductor/SKILL.md:998–1015` выбирает для footer текущего intake значения evidence точным IN (`test-UNVERIFIED`, `no-test`) и статусами done/verified-pending/blocked. Root core описывает их как literals. Отдельный package gateway `graph-gateway/concurrency.mjs:125–153,253–295` может принять для verified-pending строку `test-UNVERIFIED` с дополнительным допустимым QA-токеном; reference разрешает ряд multi-token форм, но прямо не устанавливает сочетание gap literal. Если такая составная строка окажется в поле, показанный root exact query её не выберет. Совместное использование разных клиентских контуров, реальная сериализация, другие readers и общий итог UNKNOWN; не доказана потеря предупреждения или обход release gate. Proposed controls: literal и составное value при одинаковых intake/status, независимый status oracle; graph не запускался, DEFER.
+
 ## TL-DOCS-CHANGELOG — producer и consumers
 
 Root `nacl-tl-docs/SKILL.md:174–197,307–325` до Step 9 пишет в changelog `Complete (verification pending Step 9)` и прямо обусловливает DONE проверками и commit. При отсутствии сообщения пользователя root ship `nacl-tl-ship/SKILL.md:236–247` может использовать entries после последнего commit для формирования сообщения; после docs commit запись уже может не входить в этот диапазон. Root conductor `nacl-tl-conductor/SKILL.md:799–808` проверяет FR-ID последнего раздела против graph с учётом exceptions, не трактует строку Complete как gate. Это заявленные consumers, не доказанное их исполнение или дословное копирование строки.
