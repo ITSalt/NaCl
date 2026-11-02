@@ -1,0 +1,17 @@
+# WP-02: предварительное исследование BA
+
+Статус: предисследование; зависимость WP-01 не закрыта, приёмка WP-02 не проводилась. NaCl SHA `20fe4c6a56482e85d3ea9a9ebaadb37206047e41`. Тексты ниже — контракты, не доказательство live-исполнения. Цена, фактические counts и частота неизвестны; категории предварительно DEFER.
+
+Codex BA router `codex-plugin-src/package/skills/nacl-ba/SKILL.md:8–25` перечисляет 14 leaf и требует project MCP/read canary. Общий BA writer контракт `codex-plugin-src/package/resources/workflows/references/ba-codex-contract.md:58–84` задаёт чтение → candidate → подтверждение → write → read-back; анализ/валидация read-only.
+
+| Механизм | Источник | Вход → выход; исследовательская альтернатива и риск |
+|---|---|---|
+| Context, process, workflow | `skills-for-codex/nacl-ba-context/SKILL.md:20–58`, `nacl-ba-process/SKILL.md:19–67`, `nacl-ba-workflow/SKILL.md:19–73` | Контекст → scope/actors → процессы/триггеры → шаги/исполнители/артефакты. Групповое подтверждение может уменьшить ожидания, но требует сохранения точного scope и проверки связей. |
+| Entities, roles, glossary, rules | `skills-for-codex/nacl-ba-entities/SKILL.md:20–75`, `nacl-ba-roles/SKILL.md:19–62`, `nacl-ba-glossary/SKILL.md:20–55`, `nacl-ba-rules/SKILL.md:19–73` | Из источников/графа → сущности/статусы, роли, термины и правила с trace. Единый текстовый каталог требует проверки идентичности и связей; полный rebuild glossary может быть разрушительным и не запускался. |
+| Validate/handoff | `skills-for-codex/nacl-ba-validate/SKILL.md:19–68`, `nacl-ba-handoff/SKILL.md:19–58` | Граф → L1–L8/XL и BA→SA соответствия; отсутствие SA не равно PASS. Альтернатива CI/структурированные документы должна сохранить уровни evidence и partial status. |
+| Board import/analyze/sync | `skills-for-codex/nacl-ba-import-doc/SKILL.md:20–60`, `nacl-ba-analyze/SKILL.md:19–50`, `nacl-ba-sync/SKILL.md:19–63` | Документы → board → анализ/diff → граф; stable IDs, read-back и partial failure. При объединении этапов риск потерять удалённые элементы, происхождение и ручные изменения. |
+| Orchestration | `skills-for-codex/nacl-ba-from-board/SKILL.md:19–71`, `nacl-ba-full/SKILL.md:57–90,107–130,180–212` | Маршрутизация и последовательные BA фазы с gates; в `/goal` human handoff обозначен закрытым отказом. Условные gates по риску требуют negative cases и измерения, не предполагать экономию. |
+
+Публичный installed Skills-only BA `nacl/0.2.2/skills/nacl-ba/SKILL.md:12–19` требует MCP до выбора leaf, при этом import-doc описан как board-only, а analyze допускает частичный результат без графа. Runtime contract `resources/references/skills-only-runtime-contract.md:9–14` делает pre-bootstrap намеренным. Это статическая policy-нагрузка/кандидат сравнения capability-specific gates, не доказанный runtime-баг; при изменении сохранить отказ graph-части и точный статус.
+
+`codex-plugin-src/workflow-overlays/nacl-ba-full/SKILL.md:12–19` описывает ограничение packaged gateway; Skills-only контракт имеет другой путь. Не переносить ограничения полного плагина на Skills-only без проверки активной поставки и primitives. Исторический snapshot `tests/fixtures/graph-snapshots/project-alpha/ValidationReport.json:7–31` нельзя напрямую сравнивать по номерам L4/L5 с текущим validator без истории версий. `docs/retrospectives/nacl-postmortems-synthesis.md:9–13,64–75` описывает класс false PASS, но связь с каждым конкретным gate пока не доказана.

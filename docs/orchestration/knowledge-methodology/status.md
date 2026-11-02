@@ -78,6 +78,9 @@ R-n — действие: точная команда одной строкой 
 <!-- orch:journal -->
 | Дата | WP | Событие | Подтверждение |
 |------|----|---------|---------------|
+| 2026-11-02 12:17Z | WP-FRAMEWORK-01 | WP-01: собран сводный частичный отчёт; графовый baseline и часть критериев остаются открытыми | reports/WP-FRAMEWORK-01.md |
+| 2026-11-02 12:16Z | — | Подготовлены предварительные read-only отчёты BA и SA; зависимость WP-01 не закрыта | reports/WP-02-preliminary.md; reports/WP-03-preliminary.md |
+| 2026-11-02 12:16Z | WP-FRAMEWORK-01 | WP-01: создан манифест Git-кандидатов и hash черновиков; graph baseline NOT_VERIFIED | reports/WP-01-baseline-candidates.md; git ancestry/tree; TCP timeout |
 | 2026-11-02 12:15Z | WP-FRAMEWORK-01 | WP-01: построен проверяемый индекс 61 package и назначений по путям | reports/WP-01-package-index.md; scripts/codex-plugin-manifest.json |
 | 2026-11-02 12:15Z | WP-FRAMEWORK-01 | WP-01: убрана преждевременная формулировка о дневном периоде общей квоты | reports/WP-01-briefs-draft.md; independent review |
 | 2026-11-02 12:15Z | WP-FRAMEWORK-01 | WP-01: уточнено различие локального import и непроверенной серверной копии; DNS графа отвечает, TCP 443 timeout | reports/WP-01-graph-baseline-risks.md; socket connect timeout 4s |
