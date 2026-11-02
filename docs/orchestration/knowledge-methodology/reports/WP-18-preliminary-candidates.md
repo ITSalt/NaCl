@@ -12,6 +12,12 @@
 
 [Disposable Node probes](WP-10-js-dependency-trace.md) воспроизвели MODULE_NOT_FOUND для vendor и при разрешении пути, и при sandboxed запуске копии diagnose runner; контроль разрешения пути в init положительный. Свежая Skills-only сборка pinned 20fe прошла checker, но её diagnose runner воспроизвёл loader failure; модифицированный temp control с vendor дошёл до NOT_RUN для пустого проекта. Независимый исследователь повторил оба результата в отдельной sandboxed среде. Это уточняет evidence для closure, но не доказывает исход установленного skill или MCP.
 
+Дополнительные source-only кандидаты, все DEFER:
+
+- [Неизвестный статус зависимости](WP-04-preliminary.md): различать null/pending/done, сохраняя legacy semantics и claim/lease; происхождение null и назначение UNKNOWN.
+- [Полнота graph discovery](WP-09-preliminary.md): различать complete/partial/error и результаты каждой board, не запрещая осознанное частичное восстановление; live эффект UNKNOWN.
+- [Provenance Skills-only архива](WP-07-preliminary.md): связывать проверенный materialized snapshot с payload, сохраняя сборку без .git; внешний release gate и конкретный опубликованный artifact UNKNOWN.
+
 Отдельный candidate, дважды воспроизведённый в synthetic sandbox: [root conduct GOAL_PROOF](WP-14-preliminary.md) при одном verified state-файле для двух запланированных atoms возвращает GOAL_OK 1/1. Реальный state loss и доступность других gates неизвестны; возможная альтернатива — сопоставление точных ID плана и state, с controls для missing/extra/invalid. Это не рекомендация на изменение без дальнейшей проверки; DEFER.
 
 Отдельный candidate для дальнейшего challenge: [BA glossary → SA](WP-01-glossary-sa-trace.md) описывает подтверждаемый full rebuild, который удаляет все GlossaryTerm и не показывает восстановление SA-owned полей/внешних связей. Любая альтернатива должна сохранить разрешённый owner scope, различение омонимов и SA mapping; фактическая потеря не наблюдалась, категория DEFER.

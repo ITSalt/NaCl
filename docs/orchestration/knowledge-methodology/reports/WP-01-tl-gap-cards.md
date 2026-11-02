@@ -16,6 +16,12 @@ Root `nacl-tl-stubs/SKILL.md:412–426,452–459` при исчезновени�
 
 Proposed negative: связанный unresolved WARNING с shape-unvalidated без других блокеров, проследить итог и evidence; positive: проверенная форма и resolvedAt при соблюдении прочих gates. Частота, цена, runtime и фактический consumer UNKNOWN; DEFER, пробы не выполнялись.
 
+## TL-BASELINE-REVIEW — источник baseline
+
+Root `nacl-tl-dev-be/SKILL.md:162–169,221–231,256–260` и FE :187–194,274–282 сохраняют pre-test baseline в /tmp и описывают diff в result. Root review `nacl-tl-review/SKILL.md:558–577` приоритизирует --base, затем `.tl/tasks/UC###/baseline-failures-{be,fe}.json`, затем merge-base и описывает worktree по baseline_ref. Показанные dev steps не задают writer этого JSON; review не описывает извлечение Git ref из JSON или использование набора failures напрямую. Иные producers, explicit --base и merge-base возможны; последний не обязательно равен исходному рабочему состоянию. Runtime отказ не установлен.
+
+Proposed controls: pre-test dirty tree с отличием от merge-base и сохранённым /tmp baseline; отдельно JSON без ref. Positive: точный before/after snapshot либо failure set одного runner/environment с проверяемым read-back. Tests/worktree не запускались; цена, частота, фактический путь UNKNOWN, DEFER.
+
 ## TL-EXT-PLAN — external-contract gate
 
 Задача: не планировать работу по отсутствующему или пустому внешнему wire-контракту. Producer заявлен SA architect; consumer — Codex plan overlay codex-plugin-src/workflow-overlays/nacl-tl-plan/SKILL.md:21–30,35–40,52–81. Нет named graph query — BLOCKED; подтверждённый пользователем file-only список не доказывает полноту graph; отсутствующий файл или раздел — BLOCKED по умолчанию; допускается предусмотренная signed exception для каждой пары UC/contract по :73–86. TL sync проверяет wire evidence, но чтение именно этого файла им не доказано. Альтернатива: версионированный provider registry и runnable wire test, сохраняющие отказ при неизвестном и отметку о неполном graph; риск потери discovery и ответственности владельца. Negative: missing файл, пустой раздел, недоступный query, неподтверждённый список, устаревший контракт при зелёном локальном тесте. Positive: подтверждённый полный контракт. Цена/частота неизвестны.
