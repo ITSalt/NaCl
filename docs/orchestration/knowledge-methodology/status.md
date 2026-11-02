@@ -78,6 +78,7 @@ R-n — действие: точная команда одной строкой 
 <!-- orch:journal -->
 | Дата | WP | Событие | Подтверждение |
 |------|----|---------|---------------|
+| 2026-11-02 14:17Z | WP-FRAMEWORK-01 | WP-01: прослежены graph↔board маршруты и BA→SA coverage формулы; математические случаи статические, graph не исполнялся | reports/WP-01-board-direction-trace.md; reports/WP-01-handoff-coverage-trace.md |
 | 2026-11-02 14:15Z | WP-FRAMEWORK-01 | WP-01: проиндексированы ADR и methodology; отмечены исторические claims и source-level расхождения без runtime выводов | reports/WP-01-adr-methodology-inventory.md; reports/WP-01-docs-scope-inventory.md |
 | 2026-11-02 14:14Z | WP-FRAMEWORK-01 | WP-01: независимый challenge сохранил статус PARTIAL; добавлен scope inventory docs и ссылка на 6-критериальную матрицу | reports/WP-FRAMEWORK-01.md; reports/WP-01-docs-scope-inventory.md; reports/WP-01-acceptance-matrix.md |
 | 2026-11-02 14:13Z | WP-FRAMEWORK-01 | WP-01: обновлена сводка и исправлены source vs proposed outcomes в стыках и falsifiers; graph baseline отнесён к экспериментальным гейтам | reports/WP-FRAMEWORK-01.md; reports/WP-01-interface-chain-audit.md; reports/WP-01-acceptance-matrix.md |
