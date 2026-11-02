@@ -1,0 +1,9 @@
+# WP-16: локальный probe ограничения исходящей сети
+
+2026-11-02, macOS, `sandbox-exec` с дополнительной политикой deny `network-outbound`, allow только `(remote ip "localhost:<эпhemeral-port>")`. Это дополнительное ограничение процесса, без изменения конфигурации хоста или permissions. Политика `(remote ip "127.0.0.1:<port>")` не распарсилась (`host must be * or localhost`), поэтому использован `localhost`.
+
+1. Два локальных TCP listener на случайных портах. Дочерний процесс под политикой подключился к разрешённому port; подключение ко второму получило `PermissionError errno 1`. Проверены только эти loopback endpoints.
+2. Два loopback HTTP server: первый отвечал 302 на второй. Без OS ограничения Playwright route видел только первоначальный запрос, второй сервер получил 1 запрос. Под той же ограничивающей политикой headless Chromium получил navigation-failed, routeInvocations=1, второй сервер получил 0 запросов. Оба сервера закрыты. Внешний host не использовался.
+3. Временный Next dev server и отдельный Node/Chromium browser preflight запущены под одинаковой политикой с разрешением лишь выбранного loopback port 49532. Сервер Ready; browser preflight exit 0: upload page 200, две fixture cards, пять negative browser-origin requests перехвачены. Процессная группа только этого server остановлена. Это проверка совместимости данного setup, не A/B и не full acceptance.
+
+Ограничения: доказаны конкретные TCP/HTTP сценарии, но не все варианты macOS network/Mach/Unix IPC, DNS daemon, WebSocket и всех порождённых процессов; политика содержит `allow default` для других ресурсов и **не обеспечивает секретность скрытых тестов или Git history**. Точное поведение и наследование для будущих отдельных agent runtimes, а также OS-level egress для обоих arms нужно проверить отдельно. Не объявлять пилот blind/offline только по этому probe. Исторический graph baseline, модельный budget accounting и независимый полный harness остаются открыты.

@@ -7,7 +7,7 @@
 
 | Волна | Цель | Гейт | Статус |
 |-------|------|------|--------|
-| 0 | Карта и протокол | WP-01 | PLANNED |
+| 0 | Карта и протокол | WP-01 | IN_PROGRESS |
 | 1 | Области и Harness | WP-02–10,15 | PLANNED |
 | 2 | Стыки и измерения | WP-11–14,16 | PLANNED |
 | 3 | Оспаривание | WP-17 | PLANNED |
@@ -78,6 +78,24 @@ R-n — действие: точная команда одной строкой 
 <!-- orch:journal -->
 | Дата | WP | Событие | Подтверждение |
 |------|----|---------|---------------|
+| 2026-11-02 13:10Z | — | Волна 0 отражает начатый WP-01; гейт остаётся открытым | status.md: WP-FRAMEWORK-01 IN_PROGRESS |
+| 2026-11-02 13:10Z | — | Browser draft: 8/8 на synthetic control v8 при сетевом sandbox frontend и Chromium; A/B не запущен | reports/WP-16-fr014-browser-draft-check.md; control-browser-network-sandbox.log |
+| 2026-11-02 13:09Z | — | FR-014: историческая frontend suite 16 файлов/109 тестов прошла в изолированной копии с запрещённой исходящей сетью | reports/WP-16-fr014-env-check.md; sandboxed Vitest run |
+| 2026-11-02 13:09Z | — | FR-014: отдельный frontend type-check на baseline+shared и черновых тестах прошёл; build не проверялся | reports/WP-16-fr014-env-check.md; npm run type-check -- --pretty false --incremental false |
+| 2026-11-02 13:08Z | — | Browser draft: negative control не восстановленного scroll lock корректно дал FAIL | reports/WP-16-fr014-browser-draft-check.md |
+| 2026-11-02 13:08Z | — | WP-16: локальный API вернул threadUsage null; суммарный остаток и hard-stop для пилота не подтверждены | reports/WP-16-budget-observation.md; local app-server schema/account usage |
+| 2026-11-02 13:07Z | — | Browser draft: negative controls сломанного изображения и прозрачного overlay, полная матрица ещё не выполнена | reports/WP-16-fr014-browser-draft-check.md |
+| 2026-11-02 13:06Z | — | Review: enhancing hit target уточнён; текущий runtime не скрывает evaluator; полный blind pilot не готов | reports/WP-16-fr014-browser-draft-check.md; independent reviewer |
+| 2026-11-02 13:04Z | — | WP-16: synthetic path-isolation probe выявил canonical-path и pre-existing hardlink обход; blind isolation не доказана | reports/WP-16-file-isolation-probe.md |
+| 2026-11-02 13:04Z | — | WP-16: проверена дополнительная OS network policy на loopback redirect и временном Next/Chromium; blind isolation не доказана | reports/WP-16-network-sandbox-probe.md |
+| 2026-11-02 13:02Z | — | Browser draft: проверены eight cases на baseline и synthetic v8, ограничения oracle и redirect сохранены | reports/WP-16-fr014-browser-draft-check.md |
+| 2026-11-02 13:00Z | — | Проверен redirect escape локально: Playwright route увидел только исходный запрос; egress guard не принят | reports/WP-16-fr014-browser-preflight.md; две loopback HTTP службы, destinationHits=1 |
+| 2026-11-02 12:59Z | — | Browser draft: background/scroll и synthetic portal control; один затянувшийся run остановлен и не засчитан | reports/WP-16-fr014-browser-draft-check.md |
+| 2026-11-02 12:55Z | — | Browser draft: wheel zoom negative/positive synthetic controls, выявлена зависимость от scroll lock; touch не проверялся | reports/WP-16-fr014-browser-draft-check.md |
+| 2026-11-02 12:53Z | — | Browser draft v5: проверены delayed close/src и status precondition на baseline/control; полный oracle не готов | reports/WP-16-fr014-browser-draft-check.md |
+| 2026-11-02 12:51Z | — | Создан рабочий реестр кандидатов синтеза; WP-18 не принят и реализация не разрешена | reports/WP-18-synthesis-in-progress.md |
+| 2026-11-02 12:51Z | — | Browser draft v4: неоднозначные setup/network/pageerror классифицируются UNRESOLVED; injected case проверен | reports/WP-16-fr014-browser-draft-check.md |
+| 2026-11-02 12:50Z | — | Browser draft v3: injected чужой origin даёт INVALID_HARNESS; оставлены открытыми timing и проверка состояния enhancing | reports/WP-16-fr014-browser-draft-check.md |
 | 2026-11-02 12:49Z | — | FR-014: 5 browser draft cases проверены на историческом baseline и synthetic v4 control; полный harness не готов | reports/WP-16-fr014-browser-draft-check.md |
 | 2026-11-02 12:45Z | — | FR-014: черновой v3 из 6 jsdom проверок показал частичный baseline RED и synthetic stub 6/6; полноценная приёмка не готова | reports/WP-16-fr014-draft-test-check.md |
 | 2026-11-02 12:43Z | — | Challenge пилота: добавлены контроль порядка и caches; один pair не оценивает эффект порядка | reports/WP-16-pilot-plan-draft.md |
