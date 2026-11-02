@@ -79,6 +79,7 @@ R-n — действие: точная команда одной строкой 
 <!-- orch:journal -->
 | Дата | WP | Событие | Подтверждение |
 |------|----|---------|---------------|
+| 2026-11-02 17:42Z | WP-FRAMEWORK-01 | Сужена область BA flow migration до непустого IR; прослежен заявленный consumer remote claim status. | reports/WP-01-core-migration-cards.md; reports/WP-01-platform-consumer-trace.md |
 | 2026-11-02 17:41Z | WP-FRAMEWORK-01 | Сверены документированные пределы graphAdapter contract и результаты synthetic public MCP probes; deployment implementation остаётся UNKNOWN. | reports/WP-10-preliminary.md |
 | 2026-11-02 17:40Z | WP-FRAMEWORK-01 | Два независимых synthetic fake-adapter probes проверили final audit failure/replay и обработку BLOCKED return object в public MCP application; HTTP и реальный graph не вызывались. | reports/WP-10-preliminary.md; reports/WP-18-preliminary-candidates.md |
 | 2026-11-02 17:38Z | WP-FRAMEWORK-01 | Уточнены guard повторного SA detail и условный отказ финального audit после public MCP mutation. | reports/WP-01-sa-resume-detection.md; reports/WP-10-preliminary.md |
