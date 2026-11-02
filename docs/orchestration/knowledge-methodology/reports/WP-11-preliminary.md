@@ -1,5 +1,7 @@
 # WP-11: предварительное исследование стыка BA → SA
 
+[Передача BA attributes в SA](WP-11-attribute-propagation-trace.md) показывает различие полей в конкретных source paths; runtime UNKNOWN.
+
 [Контур BusinessRule → Requirement](WP-11-rule-requirement-trace.md) уточняет условия root BA и SA validators; runtime UNKNOWN.
 
 Предисследование: WP-01/02/03 не приняты. Снимок NaCl `20fe4c6a56482e85d3ea9a9ebaadb37206047e41`; граф/валидаторы не запускались. Цена и фактические вызовы unknown, категория DEFER.
