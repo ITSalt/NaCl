@@ -18,7 +18,7 @@
 
 [Выборка атомарных обязанностей SA-06](WP-01-sa06-atomic-sample.md) и [backup/restore 09.5](WP-01-graph095-atomic-sample.md) разворачивает две составные группы; дополнены [отдельными root queries SA](WP-01-sa06-root-queries-sample.md) и [трассой migration backup gate](WP-01-migration-backup-contract.md); остальные обязанности этих групп ещё требуют разбора.
 
-[Документация root](WP-01-root-docs-index.md) инвентаризирована по 29 tracked файлам без заявления полного прочтения. [GOAL proof](WP-01-goal-proof-sequence.md) содержит версионные текстовые противоречия; реальное зависание не наблюдалось. [Legacy recovery и graph doctor](WP-01-guides-setup-trace.md) включают независимо проверенный кандидат гонки ownership lock только по коду; фактическое параллельное выполнение не проверено. [QA → release](WP-01-qa-release-contract-trace.md) фиксирует заявленного в reference писателя evidence и остающийся непроверенным путь от результатов к reader.
+[Документация root](WP-01-root-docs-index.md) инвентаризирована по 29 tracked файлам без заявления полного прочтения. [GOAL proof](WP-01-goal-proof-sequence.md) содержит версионные текстовые противоречия; реальное зависание не наблюдалось. В [synthetic conduct fixture](WP-14-preliminary.md) root script вернул GOAL_OK при одном verified state-файле из двух запланированных; реальные план и потеря state не проверены. [Legacy recovery и graph doctor](WP-01-guides-setup-trace.md) включают независимо проверенный кандидат гонки ownership lock только по коду; фактическое параллельное выполнение не проверено. [QA → release](WP-01-qa-release-contract-trace.md) фиксирует заявленного в reference писателя evidence и остающийся непроверенным путь от результатов к reader.
 
 ## Корпус и rubric
 
