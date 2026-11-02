@@ -78,6 +78,8 @@ R-n — действие: точная команда одной строкой 
 <!-- orch:journal -->
 | Дата | WP | Событие | Подтверждение |
 |------|----|---------|---------------|
+| 2026-11-02 12:35Z | — | FR-014: установлены зависимости в отдельной временной frontend копии, smoke unit test 6/6; A/B не запускался | reports/WP-16-fr014-env-check.md; npm ci --ignore-scripts; npm test -- src/test/tokens.test.ts |
+| 2026-11-02 12:33Z | — | Уточнена точка входа FR-014 и необходимость browser harness; RED/GREEN не выполнялись | reports/WP-16-fr014-blind-design.md; ограниченное чтение baseline |
 | 2026-11-02 12:33Z | WP-FRAMEWORK-01 | WP-01: реестры групп механизмов включены в сводный отчёт; полнота не заявлена | reports/WP-FRAMEWORK-01.md; mechanism registries |
 | 2026-11-02 12:32Z | WP-FRAMEWORK-01 | WP-01: подготовлен реестр групп TL/platform с источниками, альтернативами и отрицательными случаями | reports/WP-01-mechanism-registry-tl-platform.md |
 | 2026-11-02 12:32Z | — | D-4 recorded | Прямое подтверждение владельца в чате 2026-11-02 |
