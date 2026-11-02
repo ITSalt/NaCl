@@ -1,6 +1,6 @@
 # WP-01: Analyst Tool graph → Markdown и граница пути
 
-Pinned NaCl 20fe4c6; две независимые проверки исходников. Сервер, graph, tests и A/B не запускались; фактическая запись, состояние graph, доступность API и права процесса UNKNOWN. Категория DEFER.
+Pinned NaCl 20fe4c6; две независимые проверки исходников. Production/реальный сервер и graph, существующий проект и A/B не запускались; ниже описаны контролируемые Fastify inject probes с synthetic driver. Состояние реального graph, доступность API и права процесса UNKNOWN. Категория DEFER.
 
 В `analyst-tool/server/src/render/markdown/{entity,uc,form}.ts` свойство `source_file` читается из соответствующего Neo4j node (entity :46–57, UC :64, Form :56). После проверки на отсутствие (entity :284–291, UC :400–407, Form :246–253) renderer вычисляет `path.resolve(projectRoot, source_file)`. Dispatcher `render/markdown/index.ts:41–75` передаёт результат, а зарегистрированный `/api/v1/render/markdown` (`server/src/index.ts:123–136`, `routes/render.ts:41–61`) выполняет mkdir и writeFile; в показанной цепочке проверки, что путь остался внутри projectRoot, нет.
 
@@ -8,4 +8,12 @@ Pinned NaCl 20fe4c6; две независимые проверки исходн
 
 `tests/markdown.test.ts:334–336,514–516,657–659` проверяет обычные resolve cases; проверка traversal board name в `skill-runner.test.ts:143–147` относится к другой ветви и не доказывает защиту graph source_file. Наличие этих tests не означает их выполнение здесь; иные guards вне исследованной цепочки не исключены.
 
-Альтернатива для будущего исследования — scope-aware разрешение путей с проверкой symlinks/realpath, preview/подтверждённым overwrite и read-back. Риски альтернативы: запрет легитимных внешних файлов, TOCTOU при одном prefix-check и изменение существующих контрактов. Proposed controls: traversal, absolute path, symlink наружу, существующий изменённый target и разрешённый относительный путь; ничего не выполнялось.
+## Disposable воспроизведение
+
+Координатор и независимый исследователь отдельно создали одноразовые копии `analyst-tool` из `git archive 20fe4c6`, скопировали уже имевшиеся локальные dependencies без npm install и проверили отсутствие symlinks, выходящих из temp. Node v24.13.1; локальные версии источника dependencies: fastify 4.29.1, tsx 4.21.0, neo4j-driver 5.27.0; соответствие установленного дерева pinned lockfile не проверялось. HOME/NACL_HOME/TMPDIR/project находились в temp. До каждого опыта sandbox-exec с запретом сети и записи вне temp отклонил canary записи в соседний temp-каталог и loopback connect 127.0.0.1:9 с EPERM/EACCES; эти canary подтверждают только конкретные операции.
+
+В копии импортирован реальный `renderRoutes`, graph заменён на fake driver с синтетическим `source_file`, HTTP выполнялся только через Fastify `inject`, без listen/socket. Координатор проверил entity, независимый исследователь — entity/uc/form: для каждого normal, `../`, absolute и symlink пути получили HTTP 200 и перезапись заранее созданного синтетического sentinel. Normal target был внутри temp project; остальные targets — вне project, но **внутри общего разрешённого temp sandbox**. В symlink case изменён его target. Оба temp дерева удалены.
+
+Это независимое воспроизведение поведения скопированного handler при конкретных synthetic records и локальных зависимостях, а не обращение к реальному Neo4j, существующему проекту или внешнему API. Оно не устанавливает, кто может изменять `source_file` или вызывать endpoint в конкретном deployment, и не подтверждает реальную эксплуатацию/потерю данных.
+
+Альтернатива для будущего исследования — scope-aware разрешение путей с проверкой symlinks/realpath, preview/подтверждённым overwrite и read-back. Риски альтернативы: запрет легитимных внешних файлов, TOCTOU при одном prefix-check и изменение существующих контрактов. Перечисленные traversal, absolute, symlink и normal controls выполнены только в disposable synthetic fixture выше; поведение альтернативы и пользовательский deployment не проверялись.
