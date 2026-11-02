@@ -6,7 +6,13 @@ Pinned NaCl 20fe4c6; две независимые проверки исходн
 
 Условный graph node с `../outside.md` или absolute source_file может разрешиться вне root, а существующий symlink внутри root — указать наружу; при достаточных правах процесса запись может создать или перезаписать файл. POST выбирает subtype/relatedId, а не задаёт source_file напрямую: влияние зависит от фактических graph properties, доступа к API и прав процесса. Config `server/src/config.ts:59–90` выбирает repoRoot из настроек/окружения/cwd и по умолчанию использует localhost; реальная конфигурация/exposure не проверялась. Ветка `services/skill-runner.ts:207–240` тоже пишет результат, но её доступность через HTTP в проверенном scope не установлена.
 
-`tests/markdown.test.ts:334–336,514–516,657–659` проверяет обычные resolve cases; проверка traversal board name в `skill-runner.test.ts:143–147` относится к другой ветви и не доказывает защиту graph source_file. Наличие этих tests не означает их выполнение здесь; иные guards вне исследованной цепочки не исключены.
+`analyst-tool/server/src/render/markdown/markdown.test.ts:334–336,514–516,657–659` проверяет обычные resolve cases; проверка traversal board name в `analyst-tool/server/src/services/skill-runner.test.ts:143–147` относится к другой ветви и не доказывает защиту graph source_file. Наличие этих tests не означает их выполнение здесь; иные guards вне исследованной цепочки не исключены.
+
+## Происхождение source_file
+
+Две source-only проверки `nacl-migrate-sa/scripts/{parse_sa.py,generate_sa_cypher.py,validate_sa_ir.py}` и adapters показывают: обычные adapters формируют source_file из пути прочитанного документа; при невозможности `resolved_path.relative_to(project)` они возвращают исходный путь, а не отказывают (`inline_table_v1_sa.py:140–142,199–211`, `frontmatter_v1_sa.py:134–135,225–237`). Чтение документа происходит до такого преобразования, поэтому symlink наружу — условный исследовательский сценарий, не обнаруженный факт в данных пользователя.
+
+Генератор :20–31,51–66,101–189 переносит `source_file` из SaIR в Cypher без собственной проверки confinement; SV8 `validate_sa_ir.py:245–259` проверяет заполненность для верхних коллекций, не существование/границы/symlink. При обходе validation отсутствующее поле по default становится пустой строкой и может заменить прежнее значение через ON MATCH. Это вывод по исходнику, не выполненная миграция и не доказательство возможности недоверенного пользователя подменить SaIR или вызвать endpoint.
 
 ## Disposable воспроизведение
 

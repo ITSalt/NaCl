@@ -79,6 +79,7 @@ R-n — действие: точная команда одной строкой 
 <!-- orch:journal -->
 | Дата | WP | Событие | Подтверждение |
 |------|----|---------|---------------|
+| 2026-11-02 16:36Z | WP-FRAMEWORK-01 | Уточнено происхождение SA source_file и повторно сверен Analyst sandbox evidence с источниками | reports/WP-01-analyst-render-path-boundary.md |
 | 2026-11-02 16:35Z | WP-FRAMEWORK-01 | В двух sandboxed disposable копиях воспроизведены graph source_file path traversal/absolute/symlink для Analyst render; реальные graph/API не использовались | reports/WP-01-analyst-render-path-boundary.md |
 | 2026-11-02 16:31Z | WP-FRAMEWORK-01 | Исследована условная граница source_file graph→Markdown Analyst Tool без вызова сервера | reports/WP-01-analyst-render-path-boundary.md |
 | 2026-11-02 16:27Z | WP-FRAMEWORK-01 | Исследовано ограничение directed staleness пятью DEPENDS_ON рёбрами и уточнены source scopes | reports/WP-01-sa-stale-depth.md |
