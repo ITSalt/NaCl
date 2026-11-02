@@ -79,6 +79,7 @@ R-n — действие: точная команда одной строкой 
 <!-- orch:journal -->
 | Дата | WP | Событие | Подтверждение |
 |------|----|---------|---------------|
+| 2026-11-02 15:21Z | WP-FRAMEWORK-01 | Сверены 196 root resources и 34 shared files, включая 14 transformations в памяти | reports/WP-01-root-shared-resource-map.md |
 | 2026-11-02 15:19Z | WP-FRAMEWORK-01 | Независимо сверены legacy workflow non-SKILL resources и manifest transform на закреплённом снимке | reports/WP-01-legacy-resource-map.md |
 | 2026-11-02 15:16Z | WP-FRAMEWORK-01 | Зафиксирован вопрос об атрибуции D-4; пилот не запущен, общее исследование продолжалось | reports/WP-16-budget-observation.md |
 | 2026-11-02 15:16Z | — | P-2 opened for owner | reports/WP-16-budget-observation.md |
