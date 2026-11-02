@@ -78,6 +78,9 @@ R-n — действие: точная команда одной строкой 
 <!-- orch:journal -->
 | Дата | WP | Событие | Подтверждение |
 |------|----|---------|---------------|
+| 2026-11-02 12:18Z | — | Подготовлено read-only исследование TL planning и управления; WP-01 открыт | reports/WP-04-preliminary.md |
+| 2026-11-02 12:18Z | — | Подготовлено read-only исследование review и QA; WP-01 не закрыт | reports/WP-06-preliminary.md |
+| 2026-11-02 12:17Z | — | Подготовлено read-only исследование разработки и фиксов; dependency WP-01 открыта | reports/WP-05-preliminary.md |
 | 2026-11-02 12:17Z | WP-FRAMEWORK-01 | WP-01: собран сводный частичный отчёт; графовый baseline и часть критериев остаются открытыми | reports/WP-FRAMEWORK-01.md |
 | 2026-11-02 12:16Z | — | Подготовлены предварительные read-only отчёты BA и SA; зависимость WP-01 не закрыта | reports/WP-02-preliminary.md; reports/WP-03-preliminary.md |
 | 2026-11-02 12:16Z | WP-FRAMEWORK-01 | WP-01: создан манифест Git-кандидатов и hash черновиков; graph baseline NOT_VERIFIED | reports/WP-01-baseline-candidates.md; git ancestry/tree; TCP timeout |
