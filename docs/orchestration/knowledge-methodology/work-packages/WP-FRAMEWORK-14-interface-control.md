@@ -7,7 +7,7 @@
 | Снимок | `20fe4c6a56482e85d3ea9a9ebaadb37206047e41` |
 | Режим | read-only pepper_scout; выполнение исследования после plan |
 | Модель / усилие | наследовать пользовательские настройки; не переопределять |
-| Разрешённые пути чтения | nacl-goal/; nacl-migrate*/; nacl-tl-conductor/; nacl-tl-full/; nacl-tl-reconcile/; nacl-tl-sync/; nacl-tl-verify-code/; runtime/ |
+| Разрешённые пути чтения | nacl-goal/; nacl-migrate*/; nacl-tl-conductor/; nacl-tl-full/; nacl-tl-reconcile/; nacl-tl-sync/; nacl-tl-verify-code/; codex-plugin-src/package/runtime/; services/nacl-mcp/ |
 | Разрешённые изменения исходников | нет |
 | Артефакт координатора | `reports/WP-FRAMEWORK-14.md` |
 | Общие пути / замки / миграции / БД / порты | нет; в program workspace пишет только координатор |
@@ -26,7 +26,7 @@
 
 ## 1. Факты
 
-Основание: `reports/planning-evidence.md`. Это предварительная разведка. Конкретные утверждения подтвердить по исходникам с SHA и file:line; готового вывода об избыточности нет. Область: nacl-goal/; nacl-migrate*/; nacl-tl-conductor/; nacl-tl-full/; nacl-tl-reconcile/; nacl-tl-sync/; nacl-tl-verify-code/; runtime/.
+Основание: `reports/planning-evidence.md`. Это предварительная разведка. Конкретные утверждения подтвердить по исходникам с SHA и file:line; готового вывода об избыточности нет. Область: nacl-goal/; nacl-migrate*/; nacl-tl-conductor/; nacl-tl-full/; nacl-tl-reconcile/; nacl-tl-sync/; nacl-tl-verify-code/; codex-plugin-src/package/runtime/; services/nacl-mcp/.
 
 ## 2. Объём
 

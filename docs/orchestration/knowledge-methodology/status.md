@@ -78,6 +78,10 @@ R-n — действие: точная команда одной строкой 
 <!-- orch:journal -->
 | Дата | WP | Событие | Подтверждение |
 |------|----|---------|---------------|
+| 2026-11-02 12:12Z | WP-FRAMEWORK-01 | WP-01: уточнены пути runtime для WP-14 и ответственность за sync evidence в WP-08 | reports/WP-01-coverage-check.md; WP-08 и WP-14 |
+| 2026-11-02 12:12Z | WP-FRAMEWORK-01 | WP-01: проверено назначение 61 package и выделен вопрос владельца sync evidence внутри плана | reports/WP-01-coverage-check.md |
+| 2026-11-02 12:11Z | WP-FRAMEWORK-01 | WP-01: проверено происхождение требований FR-030/041 и recovery fixture | reports/WP-01-briefs-draft.md; historical git snapshots |
+| 2026-11-02 12:11Z | WP-FRAMEWORK-01 | WP-01: уточнены исходные UC и конфликты требований по OTP и квотам; критерии не заморожены | reports/WP-01-briefs-draft.md; baseline UC020, UC030, subscription.service.ts |
 | 2026-11-02 12:11Z | WP-FRAMEWORK-01 | WP-01: подтверждено текстовое противоречие read canary в установленном Skills-only; live поведение не проверено | reports/WP-01-skills-only-canary.md |
 | 2026-11-02 12:10Z | WP-FRAMEWORK-01 | Уточнено наблюдение обычной автономии: websocket доступен; cwd текущего потока не соответствует координатору; claim не выполнялся | reports/autonomy-observation-2026-11-02.md |
 | 2026-11-02 12:10Z | WP-FRAMEWORK-01 | WP-01: черновые одинаковые brief и acceptance для шести кейсов; уточнено преобразование Skills-only | reports/WP-01-briefs-draft.md; scripts/build-codex-skills-only.mjs:179–186 |
