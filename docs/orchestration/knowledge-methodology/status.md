@@ -78,6 +78,7 @@ R-n — действие: точная команда одной строкой 
 <!-- orch:journal -->
 | Дата | WP | Событие | Подтверждение |
 |------|----|---------|---------------|
+| 2026-11-02 12:45Z | — | FR-014: черновой v3 из 6 jsdom проверок показал частичный baseline RED и synthetic stub 6/6; полноценная приёмка не готова | reports/WP-16-fr014-draft-test-check.md |
 | 2026-11-02 12:43Z | — | Challenge пилота: добавлены контроль порядка и caches; один pair не оценивает эффект порядка | reports/WP-16-pilot-plan-draft.md |
 | 2026-11-02 12:43Z | — | Browser preflight: исправлен origin routing, блокированы service workers, проверены пять отрицательных URL; окно и server egress ограничены | reports/WP-16-fr014-browser-preflight.md |
 | 2026-11-02 12:42Z | — | Обновлена хронология blind design после появления предварительных fixtures и узких тестов | reports/WP-16-fr014-blind-design.md |
