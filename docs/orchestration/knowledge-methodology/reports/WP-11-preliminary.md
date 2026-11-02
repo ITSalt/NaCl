@@ -6,6 +6,8 @@
 
 [Glossary → SA](WP-01-glossary-sa-trace.md) исследован как source-only стык с условиями full rebuild и различием edges.
 
+**BA role mapping → UC actor (root, source-only).** `nacl-sa-roles/SKILL.md:565–584` предлагает отсутствующие UC→SystemRole пары через BA step/role и MAPPED_TO, с подтверждением; в MODIFY :652–666,707–724 удаление MAPPED_TO и ACTOR — отдельные операции. После подтверждённого remap SR1→SR2 старый ACTOR SR1 условно может сохраниться, а infer предложит SR2. SR1 может быть обоснован другой BA ролью или прямым пользовательским решением, поэтому нельзя автоматически считать его лишним. Proposed controls: remap с независимым вторым основанием и без него, явный provenance/read-back; graph, authorization и runtime не проверены. Codex leaf не воспроизводит все root Cypher в указанных фрагментах, active route UNKNOWN; DEFER.
+
 [Передача BA attributes в SA](WP-11-attribute-propagation-trace.md) показывает различие полей в конкретных source paths; runtime UNKNOWN.
 
 [Контур BusinessRule → Requirement](WP-11-rule-requirement-trace.md) уточняет условия root BA и SA validators; runtime UNKNOWN.

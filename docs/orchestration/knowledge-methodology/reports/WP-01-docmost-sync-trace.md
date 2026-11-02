@@ -1,5 +1,7 @@
 # WP-01: Docmost diff и частичные результаты
 
+Дополнение к rebuild: `docmost-sync/src/modes/rebuild-manifest.ts:17–49,65–72` сопоставляет remote страницы по нормализованному title и сохраняет локальный contentHash; при коллизии поздний Map entry заменяет ранний без проверки parent/body. Следующий `core/differ.ts:18–30` при прежних local bytes может дать SKIP без remote-body comparison; после изменения local файла используется сохранённый pageId для update (`modes/apply.ts:34–52`, `core/publisher.ts:58–70`). Это условная цепь, не наблюдавшаяся коллизия или реальная запись. Proposed controls: fake remote с одинаковыми title и различными parent/body, rebuild → unchanged apply → changed apply; positive — подтверждённые identity и remote content. Внешний API не запускался.
+
 Pinned NaCl 20fe4c6. Source-only; никаких API-вызовов, sync или тестов. Условные пути кода не означают наблюдённого инцидента.
 
 - `docmost-sync/src/core/scanner.ts:13–45,62–79`, `core/manifest.ts:10–16`, `core/differ.ts:18–45`: diff сопоставляет local files с последним локальным manifest, не с текущим remote body. Отсутствие записи в scan даёт warning `deleted_locally`; это может означать физическое удаление, пустой пропущенный файл или ошибку чтения каталога, которая возвращает пустой список и влияет на diff.

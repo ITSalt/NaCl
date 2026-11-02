@@ -79,6 +79,7 @@ R-n — действие: точная команда одной строкой 
 <!-- orch:journal -->
 | Дата | WP | Событие | Подтверждение |
 |------|----|---------|---------------|
+| 2026-11-02 17:04Z | WP-FRAMEWORK-01 | Уточнены условные цепи role remap → actor и Docmost manifest → SKIP/update; runtime и API не запускались. | reports/WP-11-preliminary.md; reports/WP-01-docmost-sync-trace.md |
 | 2026-11-02 17:03Z | WP-FRAMEWORK-01 | Уточнены границы durable marker в public MCP fixture и exact-SHA consumer clean-checkout evidence. | reports/WP-10-preliminary.md; reports/WP-01-tl-consumer-trace-part2.md |
 | 2026-11-02 17:01Z | WP-FRAMEWORK-01 | Уточнены root permissions reader и условная неполнота Analyst batch discovery; обе трассы source-only. | reports/WP-01-sa-consumer-trace.md; reports/WP-09-preliminary.md |
 | 2026-11-02 17:00Z | WP-FRAMEWORK-01 | Уточнены deferred stub goal, границы source-sha и условия timestamp/fallback incremental publish без runtime проверки. | reports/WP-08-preliminary.md; reports/WP-07-preliminary.md; reports/WP-01-publish-render-trace.md |
