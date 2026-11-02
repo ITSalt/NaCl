@@ -78,6 +78,7 @@ R-n — действие: точная команда одной строкой 
 <!-- orch:journal -->
 | Дата | WP | Событие | Подтверждение |
 |------|----|---------|---------------|
+| 2026-11-02 13:39Z | WP-FRAMEWORK-01 | WP-01: в общий draft FR-014 добавлен исторический AC-11, уточнены FR-029/BUG-1/FR-030; новый hash briefs зафиксирован | reports/WP-01-fr014-acceptance-matrix.md; reports/WP-01-other-case-matrices.md; reports/WP-01-baseline-candidates.md |
 | 2026-11-02 13:37Z | WP-FRAMEWORK-01 | WP-01: уточнена готовность корпуса и подготовлена матрица 11 AC FR-014; hash изменённого черновика briefs сохранён отдельно | reports/WP-01-corpus-readiness.md; reports/WP-01-fr014-acceptance-matrix.md; reports/WP-01-baseline-candidates.md |
 | 2026-11-02 13:36Z | WP-FRAMEWORK-01 | WP-01: независимая сверка уточнила ограничения CI; составлена матрица готовности шести кейсов без запуска A/B | reports/WP-01-ci-package-cards.md; reports/WP-01-corpus-readiness.md |
 | 2026-11-02 13:35Z | WP-FRAMEWORK-01 | WP-01: уточнены graph backup/status и tracker по независимому review; добавлена карта CI и сборки | reports/WP-01-graph-extra-cards.md; reports/WP-01-analyst-tracker-cards.md; reports/WP-01-ci-package-cards.md |

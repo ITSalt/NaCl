@@ -6,7 +6,7 @@
 |---|---|---|
 | AC-1 enhanced открывает нужное фото | Vitest v3 dialog/src, browser open/geometry и отдельный fixture pixel | fullscreen, нужный элемент среди нескольких, crop/overlay; role и src — экспериментальные селекторы, иной UI не означает дефект |
 | AC-2 error открывает оригинал | отдельного случая в текущих draft нет | добавить одинаковое требование в полный brief и fixture; проверить оригинал без фиктивной enhanced версии |
-| AC-3 uploading/enhancing не открываются | synthetic temp и enhancing; browser наблюдение 500 мс | настоящий upload, устойчивое состояние, hit target и согласованный deadline |
+| AC-3 uploading/enhancing не открываются | synthetic temp uploaded как proxy и enhancing; browser наблюдение enhancing 500 мс; реальное uploading не проверено | настоящий upload, устойчивое состояние, hit target и согласованный deadline |
 | AC-4 pinch 1–3× | CDP события и synthetic control по относительной bbox | повторная доставка/target, clamp сверх границ, абсолютный масштаб, viewport, вертикаль, cancel и устройство |
 | AC-5 wheel zoom 1–3× | draft bbox и synthetic wheel/scroll control | объективная метрика и false-pass controls, состояние и тайминги |
 | AC-6 кнопка X | draft close и actionability после close | role/label, deadline, отсутствие перехвата в UI |
@@ -16,6 +16,6 @@
 | AC-10 фон не прокручивается | synthetic scroll lock и восстановление | scrollable страница, до/во время/после, nested/touch; сохранение позиции — отдельный вопрос |
 | AC-11 карточные delete и toggle работают без viewer | отдельного полного теста нет | реальная карточка, контролируемый API, правильный photo ID, disabled/processing scope |
 
-Scope FR также указывает frontend-only и отсутствие новых API/domain/навигации и внешних зависимостей. User brief дополнительно явно упоминает работу карточных кнопок и восстановление scroll. До сравнения общий brief, наблюдаемость и severity должны совпадать у обеих arm; затем нужны независимый закрытый oracle, hash, negative/positive controls и технически подтверждённая изоляция.
+Scope FR также указывает frontend-only и отсутствие новых API/domain/навигации и внешних зависимостей. Исторический AC-11 требует работу карточных кнопок; они добавлены в draft одинакового brief после независимой сверки; draft brief отдельно требует восстановление scroll после close, но это не показано в историческом AC-10. До сравнения общий brief, наблюдаемость и severity должны совпадать у обеих arm; затем нужны независимый закрытый oracle, hash, negative/positive controls и технически подтверждённая изоляция.
 
-Baseline 7 FAIL в одном раннем runner связаны с отсутствием конкретного role=dialog, enhancing PASS; это не автоматически подтверждённые продуктовые defects. Полный 8/8 был на специально построенном synthetic control, более поздние pixel/pinch версии проверялись выборочно. Ни один из этих результатов не является full product acceptance или A/B.
+Baseline 7 FAIL в одном раннем runner связаны с отсутствием конкретного role=dialog, enhancing PASS; это не автоматически подтверждённые продуктовые defects. Все восемь тогдашних draft cases прошли на специально построенном synthetic v8 control, более поздние pixel/pinch версии проверялись выборочно. Ни один из этих результатов не является full product acceptance или A/B.
