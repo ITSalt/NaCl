@@ -4,7 +4,7 @@ Read-only сверка двух исследователей со снимком
 
 ## BA и SA: root contracts
 
-- Runtime contract очередей и долгих операций: FSM, границы транзакций, блокировки, retry, races, recovery и идемпотентность. Потребители TL plan/dev/QA; тестировать crash/restart и cancel-vs-fail. Heuristic Q1–Q5 требует подтверждения. Источник nacl-sa-uc/SKILL.md:803–850.
+- Runtime contract очередей и долгих операций: FSM, границы транзакций, блокировки, retry, races, recovery и идемпотентность. Возможные downstream потребители TL требуют отдельной проверки; тестировать crash/restart и cancel-vs-fail. Heuristic Q1–Q5 требует подтверждения. Источник nacl-sa-uc/SKILL.md:803–850.
 - UI state-machine: состояния, переходы и эффекты, scoped validation и признак устаревания; потребитель SA validation и TL replan. Проверять dead-end и неоднозначные переходы. Источники nacl-sa-ui/SKILL.md:824–850,1133–1162; nacl-sa-validate/SKILL.md:1330–1336,1462–1496.
 - Behavior slices и impact links: статическая связность не доказывает исполнение тестов. Проверять существующую связь при неисполненном тесте и opt-in пустой слой. Источники nacl-sa-uc/SKILL.md:1116–1124; nacl-sa-validate/SKILL.md:1587–1595,1659–1662.
 - Error taxonomy и resilience: разделение общих и UC-scoped объектов, владельцы и cache policy; проверять stale cache и fallback. Пустой opt-in слой не доказывает покрытие. Источники nacl-sa-uc/SKILL.md:1374–1402,1625–1633; nacl-sa-validate/SKILL.md:1757–1765,1963–1971.
@@ -22,5 +22,9 @@ Workflow задаёт ограничения числа шагов и ветве
 - Sync требует сопоставления FE call-site с BE route, определённых форм evidence и условий исключений. Источник skills-for-codex/nacl-tl-sync/SKILL.md:19–30,40–85.
 - Ship включает branch/base guard, tests до push и downstream tracker; exact-SHA attestation само по себе не замещает эти обязанности. Источник nacl-tl-ship/SKILL.md:47–73.
 - Release имеет strict-only exceptions и разные блокировки skipped PR/CI и drift/repair. Источник nacl-tl-release/SKILL.md:143–153,162–174.
+
+Дополнительная сверка QA: буквальная формула root nacl-tl-qa/SKILL.md:73–85 и repo Codex skills-for-codex/nacl-tl-qa/SKILL.md:36–48 одинакова: обязательный NOT_RUN без исключения присваивает aggregate UNVERIFIED даже при FAILED или BLOCKED другой стадии. Таблица root :654–668 одновременно описывает FAILED при наличии любой FAILED стадии; это текстовое противоречие, не установленное runtime-поведение. Индивидуальные статусы сохраняются по контракту.
+
+Дополнительная сверка runtime contract: root nacl-sa-uc/SKILL.md:812–850 и repo Codex skills-for-codex/nacl-sa-uc/SKILL.md:333–366 описывают те же пять эвристик и требуют подтверждения перед блокировкой. В Q5 root учитывает имя или описание зависимого UC, projection упоминает имя; root явно записывает not_required при необязательности, в projection SKILL эта строка не найдена. Ссылочный Cypher, установленная сборка и runtime не проверены.
 
 Root, overlay и установленная проекция не взаимозаменяемы; соответствие остальных ссылок, поведение и альтернативы нужно проверить до решения об изменении методологии. Реестры остаются предварительными, WP-01 не принят.

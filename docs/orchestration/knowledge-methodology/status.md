@@ -78,6 +78,7 @@ R-n — действие: точная команда одной строкой 
 <!-- orch:journal -->
 | Дата | WP | Событие | Подтверждение |
 |------|----|---------|---------------|
+| 2026-11-02 13:21Z | WP-FRAMEWORK-01 | WP-01: сверены root/Codex тексты QA aggregate и runtime contract; найдены текстовые расхождения без вывода о runtime | reports/WP-01-registry-gap-review.md |
 | 2026-11-02 13:20Z | WP-FRAMEWORK-01 | WP-01: read-only сверка выявила дополнительные обязанности BA/SA и TL; часть источников проверена координатором | reports/WP-01-registry-gap-review.md |
 | 2026-11-02 13:19Z | — | Независимый review уточнил ограничения synthetic pinch и риска ложных FAIL | reports/WP-16-fr014-browser-draft-check.md |
 | 2026-11-02 13:18Z | — | Browser draft: повторный pinch различил синтетические control с ошибкой и без; физическое устройство и blind isolation не проверены | reports/WP-16-fr014-browser-draft-check.md |
