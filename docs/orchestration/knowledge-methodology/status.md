@@ -79,6 +79,7 @@ R-n — действие: точная команда одной строкой 
 <!-- orch:journal -->
 | Дата | WP | Событие | Подтверждение |
 |------|----|---------|---------------|
+| 2026-11-02 16:21Z | WP-FRAMEWORK-01 | Обновлён предварительный synthesis по фактическому fresh bundle scan при checker VERIFIED | reports/WP-18-preliminary-candidates.md |
 | 2026-11-02 16:20Z | WP-FRAMEWORK-01 | Независимый fresh sandboxed build 20fe подтвердил 22 missing literal targets при checker VERIFIED | reports/WP-10-literal-references-checker.md |
 | 2026-11-02 16:19Z | WP-FRAMEWORK-01 | Независимо изучена область существующих diagnose tests: источник и nacl-init, не свежая diagnose closure | reports/WP-10-js-dependency-trace.md |
 | 2026-11-02 16:18Z | WP-FRAMEWORK-01 | Уточнены literal detail_status readers и BA HandoffPackage writer boundary | reports/WP-01-sa-resume-detection.md |
