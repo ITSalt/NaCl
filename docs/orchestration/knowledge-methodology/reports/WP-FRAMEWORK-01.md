@@ -6,7 +6,7 @@
 
 [Индекс 61 root package](WP-01-package-index.md) даёт source path → тематический WP и описание; [проверка покрытия](WP-01-coverage-check.md) отмечает пересечения и границы. 61 — знаменатель упаковки, не количество независимых обязанностей. [Сверки BA/SA](WP-01-ba-sa-package-coverage.md) и [TL](WP-01-tl-package-coverage.md) показывают package-level покрытие и пробелы; отдельно проверен [provenance SA projections](WP-01-sa-projection-provenance.md). Дополнительные области CI, graph-infra, analyst-tool и tracker CLI — [платформа](WP-01-platform-inventory.md); source/overlay/generated следует сопоставлять, а не суммировать. Вложенный частный `meta/` исключён из SHA NaCl; отдельное исследование не выполнялось.
 
-Заявленные рёбра, требующие сверки активных Codex leaf и реальных вызовов: BA context→process→workflow→entities/roles/glossary/rules→validate→handoff (root `nacl-ba-full/SKILL.md:64–99`); SA validate→finalize→optional publish→optional TL plan (`nacl-sa-full/SKILL.md:99–117`); запрос→TL plan→TL full→staging (`nacl-tl-conductor/SKILL.md:54–75`); pre-ship QA отдельно от post-ship verification (`nacl-tl-verify/SKILL.md:50–76`). Их нельзя выдавать за наблюдение runtime.
+Заявленные рёбра, требующие сверки активных Codex leaf и реальных вызовов: BA context→process→workflow→entities→roles→glossary→rules→validate→handoff (root `nacl-ba-full/SKILL.md:64–99`); SA validate→finalize→optional publish→optional TL plan (`nacl-sa-full/SKILL.md:99–117`); запрос→TL plan→TL full→staging (`nacl-tl-conductor/SKILL.md:54–75`); pre-ship QA отдельно от post-ship verification (`nacl-tl-verify/SKILL.md:50–76`). Их нельзя выдавать за наблюдение runtime.
 
 ## Механизмы и отрицательные случаи
 

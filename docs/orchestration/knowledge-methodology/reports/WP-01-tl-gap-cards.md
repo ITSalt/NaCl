@@ -8,7 +8,13 @@ NaCl SHA 20fe4c6a56482e85d3ea9a9ebaadb37206047e41. Это текстовые к�
 
 Root `nacl-tl-docs/SKILL.md:307–346` после проверок и commit описывает локальный status.json с `status=done`; `nacl-tl-full/SKILL.md:588–623` затем агрегирует результат и пишет общий `t.status` и evidence в graph. Resume query :806–818 исключает done/failed и возвращает шесть phase_* без отдельного phase_docs; :820–842 говорит docs if not done. Общий graph status done сигнализирует полное завершение после aggregation, но показанные поля отдельно не идентифицируют завершение docs в окне после commit до aggregation или при оставшемся verified-pending. Возможны другие источники информации; повтор/пропуск фазы не наблюдались. Root only, Codex leaf имеет иной контракт.
 
-Proposed negative: docs и commit завершены, общий graph status ещё не обновлён, затем graph-only resume; отдельно отсутствующие/failed docs или commit. Positive: aggregation записана и полный статус согласован. Перед выбором изменения требуется определить источник, freshness и recovery, сохранив проверку commit и dual-write/reconciliation. Цена, частота и фактическое поведение UNKNOWN; DEFER, пробы не запускались.
+Proposed negative: в remote graph-only mode phase_qa=done, docs имеет Step 9 PASS или допустимый подтверждённый PARTIAL и успешный commit, общий graph status ещё не done/failed, затем resume; отдельно отсутствующие/failed docs или commit. Positive: после aggregation graph status done исключается из incomplete query; runtime-проверки локального JSON это не доказывает. Перед выбором изменения требуется определить источник, freshness и recovery, сохранив проверку commit и dual-write/reconciliation. Цена, частота и фактическое поведение UNKNOWN; DEFER, пробы не запускались.
+
+## TL-STUB-SHAPE — непроверенная форма и review (root)
+
+Root `nacl-tl-stubs/SKILL.md:412–426,452–459` при исчезновении ранее зарегистрированного stub без sample сохраняет `resolvedAt:null`, `shape_validation_blocked:true` и headline UNVERIFIED; WARNING — пример возможной severity, не обязательная классификация всех таких случаев. Root review `nacl-tl-review/SKILL.md:363–381` читает task-filtered registry и для 1–3 WARNING предусматривает FLAG/proceed, не показывая в таблице отдельного правила для shape flag или наследования headline. Это неоднозначность указанного стыка, а не доказанный APPROVED/false PASS: прочие правила и gates могут влиять на исход. Отличный pre-release `--final` блокирует любой unresolved CRITICAL/WARNING (`nacl-tl-stubs/SKILL.md:549–554`), но не автоматически каждую иную severity.
+
+Proposed negative: связанный unresolved WARNING с shape-unvalidated без других блокеров, проследить итог и evidence; positive: проверенная форма и resolvedAt при соблюдении прочих gates. Частота, цена, runtime и фактический consumer UNKNOWN; DEFER, пробы не выполнялись.
 
 ## TL-EXT-PLAN — external-contract gate
 
