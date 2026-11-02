@@ -1,0 +1,34 @@
+{
+  "sessions": {},
+  "outbox": {},
+  "instances": {},
+  "assignments": {},
+  "launches": {},
+  "revision": 2,
+  "generation": 1,
+  "autonomy": {
+    "enabled": true,
+    "session_reuse": "auto",
+    "interval_seconds": 600,
+    "max_parallel_sessions": 2
+  },
+  "version": 2,
+  "coordinator": {
+    "thread_id": "01a19c14-8fb2-7d52-a56b-5c82bffa88c4",
+    "generation": 1,
+    "process": {
+      "host": "Maxs-Mac-mini.local",
+      "pid": 59672,
+      "started": "1793617883.336643"
+    },
+    "identity": {
+      "id": "01a19c14-8fb2-7d52-a56b-5c82bffa88c4",
+      "createdAt": 1793619956,
+      "model": "gpt-6.1-terra",
+      "reasoningEffort": "high"
+    },
+    "evidence": "CODEX_THREAD_ID текущего хода совпадает с active thread session discover на сокете daemon; процесс daemon 59672 — родитель shell инструмента",
+    "released": false,
+    "lease_until": 1793627578.4793768
+  }
+}

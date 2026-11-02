@@ -2,6 +2,7 @@
 
 | Поле | Значение |
 |------|----------|
+| Execution | research |
 | Поток | framework / исследование ba |
 | Репозиторий чтения | `/Users/maxnikitin/projects/NaCl` |
 | Снимок | `20fe4c6a56482e85d3ea9a9ebaadb37206047e41` |
