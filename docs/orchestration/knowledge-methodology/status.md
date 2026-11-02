@@ -26,6 +26,7 @@ CANCELLED (причина).
 | [WP-FRAMEWORK-07](work-packages/WP-FRAMEWORK-07-delivery.md) | framework | Поставка, публикация и эксплуатационная документация | DRAFT | knowledge-methodology-framework | — | 2026-11-02 |
 | [WP-FRAMEWORK-08](work-packages/WP-FRAMEWORK-08-management.md) | framework | Цели и восстановление фактического состояния | DRAFT | knowledge-methodology-framework | — | 2026-11-02 |
 | [WP-FRAMEWORK-09](work-packages/WP-FRAMEWORK-09-graph.md) | framework | Данные, граф и синхронизация | DRAFT | knowledge-methodology-framework | — | 2026-11-02 |
+| [WP-FRAMEWORK-10](work-packages/WP-FRAMEWORK-10-platform.md) | framework | Адаптеры, runtime и каналы поставки | DRAFT | knowledge-methodology-framework | — | 2026-11-02 |
 
 ## Ждёт владельца
 
@@ -64,6 +65,7 @@ R-n — действие: точная команда одной строкой 
 <!-- orch:journal -->
 | Дата | WP | Событие | Подтверждение |
 |------|----|---------|---------------|
+| 2026-11-02 11:37Z | WP-FRAMEWORK-10 | WP-FRAMEWORK-10 created (DRAFT) | work-packages/WP-FRAMEWORK-10-platform.md |
 | 2026-11-02 11:37Z | WP-FRAMEWORK-09 | WP-FRAMEWORK-09 created (DRAFT) | work-packages/WP-FRAMEWORK-09-graph.md |
 | 2026-11-02 11:37Z | WP-FRAMEWORK-08 | WP-FRAMEWORK-08 created (DRAFT) | work-packages/WP-FRAMEWORK-08-management.md |
 | 2026-11-02 11:37Z | WP-FRAMEWORK-07 | WP-FRAMEWORK-07 created (DRAFT) | work-packages/WP-FRAMEWORK-07-delivery.md |
