@@ -79,6 +79,7 @@ R-n — действие: точная команда одной строкой 
 <!-- orch:journal -->
 | Дата | WP | Событие | Подтверждение |
 |------|----|---------|---------------|
+| 2026-11-02 15:19Z | WP-FRAMEWORK-01 | Независимо сверены legacy workflow non-SKILL resources и manifest transform на закреплённом снимке | reports/WP-01-legacy-resource-map.md |
 | 2026-11-02 15:16Z | WP-FRAMEWORK-01 | Зафиксирован вопрос об атрибуции D-4; пилот не запущен, общее исследование продолжалось | reports/WP-16-budget-observation.md |
 | 2026-11-02 15:16Z | — | P-2 opened for owner | reports/WP-16-budget-observation.md |
 | 2026-11-02 15:16Z | WP-FRAMEWORK-01 | Проверены ограничения предварительных рекомендаций и уточнены обязательные installed resources; граница бюджета D-4 остаётся неустановленной | reports/WP-16-budget-observation.md |
