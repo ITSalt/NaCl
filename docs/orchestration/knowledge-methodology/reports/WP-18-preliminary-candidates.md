@@ -1,6 +1,6 @@
 # WP-18 предварительно: кандидаты для дальнейшей проверки
 
-Это разведка по предварительным, не принятым отчётам; не принятые рекомендации и не закрытие WP-01–17. Порядок отражает экспертный риск для дальнейшего исследования, а не измеренную severity или частоту. Все кандидаты DEFER; цена, эффект и runtime UNKNOWN. Root snapshot 20fe4c6 и установленная версия 0.2.2 различаются.
+Это разведка по предварительным, не принятым отчётам; не принятые рекомендации и не закрытие WP-01–17. Порядок отражает экспертный риск для дальнейшего исследования, а не измеренную severity или частоту. Все кандидаты DEFER; цена, эффект и live runtime UNKNOWN; отдельные disposable probes описаны ниже. Root snapshot 20fe4c6 и установленная версия 0.2.2 различаются.
 
 | Кандидат | Источник / риск изменения |
 |---|---|
@@ -14,7 +14,7 @@
 
 Отдельный candidate для дальнейшего challenge: [BA glossary → SA](WP-01-glossary-sa-trace.md) описывает подтверждаемый full rebuild, который удаляет все GlossaryTerm и не показывает восстановление SA-owned полей/внешних связей. Любая альтернатива должна сохранить разрешённый owner scope, различение омонимов и SA mapping; фактическая потеря не наблюдалась, категория DEFER.
 
-Дополнительный source-only candidate: [Analyst graph → Markdown path](WP-01-analyst-render-path-boundary.md) дважды воспроизведён в disposable sandbox с synthetic graph values: handler пишет за project root внутри temp; реальный доступ к endpoint и права deployment неизвестны. Альтернатива с path/symlink boundary должна учитывать допустимые внешние файлы и TOCTOU; реальные graph/API/запись не проверены, DEFER.
+Дополнительный локально воспроизведённый synthetic candidate: [Analyst graph → Markdown path](WP-01-analyst-render-path-boundary.md) дважды воспроизведён в disposable sandbox с synthetic graph values: handler пишет за project root внутри temp; реальный доступ к endpoint и права deployment неизвестны. Альтернатива с path/symlink boundary должна учитывать допустимые внешние файлы и TOCTOU; реальные graph/API/запись не проверены, DEFER.
 
 Дополнительные вопросы к closure и navigation: installed c291 и pinned 20fe дают одинаковые paths, но 9 output files отличаются; checker не сканирует backticks. В installed closure и независимо собранном disposable bundle 20fe из 26 bundle-local targets ограниченной выборки отсутствуют 22, хотя checker свежей сборки вернул VERIFIED; условия ссылок различны, это не счёт runtime failures. Для navigation необходимо отдельно сохранить per-Form reachability, affected scope, QA Condition 2 и подтверждённые exemptions; mixed formless+Form и disconnected inbound остаются proposed controls. Источники: [snapshot delta](WP-10-skills-only-snapshot-delta.md), [references](WP-10-literal-references-checker.md), [Cypher semantics](WP-10-cypher-reference-semantics.md).
 

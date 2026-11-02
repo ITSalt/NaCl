@@ -10,6 +10,16 @@ Pinned `scripts/build-codex-skills-only.mjs:240–257,260–264,267–282` от�
 
 Отдельный независимый scan тех же installed skill trees обнаружил 56 локальных inline Markdown ссылок на 105 Markdown файлов: targets всех 56 существуют внутри соответствующего skill, missing/outside/symlink 0. Это не запуск checker и не доказательство semantics, anchors, backtick paths или JS dependencies.
 
+## Атомарная карточка 10.2: JS closure diagnose
+
+- **Область и источник:** Skills-only упаковка, pinned NaCl 20fe4c6; `scripts/build-codex-skills-only.mjs:240–282`, `scripts/check-skills-only-bundle.mjs:76–90`, `codex-plugin-src/package/skills/nacl-diagnose/SKILL.md:8–13`.
+- **Цель, вход и выход:** самодостаточное дерево отдельного skill; вход builder — полный package, выход — per-skill resources. Вызывающий — packager; потребитель рассматриваемого ресурса — diagnose runner. Источник истины для конкретного probe — сгенерированная временная копия и зафиксированные результаты ниже; для контракта — pinned source.
+- **Обязательность и частота:** указан локальный runner; частота фактических вызовов UNKNOWN. Число реальных чтений, записей, передач и подтверждений UNKNOWN; статический scanner/checker не даёт измерения runtime.
+- **Предотвращаемый дефект:** недоступная локальная зависимость при загрузке runner; текущий checker проверяет другой ограниченный класс ссылок. Историческая причина и измеренная цена UNKNOWN.
+- **Наблюдение:** fresh disposable сборка вернула VERIFIED checker, но runner — MODULE_NOT_FOUND; изменённый временный контроль с vendor дошёл до NOT_RUN/PROJECT_MCP_NOT_CONFIGURED. Независимое повторение и границы приведены ниже. Активный installed route и поведение вне fixture UNKNOWN.
+- **Альтернатива и гарантия:** исследовать явный dependency manifest и per-skill load check; они должны учитывать dynamic/conditional require и различия Node/platform, иначе можно потерять полноту closure или portability. Эффективность не измерена.
+- **Категория/confidence/falsifier:** DEFER; высокая уверенность только для описанного воспроизведения, общая полнота UNKNOWN. Negative: fresh bundle без literal require target должен обнаруживаться до выдачи полного VERIFIED; positive: полный изолированный fixture загружается без обращения к соседнему skill. Это proposed controls, не выполненные проверки альтернативы.
+
 ## Граница существующих тестов
 
 Два независимых source-only обзора установили: `tests/codex-plugin/scripts/nacl-skills-only-bundle.test.mjs:11–19,105–112,455–483` проверяет диагностический сценарий и vendor hash, но берёт runner из общего `plugins/nacl/resources/bootstrap`, а vendor — из исходного package, не из `skills/nacl-diagnose`. В том же test file :489–513 и Docker E2E используют свежий `skills/nacl-init` runner. `nacl-reviewer-fixtures.test.mjs:9–27,147–168` также ссылается на общий bootstrap; `nacl-package-contract.test.mjs:110–136` проверяет текст публичного diagnose. `nacl-submission-readiness.test.mjs:68–115` проверяет build и checker, но в показанном сценарии не вызывает diagnose runner.

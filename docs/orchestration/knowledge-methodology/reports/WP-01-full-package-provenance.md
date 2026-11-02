@@ -1,6 +1,6 @@
 # WP-01: full package — полная карта Git provenance
 
-Закреплённый NaCl `20fe4c6`; read-only сопоставление tracked regular Git files с входами и правилами `scripts/build-codex-plugin.mjs` и manifest. Builder/main, tests и graph не запускались; содержимое конфигураций и секреты не выводились.
+Закреплённый NaCl `20fe4c6`; read-only сопоставление tracked regular Git files с входами и правилами `scripts/build-codex-plugin.mjs` и manifest. При этой статической сверке builder/main, tests и graph не запускались; позднейший full-package --check описан в [матрице](WP-01-acceptance-matrix.md); содержимое конфигураций и секреты не выводились.
 
 Карта builder-input → target: 196 root + 16 shared trees + 18 shared files + 60 workflow SKILL + 9 workflow non-SKILL + 114 codexSource = 413 копируемых targets, плюс 2 генерируемых JSON. Ожидаемых и фактически tracked путей по 415; missing, extraneous и коллизий — 0.
 
@@ -10,4 +10,4 @@
 
 Независимая сверка Git modes: все 415 targets имеют 100644, включая generated JSON; 14 исходных executable files (13 shell и 1 Python) стали 100644 согласно `scripts/build-codex-plugin.mjs:315–318`. Некоторые consumers явно используют `bash`/`python3`; docs goal содержат и прямые `./...` примеры относительно project cwd, но они не доказывают direct exec package copies. Package goal leaf разрешает packaged checks, не предписывая interpreter; в ограниченном поиске активная команда, гарантированно напрямую запускающая 0644 package copy, не найдена. `scripts/build-codex-plugin.test.mjs:151–167` намеренно проверяет mode 0644 и MCP через node, но не direct exec всех скриптов; tests не запускались. EACCES не наблюдался.
 
-Граница: это Git tree, не fresh build. Source symlinks, untracked/ignored files, фактические physical modes результата, Skills-only closure и runtime не проверены. `sourceChain` описывает происхождение и не доказывает семантическую эквивалентность root, legacy и overlay.
+Граница этой сверки: Git tree, не fresh build; позднейший full-package --check описан в [матрице](WP-01-acceptance-matrix.md). Source symlinks, untracked/ignored files, фактические physical modes результата, Skills-only closure и runtime не проверены. `sourceChain` описывает происхождение и не доказывает семантическую эквивалентность root, legacy и overlay.

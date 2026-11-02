@@ -79,6 +79,7 @@ R-n — действие: точная команда одной строкой 
 <!-- orch:journal -->
 | Дата | WP | Событие | Подтверждение |
 |------|----|---------|---------------|
+| 2026-11-02 16:44Z | WP-FRAMEWORK-01 | Уточнены временные границы старых отчётов, заполнена атомарная карточка JS closure и проверено совместное версионирование трёх пар snapshot/manifest. | reports/WP-10-js-dependency-trace.md; reports/WP-01-local-graph-snapshots.md; reports/WP-18-preliminary-candidates.md |
 | 2026-11-02 16:43Z | WP-FRAMEWORK-01 | Уточнена source-only цепочка QA отчёт → graph evidence → release; автоматическая передача в изученном workflow не подтверждена. | reports/WP-01-qa-release-contract-trace.md |
 | 2026-11-02 16:42Z | WP-FRAMEWORK-01 | Независимо сопоставлены root SA L4.4 и writer типов полей, а также backup snapshot и встроенный restore probe; оба вывода source-only. | reports/WP-01-sa06-atomic-sample.md; reports/WP-01-graph095-atomic-sample.md |
 | 2026-11-02 16:41Z | WP-FRAMEWORK-01 | Свежий full-package --check pinned 20fe прошёл в disposable sandbox после write и loopback canaries; runtime не подтверждён. | reports/WP-01-acceptance-matrix.md |

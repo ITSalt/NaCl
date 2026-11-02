@@ -1,6 +1,6 @@
 # WP-01: CI и упаковка — статические механизмы
 
-NaCl SHA 20fe4c6a56482e85d3ea9a9ebaadb37206047e41. Категория DEFER; частота, цена и фактические результаты CI UNKNOWN. Проверены определения, не запускался builder/checker/CI.
+NaCl SHA 20fe4c6a56482e85d3ea9a9ebaadb37206047e41. Категория DEFER; частота, цена и фактические результаты CI UNKNOWN. В этой статической проверке builder/checker/CI не запускались; позднее локальный full-package --check прошёл в disposable sandbox ([матрица](WP-01-acceptance-matrix.md)), CI run не подтверждён.
 
 ## Manifest → generated parity
 

@@ -1,6 +1,6 @@
 # WP-01: root/shared resources → full package
 
-Read-only сравнение Git blobs pinned NaCl `20fe4c6` с `plugins/nacl/resources/` по manifest и правилам `scripts/build-codex-plugin.mjs:138–146,332–335`. Builder, tests и graph не запускались; секреты и содержимое конфигурации не выводились.
+Read-only сравнение Git blobs pinned NaCl `20fe4c6` с `plugins/nacl/resources/` по manifest и правилам `scripts/build-codex-plugin.mjs:138–146,332–335`. В этой сверке builder, tests и graph не запускались; позднейший full-package --check описан в [матрице](WP-01-acceptance-matrix.md); секреты и содержимое конфигурации не выводились.
 
 | Источник | Результат |
 |---|---|

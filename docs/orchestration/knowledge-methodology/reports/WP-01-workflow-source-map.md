@@ -1,6 +1,6 @@
 # WP-01: карта источников Codex workflow
 
-NaCl SHA 20fe4c6a56482e85d3ea9a9ebaadb37206047e41. Read-only сравнение файлов checkout; builder не запускался. SHA-256 относятся только к SKILL.md, не к ресурсам или installed runtime. Выбор overlay задан scripts/codex-plugin-manifest.json; совпадение bytes не доказывает семантическую эквивалентность root и Codex.
+NaCl SHA 20fe4c6a56482e85d3ea9a9ebaadb37206047e41. Read-only сравнение файлов checkout; builder в этой сверке не запускался. Позднейший full-package --check описан в [матрице](WP-01-acceptance-matrix.md). SHA-256 относятся только к SKILL.md, не к ресурсам или installed runtime. Выбор overlay задан scripts/codex-plugin-manifest.json; совпадение bytes не доказывает семантическую эквивалентность root и Codex.
 
 | Root | Выбранный source | Generated workflow SHA-256 | Результат |
 |---|---|---|---|

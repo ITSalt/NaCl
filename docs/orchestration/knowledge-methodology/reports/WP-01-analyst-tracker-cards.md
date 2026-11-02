@@ -1,6 +1,6 @@
 # WP-01: analyst-tool и tracker дополнительные механизмы
 
-NaCl SHA 20fe4c6a56482e85d3ea9a9ebaadb37206047e41. Категория DEFER; цена, частота и runtime UNKNOWN. Источники проанализированы статически; negative/positive предложены, а не выполнены. Не обращаться к реальному tracker/graph для этих проб.
+NaCl SHA 20fe4c6a56482e85d3ea9a9ebaadb37206047e41. Категория DEFER; цена, частота и live runtime UNKNOWN. Эта карточка составлена статически; позднейший изолированный handler probe описан в [render path](WP-01-analyst-render-path-boundary.md). Не обращаться к реальному tracker/graph для этих проб.
 
 ## AT-01: состояние очереди и события
 
@@ -16,4 +16,4 @@ yougile-setup/src/index.ts:317–325 после failed GET продолжает 
 
 ## AT-02: файловая запись render endpoint
 
-analyst-tool/server/src/routes/render.ts:41–66 выполняет mkdir и writeFile и возвращает path/bytes; чтение graph при render не означает filesystem read-only. Конкретный UI consumer и защита outPath/confirmation ещё не проверены. Риск перезаписи или неверного project scope является гипотезой. Альтернатива preview, scoped overwrite и atomic read-back. Negative: dirty существующий файл, смена проекта, failure во время записи; positive: согласованный output с проверенным содержимым. Endpoint не запускался.
+analyst-tool/server/src/routes/render.ts:41–66 выполняет mkdir и writeFile и возвращает path/bytes; чтение graph при render не означает filesystem read-only. Конкретный UI consumer и confirmation остаются открыты. [Изолированный handler probe](WP-01-analyst-render-path-boundary.md) с fake graph дважды воспроизвёл запись за project root внутри temp; live graph/API и эксплуатация не проверены. Альтернатива preview, scoped overwrite и atomic read-back. Negative: dirty существующий файл, смена проекта, failure во время записи; positive: согласованный output с проверенным содержимым. На live server endpoint не запускался.
