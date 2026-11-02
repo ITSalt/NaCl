@@ -17,6 +17,8 @@
 | `reports/WP-01-measurement-rubric-draft.md` | `9a08d473c7c402ea76fceed6f2b61d2247b82fea46df42f1c9fb752dcfa3be8f` | draft |
 | `reports/WP-01-corpus-conflicts.md` | `d43187e5eea625cfc1dd6983943bf95cc9449df2cc0a77a249e62bcc5a40c50b` | draft |
 
+После создания манифеста уточнена устаревшая фраза о непроведённых тестах в briefs: текущий SHA-256 briefs `9a2759545739d9a5bbc03fb3d99029dc40f25d30d440bb14bcd33d608f9f4eca`. Исторический hash в таблице выше сохранён; корпус по-прежнему не заморожен.
+
 FR-030: новый brief выводится из post-baseline требований и должен быть одинаково предоставлен A/B; recovery основан на послесобытийном описании и синтетической фикстуре. FR-029 и BUG-1 имеют расхождения первоисточников; варианты нейтрального среза описаны отдельно. Перед заморозкой нужны проверенные независимые criteria, инструменты и зависимости для каждого snapshot, контроль доступа к post-change истории и hash закрытого harness.
 
 Graph baseline: NOT_VERIFIED; фактический scope, writers, locks, export/restore и semantic fingerprint неизвестны. `graph.itsalt.ru` разрешился в `82.202.156.157`, TCP 443 connect timeout 4s; MCP initialize ранее timeout 12s. Это не доказывает причину или отказ сервера. Recovery и live A/B остаются заблокированы до подтверждённого воспроизводимого состояния и восстановления. См. `WP-01-graph-baseline-risks.md`.
