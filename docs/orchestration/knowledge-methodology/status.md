@@ -78,6 +78,8 @@ R-n — действие: точная команда одной строкой 
 <!-- orch:journal -->
 | Дата | WP | Событие | Подтверждение |
 |------|----|---------|---------------|
+| 2026-11-02 12:09Z | WP-FRAMEWORK-01 | WP-01: дополнены механизмы графовой координации и проверяемая гипотеза по Skills-only | reports/WP-01-additional-mechanisms.md |
+| 2026-11-02 12:09Z | WP-FRAMEWORK-01 | WP-01: подготовлен черновик rubric; graph MCP initialize завершился timeout | reports/WP-01-measurement-rubric-draft.md; read-only MCP initialize timeout 12s |
 | 2026-11-02 12:02Z | WP-FRAMEWORK-01 | WP-01: зафиксированы первые карточки механизмов и различие продуктовых контуров | reports/WP-01-mechanism-samples.md |
 | 2026-11-02 12:01Z | WP-FRAMEWORK-01 | WP-01: определены кандидаты pre-change и post-change тестов; корпус не заморожен | reports/WP-01-corpus-candidates.md; read-only git history |
 | 2026-11-02 12:01Z | WP-FRAMEWORK-01 | Коррекция: прежний вывод о недоступности обычной автономии не был подтверждён. session discover: App Server timeout: initialize; capabilities сообщает наличие queue и app_server. Проверка подключения остаётся открытой. | orch.py session discover; orch.py session capabilities |
