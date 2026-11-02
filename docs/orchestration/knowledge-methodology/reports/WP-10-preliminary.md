@@ -12,6 +12,10 @@
 
 Отдельный исход audit: `services/nacl-mcp/src/application.mjs:72–125,145–159` до mutation ждёт audit reservation, а после вызова graph/ledger ожидает final audit в finally. Если первая запись и mutation прошли, а final audit отклонился, исключение вытеснит подготовленный success; rollback из этих строк не следует. Тест `test/topology-auth.test.mjs:530–552` проверяет отказ первой audit-записи и отсутствие graph calls, не второй отказ после side effect. Повтор с тем же key может быть безопасно воспроизведён корректным ledger, но реальный adapter и response boundary UNKNOWN; duplicate или production incident не доказаны. Proposed fake control: first audit success, graph effect, second audit fail и retry того же key; отдельно first audit fail.
 
+Два независимых disposable sandbox probe напрямую вызвали pinned application с synthetic adapters: при успешной reservation и fake graph effect финальный audit отказал, caller получил исключение после одного вызова; повтор с тем же key/payload в том же process-local ledger вернул VERIFIED/replayed без второго graph call. Canaries запретили write вне temp и loopback connect. Это не проверка SDK/HTTP, схем входа, реального graph, durable storage или retry после restart.
+
+В тех же двух synthetic probes fake read adapter вернул `{status:"BLOCKED",code:"LOCKED"}`, а application вернул VERIFIED/OPERATION_COMPLETED с пустым data: `safeData` не копирует эти поля. Это условный integration-contract риск, а не доказанный false PASS deployed сервиса: не установлено, допускает ли реальный adapter отказ как return value вместо exception; иные поля могут приводить к ошибке. Отдельно нужна проверка фактического adapter contract и транспортного слоя.
+
 Предлагаемые controls: два instance с одним idempotency key, restart и прерывание после side effect до сохранения результата; positive — проверенный durable adapter и явный recovery contract. Возможны другие безопасные реализации и reconciliation, повтор side effect в реальной системе не установлен. Это public HTTP service, не local package gateway; тесты здесь не запускались, DEFER.
 
 ## Упаковка и фактическая установленная версия

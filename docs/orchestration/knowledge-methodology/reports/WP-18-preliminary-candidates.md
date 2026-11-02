@@ -12,6 +12,8 @@
 
 [Disposable Node probes](WP-10-js-dependency-trace.md) воспроизвели MODULE_NOT_FOUND для vendor и при разрешении пути, и при sandboxed запуске копии diagnose runner; контроль разрешения пути в init положительный. Свежая Skills-only сборка pinned 20fe прошла checker, но её diagnose runner воспроизвёл loader failure; модифицированный temp control с vendor дошёл до NOT_RUN для пустого проекта. Независимый исследователь повторил оба результата в отдельной sandboxed среде. Это уточняет evidence для closure, но не доказывает исход установленного skill или MCP.
 
+Отдельный [public MCP synthetic challenge](WP-10-preliminary.md): два fake-adapter probe показали ошибку final audit после одного fake effect с последующим replay по тому же ключу, а также VERIFIED при synthetic return object с BLOCKED. Это прямой вызов application, не HTTP или production; контракт реального adapter и durable retry UNKNOWN. DEFER.
+
 Дополнительные source-only кандидаты, все DEFER:
 
 - [Неизвестный статус зависимости](WP-04-preliminary.md): различать null/pending/done, сохраняя legacy semantics и claim/lease; происхождение null и назначение UNKNOWN.
