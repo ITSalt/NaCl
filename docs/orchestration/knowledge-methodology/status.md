@@ -78,6 +78,7 @@ R-n — действие: точная команда одной строкой 
 <!-- orch:journal -->
 | Дата | WP | Событие | Подтверждение |
 |------|----|---------|---------------|
+| 2026-11-02 15:13Z | WP-FRAMEWORK-01 | Дополнен предварительный список кандидатов и проверены installed TL/goal resources | reports/WP-18-preliminary-candidates.md |
 | 2026-11-02 15:11Z | WP-FRAMEWORK-01 | Проверены installed TL resource paths и source-level deploy monitoring/WorkflowStep handoff | reports/WP-07-deploy-monitor-trace.md |
 | 2026-11-02 15:10Z | WP-FRAMEWORK-01 | Сверены installed BA resources и QA screenshot evidence, без запуска workflows | reports/WP-13-qa-screenshot-evidence.md |
 | 2026-11-02 15:09Z | WP-FRAMEWORK-01 | Уточнена локальная телеметрия D-4: условный parent output выше лимита при полной атрибуции, реальная атрибуция UNKNOWN | reports/WP-16-budget-observation.md |
