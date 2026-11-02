@@ -78,6 +78,7 @@ R-n — действие: точная команда одной строкой 
 <!-- orch:journal -->
 | Дата | WP | Событие | Подтверждение |
 |------|----|---------|---------------|
+| 2026-11-02 13:32Z | WP-FRAMEWORK-01 | WP-01: подготовлены карточки core/init/migration/publish и уточнён reconcile после challenge; graph 22/443 повторно timeout | reports/WP-01-core-migration-cards.md; reports/WP-01-tl-diagnose-card.md; TCP connect 4s |
 | 2026-11-02 13:31Z | WP-FRAMEWORK-01 | WP-01: исследован TL diagnose/reconcile и остальные root/resource packages; оценка TL coverage исправлена после независимого review | reports/WP-01-tl-diagnose-card.md; reports/WP-01-tl-package-coverage.md; reports/WP-01-other-package-coverage.md |
 | 2026-11-02 13:30Z | WP-FRAMEWORK-01 | WP-01: независимая сверка подтвердила 59 описаний index, выполнена package-level карта BA/SA/TL, выявлен отдельный пробел TL diagnose | reports/WP-01-package-index.md; reports/WP-01-ba-sa-package-coverage.md; reports/WP-01-tl-package-coverage.md |
 | 2026-11-02 13:29Z | WP-FRAMEWORK-01 | WP-01: исправлены 59 отсутствовавших описаний package index; составлена package-level сверка BA/SA и сохранены ограничения покрытия | reports/WP-01-package-index.md; reports/WP-01-ba-sa-package-coverage.md; reports/WP-01-sa-projection-provenance.md |
