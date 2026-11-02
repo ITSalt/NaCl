@@ -79,6 +79,7 @@ R-n — действие: точная команда одной строкой 
 <!-- orch:journal -->
 | Дата | WP | Событие | Подтверждение |
 |------|----|---------|---------------|
+| 2026-11-02 17:27Z | WP-FRAMEWORK-01 | Уточнены SA permissions reader и source-level путь Docmost CLI → publisher с условиями. | reports/WP-01-sa-consumer-trace.md; reports/WP-01-docmost-sync-trace.md |
 | 2026-11-02 17:26Z | WP-FRAMEWORK-01 | Уточнены source-level QA/sync consumers внешних контрактов и допущение пустого результата gateway-canary query. | reports/WP-01-sa-consumer-trace.md; reports/WP-01-graph095-atomic-sample.md |
 | 2026-11-02 17:25Z | WP-FRAMEWORK-01 | Challenge устранил двусмысленность покрытия criterion 3; уточнена ограниченная семантика representative restore digest и отдельной checksum. | reports/WP-01-mechanism-fields-audit.md; reports/WP-01-graph095-atomic-sample.md |
 | 2026-11-02 17:23Z | WP-FRAMEWORK-01 | Проверено различие malformed и missing atom в synthetic conduct; уточнены docs changelog consumers. | reports/WP-14-preliminary.md; reports/WP-01-tl-gap-cards.md |
