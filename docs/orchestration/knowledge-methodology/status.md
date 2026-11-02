@@ -78,6 +78,7 @@ R-n — действие: точная команда одной строкой 
 <!-- orch:journal -->
 | Дата | WP | Событие | Подтверждение |
 |------|----|---------|---------------|
+| 2026-11-02 15:07Z | WP-FRAMEWORK-01 | Подтверждена структура установленных SA/TL ресурсов и уточнена трасса Requirement anchors в TL | reports/WP-12-requirement-anchor-trace.md |
 | 2026-11-02 15:05Z | WP-FRAMEWORK-01 | Уточнён installed SA resource, критерии source-level инвентаризации и актуальность QA scenario | reports/WP-10-skill-closure-trace.md |
 | 2026-11-02 15:03Z | WP-FRAMEWORK-01 | Дополнены source-level goal resume, BE baseline и независимый challenge symlink tests | reports/WP-17-symlink-challenge-trace.md |
 | 2026-11-02 15:00Z | WP-FRAMEWORK-01 | Сверены authorization границы transports и поля BA→SA attribute mapping | reports/WP-11-attribute-propagation-trace.md |

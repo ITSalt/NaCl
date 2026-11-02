@@ -1,5 +1,7 @@
 # WP-12: предварительное исследование SA → TL → разработка
 
+[Requirement anchors → TL](WP-12-requirement-anchor-trace.md) различает полные nodes и отсутствующие в указанном query edges.
+
 [Контур BA states → enum → TL artifacts](WP-12-enum-interface-trace.md) описывает неоднозначности и границы query без утверждения runtime-дефекта.
 
 Предисследование до приёмки WP-03/04/05. NaCl SHA `20fe4c6a56482e85d3ea9a9ebaadb37206047e41`; workflow, граф и тесты не запускались. Цена и частота unknown, категория DEFER.
