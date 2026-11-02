@@ -78,6 +78,9 @@ R-n — действие: точная команда одной строкой 
 <!-- orch:journal -->
 | Дата | WP | Событие | Подтверждение |
 |------|----|---------|---------------|
+| 2026-11-02 12:15Z | WP-FRAMEWORK-01 | WP-01: построен проверяемый индекс 61 package и назначений по путям | reports/WP-01-package-index.md; scripts/codex-plugin-manifest.json |
+| 2026-11-02 12:15Z | WP-FRAMEWORK-01 | WP-01: убрана преждевременная формулировка о дневном периоде общей квоты | reports/WP-01-briefs-draft.md; independent review |
+| 2026-11-02 12:15Z | WP-FRAMEWORK-01 | WP-01: уточнено различие локального import и непроверенной серверной копии; DNS графа отвечает, TCP 443 timeout | reports/WP-01-graph-baseline-risks.md; socket connect timeout 4s |
 | 2026-11-02 12:14Z | WP-FRAMEWORK-01 | WP-01: инвентаризированы CI, graph-infra, analyst-tool и tracker CLI; отмечены кандидаты negative cases | reports/WP-01-platform-inventory.md |
 | 2026-11-02 12:13Z | WP-FRAMEWORK-01 | WP-01: подготовлен проект семантического graph fingerprint и определены его ограничения | reports/WP-01-graph-baseline-risks.md |
 | 2026-11-02 12:13Z | WP-FRAMEWORK-01 | WP-01: выявлены ограничения полного graph import, согласованности snapshot и области task lock | reports/WP-01-graph-baseline-risks.md |
