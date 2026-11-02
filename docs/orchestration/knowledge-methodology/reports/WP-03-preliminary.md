@@ -13,4 +13,6 @@
 
 Analytical replay прочитанных условий (без Neo4j): interactive с хотя бы одним `HAS_STEP`, но без формы → derived `has_ui=false` и нет L5.1 finding по этому правилу; это не общий PASS остальных проверок; interactive с формой и backend-only должны сравниваться отдельно. Это следствие логики, а не реальный запуск validator. Root `nacl-sa-feature/SKILL.md:534–542` имеет иной fallback; активный Codex путь требует отдельной проверки.
 
+[SA permissions → TL planning](WP-03-permission-planning-trace.md): named full-context query возвращает узлы ролей, но не выбирает HAS_PERMISSION edges с CRUD/scope, хотя план требует authorization в downstream artifacts. Дополнительная передача вне изученного scope и реальные последствия UNKNOWN; candidate DEFER, проверки не выполнены.
+
 Installed NaCl 0.2.2 `nacl-sa/resources/workflows/nacl-sa-validate/SKILL.md:73–85` отличается от `skills-for-codex/nacl-sa-validate/SKILL.md:75–79,91–103` на закреплённом checkout по описаниям L3.8/L3.9 и drift/exempt. Без проверки provenance/сборки нельзя приписывать новые проверки установленному bundle или заявлять runtime-дефект. WP-10 должен сверить проекции, WP-11/12 — стыки, WP-16 — измерение, WP-17 — negative cases.
