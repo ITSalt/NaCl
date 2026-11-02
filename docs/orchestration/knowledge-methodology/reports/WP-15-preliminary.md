@@ -4,6 +4,8 @@
 
 Предисследование до приёмки WP-01; документация просмотрена 2026-11-02. Локально `codex-cli 0.166.0`, `Claude Code 2.1.316`; help/version показывают поверхность CLI, не доказывают поведение в конкретном permission profile. Встроенные capabilities не признаны автоматически эквивалентными гарантиям NaCl. Поведенческие native probes и платные вызовы не выполнялись.
 
+Root goal policy: `nacl-goal/SKILL.md:223–235` и `docs/guides/goal-permissions.md:25–31` запрещают любой git push, а root intake :675–690 разрешает feature-branch push при наследовании denylist. `nacl-goal/gate-fire-detector.md:3–13` на pinned версии обозначает dynamic detector как stub, guide описывает hooks; действительное применение политики и предотвращение side effect UNKNOWN. Сначала нужен согласованный contract, затем изолированная проверка feature push, protected merge и отключённого hook. Codex intake/conduct описаны как preview, root policy нельзя автоматически переносить. Никаких push/goal не запускалось, DEFER.
+
 | Область | Что документировано | Что остаётся подтвердить/обеспечить |
 |---|---|---|
 | Делегирование | [Codex subagents](https://learn.chatgpt.com/docs/agent-configuration/subagents), [Claude agent teams](https://code.claude.com/docs/en/agent-teams): раздельные контексты, задачи и сбор результатов | Scope, независимая приёмка и durable graph claim не следуют из делегирования. Документация Codex указывает наследование sandbox/approval parent; описание роли или custom agent file само по себе не доказывает отдельный read-only sandbox. Claude teams описывают ограничения восстановления in-process teammates и устаревшие task statuses. |

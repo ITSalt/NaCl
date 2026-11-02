@@ -12,6 +12,12 @@ Pinned source: `analyst-tool/server/src/services/run-queue.ts:32–50,102–115,
 
 Proposed negative: disconnect во время terminal event, reconnect и сравнение UI с runs API; отдельно restart/eviction и out-of-order. Positive: доставленный terminal event и согласованный exitCode. Альтернатива fetch/reconcile должна защищать более новый state от старого snapshot и явно показывать границу durable history. Browser/server не запускались, частота и влияние UNKNOWN, DEFER.
 
+## AT-SNAPSHOT: restore и safety snapshot
+
+`analyst-tool/server/src/services/snapshots.ts:134–162` сначала читает целевой snapshot, затем текущее состояние board. Если чтение или JSON parse текущей board не удалось, catch пропускает создание safety snapshot и всё равно вызывает writeBoard; при его успехе возвращается safetyTimestamp даже без созданного backup. Ошибка записи самого safety snapshot, напротив, останавливает restore. `web/src/components/SnapshotBrowser.tsx:117–120,131–138` обещает autosave; реальная потеря не наблюдалась.
+
+Имя успешно созданного safety snapshot имеет ISO-формат с дефисами, тогда как watcher parser `services/snapshots.ts:43–54`, `services/fs-watcher.ts:73–87` ожидает компактный timestamp, поэтому через этот watcher path snapshot.created для него не формируется. `listSnapshots` использует другую проверку и может показать этот файл, инициатор после restore обновляет список; route отдельно отправляет board.changed/tree.changed. Это не утверждение отсутствия всех уведомлений. Proposed controls: валидный target и некорректный текущий board; затем успешный restore, backup list и события другого клиента. Source-only, runtime/API не запускались, DEFER.
+
 ## TRACK-01: project_id в конфигурации
 
 yougile-setup/src/index.ts:240–245,293–297 принимает project id для board, но :153–175,204–221 формирует yougile.project_id из одинаковых пустых ветвей. Непосредственный consumer этого поля пока не найден; влияние на live success не доказано. Риск потери выбранного scope в config. Альтернатива typed serializer/schema и roundtrip точных IDs. Negative: заданный project id после генерации, существующий config и сложный YAML; positive: корректный roundtrip ID и сохранение остальных значений.
