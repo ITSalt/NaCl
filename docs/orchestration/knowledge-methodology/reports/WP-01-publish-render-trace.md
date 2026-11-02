@@ -1,0 +1,13 @@
+# WP-01: publish → render — трасса источников
+
+NaCl SHA 20fe4c6a56482e85d3ea9a9ebaadb37206047e41. Только чтение: сервисы, сеть и graph не запускались. Runtime, ценность и расходы UNKNOWN; категория DEFER.
+
+Root nacl-publish/SKILL.md:15–32,805–809,859–891 ссылается на логику четырёх nacl-render excalidraw subcommands; nacl-render/SKILL.md:751–758 говорит, что они удалены и board generation перенесён в analyst-tool. Это подтверждённое расхождение инструкций, не доказанная поломка выполнения: prompt-ссылка не является сама по себе executable call.
+
+Отдельный реальный кодовый маршрут analyst-tool: Sidebar.tsx:195–208 → store.ts:190–205,400–401 → POST /api/v1/skills/regenerate → server/src/routes/skills.ts:31–49,93–96 возвращает runId → services/skill-runner.ts:292–318,325–383 вызывает renderBoard, пишет board/meta и публикует terminal event. Возврат runId — постановка, не завершение; graph-read в этом маршруте имеет файловые side effects. server/src/render/index.ts:20–27,36–87 перечисляет domain-model, context-map, activity, process и другие виды; семантическое и визуальное равенство старым командам не установлено. Файл и run.completed не обновляют Docmost автоматически и не доказывают boards-link.
+
+Batch routes/skills.ts:98–145,157–170 выполняет graph-derived discovery и при пустоте/ошибке может переходить к файловому списку; services/renderable.ts:77–85,89–99,117–145 возвращает пустой массив при ошибке. Сценарий пустого или недоступного graph без файлов способен по тексту вернуть 200 и Nothing to regenerate. Это статическая неоднозначность, не доказанный false PASS UI.
+
+Codex skills-for-codex/nacl-render/SKILL.md:12–23 направляет board к analyst-tool при доступности; nacl-publish/SKILL.md:15–27 требует доступного tooling, preview/confirmation и reconciliation. Автоматическая связка publish→указанный HTTP endpoint и эквивалентность manifest не найдены в проверенной цепи; это не доказывает отсутствия адаптера во всём репозитории.
+
+Предлагаемые negative: unavailable graph vs genuinely empty, unsupported import board, unsynced edits, failure между file и meta, partial batch, manifest mismatch и Docmost write failure. Positive: точный scope, terminal success и подтверждённые file/manifest; внешняя публикация проверяется отдельно и только с соответствующими полномочиями. Ничего не исполнялось.

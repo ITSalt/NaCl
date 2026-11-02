@@ -78,6 +78,7 @@ R-n — действие: точная команда одной строкой 
 <!-- orch:journal -->
 | Дата | WP | Событие | Подтверждение |
 |------|----|---------|---------------|
+| 2026-11-02 13:45Z | WP-FRAMEWORK-01 | WP-01: независимая проверка подтвердила 60/60 workflow SHA и 21 overlay; прослежен source-level маршрут publish/render | reports/WP-01-workflow-source-map.md; reports/WP-01-overlay-reasons.md; reports/WP-01-publish-render-trace.md |
 | 2026-11-02 13:44Z | WP-FRAMEWORK-01 | WP-01: составлена source→generated карта 60 workflow и 21 overlay; уточнён oracle после независимого review | reports/WP-01-workflow-source-map.md; reports/WP-01-fr014-oracle-design.md |
 | 2026-11-02 13:43Z | WP-FRAMEWORK-01 | WP-01: rubric уточнена после challenge без изменения D-4; подготовлен незамороженный oracle FR-014 | reports/WP-01-measurement-rubric-draft.md; reports/WP-01-fr014-oracle-design.md; reports/WP-01-baseline-candidates.md |
 | 2026-11-02 13:41Z | WP-FRAMEWORK-01 | WP-01: уточнены draft criteria и rubric после challenge; единая пара D-4 не приравнивается к повторной серии, hashes обновлены | reports/WP-01-measurement-rubric-draft.md; reports/WP-01-briefs-draft.md; reports/WP-01-baseline-candidates.md |

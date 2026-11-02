@@ -66,4 +66,4 @@ NaCl SHA 20fe4c6a56482e85d3ea9a9ebaadb37206047e41. Read-only сравнение 
 | nacl-tl-verify | skills-for-codex/nacl-tl-verify/SKILL.md | 1bcda8cb4da8dd60d8f061d3eb082fab3acc1059e659abb4b63b865eb174c253 | MATCH |
 | nacl-tl-verify-code | skills-for-codex/nacl-tl-verify-code/SKILL.md | ec5b4835c244869af6ec9f875bdcd29e57207e25d5a816c7cc3285ea8177a47e | MATCH |
 
-Итого: 60 совпадений, 0 отсутствий, 21 объявленных overlays. Ресурсные деревья, transforms, skills-only closure, active routing и исполнение не проверены; см. WP-01-sa-projection-provenance.md и WP-10-preliminary.md.
+Итого: 60 совпадений, 0 отсутствий, 21 объявленных overlays. Независимый reviewer сверил все 61 строку и SHA-256 с Git objects закреплённого SHA; расхождений нет. Ресурсные деревья, transforms, skills-only closure, active routing и исполнение не проверены; см. WP-01-sa-projection-provenance.md и WP-10-preliminary.md.
