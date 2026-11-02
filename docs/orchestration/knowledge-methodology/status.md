@@ -79,6 +79,7 @@ R-n — действие: точная команда одной строкой 
 <!-- orch:journal -->
 | Дата | WP | Событие | Подтверждение |
 |------|----|---------|---------------|
+| 2026-11-02 16:58Z | WP-FRAMEWORK-01 | Уточнены два условных YouGile пути и source-only граница source-sha Skills-only архива для предварительного WP-07. | reports/WP-01-analyst-tracker-cards.md; reports/WP-07-preliminary.md |
 | 2026-11-02 16:57Z | WP-FRAMEWORK-01 | Уточнены частичный YouGile setup и source-only цепь test-author → review в предварительном WP-06. | reports/WP-01-analyst-tracker-cards.md; reports/WP-06-preliminary.md |
 | 2026-11-02 16:55Z | WP-FRAMEWORK-01 | Сверены root Path C → reopened/hotfix и условный reader RuntimeContract через slices; WP-05 остаётся предварительным. | reports/WP-05-preliminary.md; reports/WP-01-sa-gap-cards.md |
 | 2026-11-02 16:53Z | WP-FRAMEWORK-01 | Уточнены условная семантика null зависимости в предварительном WP-04 и граница BA migration audit; выводы source-only. | reports/WP-04-preliminary.md; reports/WP-01-core-migration-cards.md |
