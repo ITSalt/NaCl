@@ -1,0 +1,22 @@
+# WP-01: 08.4–10.4 — заявленные callers, authority и consumers
+
+NaCl SHA 20fe4c6a56482e85d3ea9a9ebaadb37206047e41. Source-level маршруты, не наблюдённые invocation/read-back; actual runtime, installed route, частота и цена UNKNOWN. Все группы наследуют DEFER; 08.5 ниже разделена на самостоятельные механизмы.
+
+| ID | Заявленный caller / applicability | Authority и текстовый consumer |
+|---|---|---|
+| 08.4 sync | User или root nacl-tl-full/SKILL.md:556–561 после BE/FE | Task/API spec, FE call sites, BE routes и wire evidence; Codex tl-sync :17–38,68–85; QA/full — заявленные consumers. Fixture не доказывает live provider |
+| 08.5a migration | User или доступный migrate-canary; legacy project и tools | Legacy Markdown → IR → graph после подтверждения → report; skills-for-codex/nacl-migrate/SKILL.md:15–42,54–65. Consumers validation/render/user; parsing не доказывает graph write |
+| 08.5b init | User/public workflow при необходимости project MCP | Подтверждённый plan/receipt, затем реальный discovery/schema/read/write-readback; package nacl-init/SKILL.md:13–27,51–55,73–106 и skills-only contract :8–26. Root init — другой контур |
+| 08.5c postmortem | User после dev→fix boundary при доступной истории | Task specs, source и git log с проверкой цитат; skills-for-codex/nacl-postmortem/SKILL.md:15–18,24–42,61. Report для owner; автоматический consumer и причинность неизвестны |
+| 09.1 remote coordination | Shared-state skills в graph.mode remote | Remote graph; per-clone JSON cache best-effort, без stale fallback. nacl-tl-core/references/remote-mode-coordination.md:3–19,50–60 указывает full/next/status/ship; cross-store atomicity не доказана |
+| 09.2 board sync | User или from-board | Board visual input и graph structured data, root nacl-ba-sync/SKILL.md:11–17,89–110, Codex sync :19–30. Enrich/validate/handoff — заявленные downstream; crash replay двух хранилищ неизвестен |
+| 09.3 legacy Task claim | next/full/ship по remote-mode-coordination.md:21–31,50–57 | Task graph claimed_by/TTL и результат query, resolve-developer-id.mjs:4–16,60–64, claim-task.mjs:19–52. Derived ID не аутентификация и не project mutex; другие transports не приравнивать |
+| 09.4 gateway concurrency | Gateway dispatch разрешённых resource operations | Membership/principal, resource/lease/revision и idempotency record по graph-gateway/gateway.mjs:5,260 и concurrency-cypher.mjs:3–13,136–166,265–295. Consumer gateway/workflow; live auth и atomicity неизвестны |
+| 09.5 backup/handover | Operator export/import либо отдельный lifecycle | Ciphertext+manifest для legacy handover; handover-import.sh:80–86,106–145 очищает graph и проверяет totals, не полную семантику. graph-cli backup-contract.mjs:28–60,71–74 — иной контур, с representative digests |
+| 09.6 analyst runs | UI/client POST, routes/skills.ts:31–49 | Queue, WS и exitCode требуют совместной интерпретации; skill-runner.ts:417–441 и run-queue.ts:102–115 показывают completed+nonzero. UI/reconnect и false PASS не доказаны |
+| 10.1 package builder | Developer/CI | Manifest + root/Codex/overlay source → plugins/nacl; scripts/build-codex-plugin.mjs:332–369. 60/60 SKILL matches не доказывают весь tree/installed/runtime |
+| 10.2 Skills-only builder | Builder/packager | Selected package + reference closure + rewrite, scripts/build-codex-skills-only.mjs:179–186,245–278. Consumer skill/client/project MCP; capability и canary runtime неизвестны |
+| 10.3 transport | Full package client, Skills-only workflow или public HTTP client | Различные local gateway, project MCP и HTTP verifier/graph adapter; skills-only-runtime-contract.md:106–132, services/nacl-mcp/README.md:3–16,27–45. Никакой live deployment или одинаковой auth не доказывается |
+| 10.4 CI/metadata | GitHub event на выбранном commit | Exact commit/job result, не YAML definition; .github/workflows/test-codex-plugin.yml:3–10,38–56,70–97. plugin.json:18–22 и metadata test :19–22 — текстовые claims, не измерение экономии |
+
+Producer→consumer paths и authority описаны на уровне source; отрицательные проверки, costs, live access и восстановление нуждаются в отдельном evidence.
