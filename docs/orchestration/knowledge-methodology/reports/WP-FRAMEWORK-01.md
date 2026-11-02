@@ -16,6 +16,8 @@
 
 Проверенное текстовое противоречие установленного Skills-only read canary описано [здесь](WP-01-skills-only-canary.md); runtime-поведение не проверено. Кандидат расхождения QA FAILED + обязательный NOT_RUN может терять градацию отказа, оставаясь non-success; нужен отдельный negative test. Analyst Tool имеет статически различные статусы события и очереди при nonzero; UI outcome не проверен. Ничего из этого не является измеренным false PASS.
 
+[Документация root](WP-01-root-docs-index.md) инвентаризирована по 29 tracked файлам без заявления полного прочтения. [GOAL proof](WP-01-goal-proof-sequence.md) содержит версионные текстовые противоречия; реальное зависание не наблюдалось. [Legacy recovery и graph doctor](WP-01-guides-setup-trace.md) включают независимо проверенный кандидат гонки ownership lock только по коду; фактическое параллельное выполнение не проверено. [QA → release](WP-01-qa-release-contract-trace.md) фиксирует заявленного в reference писателя evidence и остающийся непроверенным путь от результатов к reader.
+
 ## Корпус и rubric
 
 Шесть предложенных сценариев, brief и black-box criteria: [черновики](WP-01-briefs-draft.md), [расхождения источников](WP-01-corpus-conflicts.md). [Манифест кандидатов](WP-01-baseline-candidates.md) фиксирует Git commit/tree и hashes черновиков, а не воспроизводимый baseline. FR-030 получает post-baseline новое требование; recovery — синтетическую фикстуру. Исторические версии используют разные toolchain. Исходные документы и post-change тесты могут раскрывать решения, поэтому одинаковые закрытые входы и изоляция ещё должны проверяться.

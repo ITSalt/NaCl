@@ -78,6 +78,7 @@ R-n — действие: точная команда одной строкой 
 <!-- orch:journal -->
 | Дата | WP | Событие | Подтверждение |
 |------|----|---------|---------------|
+| 2026-11-02 14:31Z | WP-FRAMEWORK-01 | Уточнены source-level recovery lock и QA-to-release evidence с независимой проверкой | reports/WP-01-qa-release-contract-trace.md |
 | 2026-11-02 14:29Z | WP-FRAMEWORK-01 | Уточнены falsifier-матрицы и исследованы корневые документы, последовательность GOAL proof и recovery legacy migration | reports/WP-01-guides-setup-trace.md |
 | 2026-11-02 14:25Z | WP-FRAMEWORK-01 | WP-01: независимый review уточнил evidence и recovery четырёх source-level стыков; positive/negative cases предложены без исполнения | reports/WP-01-ba-sa-static-chain.md; reports/WP-01-sa-tl-static-chain.md; reports/WP-01-quality-recovery-static-chains.md |
 | 2026-11-02 14:25Z | WP-FRAMEWORK-01 | WP-01: подготовлены source-level примеры всех четырёх стыков с явными разрывами и неподтверждённым recovery | reports/WP-01-ba-sa-static-chain.md; reports/WP-01-sa-tl-static-chain.md; reports/WP-01-quality-recovery-static-chains.md |
