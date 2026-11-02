@@ -78,6 +78,8 @@ R-n — действие: точная команда одной строкой 
 <!-- orch:journal -->
 | Дата | WP | Событие | Подтверждение |
 |------|----|---------|---------------|
+| 2026-11-02 13:18Z | — | Browser draft: повторный pinch различил синтетические control с ошибкой и без; физическое устройство и blind isolation не проверены | reports/WP-16-fr014-browser-draft-check.md |
+| 2026-11-02 13:14Z | — | Browser draft: синтетический CDP pinch различил control без touch и control с touch; физическое устройство и full pinch не проверены | reports/WP-16-fr014-browser-draft-check.md |
 | 2026-11-02 13:12Z | WP-FRAMEWORK-01 | WP-01: сводка обновлена фактическими локальными проверками и бюджетом D-4, без заявлений об A/B | reports/WP-FRAMEWORK-01.md; WP-16 и WP-09 evidence |
 | 2026-11-02 13:12Z | — | WP-16: отмечена наблюдаемая модель и условный расчёт Standard credits по официальной таблице; billing route неизвестен | reports/WP-16-budget-observation.md; thread/read; OpenAI Docs |
 | 2026-11-02 13:11Z | — | Browser draft: synthetic визуальный negative control непрозрачного overlay получил UNRESOLVED; покрытие ограничено fixture | reports/WP-16-fr014-browser-draft-check.md |
