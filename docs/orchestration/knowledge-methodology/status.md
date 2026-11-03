@@ -81,6 +81,15 @@ R-n — действие: точная команда одной строкой 
 <!-- orch:journal -->
 | Дата | WP | Событие | Подтверждение |
 |------|----|---------|---------------|
+| 2026-11-03 09:44Z | WP-FRAMEWORK-19 | research result: review | wp19-result-1-control3 |
+| 2026-11-03 09:44Z | WP-FRAMEWORK-19 | research result: collecting | wp19-result-1-control2 |
+| 2026-11-03 09:44Z | WP-FRAMEWORK-19 | research result: collecting | wp19-result-1-control1 |
+| 2026-11-03 09:44Z | WP-FRAMEWORK-19 | research result: collecting | wp19-result-1-dev3 |
+| 2026-11-03 09:44Z | WP-FRAMEWORK-19 | research result: collecting | wp19-result-1-dev2 |
+| 2026-11-03 09:44Z | WP-FRAMEWORK-19 | research result: collecting | wp19-result-1-dev1 |
+| 2026-11-03 09:44Z | WP-FRAMEWORK-19 | research result: collecting | wp19-result-1-ba3 |
+| 2026-11-03 09:44Z | WP-FRAMEWORK-19 | research result: collecting | wp19-result-1-ba2 |
+| 2026-11-03 09:44Z | WP-FRAMEWORK-19 | research result: collecting | wp19-result-1-ba1 |
 | 2026-11-03 09:42Z | WP-FRAMEWORK-19 | research start: collecting | wp19-wave-1 |
 | 2026-11-03 09:42Z | WP-FRAMEWORK-19 | research contract: ready | reports/WP-FRAMEWORK-19.md |
 | 2026-11-03 09:42Z | WP-FRAMEWORK-19 | WP-FRAMEWORK-19: READY -> IN_PROGRESS | D-8/D-9: девять ситуаций, одна исходная и одна корректирующая итерация |

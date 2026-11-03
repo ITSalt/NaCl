@@ -4,7 +4,7 @@
   "instances": {},
   "assignments": {},
   "launches": {},
-  "revision": 140,
+  "revision": 149,
   "generation": 1,
   "autonomy": {
     "enabled": true,
@@ -4208,7 +4208,7 @@
         }
       },
       "round": 1,
-      "phase": "collecting",
+      "phase": "review",
       "open": [
         "ba1",
         "ba2",
@@ -4222,7 +4222,17 @@
         "synthesis",
         "review"
       ],
-      "results": {},
+      "results": {
+        "wp19-ba1": "reports/WP-FRAMEWORK-19.md",
+        "wp19-ba2": "reports/WP-FRAMEWORK-19.md",
+        "wp19-ba3": "reports/WP-FRAMEWORK-19.md",
+        "wp19-dev1": "reports/WP-FRAMEWORK-19.md",
+        "wp19-dev2": "reports/WP-FRAMEWORK-19.md",
+        "wp19-dev3": "reports/WP-FRAMEWORK-19.md",
+        "wp19-control1": "reports/WP-FRAMEWORK-19.md",
+        "wp19-control2": "reports/WP-FRAMEWORK-19.md",
+        "wp19-control3": "reports/WP-FRAMEWORK-19.md"
+      },
       "events": {
         "wp19-wave-1": {
           "event": "start",
@@ -4284,6 +4294,78 @@
                 "decision": "Включить в единый пакет при подтверждённой реальности"
               }
             ]
+          }
+        },
+        "wp19-result-1-ba1": {
+          "event": "result",
+          "payload": {
+            "id": "wp19-result-1-ba1",
+            "task": "wp19-ba1",
+            "evidence": "reports/WP-FRAMEWORK-19.md"
+          }
+        },
+        "wp19-result-1-ba2": {
+          "event": "result",
+          "payload": {
+            "id": "wp19-result-1-ba2",
+            "task": "wp19-ba2",
+            "evidence": "reports/WP-FRAMEWORK-19.md"
+          }
+        },
+        "wp19-result-1-ba3": {
+          "event": "result",
+          "payload": {
+            "id": "wp19-result-1-ba3",
+            "task": "wp19-ba3",
+            "evidence": "reports/WP-FRAMEWORK-19.md"
+          }
+        },
+        "wp19-result-1-dev1": {
+          "event": "result",
+          "payload": {
+            "id": "wp19-result-1-dev1",
+            "task": "wp19-dev1",
+            "evidence": "reports/WP-FRAMEWORK-19.md"
+          }
+        },
+        "wp19-result-1-dev2": {
+          "event": "result",
+          "payload": {
+            "id": "wp19-result-1-dev2",
+            "task": "wp19-dev2",
+            "evidence": "reports/WP-FRAMEWORK-19.md"
+          }
+        },
+        "wp19-result-1-dev3": {
+          "event": "result",
+          "payload": {
+            "id": "wp19-result-1-dev3",
+            "task": "wp19-dev3",
+            "evidence": "reports/WP-FRAMEWORK-19.md"
+          }
+        },
+        "wp19-result-1-control1": {
+          "event": "result",
+          "payload": {
+            "id": "wp19-result-1-control1",
+            "task": "wp19-control1",
+            "evidence": "reports/WP-FRAMEWORK-19.md"
+          }
+        },
+        "wp19-result-1-control2": {
+          "event": "result",
+          "payload": {
+            "id": "wp19-result-1-control2",
+            "task": "wp19-control2",
+            "evidence": "reports/WP-FRAMEWORK-19.md"
+          }
+        },
+        "wp19-result-1-control3": {
+          "event": "result",
+          "payload": {
+            "id": "wp19-result-1-control3",
+            "task": "wp19-control3",
+            "evidence": "reports/WP-FRAMEWORK-19.md"
           }
         }
       },
