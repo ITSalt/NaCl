@@ -4,7 +4,7 @@
   "instances": {},
   "assignments": {},
   "launches": {},
-  "revision": 27,
+  "revision": 30,
   "generation": 1,
   "autonomy": {
     "enabled": true,
@@ -694,7 +694,7 @@
         }
       },
       "round": 1,
-      "phase": "collecting",
+      "phase": "review",
       "open": [
         "control",
         "coverage",
@@ -703,7 +703,9 @@
         "recommendations",
         "verification"
       ],
-      "results": {},
+      "results": {
+        "tl-synthesis": "reports/WP-FRAMEWORK-04.md"
+      },
       "events": {
         "tl-wave-1": {
           "event": "start",
@@ -718,6 +720,14 @@
               }
             ]
           }
+        },
+        "tl-result-1": {
+          "event": "result",
+          "payload": {
+            "id": "tl-result-1",
+            "task": "tl-synthesis",
+            "evidence": "reports/WP-FRAMEWORK-04.md"
+          }
         }
       },
       "verdicts": [],
@@ -727,6 +737,75 @@
           "criterion": "control",
           "missing_fact": "Свести накопленные TL материалы в граф и критический путь с UNKNOWN и областями",
           "decision": "Приёмка статического WP-04"
+        }
+      ]
+    },
+    "WP-FRAMEWORK-05": {
+      "contract": {
+        "question": "Как сократить dev/fix loop по классам задач без потери защит?",
+        "decision": "Рассмотреть статические рекомендации разработки",
+        "artifact": "reports/WP-FRAMEWORK-05.md",
+        "criteria": {
+          "loop": {
+            "evidence_standard": "Разбор dev-loop по классам задач, минимальный контекст и защищаемые гарантии",
+            "unknown_allowed": false
+          },
+          "coverage": {
+            "evidence_standard": "Все подобласти charter покрыты либо исключены с причиной и источниками",
+            "unknown_allowed": false
+          },
+          "mechanisms": {
+            "evidence_standard": "По механизму задача, consumer, цена или UNKNOWN, предотвращаемый дефект, альтернатива и риск",
+            "unknown_allowed": false
+          },
+          "evidence": {
+            "evidence_standard": "Разделение фактов, измерений, выводов и гипотез, SHA и клиентские границы",
+            "unknown_allowed": false
+          },
+          "recommendations": {
+            "evidence_standard": "Категории и условия для кандидатов без недоказанной экономии",
+            "unknown_allowed": false
+          },
+          "verification": {
+            "evidence_standard": "Ссылки, SHA/статус исходников, ограничения и независимый review",
+            "unknown_allowed": false
+          }
+        }
+      },
+      "round": 1,
+      "phase": "collecting",
+      "open": [
+        "loop",
+        "coverage",
+        "mechanisms",
+        "evidence",
+        "recommendations",
+        "verification"
+      ],
+      "results": {},
+      "events": {
+        "dev-wave-1": {
+          "event": "start",
+          "payload": {
+            "id": "dev-wave-1",
+            "tasks": [
+              {
+                "id": "dev-synthesis",
+                "criterion": "loop",
+                "missing_fact": "Свести накопленные профильные отчёты по классам задач и обозначить пробелы минимального контекста",
+                "decision": "Статическая сдача WP-05"
+              }
+            ]
+          }
+        }
+      },
+      "verdicts": [],
+      "tasks": [
+        {
+          "id": "dev-synthesis",
+          "criterion": "loop",
+          "missing_fact": "Свести накопленные профильные отчёты по классам задач и обозначить пробелы минимального контекста",
+          "decision": "Статическая сдача WP-05"
         }
       ]
     }

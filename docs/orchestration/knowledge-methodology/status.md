@@ -26,7 +26,7 @@ CANCELLED (причина).
 | [WP-FRAMEWORK-02](work-packages/WP-FRAMEWORK-02-ba.md) | framework | Бизнес-анализ | REVISE | knowledge-methodology-framework | — | 2026-11-03 |
 | [WP-FRAMEWORK-03](work-packages/WP-FRAMEWORK-03-sa.md) | framework | Системный анализ | REVISE | knowledge-methodology-framework | — | 2026-11-03 |
 | [WP-FRAMEWORK-04](work-packages/WP-FRAMEWORK-04-tl.md) | framework | Планирование и управление разработкой | IN_PROGRESS | knowledge-methodology-framework | — | 2026-11-03 |
-| [WP-FRAMEWORK-05](work-packages/WP-FRAMEWORK-05-development.md) | framework | Разработка и исправления | DRAFT | knowledge-methodology-framework | — | 2026-11-02 |
+| [WP-FRAMEWORK-05](work-packages/WP-FRAMEWORK-05-development.md) | framework | Разработка и исправления | IN_PROGRESS | knowledge-methodology-framework | — | 2026-11-03 |
 | [WP-FRAMEWORK-06](work-packages/WP-FRAMEWORK-06-quality.md) | framework | Review, QA и верификация | DRAFT | knowledge-methodology-framework | — | 2026-11-02 |
 | [WP-FRAMEWORK-07](work-packages/WP-FRAMEWORK-07-delivery.md) | framework | Поставка, публикация и эксплуатационная документация | DRAFT | knowledge-methodology-framework | — | 2026-11-02 |
 | [WP-FRAMEWORK-08](work-packages/WP-FRAMEWORK-08-management.md) | framework | Цели и восстановление фактического состояния | DRAFT | knowledge-methodology-framework | — | 2026-11-02 |
@@ -79,6 +79,11 @@ R-n — действие: точная команда одной строкой 
 <!-- orch:journal -->
 | Дата | WP | Событие | Подтверждение |
 |------|----|---------|---------------|
+| 2026-11-03 08:31Z | WP-FRAMEWORK-05 | research start: collecting | dev-wave-1 |
+| 2026-11-03 08:31Z | WP-FRAMEWORK-05 | research contract: ready | reports/WP-FRAMEWORK-05.md |
+| 2026-11-03 08:31Z | WP-FRAMEWORK-05 | WP-FRAMEWORK-05: READY -> IN_PROGRESS | Ограниченная проверка по исходному charter |
+| 2026-11-03 08:31Z | WP-FRAMEWORK-05 | WP-FRAMEWORK-05: DRAFT -> READY | WP-01 DONE по D-5; доступен профильный материал |
+| 2026-11-03 08:31Z | WP-FRAMEWORK-04 | research result: review | tl-result-1 |
 | 2026-11-03 08:30Z | WP-FRAMEWORK-04 | research start: collecting | tl-wave-1 |
 | 2026-11-03 08:30Z | WP-FRAMEWORK-04 | research contract: ready | reports/WP-FRAMEWORK-04.md |
 | 2026-11-03 08:30Z | WP-FRAMEWORK-04 | WP-FRAMEWORK-04: READY -> IN_PROGRESS | Ограниченная сдача по исходным критериям |
