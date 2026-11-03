@@ -2,6 +2,8 @@
 
 NaCl SHA 20fe4c6a56482e85d3ea9a9ebaadb37206047e41. Caller означает текстовую точку входа, не наблюдённый вызов; graph persistence, installed routing, реальная частота и цена UNKNOWN. Все группы наследуют DEFER, альтернативы и negative cases находятся в групповых реестрах и gap cards.
 
+Root `nacl-sa-validate/SKILL.md:305–324` включает BA DataFlow в allowlist соседних меток, но не читает его свойства или связи. Это schema-level потребитель метки, не проверка семантики flow; один DataFlow также не удовлетворяет SA preflight или BA scope counts. Graph/validation не запускались.
+
 | ID | Вход/применимость и заявленный caller | Source of truth и текстовый consumer |
 |---|---|---|
 | BA-01 context | User или фаза 1 root full nacl-ba-full/SKILL.md:62–69,99; Codex nacl-ba-context/SKILL.md:20–32 требует подтверждение | Подтверждённые SystemContext/Stakeholder/ExternalEntity/DataFlow в graph; Codex nacl-ba-process/SKILL.md:21–26,40–43 читает SystemContext. Полный набор BA→SA consumers не установлен |

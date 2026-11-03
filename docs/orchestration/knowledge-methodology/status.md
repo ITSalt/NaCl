@@ -22,7 +22,7 @@ CANCELLED (причина).
 <!-- orch:wp -->
 | WP | Модуль | Название | Статус | Сессия | PR | Обновлено |
 |----|--------|----------|--------|--------|----|-----------|
-| [WP-FRAMEWORK-01](work-packages/WP-FRAMEWORK-01-inventory.md) | framework | Карта фреймворка и протокол измерений | IN_PROGRESS | knowledge-methodology-framework | — | 2026-11-02 |
+| [WP-FRAMEWORK-01](work-packages/WP-FRAMEWORK-01-inventory.md) | framework | Карта фреймворка и протокол измерений | DONE | knowledge-methodology-framework | — | 2026-11-03 |
 | [WP-FRAMEWORK-02](work-packages/WP-FRAMEWORK-02-ba.md) | framework | Бизнес-анализ | DRAFT | knowledge-methodology-framework | — | 2026-11-02 |
 | [WP-FRAMEWORK-03](work-packages/WP-FRAMEWORK-03-sa.md) | framework | Системный анализ | DRAFT | knowledge-methodology-framework | — | 2026-11-02 |
 | [WP-FRAMEWORK-04](work-packages/WP-FRAMEWORK-04-tl.md) | framework | Планирование и управление разработкой | DRAFT | knowledge-methodology-framework | — | 2026-11-02 |
@@ -79,6 +79,18 @@ R-n — действие: точная команда одной строкой 
 <!-- orch:journal -->
 | Дата | WP | Событие | Подтверждение |
 |------|----|---------|---------------|
+| 2026-11-03 07:29Z | WP-FRAMEWORK-01 | Восстановлена статическая сдача WP-01 после ограниченного синтеза и независимой проверки; WP-16 ожидает P-2 и экспериментальные prerequisites. Фоновая пауза сохранена. | reports/recommendations.md; reports/WP-01-recovery-review.md |
+| 2026-11-03 07:29Z | WP-FRAMEWORK-01 | WP-FRAMEWORK-01: ACCEPTED -> DONE | D-5; reports/WP-01-recovery-review.md; reports/recommendations.md |
+| 2026-11-03 07:29Z | WP-FRAMEWORK-01 | WP-FRAMEWORK-01: REVIEW -> ACCEPTED | D-5; reports/WP-01-recovery-review.md; reports/recommendations.md |
+| 2026-11-03 07:29Z | WP-FRAMEWORK-01 | WP-FRAMEWORK-01: IN_PROGRESS -> REVIEW | D-5; reports/WP-01-recovery-review.md; reports/recommendations.md |
+| 2026-11-03 07:29Z | WP-FRAMEWORK-01 | research verdict: accepted | D5-review-accepted |
+| 2026-11-03 07:29Z | WP-FRAMEWORK-01 | research result: review | D5-result-handoff |
+| 2026-11-03 07:29Z | WP-FRAMEWORK-01 | research result: collecting | D5-result-claims |
+| 2026-11-03 07:29Z | WP-FRAMEWORK-01 | research result: collecting | D5-result-sources |
+| 2026-11-03 07:29Z | WP-FRAMEWORK-01 | research result: collecting | D5-result-map |
+| 2026-11-03 07:29Z | WP-FRAMEWORK-01 | research start: collecting | D5-static-wave |
+| 2026-11-03 07:29Z | WP-FRAMEWORK-01 | research contract: ready | reports/WP-FRAMEWORK-01.md |
+| 2026-11-03 07:25Z | — | D-5 recorded | — |
 | 2026-11-02 17:42Z | WP-FRAMEWORK-01 | Сужена область BA flow migration до непустого IR; прослежен заявленный consumer remote claim status. | reports/WP-01-core-migration-cards.md; reports/WP-01-platform-consumer-trace.md |
 | 2026-11-02 17:41Z | WP-FRAMEWORK-01 | Сверены документированные пределы graphAdapter contract и результаты synthetic public MCP probes; deployment implementation остаётся UNKNOWN. | reports/WP-10-preliminary.md |
 | 2026-11-02 17:40Z | WP-FRAMEWORK-01 | Два независимых synthetic fake-adapter probes проверили final audit failure/replay и обработку BLOCKED return object в public MCP application; HTTP и реальный graph не вызывались. | reports/WP-10-preliminary.md; reports/WP-18-preliminary-candidates.md |

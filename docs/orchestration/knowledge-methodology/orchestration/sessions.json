@@ -4,10 +4,10 @@
   "instances": {},
   "assignments": {},
   "launches": {},
-  "revision": 2,
+  "revision": 10,
   "generation": 1,
   "autonomy": {
-    "enabled": true,
+    "enabled": false,
     "session_reuse": "auto",
     "interval_seconds": 600,
     "max_parallel_sessions": 2
@@ -30,5 +30,190 @@
     "evidence": "CODEX_THREAD_ID текущего хода совпадает с active thread session discover на сокете daemon; процесс daemon 59672 — родитель shell инструмента",
     "released": false,
     "lease_until": 1793627578.4793768
+  },
+  "research": {
+    "WP-FRAMEWORK-01": {
+      "contract": {
+        "question": "Как устроен NaCl и какие решения об упрощении уже доступны?",
+        "decision": "Принять статическую карту и использовать ограниченные рекомендации",
+        "artifact": "reports/WP-FRAMEWORK-01.md",
+        "criteria": {
+          "map": {
+            "evidence_standard": "Карта и ссылки на существующий индекс с исключениями",
+            "unknown_allowed": false
+          },
+          "sources": {
+            "evidence_standard": "Зафиксированный SHA и различение проекций; атомарная полнота не заявлена",
+            "unknown_allowed": false
+          },
+          "claims": {
+            "evidence_standard": "Существенные выводы подтверждены указанными отчётами с уровнями evidence",
+            "unknown_allowed": false
+          },
+          "handoff": {
+            "evidence_standard": "Эксперимент перенесён WP-16; профильные пакеты не признаны готовыми",
+            "unknown_allowed": false
+          }
+        }
+      },
+      "round": 1,
+      "phase": "accepted",
+      "open": [],
+      "results": {
+        "map": "reports/WP-01-recovery-review.md",
+        "sources": "reports/WP-01-recovery-review.md",
+        "claims": "reports/WP-01-recovery-review.md",
+        "handoff": "reports/WP-01-recovery-review.md"
+      },
+      "events": {
+        "D5-static-wave": {
+          "event": "start",
+          "payload": {
+            "id": "D5-static-wave",
+            "tasks": [
+              {
+                "id": "map",
+                "criterion": "map",
+                "missing_fact": "Карта и ссылки на существующий индекс с исключениями",
+                "decision": "Приёмка статического объёма D-5"
+              },
+              {
+                "id": "sources",
+                "criterion": "sources",
+                "missing_fact": "Зафиксированный SHA и различение проекций; атомарная полнота не заявлена",
+                "decision": "Приёмка статического объёма D-5"
+              },
+              {
+                "id": "claims",
+                "criterion": "claims",
+                "missing_fact": "Существенные выводы подтверждены указанными отчётами с уровнями evidence",
+                "decision": "Приёмка статического объёма D-5"
+              },
+              {
+                "id": "handoff",
+                "criterion": "handoff",
+                "missing_fact": "Эксперимент перенесён WP-16; профильные пакеты не признаны готовыми",
+                "decision": "Приёмка статического объёма D-5"
+              }
+            ]
+          }
+        },
+        "D5-result-map": {
+          "event": "result",
+          "payload": {
+            "id": "D5-result-map",
+            "task": "map",
+            "evidence": "reports/WP-01-recovery-review.md"
+          }
+        },
+        "D5-result-sources": {
+          "event": "result",
+          "payload": {
+            "id": "D5-result-sources",
+            "task": "sources",
+            "evidence": "reports/WP-01-recovery-review.md"
+          }
+        },
+        "D5-result-claims": {
+          "event": "result",
+          "payload": {
+            "id": "D5-result-claims",
+            "task": "claims",
+            "evidence": "reports/WP-01-recovery-review.md"
+          }
+        },
+        "D5-result-handoff": {
+          "event": "result",
+          "payload": {
+            "id": "D5-result-handoff",
+            "task": "handoff",
+            "evidence": "reports/WP-01-recovery-review.md"
+          }
+        },
+        "D5-review-accepted": {
+          "event": "verdict",
+          "payload": {
+            "id": "D5-review-accepted",
+            "verdict": "accepted",
+            "criteria": {
+              "map": {
+                "status": "satisfied",
+                "reason": "Карта и ссылки на существующий индекс с исключениями — подтверждено ограниченным независимым review",
+                "evidence": "reports/WP-01-recovery-review.md"
+              },
+              "sources": {
+                "status": "satisfied",
+                "reason": "Зафиксированный SHA и различение проекций; атомарная полнота не заявлена — подтверждено ограниченным независимым review",
+                "evidence": "reports/WP-01-recovery-review.md"
+              },
+              "claims": {
+                "status": "satisfied",
+                "reason": "Существенные выводы подтверждены указанными отчётами с уровнями evidence — подтверждено ограниченным независимым review",
+                "evidence": "reports/WP-01-recovery-review.md"
+              },
+              "handoff": {
+                "status": "satisfied",
+                "reason": "Эксперимент перенесён WP-16; профильные пакеты не признаны готовыми — подтверждено ограниченным независимым review",
+                "evidence": "reports/WP-01-recovery-review.md"
+              }
+            }
+          }
+        }
+      },
+      "verdicts": [
+        {
+          "id": "D5-review-accepted",
+          "verdict": "accepted",
+          "criteria": {
+            "map": {
+              "status": "satisfied",
+              "reason": "Карта и ссылки на существующий индекс с исключениями — подтверждено ограниченным независимым review",
+              "evidence": "reports/WP-01-recovery-review.md"
+            },
+            "sources": {
+              "status": "satisfied",
+              "reason": "Зафиксированный SHA и различение проекций; атомарная полнота не заявлена — подтверждено ограниченным независимым review",
+              "evidence": "reports/WP-01-recovery-review.md"
+            },
+            "claims": {
+              "status": "satisfied",
+              "reason": "Существенные выводы подтверждены указанными отчётами с уровнями evidence — подтверждено ограниченным независимым review",
+              "evidence": "reports/WP-01-recovery-review.md"
+            },
+            "handoff": {
+              "status": "satisfied",
+              "reason": "Эксперимент перенесён WP-16; профильные пакеты не признаны готовыми — подтверждено ограниченным независимым review",
+              "evidence": "reports/WP-01-recovery-review.md"
+            }
+          }
+        }
+      ],
+      "tasks": [
+        {
+          "id": "map",
+          "criterion": "map",
+          "missing_fact": "Карта и ссылки на существующий индекс с исключениями",
+          "decision": "Приёмка статического объёма D-5"
+        },
+        {
+          "id": "sources",
+          "criterion": "sources",
+          "missing_fact": "Зафиксированный SHA и различение проекций; атомарная полнота не заявлена",
+          "decision": "Приёмка статического объёма D-5"
+        },
+        {
+          "id": "claims",
+          "criterion": "claims",
+          "missing_fact": "Существенные выводы подтверждены указанными отчётами с уровнями evidence",
+          "decision": "Приёмка статического объёма D-5"
+        },
+        {
+          "id": "handoff",
+          "criterion": "handoff",
+          "missing_fact": "Эксперимент перенесён WP-16; профильные пакеты не признаны готовыми",
+          "decision": "Приёмка статического объёма D-5"
+        }
+      ]
+    }
   }
 }
