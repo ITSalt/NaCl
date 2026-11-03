@@ -82,6 +82,14 @@ R-n — действие: точная команда одной строкой 
 <!-- orch:journal -->
 | Дата | WP | Событие | Подтверждение |
 |------|----|---------|---------------|
+| 2026-11-03 10:51Z | WP-FRAMEWORK-16 | D-13: приостановлено у бюджетного предела; первый раунд WP16 воспроизведён независимо, v2 evidence/recovery сохранены без независимого review, BA v2 прерван, оставшиеся задачи сохранены. | reports/WP-FRAMEWORK-16.md; reports/WP-16-independent-review.md |
+| 2026-11-03 10:51Z | WP-FRAMEWORK-16 | research result: collecting | wp16-result-2-recovery |
+| 2026-11-03 10:51Z | WP-FRAMEWORK-16 | research result: collecting | wp16-result-2-evidence |
+| 2026-11-03 10:49Z | WP-FRAMEWORK-16 | research start: collecting | wp16-wave-2 |
+| 2026-11-03 10:49Z | WP-FRAMEWORK-16 | research verdict: revise | wp16-review-1 |
+| 2026-11-03 10:49Z | WP-FRAMEWORK-16 | research result: review | wp16-result-1-recovery |
+| 2026-11-03 10:49Z | WP-FRAMEWORK-16 | research result: collecting | wp16-result-1-evidence |
+| 2026-11-03 10:49Z | WP-FRAMEWORK-16 | research result: collecting | wp16-result-1-ba |
 | 2026-11-03 10:45Z | WP-FRAMEWORK-16 | research start: collecting | wp16-wave-1 |
 | 2026-11-03 10:45Z | WP-FRAMEWORK-16 | research contract: ready | reports/WP-FRAMEWORK-16.md |
 | 2026-11-03 10:45Z | WP-FRAMEWORK-16 | WP-FRAMEWORK-16: READY -> IN_PROGRESS | D-11/D-13: проверка конкретных упрощений NaCl на принятом WP-19, graph сохранён |

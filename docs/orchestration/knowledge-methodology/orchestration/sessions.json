@@ -4,10 +4,10 @@
   "instances": {},
   "assignments": {},
   "launches": {},
-  "revision": 166,
+  "revision": 174,
   "generation": 1,
   "autonomy": {
-    "enabled": true,
+    "enabled": false,
     "session_reuse": "auto",
     "interval_seconds": 600,
     "max_parallel_sessions": 2
@@ -4882,7 +4882,7 @@
           }
         }
       },
-      "round": 1,
+      "round": 2,
       "phase": "collecting",
       "open": [
         "ba_sa",
@@ -4891,7 +4891,10 @@
         "synthesis",
         "verification"
       ],
-      "results": {},
+      "results": {
+        "wp16-fix-evidence": "reports/WP-FRAMEWORK-16.md",
+        "wp16-fix-recovery": "reports/WP-FRAMEWORK-16.md"
+      },
       "events": {
         "wp16-wave-1": {
           "event": "start",
@@ -4918,27 +4921,183 @@
               }
             ]
           }
+        },
+        "wp16-result-1-ba": {
+          "event": "result",
+          "payload": {
+            "id": "wp16-result-1-ba",
+            "task": "wp16-ba",
+            "evidence": "reports/WP-FRAMEWORK-16.md"
+          }
+        },
+        "wp16-result-1-evidence": {
+          "event": "result",
+          "payload": {
+            "id": "wp16-result-1-evidence",
+            "task": "wp16-evidence",
+            "evidence": "reports/WP-FRAMEWORK-16.md"
+          }
+        },
+        "wp16-result-1-recovery": {
+          "event": "result",
+          "payload": {
+            "id": "wp16-result-1-recovery",
+            "task": "wp16-recovery",
+            "evidence": "reports/WP-FRAMEWORK-16.md"
+          }
+        },
+        "wp16-review-1": {
+          "event": "verdict",
+          "payload": {
+            "id": "wp16-review-1",
+            "verdict": "revise",
+            "criteria": {
+              "ba_sa": {
+                "status": "blocked",
+                "reason": "Независимый review выявил дефекты synthetic моделей либо незакрытую проверку и границы текущих гарантий.",
+                "evidence": "reports/WP-16-independent-review.md"
+              },
+              "evidence": {
+                "status": "blocked",
+                "reason": "Независимый review выявил дефекты synthetic моделей либо незакрытую проверку и границы текущих гарантий.",
+                "evidence": "reports/WP-16-independent-review.md"
+              },
+              "recovery": {
+                "status": "blocked",
+                "reason": "Независимый review выявил дефекты synthetic моделей либо незакрытую проверку и границы текущих гарантий.",
+                "evidence": "reports/WP-16-independent-review.md"
+              },
+              "synthesis": {
+                "status": "blocked",
+                "reason": "Независимый review выявил дефекты synthetic моделей либо незакрытую проверку и границы текущих гарантий.",
+                "evidence": "reports/WP-16-independent-review.md"
+              },
+              "verification": {
+                "status": "blocked",
+                "reason": "Независимый review выявил дефекты synthetic моделей либо незакрытую проверку и границы текущих гарантий.",
+                "evidence": "reports/WP-16-independent-review.md"
+              }
+            }
+          }
+        },
+        "wp16-wave-2": {
+          "event": "start",
+          "payload": {
+            "id": "wp16-wave-2",
+            "tasks": [
+              {
+                "id": "wp16-fix-ba_sa",
+                "criterion": "ba_sa",
+                "missing_fact": "Адресно устранить выявленную проблему собственной synthetic модели или связать проверку; реальные гарантии сохранить UNKNOWN",
+                "decision": "Финальная независимая приёмка"
+              },
+              {
+                "id": "wp16-fix-evidence",
+                "criterion": "evidence",
+                "missing_fact": "Адресно устранить выявленную проблему собственной synthetic модели или связать проверку; реальные гарантии сохранить UNKNOWN",
+                "decision": "Финальная независимая приёмка"
+              },
+              {
+                "id": "wp16-fix-recovery",
+                "criterion": "recovery",
+                "missing_fact": "Адресно устранить выявленную проблему собственной synthetic модели или связать проверку; реальные гарантии сохранить UNKNOWN",
+                "decision": "Финальная независимая приёмка"
+              },
+              {
+                "id": "wp16-fix-synthesis",
+                "criterion": "synthesis",
+                "missing_fact": "Адресно устранить выявленную проблему собственной synthetic модели или связать проверку; реальные гарантии сохранить UNKNOWN",
+                "decision": "Финальная независимая приёмка"
+              },
+              {
+                "id": "wp16-fix-verification",
+                "criterion": "verification",
+                "missing_fact": "Адресно устранить выявленную проблему собственной synthetic модели или связать проверку; реальные гарантии сохранить UNKNOWN",
+                "decision": "Финальная независимая приёмка"
+              }
+            ]
+          }
+        },
+        "wp16-result-2-evidence": {
+          "event": "result",
+          "payload": {
+            "id": "wp16-result-2-evidence",
+            "task": "wp16-fix-evidence",
+            "evidence": "reports/WP-FRAMEWORK-16.md"
+          }
+        },
+        "wp16-result-2-recovery": {
+          "event": "result",
+          "payload": {
+            "id": "wp16-result-2-recovery",
+            "task": "wp16-fix-recovery",
+            "evidence": "reports/WP-FRAMEWORK-16.md"
+          }
         }
       },
-      "verdicts": [],
+      "verdicts": [
+        {
+          "id": "wp16-review-1",
+          "verdict": "revise",
+          "criteria": {
+            "ba_sa": {
+              "status": "blocked",
+              "reason": "Независимый review выявил дефекты synthetic моделей либо незакрытую проверку и границы текущих гарантий.",
+              "evidence": "reports/WP-16-independent-review.md"
+            },
+            "evidence": {
+              "status": "blocked",
+              "reason": "Независимый review выявил дефекты synthetic моделей либо незакрытую проверку и границы текущих гарантий.",
+              "evidence": "reports/WP-16-independent-review.md"
+            },
+            "recovery": {
+              "status": "blocked",
+              "reason": "Независимый review выявил дефекты synthetic моделей либо незакрытую проверку и границы текущих гарантий.",
+              "evidence": "reports/WP-16-independent-review.md"
+            },
+            "synthesis": {
+              "status": "blocked",
+              "reason": "Независимый review выявил дефекты synthetic моделей либо незакрытую проверку и границы текущих гарантий.",
+              "evidence": "reports/WP-16-independent-review.md"
+            },
+            "verification": {
+              "status": "blocked",
+              "reason": "Независимый review выявил дефекты synthetic моделей либо незакрытую проверку и границы текущих гарантий.",
+              "evidence": "reports/WP-16-independent-review.md"
+            }
+          }
+        }
+      ],
       "tasks": [
         {
-          "id": "wp16-ba",
+          "id": "wp16-fix-ba_sa",
           "criterion": "ba_sa",
-          "missing_fact": "Составить и безопасно проверить первую гипотезу semantic BA→SA с независимыми controls",
-          "decision": "Первое ограниченное представление кандидата и недостающих гарантий"
+          "missing_fact": "Адресно устранить выявленную проблему собственной synthetic модели или связать проверку; реальные гарантии сохранить UNKNOWN",
+          "decision": "Финальная независимая приёмка"
         },
         {
-          "id": "wp16-evidence",
+          "id": "wp16-fix-evidence",
           "criterion": "evidence",
-          "missing_fact": "Составить и безопасно проверить контракт уровней evidence с controls",
-          "decision": "Первое ограниченное представление кандидата и недостающих гарантий"
+          "missing_fact": "Адресно устранить выявленную проблему собственной synthetic модели или связать проверку; реальные гарантии сохранить UNKNOWN",
+          "decision": "Финальная независимая приёмка"
         },
         {
-          "id": "wp16-recovery",
+          "id": "wp16-fix-recovery",
           "criterion": "recovery",
-          "missing_fact": "Составить и безопасно проверить контракты graph identity и recovery с controls",
-          "decision": "Первое ограниченное представление кандидата и недостающих гарантий"
+          "missing_fact": "Адресно устранить выявленную проблему собственной synthetic модели или связать проверку; реальные гарантии сохранить UNKNOWN",
+          "decision": "Финальная независимая приёмка"
+        },
+        {
+          "id": "wp16-fix-synthesis",
+          "criterion": "synthesis",
+          "missing_fact": "Адресно устранить выявленную проблему собственной synthetic модели или связать проверку; реальные гарантии сохранить UNKNOWN",
+          "decision": "Финальная независимая приёмка"
+        },
+        {
+          "id": "wp16-fix-verification",
+          "criterion": "verification",
+          "missing_fact": "Адресно устранить выявленную проблему собственной synthetic модели или связать проверку; реальные гарантии сохранить UNKNOWN",
+          "decision": "Финальная независимая приёмка"
         }
       ]
     }
