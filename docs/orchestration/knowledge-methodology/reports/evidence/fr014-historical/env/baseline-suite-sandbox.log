@@ -1,0 +1,56 @@
+
+> family-cinema-frontend@0.1.0 test
+> vitest run --exclude src/test/fr014-pilot-*.test.tsx --maxWorkers 2 --minWorkers 1
+
+[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90m/private/var/folders/nd/0zdmygxx7433_gtcxxr7xhdr0000gn/T/nacl-fr014-env-ro5poynz/frontend[39m
+
+ [32m✓[39m src/hooks/__tests__/useMemoryVideoProgress.test.ts [2m([22m[2m10 tests[22m[2m)[22m[90m 20[2mms[22m[39m
+ [32m✓[39m src/components/features/memories/__tests__/ProcessingContent.test.tsx [2m([22m[2m20 tests[22m[2m)[22m[90m 104[2mms[22m[39m
+ [32m✓[39m src/components/features/memories/__tests__/MemoryResultPage.test.tsx [2m([22m[2m11 tests[22m[2m)[22m[90m 55[2mms[22m[39m
+[90mstderr[2m | src/components/features/memories/__tests__/MemoryShareButton.test.tsx[2m > [22m[2mMemoryShareButton[2m > [22m[2mCT-04.4: toast auto-dismisses after 3 seconds
+[22m[39mWarning: An update to MemoryShareButton inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at MemoryShareButton (/private/var/folders/nd/0zdmygxx7433_gtcxxr7xhdr0000gn/T/nacl-fr014-env-ro5poynz/frontend/src/components/features/memories/MemoryShareButton.tsx:10:30)
+
+ [32m✓[39m src/components/features/memories/__tests__/MemoryShareButton.test.tsx [2m([22m[2m6 tests[22m[2m)[22m[90m 249[2mms[22m[39m
+ [32m✓[39m src/components/features/memories/__tests__/ProcessingSteps.test.tsx [2m([22m[2m9 tests[22m[2m)[22m[90m 47[2mms[22m[39m
+ [32m✓[39m src/hooks/__tests__/useSessionSync.test.ts [2m([22m[2m5 tests[22m[2m)[22m[90m 9[2mms[22m[39m
+ [32m✓[39m src/hooks/__tests__/useMemoryDownload.test.ts [2m([22m[2m4 tests[22m[2m)[22m[90m 8[2mms[22m[39m
+ [32m✓[39m src/hooks/__tests__/useAuth.test.ts [2m([22m[2m5 tests[22m[2m)[22m[90m 14[2mms[22m[39m
+[90mstderr[2m | src/hooks/__tests__/useMemoryVideo.test.ts[2m > [22m[2museMemoryVideo[2m > [22m[2mretry triggers a re-fetch
+[22m[39mWarning: An update to TestComponent inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at TestComponent (/private/var/folders/nd/0zdmygxx7433_gtcxxr7xhdr0000gn/T/nacl-fr014-env-ro5poynz/frontend/node_modules/@testing-library/react/dist/pure.js:328:5)
+
+ [32m✓[39m src/hooks/__tests__/useMemoryVideo.test.ts [2m([22m[2m5 tests[22m[2m)[22m[90m 272[2mms[22m[39m
+ [32m✓[39m src/components/features/memories/__tests__/MemoryPaidCTA.test.tsx [2m([22m[2m7 tests[22m[2m)[22m[90m 57[2mms[22m[39m
+ [32m✓[39m src/components/features/memories/__tests__/MemoryPaywallCTA.test.tsx [2m([22m[2m6 tests[22m[2m)[22m[90m 62[2mms[22m[39m
+ [32m✓[39m src/components/features/memories/__tests__/MemoryVideoPlayer.test.tsx [2m([22m[2m5 tests[22m[2m)[22m[90m 25[2mms[22m[39m
+ [32m✓[39m src/test/tokens.test.ts [2m([22m[2m6 tests[22m[2m)[22m[90m 1[2mms[22m[39m
+ [32m✓[39m src/components/auth/__tests__/AuthButton.test.tsx [2m([22m[2m4 tests[22m[2m)[22m[90m 51[2mms[22m[39m
+ [32m✓[39m src/hooks/__tests__/useDeletedSessions.test.ts [2m([22m[2m4 tests[22m[2m)[22m[90m 7[2mms[22m[39m
+ [32m✓[39m src/components/auth/__tests__/SaveButton.test.tsx [2m([22m[2m2 tests[22m[2m)[22m[90m 26[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m16 passed[39m[22m[90m (16)[39m
+[2m      Tests [22m [1m[32m109 passed[39m[22m[90m (109)[39m
+[2m   Start at [22m 16:09:37
+[2m   Duration [22m 3.17s[2m (transform 152ms, setup 314ms, collect 703ms, tests 1.01s, environment 2.38s, prepare 355ms)[22m
+

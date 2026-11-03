@@ -1,0 +1,5 @@
+exit=0
+zoom diagnostic {"initial":{"x":0,"y":0,"width":60,"height":60},"current":{"x":0,"y":0,"width":60,"height":60},"scrollY":0}
+scroll evidence {"opened":68,"during":68,"closed":68,"after":268}
+[{"case":"open","status":"PASS"},{"case":"close","status":"PASS"},{"case":"escape","status":"PASS"},{"case":"toggle","status":"PASS"},{"case":"enhancing","status":"PASS"},{"case":"zoom","status":"PASS"},{"case":"background","status":"PASS"},{"case":"scroll","status":"PASS"}]
+

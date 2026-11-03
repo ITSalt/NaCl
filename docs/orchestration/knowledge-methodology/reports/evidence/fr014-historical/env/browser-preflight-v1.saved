@@ -1,0 +1,19 @@
+const { chromium } = require('/Users/maxnikitin/.nvm/versions/node/v24.13.1/lib/node_modules/@playwright/test/node_modules/playwright');
+(async () => {
+ const port=process.env.PILOT_PORT; if(!/^\d+$/.test(port||'')) throw new Error('PILOT_PORT required');
+ const browser=await chromium.launch({headless:true}), context=await browser.newContext({viewport:{width:800,height:600}});
+ const seen=[], unexpected=[];
+ const photos=[{id:'p1',sessionId:'session-test',position:1,originalUrl:'/fixture/original.svg',enhancedUrl:'/fixture/enhanced.svg',processingStatus:'enhanced',createdAt:'2026-01-01T00:00:00.000Z'},{id:'p2',sessionId:'session-test',position:2,originalUrl:'/fixture/original.svg',enhancedUrl:null,processingStatus:'enhancing',createdAt:'2026-01-01T00:00:00.000Z'}];
+ await context.addInitScript(()=>localStorage.setItem('fc_session_store',JSON.stringify({state:{activeSessionId:'session-test',deviceFingerprint:null},version:0})));
+ await context.route('**/*',async route=>{const request=route.request(),url=new URL(request.url()),path=url.pathname;
+  if(path.startsWith('/api/')){seen.push(request.method()+' '+path);if(request.method()==='GET'&&path==='/api/sessions/session-test')return route.fulfill({json:{data:{id:'session-test',status:'interview'}}});if(request.method()==='GET'&&path==='/api/memories/photos')return route.fulfill({json:{data:photos}});if(request.method()==='GET'&&path==='/api/memories/photos/p2/status')return route.fulfill({json:{data:{id:'p2',processingStatus:'enhancing',enhancedUrl:null,errorMessage:null}}});unexpected.push(request.method()+' '+path);return route.abort()}
+  if(path.startsWith('/fixture/'))return route.fulfill({contentType:'image/svg+xml',body:'<svg xmlns="http://www.w3.org/2000/svg" width="60" height="60"><rect width="60" height="60" fill="red"/></svg>'});
+  if(url.hostname==='127.0.0.1'&&url.port===port)return route.continue();unexpected.push(request.method()+' '+url.origin+path);return route.abort();
+ });
+ const page=await context.newPage();page.on('pageerror',e=>unexpected.push('pageerror '+e.message));
+ const response=await page.goto('http://127.0.0.1:'+port+'/memories/upload',{waitUntil:'domcontentloaded',timeout:30000});
+ await page.waitForTimeout(2500);
+ const outcome={http:response?.status(),path:new URL(page.url()).pathname,headings:(await page.locator('h1,h2').allTextContents()).slice(0,5),imageCount:await page.locator('img').count(),seen,unexpected};
+ console.log(JSON.stringify(outcome));await browser.close();
+ if(outcome.http!==200||outcome.path!=='/memories/upload'||!outcome.headings.includes('Загрузите фотографии')||outcome.imageCount!==2||unexpected.length)process.exitCode=1;
+})().catch(e=>{console.error('preflight error:',e.message);process.exitCode=1});

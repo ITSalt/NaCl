@@ -1,0 +1,7 @@
+import { useEffect, useState } from 'react';
+import type { MemoryPhoto } from '@/stores/memoryPhotosStore';
+export function PhotoPreviewGrid({photos}: {photos: MemoryPhoto[]; onDelete:(id:string)=>void; isDeleting:boolean}) {
+ const [open,setOpen]=useState(false); const [original,setOriginal]=useState(false); const photo=photos[0];
+ useEffect(()=>{const h=(e:KeyboardEvent)=>{if(e.key==='Escape')setOpen(false)};window.addEventListener('keydown',h);return()=>window.removeEventListener('keydown',h)},[]);
+ return <>{photos.map(item=><img key={item.id} alt={'Фото '+item.position} src={item.enhancedUrl||item.originalUrl} onClick={()=>{if(item.processingStatus==='enhanced'&&!item.id.startsWith('temp-'))setOpen(true)}} />)}{open&&<div role='dialog'><img alt='Просмотр фото' src={original?photo.originalUrl:photo.enhancedUrl||photo.originalUrl}/><button onClick={()=>setOriginal(true)}>Оригинал</button><button onClick={()=>setOriginal(false)}>Улучшено</button><button onClick={()=>setOpen(false)}>Закрыть</button></div>}</>;
+}
