@@ -12,7 +12,8 @@
 | Разрешённые изменения исходников | экспериментальный код family-cinema в отдельных worktree; NaCl не меняется |
 | Артефакт координатора | `reports/WP-FRAMEWORK-16.md` |
 | Общие пути / замки / миграции / БД / порты | граф family-cinema: project claim-lock, последовательные записи, baseline/reset; workspace пишет координатор |
-| Зависит от | WP-FRAMEWORK-02, WP-FRAMEWORK-03, WP-FRAMEWORK-04, WP-FRAMEWORK-05, WP-FRAMEWORK-06, WP-FRAMEWORK-07, WP-FRAMEWORK-08, WP-FRAMEWORK-09, WP-FRAMEWORK-10, WP-FRAMEWORK-11, WP-FRAMEWORK-12, WP-FRAMEWORK-13, WP-FRAMEWORK-14, WP-FRAMEWORK-15 |
+| Зависит от | WP-FRAMEWORK-11, WP-FRAMEWORK-12, WP-FRAMEWORK-13, WP-FRAMEWORK-14 |
+| Входы по D-6 | Ограниченно принятые результаты WP-02–10,15; остатки и границы: `reports/D-6-bounded-acceptance.md`. Исходные charter профильных WP остаются неполными. |
 | Решения | D-2, D-3 |
 | Размер | L — относительная трудоёмкость, не оценка календаря |
 | PR / merge / deploy | не применяются к исследовательскому пакету |

@@ -4,7 +4,7 @@
   "instances": {},
   "assignments": {},
   "launches": {},
-  "revision": 107,
+  "revision": 113,
   "generation": 1,
   "autonomy": {
     "enabled": true,
@@ -3193,6 +3193,213 @@
           "criterion": "verification",
           "missing_fact": "Адресно устранить замечание verification по накопленному evidence",
           "decision": "Финальный verdict WP-15"
+        }
+      ]
+    },
+    "WP-FRAMEWORK-11": {
+      "contract": {
+        "question": "Как передаются бизнес-требования BA в SA и какие риски потерь?",
+        "decision": "Оценить ограниченные результаты и открыть остатки согласно charter",
+        "artifact": "reports/WP-FRAMEWORK-11.md",
+        "criteria": {
+          "primary": {
+            "evidence_standard": "Producer/consumer, минимальные поля, потери, дубли, владелец, пример round-trip",
+            "unknown_allowed": false
+          },
+          "coverage": {
+            "evidence_standard": "Все подобласти charter покрыты либо явно исключены с причиной и источниками",
+            "unknown_allowed": false
+          },
+          "mechanisms": {
+            "evidence_standard": "По механизму задача, consumer, цена или UNKNOWN, defect, альтернатива и риск",
+            "unknown_allowed": false
+          },
+          "evidence": {
+            "evidence_standard": "Факты, измерения, выводы и гипотезы разделены",
+            "unknown_allowed": false
+          },
+          "recommendations": {
+            "evidence_standard": "Категория и условия для каждого кандидата",
+            "unknown_allowed": false
+          },
+          "verification": {
+            "evidence_standard": "Проверки протокола, source status, ограничения и независимый review",
+            "unknown_allowed": false
+          }
+        }
+      },
+      "round": 1,
+      "phase": "collecting",
+      "open": [
+        "primary",
+        "coverage",
+        "mechanisms",
+        "evidence",
+        "recommendations",
+        "verification"
+      ],
+      "results": {},
+      "events": {
+        "wp11-wave-1": {
+          "event": "start",
+          "payload": {
+            "id": "wp11-wave-1",
+            "tasks": [
+              {
+                "id": "wp11-synthesis",
+                "criterion": "primary",
+                "missing_fact": "Синтезировать накопленные трассы в артефакт по исходному charter",
+                "decision": "Ограниченный review WP-11"
+              }
+            ]
+          }
+        }
+      },
+      "verdicts": [],
+      "tasks": [
+        {
+          "id": "wp11-synthesis",
+          "criterion": "primary",
+          "missing_fact": "Синтезировать накопленные трассы в артефакт по исходному charter",
+          "decision": "Ограниченный review WP-11"
+        }
+      ]
+    },
+    "WP-FRAMEWORK-12": {
+      "contract": {
+        "question": "Как передаются UC через TL в разработку и BE↔FE?",
+        "decision": "Оценить ограниченные результаты и открыть остатки согласно charter",
+        "artifact": "reports/WP-FRAMEWORK-12.md",
+        "criteria": {
+          "primary": {
+            "evidence_standard": "Пошаговая трасса, минимальный контракт, критический путь и отдельная BE↔FE трасса для малого fix, UI+BE и интеграции",
+            "unknown_allowed": false
+          },
+          "coverage": {
+            "evidence_standard": "Все подобласти charter покрыты либо явно исключены с причиной и источниками",
+            "unknown_allowed": false
+          },
+          "mechanisms": {
+            "evidence_standard": "По механизму задача, consumer, цена или UNKNOWN, defect, альтернатива и риск",
+            "unknown_allowed": false
+          },
+          "evidence": {
+            "evidence_standard": "Факты, измерения, выводы и гипотезы разделены",
+            "unknown_allowed": false
+          },
+          "recommendations": {
+            "evidence_standard": "Категория и условия для каждого кандидата",
+            "unknown_allowed": false
+          },
+          "verification": {
+            "evidence_standard": "Проверки протокола, source status, ограничения и независимый review",
+            "unknown_allowed": false
+          }
+        }
+      },
+      "round": 1,
+      "phase": "collecting",
+      "open": [
+        "primary",
+        "coverage",
+        "mechanisms",
+        "evidence",
+        "recommendations",
+        "verification"
+      ],
+      "results": {},
+      "events": {
+        "wp12-wave-1": {
+          "event": "start",
+          "payload": {
+            "id": "wp12-wave-1",
+            "tasks": [
+              {
+                "id": "wp12-synthesis",
+                "criterion": "primary",
+                "missing_fact": "Синтезировать накопленные трассы в артефакт по исходному charter",
+                "decision": "Ограниченный review WP-12"
+              }
+            ]
+          }
+        }
+      },
+      "verdicts": [],
+      "tasks": [
+        {
+          "id": "wp12-synthesis",
+          "criterion": "primary",
+          "missing_fact": "Синтезировать накопленные трассы в артефакт по исходному charter",
+          "decision": "Ограниченный review WP-12"
+        }
+      ]
+    },
+    "WP-FRAMEWORK-14": {
+      "contract": {
+        "question": "Как согласуются управление, восстановление и состояния между graph, JSON, Git и сессиями?",
+        "decision": "Оценить ограниченные результаты и открыть остатки согласно charter",
+        "artifact": "reports/WP-FRAMEWORK-14.md",
+        "criteria": {
+          "primary": {
+            "evidence_standard": "Модель ответственности и конфликтов, idempotency/resume и отказы, включая interruption, stale, partial write, multi-writer и retry",
+            "unknown_allowed": false
+          },
+          "coverage": {
+            "evidence_standard": "Все подобласти charter покрыты либо явно исключены с причиной и источниками",
+            "unknown_allowed": false
+          },
+          "mechanisms": {
+            "evidence_standard": "По механизму задача, consumer, цена или UNKNOWN, defect, альтернатива и риск",
+            "unknown_allowed": false
+          },
+          "evidence": {
+            "evidence_standard": "Факты, измерения, выводы и гипотезы разделены",
+            "unknown_allowed": false
+          },
+          "recommendations": {
+            "evidence_standard": "Категория и условия для каждого кандидата",
+            "unknown_allowed": false
+          },
+          "verification": {
+            "evidence_standard": "Проверки протокола, source status, ограничения и независимый review",
+            "unknown_allowed": false
+          }
+        }
+      },
+      "round": 1,
+      "phase": "collecting",
+      "open": [
+        "primary",
+        "coverage",
+        "mechanisms",
+        "evidence",
+        "recommendations",
+        "verification"
+      ],
+      "results": {},
+      "events": {
+        "wp14-wave-1": {
+          "event": "start",
+          "payload": {
+            "id": "wp14-wave-1",
+            "tasks": [
+              {
+                "id": "wp14-synthesis",
+                "criterion": "primary",
+                "missing_fact": "Синтезировать накопленные трассы в артефакт по исходному charter",
+                "decision": "Ограниченный review WP-14"
+              }
+            ]
+          }
+        }
+      },
+      "verdicts": [],
+      "tasks": [
+        {
+          "id": "wp14-synthesis",
+          "criterion": "primary",
+          "missing_fact": "Синтезировать накопленные трассы в артефакт по исходному charter",
+          "decision": "Ограниченный review WP-14"
         }
       ]
     }

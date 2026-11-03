@@ -32,10 +32,10 @@ CANCELLED (причина).
 | [WP-FRAMEWORK-08](work-packages/WP-FRAMEWORK-08-management.md) | framework | Цели и восстановление фактического состояния | REVISE | knowledge-methodology-framework | — | 2026-11-03 |
 | [WP-FRAMEWORK-09](work-packages/WP-FRAMEWORK-09-graph.md) | framework | Данные, граф и синхронизация | REVISE | knowledge-methodology-framework | — | 2026-11-03 |
 | [WP-FRAMEWORK-10](work-packages/WP-FRAMEWORK-10-platform.md) | framework | Адаптеры, runtime и каналы поставки | REVISE | knowledge-methodology-framework | — | 2026-11-03 |
-| [WP-FRAMEWORK-11](work-packages/WP-FRAMEWORK-11-interface-ba-sa.md) | framework | Стык BA → SA | DRAFT | knowledge-methodology-framework | — | 2026-11-02 |
-| [WP-FRAMEWORK-12](work-packages/WP-FRAMEWORK-12-interface-sa-dev.md) | framework | Стык SA → TL → разработка | DRAFT | knowledge-methodology-framework | — | 2026-11-02 |
+| [WP-FRAMEWORK-11](work-packages/WP-FRAMEWORK-11-interface-ba-sa.md) | framework | Стык BA → SA | IN_PROGRESS | knowledge-methodology-framework | — | 2026-11-03 |
+| [WP-FRAMEWORK-12](work-packages/WP-FRAMEWORK-12-interface-sa-dev.md) | framework | Стык SA → TL → разработка | IN_PROGRESS | knowledge-methodology-framework | — | 2026-11-03 |
 | [WP-FRAMEWORK-13](work-packages/WP-FRAMEWORK-13-interface-dev-qa.md) | framework | Стык разработка → review/QA → release | DRAFT | knowledge-methodology-framework | — | 2026-11-02 |
-| [WP-FRAMEWORK-14](work-packages/WP-FRAMEWORK-14-interface-control.md) | framework | Стык управления, восстановления и состояния | DRAFT | knowledge-methodology-framework | — | 2026-11-02 |
+| [WP-FRAMEWORK-14](work-packages/WP-FRAMEWORK-14-interface-control.md) | framework | Стык управления, восстановления и состояния | IN_PROGRESS | knowledge-methodology-framework | — | 2026-11-03 |
 | [WP-FRAMEWORK-15](work-packages/WP-FRAMEWORK-15-harness.md) | framework | Что можно передать Harness | REVISE | knowledge-methodology-framework | — | 2026-11-03 |
 | [WP-FRAMEWORK-16](work-packages/WP-FRAMEWORK-16-measurement.md) | framework | Цена методологии и сравнение с Markdown | DRAFT | knowledge-methodology-framework | — | 2026-11-02 |
 | [WP-FRAMEWORK-17](work-packages/WP-FRAMEWORK-17-challenge.md) | framework | Независимая проверка рекомендаций | DRAFT | knowledge-methodology-framework | — | 2026-11-02 |
@@ -51,7 +51,7 @@ R-n — действие: точная команда одной строкой 
 | ID | Что (команда ; ожидание) | Где описано | Открыто | Закрыто |
 |----|--------------------------|-------------|---------|---------|
 | ~~P-1~~ | ~~Repository nacl: add `.worktreeinclude` in its root (a change of the project, made by a package there) so that every new worktree gets the gitignored files it needs: .env, .env.local (gitignore syntax, one pattern per line; directories as dir/**). Recommend (a) yes: sessions then never copy secrets or settings themselves~~ | orch.py init | 2026-11-02 | 2026-11-02 dropped: Автопредложение .worktreeinclude относится к Claude Code. Программа использует Codex; необходимость gitignored-файлов не установлена. Вернуться к этому только в пакете, которому действительно нужны такие файлы. |
-| P-2 | Уточнить границу D-4: какие выполненные агентские работы относить к подготовке одной A/B-пары, чтобы оценить расход и сохранить лимит; текущие session totals и отсутствие подтверждённого общего hard cap описаны в evidence. | reports/WP-16-budget-observation.md | 2026-11-02 |  |
+| ~~P-2~~ | ~~Уточнить границу D-4: какие выполненные агентские работы относить к подготовке одной A/B-пары, чтобы оценить расход и сохранить лимит; текущие session totals и отсутствие подтверждённого общего hard cap описаны в evidence.~~ | reports/WP-16-budget-observation.md | 2026-11-02 | 2026-11-03: answered by D-7 |
 
 ## Замки
 
@@ -79,6 +79,21 @@ R-n — действие: точная команда одной строкой 
 <!-- orch:journal -->
 | Дата | WP | Событие | Подтверждение |
 |------|----|---------|---------------|
+| 2026-11-03 09:13Z | WP-FRAMEWORK-14 | research start: collecting | wp14-wave-1 |
+| 2026-11-03 09:13Z | WP-FRAMEWORK-14 | research contract: ready | reports/WP-FRAMEWORK-14.md |
+| 2026-11-03 09:13Z | WP-FRAMEWORK-14 | WP-FRAMEWORK-14: READY -> IN_PROGRESS | Один ограниченный синтез существующих материалов и независимая приёмка |
+| 2026-11-03 09:13Z | WP-FRAMEWORK-14 | WP-FRAMEWORK-14: DRAFT -> READY | D-6: зависимость от ограниченно принятых входов документирована |
+| 2026-11-03 09:13Z | WP-FRAMEWORK-12 | research start: collecting | wp12-wave-1 |
+| 2026-11-03 09:13Z | WP-FRAMEWORK-12 | research contract: ready | reports/WP-FRAMEWORK-12.md |
+| 2026-11-03 09:13Z | WP-FRAMEWORK-12 | WP-FRAMEWORK-12: READY -> IN_PROGRESS | Один ограниченный синтез существующих материалов и независимая приёмка |
+| 2026-11-03 09:13Z | WP-FRAMEWORK-12 | WP-FRAMEWORK-12: DRAFT -> READY | D-6: зависимость от ограниченно принятых входов документирована |
+| 2026-11-03 09:13Z | WP-FRAMEWORK-11 | research start: collecting | wp11-wave-1 |
+| 2026-11-03 09:13Z | WP-FRAMEWORK-11 | research contract: ready | reports/WP-FRAMEWORK-11.md |
+| 2026-11-03 09:13Z | WP-FRAMEWORK-11 | WP-FRAMEWORK-11: READY -> IN_PROGRESS | Один ограниченный синтез существующих материалов и независимая приёмка |
+| 2026-11-03 09:13Z | WP-FRAMEWORK-11 | WP-FRAMEWORK-11: DRAFT -> READY | D-6: зависимость от ограниченно принятых входов документирована |
+| 2026-11-03 09:12Z | — | P-2 closed | answered by D-7 |
+| 2026-11-03 09:12Z | — | D-7 recorded | Ответ владельца 2А от 2026-11-03 |
+| 2026-11-03 09:12Z | — | D-6 recorded | Ответ владельца 1А от 2026-11-03 |
 | 2026-11-03 08:49Z | — | Согласованы статусы волн с D-5; завершены два раунда и независимая частичная приёмка WP-02–10,15; сводка рекомендаций дополнена и проверена. | reports/recommendations.md; reports/recommendations-profile-review.md |
 | 2026-11-03 08:48Z | WP-FRAMEWORK-15 | WP-FRAMEWORK-15: IN_PROGRESS -> REVISE | Два раунда: частичная сдача, критерии и review в reports/WP-15-independent-review.md |
 | 2026-11-03 08:48Z | WP-FRAMEWORK-15 | research verdict: partial | wp15-review-2 |
