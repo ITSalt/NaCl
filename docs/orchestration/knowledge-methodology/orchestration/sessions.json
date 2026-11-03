@@ -4,10 +4,10 @@
   "instances": {},
   "assignments": {},
   "launches": {},
-  "revision": 163,
+  "revision": 166,
   "generation": 1,
   "autonomy": {
-    "enabled": false,
+    "enabled": true,
     "session_reuse": "auto",
     "interval_seconds": 600,
     "max_parallel_sessions": 2
@@ -4851,6 +4851,94 @@
           "criterion": "verification",
           "missing_fact": "Адресно исправить по накопленным traces и review без расширения scope",
           "decision": "Финальная независимая приёмка"
+        }
+      ]
+    },
+    "WP-FRAMEWORK-16": {
+      "contract": {
+        "question": "Какие точечные упрощения NaCl сохраняют необходимые гарантии графа и методологии на проверенных сценариях?",
+        "decision": "Передать в план реализации проверенные кандидаты и честные ограничения",
+        "artifact": "reports/WP-FRAMEWORK-16.md",
+        "criteria": {
+          "ba_sa": {
+            "evidence_standard": "Исторический BA-2: конкретная проверка обнаружения смыслового изменения без потери graph/provenance, positive и negative controls, исход и UNKNOWN",
+            "unknown_allowed": false
+          },
+          "evidence": {
+            "evidence_standard": "Исторические DEV-1/DEV-3: проверка классификации evidence и защиты от false PASS, с positive и negative controls и границами",
+            "unknown_allowed": false
+          },
+          "recovery": {
+            "evidence_standard": "CTRL-1/CTRL-3: проверка согласованности authority/fingerprint и восстановления без нарушения чужого scope, positive и negative controls и границы",
+            "unknown_allowed": false
+          },
+          "synthesis": {
+            "evidence_standard": "Сопоставление результатов по механизмам: текущая гарантия, кандидат, evidence, цена либо UNKNOWN, риски и условия реализации",
+            "unknown_allowed": false
+          },
+          "verification": {
+            "evidence_standard": "Независимая проверка источников, test oracle, scopes, отсутствия ложного PASS и итоговых ограничений",
+            "unknown_allowed": false
+          }
+        }
+      },
+      "round": 1,
+      "phase": "collecting",
+      "open": [
+        "ba_sa",
+        "evidence",
+        "recovery",
+        "synthesis",
+        "verification"
+      ],
+      "results": {},
+      "events": {
+        "wp16-wave-1": {
+          "event": "start",
+          "payload": {
+            "id": "wp16-wave-1",
+            "tasks": [
+              {
+                "id": "wp16-ba",
+                "criterion": "ba_sa",
+                "missing_fact": "Составить и безопасно проверить первую гипотезу semantic BA→SA с независимыми controls",
+                "decision": "Первое ограниченное представление кандидата и недостающих гарантий"
+              },
+              {
+                "id": "wp16-evidence",
+                "criterion": "evidence",
+                "missing_fact": "Составить и безопасно проверить контракт уровней evidence с controls",
+                "decision": "Первое ограниченное представление кандидата и недостающих гарантий"
+              },
+              {
+                "id": "wp16-recovery",
+                "criterion": "recovery",
+                "missing_fact": "Составить и безопасно проверить контракты graph identity и recovery с controls",
+                "decision": "Первое ограниченное представление кандидата и недостающих гарантий"
+              }
+            ]
+          }
+        }
+      },
+      "verdicts": [],
+      "tasks": [
+        {
+          "id": "wp16-ba",
+          "criterion": "ba_sa",
+          "missing_fact": "Составить и безопасно проверить первую гипотезу semantic BA→SA с независимыми controls",
+          "decision": "Первое ограниченное представление кандидата и недостающих гарантий"
+        },
+        {
+          "id": "wp16-evidence",
+          "criterion": "evidence",
+          "missing_fact": "Составить и безопасно проверить контракт уровней evidence с controls",
+          "decision": "Первое ограниченное представление кандидата и недостающих гарантий"
+        },
+        {
+          "id": "wp16-recovery",
+          "criterion": "recovery",
+          "missing_fact": "Составить и безопасно проверить контракты graph identity и recovery с controls",
+          "decision": "Первое ограниченное представление кандидата и недостающих гарантий"
         }
       ]
     }

@@ -37,7 +37,7 @@ CANCELLED (причина).
 | [WP-FRAMEWORK-13](work-packages/WP-FRAMEWORK-13-interface-dev-qa.md) | framework | Стык разработка → review/QA → release | REVISE | knowledge-methodology-framework | — | 2026-11-03 |
 | [WP-FRAMEWORK-14](work-packages/WP-FRAMEWORK-14-interface-control.md) | framework | Стык управления, восстановления и состояния | REVISE | knowledge-methodology-framework | — | 2026-11-03 |
 | [WP-FRAMEWORK-15](work-packages/WP-FRAMEWORK-15-harness.md) | framework | Что можно передать Harness | REVISE | knowledge-methodology-framework | — | 2026-11-03 |
-| [WP-FRAMEWORK-16](work-packages/WP-FRAMEWORK-16-measurement.md) | framework | Проверка кандидатов модернизации NaCl | DRAFT | knowledge-methodology-framework | — | 2026-11-03 |
+| [WP-FRAMEWORK-16](work-packages/WP-FRAMEWORK-16-measurement.md) | framework | Проверка кандидатов модернизации NaCl | IN_PROGRESS | knowledge-methodology-framework | — | 2026-11-03 |
 | [WP-FRAMEWORK-17](work-packages/WP-FRAMEWORK-17-challenge.md) | framework | Независимая проверка рекомендаций | DRAFT | knowledge-methodology-framework | — | 2026-11-02 |
 | [WP-FRAMEWORK-18](work-packages/WP-FRAMEWORK-18-recommendations.md) | framework | План модернизации NaCl и передача следующей программе | DRAFT | knowledge-methodology-framework | — | 2026-11-03 |
 | [WP-FRAMEWORK-19](work-packages/WP-FRAMEWORK-19-historical-interface-cases.md) | framework | Девять реальных исторических ситуаций по трём границам | DONE | knowledge-methodology-framework | — | 2026-11-03 |
@@ -82,6 +82,12 @@ R-n — действие: точная команда одной строкой 
 <!-- orch:journal -->
 | Дата | WP | Событие | Подтверждение |
 |------|----|---------|---------------|
+| 2026-11-03 10:45Z | WP-FRAMEWORK-16 | research start: collecting | wp16-wave-1 |
+| 2026-11-03 10:45Z | WP-FRAMEWORK-16 | research contract: ready | reports/WP-FRAMEWORK-16.md |
+| 2026-11-03 10:45Z | WP-FRAMEWORK-16 | WP-FRAMEWORK-16: READY -> IN_PROGRESS | D-11/D-13: проверка конкретных упрощений NaCl на принятом WP-19, graph сохранён |
+| 2026-11-03 10:45Z | WP-FRAMEWORK-16 | WP-FRAMEWORK-16: DRAFT -> READY | D-11/D-13: проверка конкретных упрощений NaCl на принятом WP-19, graph сохранён |
+| 2026-11-03 10:45Z | — | По поручению владельца начата фаза проверки кандидатов; WP-16 использует принятые кейсы WP-19 и явно частичный вход WP-13 без утверждения его DONE или изменения исходных гейтов. | PLAN.md; work-packages/WP-FRAMEWORK-16-measurement.md; reports/WP-13-independent-review.md |
+| 2026-11-03 10:44Z | — | D-13 recorded | Прямой ответ владельца на запрос дополнительного бюджета для следующей фазы |
 | 2026-11-03 10:34Z | — | Статический проект модернизации и первый кандидат BA→SA оформлены; независимое review трёх проектов проведено, замечания исправлены. D-12: watcher остановлен у резерва, поскольку cumulative delta родителя 8 119 488 input, а суммарный расход дочерних сессий не установлен; финальное завершение программы не заявляется. | reports/final-audit.md; reports/target-methodology.md; reports/implementation-handoff.md; reports/modernization-draft-review.md; reports/modernization-candidate-ba-sa.md |
 | 2026-11-03 10:32Z | — | Продолжена статическая работа по D-11: подготовлены проекты final-audit, target-methodology и implementation-handoff; документы направлены на независимый review. Финальная приёмка и реализация NaCl не заявляются. | reports/final-audit.md; reports/target-methodology.md; reports/implementation-handoff.md |
 | 2026-11-03 10:07Z | — | Единый план и задания WP-16/17/18 согласованы с D-11: граф и методология NaCl сохраняются; проверки направлены на конкретные упрощения. D-12 фиксирует новый лимит без заявления о подтверждённом hard cap. | PLAN.md; spec/research-protocol.md; spec/family-cinema-testbed.md |
