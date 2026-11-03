@@ -4,7 +4,7 @@
   "instances": {},
   "assignments": {},
   "launches": {},
-  "revision": 30,
+  "revision": 36,
   "generation": 1,
   "autonomy": {
     "enabled": true,
@@ -693,18 +693,17 @@
           }
         }
       },
-      "round": 1,
+      "round": 2,
       "phase": "review",
       "open": [
         "control",
         "coverage",
-        "mechanisms",
-        "evidence",
-        "recommendations",
         "verification"
       ],
       "results": {
-        "tl-synthesis": "reports/WP-FRAMEWORK-04.md"
+        "tl-scope-fix": "reports/WP-FRAMEWORK-04.md",
+        "tl-control-fix": "reports/WP-FRAMEWORK-04.md",
+        "tl-review-fix": "reports/WP-FRAMEWORK-04.md"
       },
       "events": {
         "tl-wave-1": {
@@ -728,15 +727,153 @@
             "task": "tl-synthesis",
             "evidence": "reports/WP-FRAMEWORK-04.md"
           }
+        },
+        "tl-review-1": {
+          "event": "verdict",
+          "payload": {
+            "id": "tl-review-1",
+            "verdict": "revise",
+            "criteria": {
+              "mechanisms": {
+                "status": "satisfied",
+                "reason": "Независимый review подтвердил ограниченный source-level срез.",
+                "evidence": "reports/WP-04-independent-review.md"
+              },
+              "evidence": {
+                "status": "satisfied",
+                "reason": "Независимый review подтвердил ограниченный source-level срез.",
+                "evidence": "reports/WP-04-independent-review.md"
+              },
+              "recommendations": {
+                "status": "satisfied",
+                "reason": "Независимый review подтвердил ограниченный source-level срез.",
+                "evidence": "reports/WP-04-independent-review.md"
+              },
+              "control": {
+                "status": "blocked",
+                "reason": "Критический путь/подобласти либо фиксация проверки остаются открытыми по review.",
+                "evidence": "reports/WP-04-independent-review.md"
+              },
+              "coverage": {
+                "status": "blocked",
+                "reason": "Критический путь/подобласти либо фиксация проверки остаются открытыми по review.",
+                "evidence": "reports/WP-04-independent-review.md"
+              },
+              "verification": {
+                "status": "blocked",
+                "reason": "Критический путь/подобласти либо фиксация проверки остаются открытыми по review.",
+                "evidence": "reports/WP-04-independent-review.md"
+              }
+            }
+          }
+        },
+        "tl-wave-2": {
+          "event": "start",
+          "payload": {
+            "id": "tl-wave-2",
+            "tasks": [
+              {
+                "id": "tl-scope-fix",
+                "criterion": "coverage",
+                "missing_fact": "Проверить существующее evidence L0–L2, retry, compaction, goal/conductor и ограничения критического пути",
+                "decision": "Полная или частичная сдача WP-04"
+              },
+              {
+                "id": "tl-control-fix",
+                "criterion": "control",
+                "missing_fact": "Уточнить source-level зависимости и различие между графом и измеренным критическим путём",
+                "decision": "Полная или частичная сдача WP-04"
+              },
+              {
+                "id": "tl-review-fix",
+                "criterion": "verification",
+                "missing_fact": "Зафиксировать независимый review, проверку ссылок и исходного checkout",
+                "decision": "Полная или частичная сдача WP-04"
+              }
+            ]
+          }
+        },
+        "tl-result-2-1": {
+          "event": "result",
+          "payload": {
+            "id": "tl-result-2-1",
+            "task": "tl-scope-fix",
+            "evidence": "reports/WP-FRAMEWORK-04.md"
+          }
+        },
+        "tl-result-2-2": {
+          "event": "result",
+          "payload": {
+            "id": "tl-result-2-2",
+            "task": "tl-control-fix",
+            "evidence": "reports/WP-FRAMEWORK-04.md"
+          }
+        },
+        "tl-result-2-3": {
+          "event": "result",
+          "payload": {
+            "id": "tl-result-2-3",
+            "task": "tl-review-fix",
+            "evidence": "reports/WP-FRAMEWORK-04.md"
+          }
         }
       },
-      "verdicts": [],
+      "verdicts": [
+        {
+          "id": "tl-review-1",
+          "verdict": "revise",
+          "criteria": {
+            "mechanisms": {
+              "status": "satisfied",
+              "reason": "Независимый review подтвердил ограниченный source-level срез.",
+              "evidence": "reports/WP-04-independent-review.md"
+            },
+            "evidence": {
+              "status": "satisfied",
+              "reason": "Независимый review подтвердил ограниченный source-level срез.",
+              "evidence": "reports/WP-04-independent-review.md"
+            },
+            "recommendations": {
+              "status": "satisfied",
+              "reason": "Независимый review подтвердил ограниченный source-level срез.",
+              "evidence": "reports/WP-04-independent-review.md"
+            },
+            "control": {
+              "status": "blocked",
+              "reason": "Критический путь/подобласти либо фиксация проверки остаются открытыми по review.",
+              "evidence": "reports/WP-04-independent-review.md"
+            },
+            "coverage": {
+              "status": "blocked",
+              "reason": "Критический путь/подобласти либо фиксация проверки остаются открытыми по review.",
+              "evidence": "reports/WP-04-independent-review.md"
+            },
+            "verification": {
+              "status": "blocked",
+              "reason": "Критический путь/подобласти либо фиксация проверки остаются открытыми по review.",
+              "evidence": "reports/WP-04-independent-review.md"
+            }
+          }
+        }
+      ],
       "tasks": [
         {
-          "id": "tl-synthesis",
+          "id": "tl-scope-fix",
+          "criterion": "coverage",
+          "missing_fact": "Проверить существующее evidence L0–L2, retry, compaction, goal/conductor и ограничения критического пути",
+          "decision": "Полная или частичная сдача WP-04"
+        },
+        {
+          "id": "tl-control-fix",
           "criterion": "control",
-          "missing_fact": "Свести накопленные TL материалы в граф и критический путь с UNKNOWN и областями",
-          "decision": "Приёмка статического WP-04"
+          "missing_fact": "Уточнить source-level зависимости и различие между графом и измеренным критическим путём",
+          "decision": "Полная или частичная сдача WP-04"
+        },
+        {
+          "id": "tl-review-fix",
+          "criterion": "verification",
+          "missing_fact": "Зафиксировать независимый review, проверку ссылок и исходного checkout",
+          "decision": "Полная или частичная сдача WP-04"
         }
       ]
     },
@@ -773,7 +910,7 @@
         }
       },
       "round": 1,
-      "phase": "collecting",
+      "phase": "review",
       "open": [
         "loop",
         "coverage",
@@ -782,7 +919,9 @@
         "recommendations",
         "verification"
       ],
-      "results": {},
+      "results": {
+        "dev-synthesis": "reports/WP-FRAMEWORK-05.md"
+      },
       "events": {
         "dev-wave-1": {
           "event": "start",
@@ -796,6 +935,14 @@
                 "decision": "Статическая сдача WP-05"
               }
             ]
+          }
+        },
+        "dev-result-1": {
+          "event": "result",
+          "payload": {
+            "id": "dev-result-1",
+            "task": "dev-synthesis",
+            "evidence": "reports/WP-FRAMEWORK-05.md"
           }
         }
       },
