@@ -39,7 +39,7 @@ CANCELLED (причина).
 | [WP-FRAMEWORK-15](work-packages/WP-FRAMEWORK-15-harness.md) | framework | Что можно передать Harness | REVISE | knowledge-methodology-framework | — | 2026-11-03 |
 | [WP-FRAMEWORK-16](work-packages/WP-FRAMEWORK-16-measurement.md) | framework | Проверка кандидатов модернизации NaCl | REVISE | knowledge-methodology-framework | — | 2026-11-03 |
 | [WP-FRAMEWORK-17](work-packages/WP-FRAMEWORK-17-challenge.md) | framework | Независимая проверка рекомендаций | DONE | knowledge-methodology-framework | — | 2026-11-03 |
-| [WP-FRAMEWORK-18](work-packages/WP-FRAMEWORK-18-recommendations.md) | framework | План модернизации NaCl и передача следующей программе | DRAFT | knowledge-methodology-framework | — | 2026-11-03 |
+| [WP-FRAMEWORK-18](work-packages/WP-FRAMEWORK-18-recommendations.md) | framework | План модернизации NaCl и передача следующей программе | IN_PROGRESS | knowledge-methodology-framework | — | 2026-11-03 |
 | [WP-FRAMEWORK-19](work-packages/WP-FRAMEWORK-19-historical-interface-cases.md) | framework | Девять реальных исторических ситуаций по трём границам | DONE | knowledge-methodology-framework | — | 2026-11-03 |
 
 ## Ждёт владельца
@@ -82,6 +82,11 @@ R-n — действие: точная команда одной строкой 
 <!-- orch:journal -->
 | Дата | WP | Событие | Подтверждение |
 |------|----|---------|---------------|
+| 2026-11-03 11:06Z | WP-FRAMEWORK-18 | research start: collecting | wp18-wave-1 |
+| 2026-11-03 11:06Z | WP-FRAMEWORK-18 | research contract: ready | reports/WP-FRAMEWORK-18.md |
+| 2026-11-03 11:06Z | WP-FRAMEWORK-18 | WP-FRAMEWORK-18: READY -> IN_PROGRESS | D-15: финальный доказательный план NaCl; WP17 DONE, частичные WP13/16 обозначать |
+| 2026-11-03 11:06Z | WP-FRAMEWORK-18 | WP-FRAMEWORK-18: DRAFT -> READY | D-15: финальный доказательный план NaCl; WP17 DONE, частичные WP13/16 обозначать |
+| 2026-11-03 11:06Z | — | D-15 recorded | Прямое разрешение владельца: увеличить лимит в три раза и продолжать |
 | 2026-11-03 10:59Z | — | Ограниченный challenge WP-17 принят: M0–M5 и graph-инварианты проверены, исходные partial WP13/16 сохранены. Финальная сдача WP18 не начата; watcher приостановлен на резерве D-14 около 57,9 млн observed input из 60 млн, сумма может включать перекрытие и не является billing. | reports/WP-FRAMEWORK-17.md; reports/WP-17-independent-review.md |
 | 2026-11-03 10:59Z | WP-FRAMEWORK-17 | WP-FRAMEWORK-17: ACCEPTED -> DONE | Ограниченный независимый challenge принят: reports/WP-17-independent-review.md; WP13/16 остаются PARTIAL |
 | 2026-11-03 10:59Z | WP-FRAMEWORK-17 | WP-FRAMEWORK-17: REVIEW -> ACCEPTED | Ограниченный независимый challenge принят: reports/WP-17-independent-review.md; WP13/16 остаются PARTIAL |

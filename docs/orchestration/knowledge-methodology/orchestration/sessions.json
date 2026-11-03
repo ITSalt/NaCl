@@ -4,10 +4,10 @@
   "instances": {},
   "assignments": {},
   "launches": {},
-  "revision": 188,
+  "revision": 191,
   "generation": 1,
   "autonomy": {
-    "enabled": false,
+    "enabled": true,
     "session_reuse": "auto",
     "interval_seconds": 600,
     "max_parallel_sessions": 2
@@ -5456,6 +5456,94 @@
           "criterion": "recommendations",
           "missing_fact": "Уточнить consumer или категорию по уже рассмотренным сведениям",
           "decision": "Финальный независимый verdict"
+        }
+      ]
+    },
+    "WP-FRAMEWORK-18": {
+      "contract": {
+        "question": "Как устроен NaCl и какой доказательный, реалистичный план его модернизации сохраняет граф и методологию?",
+        "decision": "Сдать владельцу понятный аудит и исполнимый backlog с честными ограничениями",
+        "artifact": "reports/WP-FRAMEWORK-18.md",
+        "criteria": {
+          "architecture": {
+            "evidence_standard": "Связный аудит устройства BA, SA, TL, graph и платформы: цепочки, ключевые механизмы и consumers, польза, обнаруженные проблемы и границы по источникам",
+            "unknown_allowed": false
+          },
+          "evidence": {
+            "evidence_standard": "По рекомендациям связать исторические случаи, static источники и synthetic проверки; отделить факты, гипотезы и UNKNOWN без заявлений live или экономии",
+            "unknown_allowed": false
+          },
+          "methodology": {
+            "evidence_standard": "Целевая графовая методология, жизненный цикл и сохраняемые гарантии изложены связно, без подмены графа",
+            "unknown_allowed": false
+          },
+          "backlog": {
+            "evidence_standard": "Практический план M0–M5: приоритеты, зависимости, источники, before/after, риски, migration, acceptance и rollback",
+            "unknown_allowed": false
+          },
+          "verification": {
+            "evidence_standard": "Независимый review полного комплекта, ссылки и проверка сохранения ограничений D-11 и исходных partial verdicts",
+            "unknown_allowed": false
+          }
+        }
+      },
+      "round": 1,
+      "phase": "collecting",
+      "open": [
+        "architecture",
+        "evidence",
+        "methodology",
+        "backlog",
+        "verification"
+      ],
+      "results": {},
+      "events": {
+        "wp18-wave-1": {
+          "event": "start",
+          "payload": {
+            "id": "wp18-wave-1",
+            "tasks": [
+              {
+                "id": "wp18-sa-tl",
+                "criterion": "architecture",
+                "missing_fact": "Связный аудит SA/TL из проверенных исходных отчётов, механизмов и источников",
+                "decision": "Понятный итоговый аудит для владельца"
+              },
+              {
+                "id": "wp18-ba-platform",
+                "criterion": "architecture",
+                "missing_fact": "Связный аудит BA, graph и платформы по накопленным source-level материалам",
+                "decision": "Понятный итоговый аудит для владельца"
+              },
+              {
+                "id": "wp18-synthesis",
+                "criterion": "backlog",
+                "missing_fact": "Согласовать целевую методологию, evidence и план M0–M5 с принятым challenge и WP16",
+                "decision": "Итоговый комплект WP18"
+              }
+            ]
+          }
+        }
+      },
+      "verdicts": [],
+      "tasks": [
+        {
+          "id": "wp18-sa-tl",
+          "criterion": "architecture",
+          "missing_fact": "Связный аудит SA/TL из проверенных исходных отчётов, механизмов и источников",
+          "decision": "Понятный итоговый аудит для владельца"
+        },
+        {
+          "id": "wp18-ba-platform",
+          "criterion": "architecture",
+          "missing_fact": "Связный аудит BA, graph и платформы по накопленным source-level материалам",
+          "decision": "Понятный итоговый аудит для владельца"
+        },
+        {
+          "id": "wp18-synthesis",
+          "criterion": "backlog",
+          "missing_fact": "Согласовать целевую методологию, evidence и план M0–M5 с принятым challenge и WP16",
+          "decision": "Итоговый комплект WP18"
         }
       ]
     }
