@@ -79,6 +79,9 @@ R-n — действие: точная команда одной строкой 
 <!-- orch:journal -->
 | Дата | WP | Событие | Подтверждение |
 |------|----|---------|---------------|
+| 2026-11-03 08:44Z | WP-FRAMEWORK-15 | research result: review | wp15-result-1 |
+| 2026-11-03 08:44Z | WP-FRAMEWORK-10 | research result: review | wp10-result-1 |
+| 2026-11-03 08:44Z | WP-FRAMEWORK-09 | research result: review | wp09-result-1 |
 | 2026-11-03 08:43Z | WP-FRAMEWORK-15 | research start: collecting | wp15-wave-1 |
 | 2026-11-03 08:43Z | WP-FRAMEWORK-15 | research contract: ready | reports/WP-FRAMEWORK-15.md |
 | 2026-11-03 08:43Z | WP-FRAMEWORK-15 | WP-FRAMEWORK-15: READY -> IN_PROGRESS | Ограниченное рассмотрение по исходному charter |

@@ -4,7 +4,7 @@
   "instances": {},
   "assignments": {},
   "launches": {},
-  "revision": 82,
+  "revision": 85,
   "generation": 1,
   "autonomy": {
     "enabled": true,
@@ -2272,7 +2272,7 @@
         }
       },
       "round": 1,
-      "phase": "collecting",
+      "phase": "review",
       "open": [
         "primary",
         "coverage",
@@ -2281,7 +2281,9 @@
         "recommendations",
         "verification"
       ],
-      "results": {},
+      "results": {
+        "wp09-synthesis": "reports/WP-FRAMEWORK-09.md"
+      },
       "events": {
         "wp09-wave-1": {
           "event": "start",
@@ -2295,6 +2297,14 @@
                 "decision": "Статическая сдача WP-09"
               }
             ]
+          }
+        },
+        "wp09-result-1": {
+          "event": "result",
+          "payload": {
+            "id": "wp09-result-1",
+            "task": "wp09-synthesis",
+            "evidence": "reports/WP-FRAMEWORK-09.md"
           }
         }
       },
@@ -2341,7 +2351,7 @@
         }
       },
       "round": 1,
-      "phase": "collecting",
+      "phase": "review",
       "open": [
         "primary",
         "coverage",
@@ -2350,7 +2360,9 @@
         "recommendations",
         "verification"
       ],
-      "results": {},
+      "results": {
+        "wp10-synthesis": "reports/WP-FRAMEWORK-10.md"
+      },
       "events": {
         "wp10-wave-1": {
           "event": "start",
@@ -2364,6 +2376,14 @@
                 "decision": "Статическая сдача WP-10"
               }
             ]
+          }
+        },
+        "wp10-result-1": {
+          "event": "result",
+          "payload": {
+            "id": "wp10-result-1",
+            "task": "wp10-synthesis",
+            "evidence": "reports/WP-FRAMEWORK-10.md"
           }
         }
       },
@@ -2410,7 +2430,7 @@
         }
       },
       "round": 1,
-      "phase": "collecting",
+      "phase": "review",
       "open": [
         "primary",
         "coverage",
@@ -2419,7 +2439,9 @@
         "recommendations",
         "verification"
       ],
-      "results": {},
+      "results": {
+        "wp15-synthesis": "reports/WP-FRAMEWORK-15.md"
+      },
       "events": {
         "wp15-wave-1": {
           "event": "start",
@@ -2433,6 +2455,14 @@
                 "decision": "Статическая сдача WP-15"
               }
             ]
+          }
+        },
+        "wp15-result-1": {
+          "event": "result",
+          "payload": {
+            "id": "wp15-result-1",
+            "task": "wp15-synthesis",
+            "evidence": "reports/WP-FRAMEWORK-15.md"
           }
         }
       },
