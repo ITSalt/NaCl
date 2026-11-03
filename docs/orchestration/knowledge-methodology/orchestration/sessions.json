@@ -4,7 +4,7 @@
   "instances": {},
   "assignments": {},
   "launches": {},
-  "revision": 149,
+  "revision": 150,
   "generation": 1,
   "autonomy": {
     "enabled": true,
@@ -4208,20 +4208,8 @@
         }
       },
       "round": 1,
-      "phase": "review",
-      "open": [
-        "ba1",
-        "ba2",
-        "ba3",
-        "dev1",
-        "dev2",
-        "dev3",
-        "control1",
-        "control2",
-        "control3",
-        "synthesis",
-        "review"
-      ],
+      "phase": "accepted",
+      "open": [],
       "results": {
         "wp19-ba1": "reports/WP-FRAMEWORK-19.md",
         "wp19-ba2": "reports/WP-FRAMEWORK-19.md",
@@ -4367,9 +4355,135 @@
             "task": "wp19-control3",
             "evidence": "reports/WP-FRAMEWORK-19.md"
           }
+        },
+        "wp19-final-review": {
+          "event": "verdict",
+          "payload": {
+            "id": "wp19-final-review",
+            "verdict": "accepted",
+            "criteria": {
+              "ba1": {
+                "status": "satisfied",
+                "reason": "Независимый review подтвердил по историческим артефактам с явно указанными UNKNOWN; предварительный и формальный сбор учтены как две итерации.",
+                "evidence": "reports/WP-19-independent-review.md"
+              },
+              "ba2": {
+                "status": "satisfied",
+                "reason": "Независимый review подтвердил по историческим артефактам с явно указанными UNKNOWN; предварительный и формальный сбор учтены как две итерации.",
+                "evidence": "reports/WP-19-independent-review.md"
+              },
+              "ba3": {
+                "status": "satisfied",
+                "reason": "Независимый review подтвердил по историческим артефактам с явно указанными UNKNOWN; предварительный и формальный сбор учтены как две итерации.",
+                "evidence": "reports/WP-19-independent-review.md"
+              },
+              "dev1": {
+                "status": "satisfied",
+                "reason": "Независимый review подтвердил по историческим артефактам с явно указанными UNKNOWN; предварительный и формальный сбор учтены как две итерации.",
+                "evidence": "reports/WP-19-independent-review.md"
+              },
+              "dev2": {
+                "status": "satisfied",
+                "reason": "Независимый review подтвердил по историческим артефактам с явно указанными UNKNOWN; предварительный и формальный сбор учтены как две итерации.",
+                "evidence": "reports/WP-19-independent-review.md"
+              },
+              "dev3": {
+                "status": "satisfied",
+                "reason": "Независимый review подтвердил по историческим артефактам с явно указанными UNKNOWN; предварительный и формальный сбор учтены как две итерации.",
+                "evidence": "reports/WP-19-independent-review.md"
+              },
+              "control1": {
+                "status": "satisfied",
+                "reason": "Независимый review подтвердил по историческим артефактам с явно указанными UNKNOWN; предварительный и формальный сбор учтены как две итерации.",
+                "evidence": "reports/WP-19-independent-review.md"
+              },
+              "control2": {
+                "status": "satisfied",
+                "reason": "Независимый review подтвердил по историческим артефактам с явно указанными UNKNOWN; предварительный и формальный сбор учтены как две итерации.",
+                "evidence": "reports/WP-19-independent-review.md"
+              },
+              "control3": {
+                "status": "satisfied",
+                "reason": "Независимый review подтвердил по историческим артефактам с явно указанными UNKNOWN; предварительный и формальный сбор учтены как две итерации.",
+                "evidence": "reports/WP-19-independent-review.md"
+              },
+              "synthesis": {
+                "status": "satisfied",
+                "reason": "Независимый review подтвердил по историческим артефактам с явно указанными UNKNOWN; предварительный и формальный сбор учтены как две итерации.",
+                "evidence": "reports/WP-19-independent-review.md"
+              },
+              "review": {
+                "status": "satisfied",
+                "reason": "Независимый review подтвердил по историческим артефактам с явно указанными UNKNOWN; предварительный и формальный сбор учтены как две итерации.",
+                "evidence": "reports/WP-19-independent-review.md"
+              }
+            }
+          }
         }
       },
-      "verdicts": [],
+      "verdicts": [
+        {
+          "id": "wp19-final-review",
+          "verdict": "accepted",
+          "criteria": {
+            "ba1": {
+              "status": "satisfied",
+              "reason": "Независимый review подтвердил по историческим артефактам с явно указанными UNKNOWN; предварительный и формальный сбор учтены как две итерации.",
+              "evidence": "reports/WP-19-independent-review.md"
+            },
+            "ba2": {
+              "status": "satisfied",
+              "reason": "Независимый review подтвердил по историческим артефактам с явно указанными UNKNOWN; предварительный и формальный сбор учтены как две итерации.",
+              "evidence": "reports/WP-19-independent-review.md"
+            },
+            "ba3": {
+              "status": "satisfied",
+              "reason": "Независимый review подтвердил по историческим артефактам с явно указанными UNKNOWN; предварительный и формальный сбор учтены как две итерации.",
+              "evidence": "reports/WP-19-independent-review.md"
+            },
+            "dev1": {
+              "status": "satisfied",
+              "reason": "Независимый review подтвердил по историческим артефактам с явно указанными UNKNOWN; предварительный и формальный сбор учтены как две итерации.",
+              "evidence": "reports/WP-19-independent-review.md"
+            },
+            "dev2": {
+              "status": "satisfied",
+              "reason": "Независимый review подтвердил по историческим артефактам с явно указанными UNKNOWN; предварительный и формальный сбор учтены как две итерации.",
+              "evidence": "reports/WP-19-independent-review.md"
+            },
+            "dev3": {
+              "status": "satisfied",
+              "reason": "Независимый review подтвердил по историческим артефактам с явно указанными UNKNOWN; предварительный и формальный сбор учтены как две итерации.",
+              "evidence": "reports/WP-19-independent-review.md"
+            },
+            "control1": {
+              "status": "satisfied",
+              "reason": "Независимый review подтвердил по историческим артефактам с явно указанными UNKNOWN; предварительный и формальный сбор учтены как две итерации.",
+              "evidence": "reports/WP-19-independent-review.md"
+            },
+            "control2": {
+              "status": "satisfied",
+              "reason": "Независимый review подтвердил по историческим артефактам с явно указанными UNKNOWN; предварительный и формальный сбор учтены как две итерации.",
+              "evidence": "reports/WP-19-independent-review.md"
+            },
+            "control3": {
+              "status": "satisfied",
+              "reason": "Независимый review подтвердил по историческим артефактам с явно указанными UNKNOWN; предварительный и формальный сбор учтены как две итерации.",
+              "evidence": "reports/WP-19-independent-review.md"
+            },
+            "synthesis": {
+              "status": "satisfied",
+              "reason": "Независимый review подтвердил по историческим артефактам с явно указанными UNKNOWN; предварительный и формальный сбор учтены как две итерации.",
+              "evidence": "reports/WP-19-independent-review.md"
+            },
+            "review": {
+              "status": "satisfied",
+              "reason": "Независимый review подтвердил по историческим артефактам с явно указанными UNKNOWN; предварительный и формальный сбор учтены как две итерации.",
+              "evidence": "reports/WP-19-independent-review.md"
+            }
+          }
+        }
+      ],
       "tasks": [
         {
           "id": "wp19-ba1",

@@ -40,7 +40,7 @@ CANCELLED (причина).
 | [WP-FRAMEWORK-16](work-packages/WP-FRAMEWORK-16-measurement.md) | framework | Цена методологии и сравнение с Markdown | DRAFT | knowledge-methodology-framework | — | 2026-11-02 |
 | [WP-FRAMEWORK-17](work-packages/WP-FRAMEWORK-17-challenge.md) | framework | Независимая проверка рекомендаций | DRAFT | knowledge-methodology-framework | — | 2026-11-02 |
 | [WP-FRAMEWORK-18](work-packages/WP-FRAMEWORK-18-recommendations.md) | framework | Методические рекомендации и передача следующей программе | DRAFT | knowledge-methodology-framework | — | 2026-11-02 |
-| [WP-FRAMEWORK-19](work-packages/WP-FRAMEWORK-19-historical-interface-cases.md) | framework | Девять реальных исторических ситуаций по трём границам | IN_PROGRESS | knowledge-methodology-framework | — | 2026-11-03 |
+| [WP-FRAMEWORK-19](work-packages/WP-FRAMEWORK-19-historical-interface-cases.md) | framework | Девять реальных исторических ситуаций по трём границам | DONE | knowledge-methodology-framework | — | 2026-11-03 |
 
 ## Ждёт владельца
 
@@ -81,6 +81,11 @@ R-n — действие: точная команда одной строкой 
 <!-- orch:journal -->
 | Дата | WP | Событие | Подтверждение |
 |------|----|---------|---------------|
+| 2026-11-03 09:46Z | — | По D-8/D-9 приняты девять исторических случаев в едином WP-19; зависимости WP-13/16/17 переведены на принятый пакет. Исходные частичные verdicts WP-11/12/14 и UNKNOWN сохранены. | reports/WP-FRAMEWORK-19.md; reports/WP-19-independent-review.md |
+| 2026-11-03 09:45Z | WP-FRAMEWORK-19 | WP-FRAMEWORK-19: ACCEPTED -> DONE | Девять исторических ситуаций и независимая приёмка: reports/WP-FRAMEWORK-19.md; reports/WP-19-independent-review.md |
+| 2026-11-03 09:45Z | WP-FRAMEWORK-19 | WP-FRAMEWORK-19: REVIEW -> ACCEPTED | Девять исторических ситуаций и независимая приёмка: reports/WP-FRAMEWORK-19.md; reports/WP-19-independent-review.md |
+| 2026-11-03 09:45Z | WP-FRAMEWORK-19 | WP-FRAMEWORK-19: IN_PROGRESS -> REVIEW | Девять исторических ситуаций и независимая приёмка: reports/WP-FRAMEWORK-19.md; reports/WP-19-independent-review.md |
+| 2026-11-03 09:45Z | WP-FRAMEWORK-19 | research verdict: accepted | wp19-final-review |
 | 2026-11-03 09:44Z | WP-FRAMEWORK-19 | research result: review | wp19-result-1-control3 |
 | 2026-11-03 09:44Z | WP-FRAMEWORK-19 | research result: collecting | wp19-result-1-control2 |
 | 2026-11-03 09:44Z | WP-FRAMEWORK-19 | research result: collecting | wp19-result-1-control1 |

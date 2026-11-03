@@ -12,7 +12,7 @@
 | Разрешённые изменения исходников | нет |
 | Артефакт координатора | `reports/WP-FRAMEWORK-17.md` |
 | Общие пути / замки / миграции / БД / порты | нет; в program workspace пишет только координатор |
-| Зависит от | WP-FRAMEWORK-11, WP-FRAMEWORK-12, WP-FRAMEWORK-13, WP-FRAMEWORK-14, WP-FRAMEWORK-16 |
+| Зависит от | WP-FRAMEWORK-13, WP-FRAMEWORK-16, WP-FRAMEWORK-19 |
 | Решения | D-2 |
 | Размер | M — относительная трудоёмкость, не оценка календаря |
 | PR / merge / deploy | не применяются к исследовательскому пакету |
