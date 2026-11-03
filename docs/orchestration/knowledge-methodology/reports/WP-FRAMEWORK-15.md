@@ -12,4 +12,10 @@ WP-01 DONE по D-5. Дата просмотра источников в нак�
 | Независимый oracle, требования, решения владельца | Обязанность сохранить; конкретная реализация NaCl не признана единственной. | Проверить пропущенный AC и независимое evidence; capability сама не доказывает содержательное принятие. |
 | Graph identity/lease/fence/idempotency | Эквивалентность Harness не подтверждена. | Проектный scope, актуальный fence, restart и recovery требуют отдельных проверок. |
 
+**Версии и fallback.** По материалам от 2 ноября: Codex CLI 0.166.0 и Claude Code 2.1.316, актуальность runtime и конфигурации не перепроверялась. У subagents остаются scope, shared-resource coordination и независимый oracle; fallback — последовательная работа с reconcile. Desktop worktrees изолируют checkout, но не graph/services. Для resume подтверждать completion и читать durable state; при неопределённом side effect не повторять вслепую. Checkpoint не является полным backup. Denied/missing tool даёт UNKNOWN/BLOCKED. Hooks и CI не заменяют проверку exact SHA и независимую приёмку.
+
+**Предлагаемые проверки, не выполнены.** (1) Два synthetic writer и stale claim: подтверждать только одного owner. (2) Synthetic session с прерыванием: ACK без completion не считать завершением. (3) Fake tool и две identity: denied не создаёт side effect и не даёт PASS. (4) Mock CI: failure/skipped/старый SHA не дают приёмку. (5) Независимая матрица требований: выявлять тест, пропустивший один AC. Для каждого потребуются точные команды, versions, fixtures и независимый oracle; готовых воспроизводимых probes пока нет. Эксперименты и внешние ресурсы в этом раунде не запускались.
+
+Первый [независимый review](WP-15-independent-review.md) отметил недостающие воспроизводимые probes и полное покрытие.
+
 Полностью подтверждённых замен нет; это отсутствие evidence, не доказательство невозможности. Все кандидаты DEFER до отрицательных controls и client/version-specific verification. Первичные ссылки датированы в сохранённом материале, но reproducible native probes лишь предложены; фактическая стоимость и ускорение UNKNOWN. Независимый review и проверка checkout нужны до приёмки.

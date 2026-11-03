@@ -3,3 +3,16 @@
 Reviewer `/root/case_validation`, 3 ноября 2026; [сдача](WP-FRAMEWORK-15.md), charter и frozen contract. Две локальные ссылки доступны; NaCl HEAD `20fe4c6a56482e85d3ea9a9ebaadb37206047e41`, обычный status чист, ignored не проверены. Внешние URL в этом review по сети не перепроверялись. Документированные возможности, ранее наблюдавшиеся версии и proposed probes разделены.
 
 REVISE: primary требует минимально воспроизводимых probe-протоколов и привязки client/version/date; coverage — client-specific lifecycle/fallback и конкретных исключений; mechanisms/recommendations — явной связи capability/consumer/defect/residual risk и positive/negative условий; verification — привязать review/SHA/status. Evidence удовлетворён в рассматриваемом срезе. Непроведённые probes и стоимость остаются UNKNOWN, а не придуманным PASS.
+
+## Финальный независимый review — второй раунд
+
+**PARTIAL.** Исходный charter не закрыт; продолжение исследования в этом цикле исчерпано. Новых проб или проверки внешних источников не проводилось.
+
+| Критерий | Статус | Основание |
+|---|---|---|
+| primary | blocked | Предложенные probes не воспроизводимы: нет точных команд, fixtures, окружения и oracle. |
+| coverage | blocked | Нет полного покрытия client × capability или документированных исключений. |
+| mechanisms | blocked | Не все обязанности имеют индивидуальную карту consumer, defect, альтернативы и риска. |
+| evidence | satisfied | Документированные факты, гипотезы и ограничения разграничены. |
+| recommendations | blocked | DEFER не привязан к воспроизводимым positive и negative controls для каждого клиента и кандидата. |
+| verification | satisfied | Первый review зафиксирован; итоговый независимый review выполнен в указанном срезе. |

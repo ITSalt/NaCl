@@ -4,7 +4,7 @@
   "instances": {},
   "assignments": {},
   "launches": {},
-  "revision": 91,
+  "revision": 107,
   "generation": 1,
   "autonomy": {
     "enabled": true,
@@ -2272,13 +2272,16 @@
         }
       },
       "round": 2,
-      "phase": "collecting",
+      "phase": "partial",
       "open": [
         "primary",
-        "coverage",
-        "verification"
+        "coverage"
       ],
-      "results": {},
+      "results": {
+        "wp09-fix-primary": "reports/WP-FRAMEWORK-09.md",
+        "wp09-fix-coverage": "reports/WP-FRAMEWORK-09.md",
+        "wp09-fix-verification": "reports/WP-FRAMEWORK-09.md"
+      },
       "events": {
         "wp09-wave-1": {
           "event": "start",
@@ -2366,6 +2369,69 @@
               }
             ]
           }
+        },
+        "wp09-result-2-primary": {
+          "event": "result",
+          "payload": {
+            "id": "wp09-result-2-primary",
+            "task": "wp09-fix-primary",
+            "evidence": "reports/WP-FRAMEWORK-09.md"
+          }
+        },
+        "wp09-result-2-coverage": {
+          "event": "result",
+          "payload": {
+            "id": "wp09-result-2-coverage",
+            "task": "wp09-fix-coverage",
+            "evidence": "reports/WP-FRAMEWORK-09.md"
+          }
+        },
+        "wp09-result-2-verification": {
+          "event": "result",
+          "payload": {
+            "id": "wp09-result-2-verification",
+            "task": "wp09-fix-verification",
+            "evidence": "reports/WP-FRAMEWORK-09.md"
+          }
+        },
+        "wp09-review-2": {
+          "event": "verdict",
+          "payload": {
+            "id": "wp09-review-2",
+            "verdict": "partial",
+            "criteria": {
+              "primary": {
+                "status": "blocked",
+                "reason": "Выборочные authority/failure и graph/file; нет полного реестра и семантической эквивалентности.",
+                "evidence": "reports/WP-09-independent-review.md"
+              },
+              "coverage": {
+                "status": "blocked",
+                "reason": "Validators, queries и editor modes не покрыты или не исключены поштучно.",
+                "evidence": "reports/WP-09-independent-review.md"
+              },
+              "mechanisms": {
+                "status": "satisfied",
+                "reason": "Подтверждён ограниченный рассматриваемый срез, цена UNKNOWN.",
+                "evidence": "reports/WP-09-independent-review.md"
+              },
+              "evidence": {
+                "status": "satisfied",
+                "reason": "Документированные факты, гипотезы и ограничения разграничены.",
+                "evidence": "reports/WP-09-independent-review.md"
+              },
+              "recommendations": {
+                "status": "satisfied",
+                "reason": "Названные кандидаты DEFER с условиями; покрытие остального не утверждается.",
+                "evidence": "reports/WP-09-independent-review.md"
+              },
+              "verification": {
+                "status": "satisfied",
+                "reason": "Первый review зафиксирован; итоговый независимый review выполнен в указанном срезе.",
+                "evidence": "reports/WP-09-independent-review.md"
+              }
+            }
+          }
         }
       },
       "verdicts": [
@@ -2401,6 +2467,42 @@
             "verification": {
               "status": "blocked",
               "reason": "Независимый review указал конкретный пробел или необходимость фиксации проверки.",
+              "evidence": "reports/WP-09-independent-review.md"
+            }
+          }
+        },
+        {
+          "id": "wp09-review-2",
+          "verdict": "partial",
+          "criteria": {
+            "primary": {
+              "status": "blocked",
+              "reason": "Выборочные authority/failure и graph/file; нет полного реестра и семантической эквивалентности.",
+              "evidence": "reports/WP-09-independent-review.md"
+            },
+            "coverage": {
+              "status": "blocked",
+              "reason": "Validators, queries и editor modes не покрыты или не исключены поштучно.",
+              "evidence": "reports/WP-09-independent-review.md"
+            },
+            "mechanisms": {
+              "status": "satisfied",
+              "reason": "Подтверждён ограниченный рассматриваемый срез, цена UNKNOWN.",
+              "evidence": "reports/WP-09-independent-review.md"
+            },
+            "evidence": {
+              "status": "satisfied",
+              "reason": "Документированные факты, гипотезы и ограничения разграничены.",
+              "evidence": "reports/WP-09-independent-review.md"
+            },
+            "recommendations": {
+              "status": "satisfied",
+              "reason": "Названные кандидаты DEFER с условиями; покрытие остального не утверждается.",
+              "evidence": "reports/WP-09-independent-review.md"
+            },
+            "verification": {
+              "status": "satisfied",
+              "reason": "Первый review зафиксирован; итоговый независимый review выполнен в указанном срезе.",
               "evidence": "reports/WP-09-independent-review.md"
             }
           }
@@ -2460,15 +2562,19 @@
         }
       },
       "round": 2,
-      "phase": "collecting",
+      "phase": "partial",
       "open": [
         "primary",
         "coverage",
-        "mechanisms",
-        "recommendations",
-        "verification"
+        "mechanisms"
       ],
-      "results": {},
+      "results": {
+        "wp10-fix-primary": "reports/WP-FRAMEWORK-10.md",
+        "wp10-fix-coverage": "reports/WP-FRAMEWORK-10.md",
+        "wp10-fix-mechanisms": "reports/WP-FRAMEWORK-10.md",
+        "wp10-fix-recommendations": "reports/WP-FRAMEWORK-10.md",
+        "wp10-fix-verification": "reports/WP-FRAMEWORK-10.md"
+      },
       "events": {
         "wp10-wave-1": {
           "event": "start",
@@ -2568,6 +2674,85 @@
               }
             ]
           }
+        },
+        "wp10-result-2-primary": {
+          "event": "result",
+          "payload": {
+            "id": "wp10-result-2-primary",
+            "task": "wp10-fix-primary",
+            "evidence": "reports/WP-FRAMEWORK-10.md"
+          }
+        },
+        "wp10-result-2-coverage": {
+          "event": "result",
+          "payload": {
+            "id": "wp10-result-2-coverage",
+            "task": "wp10-fix-coverage",
+            "evidence": "reports/WP-FRAMEWORK-10.md"
+          }
+        },
+        "wp10-result-2-mechanisms": {
+          "event": "result",
+          "payload": {
+            "id": "wp10-result-2-mechanisms",
+            "task": "wp10-fix-mechanisms",
+            "evidence": "reports/WP-FRAMEWORK-10.md"
+          }
+        },
+        "wp10-result-2-recommendations": {
+          "event": "result",
+          "payload": {
+            "id": "wp10-result-2-recommendations",
+            "task": "wp10-fix-recommendations",
+            "evidence": "reports/WP-FRAMEWORK-10.md"
+          }
+        },
+        "wp10-result-2-verification": {
+          "event": "result",
+          "payload": {
+            "id": "wp10-result-2-verification",
+            "task": "wp10-fix-verification",
+            "evidence": "reports/WP-FRAMEWORK-10.md"
+          }
+        },
+        "wp10-review-2": {
+          "event": "verdict",
+          "payload": {
+            "id": "wp10-review-2",
+            "verdict": "partial",
+            "criteria": {
+              "primary": {
+                "status": "blocked",
+                "reason": "Не установлена карта portability и совместимости для каждого consumer и канала.",
+                "evidence": "reports/WP-10-independent-review.md"
+              },
+              "coverage": {
+                "status": "blocked",
+                "reason": "Выборочные .agents, installers, hooks и CLI/CI без полного покрытия и исключений.",
+                "evidence": "reports/WP-10-independent-review.md"
+              },
+              "mechanisms": {
+                "status": "blocked",
+                "reason": "Для ряда routers/hooks/agents/CLI/CI отсутствуют отдельные поля и риски.",
+                "evidence": "reports/WP-10-independent-review.md"
+              },
+              "evidence": {
+                "status": "satisfied",
+                "reason": "Документированные факты, гипотезы и ограничения разграничены.",
+                "evidence": "reports/WP-10-independent-review.md"
+              },
+              "recommendations": {
+                "status": "satisfied",
+                "reason": "Названные кандидаты DEFER с условиями; покрытие остального не утверждается.",
+                "evidence": "reports/WP-10-independent-review.md"
+              },
+              "verification": {
+                "status": "satisfied",
+                "reason": "Первый review зафиксирован; итоговый независимый review выполнен в указанном срезе.",
+                "evidence": "reports/WP-10-independent-review.md"
+              }
+            }
+          }
         }
       },
       "verdicts": [
@@ -2603,6 +2788,42 @@
             "verification": {
               "status": "blocked",
               "reason": "Независимый review указал конкретный пробел или необходимость фиксации проверки.",
+              "evidence": "reports/WP-10-independent-review.md"
+            }
+          }
+        },
+        {
+          "id": "wp10-review-2",
+          "verdict": "partial",
+          "criteria": {
+            "primary": {
+              "status": "blocked",
+              "reason": "Не установлена карта portability и совместимости для каждого consumer и канала.",
+              "evidence": "reports/WP-10-independent-review.md"
+            },
+            "coverage": {
+              "status": "blocked",
+              "reason": "Выборочные .agents, installers, hooks и CLI/CI без полного покрытия и исключений.",
+              "evidence": "reports/WP-10-independent-review.md"
+            },
+            "mechanisms": {
+              "status": "blocked",
+              "reason": "Для ряда routers/hooks/agents/CLI/CI отсутствуют отдельные поля и риски.",
+              "evidence": "reports/WP-10-independent-review.md"
+            },
+            "evidence": {
+              "status": "satisfied",
+              "reason": "Документированные факты, гипотезы и ограничения разграничены.",
+              "evidence": "reports/WP-10-independent-review.md"
+            },
+            "recommendations": {
+              "status": "satisfied",
+              "reason": "Названные кандидаты DEFER с условиями; покрытие остального не утверждается.",
+              "evidence": "reports/WP-10-independent-review.md"
+            },
+            "verification": {
+              "status": "satisfied",
+              "reason": "Первый review зафиксирован; итоговый независимый review выполнен в указанном срезе.",
               "evidence": "reports/WP-10-independent-review.md"
             }
           }
@@ -2674,15 +2895,20 @@
         }
       },
       "round": 2,
-      "phase": "collecting",
+      "phase": "partial",
       "open": [
         "primary",
         "coverage",
         "mechanisms",
-        "recommendations",
-        "verification"
+        "recommendations"
       ],
-      "results": {},
+      "results": {
+        "wp15-fix-primary": "reports/WP-FRAMEWORK-15.md",
+        "wp15-fix-coverage": "reports/WP-FRAMEWORK-15.md",
+        "wp15-fix-mechanisms": "reports/WP-FRAMEWORK-15.md",
+        "wp15-fix-recommendations": "reports/WP-FRAMEWORK-15.md",
+        "wp15-fix-verification": "reports/WP-FRAMEWORK-15.md"
+      },
       "events": {
         "wp15-wave-1": {
           "event": "start",
@@ -2782,6 +3008,85 @@
               }
             ]
           }
+        },
+        "wp15-result-2-primary": {
+          "event": "result",
+          "payload": {
+            "id": "wp15-result-2-primary",
+            "task": "wp15-fix-primary",
+            "evidence": "reports/WP-FRAMEWORK-15.md"
+          }
+        },
+        "wp15-result-2-coverage": {
+          "event": "result",
+          "payload": {
+            "id": "wp15-result-2-coverage",
+            "task": "wp15-fix-coverage",
+            "evidence": "reports/WP-FRAMEWORK-15.md"
+          }
+        },
+        "wp15-result-2-mechanisms": {
+          "event": "result",
+          "payload": {
+            "id": "wp15-result-2-mechanisms",
+            "task": "wp15-fix-mechanisms",
+            "evidence": "reports/WP-FRAMEWORK-15.md"
+          }
+        },
+        "wp15-result-2-recommendations": {
+          "event": "result",
+          "payload": {
+            "id": "wp15-result-2-recommendations",
+            "task": "wp15-fix-recommendations",
+            "evidence": "reports/WP-FRAMEWORK-15.md"
+          }
+        },
+        "wp15-result-2-verification": {
+          "event": "result",
+          "payload": {
+            "id": "wp15-result-2-verification",
+            "task": "wp15-fix-verification",
+            "evidence": "reports/WP-FRAMEWORK-15.md"
+          }
+        },
+        "wp15-review-2": {
+          "event": "verdict",
+          "payload": {
+            "id": "wp15-review-2",
+            "verdict": "partial",
+            "criteria": {
+              "primary": {
+                "status": "blocked",
+                "reason": "Предложенные probes не воспроизводимы: нет точных команд, fixtures, окружения и oracle.",
+                "evidence": "reports/WP-15-independent-review.md"
+              },
+              "coverage": {
+                "status": "blocked",
+                "reason": "Нет полного покрытия client × capability или документированных исключений.",
+                "evidence": "reports/WP-15-independent-review.md"
+              },
+              "mechanisms": {
+                "status": "blocked",
+                "reason": "Не все обязанности имеют индивидуальную карту consumer, defect, альтернативы и риска.",
+                "evidence": "reports/WP-15-independent-review.md"
+              },
+              "evidence": {
+                "status": "satisfied",
+                "reason": "Документированные факты, гипотезы и ограничения разграничены.",
+                "evidence": "reports/WP-15-independent-review.md"
+              },
+              "recommendations": {
+                "status": "blocked",
+                "reason": "DEFER не привязан к воспроизводимым positive и negative controls для каждого клиента и кандидата.",
+                "evidence": "reports/WP-15-independent-review.md"
+              },
+              "verification": {
+                "status": "satisfied",
+                "reason": "Первый review зафиксирован; итоговый независимый review выполнен в указанном срезе.",
+                "evidence": "reports/WP-15-independent-review.md"
+              }
+            }
+          }
         }
       },
       "verdicts": [
@@ -2817,6 +3122,42 @@
             "verification": {
               "status": "blocked",
               "reason": "Независимый review указал конкретный пробел или необходимость фиксации проверки.",
+              "evidence": "reports/WP-15-independent-review.md"
+            }
+          }
+        },
+        {
+          "id": "wp15-review-2",
+          "verdict": "partial",
+          "criteria": {
+            "primary": {
+              "status": "blocked",
+              "reason": "Предложенные probes не воспроизводимы: нет точных команд, fixtures, окружения и oracle.",
+              "evidence": "reports/WP-15-independent-review.md"
+            },
+            "coverage": {
+              "status": "blocked",
+              "reason": "Нет полного покрытия client × capability или документированных исключений.",
+              "evidence": "reports/WP-15-independent-review.md"
+            },
+            "mechanisms": {
+              "status": "blocked",
+              "reason": "Не все обязанности имеют индивидуальную карту consumer, defect, альтернативы и риска.",
+              "evidence": "reports/WP-15-independent-review.md"
+            },
+            "evidence": {
+              "status": "satisfied",
+              "reason": "Документированные факты, гипотезы и ограничения разграничены.",
+              "evidence": "reports/WP-15-independent-review.md"
+            },
+            "recommendations": {
+              "status": "blocked",
+              "reason": "DEFER не привязан к воспроизводимым positive и negative controls для каждого клиента и кандидата.",
+              "evidence": "reports/WP-15-independent-review.md"
+            },
+            "verification": {
+              "status": "satisfied",
+              "reason": "Первый review зафиксирован; итоговый независимый review выполнен в указанном срезе.",
               "evidence": "reports/WP-15-independent-review.md"
             }
           }

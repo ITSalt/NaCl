@@ -10,4 +10,15 @@ WP-01 DONE по D-5. Pinned NaCl `20fe4c6a56482e85d3ea9a9ebaadb37206047e41`; и�
 | Routers, hooks, agents, CLI и CI | Контракты и definitions не доказывают active route или successful run. Проверять требуемые checks/event/exact SHA; literal duplication сама по себе не означает ненужность closure. |
 | Legacy installers / compatibility | Retire требует реальных consumers, версий, замены и отрицательных проверок; подтверждённого кандидата на удаление нет. |
 
+**Охват и совместимость.** Выборочно прослежены `.claude` source/build и scripts build/checker/diagnose; активные consumers `.agents`, legacy installers и hooks остаются UNKNOWN. Различаются source → overlay → full package → Skills-only closure; installed 0.2.2 и pinned source имеют разные provenance. Private `meta/` исключён из pinned tree.
+
+| Кандидат | Риск / условие | Решение |
+|---|---|---|
+| Единая closure | Потеря динамических и условных зависимостей; нужны свежие bundles и negative controls | DEFER |
+| Общий transport contract | Различные principal, scope, fence и denial; проверять каждый канал | DEFER |
+| HTTP audit/idempotency | Fake adapter не подтверждает реальный HTTP, durable retry и deployment | DEFER |
+| Удаление legacy | Неизвестны consumers и совместимость; нужны inventory и тесты замены | DEFER |
+
+Первый [независимый review](WP-10-independent-review.md) выявил пробелы охвата; итоговый verdict должен учитывать исходный charter.
+
 Все альтернативы DEFER. Полная semantic/dynamic closure, реальные права/deployment, стоимость поддержки каждого канала и частота UNKNOWN; отсутствие данных не доказывает отсутствие consumers. Вложенный private `meta/` — отдельный репозиторий вне pinned tree. Не объявлять исходный charter полностью выполненным до независимого review и проверки покрытия/checkout.
