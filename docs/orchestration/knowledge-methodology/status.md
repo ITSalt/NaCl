@@ -9,8 +9,8 @@
 |-------|------|------|--------|
 | 0 | Карта и протокол | WP-01 | DONE |
 | 1 | Области и Harness | WP-02–10,15 | IN_PROGRESS |
-| 2 | Стыки и измерения | WP-11–14,16 | PLANNED |
-| 3 | Оспаривание | WP-17 | PLANNED |
+| 2 | Стыки и измерения | WP-11–14,16 | IN_PROGRESS |
+| 3 | Оспаривание | WP-17 | DONE |
 | 4 | Рекомендации | WP-18 | PLANNED |
 
 ## Пакеты работ
@@ -38,7 +38,7 @@ CANCELLED (причина).
 | [WP-FRAMEWORK-14](work-packages/WP-FRAMEWORK-14-interface-control.md) | framework | Стык управления, восстановления и состояния | REVISE | knowledge-methodology-framework | — | 2026-11-03 |
 | [WP-FRAMEWORK-15](work-packages/WP-FRAMEWORK-15-harness.md) | framework | Что можно передать Harness | REVISE | knowledge-methodology-framework | — | 2026-11-03 |
 | [WP-FRAMEWORK-16](work-packages/WP-FRAMEWORK-16-measurement.md) | framework | Проверка кандидатов модернизации NaCl | REVISE | knowledge-methodology-framework | — | 2026-11-03 |
-| [WP-FRAMEWORK-17](work-packages/WP-FRAMEWORK-17-challenge.md) | framework | Независимая проверка рекомендаций | IN_PROGRESS | knowledge-methodology-framework | — | 2026-11-03 |
+| [WP-FRAMEWORK-17](work-packages/WP-FRAMEWORK-17-challenge.md) | framework | Независимая проверка рекомендаций | DONE | knowledge-methodology-framework | — | 2026-11-03 |
 | [WP-FRAMEWORK-18](work-packages/WP-FRAMEWORK-18-recommendations.md) | framework | План модернизации NaCl и передача следующей программе | DRAFT | knowledge-methodology-framework | — | 2026-11-03 |
 | [WP-FRAMEWORK-19](work-packages/WP-FRAMEWORK-19-historical-interface-cases.md) | framework | Девять реальных исторических ситуаций по трём границам | DONE | knowledge-methodology-framework | — | 2026-11-03 |
 
@@ -82,6 +82,16 @@ R-n — действие: точная команда одной строкой 
 <!-- orch:journal -->
 | Дата | WP | Событие | Подтверждение |
 |------|----|---------|---------------|
+| 2026-11-03 10:59Z | — | Ограниченный challenge WP-17 принят: M0–M5 и graph-инварианты проверены, исходные partial WP13/16 сохранены. Финальная сдача WP18 не начата; watcher приостановлен на резерве D-14 около 57,9 млн observed input из 60 млн, сумма может включать перекрытие и не является billing. | reports/WP-FRAMEWORK-17.md; reports/WP-17-independent-review.md |
+| 2026-11-03 10:59Z | WP-FRAMEWORK-17 | WP-FRAMEWORK-17: ACCEPTED -> DONE | Ограниченный независимый challenge принят: reports/WP-17-independent-review.md; WP13/16 остаются PARTIAL |
+| 2026-11-03 10:59Z | WP-FRAMEWORK-17 | WP-FRAMEWORK-17: REVIEW -> ACCEPTED | Ограниченный независимый challenge принят: reports/WP-17-independent-review.md; WP13/16 остаются PARTIAL |
+| 2026-11-03 10:59Z | WP-FRAMEWORK-17 | WP-FRAMEWORK-17: IN_PROGRESS -> REVIEW | Ограниченный независимый challenge принят: reports/WP-17-independent-review.md; WP13/16 остаются PARTIAL |
+| 2026-11-03 10:59Z | WP-FRAMEWORK-17 | research verdict: accepted | wp17-review-2 |
+| 2026-11-03 10:58Z | WP-FRAMEWORK-17 | research result: review | wp17-result-2-recommendations |
+| 2026-11-03 10:58Z | WP-FRAMEWORK-17 | research result: collecting | wp17-result-2-mechanisms |
+| 2026-11-03 10:58Z | WP-FRAMEWORK-17 | research start: collecting | wp17-wave-2 |
+| 2026-11-03 10:58Z | WP-FRAMEWORK-17 | research verdict: revise | wp17-review-1 |
+| 2026-11-03 10:57Z | WP-FRAMEWORK-17 | research result: review | wp17-result-1 |
 | 2026-11-03 10:56Z | WP-FRAMEWORK-17 | research start: collecting | wp17-wave-1 |
 | 2026-11-03 10:56Z | WP-FRAMEWORK-17 | research contract: ready | reports/WP-FRAMEWORK-17.md |
 | 2026-11-03 10:56Z | WP-FRAMEWORK-17 | WP-FRAMEWORK-17: READY -> IN_PROGRESS | D-11: независимый challenge ограниченного плана с явными частичными входами WP13/16 |

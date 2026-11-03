@@ -4,10 +4,10 @@
   "instances": {},
   "assignments": {},
   "launches": {},
-  "revision": 181,
+  "revision": 188,
   "generation": 1,
   "autonomy": {
-    "enabled": true,
+    "enabled": false,
     "session_reuse": "auto",
     "interval_seconds": 600,
     "max_parallel_sessions": 2
@@ -5225,17 +5225,13 @@
           }
         }
       },
-      "round": 1,
-      "phase": "collecting",
-      "open": [
-        "challenge",
-        "coverage",
-        "mechanisms",
-        "evidence",
-        "recommendations",
-        "verification"
-      ],
-      "results": {},
+      "round": 2,
+      "phase": "accepted",
+      "open": [],
+      "results": {
+        "wp17-fix-mechanisms": "reports/WP-FRAMEWORK-17.md",
+        "wp17-fix-recommendations": "reports/WP-FRAMEWORK-17.md"
+      },
       "events": {
         "wp17-wave-1": {
           "event": "start",
@@ -5250,15 +5246,216 @@
               }
             ]
           }
+        },
+        "wp17-result-1": {
+          "event": "result",
+          "payload": {
+            "id": "wp17-result-1",
+            "task": "wp17-challenge",
+            "evidence": "reports/WP-FRAMEWORK-17.md"
+          }
+        },
+        "wp17-review-1": {
+          "event": "verdict",
+          "payload": {
+            "id": "wp17-review-1",
+            "verdict": "revise",
+            "criteria": {
+              "challenge": {
+                "status": "satisfied",
+                "reason": "Подтверждено в ограниченном срезе независимым reviewer.",
+                "evidence": "reports/WP-17-independent-review.md"
+              },
+              "coverage": {
+                "status": "satisfied",
+                "reason": "Подтверждено в ограниченном срезе независимым reviewer.",
+                "evidence": "reports/WP-17-independent-review.md"
+              },
+              "mechanisms": {
+                "status": "blocked",
+                "reason": "Не у всех направлений указан consumer.",
+                "evidence": "reports/WP-17-independent-review.md"
+              },
+              "evidence": {
+                "status": "satisfied",
+                "reason": "Подтверждено в ограниченном срезе независимым reviewer.",
+                "evidence": "reports/WP-17-independent-review.md"
+              },
+              "recommendations": {
+                "status": "blocked",
+                "reason": "Нет явной категории для каждого направления.",
+                "evidence": "reports/WP-17-independent-review.md"
+              },
+              "verification": {
+                "status": "satisfied",
+                "reason": "Подтверждено в ограниченном срезе независимым reviewer.",
+                "evidence": "reports/WP-17-independent-review.md"
+              }
+            }
+          }
+        },
+        "wp17-wave-2": {
+          "event": "start",
+          "payload": {
+            "id": "wp17-wave-2",
+            "tasks": [
+              {
+                "id": "wp17-fix-mechanisms",
+                "criterion": "mechanisms",
+                "missing_fact": "Уточнить consumer или категорию по уже рассмотренным сведениям",
+                "decision": "Финальный независимый verdict"
+              },
+              {
+                "id": "wp17-fix-recommendations",
+                "criterion": "recommendations",
+                "missing_fact": "Уточнить consumer или категорию по уже рассмотренным сведениям",
+                "decision": "Финальный независимый verdict"
+              }
+            ]
+          }
+        },
+        "wp17-result-2-mechanisms": {
+          "event": "result",
+          "payload": {
+            "id": "wp17-result-2-mechanisms",
+            "task": "wp17-fix-mechanisms",
+            "evidence": "reports/WP-FRAMEWORK-17.md"
+          }
+        },
+        "wp17-result-2-recommendations": {
+          "event": "result",
+          "payload": {
+            "id": "wp17-result-2-recommendations",
+            "task": "wp17-fix-recommendations",
+            "evidence": "reports/WP-FRAMEWORK-17.md"
+          }
+        },
+        "wp17-review-2": {
+          "event": "verdict",
+          "payload": {
+            "id": "wp17-review-2",
+            "verdict": "accepted",
+            "criteria": {
+              "challenge": {
+                "status": "satisfied",
+                "reason": "Независимый reviewer подтвердил ограниченный challenge M0–M5 после адресной коррекции; исходные UNKNOWN сохранены.",
+                "evidence": "reports/WP-17-independent-review.md"
+              },
+              "coverage": {
+                "status": "satisfied",
+                "reason": "Независимый reviewer подтвердил ограниченный challenge M0–M5 после адресной коррекции; исходные UNKNOWN сохранены.",
+                "evidence": "reports/WP-17-independent-review.md"
+              },
+              "mechanisms": {
+                "status": "satisfied",
+                "reason": "Независимый reviewer подтвердил ограниченный challenge M0–M5 после адресной коррекции; исходные UNKNOWN сохранены.",
+                "evidence": "reports/WP-17-independent-review.md"
+              },
+              "evidence": {
+                "status": "satisfied",
+                "reason": "Независимый reviewer подтвердил ограниченный challenge M0–M5 после адресной коррекции; исходные UNKNOWN сохранены.",
+                "evidence": "reports/WP-17-independent-review.md"
+              },
+              "recommendations": {
+                "status": "satisfied",
+                "reason": "Независимый reviewer подтвердил ограниченный challenge M0–M5 после адресной коррекции; исходные UNKNOWN сохранены.",
+                "evidence": "reports/WP-17-independent-review.md"
+              },
+              "verification": {
+                "status": "satisfied",
+                "reason": "Независимый reviewer подтвердил ограниченный challenge M0–M5 после адресной коррекции; исходные UNKNOWN сохранены.",
+                "evidence": "reports/WP-17-independent-review.md"
+              }
+            }
+          }
         }
       },
-      "verdicts": [],
+      "verdicts": [
+        {
+          "id": "wp17-review-1",
+          "verdict": "revise",
+          "criteria": {
+            "challenge": {
+              "status": "satisfied",
+              "reason": "Подтверждено в ограниченном срезе независимым reviewer.",
+              "evidence": "reports/WP-17-independent-review.md"
+            },
+            "coverage": {
+              "status": "satisfied",
+              "reason": "Подтверждено в ограниченном срезе независимым reviewer.",
+              "evidence": "reports/WP-17-independent-review.md"
+            },
+            "mechanisms": {
+              "status": "blocked",
+              "reason": "Не у всех направлений указан consumer.",
+              "evidence": "reports/WP-17-independent-review.md"
+            },
+            "evidence": {
+              "status": "satisfied",
+              "reason": "Подтверждено в ограниченном срезе независимым reviewer.",
+              "evidence": "reports/WP-17-independent-review.md"
+            },
+            "recommendations": {
+              "status": "blocked",
+              "reason": "Нет явной категории для каждого направления.",
+              "evidence": "reports/WP-17-independent-review.md"
+            },
+            "verification": {
+              "status": "satisfied",
+              "reason": "Подтверждено в ограниченном срезе независимым reviewer.",
+              "evidence": "reports/WP-17-independent-review.md"
+            }
+          }
+        },
+        {
+          "id": "wp17-review-2",
+          "verdict": "accepted",
+          "criteria": {
+            "challenge": {
+              "status": "satisfied",
+              "reason": "Независимый reviewer подтвердил ограниченный challenge M0–M5 после адресной коррекции; исходные UNKNOWN сохранены.",
+              "evidence": "reports/WP-17-independent-review.md"
+            },
+            "coverage": {
+              "status": "satisfied",
+              "reason": "Независимый reviewer подтвердил ограниченный challenge M0–M5 после адресной коррекции; исходные UNKNOWN сохранены.",
+              "evidence": "reports/WP-17-independent-review.md"
+            },
+            "mechanisms": {
+              "status": "satisfied",
+              "reason": "Независимый reviewer подтвердил ограниченный challenge M0–M5 после адресной коррекции; исходные UNKNOWN сохранены.",
+              "evidence": "reports/WP-17-independent-review.md"
+            },
+            "evidence": {
+              "status": "satisfied",
+              "reason": "Независимый reviewer подтвердил ограниченный challenge M0–M5 после адресной коррекции; исходные UNKNOWN сохранены.",
+              "evidence": "reports/WP-17-independent-review.md"
+            },
+            "recommendations": {
+              "status": "satisfied",
+              "reason": "Независимый reviewer подтвердил ограниченный challenge M0–M5 после адресной коррекции; исходные UNKNOWN сохранены.",
+              "evidence": "reports/WP-17-independent-review.md"
+            },
+            "verification": {
+              "status": "satisfied",
+              "reason": "Независимый reviewer подтвердил ограниченный challenge M0–M5 после адресной коррекции; исходные UNKNOWN сохранены.",
+              "evidence": "reports/WP-17-independent-review.md"
+            }
+          }
+        }
+      ],
       "tasks": [
         {
-          "id": "wp17-challenge",
-          "criterion": "challenge",
-          "missing_fact": "Независимо оспорить M0–M5 на основе накопленных источников, WP19 и partial WP13/16",
-          "decision": "Определить безопасную ограниченную сдачу WP18"
+          "id": "wp17-fix-mechanisms",
+          "criterion": "mechanisms",
+          "missing_fact": "Уточнить consumer или категорию по уже рассмотренным сведениям",
+          "decision": "Финальный независимый verdict"
+        },
+        {
+          "id": "wp17-fix-recommendations",
+          "criterion": "recommendations",
+          "missing_fact": "Уточнить consumer или категорию по уже рассмотренным сведениям",
+          "decision": "Финальный независимый verdict"
         }
       ]
     }
