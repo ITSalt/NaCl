@@ -82,6 +82,8 @@ R-n — действие: точная команда одной строкой 
 <!-- orch:journal -->
 | Дата | WP | Событие | Подтверждение |
 |------|----|---------|---------------|
+| 2026-11-03 10:34Z | — | Статический проект модернизации и первый кандидат BA→SA оформлены; независимое review трёх проектов проведено, замечания исправлены. D-12: watcher остановлен у резерва, поскольку cumulative delta родителя 8 119 488 input, а суммарный расход дочерних сессий не установлен; финальное завершение программы не заявляется. | reports/final-audit.md; reports/target-methodology.md; reports/implementation-handoff.md; reports/modernization-draft-review.md; reports/modernization-candidate-ba-sa.md |
+| 2026-11-03 10:32Z | — | Продолжена статическая работа по D-11: подготовлены проекты final-audit, target-methodology и implementation-handoff; документы направлены на независимый review. Финальная приёмка и реализация NaCl не заявляются. | reports/final-audit.md; reports/target-methodology.md; reports/implementation-handoff.md |
 | 2026-11-03 10:07Z | — | Единый план и задания WP-16/17/18 согласованы с D-11: граф и методология NaCl сохраняются; проверки направлены на конкретные упрощения. D-12 фиксирует новый лимит без заявления о подтверждённом hard cap. | PLAN.md; spec/research-protocol.md; spec/family-cinema-testbed.md |
 | 2026-11-03 10:05Z | — | P-4 closed | answered by D-12 |
 | 2026-11-03 10:05Z | — | D-12 recorded | Прямое разрешение владельца на новый лимит |
