@@ -40,6 +40,7 @@ CANCELLED (причина).
 | [WP-FRAMEWORK-16](work-packages/WP-FRAMEWORK-16-measurement.md) | framework | Цена методологии и сравнение с Markdown | DRAFT | knowledge-methodology-framework | — | 2026-11-02 |
 | [WP-FRAMEWORK-17](work-packages/WP-FRAMEWORK-17-challenge.md) | framework | Независимая проверка рекомендаций | DRAFT | knowledge-methodology-framework | — | 2026-11-02 |
 | [WP-FRAMEWORK-18](work-packages/WP-FRAMEWORK-18-recommendations.md) | framework | Методические рекомендации и передача следующей программе | DRAFT | knowledge-methodology-framework | — | 2026-11-02 |
+| [WP-FRAMEWORK-19](work-packages/WP-FRAMEWORK-19-historical-interface-cases.md) | framework | Девять реальных исторических ситуаций по трём границам | IN_PROGRESS | knowledge-methodology-framework | — | 2026-11-03 |
 
 ## Ждёт владельца
 
@@ -52,7 +53,7 @@ R-n — действие: точная команда одной строкой 
 |----|--------------------------|-------------|---------|---------|
 | ~~P-1~~ | ~~Repository nacl: add `.worktreeinclude` in its root (a change of the project, made by a package there) so that every new worktree gets the gitignored files it needs: .env, .env.local (gitignore syntax, one pattern per line; directories as dir/**). Recommend (a) yes: sessions then never copy secrets or settings themselves~~ | orch.py init | 2026-11-02 | 2026-11-02 dropped: Автопредложение .worktreeinclude относится к Claude Code. Программа использует Codex; необходимость gitignored-файлов не установлена. Вернуться к этому только в пакете, которому действительно нужны такие файлы. |
 | ~~P-2~~ | ~~Уточнить границу D-4: какие выполненные агентские работы относить к подготовке одной A/B-пары, чтобы оценить расход и сохранить лимит; текущие session totals и отсутствие подтверждённого общего hard cap описаны в evidence.~~ | reports/WP-16-budget-observation.md | 2026-11-02 | 2026-11-03: answered by D-7 |
-| P-3 | Принять ли ограниченные результаты WP-11, WP-12 и WP-14 как входы для последующих пакетов, сохранив незакрытые исходные критерии и независимые partial verdicts? Рекомендуется принять ограниченные входы и передать остатки в backlog; альтернатива — сохранить исходные гейты. | reports/recommendations.md | 2026-11-03 |  |
+| ~~P-3~~ | ~~Принять ли ограниченные результаты WP-11, WP-12 и WP-14 как входы для последующих пакетов, сохранив незакрытые исходные критерии и независимые partial verdicts? Рекомендуется принять ограниченные входы и передать остатки в backlog; альтернатива — сохранить исходные гейты.~~ | reports/recommendations.md | 2026-11-03 | 2026-11-03: answered by D-8 |
 
 ## Замки
 
@@ -80,6 +81,14 @@ R-n — действие: точная команда одной строкой 
 <!-- orch:journal -->
 | Дата | WP | Событие | Подтверждение |
 |------|----|---------|---------------|
+| 2026-11-03 09:42Z | WP-FRAMEWORK-19 | research start: collecting | wp19-wave-1 |
+| 2026-11-03 09:42Z | WP-FRAMEWORK-19 | research contract: ready | reports/WP-FRAMEWORK-19.md |
+| 2026-11-03 09:42Z | WP-FRAMEWORK-19 | WP-FRAMEWORK-19: READY -> IN_PROGRESS | D-8/D-9: девять ситуаций, одна исходная и одна корректирующая итерация |
+| 2026-11-03 09:42Z | WP-FRAMEWORK-19 | WP-FRAMEWORK-19: DRAFT -> READY | D-8/D-9: девять ситуаций, одна исходная и одна корректирующая итерация |
+| 2026-11-03 09:42Z | — | D-9 recorded | Уточнение владельца: один из трех может быть синтетическим |
+| 2026-11-03 09:41Z | WP-FRAMEWORK-19 | WP-FRAMEWORK-19 created (DRAFT) | work-packages/WP-FRAMEWORK-19-historical-interface-cases.md |
+| 2026-11-03 09:41Z | — | P-3 closed | answered by D-8 |
+| 2026-11-03 09:41Z | — | D-8 recorded | Ответ владельца 2026-11-03: три реальные ситуации из истории |
 | 2026-11-03 09:17Z | — | P-3 opened for owner | reports/recommendations.md |
 | 2026-11-03 09:17Z | — | По D-6 завершены два раунда WP-11, WP-12 и WP-14; частичные результаты добавлены в рекомендации и независимо проверены. По D-7 документированы относимые к пилоту работы; расход и остаток UNKNOWN. | reports/WP-11-independent-review.md; reports/WP-12-independent-review.md; reports/WP-14-independent-review.md; reports/WP-16-budget-attribution-D7.md |
 | 2026-11-03 09:17Z | WP-FRAMEWORK-14 | WP-FRAMEWORK-14: IN_PROGRESS -> REVISE | Два раунда, независимый partial verdict: reports/WP-14-independent-review.md |
