@@ -4,7 +4,7 @@
   "instances": {},
   "assignments": {},
   "launches": {},
-  "revision": 24,
+  "revision": 27,
   "generation": 1,
   "autonomy": {
     "enabled": true,
@@ -467,9 +467,9 @@
         }
       },
       "round": 2,
-      "phase": "review",
+      "phase": "partial",
       "open": [
-        "verification"
+        "coverage"
       ],
       "results": {
         "sa-review-fix": "reports/WP-FRAMEWORK-03.md"
@@ -552,6 +552,40 @@
             "task": "sa-review-fix",
             "evidence": "reports/WP-FRAMEWORK-03.md"
           }
+        },
+        "sa-review-final": {
+          "event": "verdict",
+          "payload": {
+            "id": "sa-review-final",
+            "verdict": "partial",
+            "criteria": {
+              "mechanisms": {
+                "status": "satisfied",
+                "reason": "Ограниченный статический результат подтверждён независимым review.",
+                "evidence": "reports/WP-03-independent-review.md"
+              },
+              "evidence": {
+                "status": "satisfied",
+                "reason": "Ограниченный статический результат подтверждён независимым review.",
+                "evidence": "reports/WP-03-independent-review.md"
+              },
+              "recommendations": {
+                "status": "satisfied",
+                "reason": "Ограниченный статический результат подтверждён независимым review.",
+                "evidence": "reports/WP-03-independent-review.md"
+              },
+              "verification": {
+                "status": "satisfied",
+                "reason": "Ограниченный статический результат подтверждён независимым review.",
+                "evidence": "reports/WP-03-independent-review.md"
+              },
+              "coverage": {
+                "status": "blocked",
+                "reason": "Frozen применимость описана, но исходный charter требует подтверждённую обязательность SA артефактов по риску; она остаётся гипотезой. Полный WP не принимается.",
+                "evidence": "reports/WP-03-independent-review.md"
+              }
+            }
+          }
         }
       },
       "verdicts": [
@@ -585,6 +619,37 @@
               "evidence": "reports/WP-03-independent-review.md"
             }
           }
+        },
+        {
+          "id": "sa-review-final",
+          "verdict": "partial",
+          "criteria": {
+            "mechanisms": {
+              "status": "satisfied",
+              "reason": "Ограниченный статический результат подтверждён независимым review.",
+              "evidence": "reports/WP-03-independent-review.md"
+            },
+            "evidence": {
+              "status": "satisfied",
+              "reason": "Ограниченный статический результат подтверждён независимым review.",
+              "evidence": "reports/WP-03-independent-review.md"
+            },
+            "recommendations": {
+              "status": "satisfied",
+              "reason": "Ограниченный статический результат подтверждён независимым review.",
+              "evidence": "reports/WP-03-independent-review.md"
+            },
+            "verification": {
+              "status": "satisfied",
+              "reason": "Ограниченный статический результат подтверждён независимым review.",
+              "evidence": "reports/WP-03-independent-review.md"
+            },
+            "coverage": {
+              "status": "blocked",
+              "reason": "Frozen применимость описана, но исходный charter требует подтверждённую обязательность SA артефактов по риску; она остаётся гипотезой. Полный WP не принимается.",
+              "evidence": "reports/WP-03-independent-review.md"
+            }
+          }
         }
       ],
       "tasks": [
@@ -593,6 +658,75 @@
           "criterion": "verification",
           "missing_fact": "Зафиксировать review, HEAD/status и неустановленную обязательность по риску из исходного charter",
           "decision": "Вердикт о полной или частичной приёмке"
+        }
+      ]
+    },
+    "WP-FRAMEWORK-04": {
+      "contract": {
+        "question": "Какие уровни и действия управления разработкой можно сократить без потери контроля и восстановления?",
+        "decision": "Рассмотреть статические рекомендации по управлению",
+        "artifact": "reports/WP-FRAMEWORK-04.md",
+        "criteria": {
+          "control": {
+            "evidence_standard": "Граф управления, критический путь и варианты устранения уровней на источниках; фактические числа и задержки UNKNOWN если не измерены",
+            "unknown_allowed": false
+          },
+          "coverage": {
+            "evidence_standard": "Все подобласти charter покрыты либо исключены с причиной и проверяемыми источниками",
+            "unknown_allowed": false
+          },
+          "mechanisms": {
+            "evidence_standard": "Для каждого рассматриваемого механизма задача, consumer, цена или UNKNOWN, защита, альтернатива и риск",
+            "unknown_allowed": false
+          },
+          "evidence": {
+            "evidence_standard": "Разделение фактов, измерений, выводов и гипотез, SHA и клиентские границы",
+            "unknown_allowed": false
+          },
+          "recommendations": {
+            "evidence_standard": "Категории и условия для кандидатов без недоказанной экономии",
+            "unknown_allowed": false
+          },
+          "verification": {
+            "evidence_standard": "Ссылки, SHA/статус исходников, ограничения и независимый review",
+            "unknown_allowed": false
+          }
+        }
+      },
+      "round": 1,
+      "phase": "collecting",
+      "open": [
+        "control",
+        "coverage",
+        "mechanisms",
+        "evidence",
+        "recommendations",
+        "verification"
+      ],
+      "results": {},
+      "events": {
+        "tl-wave-1": {
+          "event": "start",
+          "payload": {
+            "id": "tl-wave-1",
+            "tasks": [
+              {
+                "id": "tl-synthesis",
+                "criterion": "control",
+                "missing_fact": "Свести накопленные TL материалы в граф и критический путь с UNKNOWN и областями",
+                "decision": "Приёмка статического WP-04"
+              }
+            ]
+          }
+        }
+      },
+      "verdicts": [],
+      "tasks": [
+        {
+          "id": "tl-synthesis",
+          "criterion": "control",
+          "missing_fact": "Свести накопленные TL материалы в граф и критический путь с UNKNOWN и областями",
+          "decision": "Приёмка статического WP-04"
         }
       ]
     }
