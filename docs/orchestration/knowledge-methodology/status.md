@@ -23,7 +23,7 @@ CANCELLED (причина).
 | WP | Модуль | Название | Статус | Сессия | PR | Обновлено |
 |----|--------|----------|--------|--------|----|-----------|
 | [WP-FRAMEWORK-01](work-packages/WP-FRAMEWORK-01-inventory.md) | framework | Карта фреймворка и протокол измерений | DONE | knowledge-methodology-framework | — | 2026-11-03 |
-| [WP-FRAMEWORK-02](work-packages/WP-FRAMEWORK-02-ba.md) | framework | Бизнес-анализ | DRAFT | knowledge-methodology-framework | — | 2026-11-02 |
+| [WP-FRAMEWORK-02](work-packages/WP-FRAMEWORK-02-ba.md) | framework | Бизнес-анализ | IN_PROGRESS | knowledge-methodology-framework | — | 2026-11-03 |
 | [WP-FRAMEWORK-03](work-packages/WP-FRAMEWORK-03-sa.md) | framework | Системный анализ | DRAFT | knowledge-methodology-framework | — | 2026-11-02 |
 | [WP-FRAMEWORK-04](work-packages/WP-FRAMEWORK-04-tl.md) | framework | Планирование и управление разработкой | DRAFT | knowledge-methodology-framework | — | 2026-11-02 |
 | [WP-FRAMEWORK-05](work-packages/WP-FRAMEWORK-05-development.md) | framework | Разработка и исправления | DRAFT | knowledge-methodology-framework | — | 2026-11-02 |
@@ -79,6 +79,10 @@ R-n — действие: точная команда одной строкой 
 <!-- orch:journal -->
 | Дата | WP | Событие | Подтверждение |
 |------|----|---------|---------------|
+| 2026-11-03 08:24Z | WP-FRAMEWORK-02 | research start: collecting | ba-wave-1 |
+| 2026-11-03 08:24Z | WP-FRAMEWORK-02 | research contract: ready | reports/WP-FRAMEWORK-02.md |
+| 2026-11-03 08:24Z | WP-FRAMEWORK-02 | WP-FRAMEWORK-02: READY -> IN_PROGRESS | Формирование статической сдачи из накопленных BA отчётов по D-5 |
+| 2026-11-03 08:24Z | WP-FRAMEWORK-02 | WP-FRAMEWORK-02: DRAFT -> READY | D-5: WP-01 DONE; использовать накопленный BA материал в конечном статическом пакете |
 | 2026-11-03 07:29Z | WP-FRAMEWORK-01 | Восстановлена статическая сдача WP-01 после ограниченного синтеза и независимой проверки; WP-16 ожидает P-2 и экспериментальные prerequisites. Фоновая пауза сохранена. | reports/recommendations.md; reports/WP-01-recovery-review.md |
 | 2026-11-03 07:29Z | WP-FRAMEWORK-01 | WP-FRAMEWORK-01: ACCEPTED -> DONE | D-5; reports/WP-01-recovery-review.md; reports/recommendations.md |
 | 2026-11-03 07:29Z | WP-FRAMEWORK-01 | WP-FRAMEWORK-01: REVIEW -> ACCEPTED | D-5; reports/WP-01-recovery-review.md; reports/recommendations.md |

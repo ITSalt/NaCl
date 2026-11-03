@@ -4,10 +4,10 @@
   "instances": {},
   "assignments": {},
   "launches": {},
-  "revision": 10,
+  "revision": 13,
   "generation": 1,
   "autonomy": {
-    "enabled": false,
+    "enabled": true,
     "session_reuse": "auto",
     "interval_seconds": 600,
     "max_parallel_sessions": 2
@@ -212,6 +212,70 @@
           "criterion": "handoff",
           "missing_fact": "Эксперимент перенесён WP-16; профильные пакеты не признаны готовыми",
           "decision": "Приёмка статического объёма D-5"
+        }
+      ]
+    },
+    "WP-FRAMEWORK-02": {
+      "contract": {
+        "question": "Какие обязанности BA можно упростить, сохранив бизнес-смысл, и что пока неизвестно?",
+        "decision": "Оценить ограниченные статические рекомендации BA и передать непроверенное следующим пакетам",
+        "artifact": "reports/WP-FRAMEWORK-02.md",
+        "criteria": {
+          "coverage": {
+            "evidence_standard": "Все заявленные подобласти BA отображены или исключены с причиной, источники и клиентский scope указаны",
+            "unknown_allowed": false
+          },
+          "mechanisms": {
+            "evidence_standard": "Для выбранных обязательных механизмов указаны задача, потребитель, цена или UNKNOWN, дефект, альтернатива и риск; полнота атомов явно ограничена",
+            "unknown_allowed": false
+          },
+          "evidence": {
+            "evidence_standard": "Факты исходников, наблюдения и гипотезы разделены; SHA и уровень доказательства указаны",
+            "unknown_allowed": false
+          },
+          "recommendations": {
+            "evidence_standard": "Каждому представленному кандидату присвоена категория и условия проверки; выводы об ускорении не заявлены",
+            "unknown_allowed": false
+          },
+          "verification": {
+            "evidence_standard": "Существующие ссылки, SHA/статус исходников и независимое ограниченное review зафиксированы; непрочитанные детали отмечены",
+            "unknown_allowed": false
+          }
+        }
+      },
+      "round": 1,
+      "phase": "collecting",
+      "open": [
+        "coverage",
+        "mechanisms",
+        "evidence",
+        "recommendations",
+        "verification"
+      ],
+      "results": {},
+      "events": {
+        "ba-wave-1": {
+          "event": "start",
+          "payload": {
+            "id": "ba-wave-1",
+            "tasks": [
+              {
+                "id": "ba-synthesis",
+                "criterion": "coverage",
+                "missing_fact": "Собрать из существующих BA отчётов ограниченную карту, альтернативы и непроверенные остатки без расширения scope",
+                "decision": "Сдача статического WP-02 и последующие рекомендации"
+              }
+            ]
+          }
+        }
+      },
+      "verdicts": [],
+      "tasks": [
+        {
+          "id": "ba-synthesis",
+          "criterion": "coverage",
+          "missing_fact": "Собрать из существующих BA отчётов ограниченную карту, альтернативы и непроверенные остатки без расширения scope",
+          "decision": "Сдача статического WP-02 и последующие рекомендации"
         }
       ]
     }
