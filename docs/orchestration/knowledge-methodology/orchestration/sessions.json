@@ -4,10 +4,10 @@
   "instances": {},
   "assignments": {},
   "launches": {},
-  "revision": 174,
+  "revision": 181,
   "generation": 1,
   "autonomy": {
-    "enabled": false,
+    "enabled": true,
     "session_reuse": "auto",
     "interval_seconds": 600,
     "max_parallel_sessions": 2
@@ -4883,7 +4883,7 @@
         }
       },
       "round": 2,
-      "phase": "collecting",
+      "phase": "partial",
       "open": [
         "ba_sa",
         "evidence",
@@ -4893,7 +4893,10 @@
       ],
       "results": {
         "wp16-fix-evidence": "reports/WP-FRAMEWORK-16.md",
-        "wp16-fix-recovery": "reports/WP-FRAMEWORK-16.md"
+        "wp16-fix-recovery": "reports/WP-FRAMEWORK-16.md",
+        "wp16-fix-ba_sa": "reports/WP-FRAMEWORK-16.md",
+        "wp16-fix-synthesis": "reports/WP-FRAMEWORK-16.md",
+        "wp16-fix-verification": "reports/WP-FRAMEWORK-16.md"
       },
       "events": {
         "wp16-wave-1": {
@@ -5033,6 +5036,64 @@
             "task": "wp16-fix-recovery",
             "evidence": "reports/WP-FRAMEWORK-16.md"
           }
+        },
+        "wp16-result-2-ba_sa": {
+          "event": "result",
+          "payload": {
+            "id": "wp16-result-2-ba_sa",
+            "task": "wp16-fix-ba_sa",
+            "evidence": "reports/WP-FRAMEWORK-16.md"
+          }
+        },
+        "wp16-result-2-synthesis": {
+          "event": "result",
+          "payload": {
+            "id": "wp16-result-2-synthesis",
+            "task": "wp16-fix-synthesis",
+            "evidence": "reports/WP-FRAMEWORK-16.md"
+          }
+        },
+        "wp16-result-2-verification": {
+          "event": "result",
+          "payload": {
+            "id": "wp16-result-2-verification",
+            "task": "wp16-fix-verification",
+            "evidence": "reports/WP-FRAMEWORK-16.md"
+          }
+        },
+        "wp16-review-2": {
+          "event": "verdict",
+          "payload": {
+            "id": "wp16-review-2",
+            "verdict": "partial",
+            "criteria": {
+              "ba_sa": {
+                "status": "blocked",
+                "reason": "Не доказаны подлинность подтверждения, смысловая согласованность и настоящий graph/fence.",
+                "evidence": "reports/WP-16-independent-review.md"
+              },
+              "evidence": {
+                "status": "blocked",
+                "reason": "Trusted claims не доказывают identity/proof; policy waiver NaCl неизвестна.",
+                "evidence": "reports/WP-16-independent-review.md"
+              },
+              "recovery": {
+                "status": "blocked",
+                "reason": "Trusted digest и edge scope, настоящий graph/restore не установлены.",
+                "evidence": "reports/WP-16-independent-review.md"
+              },
+              "synthesis": {
+                "status": "blocked",
+                "reason": "Полная карта гарантий и применимость к реальному NaCl не установлены; стоимость UNKNOWN.",
+                "evidence": "reports/WP-16-independent-review.md"
+              },
+              "verification": {
+                "status": "blocked",
+                "reason": "При неподтверждённых входах independent controls показывают ложный успех в synthetic моделях.",
+                "evidence": "reports/WP-16-independent-review.md"
+              }
+            }
+          }
         }
       },
       "verdicts": [
@@ -5063,6 +5124,37 @@
             "verification": {
               "status": "blocked",
               "reason": "Независимый review выявил дефекты synthetic моделей либо незакрытую проверку и границы текущих гарантий.",
+              "evidence": "reports/WP-16-independent-review.md"
+            }
+          }
+        },
+        {
+          "id": "wp16-review-2",
+          "verdict": "partial",
+          "criteria": {
+            "ba_sa": {
+              "status": "blocked",
+              "reason": "Не доказаны подлинность подтверждения, смысловая согласованность и настоящий graph/fence.",
+              "evidence": "reports/WP-16-independent-review.md"
+            },
+            "evidence": {
+              "status": "blocked",
+              "reason": "Trusted claims не доказывают identity/proof; policy waiver NaCl неизвестна.",
+              "evidence": "reports/WP-16-independent-review.md"
+            },
+            "recovery": {
+              "status": "blocked",
+              "reason": "Trusted digest и edge scope, настоящий graph/restore не установлены.",
+              "evidence": "reports/WP-16-independent-review.md"
+            },
+            "synthesis": {
+              "status": "blocked",
+              "reason": "Полная карта гарантий и применимость к реальному NaCl не установлены; стоимость UNKNOWN.",
+              "evidence": "reports/WP-16-independent-review.md"
+            },
+            "verification": {
+              "status": "blocked",
+              "reason": "При неподтверждённых входах independent controls показывают ложный успех в synthetic моделях.",
               "evidence": "reports/WP-16-independent-review.md"
             }
           }
@@ -5098,6 +5190,75 @@
           "criterion": "verification",
           "missing_fact": "Адресно устранить выявленную проблему собственной synthetic модели или связать проверку; реальные гарантии сохранить UNKNOWN",
           "decision": "Финальная независимая приёмка"
+        }
+      ]
+    },
+    "WP-FRAMEWORK-17": {
+      "contract": {
+        "question": "Какие рекомендации по упрощению NaCl выдерживают независимый challenge при сохранении графовой основы?",
+        "decision": "Подготовить обоснованный ограниченный план модернизации и остатки без ложных гарантий",
+        "artifact": "reports/WP-FRAMEWORK-17.md",
+        "criteria": {
+          "challenge": {
+            "evidence_standard": "По кандидатам M0–M5 сильнейшие контраргументы, исторические дефекты, границы confidence и критерии DEFER/GO",
+            "unknown_allowed": false
+          },
+          "coverage": {
+            "evidence_standard": "Каждый кандидат M0–M5 рассмотрен или объяснённый остаток; graph, миграция, identity, совместимость и recovery учтены",
+            "unknown_allowed": false
+          },
+          "mechanisms": {
+            "evidence_standard": "Для найденных критических изменений указать задачу, consumer, риск утраты гарантии и условия негативной проверки",
+            "unknown_allowed": false
+          },
+          "evidence": {
+            "evidence_standard": "Отделены реальные исторические данные, synthetic prototypes, исходные контракты и UNKNOWN; no false PASS",
+            "unknown_allowed": false
+          },
+          "recommendations": {
+            "evidence_standard": "Для каждого кандидата задана категория/условия применимости и неподтверждённое остаётся DEFER",
+            "unknown_allowed": false
+          },
+          "verification": {
+            "evidence_standard": "Независимый reviewer проверил содержательность, первичные ссылки в заданном срезе и конкретные ограничения",
+            "unknown_allowed": false
+          }
+        }
+      },
+      "round": 1,
+      "phase": "collecting",
+      "open": [
+        "challenge",
+        "coverage",
+        "mechanisms",
+        "evidence",
+        "recommendations",
+        "verification"
+      ],
+      "results": {},
+      "events": {
+        "wp17-wave-1": {
+          "event": "start",
+          "payload": {
+            "id": "wp17-wave-1",
+            "tasks": [
+              {
+                "id": "wp17-challenge",
+                "criterion": "challenge",
+                "missing_fact": "Независимо оспорить M0–M5 на основе накопленных источников, WP19 и partial WP13/16",
+                "decision": "Определить безопасную ограниченную сдачу WP18"
+              }
+            ]
+          }
+        }
+      },
+      "verdicts": [],
+      "tasks": [
+        {
+          "id": "wp17-challenge",
+          "criterion": "challenge",
+          "missing_fact": "Независимо оспорить M0–M5 на основе накопленных источников, WP19 и partial WP13/16",
+          "decision": "Определить безопасную ограниченную сдачу WP18"
         }
       ]
     }

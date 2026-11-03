@@ -44,7 +44,7 @@
 | [WP-FRAMEWORK-14](work-packages/WP-FRAMEWORK-14-interface-control.md) | Стык управления, восстановления и состояния | WP-FRAMEWORK-01; ограниченные входы по D-6 |
 | [WP-FRAMEWORK-15](work-packages/WP-FRAMEWORK-15-harness.md) | Что можно передать Harness | WP-FRAMEWORK-01 |
 | [WP-FRAMEWORK-16](work-packages/WP-FRAMEWORK-16-measurement.md) | Проверка кандидатов модернизации NaCl и их цены | WP-FRAMEWORK-19; частичный вход WP-13 явно ограничен |
-| [WP-FRAMEWORK-17](work-packages/WP-FRAMEWORK-17-challenge.md) | Независимая проверка рекомендаций | WP-FRAMEWORK-13, WP-FRAMEWORK-16, WP-FRAMEWORK-19 |
+| [WP-FRAMEWORK-17](work-packages/WP-FRAMEWORK-17-challenge.md) | Независимая проверка рекомендаций | WP-FRAMEWORK-19; partial входы WP-13/16 с UNKNOWN |
 | [WP-FRAMEWORK-18](work-packages/WP-FRAMEWORK-18-recommendations.md) | План модернизации NaCl и передача следующей программе | WP-FRAMEWORK-17 |
 | [WP-FRAMEWORK-19](work-packages/WP-FRAMEWORK-19-historical-interface-cases.md) | Девять исторических ситуаций по трём границам | WP-FRAMEWORK-01 |
 

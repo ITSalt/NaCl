@@ -11,3 +11,18 @@ Reviewer воспроизвёл в отдельных временных коп�
 | verification | blocked | Reviewer выполнил воспроизведение и независимые negative controls, но обнаружены false successes самих прототипов. |
 
 Ровно одна адресная коррекция может устранить дефекты synthetic моделей, сохранить прежнюю версию и зафиксировать вторую; она не закроет реальные graph/runtime гарантии и не даёт права на внедрение.
+
+## Финальный независимый review — PARTIAL
+
+Независимый reviewer в отдельных disposable copies с запретом сети повторил BA v2 15/15 и 6/6 mutations, evidence v2 16/16 и recovery v2 15/15. Прежние конкретные controls исправлены в пределах synthetic policies. Дополнительные controls выявили: BA unsigned противоречащее подтверждение и оба отсутствующих fence дают APPLIED; evidence доверяет fabricated proof/reviewer/waiver; recovery доверяет подменяемому digest и не определяет edge-level scope. Это ограничения synthetic моделей, не установленные дефекты NaCl. Реальный graph, настоящие права/fence и restore не проверялись.
+
+| Критерий | Статус | Причина |
+|---|---|---|
+| ba_sa | blocked | Не доказаны подлинность подтверждений, semantic consistency и реальный graph/fence. |
+| evidence | blocked | Trusted claims не доказывают identity/proof; реальная policy waiver UNKNOWN. |
+| recovery | blocked | Trusted digest и edge scope не подтверждены; реальная authority/restore UNKNOWN. |
+| synthesis | blocked | Полная карта действующих гарантий и применимости к исходным charter не установлена; цена/эффект UNKNOWN. |
+| verification | blocked | Независимые controls выполнены, но в synthetic моделях остаются случаи ложного успеха при неподтверждённых входах. |
+
+Два раунда завершены, третья коррекция не проводится. Три прототипа и результаты пригодны как ограниченный вход в план модернизации при сохранении исходного PARTIAL и всех UNKNOWN; не считать их безопасной реализацией или подтверждением ускорения.
+
