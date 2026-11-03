@@ -4,7 +4,7 @@
   "instances": {},
   "assignments": {},
   "launches": {},
-  "revision": 44,
+  "revision": 51,
   "generation": 1,
   "autonomy": {
     "enabled": true,
@@ -984,13 +984,11 @@
         }
       },
       "round": 2,
-      "phase": "review",
+      "phase": "partial",
       "open": [
         "loop",
         "coverage",
-        "mechanisms",
-        "recommendations",
-        "verification"
+        "mechanisms"
       ],
       "results": {
         "dev-context": "reports/WP-FRAMEWORK-05.md",
@@ -1138,6 +1136,45 @@
             "task": "dev-review-fix",
             "evidence": "reports/WP-FRAMEWORK-05.md"
           }
+        },
+        "dev-review-final": {
+          "event": "verdict",
+          "payload": {
+            "id": "dev-review-final",
+            "verdict": "partial",
+            "criteria": {
+              "evidence": {
+                "status": "satisfied",
+                "reason": "Независимый review подтвердил ограниченный статический срез.",
+                "evidence": "reports/WP-05-independent-review.md"
+              },
+              "recommendations": {
+                "status": "satisfied",
+                "reason": "Независимый review подтвердил ограниченный статический срез.",
+                "evidence": "reports/WP-05-independent-review.md"
+              },
+              "verification": {
+                "status": "satisfied",
+                "reason": "Независимый review подтвердил ограниченный статический срез.",
+                "evidence": "reports/WP-05-independent-review.md"
+              },
+              "loop": {
+                "status": "blocked",
+                "reason": "После второго раунда минимум контекста, полнота modes/consumers и часть механических полей не доказаны.",
+                "evidence": "reports/WP-05-independent-review.md"
+              },
+              "coverage": {
+                "status": "blocked",
+                "reason": "После второго раунда минимум контекста, полнота modes/consumers и часть механических полей не доказаны.",
+                "evidence": "reports/WP-05-independent-review.md"
+              },
+              "mechanisms": {
+                "status": "blocked",
+                "reason": "После второго раунда минимум контекста, полнота modes/consumers и часть механических полей не доказаны.",
+                "evidence": "reports/WP-05-independent-review.md"
+              }
+            }
+          }
         }
       },
       "verdicts": [
@@ -1176,6 +1213,42 @@
               "evidence": "reports/WP-05-independent-review.md"
             }
           }
+        },
+        {
+          "id": "dev-review-final",
+          "verdict": "partial",
+          "criteria": {
+            "evidence": {
+              "status": "satisfied",
+              "reason": "Независимый review подтвердил ограниченный статический срез.",
+              "evidence": "reports/WP-05-independent-review.md"
+            },
+            "recommendations": {
+              "status": "satisfied",
+              "reason": "Независимый review подтвердил ограниченный статический срез.",
+              "evidence": "reports/WP-05-independent-review.md"
+            },
+            "verification": {
+              "status": "satisfied",
+              "reason": "Независимый review подтвердил ограниченный статический срез.",
+              "evidence": "reports/WP-05-independent-review.md"
+            },
+            "loop": {
+              "status": "blocked",
+              "reason": "После второго раунда минимум контекста, полнота modes/consumers и часть механических полей не доказаны.",
+              "evidence": "reports/WP-05-independent-review.md"
+            },
+            "coverage": {
+              "status": "blocked",
+              "reason": "После второго раунда минимум контекста, полнота modes/consumers и часть механических полей не доказаны.",
+              "evidence": "reports/WP-05-independent-review.md"
+            },
+            "mechanisms": {
+              "status": "blocked",
+              "reason": "После второго раунда минимум контекста, полнота modes/consumers и часть механических полей не доказаны.",
+              "evidence": "reports/WP-05-independent-review.md"
+            }
+          }
         }
       ],
       "tasks": [
@@ -1208,6 +1281,213 @@
           "criterion": "verification",
           "missing_fact": "Привязать review и проверку checkout",
           "decision": "Статическая приёмка WP-05"
+        }
+      ]
+    },
+    "WP-FRAMEWORK-06": {
+      "contract": {
+        "question": "Какие QA/review gates различимы и каковы риски их сокращения?",
+        "decision": "Рассмотреть статическую сдачу по исходным критериям",
+        "artifact": "reports/WP-FRAMEWORK-06.md",
+        "criteria": {
+          "primary": {
+            "evidence_standard": "Матрица дефект → проверка → свидетельство, дубли, пробелы и риск удаления каждого gate",
+            "unknown_allowed": false
+          },
+          "coverage": {
+            "evidence_standard": "Все подобласти charter покрыты либо исключены с причиной и источниками",
+            "unknown_allowed": false
+          },
+          "mechanisms": {
+            "evidence_standard": "По механизму задача, consumer, цена или UNKNOWN, дефект, альтернатива и риск",
+            "unknown_allowed": false
+          },
+          "evidence": {
+            "evidence_standard": "Факты, измерения, выводы, гипотезы, SHA и клиенты различены",
+            "unknown_allowed": false
+          },
+          "recommendations": {
+            "evidence_standard": "Категории и условия кандидатов без недоказанного ускорения",
+            "unknown_allowed": false
+          },
+          "verification": {
+            "evidence_standard": "Ссылки, SHA/статус исходника, ограничения и независимый review",
+            "unknown_allowed": false
+          }
+        }
+      },
+      "round": 1,
+      "phase": "collecting",
+      "open": [
+        "primary",
+        "coverage",
+        "mechanisms",
+        "evidence",
+        "recommendations",
+        "verification"
+      ],
+      "results": {},
+      "events": {
+        "wp06-wave-1": {
+          "event": "start",
+          "payload": {
+            "id": "wp06-wave-1",
+            "tasks": [
+              {
+                "id": "wp06-synthesis",
+                "criterion": "primary",
+                "missing_fact": "Свести имеющиеся профильные материалы и назвать открытые критерии",
+                "decision": "Статическая сдача WP-06"
+              }
+            ]
+          }
+        }
+      },
+      "verdicts": [],
+      "tasks": [
+        {
+          "id": "wp06-synthesis",
+          "criterion": "primary",
+          "missing_fact": "Свести имеющиеся профильные материалы и назвать открытые критерии",
+          "decision": "Статическая сдача WP-06"
+        }
+      ]
+    },
+    "WP-FRAMEWORK-07": {
+      "contract": {
+        "question": "Как различаются три цепочки поставки и какие гарантии нужно сохранять?",
+        "decision": "Рассмотреть статическую сдачу по исходным критериям",
+        "artifact": "reports/WP-FRAMEWORK-07.md",
+        "criteria": {
+          "primary": {
+            "evidence_standard": "Карта трёх цепочек поставки, цена ручных шагов или UNKNOWN и сохраняемые гарантии",
+            "unknown_allowed": false
+          },
+          "coverage": {
+            "evidence_standard": "Все подобласти charter покрыты либо исключены с причиной и источниками",
+            "unknown_allowed": false
+          },
+          "mechanisms": {
+            "evidence_standard": "По механизму задача, consumer, цена или UNKNOWN, дефект, альтернатива и риск",
+            "unknown_allowed": false
+          },
+          "evidence": {
+            "evidence_standard": "Факты, измерения, выводы, гипотезы, SHA и клиенты различены",
+            "unknown_allowed": false
+          },
+          "recommendations": {
+            "evidence_standard": "Категории и условия кандидатов без недоказанного ускорения",
+            "unknown_allowed": false
+          },
+          "verification": {
+            "evidence_standard": "Ссылки, SHA/статус исходника, ограничения и независимый review",
+            "unknown_allowed": false
+          }
+        }
+      },
+      "round": 1,
+      "phase": "collecting",
+      "open": [
+        "primary",
+        "coverage",
+        "mechanisms",
+        "evidence",
+        "recommendations",
+        "verification"
+      ],
+      "results": {},
+      "events": {
+        "wp07-wave-1": {
+          "event": "start",
+          "payload": {
+            "id": "wp07-wave-1",
+            "tasks": [
+              {
+                "id": "wp07-synthesis",
+                "criterion": "primary",
+                "missing_fact": "Свести имеющиеся профильные материалы и назвать открытые критерии",
+                "decision": "Статическая сдача WP-07"
+              }
+            ]
+          }
+        }
+      },
+      "verdicts": [],
+      "tasks": [
+        {
+          "id": "wp07-synthesis",
+          "criterion": "primary",
+          "missing_fact": "Свести имеющиеся профильные материалы и назвать открытые критерии",
+          "decision": "Статическая сдача WP-07"
+        }
+      ]
+    },
+    "WP-FRAMEWORK-08": {
+      "contract": {
+        "question": "Как управленческие надстройки описывают состояние и что можно объединить?",
+        "decision": "Рассмотреть статическую сдачу по исходным критериям",
+        "artifact": "reports/WP-FRAMEWORK-08.md",
+        "criteria": {
+          "primary": {
+            "evidence_standard": "Матрица полномочий надстроек, жизненный цикл состояния и варианты объединения или удаления",
+            "unknown_allowed": false
+          },
+          "coverage": {
+            "evidence_standard": "Все подобласти charter покрыты либо исключены с причиной и источниками",
+            "unknown_allowed": false
+          },
+          "mechanisms": {
+            "evidence_standard": "По механизму задача, consumer, цена или UNKNOWN, дефект, альтернатива и риск",
+            "unknown_allowed": false
+          },
+          "evidence": {
+            "evidence_standard": "Факты, измерения, выводы, гипотезы, SHA и клиенты различены",
+            "unknown_allowed": false
+          },
+          "recommendations": {
+            "evidence_standard": "Категории и условия кандидатов без недоказанного ускорения",
+            "unknown_allowed": false
+          },
+          "verification": {
+            "evidence_standard": "Ссылки, SHA/статус исходника, ограничения и независимый review",
+            "unknown_allowed": false
+          }
+        }
+      },
+      "round": 1,
+      "phase": "collecting",
+      "open": [
+        "primary",
+        "coverage",
+        "mechanisms",
+        "evidence",
+        "recommendations",
+        "verification"
+      ],
+      "results": {},
+      "events": {
+        "wp08-wave-1": {
+          "event": "start",
+          "payload": {
+            "id": "wp08-wave-1",
+            "tasks": [
+              {
+                "id": "wp08-synthesis",
+                "criterion": "primary",
+                "missing_fact": "Свести имеющиеся профильные материалы и назвать открытые критерии",
+                "decision": "Статическая сдача WP-08"
+              }
+            ]
+          }
+        }
+      },
+      "verdicts": [],
+      "tasks": [
+        {
+          "id": "wp08-synthesis",
+          "criterion": "primary",
+          "missing_fact": "Свести имеющиеся профильные материалы и назвать открытые критерии",
+          "decision": "Статическая сдача WP-08"
         }
       ]
     }
