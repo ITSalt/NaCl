@@ -57,6 +57,8 @@ R-n — действие: точная команда одной строкой 
 | ~~P-2~~ | ~~Уточнить границу D-4: какие выполненные агентские работы относить к подготовке одной A/B-пары, чтобы оценить расход и сохранить лимит; текущие session totals и отсутствие подтверждённого общего hard cap описаны в evidence.~~ | reports/WP-16-budget-observation.md | 2026-11-02 | 2026-11-03: answered by D-7 |
 | ~~P-3~~ | ~~Принять ли ограниченные результаты WP-11, WP-12 и WP-14 как входы для последующих пакетов, сохранив незакрытые исходные критерии и независимые partial verdicts? Рекомендуется принять ограниченные входы и передать остатки в backlog; альтернатива — сохранить исходные гейты.~~ | reports/recommendations.md | 2026-11-03 | 2026-11-03: answered by D-8 |
 | ~~P-4~~ | ~~D-10: локальные накопительные счётчики двух дочерних сессий по отдельности превысили 1,2 млн input с включённым cache; billing и общий расход неизвестны. Решить, считать ли лимит исчерпанным либо отдельно установить ограниченный бюджет диагностики и правила учёта cached input, прежде чем планировать A/B.~~ | reports/WP-16-D10-budget-stop.md | 2026-11-03 | 2026-11-03: answered by D-12 |
+| R-1 | Archive the workspace branch (from any clone of the repository): git push origin 6ae9037a4d2dd12cf7a79a686f201fcbf2b6beb5:refs/tags/orch-knowledge-methodology-closed-20261103 && git push origin --delete orch/knowledge-methodology ; expected: tag orch-knowledge-methodology-closed-20261103 on origin at 6ae9037a4d, branch orch/knowledge-methodology deleted | reports/closeout | 2026-11-03 |  |
+| P-5 | Keep the workspace as history in docs/ of the base branch through a PR? (a) yes, one PR copying the workspace (b) no, the tag is enough ; recommendation: (b) | reports/closeout | 2026-11-03 |  |
 
 ## Замки
 
@@ -84,6 +86,8 @@ R-n — действие: точная команда одной строкой 
 <!-- orch:journal -->
 | Дата | WP | Событие | Подтверждение |
 |------|----|---------|---------------|
+| 2026-11-03 11:45Z | — | P-5 opened for owner | reports/closeout |
+| 2026-11-03 11:45Z | — | R-1 opened for owner | reports/closeout |
 | 2026-11-03 11:45Z | — | program closed | reports/closeout-20261103.md |
 | 2026-11-03 11:42Z | — | По D-16 15 исходных пакетов закрыты без полного выполнения: PARTIAL и все конкретные остатки сохранены; новый результат или проверка не приписаны. | reports/WP-02-16-disposition.md |
 | 2026-11-03 11:42Z | WP-FRAMEWORK-16 | WP-FRAMEWORK-16: REVISE -> CANCELLED (PARTIAL сохранён; остаток отложен, D-16) | Два раунда PARTIAL; невыполненные критерии: reports/WP-02-16-disposition.md; отчёт WP-16 и независимый review сохранены |
