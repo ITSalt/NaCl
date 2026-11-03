@@ -37,9 +37,9 @@ CANCELLED (причина).
 | [WP-FRAMEWORK-13](work-packages/WP-FRAMEWORK-13-interface-dev-qa.md) | framework | Стык разработка → review/QA → release | REVISE | knowledge-methodology-framework | — | 2026-11-03 |
 | [WP-FRAMEWORK-14](work-packages/WP-FRAMEWORK-14-interface-control.md) | framework | Стык управления, восстановления и состояния | REVISE | knowledge-methodology-framework | — | 2026-11-03 |
 | [WP-FRAMEWORK-15](work-packages/WP-FRAMEWORK-15-harness.md) | framework | Что можно передать Harness | REVISE | knowledge-methodology-framework | — | 2026-11-03 |
-| [WP-FRAMEWORK-16](work-packages/WP-FRAMEWORK-16-measurement.md) | framework | Цена методологии и сравнение с Markdown | DRAFT | knowledge-methodology-framework | — | 2026-11-02 |
+| [WP-FRAMEWORK-16](work-packages/WP-FRAMEWORK-16-measurement.md) | framework | Проверка кандидатов модернизации NaCl | DRAFT | knowledge-methodology-framework | — | 2026-11-03 |
 | [WP-FRAMEWORK-17](work-packages/WP-FRAMEWORK-17-challenge.md) | framework | Независимая проверка рекомендаций | DRAFT | knowledge-methodology-framework | — | 2026-11-02 |
-| [WP-FRAMEWORK-18](work-packages/WP-FRAMEWORK-18-recommendations.md) | framework | Методические рекомендации и передача следующей программе | DRAFT | knowledge-methodology-framework | — | 2026-11-02 |
+| [WP-FRAMEWORK-18](work-packages/WP-FRAMEWORK-18-recommendations.md) | framework | План модернизации NaCl и передача следующей программе | DRAFT | knowledge-methodology-framework | — | 2026-11-03 |
 | [WP-FRAMEWORK-19](work-packages/WP-FRAMEWORK-19-historical-interface-cases.md) | framework | Девять реальных исторических ситуаций по трём границам | DONE | knowledge-methodology-framework | — | 2026-11-03 |
 
 ## Ждёт владельца
@@ -54,7 +54,7 @@ R-n — действие: точная команда одной строкой 
 | ~~P-1~~ | ~~Repository nacl: add `.worktreeinclude` in its root (a change of the project, made by a package there) so that every new worktree gets the gitignored files it needs: .env, .env.local (gitignore syntax, one pattern per line; directories as dir/**). Recommend (a) yes: sessions then never copy secrets or settings themselves~~ | orch.py init | 2026-11-02 | 2026-11-02 dropped: Автопредложение .worktreeinclude относится к Claude Code. Программа использует Codex; необходимость gitignored-файлов не установлена. Вернуться к этому только в пакете, которому действительно нужны такие файлы. |
 | ~~P-2~~ | ~~Уточнить границу D-4: какие выполненные агентские работы относить к подготовке одной A/B-пары, чтобы оценить расход и сохранить лимит; текущие session totals и отсутствие подтверждённого общего hard cap описаны в evidence.~~ | reports/WP-16-budget-observation.md | 2026-11-02 | 2026-11-03: answered by D-7 |
 | ~~P-3~~ | ~~Принять ли ограниченные результаты WP-11, WP-12 и WP-14 как входы для последующих пакетов, сохранив незакрытые исходные критерии и независимые partial verdicts? Рекомендуется принять ограниченные входы и передать остатки в backlog; альтернатива — сохранить исходные гейты.~~ | reports/recommendations.md | 2026-11-03 | 2026-11-03: answered by D-8 |
-| P-4 | D-10: локальные накопительные счётчики двух дочерних сессий по отдельности превысили 1,2 млн input с включённым cache; billing и общий расход неизвестны. Решить, считать ли лимит исчерпанным либо отдельно установить ограниченный бюджет диагностики и правила учёта cached input, прежде чем планировать A/B. | reports/WP-16-D10-budget-stop.md | 2026-11-03 |  |
+| ~~P-4~~ | ~~D-10: локальные накопительные счётчики двух дочерних сессий по отдельности превысили 1,2 млн input с включённым cache; billing и общий расход неизвестны. Решить, считать ли лимит исчерпанным либо отдельно установить ограниченный бюджет диагностики и правила учёта cached input, прежде чем планировать A/B.~~ | reports/WP-16-D10-budget-stop.md | 2026-11-03 | 2026-11-03: answered by D-12 |
 
 ## Замки
 
@@ -82,6 +82,10 @@ R-n — действие: точная команда одной строкой 
 <!-- orch:journal -->
 | Дата | WP | Событие | Подтверждение |
 |------|----|---------|---------------|
+| 2026-11-03 10:07Z | — | Единый план и задания WP-16/17/18 согласованы с D-11: граф и методология NaCl сохраняются; проверки направлены на конкретные упрощения. D-12 фиксирует новый лимит без заявления о подтверждённом hard cap. | PLAN.md; spec/research-protocol.md; spec/family-cinema-testbed.md |
+| 2026-11-03 10:05Z | — | P-4 closed | answered by D-12 |
+| 2026-11-03 10:05Z | — | D-12 recorded | Прямое разрешение владельца на новый лимит |
+| 2026-11-03 10:05Z | — | D-11 recorded | Уточнение и согласование владельца о графе и модернизации NaCl |
 | 2026-11-03 09:57Z | — | P-4 opened for owner | reports/WP-16-D10-budget-stop.md |
 | 2026-11-03 09:57Z | — | D-10: подготовка остановлена по консервативному чтению cumulative input; автопродолжение приостановлено; A/B не запускался. | reports/WP-16-D10-budget-stop.md |
 | 2026-11-03 09:55Z | — | D-10 recorded | Прямое согласие владельца на новый лимит и проактивное продолжение 2026-11-03 |
