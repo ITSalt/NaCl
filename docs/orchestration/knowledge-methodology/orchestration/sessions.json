@@ -4,7 +4,7 @@
   "instances": {},
   "assignments": {},
   "launches": {},
-  "revision": 73,
+  "revision": 82,
   "generation": 1,
   "autonomy": {
     "enabled": true,
@@ -1317,11 +1317,10 @@
         }
       },
       "round": 2,
-      "phase": "review",
+      "phase": "partial",
       "open": [
         "primary",
-        "coverage",
-        "verification"
+        "coverage"
       ],
       "results": {
         "wp06-fix-primary": "reports/WP-FRAMEWORK-06.md",
@@ -1439,6 +1438,45 @@
             "task": "wp06-fix-verification",
             "evidence": "reports/WP-FRAMEWORK-06.md"
           }
+        },
+        "wp06-review-final": {
+          "event": "verdict",
+          "payload": {
+            "id": "wp06-review-final",
+            "verdict": "partial",
+            "criteria": {
+              "primary": {
+                "status": "blocked",
+                "reason": "После двух раундов остаётся конкретный пробел исходного критерия; см. независимый review.",
+                "evidence": "reports/WP-06-independent-review.md"
+              },
+              "coverage": {
+                "status": "blocked",
+                "reason": "После двух раундов остаётся конкретный пробел исходного критерия; см. независимый review.",
+                "evidence": "reports/WP-06-independent-review.md"
+              },
+              "mechanisms": {
+                "status": "satisfied",
+                "reason": "Подтверждено в ограниченном статическом срезе.",
+                "evidence": "reports/WP-06-independent-review.md"
+              },
+              "evidence": {
+                "status": "satisfied",
+                "reason": "Подтверждено в ограниченном статическом срезе.",
+                "evidence": "reports/WP-06-independent-review.md"
+              },
+              "recommendations": {
+                "status": "satisfied",
+                "reason": "Подтверждено в ограниченном статическом срезе.",
+                "evidence": "reports/WP-06-independent-review.md"
+              },
+              "verification": {
+                "status": "satisfied",
+                "reason": "Подтверждено в ограниченном статическом срезе.",
+                "evidence": "reports/WP-06-independent-review.md"
+              }
+            }
+          }
         }
       },
       "verdicts": [
@@ -1474,6 +1512,42 @@
             "verification": {
               "status": "blocked",
               "reason": "Первый независимый review указал конкретный пробел или необходимость зафиксировать проверку.",
+              "evidence": "reports/WP-06-independent-review.md"
+            }
+          }
+        },
+        {
+          "id": "wp06-review-final",
+          "verdict": "partial",
+          "criteria": {
+            "primary": {
+              "status": "blocked",
+              "reason": "После двух раундов остаётся конкретный пробел исходного критерия; см. независимый review.",
+              "evidence": "reports/WP-06-independent-review.md"
+            },
+            "coverage": {
+              "status": "blocked",
+              "reason": "После двух раундов остаётся конкретный пробел исходного критерия; см. независимый review.",
+              "evidence": "reports/WP-06-independent-review.md"
+            },
+            "mechanisms": {
+              "status": "satisfied",
+              "reason": "Подтверждено в ограниченном статическом срезе.",
+              "evidence": "reports/WP-06-independent-review.md"
+            },
+            "evidence": {
+              "status": "satisfied",
+              "reason": "Подтверждено в ограниченном статическом срезе.",
+              "evidence": "reports/WP-06-independent-review.md"
+            },
+            "recommendations": {
+              "status": "satisfied",
+              "reason": "Подтверждено в ограниченном статическом срезе.",
+              "evidence": "reports/WP-06-independent-review.md"
+            },
+            "verification": {
+              "status": "satisfied",
+              "reason": "Подтверждено в ограниченном статическом срезе.",
               "evidence": "reports/WP-06-independent-review.md"
             }
           }
@@ -1533,13 +1607,10 @@
         }
       },
       "round": 2,
-      "phase": "review",
+      "phase": "partial",
       "open": [
-        "primary",
         "coverage",
-        "mechanisms",
-        "recommendations",
-        "verification"
+        "mechanisms"
       ],
       "results": {
         "wp07-fix-primary": "reports/WP-FRAMEWORK-07.md",
@@ -1687,6 +1758,45 @@
             "task": "wp07-fix-verification",
             "evidence": "reports/WP-FRAMEWORK-07.md"
           }
+        },
+        "wp07-review-final": {
+          "event": "verdict",
+          "payload": {
+            "id": "wp07-review-final",
+            "verdict": "partial",
+            "criteria": {
+              "primary": {
+                "status": "satisfied",
+                "reason": "Подтверждено в ограниченном статическом срезе.",
+                "evidence": "reports/WP-07-independent-review.md"
+              },
+              "coverage": {
+                "status": "blocked",
+                "reason": "После двух раундов остаётся конкретный пробел исходного критерия; см. независимый review.",
+                "evidence": "reports/WP-07-independent-review.md"
+              },
+              "mechanisms": {
+                "status": "blocked",
+                "reason": "После двух раундов остаётся конкретный пробел исходного критерия; см. независимый review.",
+                "evidence": "reports/WP-07-independent-review.md"
+              },
+              "evidence": {
+                "status": "satisfied",
+                "reason": "Подтверждено в ограниченном статическом срезе.",
+                "evidence": "reports/WP-07-independent-review.md"
+              },
+              "recommendations": {
+                "status": "satisfied",
+                "reason": "Подтверждено в ограниченном статическом срезе.",
+                "evidence": "reports/WP-07-independent-review.md"
+              },
+              "verification": {
+                "status": "satisfied",
+                "reason": "Подтверждено в ограниченном статическом срезе.",
+                "evidence": "reports/WP-07-independent-review.md"
+              }
+            }
+          }
         }
       },
       "verdicts": [
@@ -1722,6 +1832,42 @@
             "verification": {
               "status": "blocked",
               "reason": "Первый независимый review указал конкретный пробел или необходимость зафиксировать проверку.",
+              "evidence": "reports/WP-07-independent-review.md"
+            }
+          }
+        },
+        {
+          "id": "wp07-review-final",
+          "verdict": "partial",
+          "criteria": {
+            "primary": {
+              "status": "satisfied",
+              "reason": "Подтверждено в ограниченном статическом срезе.",
+              "evidence": "reports/WP-07-independent-review.md"
+            },
+            "coverage": {
+              "status": "blocked",
+              "reason": "После двух раундов остаётся конкретный пробел исходного критерия; см. независимый review.",
+              "evidence": "reports/WP-07-independent-review.md"
+            },
+            "mechanisms": {
+              "status": "blocked",
+              "reason": "После двух раундов остаётся конкретный пробел исходного критерия; см. независимый review.",
+              "evidence": "reports/WP-07-independent-review.md"
+            },
+            "evidence": {
+              "status": "satisfied",
+              "reason": "Подтверждено в ограниченном статическом срезе.",
+              "evidence": "reports/WP-07-independent-review.md"
+            },
+            "recommendations": {
+              "status": "satisfied",
+              "reason": "Подтверждено в ограниченном статическом срезе.",
+              "evidence": "reports/WP-07-independent-review.md"
+            },
+            "verification": {
+              "status": "satisfied",
+              "reason": "Подтверждено в ограниченном статическом срезе.",
               "evidence": "reports/WP-07-independent-review.md"
             }
           }
@@ -1793,13 +1939,11 @@
         }
       },
       "round": 2,
-      "phase": "review",
+      "phase": "partial",
       "open": [
         "primary",
         "coverage",
-        "mechanisms",
-        "recommendations",
-        "verification"
+        "mechanisms"
       ],
       "results": {
         "wp08-fix-primary": "reports/WP-FRAMEWORK-08.md",
@@ -1947,6 +2091,45 @@
             "task": "wp08-fix-verification",
             "evidence": "reports/WP-FRAMEWORK-08.md"
           }
+        },
+        "wp08-review-final": {
+          "event": "verdict",
+          "payload": {
+            "id": "wp08-review-final",
+            "verdict": "partial",
+            "criteria": {
+              "primary": {
+                "status": "blocked",
+                "reason": "После двух раундов остаётся конкретный пробел исходного критерия; см. независимый review.",
+                "evidence": "reports/WP-08-independent-review.md"
+              },
+              "coverage": {
+                "status": "blocked",
+                "reason": "После двух раундов остаётся конкретный пробел исходного критерия; см. независимый review.",
+                "evidence": "reports/WP-08-independent-review.md"
+              },
+              "mechanisms": {
+                "status": "blocked",
+                "reason": "После двух раундов остаётся конкретный пробел исходного критерия; см. независимый review.",
+                "evidence": "reports/WP-08-independent-review.md"
+              },
+              "evidence": {
+                "status": "satisfied",
+                "reason": "Подтверждено в ограниченном статическом срезе.",
+                "evidence": "reports/WP-08-independent-review.md"
+              },
+              "recommendations": {
+                "status": "satisfied",
+                "reason": "Подтверждено в ограниченном статическом срезе.",
+                "evidence": "reports/WP-08-independent-review.md"
+              },
+              "verification": {
+                "status": "satisfied",
+                "reason": "Подтверждено в ограниченном статическом срезе.",
+                "evidence": "reports/WP-08-independent-review.md"
+              }
+            }
+          }
         }
       },
       "verdicts": [
@@ -1985,6 +2168,42 @@
               "evidence": "reports/WP-08-independent-review.md"
             }
           }
+        },
+        {
+          "id": "wp08-review-final",
+          "verdict": "partial",
+          "criteria": {
+            "primary": {
+              "status": "blocked",
+              "reason": "После двух раундов остаётся конкретный пробел исходного критерия; см. независимый review.",
+              "evidence": "reports/WP-08-independent-review.md"
+            },
+            "coverage": {
+              "status": "blocked",
+              "reason": "После двух раундов остаётся конкретный пробел исходного критерия; см. независимый review.",
+              "evidence": "reports/WP-08-independent-review.md"
+            },
+            "mechanisms": {
+              "status": "blocked",
+              "reason": "После двух раундов остаётся конкретный пробел исходного критерия; см. независимый review.",
+              "evidence": "reports/WP-08-independent-review.md"
+            },
+            "evidence": {
+              "status": "satisfied",
+              "reason": "Подтверждено в ограниченном статическом срезе.",
+              "evidence": "reports/WP-08-independent-review.md"
+            },
+            "recommendations": {
+              "status": "satisfied",
+              "reason": "Подтверждено в ограниченном статическом срезе.",
+              "evidence": "reports/WP-08-independent-review.md"
+            },
+            "verification": {
+              "status": "satisfied",
+              "reason": "Подтверждено в ограниченном статическом срезе.",
+              "evidence": "reports/WP-08-independent-review.md"
+            }
+          }
         }
       ],
       "tasks": [
@@ -2017,6 +2236,213 @@
           "criterion": "verification",
           "missing_fact": "Адресно устранить замечание verification независимого review на базе имеющихся материалов",
           "decision": "Вердикт по WP-08"
+        }
+      ]
+    },
+    "WP-FRAMEWORK-09": {
+      "contract": {
+        "question": "Какие гарантии дают graph и файловое ядро?",
+        "decision": "Рассмотреть статические результаты и остатки исходного charter",
+        "artifact": "reports/WP-FRAMEWORK-09.md",
+        "criteria": {
+          "primary": {
+            "evidence_standard": "Реестр источников истины, модель отказов и сравнение graph с файловым ядром",
+            "unknown_allowed": false
+          },
+          "coverage": {
+            "evidence_standard": "Все подобласти charter покрыты либо исключены с причиной и источниками",
+            "unknown_allowed": false
+          },
+          "mechanisms": {
+            "evidence_standard": "По механизму задача, consumer, цена или UNKNOWN, defect, альтернатива и риск",
+            "unknown_allowed": false
+          },
+          "evidence": {
+            "evidence_standard": "Факты, измерения, выводы, гипотезы, SHA и клиенты различены",
+            "unknown_allowed": false
+          },
+          "recommendations": {
+            "evidence_standard": "Категории и условия кандидатов без недоказанного ускорения",
+            "unknown_allowed": false
+          },
+          "verification": {
+            "evidence_standard": "Ссылки, SHA/статус исходника, ограничения и независимый review",
+            "unknown_allowed": false
+          }
+        }
+      },
+      "round": 1,
+      "phase": "collecting",
+      "open": [
+        "primary",
+        "coverage",
+        "mechanisms",
+        "evidence",
+        "recommendations",
+        "verification"
+      ],
+      "results": {},
+      "events": {
+        "wp09-wave-1": {
+          "event": "start",
+          "payload": {
+            "id": "wp09-wave-1",
+            "tasks": [
+              {
+                "id": "wp09-synthesis",
+                "criterion": "primary",
+                "missing_fact": "Свести накопленные профильные материалы и указать доказанные ограничения",
+                "decision": "Статическая сдача WP-09"
+              }
+            ]
+          }
+        }
+      },
+      "verdicts": [],
+      "tasks": [
+        {
+          "id": "wp09-synthesis",
+          "criterion": "primary",
+          "missing_fact": "Свести накопленные профильные материалы и указать доказанные ограничения",
+          "decision": "Статическая сдача WP-09"
+        }
+      ]
+    },
+    "WP-FRAMEWORK-10": {
+      "contract": {
+        "question": "Что в платформе необходимо для переносимости и что можно вывести из эксплуатации?",
+        "decision": "Рассмотреть статические результаты и остатки исходного charter",
+        "artifact": "reports/WP-FRAMEWORK-10.md",
+        "criteria": {
+          "primary": {
+            "evidence_standard": "Карта зависимостей/совместимости, кандидаты retire, цена поддержки каждого канала или UNKNOWN",
+            "unknown_allowed": false
+          },
+          "coverage": {
+            "evidence_standard": "Все подобласти charter покрыты либо исключены с причиной и источниками",
+            "unknown_allowed": false
+          },
+          "mechanisms": {
+            "evidence_standard": "По механизму задача, consumer, цена или UNKNOWN, defect, альтернатива и риск",
+            "unknown_allowed": false
+          },
+          "evidence": {
+            "evidence_standard": "Факты, измерения, выводы, гипотезы, SHA и клиенты различены",
+            "unknown_allowed": false
+          },
+          "recommendations": {
+            "evidence_standard": "Категории и условия кандидатов без недоказанного ускорения",
+            "unknown_allowed": false
+          },
+          "verification": {
+            "evidence_standard": "Ссылки, SHA/статус исходника, ограничения и независимый review",
+            "unknown_allowed": false
+          }
+        }
+      },
+      "round": 1,
+      "phase": "collecting",
+      "open": [
+        "primary",
+        "coverage",
+        "mechanisms",
+        "evidence",
+        "recommendations",
+        "verification"
+      ],
+      "results": {},
+      "events": {
+        "wp10-wave-1": {
+          "event": "start",
+          "payload": {
+            "id": "wp10-wave-1",
+            "tasks": [
+              {
+                "id": "wp10-synthesis",
+                "criterion": "primary",
+                "missing_fact": "Свести накопленные профильные материалы и указать доказанные ограничения",
+                "decision": "Статическая сдача WP-10"
+              }
+            ]
+          }
+        }
+      },
+      "verdicts": [],
+      "tasks": [
+        {
+          "id": "wp10-synthesis",
+          "criterion": "primary",
+          "missing_fact": "Свести накопленные профильные материалы и указать доказанные ограничения",
+          "decision": "Статическая сдача WP-10"
+        }
+      ]
+    },
+    "WP-FRAMEWORK-15": {
+      "contract": {
+        "question": "Какие обязанности может взять Harness с сохранением гарантий?",
+        "decision": "Рассмотреть статические результаты и остатки исходного charter",
+        "artifact": "reports/WP-FRAMEWORK-15.md",
+        "criteria": {
+          "primary": {
+            "evidence_standard": "Матрица заменить / частично заменить / оставить / не подтверждено, датированные первичные ссылки и минимальные воспроизводимые probes",
+            "unknown_allowed": false
+          },
+          "coverage": {
+            "evidence_standard": "Все подобласти charter покрыты либо исключены с причиной и источниками",
+            "unknown_allowed": false
+          },
+          "mechanisms": {
+            "evidence_standard": "По механизму задача, consumer, цена или UNKNOWN, defect, альтернатива и риск",
+            "unknown_allowed": false
+          },
+          "evidence": {
+            "evidence_standard": "Факты, измерения, выводы, гипотезы, SHA и клиенты различены",
+            "unknown_allowed": false
+          },
+          "recommendations": {
+            "evidence_standard": "Категории и условия кандидатов без недоказанного ускорения",
+            "unknown_allowed": false
+          },
+          "verification": {
+            "evidence_standard": "Ссылки, SHA/статус исходника, ограничения и независимый review",
+            "unknown_allowed": false
+          }
+        }
+      },
+      "round": 1,
+      "phase": "collecting",
+      "open": [
+        "primary",
+        "coverage",
+        "mechanisms",
+        "evidence",
+        "recommendations",
+        "verification"
+      ],
+      "results": {},
+      "events": {
+        "wp15-wave-1": {
+          "event": "start",
+          "payload": {
+            "id": "wp15-wave-1",
+            "tasks": [
+              {
+                "id": "wp15-synthesis",
+                "criterion": "primary",
+                "missing_fact": "Свести накопленные профильные материалы и указать доказанные ограничения",
+                "decision": "Статическая сдача WP-15"
+              }
+            ]
+          }
+        }
+      },
+      "verdicts": [],
+      "tasks": [
+        {
+          "id": "wp15-synthesis",
+          "criterion": "primary",
+          "missing_fact": "Свести накопленные профильные материалы и указать доказанные ограничения",
+          "decision": "Статическая сдача WP-15"
         }
       ]
     }

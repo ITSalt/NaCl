@@ -3,3 +3,5 @@
 Reviewer `/root/case_validation`, 3 ноября 2026: [сдача](WP-FRAMEWORK-08.md), исходный charter и сохранённые профильные материалы. Пять локальных ссылок доступны, NaCl HEAD `20fe4c6a56482e85d3ea9a9ebaadb37206047e41`, обычный статус чист; ignored, graph и runtime не проверялись. Рецензент первоначально вызвал иную установленную CLI без research-команды; затем reviewer проверил frozen registry именно исправленным script: round 1, review, шесть критериев открыты. Ошибка выбора первой CLI не означает отсутствия registry.
 
 Verdict REVISE: primary — не доказаны end-to-end lifecycle/failure/recovery и отсутствие второго плана; coverage — направления названы, но modes/consumers не полностью прослежены; mechanisms и recommendations — не все поля/условия индивидуализированы; verification — review и checkout нужно связать с отчётом. Evidence в заявленных пределах корректно различает source и runtime. Адресная коррекция по накопленным данным; A/B или ложные измерения не требуются.
+
+Финальный review: PARTIAL; evidence/recommendations/verification подтверждены в ограниченном срезе, primary/coverage/mechanisms открыты: полный lifecycle, режимы и отдельные поля не доказаны.

@@ -27,16 +27,16 @@ CANCELLED (причина).
 | [WP-FRAMEWORK-03](work-packages/WP-FRAMEWORK-03-sa.md) | framework | Системный анализ | REVISE | knowledge-methodology-framework | — | 2026-11-03 |
 | [WP-FRAMEWORK-04](work-packages/WP-FRAMEWORK-04-tl.md) | framework | Планирование и управление разработкой | REVISE | knowledge-methodology-framework | — | 2026-11-03 |
 | [WP-FRAMEWORK-05](work-packages/WP-FRAMEWORK-05-development.md) | framework | Разработка и исправления | REVISE | knowledge-methodology-framework | — | 2026-11-03 |
-| [WP-FRAMEWORK-06](work-packages/WP-FRAMEWORK-06-quality.md) | framework | Review, QA и верификация | IN_PROGRESS | knowledge-methodology-framework | — | 2026-11-03 |
-| [WP-FRAMEWORK-07](work-packages/WP-FRAMEWORK-07-delivery.md) | framework | Поставка, публикация и эксплуатационная документация | IN_PROGRESS | knowledge-methodology-framework | — | 2026-11-03 |
-| [WP-FRAMEWORK-08](work-packages/WP-FRAMEWORK-08-management.md) | framework | Цели и восстановление фактического состояния | IN_PROGRESS | knowledge-methodology-framework | — | 2026-11-03 |
-| [WP-FRAMEWORK-09](work-packages/WP-FRAMEWORK-09-graph.md) | framework | Данные, граф и синхронизация | DRAFT | knowledge-methodology-framework | — | 2026-11-02 |
-| [WP-FRAMEWORK-10](work-packages/WP-FRAMEWORK-10-platform.md) | framework | Адаптеры, runtime и каналы поставки | DRAFT | knowledge-methodology-framework | — | 2026-11-02 |
+| [WP-FRAMEWORK-06](work-packages/WP-FRAMEWORK-06-quality.md) | framework | Review, QA и верификация | REVISE | knowledge-methodology-framework | — | 2026-11-03 |
+| [WP-FRAMEWORK-07](work-packages/WP-FRAMEWORK-07-delivery.md) | framework | Поставка, публикация и эксплуатационная документация | REVISE | knowledge-methodology-framework | — | 2026-11-03 |
+| [WP-FRAMEWORK-08](work-packages/WP-FRAMEWORK-08-management.md) | framework | Цели и восстановление фактического состояния | REVISE | knowledge-methodology-framework | — | 2026-11-03 |
+| [WP-FRAMEWORK-09](work-packages/WP-FRAMEWORK-09-graph.md) | framework | Данные, граф и синхронизация | IN_PROGRESS | knowledge-methodology-framework | — | 2026-11-03 |
+| [WP-FRAMEWORK-10](work-packages/WP-FRAMEWORK-10-platform.md) | framework | Адаптеры, runtime и каналы поставки | IN_PROGRESS | knowledge-methodology-framework | — | 2026-11-03 |
 | [WP-FRAMEWORK-11](work-packages/WP-FRAMEWORK-11-interface-ba-sa.md) | framework | Стык BA → SA | DRAFT | knowledge-methodology-framework | — | 2026-11-02 |
 | [WP-FRAMEWORK-12](work-packages/WP-FRAMEWORK-12-interface-sa-dev.md) | framework | Стык SA → TL → разработка | DRAFT | knowledge-methodology-framework | — | 2026-11-02 |
 | [WP-FRAMEWORK-13](work-packages/WP-FRAMEWORK-13-interface-dev-qa.md) | framework | Стык разработка → review/QA → release | DRAFT | knowledge-methodology-framework | — | 2026-11-02 |
 | [WP-FRAMEWORK-14](work-packages/WP-FRAMEWORK-14-interface-control.md) | framework | Стык управления, восстановления и состояния | DRAFT | knowledge-methodology-framework | — | 2026-11-02 |
-| [WP-FRAMEWORK-15](work-packages/WP-FRAMEWORK-15-harness.md) | framework | Что можно передать Harness | DRAFT | knowledge-methodology-framework | — | 2026-11-02 |
+| [WP-FRAMEWORK-15](work-packages/WP-FRAMEWORK-15-harness.md) | framework | Что можно передать Harness | IN_PROGRESS | knowledge-methodology-framework | — | 2026-11-03 |
 | [WP-FRAMEWORK-16](work-packages/WP-FRAMEWORK-16-measurement.md) | framework | Цена методологии и сравнение с Markdown | DRAFT | knowledge-methodology-framework | — | 2026-11-02 |
 | [WP-FRAMEWORK-17](work-packages/WP-FRAMEWORK-17-challenge.md) | framework | Независимая проверка рекомендаций | DRAFT | knowledge-methodology-framework | — | 2026-11-02 |
 | [WP-FRAMEWORK-18](work-packages/WP-FRAMEWORK-18-recommendations.md) | framework | Методические рекомендации и передача следующей программе | DRAFT | knowledge-methodology-framework | — | 2026-11-02 |
@@ -79,6 +79,24 @@ R-n — действие: точная команда одной строкой 
 <!-- orch:journal -->
 | Дата | WP | Событие | Подтверждение |
 |------|----|---------|---------------|
+| 2026-11-03 08:43Z | WP-FRAMEWORK-15 | research start: collecting | wp15-wave-1 |
+| 2026-11-03 08:43Z | WP-FRAMEWORK-15 | research contract: ready | reports/WP-FRAMEWORK-15.md |
+| 2026-11-03 08:43Z | WP-FRAMEWORK-15 | WP-FRAMEWORK-15: READY -> IN_PROGRESS | Ограниченное рассмотрение по исходному charter |
+| 2026-11-03 08:43Z | WP-FRAMEWORK-15 | WP-FRAMEWORK-15: DRAFT -> READY | WP-01 DONE по D-5; есть накопленный профильный материал |
+| 2026-11-03 08:43Z | WP-FRAMEWORK-10 | research start: collecting | wp10-wave-1 |
+| 2026-11-03 08:43Z | WP-FRAMEWORK-10 | research contract: ready | reports/WP-FRAMEWORK-10.md |
+| 2026-11-03 08:43Z | WP-FRAMEWORK-10 | WP-FRAMEWORK-10: READY -> IN_PROGRESS | Ограниченное рассмотрение по исходному charter |
+| 2026-11-03 08:43Z | WP-FRAMEWORK-10 | WP-FRAMEWORK-10: DRAFT -> READY | WP-01 DONE по D-5; есть накопленный профильный материал |
+| 2026-11-03 08:43Z | WP-FRAMEWORK-09 | research start: collecting | wp09-wave-1 |
+| 2026-11-03 08:43Z | WP-FRAMEWORK-09 | research contract: ready | reports/WP-FRAMEWORK-09.md |
+| 2026-11-03 08:43Z | WP-FRAMEWORK-09 | WP-FRAMEWORK-09: READY -> IN_PROGRESS | Ограниченное рассмотрение по исходному charter |
+| 2026-11-03 08:43Z | WP-FRAMEWORK-09 | WP-FRAMEWORK-09: DRAFT -> READY | WP-01 DONE по D-5; есть накопленный профильный материал |
+| 2026-11-03 08:42Z | WP-FRAMEWORK-08 | WP-FRAMEWORK-08: IN_PROGRESS -> REVISE | Два раунда: частичная сдача, незакрытые критерии в WP-08-independent-review.md |
+| 2026-11-03 08:42Z | WP-FRAMEWORK-08 | research verdict: partial | wp08-review-final |
+| 2026-11-03 08:42Z | WP-FRAMEWORK-07 | WP-FRAMEWORK-07: IN_PROGRESS -> REVISE | Два раунда: частичная сдача, незакрытые критерии в WP-07-independent-review.md |
+| 2026-11-03 08:42Z | WP-FRAMEWORK-07 | research verdict: partial | wp07-review-final |
+| 2026-11-03 08:42Z | WP-FRAMEWORK-06 | WP-FRAMEWORK-06: IN_PROGRESS -> REVISE | Два раунда: частичная сдача, незакрытые критерии в WP-06-independent-review.md |
+| 2026-11-03 08:42Z | WP-FRAMEWORK-06 | research verdict: partial | wp06-review-final |
 | 2026-11-03 08:41Z | WP-FRAMEWORK-08 | research result: review | wp08-result-2-5 |
 | 2026-11-03 08:41Z | WP-FRAMEWORK-08 | research result: collecting | wp08-result-2-4 |
 | 2026-11-03 08:41Z | WP-FRAMEWORK-08 | research result: collecting | wp08-result-2-3 |
