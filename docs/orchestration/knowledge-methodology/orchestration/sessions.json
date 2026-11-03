@@ -4,7 +4,7 @@
   "instances": {},
   "assignments": {},
   "launches": {},
-  "revision": 116,
+  "revision": 138,
   "generation": 1,
   "autonomy": {
     "enabled": true,
@@ -3228,18 +3228,19 @@
           }
         }
       },
-      "round": 1,
-      "phase": "review",
+      "round": 2,
+      "phase": "partial",
       "open": [
         "primary",
         "coverage",
         "mechanisms",
-        "evidence",
-        "recommendations",
         "verification"
       ],
       "results": {
-        "wp11-synthesis": "reports/WP-FRAMEWORK-11.md"
+        "wp11-fix-primary": "reports/WP-FRAMEWORK-11.md",
+        "wp11-fix-coverage": "reports/WP-FRAMEWORK-11.md",
+        "wp11-fix-mechanisms": "reports/WP-FRAMEWORK-11.md",
+        "wp11-fix-verification": "reports/WP-FRAMEWORK-11.md"
       },
       "events": {
         "wp11-wave-1": {
@@ -3263,15 +3264,248 @@
             "task": "wp11-synthesis",
             "evidence": "reports/WP-FRAMEWORK-11.md"
           }
+        },
+        "wp11-review-1": {
+          "event": "verdict",
+          "payload": {
+            "id": "wp11-review-1",
+            "verdict": "revise",
+            "criteria": {
+              "primary": {
+                "status": "blocked",
+                "reason": "Не подтверждены минимальный контракт, ownership, архитектурный handoff и recovery.",
+                "evidence": "reports/WP-11-independent-review.md"
+              },
+              "coverage": {
+                "status": "blocked",
+                "reason": "Архитектура, modes, reverse conflicts и подтверждения раскрыты выборочно.",
+                "evidence": "reports/WP-11-independent-review.md"
+              },
+              "mechanisms": {
+                "status": "blocked",
+                "reason": "Нет индивидуальных карточек для mapping, attribute diff и coverage.",
+                "evidence": "reports/WP-11-independent-review.md"
+              },
+              "evidence": {
+                "status": "satisfied",
+                "reason": "Ограниченный срез соответствует критерию; не закрывает неохваченные области.",
+                "evidence": "reports/WP-11-independent-review.md"
+              },
+              "recommendations": {
+                "status": "satisfied",
+                "reason": "Ограниченный срез соответствует критерию; не закрывает неохваченные области.",
+                "evidence": "reports/WP-11-independent-review.md"
+              },
+              "verification": {
+                "status": "blocked",
+                "reason": "Нужно связать review, подтвердить SHA/status и выборочные первичные источники.",
+                "evidence": "reports/WP-11-independent-review.md"
+              }
+            }
+          }
+        },
+        "wp11-wave-2": {
+          "event": "start",
+          "payload": {
+            "id": "wp11-wave-2",
+            "tasks": [
+              {
+                "id": "wp11-fix-primary",
+                "criterion": "primary",
+                "missing_fact": "Адресно обработать замечание по накопленным отчётам; непроверенное оставить открытым",
+                "decision": "Финальный независимый verdict"
+              },
+              {
+                "id": "wp11-fix-coverage",
+                "criterion": "coverage",
+                "missing_fact": "Адресно обработать замечание по накопленным отчётам; непроверенное оставить открытым",
+                "decision": "Финальный независимый verdict"
+              },
+              {
+                "id": "wp11-fix-mechanisms",
+                "criterion": "mechanisms",
+                "missing_fact": "Адресно обработать замечание по накопленным отчётам; непроверенное оставить открытым",
+                "decision": "Финальный независимый verdict"
+              },
+              {
+                "id": "wp11-fix-verification",
+                "criterion": "verification",
+                "missing_fact": "Адресно обработать замечание по накопленным отчётам; непроверенное оставить открытым",
+                "decision": "Финальный независимый verdict"
+              }
+            ]
+          }
+        },
+        "wp11-result-2-primary": {
+          "event": "result",
+          "payload": {
+            "id": "wp11-result-2-primary",
+            "task": "wp11-fix-primary",
+            "evidence": "reports/WP-FRAMEWORK-11.md"
+          }
+        },
+        "wp11-result-2-coverage": {
+          "event": "result",
+          "payload": {
+            "id": "wp11-result-2-coverage",
+            "task": "wp11-fix-coverage",
+            "evidence": "reports/WP-FRAMEWORK-11.md"
+          }
+        },
+        "wp11-result-2-mechanisms": {
+          "event": "result",
+          "payload": {
+            "id": "wp11-result-2-mechanisms",
+            "task": "wp11-fix-mechanisms",
+            "evidence": "reports/WP-FRAMEWORK-11.md"
+          }
+        },
+        "wp11-result-2-verification": {
+          "event": "result",
+          "payload": {
+            "id": "wp11-result-2-verification",
+            "task": "wp11-fix-verification",
+            "evidence": "reports/WP-FRAMEWORK-11.md"
+          }
+        },
+        "wp11-review-2": {
+          "event": "verdict",
+          "payload": {
+            "id": "wp11-review-2",
+            "verdict": "partial",
+            "criteria": {
+              "primary": {
+                "status": "blocked",
+                "reason": "Минимальный контракт, ownership, архитектура и recovery не установлены.",
+                "evidence": "reports/WP-11-independent-review.md"
+              },
+              "coverage": {
+                "status": "blocked",
+                "reason": "Обратные изменения, конфликты, modes и повторные подтверждения неполны.",
+                "evidence": "reports/WP-11-independent-review.md"
+              },
+              "mechanisms": {
+                "status": "blocked",
+                "reason": "Не все механизмы entities/roles/rules и confirmations имеют полные поля.",
+                "evidence": "reports/WP-11-independent-review.md"
+              },
+              "evidence": {
+                "status": "satisfied",
+                "reason": "Факты, гипотезы, предложенные проверки и UNKNOWN разделены.",
+                "evidence": "reports/WP-11-independent-review.md"
+              },
+              "recommendations": {
+                "status": "satisfied",
+                "reason": "Названные кандидаты имеют категории и условия в ограниченном срезе.",
+                "evidence": "reports/WP-11-independent-review.md"
+              },
+              "verification": {
+                "status": "blocked",
+                "reason": "Проверка первичных file:line по WP11 и WP11-specific HEAD/status не задокументирована.",
+                "evidence": "reports/WP-11-independent-review.md"
+              }
+            }
+          }
         }
       },
-      "verdicts": [],
+      "verdicts": [
+        {
+          "id": "wp11-review-1",
+          "verdict": "revise",
+          "criteria": {
+            "primary": {
+              "status": "blocked",
+              "reason": "Не подтверждены минимальный контракт, ownership, архитектурный handoff и recovery.",
+              "evidence": "reports/WP-11-independent-review.md"
+            },
+            "coverage": {
+              "status": "blocked",
+              "reason": "Архитектура, modes, reverse conflicts и подтверждения раскрыты выборочно.",
+              "evidence": "reports/WP-11-independent-review.md"
+            },
+            "mechanisms": {
+              "status": "blocked",
+              "reason": "Нет индивидуальных карточек для mapping, attribute diff и coverage.",
+              "evidence": "reports/WP-11-independent-review.md"
+            },
+            "evidence": {
+              "status": "satisfied",
+              "reason": "Ограниченный срез соответствует критерию; не закрывает неохваченные области.",
+              "evidence": "reports/WP-11-independent-review.md"
+            },
+            "recommendations": {
+              "status": "satisfied",
+              "reason": "Ограниченный срез соответствует критерию; не закрывает неохваченные области.",
+              "evidence": "reports/WP-11-independent-review.md"
+            },
+            "verification": {
+              "status": "blocked",
+              "reason": "Нужно связать review, подтвердить SHA/status и выборочные первичные источники.",
+              "evidence": "reports/WP-11-independent-review.md"
+            }
+          }
+        },
+        {
+          "id": "wp11-review-2",
+          "verdict": "partial",
+          "criteria": {
+            "primary": {
+              "status": "blocked",
+              "reason": "Минимальный контракт, ownership, архитектура и recovery не установлены.",
+              "evidence": "reports/WP-11-independent-review.md"
+            },
+            "coverage": {
+              "status": "blocked",
+              "reason": "Обратные изменения, конфликты, modes и повторные подтверждения неполны.",
+              "evidence": "reports/WP-11-independent-review.md"
+            },
+            "mechanisms": {
+              "status": "blocked",
+              "reason": "Не все механизмы entities/roles/rules и confirmations имеют полные поля.",
+              "evidence": "reports/WP-11-independent-review.md"
+            },
+            "evidence": {
+              "status": "satisfied",
+              "reason": "Факты, гипотезы, предложенные проверки и UNKNOWN разделены.",
+              "evidence": "reports/WP-11-independent-review.md"
+            },
+            "recommendations": {
+              "status": "satisfied",
+              "reason": "Названные кандидаты имеют категории и условия в ограниченном срезе.",
+              "evidence": "reports/WP-11-independent-review.md"
+            },
+            "verification": {
+              "status": "blocked",
+              "reason": "Проверка первичных file:line по WP11 и WP11-specific HEAD/status не задокументирована.",
+              "evidence": "reports/WP-11-independent-review.md"
+            }
+          }
+        }
+      ],
       "tasks": [
         {
-          "id": "wp11-synthesis",
+          "id": "wp11-fix-primary",
           "criterion": "primary",
-          "missing_fact": "Синтезировать накопленные трассы в артефакт по исходному charter",
-          "decision": "Ограниченный review WP-11"
+          "missing_fact": "Адресно обработать замечание по накопленным отчётам; непроверенное оставить открытым",
+          "decision": "Финальный независимый verdict"
+        },
+        {
+          "id": "wp11-fix-coverage",
+          "criterion": "coverage",
+          "missing_fact": "Адресно обработать замечание по накопленным отчётам; непроверенное оставить открытым",
+          "decision": "Финальный независимый verdict"
+        },
+        {
+          "id": "wp11-fix-mechanisms",
+          "criterion": "mechanisms",
+          "missing_fact": "Адресно обработать замечание по накопленным отчётам; непроверенное оставить открытым",
+          "decision": "Финальный независимый verdict"
+        },
+        {
+          "id": "wp11-fix-verification",
+          "criterion": "verification",
+          "missing_fact": "Адресно обработать замечание по накопленным отчётам; непроверенное оставить открытым",
+          "decision": "Финальный независимый verdict"
         }
       ]
     },
@@ -3307,18 +3541,20 @@
           }
         }
       },
-      "round": 1,
-      "phase": "review",
+      "round": 2,
+      "phase": "partial",
       "open": [
         "primary",
         "coverage",
         "mechanisms",
-        "evidence",
-        "recommendations",
-        "verification"
+        "recommendations"
       ],
       "results": {
-        "wp12-synthesis": "reports/WP-FRAMEWORK-12.md"
+        "wp12-fix-primary": "reports/WP-FRAMEWORK-12.md",
+        "wp12-fix-coverage": "reports/WP-FRAMEWORK-12.md",
+        "wp12-fix-mechanisms": "reports/WP-FRAMEWORK-12.md",
+        "wp12-fix-recommendations": "reports/WP-FRAMEWORK-12.md",
+        "wp12-fix-verification": "reports/WP-FRAMEWORK-12.md"
       },
       "events": {
         "wp12-wave-1": {
@@ -3342,15 +3578,268 @@
             "task": "wp12-synthesis",
             "evidence": "reports/WP-FRAMEWORK-12.md"
           }
+        },
+        "wp12-review-1": {
+          "event": "verdict",
+          "payload": {
+            "id": "wp12-review-1",
+            "verdict": "revise",
+            "criteria": {
+              "primary": {
+                "status": "blocked",
+                "reason": "Нет подтверждённого минимального контракта, критического пути и полной BE↔FE цепи.",
+                "evidence": "reports/WP-12-independent-review.md"
+              },
+              "coverage": {
+                "status": "blocked",
+                "reason": "API owner, stubs, intake и сценарии не покрыты или не исключены адресно.",
+                "evidence": "reports/WP-12-independent-review.md"
+              },
+              "mechanisms": {
+                "status": "blocked",
+                "reason": "Нет отдельных полных карточек для anchors, enum, stubs и sync/wire.",
+                "evidence": "reports/WP-12-independent-review.md"
+              },
+              "evidence": {
+                "status": "satisfied",
+                "reason": "Ограниченный срез соответствует критерию; не закрывает неохваченные области.",
+                "evidence": "reports/WP-12-independent-review.md"
+              },
+              "recommendations": {
+                "status": "blocked",
+                "reason": "Не все кандидаты имеют индивидуальные условия и controls.",
+                "evidence": "reports/WP-12-independent-review.md"
+              },
+              "verification": {
+                "status": "blocked",
+                "reason": "Связать review, SHA/status и ограничения проверки.",
+                "evidence": "reports/WP-12-independent-review.md"
+              }
+            }
+          }
+        },
+        "wp12-wave-2": {
+          "event": "start",
+          "payload": {
+            "id": "wp12-wave-2",
+            "tasks": [
+              {
+                "id": "wp12-fix-primary",
+                "criterion": "primary",
+                "missing_fact": "Адресно обработать замечание по накопленным отчётам; непроверенное оставить открытым",
+                "decision": "Финальный независимый verdict"
+              },
+              {
+                "id": "wp12-fix-coverage",
+                "criterion": "coverage",
+                "missing_fact": "Адресно обработать замечание по накопленным отчётам; непроверенное оставить открытым",
+                "decision": "Финальный независимый verdict"
+              },
+              {
+                "id": "wp12-fix-mechanisms",
+                "criterion": "mechanisms",
+                "missing_fact": "Адресно обработать замечание по накопленным отчётам; непроверенное оставить открытым",
+                "decision": "Финальный независимый verdict"
+              },
+              {
+                "id": "wp12-fix-recommendations",
+                "criterion": "recommendations",
+                "missing_fact": "Адресно обработать замечание по накопленным отчётам; непроверенное оставить открытым",
+                "decision": "Финальный независимый verdict"
+              },
+              {
+                "id": "wp12-fix-verification",
+                "criterion": "verification",
+                "missing_fact": "Адресно обработать замечание по накопленным отчётам; непроверенное оставить открытым",
+                "decision": "Финальный независимый verdict"
+              }
+            ]
+          }
+        },
+        "wp12-result-2-primary": {
+          "event": "result",
+          "payload": {
+            "id": "wp12-result-2-primary",
+            "task": "wp12-fix-primary",
+            "evidence": "reports/WP-FRAMEWORK-12.md"
+          }
+        },
+        "wp12-result-2-coverage": {
+          "event": "result",
+          "payload": {
+            "id": "wp12-result-2-coverage",
+            "task": "wp12-fix-coverage",
+            "evidence": "reports/WP-FRAMEWORK-12.md"
+          }
+        },
+        "wp12-result-2-mechanisms": {
+          "event": "result",
+          "payload": {
+            "id": "wp12-result-2-mechanisms",
+            "task": "wp12-fix-mechanisms",
+            "evidence": "reports/WP-FRAMEWORK-12.md"
+          }
+        },
+        "wp12-result-2-recommendations": {
+          "event": "result",
+          "payload": {
+            "id": "wp12-result-2-recommendations",
+            "task": "wp12-fix-recommendations",
+            "evidence": "reports/WP-FRAMEWORK-12.md"
+          }
+        },
+        "wp12-result-2-verification": {
+          "event": "result",
+          "payload": {
+            "id": "wp12-result-2-verification",
+            "task": "wp12-fix-verification",
+            "evidence": "reports/WP-FRAMEWORK-12.md"
+          }
+        },
+        "wp12-review-2": {
+          "event": "verdict",
+          "payload": {
+            "id": "wp12-review-2",
+            "verdict": "partial",
+            "criteria": {
+              "primary": {
+                "status": "blocked",
+                "reason": "Минимальный контракт, критический путь, API owner и полная BE↔FE цепь не установлены.",
+                "evidence": "reports/WP-12-independent-review.md"
+              },
+              "coverage": {
+                "status": "blocked",
+                "reason": "Intake, stubs, контракт, task→code/AC и режимы не покрыты полностью.",
+                "evidence": "reports/WP-12-independent-review.md"
+              },
+              "mechanisms": {
+                "status": "blocked",
+                "reason": "Не для всех механизмов есть индивидуальные поля и риски; stubs не выделены.",
+                "evidence": "reports/WP-12-independent-review.md"
+              },
+              "evidence": {
+                "status": "satisfied",
+                "reason": "Факты, гипотезы, предложенные проверки и UNKNOWN разделены.",
+                "evidence": "reports/WP-12-independent-review.md"
+              },
+              "recommendations": {
+                "status": "blocked",
+                "reason": "Не каждый кандидат имеет полные индивидуальные положительные и отрицательные условия.",
+                "evidence": "reports/WP-12-independent-review.md"
+              },
+              "verification": {
+                "status": "satisfied",
+                "reason": "Первый review, проверенные ссылки и ограничения checkout зафиксированы; итоговая оценка выполнена.",
+                "evidence": "reports/WP-12-independent-review.md"
+              }
+            }
+          }
         }
       },
-      "verdicts": [],
+      "verdicts": [
+        {
+          "id": "wp12-review-1",
+          "verdict": "revise",
+          "criteria": {
+            "primary": {
+              "status": "blocked",
+              "reason": "Нет подтверждённого минимального контракта, критического пути и полной BE↔FE цепи.",
+              "evidence": "reports/WP-12-independent-review.md"
+            },
+            "coverage": {
+              "status": "blocked",
+              "reason": "API owner, stubs, intake и сценарии не покрыты или не исключены адресно.",
+              "evidence": "reports/WP-12-independent-review.md"
+            },
+            "mechanisms": {
+              "status": "blocked",
+              "reason": "Нет отдельных полных карточек для anchors, enum, stubs и sync/wire.",
+              "evidence": "reports/WP-12-independent-review.md"
+            },
+            "evidence": {
+              "status": "satisfied",
+              "reason": "Ограниченный срез соответствует критерию; не закрывает неохваченные области.",
+              "evidence": "reports/WP-12-independent-review.md"
+            },
+            "recommendations": {
+              "status": "blocked",
+              "reason": "Не все кандидаты имеют индивидуальные условия и controls.",
+              "evidence": "reports/WP-12-independent-review.md"
+            },
+            "verification": {
+              "status": "blocked",
+              "reason": "Связать review, SHA/status и ограничения проверки.",
+              "evidence": "reports/WP-12-independent-review.md"
+            }
+          }
+        },
+        {
+          "id": "wp12-review-2",
+          "verdict": "partial",
+          "criteria": {
+            "primary": {
+              "status": "blocked",
+              "reason": "Минимальный контракт, критический путь, API owner и полная BE↔FE цепь не установлены.",
+              "evidence": "reports/WP-12-independent-review.md"
+            },
+            "coverage": {
+              "status": "blocked",
+              "reason": "Intake, stubs, контракт, task→code/AC и режимы не покрыты полностью.",
+              "evidence": "reports/WP-12-independent-review.md"
+            },
+            "mechanisms": {
+              "status": "blocked",
+              "reason": "Не для всех механизмов есть индивидуальные поля и риски; stubs не выделены.",
+              "evidence": "reports/WP-12-independent-review.md"
+            },
+            "evidence": {
+              "status": "satisfied",
+              "reason": "Факты, гипотезы, предложенные проверки и UNKNOWN разделены.",
+              "evidence": "reports/WP-12-independent-review.md"
+            },
+            "recommendations": {
+              "status": "blocked",
+              "reason": "Не каждый кандидат имеет полные индивидуальные положительные и отрицательные условия.",
+              "evidence": "reports/WP-12-independent-review.md"
+            },
+            "verification": {
+              "status": "satisfied",
+              "reason": "Первый review, проверенные ссылки и ограничения checkout зафиксированы; итоговая оценка выполнена.",
+              "evidence": "reports/WP-12-independent-review.md"
+            }
+          }
+        }
+      ],
       "tasks": [
         {
-          "id": "wp12-synthesis",
+          "id": "wp12-fix-primary",
           "criterion": "primary",
-          "missing_fact": "Синтезировать накопленные трассы в артефакт по исходному charter",
-          "decision": "Ограниченный review WP-12"
+          "missing_fact": "Адресно обработать замечание по накопленным отчётам; непроверенное оставить открытым",
+          "decision": "Финальный независимый verdict"
+        },
+        {
+          "id": "wp12-fix-coverage",
+          "criterion": "coverage",
+          "missing_fact": "Адресно обработать замечание по накопленным отчётам; непроверенное оставить открытым",
+          "decision": "Финальный независимый verdict"
+        },
+        {
+          "id": "wp12-fix-mechanisms",
+          "criterion": "mechanisms",
+          "missing_fact": "Адресно обработать замечание по накопленным отчётам; непроверенное оставить открытым",
+          "decision": "Финальный независимый verdict"
+        },
+        {
+          "id": "wp12-fix-recommendations",
+          "criterion": "recommendations",
+          "missing_fact": "Адресно обработать замечание по накопленным отчётам; непроверенное оставить открытым",
+          "decision": "Финальный независимый verdict"
+        },
+        {
+          "id": "wp12-fix-verification",
+          "criterion": "verification",
+          "missing_fact": "Адресно обработать замечание по накопленным отчётам; непроверенное оставить открытым",
+          "decision": "Финальный независимый verdict"
         }
       ]
     },
@@ -3386,18 +3875,18 @@
           }
         }
       },
-      "round": 1,
-      "phase": "review",
+      "round": 2,
+      "phase": "partial",
       "open": [
         "primary",
         "coverage",
-        "mechanisms",
-        "evidence",
-        "recommendations",
-        "verification"
+        "mechanisms"
       ],
       "results": {
-        "wp14-synthesis": "reports/WP-FRAMEWORK-14.md"
+        "wp14-fix-primary": "reports/WP-FRAMEWORK-14.md",
+        "wp14-fix-coverage": "reports/WP-FRAMEWORK-14.md",
+        "wp14-fix-mechanisms": "reports/WP-FRAMEWORK-14.md",
+        "wp14-fix-verification": "reports/WP-FRAMEWORK-14.md"
       },
       "events": {
         "wp14-wave-1": {
@@ -3421,15 +3910,248 @@
             "task": "wp14-synthesis",
             "evidence": "reports/WP-FRAMEWORK-14.md"
           }
+        },
+        "wp14-review-1": {
+          "event": "verdict",
+          "payload": {
+            "id": "wp14-review-1",
+            "verdict": "revise",
+            "criteria": {
+              "primary": {
+                "status": "blocked",
+                "reason": "Не полные трассы goal и migrate, authority, partial-write и multi-writer.",
+                "evidence": "reports/WP-14-independent-review.md"
+              },
+              "coverage": {
+                "status": "blocked",
+                "reason": "Подобласти migrate, host, verify-code, modes и failure cases не покрыты адресно.",
+                "evidence": "reports/WP-14-independent-review.md"
+              },
+              "mechanisms": {
+                "status": "blocked",
+                "reason": "Нужны индивидуальные карточки текущих механизмов с consumer и риском.",
+                "evidence": "reports/WP-14-independent-review.md"
+              },
+              "evidence": {
+                "status": "satisfied",
+                "reason": "Ограниченный срез соответствует критерию; не закрывает неохваченные области.",
+                "evidence": "reports/WP-14-independent-review.md"
+              },
+              "recommendations": {
+                "status": "satisfied",
+                "reason": "Ограниченный срез соответствует критерию; не закрывает неохваченные области.",
+                "evidence": "reports/WP-14-independent-review.md"
+              },
+              "verification": {
+                "status": "blocked",
+                "reason": "Связать независимый review и проверку SHA, status и ссылок.",
+                "evidence": "reports/WP-14-independent-review.md"
+              }
+            }
+          }
+        },
+        "wp14-wave-2": {
+          "event": "start",
+          "payload": {
+            "id": "wp14-wave-2",
+            "tasks": [
+              {
+                "id": "wp14-fix-primary",
+                "criterion": "primary",
+                "missing_fact": "Адресно обработать замечание по накопленным отчётам; непроверенное оставить открытым",
+                "decision": "Финальный независимый verdict"
+              },
+              {
+                "id": "wp14-fix-coverage",
+                "criterion": "coverage",
+                "missing_fact": "Адресно обработать замечание по накопленным отчётам; непроверенное оставить открытым",
+                "decision": "Финальный независимый verdict"
+              },
+              {
+                "id": "wp14-fix-mechanisms",
+                "criterion": "mechanisms",
+                "missing_fact": "Адресно обработать замечание по накопленным отчётам; непроверенное оставить открытым",
+                "decision": "Финальный независимый verdict"
+              },
+              {
+                "id": "wp14-fix-verification",
+                "criterion": "verification",
+                "missing_fact": "Адресно обработать замечание по накопленным отчётам; непроверенное оставить открытым",
+                "decision": "Финальный независимый verdict"
+              }
+            ]
+          }
+        },
+        "wp14-result-2-primary": {
+          "event": "result",
+          "payload": {
+            "id": "wp14-result-2-primary",
+            "task": "wp14-fix-primary",
+            "evidence": "reports/WP-FRAMEWORK-14.md"
+          }
+        },
+        "wp14-result-2-coverage": {
+          "event": "result",
+          "payload": {
+            "id": "wp14-result-2-coverage",
+            "task": "wp14-fix-coverage",
+            "evidence": "reports/WP-FRAMEWORK-14.md"
+          }
+        },
+        "wp14-result-2-mechanisms": {
+          "event": "result",
+          "payload": {
+            "id": "wp14-result-2-mechanisms",
+            "task": "wp14-fix-mechanisms",
+            "evidence": "reports/WP-FRAMEWORK-14.md"
+          }
+        },
+        "wp14-result-2-verification": {
+          "event": "result",
+          "payload": {
+            "id": "wp14-result-2-verification",
+            "task": "wp14-fix-verification",
+            "evidence": "reports/WP-FRAMEWORK-14.md"
+          }
+        },
+        "wp14-review-2": {
+          "event": "verdict",
+          "payload": {
+            "id": "wp14-review-2",
+            "verdict": "partial",
+            "criteria": {
+              "primary": {
+                "status": "blocked",
+                "reason": "Полные Goal→BA/SA/TL, migrate→verify, authority и runtime recovery не установлены.",
+                "evidence": "reports/WP-14-independent-review.md"
+              },
+              "coverage": {
+                "status": "blocked",
+                "reason": "Host session, migrate, режимы и failure cases не покрыты полностью.",
+                "evidence": "reports/WP-14-independent-review.md"
+              },
+              "mechanisms": {
+                "status": "blocked",
+                "reason": "Неполный набор механизмов и индивидуальных дефектов/рисков.",
+                "evidence": "reports/WP-14-independent-review.md"
+              },
+              "evidence": {
+                "status": "satisfied",
+                "reason": "Факты, гипотезы, предложенные проверки и UNKNOWN разделены.",
+                "evidence": "reports/WP-14-independent-review.md"
+              },
+              "recommendations": {
+                "status": "satisfied",
+                "reason": "Названные кандидаты имеют категории и условия в ограниченном срезе.",
+                "evidence": "reports/WP-14-independent-review.md"
+              },
+              "verification": {
+                "status": "satisfied",
+                "reason": "Первый review, проверенные ссылки и ограничения checkout зафиксированы; итоговая оценка выполнена.",
+                "evidence": "reports/WP-14-independent-review.md"
+              }
+            }
+          }
         }
       },
-      "verdicts": [],
+      "verdicts": [
+        {
+          "id": "wp14-review-1",
+          "verdict": "revise",
+          "criteria": {
+            "primary": {
+              "status": "blocked",
+              "reason": "Не полные трассы goal и migrate, authority, partial-write и multi-writer.",
+              "evidence": "reports/WP-14-independent-review.md"
+            },
+            "coverage": {
+              "status": "blocked",
+              "reason": "Подобласти migrate, host, verify-code, modes и failure cases не покрыты адресно.",
+              "evidence": "reports/WP-14-independent-review.md"
+            },
+            "mechanisms": {
+              "status": "blocked",
+              "reason": "Нужны индивидуальные карточки текущих механизмов с consumer и риском.",
+              "evidence": "reports/WP-14-independent-review.md"
+            },
+            "evidence": {
+              "status": "satisfied",
+              "reason": "Ограниченный срез соответствует критерию; не закрывает неохваченные области.",
+              "evidence": "reports/WP-14-independent-review.md"
+            },
+            "recommendations": {
+              "status": "satisfied",
+              "reason": "Ограниченный срез соответствует критерию; не закрывает неохваченные области.",
+              "evidence": "reports/WP-14-independent-review.md"
+            },
+            "verification": {
+              "status": "blocked",
+              "reason": "Связать независимый review и проверку SHA, status и ссылок.",
+              "evidence": "reports/WP-14-independent-review.md"
+            }
+          }
+        },
+        {
+          "id": "wp14-review-2",
+          "verdict": "partial",
+          "criteria": {
+            "primary": {
+              "status": "blocked",
+              "reason": "Полные Goal→BA/SA/TL, migrate→verify, authority и runtime recovery не установлены.",
+              "evidence": "reports/WP-14-independent-review.md"
+            },
+            "coverage": {
+              "status": "blocked",
+              "reason": "Host session, migrate, режимы и failure cases не покрыты полностью.",
+              "evidence": "reports/WP-14-independent-review.md"
+            },
+            "mechanisms": {
+              "status": "blocked",
+              "reason": "Неполный набор механизмов и индивидуальных дефектов/рисков.",
+              "evidence": "reports/WP-14-independent-review.md"
+            },
+            "evidence": {
+              "status": "satisfied",
+              "reason": "Факты, гипотезы, предложенные проверки и UNKNOWN разделены.",
+              "evidence": "reports/WP-14-independent-review.md"
+            },
+            "recommendations": {
+              "status": "satisfied",
+              "reason": "Названные кандидаты имеют категории и условия в ограниченном срезе.",
+              "evidence": "reports/WP-14-independent-review.md"
+            },
+            "verification": {
+              "status": "satisfied",
+              "reason": "Первый review, проверенные ссылки и ограничения checkout зафиксированы; итоговая оценка выполнена.",
+              "evidence": "reports/WP-14-independent-review.md"
+            }
+          }
+        }
+      ],
       "tasks": [
         {
-          "id": "wp14-synthesis",
+          "id": "wp14-fix-primary",
           "criterion": "primary",
-          "missing_fact": "Синтезировать накопленные трассы в артефакт по исходному charter",
-          "decision": "Ограниченный review WP-14"
+          "missing_fact": "Адресно обработать замечание по накопленным отчётам; непроверенное оставить открытым",
+          "decision": "Финальный независимый verdict"
+        },
+        {
+          "id": "wp14-fix-coverage",
+          "criterion": "coverage",
+          "missing_fact": "Адресно обработать замечание по накопленным отчётам; непроверенное оставить открытым",
+          "decision": "Финальный независимый verdict"
+        },
+        {
+          "id": "wp14-fix-mechanisms",
+          "criterion": "mechanisms",
+          "missing_fact": "Адресно обработать замечание по накопленным отчётам; непроверенное оставить открытым",
+          "decision": "Финальный независимый verdict"
+        },
+        {
+          "id": "wp14-fix-verification",
+          "criterion": "verification",
+          "missing_fact": "Адресно обработать замечание по накопленным отчётам; непроверенное оставить открытым",
+          "decision": "Финальный независимый verdict"
         }
       ]
     }

@@ -10,4 +10,17 @@
 
 **Кандидаты.** KEEP точную identity plan/state: защищает от ложного завершения; proposed deterministic ID equality требует negative missing/extra/duplicate и сохранения guards. DEFER typed ledger до проверки client/mode authority и сохранения raw failures; DEFER retry adapter до external read-back, receipt, interruption и stale fence; DEFER revision-bound attestation до проверки A→B и dirty checkout, чтобы token не заменял содержательный review. Цена каждого UNKNOWN; кандидаты не внедрены.
 
+**Адресная карта authority и механизмов.** Стоимость всех групп UNKNOWN; проверки ниже предложены, не исполнены.
+
+| Контур / consumer | Основание, альтернатива и риск |
+|---|---|
+| Goal conduct/coordinator | Locked plan и state; KEEP обязанность идентичности, exact-ID сравнение DEFER до missing/extra/duplicate и проверки guards. Synthetic fixture не доказывает реальной потери. |
+| Local full/diagnose | Graph→JSON; после graph commit предписан rebuild cache. DEFER typed ledger/read-back до interruption и проверки authority; общей транзакции не доказано. |
+| Remote full и overlay | Graph-only authority и claim/fence, graph unavailable → HALT; legacy и gateway claims не признаны эквивалентными. DEFER до multi-writer и expiry controls; active route UNKNOWN. |
+| Review/deliver | Синтаксис SHA не подтверждает checks; DEFER revision-bound evidence до A→B и dirty-checkout controls, сохраняя содержательное review. |
+| Retry/coordinator | После неизвестного outcome сверять external state; DEFER receipt/idempotency до проверки provider, interruption и stale fence. |
+| Goal proof/evaluator | Порядок proof в текстах неоднозначен; DEFER разделение промежуточного и финального доказательства до сверки версии; runtime loop не доказан. |
+
+[Первый независимый review](WP-14-independent-review.md) подтвердил шесть ссылок, HEAD и обычный clean status; ignored не проверялись. Host session и migrate→spec→verify не подтверждены имеющимися traces.
+
 **Остаток.** Полные трассы Goal→BA/SA/TL и migrate→spec→verify, исчерпывающая authority/conflict модель, live interruption, stale task, partial write, multi-writer и retry, все клиенты и active routes не доказаны. [GOAL sequence](WP-01-goal-proof-sequence.md). Исходные primary, coverage и mechanisms требуют независимой оценки; review обязателен.

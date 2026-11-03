@@ -11,4 +11,14 @@
 
 **Кандидаты — DEFER.** Versioned mapping и semantic diff могут выявлять stale semantics, но рискуют неверно затронуть чужие UC или человеческие решения. Требуются проверки stable-ID changed meaning, English stereotype, multi-edge, deleted BA, out_of_scope, role remap с независимым основанием, interruption/replay и read-back. Typed attribute diff и DISTINCT source-ID coverage требуют отдельных oracle, исключений и согласованного snapshot. Цена, частота и эффект UNKNOWN; подтверждения, provenance и validators сохраняются до доказательства альтернатив.
 
+**Адресная коррекция.** Условные source-level этапы (не утверждается автоматический запуск каждого): подтверждённый WorkflowStep → handoff или альтернативный SA UC writer → UC consumer → BA XL1.1 → handoff rescan/diff с сохранением edges. SA XL6.1 отдельно учитывает `Automated`; вызываемый отдельно SA feature описывает impact/version/stale/replan. Автоматическая связь rescan→feature и recovery не установлены.
+
+| Кандидат | Consumer / дефект | Цена и риск / предложенный контроль |
+|---|---|---|
+| DEFER versioned mapping | Handoff/SA change: устаревший смысл при прежнем ID | UNKNOWN; чужой UC и неверный stale; stable-ID changed meaning и human confirmation |
+| DEFER typed attribute diff | SA domain/import: несовпадение BA/domain свойств | UNKNOWN; допустимые преобразования и 1→many; проверить writer, migration и read-back |
+| DEFER distinct-ID coverage | Handoff/validator: искажённый numerator | UNKNOWN; неверный scope/denominator; два source и два targets у одного, пустой слой и exceptions |
+
+[Первый независимый review](WP-11-independent-review.md) проверил шесть локальных ссылок; другие source checks отдельно ограничены.
+
 **Остаток.** Полный минимальный контракт и consumers, стоимость подтверждений, архитектурный handoff, все modes и обратные конфликты, active client, runtime потери и выполненный round-trip UNKNOWN. Контроли предложены, но не выполнены. Независимый review и проверка протокола требуются для verdict.

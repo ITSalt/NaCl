@@ -32,10 +32,10 @@ CANCELLED (причина).
 | [WP-FRAMEWORK-08](work-packages/WP-FRAMEWORK-08-management.md) | framework | Цели и восстановление фактического состояния | REVISE | knowledge-methodology-framework | — | 2026-11-03 |
 | [WP-FRAMEWORK-09](work-packages/WP-FRAMEWORK-09-graph.md) | framework | Данные, граф и синхронизация | REVISE | knowledge-methodology-framework | — | 2026-11-03 |
 | [WP-FRAMEWORK-10](work-packages/WP-FRAMEWORK-10-platform.md) | framework | Адаптеры, runtime и каналы поставки | REVISE | knowledge-methodology-framework | — | 2026-11-03 |
-| [WP-FRAMEWORK-11](work-packages/WP-FRAMEWORK-11-interface-ba-sa.md) | framework | Стык BA → SA | IN_PROGRESS | knowledge-methodology-framework | — | 2026-11-03 |
-| [WP-FRAMEWORK-12](work-packages/WP-FRAMEWORK-12-interface-sa-dev.md) | framework | Стык SA → TL → разработка | IN_PROGRESS | knowledge-methodology-framework | — | 2026-11-03 |
+| [WP-FRAMEWORK-11](work-packages/WP-FRAMEWORK-11-interface-ba-sa.md) | framework | Стык BA → SA | REVISE | knowledge-methodology-framework | — | 2026-11-03 |
+| [WP-FRAMEWORK-12](work-packages/WP-FRAMEWORK-12-interface-sa-dev.md) | framework | Стык SA → TL → разработка | REVISE | knowledge-methodology-framework | — | 2026-11-03 |
 | [WP-FRAMEWORK-13](work-packages/WP-FRAMEWORK-13-interface-dev-qa.md) | framework | Стык разработка → review/QA → release | DRAFT | knowledge-methodology-framework | — | 2026-11-02 |
-| [WP-FRAMEWORK-14](work-packages/WP-FRAMEWORK-14-interface-control.md) | framework | Стык управления, восстановления и состояния | IN_PROGRESS | knowledge-methodology-framework | — | 2026-11-03 |
+| [WP-FRAMEWORK-14](work-packages/WP-FRAMEWORK-14-interface-control.md) | framework | Стык управления, восстановления и состояния | REVISE | knowledge-methodology-framework | — | 2026-11-03 |
 | [WP-FRAMEWORK-15](work-packages/WP-FRAMEWORK-15-harness.md) | framework | Что можно передать Harness | REVISE | knowledge-methodology-framework | — | 2026-11-03 |
 | [WP-FRAMEWORK-16](work-packages/WP-FRAMEWORK-16-measurement.md) | framework | Цена методологии и сравнение с Markdown | DRAFT | knowledge-methodology-framework | — | 2026-11-02 |
 | [WP-FRAMEWORK-17](work-packages/WP-FRAMEWORK-17-challenge.md) | framework | Независимая проверка рекомендаций | DRAFT | knowledge-methodology-framework | — | 2026-11-02 |
@@ -52,6 +52,7 @@ R-n — действие: точная команда одной строкой 
 |----|--------------------------|-------------|---------|---------|
 | ~~P-1~~ | ~~Repository nacl: add `.worktreeinclude` in its root (a change of the project, made by a package there) so that every new worktree gets the gitignored files it needs: .env, .env.local (gitignore syntax, one pattern per line; directories as dir/**). Recommend (a) yes: sessions then never copy secrets or settings themselves~~ | orch.py init | 2026-11-02 | 2026-11-02 dropped: Автопредложение .worktreeinclude относится к Claude Code. Программа использует Codex; необходимость gitignored-файлов не установлена. Вернуться к этому только в пакете, которому действительно нужны такие файлы. |
 | ~~P-2~~ | ~~Уточнить границу D-4: какие выполненные агентские работы относить к подготовке одной A/B-пары, чтобы оценить расход и сохранить лимит; текущие session totals и отсутствие подтверждённого общего hard cap описаны в evidence.~~ | reports/WP-16-budget-observation.md | 2026-11-02 | 2026-11-03: answered by D-7 |
+| P-3 | Принять ли ограниченные результаты WP-11, WP-12 и WP-14 как входы для последующих пакетов, сохранив незакрытые исходные критерии и независимые partial verdicts? Рекомендуется принять ограниченные входы и передать остатки в backlog; альтернатива — сохранить исходные гейты. | reports/recommendations.md | 2026-11-03 |  |
 
 ## Замки
 
@@ -79,6 +80,33 @@ R-n — действие: точная команда одной строкой 
 <!-- orch:journal -->
 | Дата | WP | Событие | Подтверждение |
 |------|----|---------|---------------|
+| 2026-11-03 09:17Z | — | P-3 opened for owner | reports/recommendations.md |
+| 2026-11-03 09:17Z | — | По D-6 завершены два раунда WP-11, WP-12 и WP-14; частичные результаты добавлены в рекомендации и независимо проверены. По D-7 документированы относимые к пилоту работы; расход и остаток UNKNOWN. | reports/WP-11-independent-review.md; reports/WP-12-independent-review.md; reports/WP-14-independent-review.md; reports/WP-16-budget-attribution-D7.md |
+| 2026-11-03 09:17Z | WP-FRAMEWORK-14 | WP-FRAMEWORK-14: IN_PROGRESS -> REVISE | Два раунда, независимый partial verdict: reports/WP-14-independent-review.md |
+| 2026-11-03 09:17Z | WP-FRAMEWORK-14 | research verdict: partial | wp14-review-2 |
+| 2026-11-03 09:17Z | WP-FRAMEWORK-12 | WP-FRAMEWORK-12: IN_PROGRESS -> REVISE | Два раунда, независимый partial verdict: reports/WP-12-independent-review.md |
+| 2026-11-03 09:17Z | WP-FRAMEWORK-12 | research verdict: partial | wp12-review-2 |
+| 2026-11-03 09:17Z | WP-FRAMEWORK-11 | WP-FRAMEWORK-11: IN_PROGRESS -> REVISE | Два раунда, независимый partial verdict: reports/WP-11-independent-review.md |
+| 2026-11-03 09:17Z | WP-FRAMEWORK-11 | research verdict: partial | wp11-review-2 |
+| 2026-11-03 09:16Z | WP-FRAMEWORK-14 | research result: review | wp14-result-2-verification |
+| 2026-11-03 09:16Z | WP-FRAMEWORK-14 | research result: collecting | wp14-result-2-mechanisms |
+| 2026-11-03 09:16Z | WP-FRAMEWORK-14 | research result: collecting | wp14-result-2-coverage |
+| 2026-11-03 09:16Z | WP-FRAMEWORK-14 | research result: collecting | wp14-result-2-primary |
+| 2026-11-03 09:16Z | WP-FRAMEWORK-12 | research result: review | wp12-result-2-verification |
+| 2026-11-03 09:16Z | WP-FRAMEWORK-12 | research result: collecting | wp12-result-2-recommendations |
+| 2026-11-03 09:16Z | WP-FRAMEWORK-12 | research result: collecting | wp12-result-2-mechanisms |
+| 2026-11-03 09:16Z | WP-FRAMEWORK-12 | research result: collecting | wp12-result-2-coverage |
+| 2026-11-03 09:16Z | WP-FRAMEWORK-12 | research result: collecting | wp12-result-2-primary |
+| 2026-11-03 09:16Z | WP-FRAMEWORK-11 | research result: review | wp11-result-2-verification |
+| 2026-11-03 09:16Z | WP-FRAMEWORK-11 | research result: collecting | wp11-result-2-mechanisms |
+| 2026-11-03 09:16Z | WP-FRAMEWORK-11 | research result: collecting | wp11-result-2-coverage |
+| 2026-11-03 09:16Z | WP-FRAMEWORK-11 | research result: collecting | wp11-result-2-primary |
+| 2026-11-03 09:15Z | WP-FRAMEWORK-14 | research start: collecting | wp14-wave-2 |
+| 2026-11-03 09:15Z | WP-FRAMEWORK-12 | research start: collecting | wp12-wave-2 |
+| 2026-11-03 09:15Z | WP-FRAMEWORK-11 | research start: collecting | wp11-wave-2 |
+| 2026-11-03 09:15Z | WP-FRAMEWORK-14 | research verdict: revise | wp14-review-1 |
+| 2026-11-03 09:15Z | WP-FRAMEWORK-12 | research verdict: revise | wp12-review-1 |
+| 2026-11-03 09:15Z | WP-FRAMEWORK-11 | research verdict: revise | wp11-review-1 |
 | 2026-11-03 09:14Z | WP-FRAMEWORK-14 | research result: review | wp14-result-1 |
 | 2026-11-03 09:14Z | WP-FRAMEWORK-12 | research result: review | wp12-result-1 |
 | 2026-11-03 09:14Z | WP-FRAMEWORK-11 | research result: review | wp11-result-1 |
