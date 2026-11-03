@@ -4,7 +4,7 @@
   "instances": {},
   "assignments": {},
   "launches": {},
-  "revision": 150,
+  "revision": 160,
   "generation": 1,
   "autonomy": {
     "enabled": true,
@@ -4538,6 +4538,319 @@
           "criterion": "control3",
           "missing_fact": "Проверить первичные исторические свидетельства и границы вывода: graph handover snapshot, commit 3646a26",
           "decision": "Включить в единый пакет при подтверждённой реальности"
+        }
+      ]
+    },
+    "WP-FRAMEWORK-13": {
+      "contract": {
+        "question": "Как evidence переходит от разработки к review, QA и выпуску, когда устаревает и что можно объединить?",
+        "decision": "Рассмотреть доказанные кандидаты с условиями и неустановленные области",
+        "artifact": "reports/WP-FRAMEWORK-13.md",
+        "criteria": {
+          "primary": {
+            "evidence_standard": "Контракт evidence и invalidation, стоимость повторов, гарантии при объединении gates; BE↔FE evidence до QA, петли REVISE/fix/reopen",
+            "unknown_allowed": false
+          },
+          "coverage": {
+            "evidence_standard": "Все подобласти charter покрыты или исключены с причиной и первичными источниками",
+            "unknown_allowed": false
+          },
+          "mechanisms": {
+            "evidence_standard": "По каждому механизму задача, consumer, цена или UNKNOWN, defect, альтернатива и риск",
+            "unknown_allowed": false
+          },
+          "evidence": {
+            "evidence_standard": "Факты, измерения, выводы и гипотезы разделены",
+            "unknown_allowed": false
+          },
+          "recommendations": {
+            "evidence_standard": "Категории и индивидуальные условия каждого кандидата",
+            "unknown_allowed": false
+          },
+          "verification": {
+            "evidence_standard": "Проверки протокола, source status, ограничения и независимое review",
+            "unknown_allowed": false
+          }
+        }
+      },
+      "round": 2,
+      "phase": "partial",
+      "open": [
+        "primary",
+        "coverage",
+        "mechanisms",
+        "verification"
+      ],
+      "results": {
+        "wp13-fix-primary": "reports/WP-FRAMEWORK-13.md",
+        "wp13-fix-coverage": "reports/WP-FRAMEWORK-13.md",
+        "wp13-fix-mechanisms": "reports/WP-FRAMEWORK-13.md",
+        "wp13-fix-verification": "reports/WP-FRAMEWORK-13.md"
+      },
+      "events": {
+        "wp13-wave-1": {
+          "event": "start",
+          "payload": {
+            "id": "wp13-wave-1",
+            "tasks": [
+              {
+                "id": "wp13-synthesis",
+                "criterion": "primary",
+                "missing_fact": "Свести накопленные traces по исходному charter и принятым случаям WP19",
+                "decision": "Независимая приёмка WP13"
+              }
+            ]
+          }
+        },
+        "wp13-result-1": {
+          "event": "result",
+          "payload": {
+            "id": "wp13-result-1",
+            "task": "wp13-synthesis",
+            "evidence": "reports/WP-FRAMEWORK-13.md"
+          }
+        },
+        "wp13-review-1": {
+          "event": "verdict",
+          "payload": {
+            "id": "wp13-review-1",
+            "verdict": "revise",
+            "criteria": {
+              "primary": {
+                "status": "blocked",
+                "reason": "Полный evidence/invalidation, стоимость и гарантии объединения не установлены.",
+                "evidence": "reports/WP-13-independent-review.md"
+              },
+              "coverage": {
+                "status": "blocked",
+                "reason": "Не покрыты все modes, QA→token→release и selective rerun.",
+                "evidence": "reports/WP-13-independent-review.md"
+              },
+              "mechanisms": {
+                "status": "blocked",
+                "reason": "Неполны отдельные поля механизмов и их полный набор.",
+                "evidence": "reports/WP-13-independent-review.md"
+              },
+              "evidence": {
+                "status": "satisfied",
+                "reason": "Подтверждён ограниченный срез.",
+                "evidence": "reports/WP-13-independent-review.md"
+              },
+              "recommendations": {
+                "status": "satisfied",
+                "reason": "Подтверждён ограниченный срез.",
+                "evidence": "reports/WP-13-independent-review.md"
+              },
+              "verification": {
+                "status": "blocked",
+                "reason": "Review ещё не связан; первичные строки не сверены.",
+                "evidence": "reports/WP-13-independent-review.md"
+              }
+            }
+          }
+        },
+        "wp13-wave-2": {
+          "event": "start",
+          "payload": {
+            "id": "wp13-wave-2",
+            "tasks": [
+              {
+                "id": "wp13-fix-primary",
+                "criterion": "primary",
+                "missing_fact": "Адресно исправить по накопленным traces и review без расширения scope",
+                "decision": "Финальная независимая приёмка"
+              },
+              {
+                "id": "wp13-fix-coverage",
+                "criterion": "coverage",
+                "missing_fact": "Адресно исправить по накопленным traces и review без расширения scope",
+                "decision": "Финальная независимая приёмка"
+              },
+              {
+                "id": "wp13-fix-mechanisms",
+                "criterion": "mechanisms",
+                "missing_fact": "Адресно исправить по накопленным traces и review без расширения scope",
+                "decision": "Финальная независимая приёмка"
+              },
+              {
+                "id": "wp13-fix-verification",
+                "criterion": "verification",
+                "missing_fact": "Адресно исправить по накопленным traces и review без расширения scope",
+                "decision": "Финальная независимая приёмка"
+              }
+            ]
+          }
+        },
+        "wp13-result-2-primary": {
+          "event": "result",
+          "payload": {
+            "id": "wp13-result-2-primary",
+            "task": "wp13-fix-primary",
+            "evidence": "reports/WP-FRAMEWORK-13.md"
+          }
+        },
+        "wp13-result-2-coverage": {
+          "event": "result",
+          "payload": {
+            "id": "wp13-result-2-coverage",
+            "task": "wp13-fix-coverage",
+            "evidence": "reports/WP-FRAMEWORK-13.md"
+          }
+        },
+        "wp13-result-2-mechanisms": {
+          "event": "result",
+          "payload": {
+            "id": "wp13-result-2-mechanisms",
+            "task": "wp13-fix-mechanisms",
+            "evidence": "reports/WP-FRAMEWORK-13.md"
+          }
+        },
+        "wp13-result-2-verification": {
+          "event": "result",
+          "payload": {
+            "id": "wp13-result-2-verification",
+            "task": "wp13-fix-verification",
+            "evidence": "reports/WP-FRAMEWORK-13.md"
+          }
+        },
+        "wp13-review-2": {
+          "event": "verdict",
+          "payload": {
+            "id": "wp13-review-2",
+            "verdict": "partial",
+            "criteria": {
+              "primary": {
+                "status": "blocked",
+                "reason": "Не установлены полный contract/invalidation и гарантии объединения gates.",
+                "evidence": "reports/WP-13-independent-review.md"
+              },
+              "coverage": {
+                "status": "blocked",
+                "reason": "Modes, serializer QA→token→release и selective-rerun зависимости неполны.",
+                "evidence": "reports/WP-13-independent-review.md"
+              },
+              "mechanisms": {
+                "status": "blocked",
+                "reason": "Не каждый механизм имеет индивидуальные поля и утрачиваемые гарантии.",
+                "evidence": "reports/WP-13-independent-review.md"
+              },
+              "evidence": {
+                "status": "satisfied",
+                "reason": "Ограниченный срез подтверждён; неохваченные области остаются открытыми.",
+                "evidence": "reports/WP-13-independent-review.md"
+              },
+              "recommendations": {
+                "status": "satisfied",
+                "reason": "Ограниченный срез подтверждён; неохваченные области остаются открытыми.",
+                "evidence": "reports/WP-13-independent-review.md"
+              },
+              "verification": {
+                "status": "blocked",
+                "reason": "Не задокументирована проверка ключевых первичных file:line.",
+                "evidence": "reports/WP-13-independent-review.md"
+              }
+            }
+          }
+        }
+      },
+      "verdicts": [
+        {
+          "id": "wp13-review-1",
+          "verdict": "revise",
+          "criteria": {
+            "primary": {
+              "status": "blocked",
+              "reason": "Полный evidence/invalidation, стоимость и гарантии объединения не установлены.",
+              "evidence": "reports/WP-13-independent-review.md"
+            },
+            "coverage": {
+              "status": "blocked",
+              "reason": "Не покрыты все modes, QA→token→release и selective rerun.",
+              "evidence": "reports/WP-13-independent-review.md"
+            },
+            "mechanisms": {
+              "status": "blocked",
+              "reason": "Неполны отдельные поля механизмов и их полный набор.",
+              "evidence": "reports/WP-13-independent-review.md"
+            },
+            "evidence": {
+              "status": "satisfied",
+              "reason": "Подтверждён ограниченный срез.",
+              "evidence": "reports/WP-13-independent-review.md"
+            },
+            "recommendations": {
+              "status": "satisfied",
+              "reason": "Подтверждён ограниченный срез.",
+              "evidence": "reports/WP-13-independent-review.md"
+            },
+            "verification": {
+              "status": "blocked",
+              "reason": "Review ещё не связан; первичные строки не сверены.",
+              "evidence": "reports/WP-13-independent-review.md"
+            }
+          }
+        },
+        {
+          "id": "wp13-review-2",
+          "verdict": "partial",
+          "criteria": {
+            "primary": {
+              "status": "blocked",
+              "reason": "Не установлены полный contract/invalidation и гарантии объединения gates.",
+              "evidence": "reports/WP-13-independent-review.md"
+            },
+            "coverage": {
+              "status": "blocked",
+              "reason": "Modes, serializer QA→token→release и selective-rerun зависимости неполны.",
+              "evidence": "reports/WP-13-independent-review.md"
+            },
+            "mechanisms": {
+              "status": "blocked",
+              "reason": "Не каждый механизм имеет индивидуальные поля и утрачиваемые гарантии.",
+              "evidence": "reports/WP-13-independent-review.md"
+            },
+            "evidence": {
+              "status": "satisfied",
+              "reason": "Ограниченный срез подтверждён; неохваченные области остаются открытыми.",
+              "evidence": "reports/WP-13-independent-review.md"
+            },
+            "recommendations": {
+              "status": "satisfied",
+              "reason": "Ограниченный срез подтверждён; неохваченные области остаются открытыми.",
+              "evidence": "reports/WP-13-independent-review.md"
+            },
+            "verification": {
+              "status": "blocked",
+              "reason": "Не задокументирована проверка ключевых первичных file:line.",
+              "evidence": "reports/WP-13-independent-review.md"
+            }
+          }
+        }
+      ],
+      "tasks": [
+        {
+          "id": "wp13-fix-primary",
+          "criterion": "primary",
+          "missing_fact": "Адресно исправить по накопленным traces и review без расширения scope",
+          "decision": "Финальная независимая приёмка"
+        },
+        {
+          "id": "wp13-fix-coverage",
+          "criterion": "coverage",
+          "missing_fact": "Адресно исправить по накопленным traces и review без расширения scope",
+          "decision": "Финальная независимая приёмка"
+        },
+        {
+          "id": "wp13-fix-mechanisms",
+          "criterion": "mechanisms",
+          "missing_fact": "Адресно исправить по накопленным traces и review без расширения scope",
+          "decision": "Финальная независимая приёмка"
+        },
+        {
+          "id": "wp13-fix-verification",
+          "criterion": "verification",
+          "missing_fact": "Адресно исправить по накопленным traces и review без расширения scope",
+          "decision": "Финальная независимая приёмка"
         }
       ]
     }

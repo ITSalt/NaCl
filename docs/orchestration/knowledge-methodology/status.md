@@ -34,7 +34,7 @@ CANCELLED (причина).
 | [WP-FRAMEWORK-10](work-packages/WP-FRAMEWORK-10-platform.md) | framework | Адаптеры, runtime и каналы поставки | REVISE | knowledge-methodology-framework | — | 2026-11-03 |
 | [WP-FRAMEWORK-11](work-packages/WP-FRAMEWORK-11-interface-ba-sa.md) | framework | Стык BA → SA | REVISE | knowledge-methodology-framework | — | 2026-11-03 |
 | [WP-FRAMEWORK-12](work-packages/WP-FRAMEWORK-12-interface-sa-dev.md) | framework | Стык SA → TL → разработка | REVISE | knowledge-methodology-framework | — | 2026-11-03 |
-| [WP-FRAMEWORK-13](work-packages/WP-FRAMEWORK-13-interface-dev-qa.md) | framework | Стык разработка → review/QA → release | DRAFT | knowledge-methodology-framework | — | 2026-11-02 |
+| [WP-FRAMEWORK-13](work-packages/WP-FRAMEWORK-13-interface-dev-qa.md) | framework | Стык разработка → review/QA → release | REVISE | knowledge-methodology-framework | — | 2026-11-03 |
 | [WP-FRAMEWORK-14](work-packages/WP-FRAMEWORK-14-interface-control.md) | framework | Стык управления, восстановления и состояния | REVISE | knowledge-methodology-framework | — | 2026-11-03 |
 | [WP-FRAMEWORK-15](work-packages/WP-FRAMEWORK-15-harness.md) | framework | Что можно передать Harness | REVISE | knowledge-methodology-framework | — | 2026-11-03 |
 | [WP-FRAMEWORK-16](work-packages/WP-FRAMEWORK-16-measurement.md) | framework | Цена методологии и сравнение с Markdown | DRAFT | knowledge-methodology-framework | — | 2026-11-02 |
@@ -81,6 +81,19 @@ R-n — действие: точная команда одной строкой 
 <!-- orch:journal -->
 | Дата | WP | Событие | Подтверждение |
 |------|----|---------|---------------|
+| 2026-11-03 09:49Z | WP-FRAMEWORK-13 | WP-FRAMEWORK-13: IN_PROGRESS -> REVISE | Два раунда, независимый partial verdict: reports/WP-13-independent-review.md |
+| 2026-11-03 09:49Z | WP-FRAMEWORK-13 | research verdict: partial | wp13-review-2 |
+| 2026-11-03 09:49Z | WP-FRAMEWORK-13 | research result: review | wp13-result-2-verification |
+| 2026-11-03 09:49Z | WP-FRAMEWORK-13 | research result: collecting | wp13-result-2-mechanisms |
+| 2026-11-03 09:49Z | WP-FRAMEWORK-13 | research result: collecting | wp13-result-2-coverage |
+| 2026-11-03 09:49Z | WP-FRAMEWORK-13 | research result: collecting | wp13-result-2-primary |
+| 2026-11-03 09:48Z | WP-FRAMEWORK-13 | research start: collecting | wp13-wave-2 |
+| 2026-11-03 09:48Z | WP-FRAMEWORK-13 | research verdict: revise | wp13-review-1 |
+| 2026-11-03 09:47Z | WP-FRAMEWORK-13 | research result: review | wp13-result-1 |
+| 2026-11-03 09:46Z | WP-FRAMEWORK-13 | research start: collecting | wp13-wave-1 |
+| 2026-11-03 09:46Z | WP-FRAMEWORK-13 | research contract: ready | reports/WP-FRAMEWORK-13.md |
+| 2026-11-03 09:46Z | WP-FRAMEWORK-13 | WP-FRAMEWORK-13: READY -> IN_PROGRESS | WP-19 DONE: ограниченный материал стыков принят по D-8/D-9 |
+| 2026-11-03 09:46Z | WP-FRAMEWORK-13 | WP-FRAMEWORK-13: DRAFT -> READY | WP-19 DONE: ограниченный материал стыков принят по D-8/D-9 |
 | 2026-11-03 09:46Z | — | По D-8/D-9 приняты девять исторических случаев в едином WP-19; зависимости WP-13/16/17 переведены на принятый пакет. Исходные частичные verdicts WP-11/12/14 и UNKNOWN сохранены. | reports/WP-FRAMEWORK-19.md; reports/WP-19-independent-review.md |
 | 2026-11-03 09:45Z | WP-FRAMEWORK-19 | WP-FRAMEWORK-19: ACCEPTED -> DONE | Девять исторических ситуаций и независимая приёмка: reports/WP-FRAMEWORK-19.md; reports/WP-19-independent-review.md |
 | 2026-11-03 09:45Z | WP-FRAMEWORK-19 | WP-FRAMEWORK-19: REVIEW -> ACCEPTED | Девять исторических ситуаций и независимая приёмка: reports/WP-FRAMEWORK-19.md; reports/WP-19-independent-review.md |
