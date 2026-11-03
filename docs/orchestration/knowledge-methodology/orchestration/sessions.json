@@ -4,7 +4,7 @@
   "instances": {},
   "assignments": {},
   "launches": {},
-  "revision": 13,
+  "revision": 15,
   "generation": 1,
   "autonomy": {
     "enabled": true,
@@ -276,6 +276,70 @@
           "criterion": "coverage",
           "missing_fact": "Собрать из существующих BA отчётов ограниченную карту, альтернативы и непроверенные остатки без расширения scope",
           "decision": "Сдача статического WP-02 и последующие рекомендации"
+        }
+      ]
+    },
+    "WP-FRAMEWORK-03": {
+      "contract": {
+        "question": "Какие SA артефакты и обязанности оправданы при разных рисках и что можно упростить?",
+        "decision": "Оценить ограниченные статические рекомендации SA",
+        "artifact": "reports/WP-FRAMEWORK-03.md",
+        "criteria": {
+          "coverage": {
+            "evidence_standard": "Отображены SA области и матрица артефактов/применимости по риску либо причины пробелов; клиентский scope указан",
+            "unknown_allowed": false
+          },
+          "mechanisms": {
+            "evidence_standard": "Для выбранных механизмов указаны цель, потребитель, цена или UNKNOWN, защита, альтернатива и риск; атомарная полнота не преувеличена",
+            "unknown_allowed": false
+          },
+          "evidence": {
+            "evidence_standard": "SHA, source/synthetic/runtime и неизвестное различены",
+            "unknown_allowed": false
+          },
+          "recommendations": {
+            "evidence_standard": "Категории и условия проверки указаны без вывода об измеренном ускорении",
+            "unknown_allowed": false
+          },
+          "verification": {
+            "evidence_standard": "Ссылки, SHA и статус исходника проверены, независимое review и ограничения зафиксированы",
+            "unknown_allowed": false
+          }
+        }
+      },
+      "round": 1,
+      "phase": "collecting",
+      "open": [
+        "coverage",
+        "mechanisms",
+        "evidence",
+        "recommendations",
+        "verification"
+      ],
+      "results": {},
+      "events": {
+        "sa-wave-1": {
+          "event": "start",
+          "payload": {
+            "id": "sa-wave-1",
+            "tasks": [
+              {
+                "id": "sa-synthesis",
+                "criterion": "coverage",
+                "missing_fact": "Свести накопленные SA материалы и риск-матрицу без нового исследования",
+                "decision": "Сдача статического WP-03"
+              }
+            ]
+          }
+        }
+      },
+      "verdicts": [],
+      "tasks": [
+        {
+          "id": "sa-synthesis",
+          "criterion": "coverage",
+          "missing_fact": "Свести накопленные SA материалы и риск-матрицу без нового исследования",
+          "decision": "Сдача статического WP-03"
         }
       ]
     }
