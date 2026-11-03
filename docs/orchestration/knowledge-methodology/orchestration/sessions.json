@@ -4,7 +4,7 @@
   "instances": {},
   "assignments": {},
   "launches": {},
-  "revision": 19,
+  "revision": 24,
   "generation": 1,
   "autonomy": {
     "enabled": true,
@@ -244,11 +244,13 @@
         }
       },
       "round": 2,
-      "phase": "collecting",
+      "phase": "partial",
       "open": [
-        "verification"
+        "mechanisms"
       ],
-      "results": {},
+      "results": {
+        "ba-review-fix": "reports/WP-FRAMEWORK-02.md"
+      },
       "events": {
         "ba-wave-1": {
           "event": "start",
@@ -319,6 +321,48 @@
               }
             ]
           }
+        },
+        "ba-result-2": {
+          "event": "result",
+          "payload": {
+            "id": "ba-result-2",
+            "task": "ba-review-fix",
+            "evidence": "reports/WP-FRAMEWORK-02.md"
+          }
+        },
+        "ba-review-final": {
+          "event": "verdict",
+          "payload": {
+            "id": "ba-review-final",
+            "verdict": "partial",
+            "criteria": {
+              "coverage": {
+                "status": "satisfied",
+                "reason": "Независимый review подтверждает ограниченный статический результат.",
+                "evidence": "reports/WP-02-independent-review.md"
+              },
+              "evidence": {
+                "status": "satisfied",
+                "reason": "Независимый review подтверждает ограниченный статический результат.",
+                "evidence": "reports/WP-02-independent-review.md"
+              },
+              "recommendations": {
+                "status": "satisfied",
+                "reason": "Независимый review подтверждает ограниченный статический результат.",
+                "evidence": "reports/WP-02-independent-review.md"
+              },
+              "verification": {
+                "status": "satisfied",
+                "reason": "Независимый review подтверждает ограниченный статический результат.",
+                "evidence": "reports/WP-02-independent-review.md"
+              },
+              "mechanisms": {
+                "status": "blocked",
+                "reason": "Выбранные группы описаны, но frozen формулировка уже исходного charter: полнота отдельных обязательных шагов и стоимость каждого не установлены. Полный WP не принимается.",
+                "evidence": "reports/WP-02-independent-review.md"
+              }
+            }
+          }
         }
       },
       "verdicts": [
@@ -349,6 +393,37 @@
             "verification": {
               "status": "blocked",
               "reason": "Review и чистоту checkout требуется явно связать со сдачей; исходный charter и ограничения также должны быть ясно отражены.",
+              "evidence": "reports/WP-02-independent-review.md"
+            }
+          }
+        },
+        {
+          "id": "ba-review-final",
+          "verdict": "partial",
+          "criteria": {
+            "coverage": {
+              "status": "satisfied",
+              "reason": "Независимый review подтверждает ограниченный статический результат.",
+              "evidence": "reports/WP-02-independent-review.md"
+            },
+            "evidence": {
+              "status": "satisfied",
+              "reason": "Независимый review подтверждает ограниченный статический результат.",
+              "evidence": "reports/WP-02-independent-review.md"
+            },
+            "recommendations": {
+              "status": "satisfied",
+              "reason": "Независимый review подтверждает ограниченный статический результат.",
+              "evidence": "reports/WP-02-independent-review.md"
+            },
+            "verification": {
+              "status": "satisfied",
+              "reason": "Независимый review подтверждает ограниченный статический результат.",
+              "evidence": "reports/WP-02-independent-review.md"
+            },
+            "mechanisms": {
+              "status": "blocked",
+              "reason": "Выбранные группы описаны, но frozen формулировка уже исходного charter: полнота отдельных обязательных шагов и стоимость каждого не установлены. Полный WP не принимается.",
               "evidence": "reports/WP-02-independent-review.md"
             }
           }
@@ -391,17 +466,13 @@
           }
         }
       },
-      "round": 1,
+      "round": 2,
       "phase": "review",
       "open": [
-        "coverage",
-        "mechanisms",
-        "evidence",
-        "recommendations",
         "verification"
       ],
       "results": {
-        "sa-synthesis": "reports/WP-FRAMEWORK-03.md"
+        "sa-review-fix": "reports/WP-FRAMEWORK-03.md"
       },
       "events": {
         "sa-wave-1": {
@@ -425,15 +496,103 @@
             "task": "sa-synthesis",
             "evidence": "reports/WP-FRAMEWORK-03.md"
           }
+        },
+        "sa-review-1": {
+          "event": "verdict",
+          "payload": {
+            "id": "sa-review-1",
+            "verdict": "revise",
+            "criteria": {
+              "coverage": {
+                "status": "satisfied",
+                "reason": "Независимая проверка подтвердила ограниченный статический объём, но не полное выполнение исходного charter.",
+                "evidence": "reports/WP-03-independent-review.md"
+              },
+              "mechanisms": {
+                "status": "satisfied",
+                "reason": "Независимая проверка подтвердила ограниченный статический объём, но не полное выполнение исходного charter.",
+                "evidence": "reports/WP-03-independent-review.md"
+              },
+              "evidence": {
+                "status": "satisfied",
+                "reason": "Независимая проверка подтвердила ограниченный статический объём, но не полное выполнение исходного charter.",
+                "evidence": "reports/WP-03-independent-review.md"
+              },
+              "recommendations": {
+                "status": "satisfied",
+                "reason": "Независимая проверка подтвердила ограниченный статический объём, но не полное выполнение исходного charter.",
+                "evidence": "reports/WP-03-independent-review.md"
+              },
+              "verification": {
+                "status": "blocked",
+                "reason": "Нужно связать независимый review и состояние checkout со сдачей; явно сохранить пробел исходного charter.",
+                "evidence": "reports/WP-03-independent-review.md"
+              }
+            }
+          }
+        },
+        "sa-wave-2": {
+          "event": "start",
+          "payload": {
+            "id": "sa-wave-2",
+            "tasks": [
+              {
+                "id": "sa-review-fix",
+                "criterion": "verification",
+                "missing_fact": "Зафиксировать review, HEAD/status и неустановленную обязательность по риску из исходного charter",
+                "decision": "Вердикт о полной или частичной приёмке"
+              }
+            ]
+          }
+        },
+        "sa-result-2": {
+          "event": "result",
+          "payload": {
+            "id": "sa-result-2",
+            "task": "sa-review-fix",
+            "evidence": "reports/WP-FRAMEWORK-03.md"
+          }
         }
       },
-      "verdicts": [],
+      "verdicts": [
+        {
+          "id": "sa-review-1",
+          "verdict": "revise",
+          "criteria": {
+            "coverage": {
+              "status": "satisfied",
+              "reason": "Независимая проверка подтвердила ограниченный статический объём, но не полное выполнение исходного charter.",
+              "evidence": "reports/WP-03-independent-review.md"
+            },
+            "mechanisms": {
+              "status": "satisfied",
+              "reason": "Независимая проверка подтвердила ограниченный статический объём, но не полное выполнение исходного charter.",
+              "evidence": "reports/WP-03-independent-review.md"
+            },
+            "evidence": {
+              "status": "satisfied",
+              "reason": "Независимая проверка подтвердила ограниченный статический объём, но не полное выполнение исходного charter.",
+              "evidence": "reports/WP-03-independent-review.md"
+            },
+            "recommendations": {
+              "status": "satisfied",
+              "reason": "Независимая проверка подтвердила ограниченный статический объём, но не полное выполнение исходного charter.",
+              "evidence": "reports/WP-03-independent-review.md"
+            },
+            "verification": {
+              "status": "blocked",
+              "reason": "Нужно связать независимый review и состояние checkout со сдачей; явно сохранить пробел исходного charter.",
+              "evidence": "reports/WP-03-independent-review.md"
+            }
+          }
+        }
+      ],
       "tasks": [
         {
-          "id": "sa-synthesis",
-          "criterion": "coverage",
-          "missing_fact": "Свести накопленные SA материалы и риск-матрицу без нового исследования",
-          "decision": "Сдача статического WP-03"
+          "id": "sa-review-fix",
+          "criterion": "verification",
+          "missing_fact": "Зафиксировать review, HEAD/status и неустановленную обязательность по риску из исходного charter",
+          "decision": "Вердикт о полной или частичной приёмке"
         }
       ]
     }

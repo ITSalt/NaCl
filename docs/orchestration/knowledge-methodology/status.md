@@ -23,7 +23,7 @@ CANCELLED (причина).
 | WP | Модуль | Название | Статус | Сессия | PR | Обновлено |
 |----|--------|----------|--------|--------|----|-----------|
 | [WP-FRAMEWORK-01](work-packages/WP-FRAMEWORK-01-inventory.md) | framework | Карта фреймворка и протокол измерений | DONE | knowledge-methodology-framework | — | 2026-11-03 |
-| [WP-FRAMEWORK-02](work-packages/WP-FRAMEWORK-02-ba.md) | framework | Бизнес-анализ | IN_PROGRESS | knowledge-methodology-framework | — | 2026-11-03 |
+| [WP-FRAMEWORK-02](work-packages/WP-FRAMEWORK-02-ba.md) | framework | Бизнес-анализ | REVISE | knowledge-methodology-framework | — | 2026-11-03 |
 | [WP-FRAMEWORK-03](work-packages/WP-FRAMEWORK-03-sa.md) | framework | Системный анализ | IN_PROGRESS | knowledge-methodology-framework | — | 2026-11-03 |
 | [WP-FRAMEWORK-04](work-packages/WP-FRAMEWORK-04-tl.md) | framework | Планирование и управление разработкой | DRAFT | knowledge-methodology-framework | — | 2026-11-02 |
 | [WP-FRAMEWORK-05](work-packages/WP-FRAMEWORK-05-development.md) | framework | Разработка и исправления | DRAFT | knowledge-methodology-framework | — | 2026-11-02 |
@@ -79,6 +79,12 @@ R-n — действие: точная команда одной строкой 
 <!-- orch:journal -->
 | Дата | WP | Событие | Подтверждение |
 |------|----|---------|---------------|
+| 2026-11-03 08:29Z | WP-FRAMEWORK-03 | research result: review | sa-result-2 |
+| 2026-11-03 08:29Z | WP-FRAMEWORK-02 | WP-FRAMEWORK-02: IN_PROGRESS -> REVISE | Два раунда завершены, статический отчёт частичен; полный charter не подтверждён: WP-02-independent-review.md |
+| 2026-11-03 08:29Z | WP-FRAMEWORK-02 | research verdict: partial | ba-review-final |
+| 2026-11-03 08:28Z | WP-FRAMEWORK-03 | research start: collecting | sa-wave-2 |
+| 2026-11-03 08:28Z | WP-FRAMEWORK-03 | research verdict: revise | sa-review-1 |
+| 2026-11-03 08:28Z | WP-FRAMEWORK-02 | research result: review | ba-result-2 |
 | 2026-11-03 08:27Z | WP-FRAMEWORK-02 | research start: collecting | ba-wave-2 |
 | 2026-11-03 08:27Z | WP-FRAMEWORK-02 | research verdict: revise | ba-review-1 |
 | 2026-11-03 08:26Z | WP-FRAMEWORK-03 | research result: review | sa-result-1 |
