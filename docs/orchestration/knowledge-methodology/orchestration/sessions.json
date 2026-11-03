@@ -4,7 +4,7 @@
   "instances": {},
   "assignments": {},
   "launches": {},
-  "revision": 194,
+  "revision": 199,
   "generation": 1,
   "autonomy": {
     "enabled": true,
@@ -5487,19 +5487,12 @@
           }
         }
       },
-      "round": 1,
-      "phase": "review",
-      "open": [
-        "architecture",
-        "evidence",
-        "methodology",
-        "backlog",
-        "verification"
-      ],
+      "round": 2,
+      "phase": "accepted",
+      "open": [],
       "results": {
-        "wp18-sa-tl": "reports/final-audit.md",
-        "wp18-ba-platform": "reports/final-audit.md",
-        "wp18-synthesis": "reports/WP-FRAMEWORK-18.md"
+        "wp18-fix-evidence": "reports/recommendations.md",
+        "wp18-fix-backlog": "reports/implementation-handoff.md"
       },
       "events": {
         "wp18-wave-1": {
@@ -5551,27 +5544,188 @@
             "task": "wp18-synthesis",
             "evidence": "reports/WP-FRAMEWORK-18.md"
           }
+        },
+        "wp18-review-1": {
+          "event": "verdict",
+          "payload": {
+            "id": "wp18-review-1",
+            "verdict": "revise",
+            "criteria": {
+              "architecture": {
+                "status": "satisfied",
+                "reason": "Подтверждено независимым reviewer в ограниченном документированном срезе.",
+                "evidence": "reports/WP-18-independent-review.md"
+              },
+              "evidence": {
+                "status": "blocked",
+                "reason": "Уточнить условность рекомендаций, ограничения Harness и устаревшее количество отчётов.",
+                "evidence": "reports/WP-18-independent-review.md"
+              },
+              "methodology": {
+                "status": "satisfied",
+                "reason": "Подтверждено независимым reviewer в ограниченном документированном срезе.",
+                "evidence": "reports/WP-18-independent-review.md"
+              },
+              "backlog": {
+                "status": "blocked",
+                "reason": "Разделить M4a/b/c на отдельные acceptance/stop/rollback.",
+                "evidence": "reports/WP-18-independent-review.md"
+              },
+              "verification": {
+                "status": "satisfied",
+                "reason": "Подтверждено независимым reviewer в ограниченном документированном срезе.",
+                "evidence": "reports/WP-18-independent-review.md"
+              }
+            }
+          }
+        },
+        "wp18-wave-2": {
+          "event": "start",
+          "payload": {
+            "id": "wp18-wave-2",
+            "tasks": [
+              {
+                "id": "wp18-fix-evidence",
+                "criterion": "evidence",
+                "missing_fact": "Точечное исправление противоречий по независимому review и сохранённым evidence",
+                "decision": "Финальная независимая приёмка"
+              },
+              {
+                "id": "wp18-fix-backlog",
+                "criterion": "backlog",
+                "missing_fact": "Точечное исправление противоречий по независимому review и сохранённым evidence",
+                "decision": "Финальная независимая приёмка"
+              }
+            ]
+          }
+        },
+        "wp18-result-2-evidence": {
+          "event": "result",
+          "payload": {
+            "id": "wp18-result-2-evidence",
+            "task": "wp18-fix-evidence",
+            "evidence": "reports/recommendations.md"
+          }
+        },
+        "wp18-result-2-backlog": {
+          "event": "result",
+          "payload": {
+            "id": "wp18-result-2-backlog",
+            "task": "wp18-fix-backlog",
+            "evidence": "reports/implementation-handoff.md"
+          }
+        },
+        "wp18-review-2": {
+          "event": "verdict",
+          "payload": {
+            "id": "wp18-review-2",
+            "verdict": "accepted",
+            "criteria": {
+              "architecture": {
+                "status": "satisfied",
+                "reason": "Независимый reviewer подтвердил ограниченную исследовательскую сдачу после точечных исправлений; исходные UNKNOWN сохранены.",
+                "evidence": "reports/WP-18-independent-review.md"
+              },
+              "evidence": {
+                "status": "satisfied",
+                "reason": "Независимый reviewer подтвердил ограниченную исследовательскую сдачу после точечных исправлений; исходные UNKNOWN сохранены.",
+                "evidence": "reports/WP-18-independent-review.md"
+              },
+              "methodology": {
+                "status": "satisfied",
+                "reason": "Независимый reviewer подтвердил ограниченную исследовательскую сдачу после точечных исправлений; исходные UNKNOWN сохранены.",
+                "evidence": "reports/WP-18-independent-review.md"
+              },
+              "backlog": {
+                "status": "satisfied",
+                "reason": "Независимый reviewer подтвердил ограниченную исследовательскую сдачу после точечных исправлений; исходные UNKNOWN сохранены.",
+                "evidence": "reports/WP-18-independent-review.md"
+              },
+              "verification": {
+                "status": "satisfied",
+                "reason": "Независимый reviewer подтвердил ограниченную исследовательскую сдачу после точечных исправлений; исходные UNKNOWN сохранены.",
+                "evidence": "reports/WP-18-independent-review.md"
+              }
+            }
+          }
         }
       },
-      "verdicts": [],
+      "verdicts": [
+        {
+          "id": "wp18-review-1",
+          "verdict": "revise",
+          "criteria": {
+            "architecture": {
+              "status": "satisfied",
+              "reason": "Подтверждено независимым reviewer в ограниченном документированном срезе.",
+              "evidence": "reports/WP-18-independent-review.md"
+            },
+            "evidence": {
+              "status": "blocked",
+              "reason": "Уточнить условность рекомендаций, ограничения Harness и устаревшее количество отчётов.",
+              "evidence": "reports/WP-18-independent-review.md"
+            },
+            "methodology": {
+              "status": "satisfied",
+              "reason": "Подтверждено независимым reviewer в ограниченном документированном срезе.",
+              "evidence": "reports/WP-18-independent-review.md"
+            },
+            "backlog": {
+              "status": "blocked",
+              "reason": "Разделить M4a/b/c на отдельные acceptance/stop/rollback.",
+              "evidence": "reports/WP-18-independent-review.md"
+            },
+            "verification": {
+              "status": "satisfied",
+              "reason": "Подтверждено независимым reviewer в ограниченном документированном срезе.",
+              "evidence": "reports/WP-18-independent-review.md"
+            }
+          }
+        },
+        {
+          "id": "wp18-review-2",
+          "verdict": "accepted",
+          "criteria": {
+            "architecture": {
+              "status": "satisfied",
+              "reason": "Независимый reviewer подтвердил ограниченную исследовательскую сдачу после точечных исправлений; исходные UNKNOWN сохранены.",
+              "evidence": "reports/WP-18-independent-review.md"
+            },
+            "evidence": {
+              "status": "satisfied",
+              "reason": "Независимый reviewer подтвердил ограниченную исследовательскую сдачу после точечных исправлений; исходные UNKNOWN сохранены.",
+              "evidence": "reports/WP-18-independent-review.md"
+            },
+            "methodology": {
+              "status": "satisfied",
+              "reason": "Независимый reviewer подтвердил ограниченную исследовательскую сдачу после точечных исправлений; исходные UNKNOWN сохранены.",
+              "evidence": "reports/WP-18-independent-review.md"
+            },
+            "backlog": {
+              "status": "satisfied",
+              "reason": "Независимый reviewer подтвердил ограниченную исследовательскую сдачу после точечных исправлений; исходные UNKNOWN сохранены.",
+              "evidence": "reports/WP-18-independent-review.md"
+            },
+            "verification": {
+              "status": "satisfied",
+              "reason": "Независимый reviewer подтвердил ограниченную исследовательскую сдачу после точечных исправлений; исходные UNKNOWN сохранены.",
+              "evidence": "reports/WP-18-independent-review.md"
+            }
+          }
+        }
+      ],
       "tasks": [
         {
-          "id": "wp18-sa-tl",
-          "criterion": "architecture",
-          "missing_fact": "Связный аудит SA/TL из проверенных исходных отчётов, механизмов и источников",
-          "decision": "Понятный итоговый аудит для владельца"
+          "id": "wp18-fix-evidence",
+          "criterion": "evidence",
+          "missing_fact": "Точечное исправление противоречий по независимому review и сохранённым evidence",
+          "decision": "Финальная независимая приёмка"
         },
         {
-          "id": "wp18-ba-platform",
-          "criterion": "architecture",
-          "missing_fact": "Связный аудит BA, graph и платформы по накопленным source-level материалам",
-          "decision": "Понятный итоговый аудит для владельца"
-        },
-        {
-          "id": "wp18-synthesis",
+          "id": "wp18-fix-backlog",
           "criterion": "backlog",
-          "missing_fact": "Согласовать целевую методологию, evidence и план M0–M5 с принятым challenge и WP16",
-          "decision": "Итоговый комплект WP18"
+          "missing_fact": "Точечное исправление противоречий по независимому review и сохранённым evidence",
+          "decision": "Финальная независимая приёмка"
         }
       ]
     }

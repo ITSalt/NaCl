@@ -11,7 +11,7 @@
 | 1 | Области и Harness | WP-02–10,15 | IN_PROGRESS |
 | 2 | Стыки и измерения | WP-11–14,16 | IN_PROGRESS |
 | 3 | Оспаривание | WP-17 | DONE |
-| 4 | Рекомендации | WP-18 | PLANNED |
+| 4 | Рекомендации | WP-18 | DONE |
 
 ## Пакеты работ
 
@@ -39,7 +39,7 @@ CANCELLED (причина).
 | [WP-FRAMEWORK-15](work-packages/WP-FRAMEWORK-15-harness.md) | framework | Что можно передать Harness | REVISE | knowledge-methodology-framework | — | 2026-11-03 |
 | [WP-FRAMEWORK-16](work-packages/WP-FRAMEWORK-16-measurement.md) | framework | Проверка кандидатов модернизации NaCl | REVISE | knowledge-methodology-framework | — | 2026-11-03 |
 | [WP-FRAMEWORK-17](work-packages/WP-FRAMEWORK-17-challenge.md) | framework | Независимая проверка рекомендаций | DONE | knowledge-methodology-framework | — | 2026-11-03 |
-| [WP-FRAMEWORK-18](work-packages/WP-FRAMEWORK-18-recommendations.md) | framework | План модернизации NaCl и передача следующей программе | IN_PROGRESS | knowledge-methodology-framework | — | 2026-11-03 |
+| [WP-FRAMEWORK-18](work-packages/WP-FRAMEWORK-18-recommendations.md) | framework | План модернизации NaCl и передача следующей программе | DONE | knowledge-methodology-framework | — | 2026-11-03 |
 | [WP-FRAMEWORK-19](work-packages/WP-FRAMEWORK-19-historical-interface-cases.md) | framework | Девять реальных исторических ситуаций по трём границам | DONE | knowledge-methodology-framework | — | 2026-11-03 |
 
 ## Ждёт владельца
@@ -82,6 +82,16 @@ R-n — действие: точная команда одной строкой 
 <!-- orch:journal -->
 | Дата | WP | Событие | Подтверждение |
 |------|----|---------|---------------|
+| 2026-11-03 11:14Z | — | Проверено формальное закрытие: 15 исходных WP остаются REVISE, поэтому close --check отказал; ограниченный комплект WP18 принят и сохранён без подмены статусов. | reports/program-closure-readiness.md; reports/WP-18-independent-review.md |
+| 2026-11-03 11:13Z | — | WP-18: связный аудит BA/SA/TL/graph и план модернизации приняты независимым reviewer в ограниченном scope; исходные partial verdicts, неизвестный runtime и DEFER изменений сохранены. | reports/WP-FRAMEWORK-18.md; reports/WP-18-independent-review.md |
+| 2026-11-03 11:13Z | WP-FRAMEWORK-18 | WP-FRAMEWORK-18: ACCEPTED -> DONE | Принят ограниченный исследовательский комплект; независимая проверка reports/WP-18-independent-review.md |
+| 2026-11-03 11:13Z | WP-FRAMEWORK-18 | WP-FRAMEWORK-18: REVIEW -> ACCEPTED | Принят ограниченный исследовательский комплект; независимая проверка reports/WP-18-independent-review.md |
+| 2026-11-03 11:13Z | WP-FRAMEWORK-18 | WP-FRAMEWORK-18: IN_PROGRESS -> REVIEW | Принят ограниченный исследовательский комплект; независимая проверка reports/WP-18-independent-review.md |
+| 2026-11-03 11:13Z | WP-FRAMEWORK-18 | research verdict: accepted | wp18-review-2 |
+| 2026-11-03 11:12Z | WP-FRAMEWORK-18 | research result: review | wp18-result-2-backlog |
+| 2026-11-03 11:12Z | WP-FRAMEWORK-18 | research result: collecting | wp18-result-2-evidence |
+| 2026-11-03 11:11Z | WP-FRAMEWORK-18 | research start: collecting | wp18-wave-2 |
+| 2026-11-03 11:11Z | WP-FRAMEWORK-18 | research verdict: revise | wp18-review-1 |
 | 2026-11-03 11:10Z | WP-FRAMEWORK-18 | research result: review | wp18-result-1-synthesis |
 | 2026-11-03 11:10Z | WP-FRAMEWORK-18 | research result: collecting | wp18-result-1-ba-platform |
 | 2026-11-03 11:10Z | WP-FRAMEWORK-18 | research result: collecting | wp18-result-1-sa-tl |
