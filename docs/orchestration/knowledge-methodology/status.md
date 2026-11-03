@@ -25,7 +25,7 @@ CANCELLED (причина).
 | [WP-FRAMEWORK-01](work-packages/WP-FRAMEWORK-01-inventory.md) | framework | Карта фреймворка и протокол измерений | DONE | knowledge-methodology-framework | — | 2026-11-03 |
 | [WP-FRAMEWORK-02](work-packages/WP-FRAMEWORK-02-ba.md) | framework | Бизнес-анализ | REVISE | knowledge-methodology-framework | — | 2026-11-03 |
 | [WP-FRAMEWORK-03](work-packages/WP-FRAMEWORK-03-sa.md) | framework | Системный анализ | REVISE | knowledge-methodology-framework | — | 2026-11-03 |
-| [WP-FRAMEWORK-04](work-packages/WP-FRAMEWORK-04-tl.md) | framework | Планирование и управление разработкой | IN_PROGRESS | knowledge-methodology-framework | — | 2026-11-03 |
+| [WP-FRAMEWORK-04](work-packages/WP-FRAMEWORK-04-tl.md) | framework | Планирование и управление разработкой | REVISE | knowledge-methodology-framework | — | 2026-11-03 |
 | [WP-FRAMEWORK-05](work-packages/WP-FRAMEWORK-05-development.md) | framework | Разработка и исправления | IN_PROGRESS | knowledge-methodology-framework | — | 2026-11-03 |
 | [WP-FRAMEWORK-06](work-packages/WP-FRAMEWORK-06-quality.md) | framework | Review, QA и верификация | DRAFT | knowledge-methodology-framework | — | 2026-11-02 |
 | [WP-FRAMEWORK-07](work-packages/WP-FRAMEWORK-07-delivery.md) | framework | Поставка, публикация и эксплуатационная документация | DRAFT | knowledge-methodology-framework | — | 2026-11-02 |
@@ -79,6 +79,15 @@ R-n — действие: точная команда одной строкой 
 <!-- orch:journal -->
 | Дата | WP | Событие | Подтверждение |
 |------|----|---------|---------------|
+| 2026-11-03 08:34Z | WP-FRAMEWORK-05 | research result: review | dev-result-2-5 |
+| 2026-11-03 08:34Z | WP-FRAMEWORK-05 | research result: collecting | dev-result-2-4 |
+| 2026-11-03 08:34Z | WP-FRAMEWORK-05 | research result: collecting | dev-result-2-3 |
+| 2026-11-03 08:34Z | WP-FRAMEWORK-05 | research result: collecting | dev-result-2-2 |
+| 2026-11-03 08:34Z | WP-FRAMEWORK-05 | research result: collecting | dev-result-2-1 |
+| 2026-11-03 08:34Z | WP-FRAMEWORK-04 | WP-FRAMEWORK-04: IN_PROGRESS -> REVISE | Два раунда завершены: control и coverage остаются открыты, см. WP-04-independent-review.md |
+| 2026-11-03 08:34Z | WP-FRAMEWORK-04 | research verdict: partial | tl-review-final |
+| 2026-11-03 08:33Z | WP-FRAMEWORK-05 | research start: collecting | dev-wave-2 |
+| 2026-11-03 08:33Z | WP-FRAMEWORK-05 | research verdict: revise | dev-review-1 |
 | 2026-11-03 08:33Z | WP-FRAMEWORK-04 | research result: review | tl-result-2-3 |
 | 2026-11-03 08:33Z | WP-FRAMEWORK-04 | research result: collecting | tl-result-2-2 |
 | 2026-11-03 08:33Z | WP-FRAMEWORK-04 | research result: collecting | tl-result-2-1 |

@@ -4,7 +4,7 @@
   "instances": {},
   "assignments": {},
   "launches": {},
-  "revision": 36,
+  "revision": 44,
   "generation": 1,
   "autonomy": {
     "enabled": true,
@@ -694,11 +694,10 @@
         }
       },
       "round": 2,
-      "phase": "review",
+      "phase": "partial",
       "open": [
         "control",
-        "coverage",
-        "verification"
+        "coverage"
       ],
       "results": {
         "tl-scope-fix": "reports/WP-FRAMEWORK-04.md",
@@ -816,6 +815,45 @@
             "task": "tl-review-fix",
             "evidence": "reports/WP-FRAMEWORK-04.md"
           }
+        },
+        "tl-review-final": {
+          "event": "verdict",
+          "payload": {
+            "id": "tl-review-final",
+            "verdict": "partial",
+            "criteria": {
+              "mechanisms": {
+                "status": "satisfied",
+                "reason": "Независимый review подтвердил ограниченный статический срез.",
+                "evidence": "reports/WP-04-independent-review.md"
+              },
+              "evidence": {
+                "status": "satisfied",
+                "reason": "Независимый review подтвердил ограниченный статический срез.",
+                "evidence": "reports/WP-04-independent-review.md"
+              },
+              "recommendations": {
+                "status": "satisfied",
+                "reason": "Независимый review подтвердил ограниченный статический срез.",
+                "evidence": "reports/WP-04-independent-review.md"
+              },
+              "verification": {
+                "status": "satisfied",
+                "reason": "Независимый review подтвердил ограниченный статический срез.",
+                "evidence": "reports/WP-04-independent-review.md"
+              },
+              "control": {
+                "status": "blocked",
+                "reason": "Полный граф и critical path, уровни L0–L2, TL compaction и повторяемость решений не установлены после второго раунда.",
+                "evidence": "reports/WP-04-independent-review.md"
+              },
+              "coverage": {
+                "status": "blocked",
+                "reason": "Полный граф и critical path, уровни L0–L2, TL compaction и повторяемость решений не установлены после второго раунда.",
+                "evidence": "reports/WP-04-independent-review.md"
+              }
+            }
+          }
         }
       },
       "verdicts": [
@@ -851,6 +889,42 @@
             "verification": {
               "status": "blocked",
               "reason": "Критический путь/подобласти либо фиксация проверки остаются открытыми по review.",
+              "evidence": "reports/WP-04-independent-review.md"
+            }
+          }
+        },
+        {
+          "id": "tl-review-final",
+          "verdict": "partial",
+          "criteria": {
+            "mechanisms": {
+              "status": "satisfied",
+              "reason": "Независимый review подтвердил ограниченный статический срез.",
+              "evidence": "reports/WP-04-independent-review.md"
+            },
+            "evidence": {
+              "status": "satisfied",
+              "reason": "Независимый review подтвердил ограниченный статический срез.",
+              "evidence": "reports/WP-04-independent-review.md"
+            },
+            "recommendations": {
+              "status": "satisfied",
+              "reason": "Независимый review подтвердил ограниченный статический срез.",
+              "evidence": "reports/WP-04-independent-review.md"
+            },
+            "verification": {
+              "status": "satisfied",
+              "reason": "Независимый review подтвердил ограниченный статический срез.",
+              "evidence": "reports/WP-04-independent-review.md"
+            },
+            "control": {
+              "status": "blocked",
+              "reason": "Полный граф и critical path, уровни L0–L2, TL compaction и повторяемость решений не установлены после второго раунда.",
+              "evidence": "reports/WP-04-independent-review.md"
+            },
+            "coverage": {
+              "status": "blocked",
+              "reason": "Полный граф и critical path, уровни L0–L2, TL compaction и повторяемость решений не установлены после второго раунда.",
               "evidence": "reports/WP-04-independent-review.md"
             }
           }
@@ -909,18 +983,21 @@
           }
         }
       },
-      "round": 1,
+      "round": 2,
       "phase": "review",
       "open": [
         "loop",
         "coverage",
         "mechanisms",
-        "evidence",
         "recommendations",
         "verification"
       ],
       "results": {
-        "dev-synthesis": "reports/WP-FRAMEWORK-05.md"
+        "dev-context": "reports/WP-FRAMEWORK-05.md",
+        "dev-coverage": "reports/WP-FRAMEWORK-05.md",
+        "dev-fields": "reports/WP-FRAMEWORK-05.md",
+        "dev-categories": "reports/WP-FRAMEWORK-05.md",
+        "dev-review-fix": "reports/WP-FRAMEWORK-05.md"
       },
       "events": {
         "dev-wave-1": {
@@ -944,15 +1021,193 @@
             "task": "dev-synthesis",
             "evidence": "reports/WP-FRAMEWORK-05.md"
           }
+        },
+        "dev-review-1": {
+          "event": "verdict",
+          "payload": {
+            "id": "dev-review-1",
+            "verdict": "revise",
+            "criteria": {
+              "evidence": {
+                "status": "satisfied",
+                "reason": "В выборке reviewer подтвердил разделение source/runtime.",
+                "evidence": "reports/WP-05-independent-review.md"
+              },
+              "loop": {
+                "status": "blocked",
+                "reason": "Независимый review описывает адресные недостающие данные или фиксацию проверки.",
+                "evidence": "reports/WP-05-independent-review.md"
+              },
+              "coverage": {
+                "status": "blocked",
+                "reason": "Независимый review описывает адресные недостающие данные или фиксацию проверки.",
+                "evidence": "reports/WP-05-independent-review.md"
+              },
+              "mechanisms": {
+                "status": "blocked",
+                "reason": "Независимый review описывает адресные недостающие данные или фиксацию проверки.",
+                "evidence": "reports/WP-05-independent-review.md"
+              },
+              "recommendations": {
+                "status": "blocked",
+                "reason": "Независимый review описывает адресные недостающие данные или фиксацию проверки.",
+                "evidence": "reports/WP-05-independent-review.md"
+              },
+              "verification": {
+                "status": "blocked",
+                "reason": "Независимый review описывает адресные недостающие данные или фиксацию проверки.",
+                "evidence": "reports/WP-05-independent-review.md"
+              }
+            }
+          }
+        },
+        "dev-wave-2": {
+          "event": "start",
+          "payload": {
+            "id": "dev-wave-2",
+            "tasks": [
+              {
+                "id": "dev-context",
+                "criterion": "loop",
+                "missing_fact": "Сопоставить контекст малого fix и большой feature по имеющимся источникам",
+                "decision": "Статическая приёмка WP-05"
+              },
+              {
+                "id": "dev-coverage",
+                "criterion": "coverage",
+                "missing_fact": "Явно показать source coverage и незакрытые modes",
+                "decision": "Статическая приёмка WP-05"
+              },
+              {
+                "id": "dev-fields",
+                "criterion": "mechanisms",
+                "missing_fact": "Свести недостающие поля и условия каждой категории включая stubs",
+                "decision": "Статическая приёмка WP-05"
+              },
+              {
+                "id": "dev-categories",
+                "criterion": "recommendations",
+                "missing_fact": "Уточнить условия DEFER по каждому кандидату",
+                "decision": "Статическая приёмка WP-05"
+              },
+              {
+                "id": "dev-review-fix",
+                "criterion": "verification",
+                "missing_fact": "Привязать review и проверку checkout",
+                "decision": "Статическая приёмка WP-05"
+              }
+            ]
+          }
+        },
+        "dev-result-2-1": {
+          "event": "result",
+          "payload": {
+            "id": "dev-result-2-1",
+            "task": "dev-context",
+            "evidence": "reports/WP-FRAMEWORK-05.md"
+          }
+        },
+        "dev-result-2-2": {
+          "event": "result",
+          "payload": {
+            "id": "dev-result-2-2",
+            "task": "dev-coverage",
+            "evidence": "reports/WP-FRAMEWORK-05.md"
+          }
+        },
+        "dev-result-2-3": {
+          "event": "result",
+          "payload": {
+            "id": "dev-result-2-3",
+            "task": "dev-fields",
+            "evidence": "reports/WP-FRAMEWORK-05.md"
+          }
+        },
+        "dev-result-2-4": {
+          "event": "result",
+          "payload": {
+            "id": "dev-result-2-4",
+            "task": "dev-categories",
+            "evidence": "reports/WP-FRAMEWORK-05.md"
+          }
+        },
+        "dev-result-2-5": {
+          "event": "result",
+          "payload": {
+            "id": "dev-result-2-5",
+            "task": "dev-review-fix",
+            "evidence": "reports/WP-FRAMEWORK-05.md"
+          }
         }
       },
-      "verdicts": [],
+      "verdicts": [
+        {
+          "id": "dev-review-1",
+          "verdict": "revise",
+          "criteria": {
+            "evidence": {
+              "status": "satisfied",
+              "reason": "В выборке reviewer подтвердил разделение source/runtime.",
+              "evidence": "reports/WP-05-independent-review.md"
+            },
+            "loop": {
+              "status": "blocked",
+              "reason": "Независимый review описывает адресные недостающие данные или фиксацию проверки.",
+              "evidence": "reports/WP-05-independent-review.md"
+            },
+            "coverage": {
+              "status": "blocked",
+              "reason": "Независимый review описывает адресные недостающие данные или фиксацию проверки.",
+              "evidence": "reports/WP-05-independent-review.md"
+            },
+            "mechanisms": {
+              "status": "blocked",
+              "reason": "Независимый review описывает адресные недостающие данные или фиксацию проверки.",
+              "evidence": "reports/WP-05-independent-review.md"
+            },
+            "recommendations": {
+              "status": "blocked",
+              "reason": "Независимый review описывает адресные недостающие данные или фиксацию проверки.",
+              "evidence": "reports/WP-05-independent-review.md"
+            },
+            "verification": {
+              "status": "blocked",
+              "reason": "Независимый review описывает адресные недостающие данные или фиксацию проверки.",
+              "evidence": "reports/WP-05-independent-review.md"
+            }
+          }
+        }
+      ],
       "tasks": [
         {
-          "id": "dev-synthesis",
+          "id": "dev-context",
           "criterion": "loop",
-          "missing_fact": "Свести накопленные профильные отчёты по классам задач и обозначить пробелы минимального контекста",
-          "decision": "Статическая сдача WP-05"
+          "missing_fact": "Сопоставить контекст малого fix и большой feature по имеющимся источникам",
+          "decision": "Статическая приёмка WP-05"
+        },
+        {
+          "id": "dev-coverage",
+          "criterion": "coverage",
+          "missing_fact": "Явно показать source coverage и незакрытые modes",
+          "decision": "Статическая приёмка WP-05"
+        },
+        {
+          "id": "dev-fields",
+          "criterion": "mechanisms",
+          "missing_fact": "Свести недостающие поля и условия каждой категории включая stubs",
+          "decision": "Статическая приёмка WP-05"
+        },
+        {
+          "id": "dev-categories",
+          "criterion": "recommendations",
+          "missing_fact": "Уточнить условия DEFER по каждому кандидату",
+          "decision": "Статическая приёмка WP-05"
+        },
+        {
+          "id": "dev-review-fix",
+          "criterion": "verification",
+          "missing_fact": "Привязать review и проверку checkout",
+          "decision": "Статическая приёмка WP-05"
         }
       ]
     }

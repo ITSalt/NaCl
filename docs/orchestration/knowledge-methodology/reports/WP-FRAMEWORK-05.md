@@ -12,6 +12,18 @@ Pinned NaCl `20fe4c6a56482e85d3ea9a9ebaadb37206047e41`; исходные мат�
 | Reopened | Authoritative status → повторный fix/review → tracker/conductor (`nacl-tl-reopened/SKILL.md:13–38`, Codex overlay :57–96) | Typed result может не принять допустимое infra evidence или повторить partial side effect; сохранить reconciliation. |
 | Stubs | Registry и shape validation → review/release (`nacl-tl-stubs/SKILL.md:13–28,86–105`) | Consumer contract tests должны покрыть missing sample, fake IDs и реальную форму provider. |
 
+**Сравнение контекста.** Для малого fix source предписывает классификацию L0–L3 и spec-first при drift; кандидат для подтверждённого L1 — затронутое поведение, актуальный контракт, failure baseline и независимый regression case. Размер diff не доказывает класс L1. Для большой BE+FE feature исходные workflows передают отдельные task/test briefs, общие acceptance и API contract; кандидат упрощения — versioned срез UC и единый API contract с отдельными evidence. Общий документ не доказывает wire compatibility или сохранения независимости. Это гипотезы, не установленный универсальный минимум.
+
+| Класс DEFER | Условие дальнейшего рассмотрения |
+|---|---|
+| TECH | Сравнить testable/non-testable infra path, baseline и идентичность команд. |
+| BE | Сопоставить failure-set delta и несвязанные failures; разрешить приоритет root PASS/BLOCKED. |
+| FE | Проверить передачу baseline и RED, включая unrelated failures. |
+| Fix | Проверить L1 с актуальной spec, L2/L3 drift и Path C без test runner. |
+| Hotfix | Проверить interruption/recovery и полномочия отдельно для root и Codex. |
+| Reopened | Проверить partial side effect и Path C через downstream rerun gate. |
+| Stubs | Проверить missing sample, fake IDs, происхождение sample и обязательные поля/типы. |
+
 Все альтернативы DEFER; предлагаемые negative/positive controls не выполнены. Root Path C использует verification record, отдельно поясняя отсутствие тестового RED→GREEN; downstream reopened имеет собственный test rerun gate. Формальное сходство строк не доказывает runtime pass или merge. Root FE при отсутствии API contract содержит противоречивые инструкции, Codex FE требует BLOCKED; фактический outcome root неизвестен.
 
-Исходный charter дополнительно требует минимальный достаточный контекст малого фикса и большой фичи, цену возврата к спецификации, совместимости и ожидания provider fixtures. Универсальный минимум, эти цены и полнота отдельных modes/consumers UNKNOWN; групповой срез не доказывает выполнения полного charter. Внешние действия, graph, tests и A/B не запускались. Независимый review и проверка ссылок и исходного checkout требуются до решения о приёмке.
+Исходный charter дополнительно требует минимальный достаточный контекст малого фикса и большой фичи, цену возврата к спецификации, совместимости и ожидания provider fixtures. Универсальный минимум, эти цены и полнота отдельных modes/consumers UNKNOWN; групповой срез не доказывает выполнения полного charter. В этом ограниченном раунде внешние действия, graph, tests и A/B не запускались. [Независимый review](WP-05-independent-review.md) проверил четыре прямых ссылки и чистый обычный статус NaCl при указанном SHA; ignored files и все первоисточники не охвачены. Категории и выводы нуждаются в повторном review после адресной коррекции.
