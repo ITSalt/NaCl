@@ -4,7 +4,7 @@
   "instances": {},
   "assignments": {},
   "launches": {},
-  "revision": 60,
+  "revision": 73,
   "generation": 1,
   "autonomy": {
     "enabled": true,
@@ -1317,13 +1317,17 @@
         }
       },
       "round": 2,
-      "phase": "collecting",
+      "phase": "review",
       "open": [
         "primary",
         "coverage",
         "verification"
       ],
-      "results": {},
+      "results": {
+        "wp06-fix-primary": "reports/WP-FRAMEWORK-06.md",
+        "wp06-fix-coverage": "reports/WP-FRAMEWORK-06.md",
+        "wp06-fix-verification": "reports/WP-FRAMEWORK-06.md"
+      },
       "events": {
         "wp06-wave-1": {
           "event": "start",
@@ -1410,6 +1414,30 @@
                 "decision": "Вердикт по WP-06"
               }
             ]
+          }
+        },
+        "wp06-result-2-1": {
+          "event": "result",
+          "payload": {
+            "id": "wp06-result-2-1",
+            "task": "wp06-fix-primary",
+            "evidence": "reports/WP-FRAMEWORK-06.md"
+          }
+        },
+        "wp06-result-2-2": {
+          "event": "result",
+          "payload": {
+            "id": "wp06-result-2-2",
+            "task": "wp06-fix-coverage",
+            "evidence": "reports/WP-FRAMEWORK-06.md"
+          }
+        },
+        "wp06-result-2-3": {
+          "event": "result",
+          "payload": {
+            "id": "wp06-result-2-3",
+            "task": "wp06-fix-verification",
+            "evidence": "reports/WP-FRAMEWORK-06.md"
           }
         }
       },
@@ -1505,7 +1533,7 @@
         }
       },
       "round": 2,
-      "phase": "collecting",
+      "phase": "review",
       "open": [
         "primary",
         "coverage",
@@ -1513,7 +1541,13 @@
         "recommendations",
         "verification"
       ],
-      "results": {},
+      "results": {
+        "wp07-fix-primary": "reports/WP-FRAMEWORK-07.md",
+        "wp07-fix-coverage": "reports/WP-FRAMEWORK-07.md",
+        "wp07-fix-mechanisms": "reports/WP-FRAMEWORK-07.md",
+        "wp07-fix-recommendations": "reports/WP-FRAMEWORK-07.md",
+        "wp07-fix-verification": "reports/WP-FRAMEWORK-07.md"
+      },
       "events": {
         "wp07-wave-1": {
           "event": "start",
@@ -1612,6 +1646,46 @@
                 "decision": "Вердикт по WP-07"
               }
             ]
+          }
+        },
+        "wp07-result-2-1": {
+          "event": "result",
+          "payload": {
+            "id": "wp07-result-2-1",
+            "task": "wp07-fix-primary",
+            "evidence": "reports/WP-FRAMEWORK-07.md"
+          }
+        },
+        "wp07-result-2-2": {
+          "event": "result",
+          "payload": {
+            "id": "wp07-result-2-2",
+            "task": "wp07-fix-coverage",
+            "evidence": "reports/WP-FRAMEWORK-07.md"
+          }
+        },
+        "wp07-result-2-3": {
+          "event": "result",
+          "payload": {
+            "id": "wp07-result-2-3",
+            "task": "wp07-fix-mechanisms",
+            "evidence": "reports/WP-FRAMEWORK-07.md"
+          }
+        },
+        "wp07-result-2-4": {
+          "event": "result",
+          "payload": {
+            "id": "wp07-result-2-4",
+            "task": "wp07-fix-recommendations",
+            "evidence": "reports/WP-FRAMEWORK-07.md"
+          }
+        },
+        "wp07-result-2-5": {
+          "event": "result",
+          "payload": {
+            "id": "wp07-result-2-5",
+            "task": "wp07-fix-verification",
+            "evidence": "reports/WP-FRAMEWORK-07.md"
           }
         }
       },
@@ -1719,7 +1793,7 @@
         }
       },
       "round": 2,
-      "phase": "collecting",
+      "phase": "review",
       "open": [
         "primary",
         "coverage",
@@ -1727,7 +1801,13 @@
         "recommendations",
         "verification"
       ],
-      "results": {},
+      "results": {
+        "wp08-fix-primary": "reports/WP-FRAMEWORK-08.md",
+        "wp08-fix-coverage": "reports/WP-FRAMEWORK-08.md",
+        "wp08-fix-mechanisms": "reports/WP-FRAMEWORK-08.md",
+        "wp08-fix-recommendations": "reports/WP-FRAMEWORK-08.md",
+        "wp08-fix-verification": "reports/WP-FRAMEWORK-08.md"
+      },
       "events": {
         "wp08-wave-1": {
           "event": "start",
@@ -1826,6 +1906,46 @@
                 "decision": "Вердикт по WP-08"
               }
             ]
+          }
+        },
+        "wp08-result-2-1": {
+          "event": "result",
+          "payload": {
+            "id": "wp08-result-2-1",
+            "task": "wp08-fix-primary",
+            "evidence": "reports/WP-FRAMEWORK-08.md"
+          }
+        },
+        "wp08-result-2-2": {
+          "event": "result",
+          "payload": {
+            "id": "wp08-result-2-2",
+            "task": "wp08-fix-coverage",
+            "evidence": "reports/WP-FRAMEWORK-08.md"
+          }
+        },
+        "wp08-result-2-3": {
+          "event": "result",
+          "payload": {
+            "id": "wp08-result-2-3",
+            "task": "wp08-fix-mechanisms",
+            "evidence": "reports/WP-FRAMEWORK-08.md"
+          }
+        },
+        "wp08-result-2-4": {
+          "event": "result",
+          "payload": {
+            "id": "wp08-result-2-4",
+            "task": "wp08-fix-recommendations",
+            "evidence": "reports/WP-FRAMEWORK-08.md"
+          }
+        },
+        "wp08-result-2-5": {
+          "event": "result",
+          "payload": {
+            "id": "wp08-result-2-5",
+            "task": "wp08-fix-verification",
+            "evidence": "reports/WP-FRAMEWORK-08.md"
           }
         }
       },

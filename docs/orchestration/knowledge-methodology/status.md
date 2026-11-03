@@ -79,6 +79,19 @@ R-n — действие: точная команда одной строкой 
 <!-- orch:journal -->
 | Дата | WP | Событие | Подтверждение |
 |------|----|---------|---------------|
+| 2026-11-03 08:41Z | WP-FRAMEWORK-08 | research result: review | wp08-result-2-5 |
+| 2026-11-03 08:41Z | WP-FRAMEWORK-08 | research result: collecting | wp08-result-2-4 |
+| 2026-11-03 08:41Z | WP-FRAMEWORK-08 | research result: collecting | wp08-result-2-3 |
+| 2026-11-03 08:41Z | WP-FRAMEWORK-08 | research result: collecting | wp08-result-2-2 |
+| 2026-11-03 08:41Z | WP-FRAMEWORK-08 | research result: collecting | wp08-result-2-1 |
+| 2026-11-03 08:41Z | WP-FRAMEWORK-07 | research result: review | wp07-result-2-5 |
+| 2026-11-03 08:41Z | WP-FRAMEWORK-07 | research result: collecting | wp07-result-2-4 |
+| 2026-11-03 08:41Z | WP-FRAMEWORK-07 | research result: collecting | wp07-result-2-3 |
+| 2026-11-03 08:41Z | WP-FRAMEWORK-07 | research result: collecting | wp07-result-2-2 |
+| 2026-11-03 08:41Z | WP-FRAMEWORK-07 | research result: collecting | wp07-result-2-1 |
+| 2026-11-03 08:41Z | WP-FRAMEWORK-06 | research result: review | wp06-result-2-3 |
+| 2026-11-03 08:41Z | WP-FRAMEWORK-06 | research result: collecting | wp06-result-2-2 |
+| 2026-11-03 08:41Z | WP-FRAMEWORK-06 | research result: collecting | wp06-result-2-1 |
 | 2026-11-03 08:39Z | WP-FRAMEWORK-08 | research start: collecting | wp08-wave-2 |
 | 2026-11-03 08:39Z | WP-FRAMEWORK-08 | research verdict: revise | wp08-review-1 |
 | 2026-11-03 08:39Z | WP-FRAMEWORK-07 | research start: collecting | wp07-wave-2 |
