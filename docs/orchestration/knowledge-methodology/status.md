@@ -1,5 +1,7 @@
 # Актуализация знаний и упрощение методологии — статус
 
+> **Закрыта 2026-11-03.** Итог: [reports/closeout-20261103.md](reports/closeout-20261103.md). Новая цель — новая программа.
+
 Единственный источник состояния программы `knowledge-methodology`. Пишет только оркестратор —
 через `orch.py` и точечные правки, после каждого изменения состояния.
 
@@ -8,8 +10,8 @@
 | Волна | Цель | Гейт | Статус |
 |-------|------|------|--------|
 | 0 | Карта и протокол | WP-01 | DONE |
-| 1 | Области и Harness | WP-02–10,15 | IN_PROGRESS |
-| 2 | Стыки и измерения | WP-11–14,16 | IN_PROGRESS |
+| 1 | Области и Harness | WP-02–10,15 | ЗАКРЫТО ЧАСТИЧНО (D-16) |
+| 2 | Стыки и измерения | WP-11–14,16,19 | ЗАКРЫТО ЧАСТИЧНО (D-16) |
 | 3 | Оспаривание | WP-17 | DONE |
 | 4 | Рекомендации | WP-18 | DONE |
 
@@ -23,21 +25,21 @@ CANCELLED (причина).
 | WP | Модуль | Название | Статус | Сессия | PR | Обновлено |
 |----|--------|----------|--------|--------|----|-----------|
 | [WP-FRAMEWORK-01](work-packages/WP-FRAMEWORK-01-inventory.md) | framework | Карта фреймворка и протокол измерений | DONE | knowledge-methodology-framework | — | 2026-11-03 |
-| [WP-FRAMEWORK-02](work-packages/WP-FRAMEWORK-02-ba.md) | framework | Бизнес-анализ | REVISE | knowledge-methodology-framework | — | 2026-11-03 |
-| [WP-FRAMEWORK-03](work-packages/WP-FRAMEWORK-03-sa.md) | framework | Системный анализ | REVISE | knowledge-methodology-framework | — | 2026-11-03 |
-| [WP-FRAMEWORK-04](work-packages/WP-FRAMEWORK-04-tl.md) | framework | Планирование и управление разработкой | REVISE | knowledge-methodology-framework | — | 2026-11-03 |
-| [WP-FRAMEWORK-05](work-packages/WP-FRAMEWORK-05-development.md) | framework | Разработка и исправления | REVISE | knowledge-methodology-framework | — | 2026-11-03 |
-| [WP-FRAMEWORK-06](work-packages/WP-FRAMEWORK-06-quality.md) | framework | Review, QA и верификация | REVISE | knowledge-methodology-framework | — | 2026-11-03 |
-| [WP-FRAMEWORK-07](work-packages/WP-FRAMEWORK-07-delivery.md) | framework | Поставка, публикация и эксплуатационная документация | REVISE | knowledge-methodology-framework | — | 2026-11-03 |
-| [WP-FRAMEWORK-08](work-packages/WP-FRAMEWORK-08-management.md) | framework | Цели и восстановление фактического состояния | REVISE | knowledge-methodology-framework | — | 2026-11-03 |
-| [WP-FRAMEWORK-09](work-packages/WP-FRAMEWORK-09-graph.md) | framework | Данные, граф и синхронизация | REVISE | knowledge-methodology-framework | — | 2026-11-03 |
-| [WP-FRAMEWORK-10](work-packages/WP-FRAMEWORK-10-platform.md) | framework | Адаптеры, runtime и каналы поставки | REVISE | knowledge-methodology-framework | — | 2026-11-03 |
-| [WP-FRAMEWORK-11](work-packages/WP-FRAMEWORK-11-interface-ba-sa.md) | framework | Стык BA → SA | REVISE | knowledge-methodology-framework | — | 2026-11-03 |
-| [WP-FRAMEWORK-12](work-packages/WP-FRAMEWORK-12-interface-sa-dev.md) | framework | Стык SA → TL → разработка | REVISE | knowledge-methodology-framework | — | 2026-11-03 |
-| [WP-FRAMEWORK-13](work-packages/WP-FRAMEWORK-13-interface-dev-qa.md) | framework | Стык разработка → review/QA → release | REVISE | knowledge-methodology-framework | — | 2026-11-03 |
-| [WP-FRAMEWORK-14](work-packages/WP-FRAMEWORK-14-interface-control.md) | framework | Стык управления, восстановления и состояния | REVISE | knowledge-methodology-framework | — | 2026-11-03 |
-| [WP-FRAMEWORK-15](work-packages/WP-FRAMEWORK-15-harness.md) | framework | Что можно передать Harness | REVISE | knowledge-methodology-framework | — | 2026-11-03 |
-| [WP-FRAMEWORK-16](work-packages/WP-FRAMEWORK-16-measurement.md) | framework | Проверка кандидатов модернизации NaCl | REVISE | knowledge-methodology-framework | — | 2026-11-03 |
+| [WP-FRAMEWORK-02](work-packages/WP-FRAMEWORK-02-ba.md) | framework | Бизнес-анализ | CANCELLED (PARTIAL сохранён; остаток отложен, D-16) | knowledge-methodology-framework | — | 2026-11-03 |
+| [WP-FRAMEWORK-03](work-packages/WP-FRAMEWORK-03-sa.md) | framework | Системный анализ | CANCELLED (PARTIAL сохранён; остаток отложен, D-16) | knowledge-methodology-framework | — | 2026-11-03 |
+| [WP-FRAMEWORK-04](work-packages/WP-FRAMEWORK-04-tl.md) | framework | Планирование и управление разработкой | CANCELLED (PARTIAL сохранён; остаток отложен, D-16) | knowledge-methodology-framework | — | 2026-11-03 |
+| [WP-FRAMEWORK-05](work-packages/WP-FRAMEWORK-05-development.md) | framework | Разработка и исправления | CANCELLED (PARTIAL сохранён; остаток отложен, D-16) | knowledge-methodology-framework | — | 2026-11-03 |
+| [WP-FRAMEWORK-06](work-packages/WP-FRAMEWORK-06-quality.md) | framework | Review, QA и верификация | CANCELLED (PARTIAL сохранён; остаток отложен, D-16) | knowledge-methodology-framework | — | 2026-11-03 |
+| [WP-FRAMEWORK-07](work-packages/WP-FRAMEWORK-07-delivery.md) | framework | Поставка, публикация и эксплуатационная документация | CANCELLED (PARTIAL сохранён; остаток отложен, D-16) | knowledge-methodology-framework | — | 2026-11-03 |
+| [WP-FRAMEWORK-08](work-packages/WP-FRAMEWORK-08-management.md) | framework | Цели и восстановление фактического состояния | CANCELLED (PARTIAL сохранён; остаток отложен, D-16) | knowledge-methodology-framework | — | 2026-11-03 |
+| [WP-FRAMEWORK-09](work-packages/WP-FRAMEWORK-09-graph.md) | framework | Данные, граф и синхронизация | CANCELLED (PARTIAL сохранён; остаток отложен, D-16) | knowledge-methodology-framework | — | 2026-11-03 |
+| [WP-FRAMEWORK-10](work-packages/WP-FRAMEWORK-10-platform.md) | framework | Адаптеры, runtime и каналы поставки | CANCELLED (PARTIAL сохранён; остаток отложен, D-16) | knowledge-methodology-framework | — | 2026-11-03 |
+| [WP-FRAMEWORK-11](work-packages/WP-FRAMEWORK-11-interface-ba-sa.md) | framework | Стык BA → SA | CANCELLED (PARTIAL сохранён; остаток отложен, D-16) | knowledge-methodology-framework | — | 2026-11-03 |
+| [WP-FRAMEWORK-12](work-packages/WP-FRAMEWORK-12-interface-sa-dev.md) | framework | Стык SA → TL → разработка | CANCELLED (PARTIAL сохранён; остаток отложен, D-16) | knowledge-methodology-framework | — | 2026-11-03 |
+| [WP-FRAMEWORK-13](work-packages/WP-FRAMEWORK-13-interface-dev-qa.md) | framework | Стык разработка → review/QA → release | CANCELLED (PARTIAL сохранён; остаток отложен, D-16) | knowledge-methodology-framework | — | 2026-11-03 |
+| [WP-FRAMEWORK-14](work-packages/WP-FRAMEWORK-14-interface-control.md) | framework | Стык управления, восстановления и состояния | CANCELLED (PARTIAL сохранён; остаток отложен, D-16) | knowledge-methodology-framework | — | 2026-11-03 |
+| [WP-FRAMEWORK-15](work-packages/WP-FRAMEWORK-15-harness.md) | framework | Что можно передать Harness | CANCELLED (PARTIAL сохранён; остаток отложен, D-16) | knowledge-methodology-framework | — | 2026-11-03 |
+| [WP-FRAMEWORK-16](work-packages/WP-FRAMEWORK-16-measurement.md) | framework | Проверка кандидатов модернизации NaCl | CANCELLED (PARTIAL сохранён; остаток отложен, D-16) | knowledge-methodology-framework | — | 2026-11-03 |
 | [WP-FRAMEWORK-17](work-packages/WP-FRAMEWORK-17-challenge.md) | framework | Независимая проверка рекомендаций | DONE | knowledge-methodology-framework | — | 2026-11-03 |
 | [WP-FRAMEWORK-18](work-packages/WP-FRAMEWORK-18-recommendations.md) | framework | План модернизации NaCl и передача следующей программе | DONE | knowledge-methodology-framework | — | 2026-11-03 |
 | [WP-FRAMEWORK-19](work-packages/WP-FRAMEWORK-19-historical-interface-cases.md) | framework | Девять реальных исторических ситуаций по трём границам | DONE | knowledge-methodology-framework | — | 2026-11-03 |
@@ -82,6 +84,24 @@ R-n — действие: точная команда одной строкой 
 <!-- orch:journal -->
 | Дата | WP | Событие | Подтверждение |
 |------|----|---------|---------------|
+| 2026-11-03 11:45Z | — | program closed | reports/closeout-20261103.md |
+| 2026-11-03 11:42Z | — | По D-16 15 исходных пакетов закрыты без полного выполнения: PARTIAL и все конкретные остатки сохранены; новый результат или проверка не приписаны. | reports/WP-02-16-disposition.md |
+| 2026-11-03 11:42Z | WP-FRAMEWORK-16 | WP-FRAMEWORK-16: REVISE -> CANCELLED (PARTIAL сохранён; остаток отложен, D-16) | Два раунда PARTIAL; невыполненные критерии: reports/WP-02-16-disposition.md; отчёт WP-16 и независимый review сохранены |
+| 2026-11-03 11:42Z | WP-FRAMEWORK-15 | WP-FRAMEWORK-15: REVISE -> CANCELLED (PARTIAL сохранён; остаток отложен, D-16) | Два раунда PARTIAL; невыполненные критерии: reports/WP-02-16-disposition.md; отчёт WP-15 и независимый review сохранены |
+| 2026-11-03 11:42Z | WP-FRAMEWORK-14 | WP-FRAMEWORK-14: REVISE -> CANCELLED (PARTIAL сохранён; остаток отложен, D-16) | Два раунда PARTIAL; невыполненные критерии: reports/WP-02-16-disposition.md; отчёт WP-14 и независимый review сохранены |
+| 2026-11-03 11:42Z | WP-FRAMEWORK-13 | WP-FRAMEWORK-13: REVISE -> CANCELLED (PARTIAL сохранён; остаток отложен, D-16) | Два раунда PARTIAL; невыполненные критерии: reports/WP-02-16-disposition.md; отчёт WP-13 и независимый review сохранены |
+| 2026-11-03 11:42Z | WP-FRAMEWORK-12 | WP-FRAMEWORK-12: REVISE -> CANCELLED (PARTIAL сохранён; остаток отложен, D-16) | Два раунда PARTIAL; невыполненные критерии: reports/WP-02-16-disposition.md; отчёт WP-12 и независимый review сохранены |
+| 2026-11-03 11:42Z | WP-FRAMEWORK-11 | WP-FRAMEWORK-11: REVISE -> CANCELLED (PARTIAL сохранён; остаток отложен, D-16) | Два раунда PARTIAL; невыполненные критерии: reports/WP-02-16-disposition.md; отчёт WP-11 и независимый review сохранены |
+| 2026-11-03 11:42Z | WP-FRAMEWORK-10 | WP-FRAMEWORK-10: REVISE -> CANCELLED (PARTIAL сохранён; остаток отложен, D-16) | Два раунда PARTIAL; невыполненные критерии: reports/WP-02-16-disposition.md; отчёт WP-10 и независимый review сохранены |
+| 2026-11-03 11:42Z | WP-FRAMEWORK-09 | WP-FRAMEWORK-09: REVISE -> CANCELLED (PARTIAL сохранён; остаток отложен, D-16) | Два раунда PARTIAL; невыполненные критерии: reports/WP-02-16-disposition.md; отчёт WP-09 и независимый review сохранены |
+| 2026-11-03 11:42Z | WP-FRAMEWORK-08 | WP-FRAMEWORK-08: REVISE -> CANCELLED (PARTIAL сохранён; остаток отложен, D-16) | Два раунда PARTIAL; невыполненные критерии: reports/WP-02-16-disposition.md; отчёт WP-08 и независимый review сохранены |
+| 2026-11-03 11:42Z | WP-FRAMEWORK-07 | WP-FRAMEWORK-07: REVISE -> CANCELLED (PARTIAL сохранён; остаток отложен, D-16) | Два раунда PARTIAL; невыполненные критерии: reports/WP-02-16-disposition.md; отчёт WP-07 и независимый review сохранены |
+| 2026-11-03 11:42Z | WP-FRAMEWORK-06 | WP-FRAMEWORK-06: REVISE -> CANCELLED (PARTIAL сохранён; остаток отложен, D-16) | Два раунда PARTIAL; невыполненные критерии: reports/WP-02-16-disposition.md; отчёт WP-06 и независимый review сохранены |
+| 2026-11-03 11:42Z | WP-FRAMEWORK-05 | WP-FRAMEWORK-05: REVISE -> CANCELLED (PARTIAL сохранён; остаток отложен, D-16) | Два раунда PARTIAL; невыполненные критерии: reports/WP-02-16-disposition.md; отчёт WP-05 и независимый review сохранены |
+| 2026-11-03 11:42Z | WP-FRAMEWORK-04 | WP-FRAMEWORK-04: REVISE -> CANCELLED (PARTIAL сохранён; остаток отложен, D-16) | Два раунда PARTIAL; невыполненные критерии: reports/WP-02-16-disposition.md; отчёт WP-04 и независимый review сохранены |
+| 2026-11-03 11:42Z | WP-FRAMEWORK-03 | WP-FRAMEWORK-03: REVISE -> CANCELLED (PARTIAL сохранён; остаток отложен, D-16) | Два раунда PARTIAL; невыполненные критерии: reports/WP-02-16-disposition.md; отчёт WP-03 и независимый review сохранены |
+| 2026-11-03 11:42Z | WP-FRAMEWORK-02 | WP-FRAMEWORK-02: REVISE -> CANCELLED (PARTIAL сохранён; остаток отложен, D-16) | Два раунда PARTIAL; невыполненные критерии: reports/WP-02-16-disposition.md; отчёт WP-02 и независимый review сохранены |
+| 2026-11-03 11:42Z | — | D-16 recorded | Поручение владельца урегулировать 15 пакетов REVISE и выложить исследование в отдельную ветку |
 | 2026-11-03 11:14Z | — | Проверено формальное закрытие: 15 исходных WP остаются REVISE, поэтому close --check отказал; ограниченный комплект WP18 принят и сохранён без подмены статусов. | reports/program-closure-readiness.md; reports/WP-18-independent-review.md |
 | 2026-11-03 11:13Z | — | WP-18: связный аудит BA/SA/TL/graph и план модернизации приняты независимым reviewer в ограниченном scope; исходные partial verdicts, неизвестный runtime и DEFER изменений сохранены. | reports/WP-FRAMEWORK-18.md; reports/WP-18-independent-review.md |
 | 2026-11-03 11:13Z | WP-FRAMEWORK-18 | WP-FRAMEWORK-18: ACCEPTED -> DONE | Принят ограниченный исследовательский комплект; независимая проверка reports/WP-18-independent-review.md |
