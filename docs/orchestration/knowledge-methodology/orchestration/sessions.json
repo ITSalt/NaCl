@@ -4,7 +4,7 @@
   "instances": {},
   "assignments": {},
   "launches": {},
-  "revision": 15,
+  "revision": 19,
   "generation": 1,
   "autonomy": {
     "enabled": true,
@@ -243,13 +243,9 @@
           }
         }
       },
-      "round": 1,
+      "round": 2,
       "phase": "collecting",
       "open": [
-        "coverage",
-        "mechanisms",
-        "evidence",
-        "recommendations",
         "verification"
       ],
       "results": {},
@@ -267,15 +263,103 @@
               }
             ]
           }
+        },
+        "ba-result-1": {
+          "event": "result",
+          "payload": {
+            "id": "ba-result-1",
+            "task": "ba-synthesis",
+            "evidence": "reports/WP-FRAMEWORK-02.md"
+          }
+        },
+        "ba-review-1": {
+          "event": "verdict",
+          "payload": {
+            "id": "ba-review-1",
+            "verdict": "revise",
+            "criteria": {
+              "coverage": {
+                "status": "satisfied",
+                "reason": "Независимый reviewer подтвердил ограниченный source-level объём; исходный charter содержит дополнительные неустановленные детали.",
+                "evidence": "reports/WP-02-independent-review.md"
+              },
+              "mechanisms": {
+                "status": "satisfied",
+                "reason": "Независимый reviewer подтвердил ограниченный source-level объём; исходный charter содержит дополнительные неустановленные детали.",
+                "evidence": "reports/WP-02-independent-review.md"
+              },
+              "evidence": {
+                "status": "satisfied",
+                "reason": "Независимый reviewer подтвердил ограниченный source-level объём; исходный charter содержит дополнительные неустановленные детали.",
+                "evidence": "reports/WP-02-independent-review.md"
+              },
+              "recommendations": {
+                "status": "satisfied",
+                "reason": "Независимый reviewer подтвердил ограниченный source-level объём; исходный charter содержит дополнительные неустановленные детали.",
+                "evidence": "reports/WP-02-independent-review.md"
+              },
+              "verification": {
+                "status": "blocked",
+                "reason": "Review и чистоту checkout требуется явно связать со сдачей; исходный charter и ограничения также должны быть ясно отражены.",
+                "evidence": "reports/WP-02-independent-review.md"
+              }
+            }
+          }
+        },
+        "ba-wave-2": {
+          "event": "start",
+          "payload": {
+            "id": "ba-wave-2",
+            "tasks": [
+              {
+                "id": "ba-review-fix",
+                "criterion": "verification",
+                "missing_fact": "Связать независимое review и HEAD/status со сдачей; явно отделить требования исходного charter от UNKNOWN",
+                "decision": "Вердикт о полной или частичной приёмке"
+              }
+            ]
+          }
         }
       },
-      "verdicts": [],
+      "verdicts": [
+        {
+          "id": "ba-review-1",
+          "verdict": "revise",
+          "criteria": {
+            "coverage": {
+              "status": "satisfied",
+              "reason": "Независимый reviewer подтвердил ограниченный source-level объём; исходный charter содержит дополнительные неустановленные детали.",
+              "evidence": "reports/WP-02-independent-review.md"
+            },
+            "mechanisms": {
+              "status": "satisfied",
+              "reason": "Независимый reviewer подтвердил ограниченный source-level объём; исходный charter содержит дополнительные неустановленные детали.",
+              "evidence": "reports/WP-02-independent-review.md"
+            },
+            "evidence": {
+              "status": "satisfied",
+              "reason": "Независимый reviewer подтвердил ограниченный source-level объём; исходный charter содержит дополнительные неустановленные детали.",
+              "evidence": "reports/WP-02-independent-review.md"
+            },
+            "recommendations": {
+              "status": "satisfied",
+              "reason": "Независимый reviewer подтвердил ограниченный source-level объём; исходный charter содержит дополнительные неустановленные детали.",
+              "evidence": "reports/WP-02-independent-review.md"
+            },
+            "verification": {
+              "status": "blocked",
+              "reason": "Review и чистоту checkout требуется явно связать со сдачей; исходный charter и ограничения также должны быть ясно отражены.",
+              "evidence": "reports/WP-02-independent-review.md"
+            }
+          }
+        }
+      ],
       "tasks": [
         {
-          "id": "ba-synthesis",
-          "criterion": "coverage",
-          "missing_fact": "Собрать из существующих BA отчётов ограниченную карту, альтернативы и непроверенные остатки без расширения scope",
-          "decision": "Сдача статического WP-02 и последующие рекомендации"
+          "id": "ba-review-fix",
+          "criterion": "verification",
+          "missing_fact": "Связать независимое review и HEAD/status со сдачей; явно отделить требования исходного charter от UNKNOWN",
+          "decision": "Вердикт о полной или частичной приёмке"
         }
       ]
     },
@@ -308,7 +392,7 @@
         }
       },
       "round": 1,
-      "phase": "collecting",
+      "phase": "review",
       "open": [
         "coverage",
         "mechanisms",
@@ -316,7 +400,9 @@
         "recommendations",
         "verification"
       ],
-      "results": {},
+      "results": {
+        "sa-synthesis": "reports/WP-FRAMEWORK-03.md"
+      },
       "events": {
         "sa-wave-1": {
           "event": "start",
@@ -330,6 +416,14 @@
                 "decision": "Сдача статического WP-03"
               }
             ]
+          }
+        },
+        "sa-result-1": {
+          "event": "result",
+          "payload": {
+            "id": "sa-result-1",
+            "task": "sa-synthesis",
+            "evidence": "reports/WP-FRAMEWORK-03.md"
           }
         }
       },

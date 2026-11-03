@@ -79,6 +79,10 @@ R-n — действие: точная команда одной строкой 
 <!-- orch:journal -->
 | Дата | WP | Событие | Подтверждение |
 |------|----|---------|---------------|
+| 2026-11-03 08:27Z | WP-FRAMEWORK-02 | research start: collecting | ba-wave-2 |
+| 2026-11-03 08:27Z | WP-FRAMEWORK-02 | research verdict: revise | ba-review-1 |
+| 2026-11-03 08:26Z | WP-FRAMEWORK-03 | research result: review | sa-result-1 |
+| 2026-11-03 08:25Z | WP-FRAMEWORK-02 | research result: review | ba-result-1 |
 | 2026-11-03 08:25Z | WP-FRAMEWORK-03 | research start: collecting | sa-wave-1 |
 | 2026-11-03 08:25Z | WP-FRAMEWORK-03 | research contract: ready | reports/WP-FRAMEWORK-03.md |
 | 2026-11-03 08:25Z | WP-FRAMEWORK-03 | WP-FRAMEWORK-03: READY -> IN_PROGRESS | Синтез существующих SA материалов |
