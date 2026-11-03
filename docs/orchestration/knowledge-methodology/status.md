@@ -79,6 +79,9 @@ R-n — действие: точная команда одной строкой 
 <!-- orch:journal -->
 | Дата | WP | Событие | Подтверждение |
 |------|----|---------|---------------|
+| 2026-11-03 09:14Z | WP-FRAMEWORK-14 | research result: review | wp14-result-1 |
+| 2026-11-03 09:14Z | WP-FRAMEWORK-12 | research result: review | wp12-result-1 |
+| 2026-11-03 09:14Z | WP-FRAMEWORK-11 | research result: review | wp11-result-1 |
 | 2026-11-03 09:13Z | WP-FRAMEWORK-14 | research start: collecting | wp14-wave-1 |
 | 2026-11-03 09:13Z | WP-FRAMEWORK-14 | research contract: ready | reports/WP-FRAMEWORK-14.md |
 | 2026-11-03 09:13Z | WP-FRAMEWORK-14 | WP-FRAMEWORK-14: READY -> IN_PROGRESS | Один ограниченный синтез существующих материалов и независимая приёмка |

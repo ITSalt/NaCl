@@ -4,7 +4,7 @@
   "instances": {},
   "assignments": {},
   "launches": {},
-  "revision": 113,
+  "revision": 116,
   "generation": 1,
   "autonomy": {
     "enabled": true,
@@ -3229,7 +3229,7 @@
         }
       },
       "round": 1,
-      "phase": "collecting",
+      "phase": "review",
       "open": [
         "primary",
         "coverage",
@@ -3238,7 +3238,9 @@
         "recommendations",
         "verification"
       ],
-      "results": {},
+      "results": {
+        "wp11-synthesis": "reports/WP-FRAMEWORK-11.md"
+      },
       "events": {
         "wp11-wave-1": {
           "event": "start",
@@ -3252,6 +3254,14 @@
                 "decision": "Ограниченный review WP-11"
               }
             ]
+          }
+        },
+        "wp11-result-1": {
+          "event": "result",
+          "payload": {
+            "id": "wp11-result-1",
+            "task": "wp11-synthesis",
+            "evidence": "reports/WP-FRAMEWORK-11.md"
           }
         }
       },
@@ -3298,7 +3308,7 @@
         }
       },
       "round": 1,
-      "phase": "collecting",
+      "phase": "review",
       "open": [
         "primary",
         "coverage",
@@ -3307,7 +3317,9 @@
         "recommendations",
         "verification"
       ],
-      "results": {},
+      "results": {
+        "wp12-synthesis": "reports/WP-FRAMEWORK-12.md"
+      },
       "events": {
         "wp12-wave-1": {
           "event": "start",
@@ -3321,6 +3333,14 @@
                 "decision": "Ограниченный review WP-12"
               }
             ]
+          }
+        },
+        "wp12-result-1": {
+          "event": "result",
+          "payload": {
+            "id": "wp12-result-1",
+            "task": "wp12-synthesis",
+            "evidence": "reports/WP-FRAMEWORK-12.md"
           }
         }
       },
@@ -3367,7 +3387,7 @@
         }
       },
       "round": 1,
-      "phase": "collecting",
+      "phase": "review",
       "open": [
         "primary",
         "coverage",
@@ -3376,7 +3396,9 @@
         "recommendations",
         "verification"
       ],
-      "results": {},
+      "results": {
+        "wp14-synthesis": "reports/WP-FRAMEWORK-14.md"
+      },
       "events": {
         "wp14-wave-1": {
           "event": "start",
@@ -3390,6 +3412,14 @@
                 "decision": "Ограниченный review WP-14"
               }
             ]
+          }
+        },
+        "wp14-result-1": {
+          "event": "result",
+          "payload": {
+            "id": "wp14-result-1",
+            "task": "wp14-synthesis",
+            "evidence": "reports/WP-FRAMEWORK-14.md"
           }
         }
       },
