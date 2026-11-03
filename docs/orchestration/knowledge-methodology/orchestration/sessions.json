@@ -4,10 +4,10 @@
   "instances": {},
   "assignments": {},
   "launches": {},
-  "revision": 160,
+  "revision": 161,
   "generation": 1,
   "autonomy": {
-    "enabled": true,
+    "enabled": false,
     "session_reuse": "auto",
     "interval_seconds": 600,
     "max_parallel_sessions": 2
