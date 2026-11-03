@@ -4,7 +4,7 @@
   "instances": {},
   "assignments": {},
   "launches": {},
-  "revision": 54,
+  "revision": 60,
   "generation": 1,
   "autonomy": {
     "enabled": true,
@@ -1316,19 +1316,14 @@
           }
         }
       },
-      "round": 1,
-      "phase": "review",
+      "round": 2,
+      "phase": "collecting",
       "open": [
         "primary",
         "coverage",
-        "mechanisms",
-        "evidence",
-        "recommendations",
         "verification"
       ],
-      "results": {
-        "wp06-synthesis": "reports/WP-FRAMEWORK-06.md"
-      },
+      "results": {},
       "events": {
         "wp06-wave-1": {
           "event": "start",
@@ -1351,15 +1346,129 @@
             "task": "wp06-synthesis",
             "evidence": "reports/WP-FRAMEWORK-06.md"
           }
+        },
+        "wp06-review-1": {
+          "event": "verdict",
+          "payload": {
+            "id": "wp06-review-1",
+            "verdict": "revise",
+            "criteria": {
+              "primary": {
+                "status": "blocked",
+                "reason": "Первый независимый review указал конкретный пробел или необходимость зафиксировать проверку.",
+                "evidence": "reports/WP-06-independent-review.md"
+              },
+              "coverage": {
+                "status": "blocked",
+                "reason": "Первый независимый review указал конкретный пробел или необходимость зафиксировать проверку.",
+                "evidence": "reports/WP-06-independent-review.md"
+              },
+              "mechanisms": {
+                "status": "satisfied",
+                "reason": "Ограниченный срез подтверждён.",
+                "evidence": "reports/WP-06-independent-review.md"
+              },
+              "evidence": {
+                "status": "satisfied",
+                "reason": "Ограниченный срез подтверждён.",
+                "evidence": "reports/WP-06-independent-review.md"
+              },
+              "recommendations": {
+                "status": "satisfied",
+                "reason": "Ограниченный срез подтверждён.",
+                "evidence": "reports/WP-06-independent-review.md"
+              },
+              "verification": {
+                "status": "blocked",
+                "reason": "Первый независимый review указал конкретный пробел или необходимость зафиксировать проверку.",
+                "evidence": "reports/WP-06-independent-review.md"
+              }
+            }
+          }
+        },
+        "wp06-wave-2": {
+          "event": "start",
+          "payload": {
+            "id": "wp06-wave-2",
+            "tasks": [
+              {
+                "id": "wp06-fix-primary",
+                "criterion": "primary",
+                "missing_fact": "Адресно устранить замечание primary независимого review на базе имеющихся материалов",
+                "decision": "Вердикт по WP-06"
+              },
+              {
+                "id": "wp06-fix-coverage",
+                "criterion": "coverage",
+                "missing_fact": "Адресно устранить замечание coverage независимого review на базе имеющихся материалов",
+                "decision": "Вердикт по WP-06"
+              },
+              {
+                "id": "wp06-fix-verification",
+                "criterion": "verification",
+                "missing_fact": "Адресно устранить замечание verification независимого review на базе имеющихся материалов",
+                "decision": "Вердикт по WP-06"
+              }
+            ]
+          }
         }
       },
-      "verdicts": [],
+      "verdicts": [
+        {
+          "id": "wp06-review-1",
+          "verdict": "revise",
+          "criteria": {
+            "primary": {
+              "status": "blocked",
+              "reason": "Первый независимый review указал конкретный пробел или необходимость зафиксировать проверку.",
+              "evidence": "reports/WP-06-independent-review.md"
+            },
+            "coverage": {
+              "status": "blocked",
+              "reason": "Первый независимый review указал конкретный пробел или необходимость зафиксировать проверку.",
+              "evidence": "reports/WP-06-independent-review.md"
+            },
+            "mechanisms": {
+              "status": "satisfied",
+              "reason": "Ограниченный срез подтверждён.",
+              "evidence": "reports/WP-06-independent-review.md"
+            },
+            "evidence": {
+              "status": "satisfied",
+              "reason": "Ограниченный срез подтверждён.",
+              "evidence": "reports/WP-06-independent-review.md"
+            },
+            "recommendations": {
+              "status": "satisfied",
+              "reason": "Ограниченный срез подтверждён.",
+              "evidence": "reports/WP-06-independent-review.md"
+            },
+            "verification": {
+              "status": "blocked",
+              "reason": "Первый независимый review указал конкретный пробел или необходимость зафиксировать проверку.",
+              "evidence": "reports/WP-06-independent-review.md"
+            }
+          }
+        }
+      ],
       "tasks": [
         {
-          "id": "wp06-synthesis",
+          "id": "wp06-fix-primary",
           "criterion": "primary",
-          "missing_fact": "Свести имеющиеся профильные материалы и назвать открытые критерии",
-          "decision": "Статическая сдача WP-06"
+          "missing_fact": "Адресно устранить замечание primary независимого review на базе имеющихся материалов",
+          "decision": "Вердикт по WP-06"
+        },
+        {
+          "id": "wp06-fix-coverage",
+          "criterion": "coverage",
+          "missing_fact": "Адресно устранить замечание coverage независимого review на базе имеющихся материалов",
+          "decision": "Вердикт по WP-06"
+        },
+        {
+          "id": "wp06-fix-verification",
+          "criterion": "verification",
+          "missing_fact": "Адресно устранить замечание verification независимого review на базе имеющихся материалов",
+          "decision": "Вердикт по WP-06"
         }
       ]
     },
@@ -1395,19 +1504,16 @@
           }
         }
       },
-      "round": 1,
-      "phase": "review",
+      "round": 2,
+      "phase": "collecting",
       "open": [
         "primary",
         "coverage",
         "mechanisms",
-        "evidence",
         "recommendations",
         "verification"
       ],
-      "results": {
-        "wp07-synthesis": "reports/WP-FRAMEWORK-07.md"
-      },
+      "results": {},
       "events": {
         "wp07-wave-1": {
           "event": "start",
@@ -1430,15 +1536,153 @@
             "task": "wp07-synthesis",
             "evidence": "reports/WP-FRAMEWORK-07.md"
           }
+        },
+        "wp07-review-1": {
+          "event": "verdict",
+          "payload": {
+            "id": "wp07-review-1",
+            "verdict": "revise",
+            "criteria": {
+              "primary": {
+                "status": "blocked",
+                "reason": "Первый независимый review указал конкретный пробел или необходимость зафиксировать проверку.",
+                "evidence": "reports/WP-07-independent-review.md"
+              },
+              "coverage": {
+                "status": "blocked",
+                "reason": "Первый независимый review указал конкретный пробел или необходимость зафиксировать проверку.",
+                "evidence": "reports/WP-07-independent-review.md"
+              },
+              "mechanisms": {
+                "status": "blocked",
+                "reason": "Первый независимый review указал конкретный пробел или необходимость зафиксировать проверку.",
+                "evidence": "reports/WP-07-independent-review.md"
+              },
+              "evidence": {
+                "status": "satisfied",
+                "reason": "Ограниченный срез подтверждён.",
+                "evidence": "reports/WP-07-independent-review.md"
+              },
+              "recommendations": {
+                "status": "blocked",
+                "reason": "Первый независимый review указал конкретный пробел или необходимость зафиксировать проверку.",
+                "evidence": "reports/WP-07-independent-review.md"
+              },
+              "verification": {
+                "status": "blocked",
+                "reason": "Первый независимый review указал конкретный пробел или необходимость зафиксировать проверку.",
+                "evidence": "reports/WP-07-independent-review.md"
+              }
+            }
+          }
+        },
+        "wp07-wave-2": {
+          "event": "start",
+          "payload": {
+            "id": "wp07-wave-2",
+            "tasks": [
+              {
+                "id": "wp07-fix-primary",
+                "criterion": "primary",
+                "missing_fact": "Адресно устранить замечание primary независимого review на базе имеющихся материалов",
+                "decision": "Вердикт по WP-07"
+              },
+              {
+                "id": "wp07-fix-coverage",
+                "criterion": "coverage",
+                "missing_fact": "Адресно устранить замечание coverage независимого review на базе имеющихся материалов",
+                "decision": "Вердикт по WP-07"
+              },
+              {
+                "id": "wp07-fix-mechanisms",
+                "criterion": "mechanisms",
+                "missing_fact": "Адресно устранить замечание mechanisms независимого review на базе имеющихся материалов",
+                "decision": "Вердикт по WP-07"
+              },
+              {
+                "id": "wp07-fix-recommendations",
+                "criterion": "recommendations",
+                "missing_fact": "Адресно устранить замечание recommendations независимого review на базе имеющихся материалов",
+                "decision": "Вердикт по WP-07"
+              },
+              {
+                "id": "wp07-fix-verification",
+                "criterion": "verification",
+                "missing_fact": "Адресно устранить замечание verification независимого review на базе имеющихся материалов",
+                "decision": "Вердикт по WP-07"
+              }
+            ]
+          }
         }
       },
-      "verdicts": [],
+      "verdicts": [
+        {
+          "id": "wp07-review-1",
+          "verdict": "revise",
+          "criteria": {
+            "primary": {
+              "status": "blocked",
+              "reason": "Первый независимый review указал конкретный пробел или необходимость зафиксировать проверку.",
+              "evidence": "reports/WP-07-independent-review.md"
+            },
+            "coverage": {
+              "status": "blocked",
+              "reason": "Первый независимый review указал конкретный пробел или необходимость зафиксировать проверку.",
+              "evidence": "reports/WP-07-independent-review.md"
+            },
+            "mechanisms": {
+              "status": "blocked",
+              "reason": "Первый независимый review указал конкретный пробел или необходимость зафиксировать проверку.",
+              "evidence": "reports/WP-07-independent-review.md"
+            },
+            "evidence": {
+              "status": "satisfied",
+              "reason": "Ограниченный срез подтверждён.",
+              "evidence": "reports/WP-07-independent-review.md"
+            },
+            "recommendations": {
+              "status": "blocked",
+              "reason": "Первый независимый review указал конкретный пробел или необходимость зафиксировать проверку.",
+              "evidence": "reports/WP-07-independent-review.md"
+            },
+            "verification": {
+              "status": "blocked",
+              "reason": "Первый независимый review указал конкретный пробел или необходимость зафиксировать проверку.",
+              "evidence": "reports/WP-07-independent-review.md"
+            }
+          }
+        }
+      ],
       "tasks": [
         {
-          "id": "wp07-synthesis",
+          "id": "wp07-fix-primary",
           "criterion": "primary",
-          "missing_fact": "Свести имеющиеся профильные материалы и назвать открытые критерии",
-          "decision": "Статическая сдача WP-07"
+          "missing_fact": "Адресно устранить замечание primary независимого review на базе имеющихся материалов",
+          "decision": "Вердикт по WP-07"
+        },
+        {
+          "id": "wp07-fix-coverage",
+          "criterion": "coverage",
+          "missing_fact": "Адресно устранить замечание coverage независимого review на базе имеющихся материалов",
+          "decision": "Вердикт по WP-07"
+        },
+        {
+          "id": "wp07-fix-mechanisms",
+          "criterion": "mechanisms",
+          "missing_fact": "Адресно устранить замечание mechanisms независимого review на базе имеющихся материалов",
+          "decision": "Вердикт по WP-07"
+        },
+        {
+          "id": "wp07-fix-recommendations",
+          "criterion": "recommendations",
+          "missing_fact": "Адресно устранить замечание recommendations независимого review на базе имеющихся материалов",
+          "decision": "Вердикт по WP-07"
+        },
+        {
+          "id": "wp07-fix-verification",
+          "criterion": "verification",
+          "missing_fact": "Адресно устранить замечание verification независимого review на базе имеющихся материалов",
+          "decision": "Вердикт по WP-07"
         }
       ]
     },
@@ -1474,19 +1718,16 @@
           }
         }
       },
-      "round": 1,
-      "phase": "review",
+      "round": 2,
+      "phase": "collecting",
       "open": [
         "primary",
         "coverage",
         "mechanisms",
-        "evidence",
         "recommendations",
         "verification"
       ],
-      "results": {
-        "wp08-synthesis": "reports/WP-FRAMEWORK-08.md"
-      },
+      "results": {},
       "events": {
         "wp08-wave-1": {
           "event": "start",
@@ -1509,15 +1750,153 @@
             "task": "wp08-synthesis",
             "evidence": "reports/WP-FRAMEWORK-08.md"
           }
+        },
+        "wp08-review-1": {
+          "event": "verdict",
+          "payload": {
+            "id": "wp08-review-1",
+            "verdict": "revise",
+            "criteria": {
+              "primary": {
+                "status": "blocked",
+                "reason": "Первый независимый review указал конкретный пробел или необходимость зафиксировать проверку.",
+                "evidence": "reports/WP-08-independent-review.md"
+              },
+              "coverage": {
+                "status": "blocked",
+                "reason": "Первый независимый review указал конкретный пробел или необходимость зафиксировать проверку.",
+                "evidence": "reports/WP-08-independent-review.md"
+              },
+              "mechanisms": {
+                "status": "blocked",
+                "reason": "Первый независимый review указал конкретный пробел или необходимость зафиксировать проверку.",
+                "evidence": "reports/WP-08-independent-review.md"
+              },
+              "evidence": {
+                "status": "satisfied",
+                "reason": "Ограниченный срез подтверждён.",
+                "evidence": "reports/WP-08-independent-review.md"
+              },
+              "recommendations": {
+                "status": "blocked",
+                "reason": "Первый независимый review указал конкретный пробел или необходимость зафиксировать проверку.",
+                "evidence": "reports/WP-08-independent-review.md"
+              },
+              "verification": {
+                "status": "blocked",
+                "reason": "Первый независимый review указал конкретный пробел или необходимость зафиксировать проверку.",
+                "evidence": "reports/WP-08-independent-review.md"
+              }
+            }
+          }
+        },
+        "wp08-wave-2": {
+          "event": "start",
+          "payload": {
+            "id": "wp08-wave-2",
+            "tasks": [
+              {
+                "id": "wp08-fix-primary",
+                "criterion": "primary",
+                "missing_fact": "Адресно устранить замечание primary независимого review на базе имеющихся материалов",
+                "decision": "Вердикт по WP-08"
+              },
+              {
+                "id": "wp08-fix-coverage",
+                "criterion": "coverage",
+                "missing_fact": "Адресно устранить замечание coverage независимого review на базе имеющихся материалов",
+                "decision": "Вердикт по WP-08"
+              },
+              {
+                "id": "wp08-fix-mechanisms",
+                "criterion": "mechanisms",
+                "missing_fact": "Адресно устранить замечание mechanisms независимого review на базе имеющихся материалов",
+                "decision": "Вердикт по WP-08"
+              },
+              {
+                "id": "wp08-fix-recommendations",
+                "criterion": "recommendations",
+                "missing_fact": "Адресно устранить замечание recommendations независимого review на базе имеющихся материалов",
+                "decision": "Вердикт по WP-08"
+              },
+              {
+                "id": "wp08-fix-verification",
+                "criterion": "verification",
+                "missing_fact": "Адресно устранить замечание verification независимого review на базе имеющихся материалов",
+                "decision": "Вердикт по WP-08"
+              }
+            ]
+          }
         }
       },
-      "verdicts": [],
+      "verdicts": [
+        {
+          "id": "wp08-review-1",
+          "verdict": "revise",
+          "criteria": {
+            "primary": {
+              "status": "blocked",
+              "reason": "Первый независимый review указал конкретный пробел или необходимость зафиксировать проверку.",
+              "evidence": "reports/WP-08-independent-review.md"
+            },
+            "coverage": {
+              "status": "blocked",
+              "reason": "Первый независимый review указал конкретный пробел или необходимость зафиксировать проверку.",
+              "evidence": "reports/WP-08-independent-review.md"
+            },
+            "mechanisms": {
+              "status": "blocked",
+              "reason": "Первый независимый review указал конкретный пробел или необходимость зафиксировать проверку.",
+              "evidence": "reports/WP-08-independent-review.md"
+            },
+            "evidence": {
+              "status": "satisfied",
+              "reason": "Ограниченный срез подтверждён.",
+              "evidence": "reports/WP-08-independent-review.md"
+            },
+            "recommendations": {
+              "status": "blocked",
+              "reason": "Первый независимый review указал конкретный пробел или необходимость зафиксировать проверку.",
+              "evidence": "reports/WP-08-independent-review.md"
+            },
+            "verification": {
+              "status": "blocked",
+              "reason": "Первый независимый review указал конкретный пробел или необходимость зафиксировать проверку.",
+              "evidence": "reports/WP-08-independent-review.md"
+            }
+          }
+        }
+      ],
       "tasks": [
         {
-          "id": "wp08-synthesis",
+          "id": "wp08-fix-primary",
           "criterion": "primary",
-          "missing_fact": "Свести имеющиеся профильные материалы и назвать открытые критерии",
-          "decision": "Статическая сдача WP-08"
+          "missing_fact": "Адресно устранить замечание primary независимого review на базе имеющихся материалов",
+          "decision": "Вердикт по WP-08"
+        },
+        {
+          "id": "wp08-fix-coverage",
+          "criterion": "coverage",
+          "missing_fact": "Адресно устранить замечание coverage независимого review на базе имеющихся материалов",
+          "decision": "Вердикт по WP-08"
+        },
+        {
+          "id": "wp08-fix-mechanisms",
+          "criterion": "mechanisms",
+          "missing_fact": "Адресно устранить замечание mechanisms независимого review на базе имеющихся материалов",
+          "decision": "Вердикт по WP-08"
+        },
+        {
+          "id": "wp08-fix-recommendations",
+          "criterion": "recommendations",
+          "missing_fact": "Адресно устранить замечание recommendations независимого review на базе имеющихся материалов",
+          "decision": "Вердикт по WP-08"
+        },
+        {
+          "id": "wp08-fix-verification",
+          "criterion": "verification",
+          "missing_fact": "Адресно устранить замечание verification независимого review на базе имеющихся материалов",
+          "decision": "Вердикт по WP-08"
         }
       ]
     }
