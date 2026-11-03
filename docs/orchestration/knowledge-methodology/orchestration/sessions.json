@@ -4,7 +4,7 @@
   "instances": {},
   "assignments": {},
   "launches": {},
-  "revision": 191,
+  "revision": 194,
   "generation": 1,
   "autonomy": {
     "enabled": true,
@@ -5488,7 +5488,7 @@
         }
       },
       "round": 1,
-      "phase": "collecting",
+      "phase": "review",
       "open": [
         "architecture",
         "evidence",
@@ -5496,7 +5496,11 @@
         "backlog",
         "verification"
       ],
-      "results": {},
+      "results": {
+        "wp18-sa-tl": "reports/final-audit.md",
+        "wp18-ba-platform": "reports/final-audit.md",
+        "wp18-synthesis": "reports/WP-FRAMEWORK-18.md"
+      },
       "events": {
         "wp18-wave-1": {
           "event": "start",
@@ -5522,6 +5526,30 @@
                 "decision": "Итоговый комплект WP18"
               }
             ]
+          }
+        },
+        "wp18-result-1-sa-tl": {
+          "event": "result",
+          "payload": {
+            "id": "wp18-result-1-sa-tl",
+            "task": "wp18-sa-tl",
+            "evidence": "reports/final-audit.md"
+          }
+        },
+        "wp18-result-1-ba-platform": {
+          "event": "result",
+          "payload": {
+            "id": "wp18-result-1-ba-platform",
+            "task": "wp18-ba-platform",
+            "evidence": "reports/final-audit.md"
+          }
+        },
+        "wp18-result-1-synthesis": {
+          "event": "result",
+          "payload": {
+            "id": "wp18-result-1-synthesis",
+            "task": "wp18-synthesis",
+            "evidence": "reports/WP-FRAMEWORK-18.md"
           }
         }
       },

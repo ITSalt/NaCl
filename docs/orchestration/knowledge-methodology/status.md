@@ -82,6 +82,9 @@ R-n — действие: точная команда одной строкой 
 <!-- orch:journal -->
 | Дата | WP | Событие | Подтверждение |
 |------|----|---------|---------------|
+| 2026-11-03 11:10Z | WP-FRAMEWORK-18 | research result: review | wp18-result-1-synthesis |
+| 2026-11-03 11:10Z | WP-FRAMEWORK-18 | research result: collecting | wp18-result-1-ba-platform |
+| 2026-11-03 11:10Z | WP-FRAMEWORK-18 | research result: collecting | wp18-result-1-sa-tl |
 | 2026-11-03 11:06Z | WP-FRAMEWORK-18 | research start: collecting | wp18-wave-1 |
 | 2026-11-03 11:06Z | WP-FRAMEWORK-18 | research contract: ready | reports/WP-FRAMEWORK-18.md |
 | 2026-11-03 11:06Z | WP-FRAMEWORK-18 | WP-FRAMEWORK-18: READY -> IN_PROGRESS | D-15: финальный доказательный план NaCl; WP17 DONE, частичные WP13/16 обозначать |
