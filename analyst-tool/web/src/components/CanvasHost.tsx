@@ -11,6 +11,32 @@ import { BoardChangedBanner } from './BoardChangedBanner.js';
 const DEBOUNCE_MS = 800;
 const HIGHLIGHT_DURATION_MS = 3000;
 
+// Excalidraw can advance element versions while settling a loaded scene.
+// Compare actual scene content before treating such a callback as an edit.
+function sceneContentSignature(
+  elements: readonly ExcalidrawElement[],
+  appState: AppState,
+  files: BinaryFiles,
+  ignoreTextMetrics = false,
+): string {
+  const excluded = new Set(['version', 'versionNonce', 'updated']);
+  const elemSig = elements.map((element) => {
+    const record = element as unknown as Record<string, unknown>;
+    return Object.keys(record)
+      .filter((key) => !excluded.has(key)
+        && !(ignoreTextMetrics && record['type'] === 'text'
+          && (key === 'width' || key === 'height' || key === 'baseline')))
+      .sort()
+      .map((key) => [key, record[key]]);
+  });
+  return JSON.stringify({
+    e: elemSig,
+    bg: appState.viewBackgroundColor ?? '#ffffff',
+    grid: appState.gridSize ?? null,
+    files: Object.keys(files).sort(),
+  });
+}
+
 /** Build overlay elements from diff entries for rendering. */
 function buildDiffOverlay(
   liveElements: readonly ExcalidrawElement[],
@@ -99,8 +125,12 @@ export default function CanvasHost() {
   // blink) — not only on actual scene mutations. Without a content-equality
   // guard the debounce keeps firing PUTs every DEBOUNCE_MS even when the
   // scene is unchanged. Hash the structural fields and bail when they match
-  // the last PUT we sent.
+  // the loaded scene or the last PUT we sent.
   const lastSavedHashRef = useRef<string | null>(null);
+  const lastSavedContentRef = useRef<string | null>(null);
+  const lastSavedContextRef = useRef<string | null>(null);
+  const fontRefreshRef = useRef<{ context: string; content: string } | null>(null);
+  const userGestureRef = useRef({ pointer: false, key: false });
 
   const sceneSignature = useCallback(
     (elements: readonly ExcalidrawElement[], appState: AppState, files: BinaryFiles): string => {
@@ -113,30 +143,71 @@ export default function CanvasHost() {
       });
       return JSON.stringify({
         e: elemSig,
-        bg: appState.viewBackgroundColor,
-        grid: appState.gridSize,
+        bg: appState.viewBackgroundColor ?? '#ffffff',
+        grid: appState.gridSize ?? null,
         files: Object.keys(files).sort(),
       });
     },
     [],
   );
 
-  // Owned debounce timer + the board name the timer is bound to. Cleared
-  // whenever the user switches boards so a delayed save can never fire with
-  // a stale scene targeting the freshly-selected board (which would silently
-  // overwrite the new board's file with the previous board's content).
+  // Owned debounce timer for the loaded board/revision/reload context. A
+  // same-board restore must retire the old edit just like a board switch.
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const saveTimerContextRef = useRef<string | null>(null);
 
   const handleChange = useCallback(
     (elements: readonly ExcalidrawElement[], appState: AppState, files: BinaryFiles) => {
+      // A child may call onChange before this parent's passive effects run.
+      // Establish the loaded board's baseline synchronously on the first
+      // callback for this board/revision, without suppressing a real first edit.
+      // A PUT response changes `current` but not this load key, so it cannot
+      // reset the baseline while a newer edit is waiting to be saved.
+      const contextKey = JSON.stringify([selectedBoard, currentRevision, reloadKey]);
+      if (contextKey !== lastSavedContextRef.current) {
+        if (saveTimerRef.current) {
+          clearTimeout(saveTimerRef.current);
+          saveTimerRef.current = null;
+          saveTimerContextRef.current = null;
+        }
+        lastSavedContextRef.current = contextKey;
+        // The font effect can run before the child's first onChange. Keep
+        // only a marker already bound to this new load context.
+        if (fontRefreshRef.current?.context !== contextKey) fontRefreshRef.current = null;
+        if (current) {
+          const initialElements = (current.scene.elements ?? []) as ExcalidrawElement[];
+          const initialAppState = (current.scene.appState ?? {}) as AppState;
+          const initialFiles = (current.scene.files ?? {}) as BinaryFiles;
+          lastSavedHashRef.current = sceneSignature(initialElements, initialAppState, initialFiles);
+          lastSavedContentRef.current = sceneContentSignature(initialElements, initialAppState, initialFiles);
+        } else {
+          lastSavedHashRef.current = null;
+          lastSavedContentRef.current = null;
+        }
+      }
       const sig = sceneSignature(elements, appState, files);
       if (sig === lastSavedHashRef.current) return;
+      const content = sceneContentSignature(elements, appState, files);
+      if (content === lastSavedContentRef.current) {
+        lastSavedHashRef.current = sig;
+        return;
+      }
+      const fontRefresh = fontRefreshRef.current;
+      fontRefreshRef.current = null;
+      if (fontRefresh?.context === contextKey && saveTimerRef.current === null
+          && sceneContentSignature(elements, appState, files, true) === fontRefresh.content) {
+        // Only this component's pending font refresh may alter measured text
+        // geometry without representing a user edit.
+        lastSavedHashRef.current = sig;
+        lastSavedContentRef.current = content;
+        return;
+      }
       lastSavedHashRef.current = sig;
+      lastSavedContentRef.current = content;
 
-      // Capture which board this onChange belongs to. If the user switches
-      // before the debounce fires, the timer is cleared by the cleanup effect
-      // below; the extra runtime guard is a belt for the suspenders.
-      const targetBoard = selectedBoard;
+      // Capture the complete loaded-scene identity. Check the live store
+      // before sending, including when a new child has not rendered yet.
+      const targetContext = contextKey;
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
       const snapshotElements = [...elements];
       const snapshotAppState = {
@@ -146,7 +217,10 @@ export default function CanvasHost() {
       const snapshotFiles = files;
       saveTimerRef.current = setTimeout(() => {
         saveTimerRef.current = null;
-        if (useStore.getState().selectedBoard !== targetBoard) return;
+        saveTimerContextRef.current = null;
+        const state = useStore.getState();
+        if (JSON.stringify([state.selectedBoard, state.currentRevision, state.reloadKey])
+            !== targetContext) return;
         const scene = {
           type: 'excalidraw',
           version: 2,
@@ -156,36 +230,43 @@ export default function CanvasHost() {
         };
         void saveCurrent(scene);
       }, DEBOUNCE_MS);
+      saveTimerContextRef.current = targetContext;
     },
-    [sceneSignature, selectedBoard, saveCurrent],
+    [sceneSignature, selectedBoard, currentRevision, reloadKey, current, saveCurrent],
   );
 
-  // Cancel any pending debounced save when the selected board changes (or the
-  // component unmounts). Without this, a save scheduled while UC-001 was open
-  // could fire after the user switched to Domain Model and overwrite it.
+  // Cancel pending saves on every loaded-scene transition or unmount.
   useEffect(() => {
+    const effectContext = JSON.stringify([selectedBoard, currentRevision, reloadKey]);
     return () => {
-      if (saveTimerRef.current) {
+      // Old passive cleanup can follow a new child's first onChange. It must
+      // not cancel a timer already owned by the newly loaded scene.
+      if (saveTimerRef.current && saveTimerContextRef.current === effectContext) {
         clearTimeout(saveTimerRef.current);
         saveTimerRef.current = null;
+        saveTimerContextRef.current = null;
       }
     };
-  }, [selectedBoard]);
+  }, [selectedBoard, currentRevision, reloadKey]);
 
-  // Reset the saved-content hash whenever a new board is loaded. Seed it with
-  // the initial scene's signature so the first onChange after load (which
-  // Excalidraw fires before any user interaction) does not trigger a phantom
-  // PUT that would persist back the same content we just read.
+  // A drag or key edit may be in progress when fonts finish loading. In that
+  // case the following text geometry belongs to the user, not our refresh.
   useEffect(() => {
-    if (!current) {
-      lastSavedHashRef.current = null;
-      return;
-    }
-    const elements = (current.scene.elements ?? []) as ExcalidrawElement[];
-    const appState = (current.scene.appState ?? {}) as AppState;
-    const files = (current.scene.files ?? {}) as BinaryFiles;
-    lastSavedHashRef.current = sceneSignature(elements, appState, files);
-  }, [current, sceneSignature]);
+    if (typeof window === 'undefined') return;
+    const endPointer = () => { userGestureRef.current.pointer = false; };
+    const endKey = () => { userGestureRef.current.key = false; };
+    const endAll = () => { userGestureRef.current.pointer = false; userGestureRef.current.key = false; };
+    window.addEventListener('pointerup', endPointer);
+    window.addEventListener('pointercancel', endPointer);
+    window.addEventListener('keyup', endKey);
+    window.addEventListener('blur', endAll);
+    return () => {
+      window.removeEventListener('pointerup', endPointer);
+      window.removeEventListener('pointercancel', endPointer);
+      window.removeEventListener('keyup', endKey);
+      window.removeEventListener('blur', endAll);
+    };
+  }, []);
 
   // Force Excalidraw to re-render bound text once web fonts finish loading.
   //
@@ -209,7 +290,21 @@ export default function CanvasHost() {
       if (cancelled) return;
       const api = excalidrawApiRef.current;
       if (!api) return;
-      const refreshed = api.getSceneElements().map((e) => ({ ...e }));
+      const apiElements = api.getSceneElements();
+      const context = JSON.stringify([selectedBoard, currentRevision, reloadKey]);
+      if (saveTimerContextRef.current !== context
+          && !userGestureRef.current.pointer && !userGestureRef.current.key) {
+        fontRefreshRef.current = {
+          context,
+          content: sceneContentSignature(
+            apiElements,
+            (current.scene.appState ?? {}) as AppState,
+            (current.scene.files ?? {}) as BinaryFiles,
+            true,
+          ),
+        };
+      }
+      const refreshed = apiElements.map((e) => ({ ...e }));
       api.updateScene({ elements: refreshed as unknown as ExcalidrawElement[] });
     };
 
@@ -229,7 +324,7 @@ export default function CanvasHost() {
       cancelled = true;
       fonts?.removeEventListener?.('loadingdone', onLoadingDone);
     };
-  }, [apiReady, current, currentRevision, reloadKey]);
+  }, [apiReady, current, selectedBoard, currentRevision, reloadKey]);
 
   // Handle pending highlight: scroll to element + set transient highlight id
   useEffect(() => {
@@ -316,7 +411,15 @@ export default function CanvasHost() {
   }
 
   return (
-    <div className="canvas-host" style={{ position: 'relative' }}>
+    <div
+      className="canvas-host"
+      style={{ position: 'relative' }}
+      onPointerDownCapture={() => { userGestureRef.current.pointer = true; fontRefreshRef.current = null; }}
+      onPointerUpCapture={() => { userGestureRef.current.pointer = false; }}
+      onPointerCancelCapture={() => { userGestureRef.current.pointer = false; }}
+      onKeyDownCapture={() => { userGestureRef.current.key = true; fontRefreshRef.current = null; }}
+      onKeyUpCapture={() => { userGestureRef.current.key = false; }}
+    >
       <BoardChangedBanner />
       <Excalidraw
         key={`${selectedBoard}:${currentRevision}:${reloadKey}`}
