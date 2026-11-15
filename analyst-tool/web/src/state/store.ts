@@ -298,29 +298,26 @@ export const useStore = create<Store>((set, get) => ({
   },
 
   async saveCurrent(scene) {
-    const { selectedBoard, diffMode } = get();
+    const { selectedBoard, diffMode, currentRevision } = get();
     if (!selectedBoard) return;
     // Auto-save is suspended during diff mode
     if (diffMode.active) return;
     try {
       const result = await apiClient.putBoard(selectedBoard, scene);
-      // Update current meta snapshot
-      const { current, boards } = get();
-      if (current) {
-        set({
-          current: {
-            ...current,
-            scene,
-            mtime: result.mtime,
-          },
-        });
-      }
       // Patch the saved board's row in-place. Re-fetching the full list on
       // every autosave produced a flood of GET /boards while dragging — and
       // for a save the only fields that can change are mtime, hasUnsyncedEdits
       // and the derived syncStatus.
-      set({
-        boards: boards.map((b) => {
+      set((state) => ({
+        // A completed PUT for the old board must not install its scene into a
+        // board selected while the request was in flight. The revision also
+        // protects a switch away and back to the same board name.
+        ...(state.selectedBoard === selectedBoard &&
+        state.currentRevision === currentRevision &&
+        state.current
+          ? { current: { ...state.current, scene, mtime: result.mtime } }
+          : {}),
+        boards: state.boards.map((b) => {
           if (b.name !== selectedBoard) return b;
           const syncStatus =
             b.lastSyncedAt === null
@@ -335,7 +332,7 @@ export const useStore = create<Store>((set, get) => ({
             syncStatus,
           };
         }),
-      });
+      }));
     } catch {
       // Silently fail for autosave — could add error indicator in future
     }
@@ -498,12 +495,18 @@ export const useStore = create<Store>((set, get) => ({
       await apiClient.restoreSnapshot(board, timestamp);
       // Reload board data after restore
       const data = await apiClient.getBoard(board);
-      set({ current: data });
-      // Exit diff mode (restored state is now live)
-      set({ diffMode: { ...DEFAULT_DIFF_MODE } });
+      if (get().selectedBoard !== board) return;
+      // A restored scene is a new Excalidraw load, with a new autosave
+      // baseline. Re-mount the canvas instead of retaining the old scene.
+      set((state) => ({
+        current: data,
+        currentRevision: state.currentRevision + 1,
+        reloadKey: state.reloadKey + 1,
+        diffMode: { ...DEFAULT_DIFF_MODE },
+      }));
       // Refresh snapshot list (safety snapshot was added)
       const snaps = await apiClient.listSnapshots(board);
-      set({ snapshots: snaps });
+      if (get().selectedBoard === board) set({ snapshots: snaps });
     } catch (err) {
       console.error('Failed to restore snapshot:', err);
       throw err;
